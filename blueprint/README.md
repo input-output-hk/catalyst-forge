@@ -46,6 +46,8 @@ func main() {
 }
 ```
 
+If no blueprint files are found, the loader will return a `Blueprint` structure with default values provided for all fields.
+
 ### Blueprint Schema
 
 The blueprint schema is embedded in the `schema` package and can be loaded using the included function:
