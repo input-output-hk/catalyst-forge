@@ -13,8 +13,8 @@ The `BlueprintLoader` can be used to load blueprint files from a given path.
 By default, the loader performs the following:
 
 1. Walks the filesystem searching for `blueprint.cue` files
-   a. If the path is in a git repository, it walks up to the root of the repository
-   b. If the path is not in a git repository, it only searches the given path
+   1. If the path is in a git repository, it walks up to the root of the repository
+   2. If the path is not in a git repository, it only searches the given path
 2. Loads and processes all found blueprint files (including things like injecting environment variables)
 3. Unifies all blueprint files into a single blueprint (including handling versions)
 4. Validates the final blueprint against the embedded schema
