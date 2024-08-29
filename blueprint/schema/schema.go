@@ -12,15 +12,19 @@ var RawSchemaFile []byte
 
 // Blueprint contains the schema for blueprint files.
 type Blueprint struct {
-	Version  string            `json:"version"`
-	Global   Global            `json:"global"`
-	Registry string            `json:"registry"`
-	Secrets  map[string]Secret `json:"secrets"`
-	Targets  map[string]Target `json:"targets"`
+	Version string `json:"version"`
+	CI      CI     `json:"ci"`
+}
+
+type CI struct {
+	Global  Global            `json:"global"`
+	Secrets map[string]Secret `json:"secrets"`
+	Targets map[string]Target `json:"targets"`
 }
 
 // Global contains the global configuration.
 type Global struct {
+	Registry  string `json:"registry"`
 	Satellite string `json:"satellite"`
 }
 

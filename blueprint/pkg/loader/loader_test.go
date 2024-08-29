@@ -73,9 +73,11 @@ func TestBlueprintLoaderLoad(t *testing.T) {
 			files: map[string]string{
 				"/tmp/dir1/dir2/blueprint.cue": `
 				version: "1.0"
-				targets: {
-					test: {
-						privileged: true
+				ci: {
+					targets: {
+						test: {
+							privileged: true
+						}
 					}
 				}
 				`,
@@ -83,7 +85,7 @@ func TestBlueprintLoaderLoad(t *testing.T) {
 			},
 			want: []fieldTest{
 				{
-					fieldPath:  "targets.test.privileged",
+					fieldPath:  "ci.targets.test.privileged",
 					fieldType:  "bool",
 					fieldValue: true,
 				},
@@ -95,17 +97,21 @@ func TestBlueprintLoaderLoad(t *testing.T) {
 			files: map[string]string{
 				"/tmp/dir1/dir2/blueprint.cue": `
 				version: "1.0"
-				targets: {
-					test: {
-						privileged: true
+				ci: {
+					targets: {
+						test: {
+							privileged: true
+						}
 					}
 				}
 				`,
 				"/tmp/dir1/blueprint.cue": `
 				version: "1.1"
-				targets: {
-					test: {
-						retries: 3
+				ci: {
+					targets: {
+						test: {
+							retries: 3
+						}
 					}
 				}
 				`,
@@ -118,12 +124,12 @@ func TestBlueprintLoaderLoad(t *testing.T) {
 					fieldValue: "1.1.0",
 				},
 				{
-					fieldPath:  "targets.test.privileged",
+					fieldPath:  "ci.targets.test.privileged",
 					fieldType:  "bool",
 					fieldValue: true,
 				},
 				{
-					fieldPath:  "targets.test.retries",
+					fieldPath:  "ci.targets.test.retries",
 					fieldType:  "int",
 					fieldValue: int64(3),
 				},
@@ -135,28 +141,33 @@ func TestBlueprintLoaderLoad(t *testing.T) {
 			files: map[string]string{
 				"/tmp/dir1/dir2/blueprint.cue": `
 				version: "1.0"
-				targets: {
-					test: {
-						privileged: true
+				ci: {
+					targets: {
+						test: {
+							privileged: true
+						}
 					}
-				}
+			    }
 				`,
 				"/tmp/dir1/blueprint.cue": `
-				targets: {
-					test: {
-						retries: 3
+				version: "1.0"
+				ci: {
+					targets: {
+						test: {
+							retries: 3
+						}
 					}
-				}
+			    }
 				`,
 			},
 			want: []fieldTest{
 				{
-					fieldPath:  "targets.test.privileged",
+					fieldPath:  "ci.targets.test.privileged",
 					fieldType:  "bool",
 					fieldValue: true,
 				},
 				{
-					fieldPath:  "targets.test.retries",
+					fieldPath:  "ci.targets.test.retries",
 					fieldType:  "int",
 					fieldValue: int64(0),
 				},

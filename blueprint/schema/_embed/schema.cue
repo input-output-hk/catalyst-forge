@@ -3,20 +3,27 @@ package schema
 // Blueprint contains the schema for blueprint files.
 #Blueprint: {
 	version: =~"^\\d+\\.\\d+" @go(Version)
-	global:  #Global          @go(Global)
-	registry: (_ | *"") & {
-		string
-	} @go(Registry)
-	secrets: {
-		[string]: #Secret
+	ci:      #CI              @go(CI)
+}
+#CI: {
+	global: #Global @go(Global)
+	secrets: (_ | *{}) & {
+		{
+			[string]: #Secret
+		}
 	} @go(Secrets,map[string]Secret)
-	targets: {
-		[string]: #Target
+	targets: (_ | *{}) & {
+		{
+			[string]: #Target
+		}
 	} @go(Targets,map[string]Target)
 }
 
 // Global contains the global configuration.
 #Global: {
+	registry: (_ | *"") & {
+		string
+	} @go(Registry)
 	satellite: (_ | *"") & {
 		string
 	} @go(Satellite)
@@ -45,5 +52,5 @@ version: "1.0"
 	retries: (_ | *0) & {
 		int
 	} @go(Retries)
-	secrets: [...#Secret] @go(Secrets,[]Secret)
+	secrets: [...#Secret] & (_ | *[]) @go(Secrets,[]Secret)
 }

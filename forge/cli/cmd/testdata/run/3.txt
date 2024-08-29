@@ -12,8 +12,10 @@ Image ./dir1+test output as test
 Image ./dir1+test output as test
 -- dir1/blueprint.cue --
 version: "1.0"
-targets: {
-    test: {
-        privileged: true
+ci: {
+    targets: {
+        test: {
+            privileged: true
+        }
     }
 }
