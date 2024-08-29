@@ -1,0 +1,11 @@
+! exec forge blueprint validate ./blueprint.cue
+
+-- blueprint.cue --
+version: "1.0"
+ci: {
+    targets: {
+        test: {
+            privileged: "true"
+        }
+    }
+}

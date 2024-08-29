@@ -1,4 +1,4 @@
-exec forge config validate ./blueprint.cue
+exec forge blueprint validate ./blueprint.cue
 
 -- blueprint.cue --
 version: "1.0"
