@@ -7,9 +7,9 @@ import (
 	"slices"
 	"testing"
 
+	"github.com/input-output-hk/catalyst-forge/blueprint/pkg/utils"
 	"github.com/input-output-hk/catalyst-forge/blueprint/schema"
 	"github.com/input-output-hk/catalyst-forge/forge/cli/internal/testutils"
-	"github.com/input-output-hk/catalyst-forge/forge/cli/internal/utils"
 	"github.com/input-output-hk/catalyst-forge/forge/cli/pkg/executor"
 	"github.com/input-output-hk/catalyst-forge/forge/cli/pkg/secrets"
 )
