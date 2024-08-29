@@ -1,15 +1,11 @@
 name: Setup CI
 description: Sets up the CI with the configured providers
-inputs:
-  version:
-    description: The version of Catalyst Forge actions to use
-    default: adds-install-action
 runs:
   using: composite
   steps:
     - name: Dump blueprint
       id: blueprint
-      uses: input-output-hk/catalyst-forge/forge/actions/blueprint@${{ inputs.version }}
+      uses: ./forge/actions/blueprint
       with:
         path: .
     - name: Show
