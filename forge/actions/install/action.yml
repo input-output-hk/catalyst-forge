@@ -1,0 +1,29 @@
+name: Install Forge CLI
+description: Installs the Catalyst Forge CLI on the local runner
+inputs:
+  earthly_version:
+    description: The version of Earthly to install if not present
+    default: "latest"
+  local:
+    description: If true, the CLI will be installed by building it locally with Earthly (only used for testing)
+    default: "false"
+runs:
+  using: composite
+  steps:
+    - name: Check if earthly is installed
+      id: check
+      shell: bash
+      run: |
+        if ! command -v earthly &> /dev/null; then
+          echo "found=false" >> $GITHUB_ENV
+        else
+          echo "found=true" >> $GITHUB_ENV
+    - name: Install Earthly
+      uses: earthly/actions-setup@v1
+      if: steps.check.outputs.env.found == 'false'
+      with:
+        version: ${{ inputs.earthly_version }}
+    - name: Build Forge CLI
+      shell: bash
+      run: |
+          earthly --artifact +build/forge /usr/local/bin/forge

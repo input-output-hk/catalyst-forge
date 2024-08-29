@@ -1,0 +1,13 @@
+name: Test
+on:
+  push:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Forge CLI
+        uses: ./forge/actions/install
+        with:
+          local: "true"
