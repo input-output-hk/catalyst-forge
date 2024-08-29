@@ -27,8 +27,8 @@ func generateOpts(target string, flags *RunCmd, config *schema.Blueprint) []eart
 	var opts []earthly.EarthlyExecutorOption
 
 	if config != nil {
-		if _, ok := config.Targets[target]; ok {
-			targetConfig := config.Targets[target]
+		if _, ok := config.CI.Targets[target]; ok {
+			targetConfig := config.CI.Targets[target]
 
 			if len(targetConfig.Args) > 0 {
 				var args []string
@@ -52,8 +52,8 @@ func generateOpts(target string, flags *RunCmd, config *schema.Blueprint) []eart
 			}
 		}
 
-		if config.Global.Satellite != "" && !flags.Local {
-			opts = append(opts, earthly.WithSatellite(config.Global.Satellite))
+		if config.CI.Global.Satellite != "" && !flags.Local {
+			opts = append(opts, earthly.WithSatellite(config.CI.Global.Satellite))
 		}
 	}
 

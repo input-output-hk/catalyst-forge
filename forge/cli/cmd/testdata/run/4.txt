@@ -15,20 +15,22 @@ Image ./dir1+test output as test
 Image ./dir1+test output as test
 -- dir1/blueprint.cue --
 version: "1.0"
-S=secrets: {
-  my_secret_1: {
-    path: "./dir1/Secretfile"
-    provider: "local"
-    maps: {
-      "secret_key": "secret_id"
+ci: {
+  secrets: {
+    my_secret_1: {
+      path: "./dir1/Secretfile"
+      provider: "local"
+      maps: {
+        "secret_key": "secret_id"
+      }
     }
   }
-}
-targets: {
-    test: {
-        privileged: true
-        secrets: [
-          S.my_secret_1
-        ]
-    }
+  targets: {
+      test: {
+          privileged: true
+          secrets: [
+            ci.secrets.my_secret_1
+          ]
+      }
+  }
 }

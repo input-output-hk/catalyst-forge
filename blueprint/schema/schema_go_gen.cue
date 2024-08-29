@@ -6,15 +6,19 @@ package schema
 
 // Blueprint contains the schema for blueprint files.
 #Blueprint: {
-	version:  string  @go(Version)
-	global:   #Global @go(Global)
-	registry: string  @go(Registry)
+	version: string @go(Version)
+	ci:      #CI    @go(CI)
+}
+
+#CI: {
+	global: #Global @go(Global)
 	secrets: {[string]: #Secret} @go(Secrets,map[string]Secret)
 	targets: {[string]: #Target} @go(Targets,map[string]Target)
 }
 
 // Global contains the global configuration.
 #Global: {
+	registry:  string @go(Registry)
 	satellite: string @go(Satellite)
 }
 

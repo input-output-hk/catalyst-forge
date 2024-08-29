@@ -1,11 +1,16 @@
 package schema
 
 #Blueprint: {
-	version:  string & =~"^\\d+\\.\\d+"
-	registry: _ | *""
+	version: string & =~"^\\d+\\.\\d+"
+}
+
+#CI: {
+	secrets: _ | *{}
+	targets: _ | *{}
 }
 
 #Global: {
+	registry:  _ | *""
 	satellite: _ | *""
 }
 
@@ -13,4 +18,5 @@ package schema
 	args: _ | *{}
 	privileged: _ | *false
 	retries:    _ | *0
+	secrets: _ | *[]
 }
