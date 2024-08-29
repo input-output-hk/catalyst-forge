@@ -1,0 +1,13 @@
+name: Setup CI
+description: Sets up the CI with the configured providers
+runs:
+  using: composite
+  steps:
+    - name: Dump blueprint
+      id: blueprint
+      uses: ./forge/actions/blueprint
+      with:
+        path: .
+    - name: Show
+      shell: bash
+      run: echo '${{ steps.blueprint.outputs.json }}'

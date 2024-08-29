@@ -9,10 +9,5 @@ jobs:
       - uses: actions/checkout@v4
       - name: Install Forge CLI
         uses: ./forge/actions/install
-      - name: Dump blueprint
-        id: blueprint
-        uses: ./forge/actions/blueprint
-        with:
-          path: .
-      - name: Print result
-        run: echo '${{ steps.blueprint.outputs.json }}'
+      - name: Setup
+        uses: ./forge/actions/setup
