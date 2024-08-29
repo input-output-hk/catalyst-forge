@@ -22,7 +22,7 @@ runs:
         fi
     - name: Install Earthly
       uses: earthly/actions-setup@v1
-      if: steps.check.outputs.env.found == 'false'
+      if: steps.check.outputs.found == 'false'
       with:
         version: ${{ inputs.earthly_version }}
     - name: Build Forge CLI
