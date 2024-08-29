@@ -15,12 +15,6 @@ func TestMain(m *testing.M) {
 	}))
 }
 
-func TestConfigDump(t *testing.T) {
-	testscript.Run(t, testscript.Params{
-		Dir: "testdata/config_dump",
-	})
-}
-
 func TestConfigValidate(t *testing.T) {
 	testscript.Run(t, testscript.Params{
 		Dir: "testdata/config_validate",

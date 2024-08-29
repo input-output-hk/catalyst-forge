@@ -11,7 +11,8 @@ package schema
 }
 
 #CI: {
-	global: #Global @go(Global)
+	global:    #Global    @go(Global)
+	providers: #Providers @go(Providers)
 	secrets: {[string]: #Secret} @go(Secrets,map[string]Secret)
 	targets: {[string]: #Target} @go(Targets,map[string]Target)
 }
@@ -20,6 +21,25 @@ package schema
 #Global: {
 	registry:  string @go(Registry)
 	satellite: string @go(Satellite)
+}
+
+#Providers: {
+	aws:     #ProviderAWS     @go(AWS)
+	docker:  #ProviderDocker  @go(Docker)
+	earthly: #ProviderEarthly @go(Earthly)
+}
+
+#ProviderAWS: {
+	role:   string @go(Role)
+	region: string @go(Region)
+}
+
+#ProviderDocker: {
+	credentials: #Secret @go(Credentials)
+}
+
+#ProviderEarthly: {
+	credentials: #Secret @go(Credentials)
 }
 
 // Secret contains the secret provider and a list of mappings

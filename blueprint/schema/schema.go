@@ -17,15 +17,35 @@ type Blueprint struct {
 }
 
 type CI struct {
-	Global  Global            `json:"global"`
-	Secrets map[string]Secret `json:"secrets"`
-	Targets map[string]Target `json:"targets"`
+	Global    Global            `json:"global"`
+	Providers Providers         `json:"providers"`
+	Secrets   map[string]Secret `json:"secrets"`
+	Targets   map[string]Target `json:"targets"`
 }
 
 // Global contains the global configuration.
 type Global struct {
 	Registry  string `json:"registry"`
 	Satellite string `json:"satellite"`
+}
+
+type Providers struct {
+	AWS     ProviderAWS     `json:"aws"`
+	Docker  ProviderDocker  `json:"docker"`
+	Earthly ProviderEarthly `json:"earthly"`
+}
+
+type ProviderAWS struct {
+	Role   string `json:"role"`
+	Region string `json:"region"`
+}
+
+type ProviderDocker struct {
+	Credentials Secret `json:"credentials"`
+}
+
+type ProviderEarthly struct {
+	Credentials Secret `json:"credentials"`
 }
 
 // Secret contains the secret provider and a list of mappings
