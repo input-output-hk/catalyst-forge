@@ -6,7 +6,8 @@ package schema
 	ci:      #CI              @go(CI)
 }
 #CI: {
-	global: #Global @go(Global)
+	global:    #Global    @go(Global)
+	providers: #Providers @go(Providers)
 	secrets: (_ | *{}) & {
 		{
 			[string]: #Secret
@@ -28,13 +29,38 @@ package schema
 		string
 	} @go(Satellite)
 }
+#Providers: {
+	aws: #ProviderAWS & (_ | *{}) @go(AWS)
+	docker: #ProviderDocker & (_ | *{}) @go(Docker)
+	earthly: #ProviderEarthly & (_ | *{}) @go(Earthly)
+}
+#ProviderAWS: {
+	role: (_ | *"") & {
+		string
+	} @go(Role)
+	region: (_ | *"") & {
+		string
+	} @go(Region)
+}
+#ProviderDocker: {
+	credentials: #Secret & (_ | *#Secret) @go(Credentials)
+}
+#ProviderEarthly: {
+	credentials: #Secret & (_ | *#Secret) @go(Credentials)
+}
 
 // Secret contains the secret provider and a list of mappings
 #Secret: {
-	path:     string @go(Path)
-	provider: string @go(Provider)
-	maps: {
-		[string]: string
+	path: (_ | *"") & {
+		string
+	} @go(Path)
+	provider: (_ | *"") & {
+		string
+	} @go(Provider)
+	maps: (_ | *{}) & {
+		{
+			[string]: string
+		}
 	} @go(Maps,map[string]string)
 }
 version: "1.0"

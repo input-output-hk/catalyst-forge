@@ -14,6 +14,31 @@ package schema
 	satellite: _ | *""
 }
 
+#Providers: {
+	aws: _ | *{}
+	docker: _ | *{}
+	earthly: _ | *{}
+}
+
+#ProviderAWS: {
+	role:   _ | *""
+	region: _ | *""
+}
+
+#ProviderDocker: {
+	credentials: _ | *#Secret
+}
+
+#ProviderEarthly: {
+	credentials: _ | *#Secret
+}
+
+#Secret: {
+	path:     _ | *""
+	provider: _ | *""
+	maps: _ | *{}
+}
+
 #Target: {
 	args: _ | *{}
 	privileged: _ | *false
