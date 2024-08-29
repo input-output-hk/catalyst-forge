@@ -238,7 +238,7 @@ func TestBlueprintLoaderLoad(t *testing.T) {
 			}
 
 			for _, test := range tt.want {
-				value := loader.blueprint.LookupPath(cue.ParsePath(test.fieldPath))
+				value := loader.blueprint.Value().LookupPath(cue.ParsePath(test.fieldPath))
 				if value.Err() != nil {
 					t.Fatalf("failed to lookup field %s: %v", test.fieldPath, value.Err())
 				}

@@ -25,7 +25,7 @@ var (
 )
 
 type BlueprintLoader struct {
-	blueprint cue.Value
+	blueprint blueprint.RawBlueprint
 	injector  injector.Injector
 	logger    *slog.Logger
 	rootPath  string
@@ -113,7 +113,7 @@ func (b *BlueprintLoader) Load() error {
 		}
 	}
 
-	b.blueprint = finalBlueprint
+	b.blueprint = blueprint.NewRawBlueprint(finalBlueprint)
 	return nil
 }
 
@@ -124,6 +124,11 @@ func (b *BlueprintLoader) Decode() (schema.Blueprint, error) {
 	}
 
 	return cfg, nil
+}
+
+// Raw returns the raw blueprint CUE value.
+func (b *BlueprintLoader) Raw() blueprint.RawBlueprint {
+	return b.blueprint
 }
 
 // findBlueprints searches for blueprint files starting from the startPath and
