@@ -16,4 +16,10 @@ runs:
       shell: bash
       run: |
         OUTPUT=$(forge blueprint dump ${{ inputs.path }} 2> >(tee /dev/stderr))
-        echo "json=$(echo $OUTPUT | jq -c)" >> GITHUB_OUTPUT
+        echo "Output: $OUTPUT"
+        echo "Final Output: $(echo $OUTPUT | jq -rc)"
+        echo "json=$(echo $OUTPUT | jq -rc)" >> GITHUB_OUTPUT
+    - name: Show
+      shell: bash
+      run: |
+        echo ${{ steps.run.outputs.json }}
