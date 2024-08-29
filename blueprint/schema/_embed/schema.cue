@@ -2,81 +2,111 @@ package schema
 
 // Blueprint contains the schema for blueprint files.
 #Blueprint: {
+	// Version defines the version of the blueprint schema being used.
 	version: =~"^\\d+\\.\\d+" @go(Version)
-	ci:      #CI              @go(CI)
+
+	// CI contains the configuration for the CI system.
+	// +optional
+	ci?: #CI @go(CI)
 }
+
+// CI contains the configuration for the CI system.
 #CI: {
-	global:    #Global    @go(Global)
-	providers: #Providers @go(Providers)
-	secrets: (_ | *{}) & {
-		{
-			[string]: #Secret
-		}
+	// Providers contains the configuration for the providers being used by the CI system.
+	// +optional
+	providers?: #Providers @go(Providers)
+
+	// Registry contains the registry to push images to.
+	// +optional
+	registry?: null | string @go(Registry,*string)
+
+	// Secrets contains the configuration for the secrets being used by the CI system.
+	// +optional
+	secrets?: {
+		[string]: #Secret
 	} @go(Secrets,map[string]Secret)
-	targets: (_ | *{}) & {
-		{
-			[string]: #Target
-		}
+
+	// Targets configures the individual targets that are run by the CI system.
+	// +optional
+	targets?: {
+		[string]: #Target
 	} @go(Targets,map[string]Target)
 }
 
-// Global contains the global configuration.
-#Global: {
-	registry: (_ | *"") & {
-		string
-	} @go(Registry)
-	satellite: (_ | *"") & {
-		string
-	} @go(Satellite)
-}
+// Providers contains the configuration for the providers being used by the CI system.
 #Providers: {
-	aws: #ProviderAWS & (_ | *{}) @go(AWS)
-	docker: #ProviderDocker & (_ | *{}) @go(Docker)
-	earthly: #ProviderEarthly & (_ | *{}) @go(Earthly)
+	// AWS contains the configuration for the AWS provider.
+	// +optional
+	aws?: #ProviderAWS @go(AWS)
+
+	// Docker contains the configuration for the DockerHub provider.
+	// +optional
+	docker?: #ProviderDocker @go(Docker)
+
+	// Earthly contains the configuration for the Earthly Cloud provider.
+	// +optional
+	earthly?: #ProviderEarthly @go(Earthly)
 }
+
+// ProviderAWS contains the configuration for the AWS provider.
 #ProviderAWS: {
-	role: (_ | *"") & {
-		string
-	} @go(Role)
-	region: (_ | *"") & {
-		string
-	} @go(Region)
+	// Role contains the role to assume.
+	role?: null | string @go(Role,*string)
+
+	// Region contains the region to use.
+	region?: null | string @go(Region,*string)
 }
+
+// ProviderDocker contains the configuration for the DockerHub provider.
 #ProviderDocker: {
-	credentials: #Secret & (_ | *#Secret) @go(Credentials)
+	// Credentials contains the credentials to use for DockerHub
+	credentials: #Secret @go(Credentials)
 }
+
+// ProviderEarthly contains the configuration for the Earthly Cloud provider.
 #ProviderEarthly: {
-	credentials: #Secret & (_ | *#Secret) @go(Credentials)
+	// Credentials contains the credentials to use for Earthly Cloud
+	// +optional
+	credentials?: #Secret @go(Credentials)
+
+	// Satellite contains the satellite to use for caching.
+	// +optional
+	satellite?: null | string @go(Satellite,*string)
 }
 
 // Secret contains the secret provider and a list of mappings
 #Secret: {
-	path: (_ | *"") & {
-		string
-	} @go(Path)
-	provider: (_ | *"") & {
-		string
-	} @go(Provider)
-	maps: (_ | *{}) & {
-		{
-			[string]: string
-		}
+	// Path contains the path to the secret.
+	path?: null | string @go(Path,*string)
+
+	// Provider contains the provider to use for the secret.
+	provider?: null | string @go(Provider,*string)
+
+	// Maps contains the mappings for the secret.
+	// +optional
+	maps?: {
+		[string]: string
 	} @go(Maps,map[string]string)
 }
 version: "1.0"
 
 // Target contains the configuration for a single target.
 #Target: {
-	args: (_ | *{}) & {
-		{
-			[string]: string
-		}
+	// Args contains the arguments to pass to the target.
+	// +optional
+	args?: {
+		[string]: string
 	} @go(Args,map[string]string)
-	privileged: (_ | *false) & {
-		bool
-	} @go(Privileged)
-	retries: (_ | *0) & {
-		int
-	} @go(Retries)
-	secrets: [...#Secret] & (_ | *[]) @go(Secrets,[]Secret)
+
+	// Privileged determines if the target should run in privileged mode.
+	// +optional
+	privileged?: null | bool @go(Privileged,*bool)
+
+	// Retries contains the number of times to retry the target.
+	// +optional
+	retries?: null | int @go(Retries,*int)
+
+	// Secrets contains the secrets to pass to the target.
+	// +optional
+	secrets?: [...#Secret] @go(Secrets,[]Secret)
 }

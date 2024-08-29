@@ -23,6 +23,11 @@ func (r RawBlueprint) Get(path string) cue.Value {
 	return r.value.LookupPath(cue.ParsePath(path))
 }
 
+// MarshalJSON marshals the raw blueprint into JSON.
+func (r RawBlueprint) MarshalJSON() ([]byte, error) {
+	return r.value.MarshalJSON()
+}
+
 // Value returns the raw blueprint value.
 func (r RawBlueprint) Value() cue.Value {
 	return r.value

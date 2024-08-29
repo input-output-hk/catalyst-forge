@@ -4,24 +4,30 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
-	"path/filepath"
+
+	"github.com/input-output-hk/catalyst-forge/blueprint/pkg/loader"
 )
 
 type DumpCmd struct {
-	Config string `arg:"" help:"Path to the configuration file."`
+	Config string `arg:"" help:"Path to the blueprint file."`
 	Pretty bool   `help:"Pretty print JSON output."`
 }
 
 func (c *DumpCmd) Run(logger *slog.Logger) error {
 	if _, err := os.Stat(c.Config); os.IsNotExist(err) {
-		return fmt.Errorf("configuration file does not exist: %s", c.Config)
+		return fmt.Errorf("blueprint file does not exist: %s", c.Config)
 	}
 
-	config, err := loadBlueprint(filepath.Dir(c.Config), logger)
+	loader := loader.NewDefaultBlueprintLoader(c.Config, logger)
+	if err := loader.Load(); err != nil {
+		return err
+	}
+
+	json, err := loader.Raw().MarshalJSON()
 	if err != nil {
 		return err
 	}
 
-	printJson(config, c.Pretty)
+	fmt.Println(string(json))
 	return nil
 }

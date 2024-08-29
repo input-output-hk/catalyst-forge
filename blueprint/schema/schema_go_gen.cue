@@ -6,53 +6,102 @@ package schema
 
 // Blueprint contains the schema for blueprint files.
 #Blueprint: {
+	// Version defines the version of the blueprint schema being used.
 	version: string @go(Version)
-	ci:      #CI    @go(CI)
+
+	// CI contains the configuration for the CI system.
+	// +optional
+	ci?: #CI @go(CI)
 }
 
+// CI contains the configuration for the CI system.
 #CI: {
-	global:    #Global    @go(Global)
-	providers: #Providers @go(Providers)
-	secrets: {[string]: #Secret} @go(Secrets,map[string]Secret)
-	targets: {[string]: #Target} @go(Targets,map[string]Target)
+	// Providers contains the configuration for the providers being used by the CI system.
+	// +optional
+	providers?: #Providers @go(Providers)
+
+	// Registry contains the registry to push images to.
+	// +optional
+	registry?: null | string @go(Registry,*string)
+
+	// Secrets contains the configuration for the secrets being used by the CI system.
+	// +optional
+	secrets?: {[string]: #Secret} @go(Secrets,map[string]Secret)
+
+	// Targets configures the individual targets that are run by the CI system.
+	// +optional
+	targets?: {[string]: #Target} @go(Targets,map[string]Target)
 }
 
-// Global contains the global configuration.
-#Global: {
-	registry:  string @go(Registry)
-	satellite: string @go(Satellite)
-}
-
+// Providers contains the configuration for the providers being used by the CI system.
 #Providers: {
-	aws:     #ProviderAWS     @go(AWS)
-	docker:  #ProviderDocker  @go(Docker)
-	earthly: #ProviderEarthly @go(Earthly)
+	// AWS contains the configuration for the AWS provider.
+	// +optional
+	aws?: #ProviderAWS @go(AWS)
+
+	// Docker contains the configuration for the DockerHub provider.
+	// +optional
+	docker?: #ProviderDocker @go(Docker)
+
+	// Earthly contains the configuration for the Earthly Cloud provider.
+	// +optional
+	earthly?: #ProviderEarthly @go(Earthly)
 }
 
+// ProviderAWS contains the configuration for the AWS provider.
 #ProviderAWS: {
-	role:   string @go(Role)
-	region: string @go(Region)
+	// Role contains the role to assume.
+	role?: null | string @go(Role,*string)
+
+	// Region contains the region to use.
+	region?: null | string @go(Region,*string)
 }
 
+// ProviderDocker contains the configuration for the DockerHub provider.
 #ProviderDocker: {
+	// Credentials contains the credentials to use for DockerHub
 	credentials: #Secret @go(Credentials)
 }
 
+// ProviderEarthly contains the configuration for the Earthly Cloud provider.
 #ProviderEarthly: {
-	credentials: #Secret @go(Credentials)
+	// Credentials contains the credentials to use for Earthly Cloud
+	// +optional
+	credentials?: #Secret @go(Credentials)
+
+	// Satellite contains the satellite to use for caching.
+	// +optional
+	satellite?: null | string @go(Satellite,*string)
 }
 
 // Secret contains the secret provider and a list of mappings
 #Secret: {
-	path:     string @go(Path)
-	provider: string @go(Provider)
-	maps: {[string]: string} @go(Maps,map[string]string)
+	// Path contains the path to the secret.
+	path?: null | string @go(Path,*string)
+
+	// Provider contains the provider to use for the secret.
+	provider?: null | string @go(Provider,*string)
+
+	// Maps contains the mappings for the secret.
+	// +optional
+	maps?: {[string]: string} @go(Maps,map[string]string)
 }
 
 // Target contains the configuration for a single target.
 #Target: {
-	args: {[string]: string} @go(Args,map[string]string)
-	privileged: bool @go(Privileged)
-	retries:    int  @go(Retries)
-	secrets: [...#Secret] @go(Secrets,[]Secret)
+	// Args contains the arguments to pass to the target.
+	// +optional
+	args?: {[string]: string} @go(Args,map[string]string)
+
+	// Privileged determines if the target should run in privileged mode.
+	// +optional
+	privileged?: null | bool @go(Privileged,*bool)
+
+	// Retries contains the number of times to retry the target.
+	// +optional
+	retries?: null | int @go(Retries,*int)
+
+	// Secrets contains the secrets to pass to the target.
+	// +optional
+	secrets?: [...#Secret] @go(Secrets,[]Secret)
 }

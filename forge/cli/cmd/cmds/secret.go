@@ -52,9 +52,9 @@ func (c *Get) Run(logger *slog.Logger) error {
 			return fmt.Errorf("could not decode secret: %w", err)
 		}
 
-		if secret.Path != "" && secret.Provider != "" {
-			path = secret.Path
-			provider = secret.Provider
+		if secret.Path != nil && secret.Provider != nil {
+			path = *secret.Path
+			provider = *secret.Provider
 		}
 	} else {
 		path = c.Path
@@ -107,9 +107,9 @@ func (c *Set) Run(logger *slog.Logger) error {
 			return fmt.Errorf("could not decode secret: %w", err)
 		}
 
-		if secret.Path != "" && secret.Provider != "" {
-			path = secret.Path
-			provider = secret.Provider
+		if secret.Path != nil && secret.Provider != nil {
+			path = *secret.Path
+			provider = *secret.Provider
 		}
 	} else {
 		path = c.Path
