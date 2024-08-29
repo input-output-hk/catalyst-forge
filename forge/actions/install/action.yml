@@ -28,4 +28,4 @@ runs:
     - name: Build Forge CLI
       shell: bash
       run: |
-          earthly --artifact +build/forge /usr/local/bin/forge
+          earthly --artifact forge/cli+build/forge /usr/local/bin/forge
