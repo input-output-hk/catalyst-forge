@@ -166,11 +166,6 @@ func TestBlueprintLoaderLoad(t *testing.T) {
 					fieldType:  "bool",
 					fieldValue: true,
 				},
-				{
-					fieldPath:  "ci.targets.test.retries",
-					fieldType:  "int",
-					fieldValue: int64(0),
-				},
 			},
 		},
 	}

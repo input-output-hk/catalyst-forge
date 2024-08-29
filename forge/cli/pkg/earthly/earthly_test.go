@@ -7,6 +7,7 @@ import (
 	"slices"
 	"testing"
 
+	"github.com/input-output-hk/catalyst-forge/blueprint/pkg/utils"
 	"github.com/input-output-hk/catalyst-forge/blueprint/schema"
 	"github.com/input-output-hk/catalyst-forge/forge/cli/internal/testutils"
 	"github.com/input-output-hk/catalyst-forge/forge/cli/pkg/executor"
@@ -168,8 +169,8 @@ func TestEarthlyExecutor_buildSecrets(t *testing.T) {
 			},
 			secrets: []schema.Secret{
 				{
-					Path:     "path",
-					Provider: "mock",
+					Path:     utils.StringPtr("path"),
+					Provider: utils.StringPtr("mock"),
 					Maps: map[string]string{
 						"key": "id",
 					},
@@ -193,8 +194,8 @@ func TestEarthlyExecutor_buildSecrets(t *testing.T) {
 			},
 			secrets: []schema.Secret{
 				{
-					Path:     "path",
-					Provider: "mock",
+					Path:     utils.StringPtr("path"),
+					Provider: utils.StringPtr("mock"),
 					Maps: map[string]string{
 						"key1": "id1",
 					},
@@ -213,8 +214,8 @@ func TestEarthlyExecutor_buildSecrets(t *testing.T) {
 			},
 			secrets: []schema.Secret{
 				{
-					Path:     "path",
-					Provider: "mock",
+					Path:     utils.StringPtr("path"),
+					Provider: utils.StringPtr("mock"),
 					Maps:     map[string]string{},
 				},
 			},
@@ -231,8 +232,8 @@ func TestEarthlyExecutor_buildSecrets(t *testing.T) {
 			},
 			secrets: []schema.Secret{
 				{
-					Path:     "path",
-					Provider: "bad",
+					Path:     utils.StringPtr("path"),
+					Provider: utils.StringPtr("bad"),
 					Maps:     map[string]string{},
 				},
 			},
@@ -249,8 +250,8 @@ func TestEarthlyExecutor_buildSecrets(t *testing.T) {
 			},
 			secrets: []schema.Secret{
 				{
-					Path:     "path",
-					Provider: "mock",
+					Path:     utils.StringPtr("path"),
+					Provider: utils.StringPtr("mock"),
 					Maps:     map[string]string{},
 				},
 			},

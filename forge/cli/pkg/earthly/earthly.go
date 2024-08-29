@@ -116,16 +116,16 @@ func (e *EarthlyExecutor) buildSecrets() ([]EarthlySecret, error) {
 	var secrets []EarthlySecret
 
 	for _, secret := range e.secrets {
-		secretClient, err := e.secretsStore.NewClient(e.logger, secretstore.Provider(secret.Provider))
+		secretClient, err := e.secretsStore.NewClient(e.logger, secretstore.Provider(*secret.Provider))
 		if err != nil {
 			e.logger.Error("Unable to create new secret client", "provider", secret.Provider, "error", err)
 			return secrets, fmt.Errorf("unable to create new secret client: %w", err)
 		}
 
-		s, err := secretClient.Get(secret.Path)
+		s, err := secretClient.Get(*secret.Path)
 		if err != nil {
 			e.logger.Error("Unable to get secret", "provider", secret.Provider, "path", secret.Path, "error", err)
-			return secrets, fmt.Errorf("unable to get secret %s from provider: %s", secret.Path, secret.Provider)
+			return secrets, fmt.Errorf("unable to get secret %s from provider: %s", *secret.Path, *secret.Provider)
 		}
 
 		var secretValues map[string]interface{}

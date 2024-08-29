@@ -39,12 +39,12 @@ func generateOpts(target string, flags *RunCmd, config *schema.Blueprint) []eart
 				opts = append(opts, earthly.WithTargetArgs(args...))
 			}
 
-			if targetConfig.Privileged {
+			if targetConfig.Privileged != nil && *targetConfig.Privileged {
 				opts = append(opts, earthly.WithPrivileged())
 			}
 
-			if targetConfig.Retries > 0 {
-				opts = append(opts, earthly.WithRetries(targetConfig.Retries))
+			if targetConfig.Retries != nil {
+				opts = append(opts, earthly.WithRetries(*targetConfig.Retries))
 			}
 
 			if len(targetConfig.Secrets) > 0 {
@@ -52,8 +52,8 @@ func generateOpts(target string, flags *RunCmd, config *schema.Blueprint) []eart
 			}
 		}
 
-		if config.CI.Global.Satellite != "" && !flags.Local {
-			opts = append(opts, earthly.WithSatellite(config.CI.Global.Satellite))
+		if config.CI.Providers.Earthly.Satellite != nil && !flags.Local {
+			opts = append(opts, earthly.WithSatellite(*config.CI.Providers.Earthly.Satellite))
 		}
 	}
 
