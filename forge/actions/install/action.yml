@@ -18,6 +18,7 @@ runs:
           echo "found=false" >> $GITHUB_ENV
         else
           echo "found=true" >> $GITHUB_ENV
+        fi
     - name: Install Earthly
       uses: earthly/actions-setup@v1
       if: steps.check.outputs.env.found == 'false'
