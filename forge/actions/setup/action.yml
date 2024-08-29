@@ -1,11 +1,25 @@
 name: Setup CI
 description: Sets up the CI with the configured providers
+inputs:
+  github_token:
+    description: Github token used to fetch local actions
+    required: false
+    default: ${{ github.token }}
 runs:
   using: composite
   steps:
+    - name: Setup workaround for local actions
+      uses: actions/checkout@v4
+      with:
+        repository: input-output-hk/catalyst-forge
+        ref: ${{ github.action_ref }}
+        token: ${{ inputs.github_token }}
+        path: .local-action-cache
+        sparse-checkout: |
+          forge/actions/blueprint
     - name: Dump blueprint
       id: blueprint
-      uses: ./forge/actions/blueprint
+      uses: ./.local-action-cache/forge/actions/blueprint
       with:
         path: .
     - name: Show
