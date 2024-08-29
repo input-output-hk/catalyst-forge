@@ -1,0 +1,9 @@
+exec forge config validate ./blueprint.cue
+
+-- blueprint.cue --
+version: "1.0"
+targets: {
+    test: {
+        privileged: true
+    }
+}

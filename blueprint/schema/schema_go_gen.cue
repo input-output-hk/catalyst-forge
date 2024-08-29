@@ -9,6 +9,7 @@ package schema
 	version:  string  @go(Version)
 	global:   #Global @go(Global)
 	registry: string  @go(Registry)
+	secrets: {[string]: #Secret} @go(Secrets,map[string]Secret)
 	targets: {[string]: #Target} @go(Targets,map[string]Target)
 }
 
@@ -17,9 +18,17 @@ package schema
 	satellite: string @go(Satellite)
 }
 
+// Secret contains the secret provider and a list of mappings
+#Secret: {
+	path:     string @go(Path)
+	provider: string @go(Provider)
+	maps: {[string]: string} @go(Maps,map[string]string)
+}
+
 // Target contains the configuration for a single target.
 #Target: {
 	args: {[string]: string} @go(Args,map[string]string)
 	privileged: bool @go(Privileged)
 	retries:    int  @go(Retries)
+	secrets: [...#Secret] @go(Secrets,[]Secret)
 }

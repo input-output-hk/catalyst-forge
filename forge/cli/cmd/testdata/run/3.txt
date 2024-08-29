@@ -1,0 +1,19 @@
+exec forge run ./dir1+test
+cmp stdout golden.txt
+
+-- golden.txt --
+earthly
+--allow-privileged
+./dir1+test
+Image ./dir1+test output as test
+
+{"artifacts":{},"images":{"./dir1+test":"test"}}
+-- earthly_stdout.txt --
+Image ./dir1+test output as test
+-- dir1/blueprint.cue --
+version: "1.0"
+targets: {
+    test: {
+        privileged: true
+    }
+}

@@ -1,0 +1,58 @@
+VERSION 0.8
+
+deps:
+    FROM golang:1.22.4-alpine3.19
+
+    WORKDIR /work
+
+    RUN mkdir -p /go/cache && mkdir -p /go/modcache
+    ENV GOCACHE=/go/cache
+    ENV GOMODCACHE=/go/modcache
+    CACHE --persist --sharing shared /go
+
+    COPY go.mod go.sum .
+    RUN go mod download
+
+src:
+    FROM +deps
+
+    CACHE --persist --sharing shared /go
+
+    COPY --dir cmd cue internal pkg .
+    RUN go generate ./...
+
+check:
+    FROM +src
+
+    RUN gofmt -l . | grep . && exit 1 || exit 0
+    RUN go vet ./...
+
+build:
+    FROM +src
+
+    ARG version="0.0.0"
+
+    ENV CGO_ENABLED=0
+    RUN go build -ldflags="-extldflags=-static -X main.version=$version" -o bin/forge cmd/main.go
+
+    SAVE ARTIFACT bin/forge forge
+
+test:
+    FROM +build
+
+    RUN go test ./...
+
+release:
+    FROM +build
+
+    SAVE ARTIFACT bin/forge forge
+
+publish:
+    FROM debian:bookworm-slim
+    WORKDIR /workspace
+    ARG tag=latest
+
+    COPY +build/forge /usr/local/bin/forge
+
+    ENTRYPOINT ["/usr/local/bin/forge"]
+    SAVE IMAGE --push forge:${tag}
