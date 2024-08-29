@@ -1,0 +1,38 @@
+exec mkdir -p .git
+exec forge config dump --pretty ./dir1/dir2/blueprint.cue
+cmpenv stdout golden.txt
+
+-- golden.txt --
+{
+  "version": "1.0.0",
+  "global": {
+    "satellite": ""
+  },
+  "registry": "test",
+  "secrets": {},
+  "targets": {
+    "test": {
+      "args": {},
+      "privileged": true,
+      "retries": 3,
+      "secrets": []
+    }
+  }
+}
+-- dir1/dir2/blueprint.cue --
+version: "1.0"
+targets: {
+    test: {
+        privileged: true
+    }
+}
+-- dir1/blueprint.cue --
+version: "1.0"
+targets: {
+    test: {
+        retries: 3
+    }
+}
+-- blueprint.cue --
+version: "1.0"
+registry: "test"

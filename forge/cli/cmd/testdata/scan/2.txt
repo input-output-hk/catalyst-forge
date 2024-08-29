@@ -1,0 +1,42 @@
+exec forge scan .
+cmp stdout golden.txt
+
+exec forge scan --enumerate .
+cmp stdout golden_enum.txt
+
+-- golden.txt --
+{"Earthfile":["foo","bar"],"dir1/Earthfile":["foo","bar"],"dir1/dir2/Earthfile":["foo","bar"],"dir3/dir4/dir5/Earthfile":["foo"]}
+-- golden_enum.txt --
+["Earthfile+bar","Earthfile+foo","dir1/Earthfile+bar","dir1/Earthfile+foo","dir1/dir2/Earthfile+bar","dir1/dir2/Earthfile+foo","dir3/dir4/dir5/Earthfile+foo"]
+-- Earthfile --
+VERSION 0.7
+
+foo:
+  LET bar = baz
+
+bar:
+  LET bar = baz
+
+-- dir1/Earthfile --
+VERSION 0.7
+
+foo:
+  LET bar = baz
+
+bar:
+  LET bar = baz
+
+-- dir1/dir2/Earthfile --
+VERSION 0.7
+
+foo:
+  LET bar = baz
+
+bar:
+  LET bar = baz
+
+-- dir3/dir4/dir5/Earthfile --
+VERSION 0.7
+
+foo:
+  LET bar = baz

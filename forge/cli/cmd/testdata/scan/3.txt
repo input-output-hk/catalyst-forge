@@ -1,0 +1,55 @@
+exec forge scan --filter check .
+cmp stdout golden_1.txt
+
+exec forge scan --filter check --filter build .
+cmp stdout golden_2.txt
+
+exec forge scan --filter check --filter build-\w+ --filter test$ .
+cmp stdout golden_3.txt
+
+exec forge scan --enumerate --filter check --filter build-\w+ --filter test$ .
+cmp stdout golden_3_enum.txt
+
+-- golden_1.txt --
+{"check":{"Earthfile":["check"],"dir3/dir4/dir5/Earthfile":["check-foo"]}}
+-- golden_2.txt --
+{"build":{"Earthfile":["build"],"dir1/Earthfile":["build"],"dir1/dir2/Earthfile":["build-thing"]},"check":{"Earthfile":["check"],"dir3/dir4/dir5/Earthfile":["check-foo"]}}
+-- golden_3.txt --
+{"build-\\w+":{"dir1/dir2/Earthfile":["build-thing"]},"check":{"Earthfile":["check"],"dir3/dir4/dir5/Earthfile":["check-foo"]},"test$":{"dir3/dir4/dir5/Earthfile":["test"]}}
+-- golden_3_enum.txt --
+{"build-\\w+":["dir1/dir2/Earthfile+build-thing"],"check":["Earthfile+check","dir3/dir4/dir5/Earthfile+check-foo"],"test$":["dir3/dir4/dir5/Earthfile+test"]}
+-- Earthfile --
+VERSION 0.7
+
+check:
+  LET bar = baz
+
+build:
+  LET bar = baz
+
+-- dir1/Earthfile --
+VERSION 0.7
+
+build:
+  LET bar = baz
+
+publish:
+  LET bar = baz
+
+-- dir1/dir2/Earthfile --
+VERSION 0.7
+
+build-thing:
+  LET bar = baz
+
+release:
+  LET bar = baz
+
+-- dir3/dir4/dir5/Earthfile --
+VERSION 0.7
+
+check-foo:
+    LET bar = baz
+
+test:
+  LET bar = baz

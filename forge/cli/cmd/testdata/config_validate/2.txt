@@ -1,0 +1,11 @@
+! exec forge config validate ./blueprint.cue
+
+-- golden.txt --
+forge: failed loading configuration: failed to validate configuration file: #Config.targets.test.privileged: conflicting values "true" and bool (mismatched types string and bool)
+-- blueprint.cue --
+version: "1.0"
+targets: {
+    test: {
+        privileged: "true"
+    }
+}

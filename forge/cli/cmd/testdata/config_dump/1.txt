@@ -1,0 +1,27 @@
+exec forge config dump --pretty ./blueprint.cue
+cmp stdout golden.txt
+
+-- golden.txt --
+{
+  "version": "1.0.0",
+  "global": {
+    "satellite": ""
+  },
+  "registry": "",
+  "secrets": {},
+  "targets": {
+    "test": {
+      "args": {},
+      "privileged": true,
+      "retries": 0,
+      "secrets": []
+    }
+  }
+}
+-- blueprint.cue --
+version: "1.0"
+targets: {
+    test: {
+        privileged: true
+    }
+}
