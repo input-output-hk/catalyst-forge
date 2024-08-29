@@ -25,7 +25,16 @@ runs:
       if: steps.check.outputs.found == 'false'
       with:
         version: ${{ inputs.earthly_version }}
+    - name: Cache Forge CLI binary
+      id: cache-forge
+      uses: actions/cache@v3
+      with:
+        path: /usr/local/bin/forge
+        key: ${{ runner.os }}-forge-${{ hashFiles('forge/cli/**') }}
+        restore-keys: |
+          ${{ runner.os }}-forge-
     - name: Build Forge CLI
+      if: steps.cache-forge.outputs.cache-hit != 'true'
       shell: bash
       run: |
           earthly --artifact ./forge/cli+build/forge /usr/local/bin/forge
