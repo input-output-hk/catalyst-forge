@@ -5,7 +5,7 @@ runs:
   steps:
     - name: Dump blueprint
       id: blueprint
-      uses: ./forge/actions/blueprint
+      uses: input-output-hk/catalyst-forge/forge/actions/blueprint@adds-install-action
       with:
         path: .
     - name: Show
