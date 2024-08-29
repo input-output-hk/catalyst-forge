@@ -16,15 +16,15 @@ import (
 var version = "dev"
 
 var cli struct {
-	Config  configCmd      `cmd:"" help:"Configuration commands."`
-	Run     cmds.RunCmd    `cmd:"" help:"Run an Earthly target."`
-	Scan    cmds.ScanCmd   `cmd:"" help:"Scan for Earthfiles."`
-	Secret  cmds.SecretCmd `cmd:"" help:"Manage secrets."`
-	Version VersionCmd     `cmd:"" help:"Print the version."`
-	Verbose int            `short:"v" type:"counter" help:"Enable verbose logging."`
+	Blueprint blueprintCmd   `cmd:"" help:"Blueprint commands."`
+	Run       cmds.RunCmd    `cmd:"" help:"Run an Earthly target."`
+	Scan      cmds.ScanCmd   `cmd:"" help:"Scan for Earthfiles."`
+	Secret    cmds.SecretCmd `cmd:"" help:"Manage secrets."`
+	Version   VersionCmd     `cmd:"" help:"Print the version."`
+	Verbose   int            `short:"v" type:"counter" help:"Enable verbose logging."`
 }
 
-type configCmd struct {
+type blueprintCmd struct {
 	Validate cmds.ValidateCmd `cmd:"" help:"Validates a blueprint file."`
 	Dump     cmds.DumpCmd     `cmd:"" help:"Dumps a blueprint file to JSON."`
 }

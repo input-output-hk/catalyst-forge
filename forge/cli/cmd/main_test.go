@@ -15,9 +15,9 @@ func TestMain(m *testing.M) {
 	}))
 }
 
-func TestConfigValidate(t *testing.T) {
+func TestBlueprintValidate(t *testing.T) {
 	testscript.Run(t, testscript.Params{
-		Dir: "testdata/config_validate",
+		Dir: "testdata/blueprint_validate",
 	})
 }
 func TestRun(t *testing.T) {
