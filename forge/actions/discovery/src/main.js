@@ -7,7 +7,7 @@ async function run() {
     const filters = core.getInput("filters", { required: false });
 
     const args = ["-vv", "scan"];
-    args.push(filtersToArgs(filters));
+    args.concat(filtersToArgs(filters))
     args.push(path);
 
     core.info(`Running forge ${args.join(" ")}`);
@@ -18,6 +18,9 @@ async function run() {
       stdout: (data) => {
         stdout += data.toString();
       },
+      stderr: (data) => {
+        console.log(data.toString());
+      }
     };
 
     await exec.exec('forge', args, options);
@@ -36,9 +39,9 @@ function filtersToArgs(input) {
   const lines = input.trim().split("\n");
 
   const result = [];
-  lines.forEach((line) => {
+  for (const line of lines) {
     result.push("-f", line);
-  });
+  }
 
   return result;
 }
