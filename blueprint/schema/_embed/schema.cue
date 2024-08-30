@@ -69,6 +69,10 @@ package schema
 	// +optional
 	credentials?: #Secret @go(Credentials)
 
+	// Org specifies the Earthly Cloud organization to use.
+	// +optional
+	org?: null | string @go(Org,*string)
+
 	// Satellite contains the satellite to use for caching.
 	// +optional
 	satellite?: null | string @go(Satellite,*string)

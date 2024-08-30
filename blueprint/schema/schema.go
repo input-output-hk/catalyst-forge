@@ -75,6 +75,10 @@ type ProviderEarthly struct {
 	// +optional
 	Credentials Secret `json:"credentials"`
 
+	// Org specifies the Earthly Cloud organization to use.
+	// +optional
+	Org *string `json:"org"`
+
 	// Satellite contains the satellite to use for caching.
 	// +optional
 	Satellite *string `json:"satellite"`

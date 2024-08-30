@@ -16,6 +16,7 @@ ci: {
 				provider: "aws"
 				path:     "global/ci/earthly"
 			}
+			org:       "Catalyst"
 			satellite: "ci"
 		}
 	}
