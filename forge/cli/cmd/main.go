@@ -74,5 +74,5 @@ func Run() int {
 }
 
 func main() {
-	Run()
+	os.Exit(Run())
 }

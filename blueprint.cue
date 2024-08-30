@@ -10,8 +10,8 @@ ci: {
 				provider: "aws"
 				path:     "global/ci/docker"
 				maps: {
-					usernames: "username"
-					passwords: "password"
+					username: "username"
+					password: "password"
 				}
 			}
 		}
