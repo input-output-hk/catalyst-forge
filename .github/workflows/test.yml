@@ -23,4 +23,4 @@ jobs:
             ^check.*
             ^test.*
       - name: Show output
-        run: echo "${{ steps.discovery.outputs.json }}"
+        run: echo "${{ steps.discovery.outputs.result }}"

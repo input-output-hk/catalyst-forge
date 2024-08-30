@@ -8,25 +8,9 @@ inputs:
     description: The path to search from
     default: "."
 outputs:
-  json:
+  result:
     description: The result of the discovery
-    value: ${{ steps.discover.outputs.json }}
+
 runs:
-  using: composite
-  steps:
-    - name: Discover
-      id: discover
-      shell: bash
-      run: |
-        FILTERS="${{ inputs.filters }}"
-        FILTERS="$(echo "${FILTERS}" | tr '\n' ' ' | sed 's/ $//')"
-
-        FLAGS=""
-        for filter in $FILTERS; do
-          FLAGS+="-f $filter "
-        done
-
-        OUTPUT=$(forge -vvv scan $FLAGS "${{ inputs.path }}" 2> >(tee /dev/stderr))
-        echo "Output: $OUTPUT"
-        #OUTPUT=$(echo $OUTPUT | jq -rc)
-        #echo "json=$OUTPUT" >> $GITHUB_OUTPUT
+  using: node20
+  main: dist/index.js
