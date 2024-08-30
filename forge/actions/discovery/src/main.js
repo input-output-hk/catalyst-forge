@@ -15,7 +15,7 @@ async function run() {
     }
 
     if (enumerate === true) {
-      args.push("--enumerates");
+      args.push("--enumerate");
     }
 
     args = args.concat(filtersToArgs(filters));
