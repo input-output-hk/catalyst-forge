@@ -1,27 +1,34 @@
 name: Setup CI
 description: Sets up the CI with the configured providers
 inputs:
-  github_token:
-    description: Github token used to fetch local actions
-    required: false
-    default: ${{ github.token }}
+  earthly_version:
+    description: The version of Earthly to install
+    default: latest
+  forge_version:
+    description: The version of the forge CLI to install (use 'local' for testing)
+    default: latest
 runs:
   using: composite
   steps:
-    - name: Setup workaround for local actions
-      uses: actions/checkout@v4
+    - name: Install Earthly
+      uses: earthly/actions-setup@v1
+      if: inputs.forge_version == 'local'
       with:
-        repository: input-output-hk/catalyst-forge
-        ref: ${{ github.action_ref }}
-        token: ${{ inputs.github_token }}
-        path: .local-action-cache
-        sparse-checkout: |
-          forge/actions/blueprint
-    - name: Dump blueprint
-      id: blueprint
-      uses: ./.local-action-cache/forge/actions/blueprint
+        version: ${{ inputs.earthly_version }}
+    - name: Cache Forge CLI binary
+      if: inputs.forge_version == 'local'
+      id: cache-forge
+      uses: actions/cache@v3
       with:
-        path: .
-    - name: Show
+        path: /usr/local/bin/forge
+        key: ${{ runner.os }}-forge-${{ hashFiles('forge/cli/**') }}
+        restore-keys: |
+          ${{ runner.os }}-forge-
+    - name: Build Forge CLI
+      if: steps.cache-forge.outputs.cache-hit != 'true' && inputs.forge_version == 'local'
       shell: bash
-      run: echo '${{ steps.blueprint.outputs.json }}'
+      run: |
+          earthly --artifact ./forge/cli+build/forge /usr/local/bin/forge
+    - name: Check version
+      shell: bash
+      run: forge version
