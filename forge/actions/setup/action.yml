@@ -115,3 +115,8 @@ runs:
       shell: bash
       run: |
         earthly account login --token "${{ steps.earthly.outputs.token }}"
+
+    - name: Testing
+      shell: bash
+      run: |
+        forge run ./forge/cli+test
