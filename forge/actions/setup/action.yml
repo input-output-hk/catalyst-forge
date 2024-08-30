@@ -15,7 +15,7 @@ runs:
     # locally with Earthly
     - if: inputs.forge_version == 'local'
       shell: bash
-      run: "Building Forge CLI locally..."
+      run: echo "Building Forge CLI locally..."
     - name: Install Earthly
       uses: earthly/actions-setup@v1
       if: inputs.forge_version == 'local'
