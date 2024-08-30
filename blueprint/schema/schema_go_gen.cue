@@ -20,9 +20,9 @@ package schema
 	// +optional
 	providers?: #Providers @go(Providers)
 
-	// Registry contains the registry to push images to.
+	// Registries contains the container registries to push images to.
 	// +optional
-	registry?: null | string @go(Registry,*string)
+	registries?: [...string] @go(Registries,[]string)
 
 	// Secrets contains the configuration for the secrets being used by the CI system.
 	// +optional
@@ -55,6 +55,10 @@ package schema
 
 	// Region contains the region to use.
 	region?: null | string @go(Region,*string)
+
+	// Registry contains the ECR registry to use.
+	// +optional
+	registry?: null | string @go(Registry,*string)
 }
 
 // ProviderDocker contains the configuration for the DockerHub provider.

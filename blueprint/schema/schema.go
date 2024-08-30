@@ -26,9 +26,9 @@ type CI struct {
 	// +optional
 	Providers Providers `json:"providers"`
 
-	// Registry contains the registry to push images to.
+	// Registries contains the container registries to push images to.
 	// +optional
-	Registry *string `json:"registry"`
+	Registries []string `json:"registries"`
 
 	// Secrets contains the configuration for the secrets being used by the CI system.
 	// +optional
@@ -61,6 +61,10 @@ type ProviderAWS struct {
 
 	// Region contains the region to use.
 	Region *string `json:"region"`
+
+	// Registry contains the ECR registry to use.
+	// +optional
+	Registry *string `json:"registry"`
 }
 
 // ProviderDocker contains the configuration for the DockerHub provider.

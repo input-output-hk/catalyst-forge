@@ -42,17 +42,24 @@ runs:
         AWS=$(echo "$BP" | jq -r .ci.providers.aws)
         if [[ "$AWS" != "null" ]]; then
           REGION=$(echo "$BP" | jq -r .ci.providers.aws.region)
+          REGISTRY=$(echo "$BP" | jq -r .ci.providers.aws.registry)
           ROLE=$(echo "$BP" | jq -r .ci.providers.aws.role)
         fi
 
         echo "region=$REGION" >> $GITHUB_OUTPUT
+        echo "registry=$REGISTRY" >> $GITHUB_OUTPUT
         echo "role=$ROLE" >> $GITHUB_OUTPUT
-    - name: Configure AWS
+    - name: Login to AWS
       uses: aws-actions/configure-aws-credentials@v4
       if: steps.aws.outputs.region  != '' && steps.aws.outputs.role != ''
       with:
         aws-region: ${{ steps.aws.outputs.region }}
         role-to-assume: ${{ steps.aws.outputs.role }}
+    - name: Login to ECR
+      uses: docker/login-action@v3
+      if: steps.aws.outputs.registry != ''
+      with:
+        registry: ${{ steps.aws.outputs.registry }}
 
     # Docker Provider
     - name: Get Docker provider configuration
