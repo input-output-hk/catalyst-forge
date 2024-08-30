@@ -27,5 +27,6 @@ runs:
         done
 
         OUTPUT=$(forge -vvv scan $FLAGS "${{ inputs.path }}" 2> >(tee /dev/stderr))
-        OUTPUT=$(echo $OUTPUT | jq -rc)
-        echo "json=$OUTPUT" >> $GITHUB_OUTPUT
+        echo "Output: $OUTPUT"
+        #OUTPUT=$(echo $OUTPUT | jq -rc)
+        #echo "json=$OUTPUT" >> $GITHUB_OUTPUT
