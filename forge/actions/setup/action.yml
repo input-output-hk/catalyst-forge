@@ -88,7 +88,7 @@ runs:
     # Earthly Provider
     - name: Install Earthly
       uses: earthly/actions-setup@v1
-      if: inputs.forge_version != 'local'
+      if: inputs.forge_version != 'local'  # Prefer to install Earthly after logging into Docker Hub
       with:
         version: ${{ inputs.earthly_version }}
     - name: Get Earthly provider configuration
