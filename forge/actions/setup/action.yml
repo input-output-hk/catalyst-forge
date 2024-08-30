@@ -67,7 +67,7 @@ runs:
           USERNAME=$(echo "$SECRET" | jq -r .username)
           PASSWORD=$(echo "$SECRET" | jq -r .password)
 
-          if [[ "$USERNAME" == "null" || "$PASSWORD" == "null"]]; then
+          if [[ "$USERNAME" == "null" || "$PASSWORD" == "null" ]]; then
             echo "Error: the docker provider secret must map secret values to 'username' and 'password'"
             exit 1
           fi
