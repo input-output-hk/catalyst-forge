@@ -52,6 +52,8 @@ type Providers struct {
 	// Earthly contains the configuration for the Earthly Cloud provider.
 	// +optional
 	Earthly ProviderEarthly `json:"earthly"`
+
+	Github ProviderGithub `json:"github"`
 }
 
 // ProviderAWS contains the configuration for the AWS provider.
@@ -86,6 +88,17 @@ type ProviderEarthly struct {
 	// Satellite contains the satellite to use for caching.
 	// +optional
 	Satellite *string `json:"satellite"`
+}
+
+// ProviderGithub contains the configuration for the Github provider.
+type ProviderGithub struct {
+	// Credentials contains the credentials to use for Github
+	//  +optional
+	Credentials Secret
+
+	// Registry contains the Github registry to use.
+	// +optional
+	Registry *string
 }
 
 // Secret contains the secret provider and a list of mappings

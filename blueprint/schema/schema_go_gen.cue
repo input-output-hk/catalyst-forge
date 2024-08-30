@@ -46,6 +46,7 @@ package schema
 	// Earthly contains the configuration for the Earthly Cloud provider.
 	// +optional
 	earthly?: #ProviderEarthly @go(Earthly)
+	github:   #ProviderGithub  @go(Github)
 }
 
 // ProviderAWS contains the configuration for the AWS provider.
@@ -80,6 +81,17 @@ package schema
 	// Satellite contains the satellite to use for caching.
 	// +optional
 	satellite?: null | string @go(Satellite,*string)
+}
+
+// ProviderGithub contains the configuration for the Github provider.
+#ProviderGithub: {
+	// Credentials contains the credentials to use for Github
+	//  +optional
+	Credentials?: #Secret
+
+	// Registry contains the Github registry to use.
+	// +optional
+	Registry?: null | string @go(,*string)
 }
 
 // Secret contains the secret provider and a list of mappings

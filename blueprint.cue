@@ -23,5 +23,8 @@ ci: {
 			org:       "Catalyst"
 			satellite: "ci"
 		}
+		github: {
+			registry: "ghcr.io"
+		}
 	}
 }

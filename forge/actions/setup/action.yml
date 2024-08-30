@@ -7,6 +7,10 @@ inputs:
   forge_version:
     description: The version of the forge CLI to install (use 'local' for testing)
     default: latest
+  github_token:
+    description: Github token assigned to CI
+    required: false
+    default: ${{ github.token }}
 runs:
   using: composite
   steps:
@@ -91,6 +95,27 @@ runs:
       with:
         username: ${{ steps.docker.outputs.username }}
         password: ${{ steps.docker.outputs.password }}
+
+    # GitHub Provider
+    - name: Get GitHub provider configuration
+      id: github
+      shell: bash
+      run: |
+        BP=$(forge blueprint dump .)
+
+        GITHUB=$(echo "$BP" | jq -r .ci.providers.github.registry)
+        if [[ "$GITHUB" != "null" ]]; then
+          LOGIN=1
+        fi
+
+        echo "login=$LOGIN" >> $GITHUB_OUTPUT
+    - name: Login to GitHub Container Registry
+      uses: docker/login-action@v3
+      if: steps.github.outputs.login
+      with:
+        registry: ghcr.io
+        username: ${{ github.actor }}
+        password: ${{ inputs.github_token }}
 
     # Earthly Provider
     - name: Install Earthly
