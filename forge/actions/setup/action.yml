@@ -10,6 +10,8 @@ inputs:
 runs:
   using: composite
   steps:
+    # If the local version of forge is requested, we try to build (and cache) it
+    # locally with Earthly
     - name: Install Earthly
       uses: earthly/actions-setup@v1
       if: inputs.forge_version == 'local'
@@ -29,6 +31,17 @@ runs:
       shell: bash
       run: |
           earthly --artifact ./forge/cli+build/forge /usr/local/bin/forge
-    - name: Check version
+
+    - name: Get provider configuration
       shell: bash
-      run: forge version
+      run: |
+        BP=$(forge blueprint dump .)
+
+        AWS=$(echo "$BP" | jq -r .ci.providers.aws)
+        if [[ "$AWS" -ne "null" ]]; then
+          AWS_REGION=$(echo "$BP" | jq -r .ci.providers.aws.region)
+          AWS_ROLE=$(echo "$BP" | jq -r .ci.providers.aws.role)
+        fi
+
+        echo "$AWS_REGION"
+        echo "$AWS_ROLE"
