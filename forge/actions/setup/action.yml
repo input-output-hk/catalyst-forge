@@ -38,6 +38,7 @@ runs:
       id: aws
       shell: bash
       run: |
+        echo "::group::AWS Setup"
         BP=$(forge blueprint dump .)
 
         AWS=$(echo "$BP" | jq -r .ci.providers.aws)
@@ -67,6 +68,8 @@ runs:
       id: docker
       shell: bash
       run: |
+        echo "::endgroup::"
+        echo "::group::Docker Setup"
         BP=$(forge blueprint dump .)
 
         DOCKER=$(echo "$BP" | jq -r .ci.providers.docker.credentials)
@@ -98,6 +101,8 @@ runs:
       id: github
       shell: bash
       run: |
+        echo "::endgroup::"
+        echo "::group::Docker Setup"
         BP=$(forge blueprint dump .)
 
         GITHUB=$(echo "$BP" | jq -r .ci.providers.github.registry)
@@ -119,6 +124,8 @@ runs:
       id: earthly
       shell: bash
       run: |
+        echo "::endgroup::"
+        echo "::group::Earthly Setup"
         BP=$(forge blueprint dump .)
 
         EARTHLY=$(echo "$BP" | jq -r .ci.providers.earthly)
