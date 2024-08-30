@@ -1,0 +1,26 @@
+name: Test
+on:
+  push:
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup
+        uses: ./forge/actions/setup
+        with:
+          forge_version: local
+      - name: Discovery
+        id: discovery
+        uses: ./forge/actions/discovery
+        with:
+          filters: |
+            ^check.*
+            ^test.*
+      - name: Show output
+        run: echo "${{ steps.discovery.outputs.json }}"

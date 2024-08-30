@@ -1,0 +1,31 @@
+name: Discovery
+description: Discovers Earthfiles
+inputs:
+  filters:
+    description: A newline separated list of filters to apply
+    default: ""
+  path:
+    description: The path to search from
+    default: "."
+outputs:
+  json:
+    description: The result of the discovery
+    value: ${{ steps.discover.outputs.json }}
+runs:
+  using: composite
+  steps:
+    - name: Discover
+      id: discover
+      shell: bash
+      run: |
+        FILTERS="${{ inputs.filters }}"
+        FILTERS="$(echo "${FILTERS}" | tr '\n' ' ' | sed 's/ $//')"
+
+        FLAGS=""
+        for filter in $FILTERS; do
+          FLAGS+="-f $filter "
+        done
+
+        OUTPUT=$(forge -vvv scan $FLAGS "${{ inputs.path }}" 2> >(tee /dev/stderr))
+        OUTPUT=$(echo $OUTPUT | jq -rc)
+        echo "json=$OUTPUT" >> $GITHUB_OUTPUT
