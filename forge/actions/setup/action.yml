@@ -20,7 +20,7 @@ runs:
     - name: Cache Forge CLI binary
       if: inputs.forge_version == 'local'
       id: cache-forge
-      uses: actions/cache@v3
+      uses: actions/cache@v4
       with:
         path: /usr/local/bin/forge
         key: ${{ runner.os }}-forge-${{ hashFiles('forge/cli/**') }}
@@ -33,6 +33,7 @@ runs:
           earthly --artifact ./forge/cli+build/forge /usr/local/bin/forge
 
     - name: Get provider configuration
+      id: provider
       shell: bash
       run: |
         BP=$(forge blueprint dump .)
@@ -43,5 +44,12 @@ runs:
           AWS_ROLE=$(echo "$BP" | jq -r .ci.providers.aws.role)
         fi
 
-        echo "$AWS_REGION"
-        echo "$AWS_ROLE"
+        echo "aws_region=$AWS_REGION" >> $GITHUB_OUTPUT
+        echo "aws_role=$AWS_ROLE" >> $GITHUB_OUTPUT
+
+    - name: Configure AWS
+      uses: aws-actions/configure-aws-credentials@v4
+      if: ${{ steps.provider.outputs.aws_region  != '' && steps.provider.outputs.aws_role != '' }}
+      with:
+        aws-region: ${{ steps.provider.outputs.aws_region }}
+        role-to-assume: ${{ steps.provider.outputs.aws_role }}
