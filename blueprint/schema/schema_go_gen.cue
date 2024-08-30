@@ -81,6 +81,10 @@ package schema
 	// Satellite contains the satellite to use for caching.
 	// +optional
 	satellite?: null | string @go(Satellite,*string)
+
+	// The version of Earthly to use in CI.
+	// +optional
+	version?: null | string @go(Version,*string)
 }
 
 // ProviderGithub contains the configuration for the Github provider.

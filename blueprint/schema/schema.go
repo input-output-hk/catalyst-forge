@@ -53,6 +53,8 @@ type Providers struct {
 	// +optional
 	Earthly ProviderEarthly `json:"earthly"`
 
+	// Github contains the configuration for the Github provider.
+	// +optional
 	Github ProviderGithub `json:"github"`
 }
 
@@ -88,6 +90,10 @@ type ProviderEarthly struct {
 	// Satellite contains the satellite to use for caching.
 	// +optional
 	Satellite *string `json:"satellite"`
+
+	// The version of Earthly to use in CI.
+	// +optional
+	Version *string `json:"version"`
 }
 
 // ProviderGithub contains the configuration for the Github provider.
