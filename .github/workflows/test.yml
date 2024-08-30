@@ -3,6 +3,7 @@ on:
   push:
 
 permissions:
+  contents: read
   id-token: write
 
 jobs:
@@ -10,3 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Setup
+        uses: ./forge/actions/setup
+        with:
+          forge_version: local
