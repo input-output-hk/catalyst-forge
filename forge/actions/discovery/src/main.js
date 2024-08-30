@@ -18,9 +18,6 @@ async function run() {
       stdout: (data) => {
         stdout += data.toString();
       },
-      stderr: (data) => {
-        console.log(data.toString());
-      },
     };
 
     await exec.exec("forge", args, options);
