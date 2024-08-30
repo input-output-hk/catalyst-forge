@@ -3,10 +3,21 @@ const exec = require("@actions/exec");
 
 async function run() {
   try {
+    const absolute = core.getBooleanInput("absolute", { required: false });
+    const enumerate = core.getBooleanInput("enumerate", { required: false });
     const path = core.getInput("path", { required: true });
     const filters = core.getInput("filters", { required: false });
 
     let args = ["-vv", "scan"];
+
+    if (absolute === true) {
+      args.push("--absolute");
+    }
+
+    if (enumerate === true) {
+      args.push("--enumerate");
+    }
+
     args = args.concat(filtersToArgs(filters));
     args.push(path);
 
@@ -37,7 +48,7 @@ function filtersToArgs(input) {
 
   const result = [];
   for (const line of lines) {
-    result.push("-f", line);
+    result.push("--filter", line);
   }
 
   return result;
