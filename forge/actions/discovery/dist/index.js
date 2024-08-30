@@ -3973,7 +3973,7 @@ async function run() {
     }
 
     if (enumerate === true) {
-      args.push("--enumerate");
+      args.push("--enumerates");
     }
 
     args = args.concat(filtersToArgs(filters));

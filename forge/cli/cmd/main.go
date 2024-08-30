@@ -66,7 +66,7 @@ func Run() int {
 
 	err := ctx.Run()
 	if err != nil {
-		fmt.Printf("forge: %v", err)
+		fmt.Fprintf(os.Stderr, "forge: %v", err)
 		return 1
 	}
 
