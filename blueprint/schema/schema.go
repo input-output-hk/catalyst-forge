@@ -26,9 +26,9 @@ type CI struct {
 	// +optional
 	Providers Providers `json:"providers"`
 
-	// Registry contains the registry to push images to.
+	// Registries contains the container registries to push images to.
 	// +optional
-	Registry *string `json:"registry"`
+	Registries []string `json:"registries"`
 
 	// Secrets contains the configuration for the secrets being used by the CI system.
 	// +optional
@@ -52,6 +52,10 @@ type Providers struct {
 	// Earthly contains the configuration for the Earthly Cloud provider.
 	// +optional
 	Earthly ProviderEarthly `json:"earthly"`
+
+	// Github contains the configuration for the Github provider.
+	// +optional
+	Github ProviderGithub `json:"github"`
 }
 
 // ProviderAWS contains the configuration for the AWS provider.
@@ -61,6 +65,10 @@ type ProviderAWS struct {
 
 	// Region contains the region to use.
 	Region *string `json:"region"`
+
+	// Registry contains the ECR registry to use.
+	// +optional
+	Registry *string `json:"registry"`
 }
 
 // ProviderDocker contains the configuration for the DockerHub provider.
@@ -75,9 +83,28 @@ type ProviderEarthly struct {
 	// +optional
 	Credentials Secret `json:"credentials"`
 
+	// Org specifies the Earthly Cloud organization to use.
+	// +optional
+	Org *string `json:"org"`
+
 	// Satellite contains the satellite to use for caching.
 	// +optional
 	Satellite *string `json:"satellite"`
+
+	// The version of Earthly to use in CI.
+	// +optional
+	Version *string `json:"version"`
+}
+
+// ProviderGithub contains the configuration for the Github provider.
+type ProviderGithub struct {
+	// Credentials contains the credentials to use for Github
+	//  +optional
+	Credentials Secret `json:"credentials"`
+
+	// Registry contains the Github registry to use.
+	// +optional
+	Registry *string `json:"registry"`
 }
 
 // Secret contains the secret provider and a list of mappings

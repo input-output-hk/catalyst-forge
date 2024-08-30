@@ -20,9 +20,9 @@ package schema
 	// +optional
 	providers?: #Providers @go(Providers)
 
-	// Registry contains the registry to push images to.
+	// Registries contains the container registries to push images to.
 	// +optional
-	registry?: null | string @go(Registry,*string)
+	registries?: [...string] @go(Registries,[]string)
 
 	// Secrets contains the configuration for the secrets being used by the CI system.
 	// +optional
@@ -46,6 +46,7 @@ package schema
 	// Earthly contains the configuration for the Earthly Cloud provider.
 	// +optional
 	earthly?: #ProviderEarthly @go(Earthly)
+	github:   #ProviderGithub  @go(Github)
 }
 
 // ProviderAWS contains the configuration for the AWS provider.
@@ -55,6 +56,10 @@ package schema
 
 	// Region contains the region to use.
 	region?: null | string @go(Region,*string)
+
+	// Registry contains the ECR registry to use.
+	// +optional
+	registry?: null | string @go(Registry,*string)
 }
 
 // ProviderDocker contains the configuration for the DockerHub provider.
@@ -69,9 +74,28 @@ package schema
 	// +optional
 	credentials?: #Secret @go(Credentials)
 
+	// Org specifies the Earthly Cloud organization to use.
+	// +optional
+	org?: null | string @go(Org,*string)
+
 	// Satellite contains the satellite to use for caching.
 	// +optional
 	satellite?: null | string @go(Satellite,*string)
+
+	// The version of Earthly to use in CI.
+	// +optional
+	version?: null | string @go(Version,*string)
+}
+
+// ProviderGithub contains the configuration for the Github provider.
+#ProviderGithub: {
+	// Credentials contains the credentials to use for Github
+	//  +optional
+	credentials?: #Secret @go(Credentials)
+
+	// Registry contains the Github registry to use.
+	// +optional
+	registry?: null | string @go(Registry,*string)
 }
 
 // Secret contains the secret provider and a list of mappings

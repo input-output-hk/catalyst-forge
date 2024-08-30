@@ -1,0 +1,20 @@
+name: Dump Blueprint
+description: Dumps blueprint files to JSON
+inputs:
+  path:
+    description: Path to the root folder
+    default: "."
+outputs:
+  json:
+    description: The blueprint in JSON form
+    value: ${{ steps.run.outputs.json }}
+runs:
+  using: composite
+  steps:
+    - name: Run
+      id: run
+      shell: bash
+      run: |
+        OUTPUT=$(forge blueprint dump ${{ inputs.path }} 2> >(tee /dev/stderr))
+        OUTPUT=$(echo $OUTPUT | jq -rc)
+        echo "json=$OUTPUT" >> $GITHUB_OUTPUT

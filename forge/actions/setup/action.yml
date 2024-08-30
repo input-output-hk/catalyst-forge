@@ -1,0 +1,171 @@
+name: Setup CI
+description: Sets up the CI with the configured providers
+inputs:
+  forge_version:
+    description: The version of the forge CLI to install (use 'local' for testing)
+    default: latest
+  github_token:
+    description: Github token assigned to CI
+    required: false
+    default: ${{ github.token }}
+runs:
+  using: composite
+  steps:
+    # If the local version of forge is requested, we try to build (and cache) it
+    # locally with Earthly
+    - if: inputs.forge_version == 'local'
+      shell: bash
+      run: echo "Building Forge CLI locally..."
+    - name: Install Earthly
+      uses: earthly/actions-setup@v1
+      if: inputs.forge_version == 'local'
+      with:
+        version: latest
+    - name: Cache Forge CLI binary
+      if: inputs.forge_version == 'local'
+      id: cache-forge
+      uses: actions/cache@v4
+      with:
+        path: /usr/local/bin/forge
+        key: ${{ runner.os }}-forge-${{ hashFiles('forge/cli/**', 'blueprint/**') }}
+        restore-keys: |
+          ${{ runner.os }}-forge-
+    - name: Build Forge CLI
+      if: steps.cache-forge.outputs.cache-hit != 'true' && inputs.forge_version == 'local'
+      shell: bash
+      run: |
+        echo "::group::Forge CLI Earthly Build"
+        earthly --artifact ./forge/cli+build/forge /usr/local/bin/forge
+        echo "::endgroup::"
+
+    # AWS Provider
+    - name: Get AWS provider configuration
+      id: aws
+      shell: bash
+      run: |
+        echo "==== AWS Setup ====="
+        BP=$(forge blueprint dump .)
+
+        AWS=$(echo "$BP" | jq -r .ci.providers.aws)
+        if [[ "$AWS" != "null" ]]; then
+          REGION=$(echo "$BP" | jq -r .ci.providers.aws.region)
+          REGISTRY=$(echo "$BP" | jq -r .ci.providers.aws.registry)
+          ROLE=$(echo "$BP" | jq -r .ci.providers.aws.role)
+        fi
+
+        echo "region=$REGION" >> $GITHUB_OUTPUT
+        echo "registry=$REGISTRY" >> $GITHUB_OUTPUT
+        echo "role=$ROLE" >> $GITHUB_OUTPUT
+    - name: Login to AWS
+      uses: aws-actions/configure-aws-credentials@v4
+      if: steps.aws.outputs.region  != '' && steps.aws.outputs.role != ''
+      with:
+        aws-region: ${{ steps.aws.outputs.region }}
+        role-to-assume: ${{ steps.aws.outputs.role }}
+    - name: Login to ECR
+      uses: docker/login-action@v3
+      if: steps.aws.outputs.registry != ''
+      with:
+        registry: ${{ steps.aws.outputs.registry }}
+
+    # Docker Provider
+    - name: Get Docker provider configuration
+      id: docker
+      shell: bash
+      run: |
+        echo "==== Docker Setup ====="
+        BP=$(forge blueprint dump .)
+
+        DOCKER=$(echo "$BP" | jq -r .ci.providers.docker.credentials)
+        if [[ "$DOCKER" != "null" ]]; then
+          SECRET=$(forge secret get -b . ci.providers.docker.credentials)
+          USERNAME=$(echo "$SECRET" | jq -r .username)
+          PASSWORD=$(echo "$SECRET" | jq -r .password)
+
+          if [[ "$USERNAME" == "null" || "$PASSWORD" == "null" ]]; then
+            echo "Error: the docker provider secret must map secret values to 'username' and 'password'"
+            exit 1
+          fi
+        fi
+
+        echo "::add-mask::$USERNAME"
+        echo "::add-mask::$PASSWORD"
+
+        echo "username=$USERNAME" >> $GITHUB_OUTPUT
+        echo "password=$PASSWORD" >> $GITHUB_OUTPUT
+    - name: Login to Docker Hub
+      uses: docker/login-action@v3
+      if: steps.docker.outputs.username != '' && steps.docker.outputs.password != ''
+      with:
+        username: ${{ steps.docker.outputs.username }}
+        password: ${{ steps.docker.outputs.password }}
+
+    # GitHub Provider
+    - name: Get GitHub provider configuration
+      id: github
+      shell: bash
+      run: |
+        echo "==== GitHub Setup ====="
+        BP=$(forge blueprint dump .)
+
+        GITHUB=$(echo "$BP" | jq -r .ci.providers.github.registry)
+        if [[ "$GITHUB" != "null" ]]; then
+          LOGIN=1
+        fi
+
+        echo "login=$LOGIN" >> $GITHUB_OUTPUT
+    - name: Login to GitHub Container Registry
+      uses: docker/login-action@v3
+      if: steps.github.outputs.login
+      with:
+        registry: ghcr.io
+        username: ${{ github.actor }}
+        password: ${{ inputs.github_token }}
+
+    # Earthly Provider
+    - name: Get Earthly provider configuration
+      id: earthly
+      shell: bash
+      run: |
+        echo "==== Earthly Setup ====="
+        BP=$(forge blueprint dump .)
+
+        EARTHLY=$(echo "$BP" | jq -r .ci.providers.earthly)
+        if [[ "$EARTHLY" != "null" ]]; then
+          ORG=$(echo "$BP" | jq -r .ci.providers.earthly.org)
+          VERSION=$(echo "$BP" | jq -r .ci.providers.earthly.version)
+        else
+          VERSION="latest"
+        fi
+
+        EARTHLY_CREDS=$(echo "$BP" | jq -r .ci.providers.earthly.credentials)
+        if [[ "$EARTHLY_CREDS" != "null" ]]; then
+          SECRET=$(forge secret get -b . ci.providers.earthly.credentials)
+          TOKEN=$(echo "$SECRET" | jq -r .token)
+
+          if [[ "$TOKEN" == "null" ]]; then
+            echo "Error: the earthly provider secret must map the secret value to 'token'"
+            exit 1
+          fi
+        fi
+
+        echo "org=$ORG" >> $GITHUB_OUTPUT
+        echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+        echo "::add-mask::$TOKEN"
+        echo "token=$TOKEN" >> $GITHUB_OUTPUT
+    - name: Install Earthly
+      uses: earthly/actions-setup@v1
+      if: inputs.forge_version != 'local'  # Prefer to install Earthly after logging into Docker Hub
+      with:
+        version: ${{ steps.earthly.outputs.version }}
+    - name: Login to Earthly Cloud
+      if: steps.earthly.outputs.token != ''
+      shell: bash
+      run: |
+        earthly account login --token "${{ steps.earthly.outputs.token }}"
+    - name: Set Earthly organization
+      if: steps.earthly.outputs.org != ''
+      shell: bash
+      run: |
+        earthly org select "${{ steps.earthly.outputs.org }}"
