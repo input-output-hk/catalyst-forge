@@ -13,6 +13,9 @@ runs:
   steps:
     # If the local version of forge is requested, we try to build (and cache) it
     # locally with Earthly
+    - if: inputs.forge_version == 'local'
+      shell: bash
+      run: "Building Forge CLI locally..."
     - name: Install Earthly
       uses: earthly/actions-setup@v1
       if: inputs.forge_version == 'local'
@@ -31,14 +34,16 @@ runs:
       if: steps.cache-forge.outputs.cache-hit != 'true' && inputs.forge_version == 'local'
       shell: bash
       run: |
-          earthly --artifact ./forge/cli+build/forge /usr/local/bin/forge
+        echo "::group::Forge CLI Earthly Build"
+        earthly --artifact ./forge/cli+build/forge /usr/local/bin/forge
+        echo "::endgroup::"
 
     # AWS Provider
     - name: Get AWS provider configuration
       id: aws
       shell: bash
       run: |
-        echo "::group::AWS Setup"
+        echo "==== AWS Setup ====="
         BP=$(forge blueprint dump .)
 
         AWS=$(echo "$BP" | jq -r .ci.providers.aws)
@@ -68,8 +73,7 @@ runs:
       id: docker
       shell: bash
       run: |
-        echo "::endgroup::"
-        echo "::group::Docker Setup"
+        echo "==== Docker Setup ====="
         BP=$(forge blueprint dump .)
 
         DOCKER=$(echo "$BP" | jq -r .ci.providers.docker.credentials)
@@ -101,8 +105,7 @@ runs:
       id: github
       shell: bash
       run: |
-        echo "::endgroup::"
-        echo "::group::Docker Setup"
+        echo "==== GitHub Setup ====="
         BP=$(forge blueprint dump .)
 
         GITHUB=$(echo "$BP" | jq -r .ci.providers.github.registry)
@@ -124,8 +127,7 @@ runs:
       id: earthly
       shell: bash
       run: |
-        echo "::endgroup::"
-        echo "::group::Earthly Setup"
+        echo "==== Earthly Setup ====="
         BP=$(forge blueprint dump .)
 
         EARTHLY=$(echo "$BP" | jq -r .ci.providers.earthly)
