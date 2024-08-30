@@ -38,7 +38,7 @@ runs:
         BP=$(forge blueprint dump .)
 
         AWS=$(echo "$BP" | jq -r .ci.providers.aws)
-        if [[ "$AWS" -ne "null" ]]; then
+        if [[ "$AWS" != "null" ]]; then
           AWS_REGION=$(echo "$BP" | jq -r .ci.providers.aws.region)
           AWS_ROLE=$(echo "$BP" | jq -r .ci.providers.aws.role)
         fi
