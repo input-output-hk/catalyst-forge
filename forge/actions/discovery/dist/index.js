@@ -3970,8 +3970,8 @@ async function run() {
 
     core.info(`Running forge ${args.join(" ")}`);
 
+    let stdout = "";
     const options = {};
-    const stdout = "";
     options.listeners = {
       stdout: (data) => {
         stdout += data.toString();
