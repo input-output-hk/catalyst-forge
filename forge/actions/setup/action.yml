@@ -32,24 +32,52 @@ runs:
       run: |
           earthly --artifact ./forge/cli+build/forge /usr/local/bin/forge
 
-    - name: Get provider configuration
-      id: provider
+    # AWS Provider
+    - name: Get AWS provider configuration
+      id: aws
       shell: bash
       run: |
         BP=$(forge blueprint dump .)
 
         AWS=$(echo "$BP" | jq -r .ci.providers.aws)
         if [[ "$AWS" != "null" ]]; then
-          AWS_REGION=$(echo "$BP" | jq -r .ci.providers.aws.region)
-          AWS_ROLE=$(echo "$BP" | jq -r .ci.providers.aws.role)
+          REGION=$(echo "$BP" | jq -r .ci.providers.aws.region)
+          ROLE=$(echo "$BP" | jq -r .ci.providers.aws.role)
         fi
 
-        echo "aws_region=$AWS_REGION" >> $GITHUB_OUTPUT
-        echo "aws_role=$AWS_ROLE" >> $GITHUB_OUTPUT
-
+        echo "region=$REGION" >> $GITHUB_OUTPUT
+        echo "role=$ROLE" >> $GITHUB_OUTPUT
     - name: Configure AWS
       uses: aws-actions/configure-aws-credentials@v4
-      if: ${{ steps.provider.outputs.aws_region  != '' && steps.provider.outputs.aws_role != '' }}
+      if: ${{ steps.aws.outputs.region  != '' && steps.aws.outputs.role != '' }}
       with:
-        aws-region: ${{ steps.provider.outputs.aws_region }}
-        role-to-assume: ${{ steps.provider.outputs.aws_role }}
+        aws-region: ${{ steps.aws.outputs.region }}
+        role-to-assume: ${{ steps.aws.outputs.role }}
+
+    # Docker Provider
+    - name: Get Docker provider configuration
+      id: docker
+      shell: bash
+      run: |
+        BP=$(forge blueprint dump .)
+
+        DOCKER=$(echo "$BP" | jq -r .ci.providers.docker.credentials)
+        if [[ "$DOCKER" != "null" ]]; then
+          SECRET=$(forge secret get -b . ci.providers.docker.credentials)
+          USERNAME=$(echo "$SECRET" | jq -r .username)
+          PASSWORD=$(echo "$SECRET" | jq -r .password)
+
+          if [[ "$USERNAME" == "null" || "$PASSWORD" == "null"]]; then
+            echo "Error: the docker provider secret must map secret values to 'username' and 'password'"
+            exit 1
+          fi
+        fi
+
+        echo "username=$USERNAME" >> $GITHUB_OUTPUT
+        echo "password=$PASSWORD" >> $GITHUB_OUTPUT
+    - name: Login to Docker Hub
+      uses: docker/login-action@v3
+      if: ${{ steps.docker.outputs.username != '' && steps.docker.outputs.password != '' }}
+      with:
+        username: ${{ steps.docker.outputs.username }}
+        password: ${{ steps.docker.outputs.password }}

@@ -38,6 +38,7 @@ type SecretCmd struct {
 
 func (c *Get) Run(logger *slog.Logger) error {
 	var path, provider string
+	var maps map[string]string
 
 	if c.Blueprint != "" {
 		loader := loader.NewDefaultBlueprintLoader(c.Blueprint, logger)
@@ -56,9 +57,16 @@ func (c *Get) Run(logger *slog.Logger) error {
 			path = *secret.Path
 			provider = *secret.Provider
 		}
+
+		if len(secret.Maps) > 0 {
+			maps = secret.Maps
+		} else {
+			maps = make(map[string]string)
+		}
 	} else {
 		path = c.Path
 		provider = c.Provider
+		maps = make(map[string]string)
 	}
 
 	store := secrets.NewDefaultSecretStore()
@@ -71,6 +79,35 @@ func (c *Get) Run(logger *slog.Logger) error {
 	s, err := client.Get(path)
 	if err != nil {
 		return fmt.Errorf("could not get secret: %w", err)
+	}
+
+	if len(maps) > 0 {
+		mappedSecret := make(map[string]string)
+		m := make(map[string]string)
+
+		if err := json.Unmarshal([]byte(s), &m); err != nil {
+			return err
+		}
+
+		for k, v := range maps {
+			if _, ok := m[v]; !ok {
+				return fmt.Errorf("key %s not found in secret at %s", v, path)
+			}
+
+			mappedSecret[k] = m[v]
+		}
+
+		if c.Key != "" {
+			if _, ok := mappedSecret[c.Key]; !ok {
+				return fmt.Errorf("key %s not found in mapped secret at %s", c.Key, path)
+			}
+
+			fmt.Println(mappedSecret[c.Key])
+			return nil
+		} else {
+			printJson(mappedSecret, false)
+			return nil
+		}
 	}
 
 	if c.Key != "" {
