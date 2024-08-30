@@ -87,11 +87,11 @@ package schema
 #ProviderGithub: {
 	// Credentials contains the credentials to use for Github
 	//  +optional
-	Credentials?: #Secret
+	credentials?: #Secret @go(Credentials)
 
 	// Registry contains the Github registry to use.
 	// +optional
-	Registry?: null | string @go(,*string)
+	registry?: null | string @go(Registry,*string)
 }
 
 // Secret contains the secret provider and a list of mappings

@@ -94,11 +94,11 @@ type ProviderEarthly struct {
 type ProviderGithub struct {
 	// Credentials contains the credentials to use for Github
 	//  +optional
-	Credentials Secret
+	Credentials Secret `json:"credentials"`
 
 	// Registry contains the Github registry to use.
 	// +optional
-	Registry *string
+	Registry *string `json:"registry"`
 }
 
 // Secret contains the secret provider and a list of mappings
