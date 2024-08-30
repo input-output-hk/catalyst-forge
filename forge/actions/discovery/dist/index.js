@@ -3964,8 +3964,8 @@ async function run() {
     const path = core.getInput("path", { required: true });
     const filters = core.getInput("filters", { required: false });
 
-    const args = ["-vv", "scan"];
-    args.concat(filtersToArgs(filters));
+    let args = ["-vv", "scan"];
+    args = args.concat(filtersToArgs(filters));
     args.push(path);
 
     core.info(`Running forge ${args.join(" ")}`);
