@@ -9,10 +9,6 @@ ci: {
 			credentials: {
 				provider: "aws"
 				path:     "global/ci/docker"
-				maps: {
-					username: "username"
-					password: "password"
-				}
 			}
 		}
 		earthly: {

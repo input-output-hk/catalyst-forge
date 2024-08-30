@@ -100,7 +100,7 @@ runs:
         EARTHLY=$(echo "$BP" | jq -r .ci.providers.earthly.credentials)
         if [[ "$EARTHLY" != "null" ]]; then
           SECRET=$(forge secret get -b . ci.providers.earthly.credentials)
-          TOKEN=$(echo "$EARTHLY" | jq -r .token)
+          TOKEN=$(echo "$SECRET" | jq -r .token)
 
           if [[ "$TOKEN" == "null" ]]; then
             echo "Error: the earthly provider secret must map the secret value to 'token'"
