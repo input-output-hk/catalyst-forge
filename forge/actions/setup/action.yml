@@ -126,7 +126,7 @@ runs:
       if: steps.earthly.outputs.org != ''
       shell: bash
       run: |
-        earthly org select "${{ steps.earthly.outputs.org }}""
+        earthly org select "${{ steps.earthly.outputs.org }}"
     - name: Testing
       shell: bash
       run: |
