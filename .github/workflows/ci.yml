@@ -1,10 +1,11 @@
-name: Test
 on:
-  push:
-
-permissions:
-  contents: read
-  id-token: write
+  workflow_call:
+    inputs:
+      forge_version:
+        description: |
+          The version of the forge CLI to install (use 'local' for testing)
+        required: true
+        type: string
 
 jobs:
   discover:
@@ -16,7 +17,7 @@ jobs:
       - name: Setup
         uses: ./forge/actions/setup
         with:
-          forge_version: local
+          forge_version: ${{ inputs.forge_version }}
       - name: Discovery
         id: discovery
         uses: ./forge/actions/discovery
@@ -31,15 +32,18 @@ jobs:
     needs: [discover]
     with:
       earthfiles: ${{ toJson(fromJson(needs.discover.outputs.result)['^check.*']) }}
+      forge_version: ${{ inputs.forge_version }}
 
   build:
     uses: ./.github/workflows/run.yml
     needs: [discover, check]
     with:
       earthfiles: ${{ toJson(fromJson(needs.discover.outputs.result)['^build.*']) }}
+      forge_version: ${{ inputs.forge_version }}
 
   test:
     uses: ./.github/workflows/run.yml
     needs: [discover, check, build]
     with:
       earthfiles: ${{ toJson(fromJson(needs.discover.outputs.result)['^test.*']) }}
+      forge_version: ${{ inputs.forge_version }}
