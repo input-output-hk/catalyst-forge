@@ -34,7 +34,7 @@ func ScanEarthfiles(rootPath string, walker w.Walker, logger *slog.Logger) (map[
 			return fmt.Errorf("error parsing %s: %w", path, err)
 		}
 
-		earthfiles[path] = earthfile
+		earthfiles[filepath.Dir(path)] = earthfile
 
 		return nil
 	})
