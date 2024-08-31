@@ -9,6 +9,7 @@ on:
 
 jobs:
   run:
+    name: ${{ matrix.earthfile }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false

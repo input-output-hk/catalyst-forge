@@ -5,9 +5,9 @@ exec forge scan --enumerate .
 cmp stdout golden_enum.txt
 
 -- golden.txt --
-{"Earthfile":["foo","bar"],"dir1/Earthfile":["foo","bar"],"dir1/dir2/Earthfile":["foo","bar"],"dir3/dir4/dir5/Earthfile":["foo"]}
+{".":["foo","bar"],"./dir1":["foo","bar"],"./dir1/dir2":["foo","bar"],"./dir3/dir4/dir5":["foo"]}
 -- golden_enum.txt --
-["Earthfile+bar","Earthfile+foo","dir1/Earthfile+bar","dir1/Earthfile+foo","dir1/dir2/Earthfile+bar","dir1/dir2/Earthfile+foo","dir3/dir4/dir5/Earthfile+foo"]
+[".+bar",".+foo","./dir1+bar","./dir1+foo","./dir1/dir2+bar","./dir1/dir2+foo","./dir3/dir4/dir5+foo"]
 -- Earthfile --
 VERSION 0.7
 

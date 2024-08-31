@@ -11,13 +11,13 @@ exec forge scan --enumerate --filter check --filter build-\w+ --filter test$ .
 cmp stdout golden_3_enum.txt
 
 -- golden_1.txt --
-{"check":{"Earthfile":["check"],"dir3/dir4/dir5/Earthfile":["check-foo"]}}
+{"check":{".":["check"],"./dir3/dir4/dir5":["check-foo"]}}
 -- golden_2.txt --
-{"build":{"Earthfile":["build"],"dir1/Earthfile":["build"],"dir1/dir2/Earthfile":["build-thing"]},"check":{"Earthfile":["check"],"dir3/dir4/dir5/Earthfile":["check-foo"]}}
+{"build":{".":["build"],"./dir1":["build"],"./dir1/dir2":["build-thing"]},"check":{".":["check"],"./dir3/dir4/dir5":["check-foo"]}}
 -- golden_3.txt --
-{"build-\\w+":{"dir1/dir2/Earthfile":["build-thing"]},"check":{"Earthfile":["check"],"dir3/dir4/dir5/Earthfile":["check-foo"]},"test$":{"dir3/dir4/dir5/Earthfile":["test"]}}
+{"build-\\w+":{"./dir1/dir2":["build-thing"]},"check":{".":["check"],"./dir3/dir4/dir5":["check-foo"]},"test$":{"./dir3/dir4/dir5":["test"]}}
 -- golden_3_enum.txt --
-{"build-\\w+":["dir1/dir2/Earthfile+build-thing"],"check":["Earthfile+check","dir3/dir4/dir5/Earthfile+check-foo"],"test$":["dir3/dir4/dir5/Earthfile+test"]}
+{"build-\\w+":["./dir1/dir2+build-thing"],"check":[".+check","./dir3/dir4/dir5+check-foo"],"test$":["./dir3/dir4/dir5+test"]}
 -- Earthfile --
 VERSION 0.7
 

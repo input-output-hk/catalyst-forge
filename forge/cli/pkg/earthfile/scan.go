@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log/slog"
 	"path/filepath"
+	"strings"
 
 	w "github.com/input-output-hk/catalyst-forge/forge/cli/pkg/walker"
 )
@@ -34,7 +35,14 @@ func ScanEarthfiles(rootPath string, walker w.Walker, logger *slog.Logger) (map[
 			return fmt.Errorf("error parsing %s: %w", path, err)
 		}
 
-		earthfiles[filepath.Dir(path)] = earthfile
+		// We need to drop the Earthfile suffix and make sure relative paths
+		// include a leading "./" to avoid confusing the Earthly CLI
+		path = filepath.Dir(path)
+		if !strings.HasPrefix(rootPath, "/") && path != "." {
+			path = fmt.Sprintf("./%s", path)
+		}
+
+		earthfiles[path] = earthfile
 
 		return nil
 	})
