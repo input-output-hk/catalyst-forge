@@ -22,10 +22,24 @@ jobs:
         uses: ./forge/actions/discovery
         with:
           filters: |
+            ^build.*
             ^check.*
             ^test.*
+
   check:
     uses: ./.github/workflows/run.yml
     needs: [discover]
     with:
       earthfiles: ${{ toJson(fromJson(needs.discover.outputs.result)['^check.*']) }}
+
+  build:
+    uses: ./.github/workflows/run.yml
+    needs: [discover, check]
+    with:
+      earthfiles: ${{ toJson(fromJson(needs.discover.outputs.result)['^build.*']) }}
+
+  test:
+    uses: ./.github/workflows/run.yml
+    needs: [discover, check, build]
+    with:
+      earthfiles: ${{ toJson(fromJson(needs.discover.outputs.result)['^test.*']) }}
