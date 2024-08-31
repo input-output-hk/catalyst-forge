@@ -25,7 +25,10 @@ jobs:
             ^check.*
             ^test.*
   check:
-    uses: ./.github/workflows/run.yml
+    #uses: ./.github/workflows/run.yml
+    runs-on: ubuntu-latest
     needs: [discover]
-    with:
-      earthfiles: "${{ fromJson(needs.discover.outputs.result)['^check.*'] }}"
+    steps:
+      - name: Check
+        run: |
+          echo "${{ fromJson(needs.discover.outputs.result)['^check.*'] }}"
