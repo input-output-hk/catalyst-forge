@@ -1,0 +1,26 @@
+on:
+  workflow_call:
+    inputs:
+      earthfiles:
+        description: |
+          A JSON list of Earthfile paths+targets to run
+        required: true
+        type: string
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        earthfile: ${{ fromJson(inputs.earthfiles) }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup CI
+        uses: ./forge/actions/setup
+        with:
+          forge_version: local
+      - name: Run
+        uses: ./forge/actions/run
+        with:
+          path: ${{ matrix.earthfile }}
