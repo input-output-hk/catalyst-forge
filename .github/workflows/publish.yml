@@ -41,7 +41,7 @@ jobs:
 
           # If the path is just ".", then we omit it
           if [[ "$FILE" == "." ]]; then
-            EARTHFILE="$TARGET"
+            EARTHFILE="+$TARGET"
           fi
 
           IMAGE="$(echo "$RESULT" | jq -r ".images[\"$EARTHFILE\"]")"
