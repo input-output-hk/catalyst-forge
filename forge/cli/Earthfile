@@ -50,12 +50,12 @@ release:
 
     SAVE ARTIFACT bin/forge forge
 
-# publish:
-#     FROM debian:bookworm-slim
-#     WORKDIR /workspace
-#     ARG tag=latest
+publish:
+    FROM debian:bookworm-slim
+    WORKDIR /workspace
+    ARG tag=latest
 
-#     COPY +build/forge /usr/local/bin/forge
+    COPY +build/forge /usr/local/bin/forge
 
-#     ENTRYPOINT ["/usr/local/bin/forge"]
-#     SAVE IMAGE forge:${tag}
+    ENTRYPOINT ["/usr/local/bin/forge"]
+    SAVE IMAGE forge:${tag}
