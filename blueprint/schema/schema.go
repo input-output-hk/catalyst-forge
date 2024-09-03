@@ -15,13 +15,40 @@ type Blueprint struct {
 	// Version defines the version of the blueprint schema being used.
 	Version string `json:"version"`
 
+	// Global contains the global configuration for the blueprint.
+	// +optional
+	Global Global `json:"global"`
+
+	// Project contains the configuration for the project.
+	// +optional
+	Project Project `json:"project"`
+}
+
+// Global contains the global configuration for the blueprint.
+type Global struct {
 	// CI contains the configuration for the CI system.
 	// +optional
-	CI CI `json:"ci"`
+	CI GlobalCI `json:"ci"`
+}
+
+// Project contains the configuration for the project.
+type Project struct {
+	// Name contains the name of the project.
+	Name string `json:"name"`
+
+	// CI contains the configuration for the CI system.
+	// +optional
+	CI ProjectCI `json:"ci"`
+}
+
+type ProjectCI struct {
+	// Targets configures the individual targets that are run by the CI system.
+	// +optional
+	Targets map[string]Target `json:"targets"`
 }
 
 // CI contains the configuration for the CI system.
-type CI struct {
+type GlobalCI struct {
 	// Providers contains the configuration for the providers being used by the CI system.
 	// +optional
 	Providers Providers `json:"providers"`
@@ -29,14 +56,6 @@ type CI struct {
 	// Registries contains the container registries to push images to.
 	// +optional
 	Registries []string `json:"registries"`
-
-	// Secrets contains the configuration for the secrets being used by the CI system.
-	// +optional
-	Secrets map[string]Secret `json:"secrets"`
-
-	// Targets configures the individual targets that are run by the CI system.
-	// +optional
-	Targets map[string]Target `json:"targets"`
 }
 
 // Providers contains the configuration for the providers being used by the CI system.

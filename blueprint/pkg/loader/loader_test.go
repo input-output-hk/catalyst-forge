@@ -73,10 +73,13 @@ func TestBlueprintLoaderLoad(t *testing.T) {
 			files: map[string]string{
 				"/tmp/dir1/dir2/blueprint.cue": `
 				version: "1.0"
-				ci: {
-					targets: {
-						test: {
-							privileged: true
+				project: {
+					name: "test"
+					ci: {
+						targets: {
+							test: {
+								privileged: true
+							}
 						}
 					}
 				}
@@ -85,7 +88,7 @@ func TestBlueprintLoaderLoad(t *testing.T) {
 			},
 			want: []fieldTest{
 				{
-					fieldPath:  "ci.targets.test.privileged",
+					fieldPath:  "project.ci.targets.test.privileged",
 					fieldType:  "bool",
 					fieldValue: true,
 				},
@@ -97,17 +100,20 @@ func TestBlueprintLoaderLoad(t *testing.T) {
 			files: map[string]string{
 				"/tmp/dir1/dir2/blueprint.cue": `
 				version: "1.0"
-				ci: {
-					targets: {
-						test: {
-							privileged: true
+				project: {
+					name: "test"
+					ci: {
+						targets: {
+							test: {
+								privileged: true
+							}
 						}
 					}
 				}
 				`,
 				"/tmp/dir1/blueprint.cue": `
 				version: "1.1"
-				ci: {
+				project: ci: {
 					targets: {
 						test: {
 							retries: 3
@@ -124,12 +130,12 @@ func TestBlueprintLoaderLoad(t *testing.T) {
 					fieldValue: "1.1.0",
 				},
 				{
-					fieldPath:  "ci.targets.test.privileged",
+					fieldPath:  "project.ci.targets.test.privileged",
 					fieldType:  "bool",
 					fieldValue: true,
 				},
 				{
-					fieldPath:  "ci.targets.test.retries",
+					fieldPath:  "project.ci.targets.test.retries",
 					fieldType:  "int",
 					fieldValue: int64(3),
 				},
@@ -141,17 +147,20 @@ func TestBlueprintLoaderLoad(t *testing.T) {
 			files: map[string]string{
 				"/tmp/dir1/dir2/blueprint.cue": `
 				version: "1.0"
-				ci: {
-					targets: {
-						test: {
-							privileged: true
+				project: {
+					name: "test"
+					ci: {
+						targets: {
+							test: {
+								privileged: true
+							}
 						}
 					}
-			    }
+				}
 				`,
 				"/tmp/dir1/blueprint.cue": `
 				version: "1.0"
-				ci: {
+				project: ci: {
 					targets: {
 						test: {
 							retries: 3
@@ -162,7 +171,7 @@ func TestBlueprintLoaderLoad(t *testing.T) {
 			},
 			want: []fieldTest{
 				{
-					fieldPath:  "ci.targets.test.privileged",
+					fieldPath:  "project.ci.targets.test.privileged",
 					fieldType:  "bool",
 					fieldValue: true,
 				},

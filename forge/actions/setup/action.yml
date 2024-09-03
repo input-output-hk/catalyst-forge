@@ -46,11 +46,11 @@ runs:
         echo "==== AWS Setup ====="
         BP=$(forge blueprint dump .)
 
-        AWS=$(echo "$BP" | jq -r .ci.providers.aws)
+        AWS=$(echo "$BP" | jq -r .global.ci.providers.aws)
         if [[ "$AWS" != "null" ]]; then
-          REGION=$(echo "$BP" | jq -r .ci.providers.aws.region)
-          REGISTRY=$(echo "$BP" | jq -r .ci.providers.aws.registry)
-          ROLE=$(echo "$BP" | jq -r .ci.providers.aws.role)
+          REGION=$(echo "$BP" | jq -r .global.ci.providers.aws.region)
+          REGISTRY=$(echo "$BP" | jq -r .global.ci.providers.aws.registry)
+          ROLE=$(echo "$BP" | jq -r .global.ci.providers.aws.role)
         fi
 
         echo "region=$REGION" >> $GITHUB_OUTPUT
@@ -76,9 +76,9 @@ runs:
         echo "==== Docker Setup ====="
         BP=$(forge blueprint dump .)
 
-        DOCKER=$(echo "$BP" | jq -r .ci.providers.docker.credentials)
+        DOCKER=$(echo "$BP" | jq -r .global.ci.providers.docker.credentials)
         if [[ "$DOCKER" != "null" ]]; then
-          SECRET=$(forge secret get -b . ci.providers.docker.credentials)
+          SECRET=$(forge secret get -b . global.ci.providers.docker.credentials)
           USERNAME=$(echo "$SECRET" | jq -r .username)
           PASSWORD=$(echo "$SECRET" | jq -r .password)
 
@@ -108,7 +108,7 @@ runs:
         echo "==== GitHub Setup ====="
         BP=$(forge blueprint dump .)
 
-        GITHUB=$(echo "$BP" | jq -r .ci.providers.github.registry)
+        GITHUB=$(echo "$BP" | jq -r .global.ci.providers.github.registry)
         if [[ "$GITHUB" != "null" ]]; then
           LOGIN=1
         fi
@@ -130,17 +130,17 @@ runs:
         echo "==== Earthly Setup ====="
         BP=$(forge blueprint dump .)
 
-        EARTHLY=$(echo "$BP" | jq -r .ci.providers.earthly)
+        EARTHLY=$(echo "$BP" | jq -r .global.ci.providers.earthly)
         if [[ "$EARTHLY" != "null" ]]; then
-          ORG=$(echo "$BP" | jq -r .ci.providers.earthly.org)
-          VERSION=$(echo "$BP" | jq -r .ci.providers.earthly.version)
+          ORG=$(echo "$BP" | jq -r .global.ci.providers.earthly.org)
+          VERSION=$(echo "$BP" | jq -r .global.ci.providers.earthly.version)
         else
           VERSION="latest"
         fi
 
-        EARTHLY_CREDS=$(echo "$BP" | jq -r .ci.providers.earthly.credentials)
+        EARTHLY_CREDS=$(echo "$BP" | jq -r .global.ci.providers.earthly.credentials)
         if [[ "$EARTHLY_CREDS" != "null" ]]; then
-          SECRET=$(forge secret get -b . ci.providers.earthly.credentials)
+          SECRET=$(forge secret get -b . global.ci.providers.earthly.credentials)
           TOKEN=$(echo "$SECRET" | jq -r .token)
 
           if [[ "$TOKEN" == "null" ]]; then
