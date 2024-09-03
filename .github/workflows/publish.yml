@@ -34,18 +34,12 @@ jobs:
       - name: Get image
         id: image
         run: |
-          INPUT="${{ matrix.earthfile }}"
-          EARTHFILE="${INPUT%+*}"
-          TARGET="${INPUT#*+}"
-
-          echo "EARTHFILE: $EARTHFILE"
-          echo "TARGET: $TARGET"
-
-          $RESULT="${{ steps.run.outputs.result }}"
-          $IMAGE=$(echo "$RESULT" | jq -r ".images[\"$TARGET\"]")
+          EARTHFILE="${{ matrix.earthfile }}"
+          RESULT="${{ steps.run.outputs.result }}"
+          IMAGE="$(echo "$RESULT" | jq -r ".images[\"$INPUT\"]")"
 
           if [[ "$IMAGE" == "null" ]]; then
-            echo "::error file=${EARTHFILE}/Earthfile::No images produced. Cannot publish."
+            echo "::error file=${EARTHFILE%+*}/Earthfile::No images produced. Cannot publish."
             exit 1
           fi
 
