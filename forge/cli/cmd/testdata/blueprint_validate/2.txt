@@ -2,10 +2,13 @@
 
 -- blueprint.cue --
 version: "1.0"
-ci: {
+project: {
+  name: "test"
+  ci: {
     targets: {
-        test: {
-            privileged: "true"
-        }
+      test: {
+        privileged: "true"
+      }
     }
+  }
 }

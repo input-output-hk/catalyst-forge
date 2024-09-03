@@ -5,13 +5,41 @@ package schema
 	// Version defines the version of the blueprint schema being used.
 	version: =~"^\\d+\\.\\d+" @go(Version)
 
+	// Global contains the global configuration for the blueprint.
+	// +optional
+	global?: #Global @go(Global)
+
+	// Project contains the configuration for the project.
+	// +optional
+	project?: #Project @go(Project)
+}
+
+// Global contains the global configuration for the blueprint.
+#Global: {
 	// CI contains the configuration for the CI system.
 	// +optional
-	ci?: #CI @go(CI)
+	ci?: #GlobalCI @go(CI)
+}
+
+// Project contains the configuration for the project.
+#Project: {
+	// Name contains the name of the project.
+	name: string @go(Name)
+
+	// CI contains the configuration for the CI system.
+	// +optional
+	ci?: #ProjectCI @go(CI)
+}
+#ProjectCI: {
+	// Targets configures the individual targets that are run by the CI system.
+	// +optional
+	targets?: {
+		[string]: #Target
+	} @go(Targets,map[string]Target)
 }
 
 // CI contains the configuration for the CI system.
-#CI: {
+#GlobalCI: {
 	// Providers contains the configuration for the providers being used by the CI system.
 	// +optional
 	providers?: #Providers @go(Providers)
@@ -19,18 +47,6 @@ package schema
 	// Registries contains the container registries to push images to.
 	// +optional
 	registries?: [...string] @go(Registries,[]string)
-
-	// Secrets contains the configuration for the secrets being used by the CI system.
-	// +optional
-	secrets?: {
-		[string]: #Secret
-	} @go(Secrets,map[string]Secret)
-
-	// Targets configures the individual targets that are run by the CI system.
-	// +optional
-	targets?: {
-		[string]: #Target
-	} @go(Targets,map[string]Target)
 }
 
 // Providers contains the configuration for the providers being used by the CI system.
@@ -46,7 +62,10 @@ package schema
 	// Earthly contains the configuration for the Earthly Cloud provider.
 	// +optional
 	earthly?: #ProviderEarthly @go(Earthly)
-	github:   #ProviderGithub  @go(Github)
+
+	// Github contains the configuration for the Github provider.
+	// +optional
+	github?: #ProviderGithub @go(Github)
 }
 
 // ProviderAWS contains the configuration for the AWS provider.
