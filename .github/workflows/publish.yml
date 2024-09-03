@@ -36,7 +36,7 @@ jobs:
         run: |
           EARTHFILE="${{ matrix.earthfile }}"
           RESULT="${{ steps.run.outputs.result }}"
-          IMAGE="$(echo "$RESULT" | jq -r ".images[\"$INPUT\"]")"
+          IMAGE="$(echo "$RESULT" | jq -r ".images[\"$EARTHFILE\"]")"
 
           if [[ "$IMAGE" == "null" ]]; then
             echo "::error file=${EARTHFILE%+*}/Earthfile::No images produced. Cannot publish."
