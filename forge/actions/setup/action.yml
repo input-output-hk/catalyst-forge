@@ -78,7 +78,7 @@ runs:
 
         DOCKER=$(echo "$BP" | jq -r .global.ci.providers.docker.credentials)
         if [[ "$DOCKER" != "null" ]]; then
-          SECRET=$(forge secret get -b . ci.providers.docker.credentials)
+          SECRET=$(forge secret get -b .global.ci.providers.docker.credentials)
           USERNAME=$(echo "$SECRET" | jq -r .username)
           PASSWORD=$(echo "$SECRET" | jq -r .password)
 
@@ -140,7 +140,7 @@ runs:
 
         EARTHLY_CREDS=$(echo "$BP" | jq -r .global.ci.providers.earthly.credentials)
         if [[ "$EARTHLY_CREDS" != "null" ]]; then
-          SECRET=$(forge secret get -b . ci.providers.earthly.credentials)
+          SECRET=$(forge secret get -b .global.ci.providers.earthly.credentials)
           TOKEN=$(echo "$SECRET" | jq -r .token)
 
           if [[ "$TOKEN" == "null" ]]; then
