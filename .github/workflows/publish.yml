@@ -35,7 +35,15 @@ jobs:
         id: image
         run: |
           EARTHFILE='${{ matrix.earthfile }}'
+          PATH="${EARTHFILE%+*}"
+          TARGET="${EARTHFILE#*+}"
           RESULT='${{ steps.run.outputs.result }}'
+
+          # If the path is just ".", then we omit it
+          if [[ "$PATH" == "." ]]; then
+            EARTHFILE="$TARGET"
+          fi
+
           IMAGE="$(echo "$RESULT" | jq -r ".images[\"$EARTHFILE\"]")"
 
           if [[ "$IMAGE" == "null" ]]; then
