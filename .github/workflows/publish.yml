@@ -1,0 +1,54 @@
+on:
+  workflow_call:
+    inputs:
+      earthfiles:
+        description: |
+          A JSON list of Earthfile paths+targets to use for publishing
+        required: true
+        type: string
+      forge_version:
+        description: |
+          The version of the forge CLI to install (use 'local' for testing)
+        required: true
+        type: string
+
+jobs:
+  run:
+    name: ${{ matrix.earthfile }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        earthfile: ${{ fromJson(inputs.earthfiles) }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup CI
+        uses: ./forge/actions/setup
+        with:
+          forge_version: ${{ inputs.forge_version }}
+      - name: Run
+        id: run
+        uses: ./forge/actions/run
+        with:
+          path: ${{ matrix.earthfile }}
+      - name: Get image
+        id: image
+        run: |
+          INPUT="${{ matrix.earthfile }}"
+          EARTHFILE="${INPUT%+*}"
+          TARGET="${INPUT#*+}"
+
+          echo "EARTHFILE: $EARTHFILE"
+          echo "TARGET: $TARGET"
+
+          $RESULT="${{ steps.run.outputs.result }}"
+          $IMAGE=$(echo "$RESULT" | jq -r ".images[\"$TARGET\"]")
+
+          if [[ "$IMAGE" == "null" ]]; then
+            echo "::error file=${EARTHFILE}/Earthfile::No images produced. Cannot publish."
+            exit 1
+          fi
+
+          echo "image=$IMAGE" >> $GITHUB_OUTPUT
+      - name: Show image
+        run: echo "${{ steps.image.outputs.image }}"

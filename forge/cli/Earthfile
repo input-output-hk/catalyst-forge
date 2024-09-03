@@ -58,4 +58,4 @@ publish:
     COPY +build/forge /usr/local/bin/forge
 
     ENTRYPOINT ["/usr/local/bin/forge"]
-    SAVE IMAGE --push forge:${tag}
+    SAVE IMAGE forge:${tag}

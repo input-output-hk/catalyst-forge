@@ -26,24 +26,33 @@ jobs:
             ^build.*
             ^check.*
             ^test.*
+            ^publish.*
 
-  check:
-    uses: ./.github/workflows/run.yml
+  # check:
+  #   uses: ./.github/workflows/run.yml
+  #   needs: [discover]
+  #   with:
+  #     earthfiles: ${{ toJson(fromJson(needs.discover.outputs.result)['^check.*']) }}
+  #     forge_version: ${{ inputs.forge_version }}
+
+  # build:
+  #   uses: ./.github/workflows/run.yml
+  #   needs: [discover, check]
+  #   with:
+  #     earthfiles: ${{ toJson(fromJson(needs.discover.outputs.result)['^build.*']) }}
+  #     forge_version: ${{ inputs.forge_version }}
+
+  # test:
+  #   uses: ./.github/workflows/run.yml
+  #   needs: [discover, check, build]
+  #   with:
+  #     earthfiles: ${{ toJson(fromJson(needs.discover.outputs.result)['^test.*']) }}
+  #     forge_version: ${{ inputs.forge_version }}
+
+  publish:
+    uses: ./.github/workflows/publish.yml
+    #needs: [discover, check, build, test]
     needs: [discover]
     with:
-      earthfiles: ${{ toJson(fromJson(needs.discover.outputs.result)['^check.*']) }}
-      forge_version: ${{ inputs.forge_version }}
-
-  build:
-    uses: ./.github/workflows/run.yml
-    needs: [discover, check]
-    with:
-      earthfiles: ${{ toJson(fromJson(needs.discover.outputs.result)['^build.*']) }}
-      forge_version: ${{ inputs.forge_version }}
-
-  test:
-    uses: ./.github/workflows/run.yml
-    needs: [discover, check, build]
-    with:
-      earthfiles: ${{ toJson(fromJson(needs.discover.outputs.result)['^test.*']) }}
+      earthfiles: ${{ toJson(fromJson(needs.discover.outputs.result)['^publish.*']) }}
       forge_version: ${{ inputs.forge_version }}

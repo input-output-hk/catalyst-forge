@@ -24,18 +24,16 @@ package schema
 // Project contains the configuration for the project.
 #Project: {
 	// Name contains the name of the project.
-	name: string @go(Name)
+	name: =~"^[a-z][a-z0-9_-]*$" @go(Name)
+
+	// Container is the name that the container will be built as.
+	container: (_ | *name) & {
+		string
+	} @go(Container)
 
 	// CI contains the configuration for the CI system.
 	// +optional
 	ci?: #ProjectCI @go(CI)
-}
-#ProjectCI: {
-	// Targets configures the individual targets that are run by the CI system.
-	// +optional
-	targets?: {
-		[string]: #Target
-	} @go(Targets,map[string]Target)
 }
 
 // CI contains the configuration for the CI system.
@@ -47,6 +45,17 @@ package schema
 	// Registries contains the container registries to push images to.
 	// +optional
 	registries?: [...string] @go(Registries,[]string)
+
+	// Tagging contains the tagging configuration for the CI system.
+	// +optional
+	tagging?: #Tagging @go(Tagging)
+}
+#ProjectCI: {
+	// Targets configures the individual targets that are run by the CI system.
+	// +optional
+	targets?: {
+		[string]: #Target
+	} @go(Targets,map[string]Target)
 }
 
 // Providers contains the configuration for the providers being used by the CI system.
@@ -132,6 +141,10 @@ package schema
 	} @go(Maps,map[string]string)
 }
 version: "1.0"
+#Tagging: {
+	// Strategy contains the tagging strategy to use.
+	strategy: "commit" @go(Strategy)
+}
 
 // Target contains the configuration for a single target.
 #Target: {

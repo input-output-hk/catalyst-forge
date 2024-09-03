@@ -28,5 +28,6 @@ global: {
 
 			github: registry: "ghcr.io"
 		}
+		tagging: strategy: "commit"
 	}
 }
