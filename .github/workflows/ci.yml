@@ -54,5 +54,5 @@ jobs:
     #needs: [discover, check, build, test]
     needs: [discover]
     with:
-      earthfiles: ${{ toJson(fromJson(needs.discover.outputs.result)['^publish.*']) }}
+      earthfiles: ${{ toJson(fromJson(needs.discover.outputs.result)['publish']) }}
       forge_version: ${{ inputs.forge_version }}
