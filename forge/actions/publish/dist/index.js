@@ -3961,35 +3961,51 @@ const exec = __nccwpck_require__(514);
 
 async function run() {
   try {
-    const artifact = core.getBooleanInput("artifact", { required: false });
-    const local = core.getBooleanInput("local", { required: false });
-    const path = core.getInput("path", { required: true });
+    const project = core.getInput("project", { required: true });
+    const image = core.getInput("image", { required: true });
 
-    let args = ["-vv", "run"];
-
-    if (artifact === true) {
-      args.push("--artifact");
+    if (!imageExists(image)) {
+      core.setFailed(
+        `Image ${image} does not exist in the local Docker daemon`,
+      );
+      return;
     }
 
-    if (local === true) {
-      args.push("--local");
+    const blueprint = await getBlueprint(project);
+
+    if (blueprint?.project?.container === undefined) {
+      core.warning(
+        `Project ${project} does not have a container defined. Skipping publish`,
+      );
+      return;
+    } else if (blueprint?.global?.tagging?.strategy === undefined) {
+      core.warning(
+        `The repository does not have a tagging strategy defined. Skipping publish`,
+      );
+      return;
+    } else if (
+      blueprint?.global?.registry === undefined ||
+      blueprint?.global?.registry.length === 0
+    ) {
+      core.warning(
+        `The repository does not have any registries defined. Skipping publish`,
+      );
+      return;
     }
 
-    args.push(path);
+    const container = blueprint.project.container;
+    const registries = blueprint.global.registry;
+    const tag = getTag(blueprint.global.tagging.strategy);
 
-    core.info(`Running forge ${args.join(" ")}`);
+    for (const registry of registries) {
+      const taggedImage = `${registry}/${container}:${tag}`;
 
-    let stdout = "";
-    const options = {};
-    options.listeners = {
-      stdout: (data) => {
-        stdout += data.toString();
-      },
-    };
+      core.info(`Tagging image ${image} as ${taggedImage}`);
+      await tagImage(image, taggedImage);
 
-    await exec.exec("forge", args, options);
-
-    core.setOutput("result", stdout);
+      core.info(`Pushing image ${taggedImage}`);
+      await pushImage(taggedImage);
+    }
   } catch (error) {
     core.setFailed(error.message);
   }
@@ -3998,6 +4014,67 @@ async function run() {
 module.exports = {
   run,
 };
+
+/**
+ *
+ * @param {string} project  The name of the project to get the blueprint for
+ * @returns {object}        The blueprint object
+ */
+async function getBlueprint(project) {
+  return JSON.parse(
+    await exec.getExecOutput("forge", ["blueprint", "dump", project]),
+  );
+}
+
+/**
+ * Get the tag to use for the Docker image from the tagging strategy
+ * @param {string} strategy  The tagging strategy to use
+ * @returns {string}         The tag to use
+ */
+function getTag(strategy) {
+  switch (strategy) {
+    case "commit": {
+      return strategyCommit();
+    }
+    default: {
+      throw new Error(`Unknown tagging strategy: ${strategy}`);
+    }
+  }
+}
+
+/**
+ * Check if a Docker image exists
+ * @param {string} name  The name of the image to check
+ * @return {boolean}     True if the image exists, false otherwise
+ */
+async function imageExists(name) {
+  const ret = await exec.exec("docker", ["inspect", name]);
+  return ret === 0;
+}
+
+/***
+ * Push a Docker image to a registry
+ */
+async function pushImage(image) {
+  await exec.exec("docker", ["push", image]);
+}
+
+/**
+ * The "commit" tagging strategy
+ * @returns {string} The commit hash
+ */
+function strategyCommit() {
+  return process.env.GITHUB_SHA;
+}
+
+/**
+ * Tag a Docker image
+ * @param {string} oldImage  The old image name
+ * @param {string} newImage  The new image name
+ */
+async function tagImage(oldImage, newImage) {
+  await exec.exec("docker", ["tag", oldImage, newImage]);
+}
 
 
 /***/ }),

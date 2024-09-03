@@ -7,20 +7,31 @@ async function run() {
     const image = core.getInput("image", { required: true });
 
     if (!imageExists(image)) {
-      core.setFailed(`Image ${image} does not exist in the local Docker daemon`);
+      core.setFailed(
+        `Image ${image} does not exist in the local Docker daemon`,
+      );
       return;
     }
 
     const blueprint = await getBlueprint(project);
 
     if (blueprint?.project?.container === undefined) {
-      core.warning(`Project ${project} does not have a container defined. Skipping publish`);
+      core.warning(
+        `Project ${project} does not have a container defined. Skipping publish`,
+      );
       return;
     } else if (blueprint?.global?.tagging?.strategy === undefined) {
-      core.warning(`The repository does not have a tagging strategy defined. Skipping publish`);
+      core.warning(
+        `The repository does not have a tagging strategy defined. Skipping publish`,
+      );
       return;
-    } else if (blueprint?.global?.registry === undefined || blueprint?.global?.registry.length === 0) {
-      core.warning(`The repository does not have any registries defined. Skipping publish`);
+    } else if (
+      blueprint?.global?.registry === undefined ||
+      blueprint?.global?.registry.length === 0
+    ) {
+      core.warning(
+        `The repository does not have any registries defined. Skipping publish`,
+      );
       return;
     }
 
@@ -52,7 +63,9 @@ module.exports = {
  * @returns {object}        The blueprint object
  */
 async function getBlueprint(project) {
-  return JSON.parse(await exec.getExecOutput("forge", ["blueprint", "dump", project]));
+  return JSON.parse(
+    await exec.getExecOutput("forge", ["blueprint", "dump", project]),
+  );
 }
 
 /**
@@ -77,7 +90,7 @@ function getTag(strategy) {
  * @return {boolean}     True if the image exists, false otherwise
  */
 async function imageExists(name) {
-  ret = await exec.exec("docker", ["inspect", name]);
+  const ret = await exec.exec("docker", ["inspect", name]);
   return ret === 0;
 }
 

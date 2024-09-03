@@ -31,26 +31,30 @@ jobs:
         uses: ./forge/actions/run
         with:
           path: ${{ matrix.earthfile }}
-      - name: Get image
+      - name: Get image and project
         id: image
         run: |
           EARTHFILE='${{ matrix.earthfile }}'
-          FILE="${EARTHFILE%+*}"
+          PROJECT="${EARTHFILE%+*}"
           TARGET="${EARTHFILE#*+}"
           RESULT='${{ steps.run.outputs.result }}'
 
-          # If the path is just ".", then we omit it
-          if [[ "$FILE" == "." ]]; then
+          # If the path to the project is just ".", then we omit it
+          if [[ "$PROJECT" == "." ]]; then
             EARTHFILE="+$TARGET"
           fi
 
           IMAGE="$(echo "$RESULT" | jq -r ".images[\"$EARTHFILE\"]")"
 
           if [[ "$IMAGE" == "null" ]]; then
-            echo "::error file=${FILE}/Earthfile::No images produced. Cannot publish."
+            echo "::error file=${PROJECT}/Earthfile::No images produced. Cannot publish."
             exit 1
           fi
 
           echo "image=$IMAGE" >> $GITHUB_OUTPUT
-      - name: Show image
-        run: echo "${{ steps.image.outputs.image }}"
+          echo "project=$PROJECT" >> $GITHUB_OUTPUT
+      - name: Publish
+        uses: ./forge/actions/publish
+        with:
+          image: ${{ steps.image.outputs.image }}
+          project: ${{ steps.image.outputs.project }}
