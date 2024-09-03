@@ -1,0 +1,19 @@
+name: Run
+description: Execute Earthfiles
+inputs:
+  artifact:
+    description: Enable artifact collection
+    default: "false"
+  local:
+    description: Forces the target to run locally (ignores satellite).
+    default: "false"
+  path:
+    description: The path to the Earthfile, including target (i.e. path/to/project+target)
+    required: true
+outputs:
+  result:
+    description: The result of the run
+
+runs:
+  using: node20
+  main: dist/index.js

@@ -33,7 +33,7 @@ foo2:
 `,
 			},
 			expectedResult: map[string][]string{
-				"/tmp1/Earthfile": {"foo1", "foo2"},
+				"/tmp1": {"foo1", "foo2"},
 			},
 			callbackErr: nil,
 			walkErr:     nil,
@@ -55,8 +55,8 @@ foo2:
 `,
 			},
 			expectedResult: map[string][]string{
-				"/tmp1/Earthfile": {"foo1"},
-				"/tmp2/Earthfile": {"foo2"},
+				"/tmp1": {"foo1"},
+				"/tmp2": {"foo2"},
 			},
 			callbackErr: nil,
 			walkErr:     nil,
@@ -108,7 +108,8 @@ foo1:
 					return tt.walkErr
 				},
 			}
-			result, err := ScanEarthfiles("", walker, slog.New(slog.NewTextHandler(io.Discard, nil)))
+			result, err := ScanEarthfiles("/", walker, slog.New(slog.NewTextHandler(io.Discard, nil)))
+			fmt.Printf("result: %v\n", result)
 
 			if tt.callbackErr != nil && err == nil {
 				t.Error("expected error, got nil")
@@ -124,11 +125,13 @@ foo1:
 
 			if len(result) != len(tt.expectedResult) {
 				t.Errorf("expected %d earthfiles, got %d", len(tt.expectedResult), len(result))
+				return
 			}
 
 			for path, targets := range tt.expectedResult {
 				if len(result[path].Targets()) != len(targets) {
 					t.Errorf("expected %d targets for %s, got %d", len(targets), path, len(result[path].Targets()))
+					return
 				}
 
 				for i, target := range targets {

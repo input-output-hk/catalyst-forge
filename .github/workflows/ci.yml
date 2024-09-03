@@ -1,0 +1,49 @@
+on:
+  workflow_call:
+    inputs:
+      forge_version:
+        description: |
+          The version of the forge CLI to install (use 'local' for testing)
+        required: true
+        type: string
+
+jobs:
+  discover:
+    runs-on: ubuntu-latest
+    outputs:
+      result: ${{ steps.discovery.outputs.result }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup
+        uses: ./forge/actions/setup
+        with:
+          forge_version: ${{ inputs.forge_version }}
+      - name: Discovery
+        id: discovery
+        uses: ./forge/actions/discovery
+        with:
+          filters: |
+            ^build.*
+            ^check.*
+            ^test.*
+
+  check:
+    uses: ./.github/workflows/run.yml
+    needs: [discover]
+    with:
+      earthfiles: ${{ toJson(fromJson(needs.discover.outputs.result)['^check.*']) }}
+      forge_version: ${{ inputs.forge_version }}
+
+  build:
+    uses: ./.github/workflows/run.yml
+    needs: [discover, check]
+    with:
+      earthfiles: ${{ toJson(fromJson(needs.discover.outputs.result)['^build.*']) }}
+      forge_version: ${{ inputs.forge_version }}
+
+  test:
+    uses: ./.github/workflows/run.yml
+    needs: [discover, check, build]
+    with:
+      earthfiles: ${{ toJson(fromJson(needs.discover.outputs.result)['^test.*']) }}
+      forge_version: ${{ inputs.forge_version }}

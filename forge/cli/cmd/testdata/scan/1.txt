@@ -11,13 +11,13 @@ exec forge scan --absolute --enumerate .
 cmpenv stdout golden_2_enum.txt
 
 -- golden_1.txt --
-{"Earthfile":["foo","bar"]}
+{".":["foo","bar"]}
 -- golden_1_enum.txt --
-["Earthfile+bar","Earthfile+foo"]
+[".+bar",".+foo"]
 -- golden_2.txt --
-{"$WORK/Earthfile":["foo","bar"]}
+{"$WORK":["foo","bar"]}
 -- golden_2_enum.txt --
-["$WORK/Earthfile+bar","$WORK/Earthfile+foo"]
+["$WORK+bar","$WORK+foo"]
 -- Earthfile --
 VERSION 0.7
 

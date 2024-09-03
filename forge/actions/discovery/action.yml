@@ -1,0 +1,22 @@
+name: Discovery
+description: Discovers Earthfiles
+inputs:
+  absolute:
+    description: Output absolute paths
+    default: "false"
+  enumerate:
+    description: Enumerate results into Earthfile+Target pairs
+    default: "true"
+  filters:
+    description: A newline separated list of filters to apply
+    default: ""
+  path:
+    description: The path to search from
+    default: "."
+outputs:
+  result:
+    description: The result of the discovery
+
+runs:
+  using: node20
+  main: dist/index.js
