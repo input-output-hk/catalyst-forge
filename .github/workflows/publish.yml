@@ -34,8 +34,8 @@ jobs:
       - name: Get image
         id: image
         run: |
-          EARTHFILE="${{ matrix.earthfile }}"
-          RESULT="${{ steps.run.outputs.result }}"
+          EARTHFILE='${{ matrix.earthfile }}'
+          RESULT='${{ steps.run.outputs.result }}'
           IMAGE="$(echo "$RESULT" | jq -r ".images[\"$EARTHFILE\"]")"
 
           if [[ "$IMAGE" == "null" ]]; then
