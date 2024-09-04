@@ -3976,7 +3976,7 @@ async function run() {
 
     if (blueprint?.project?.container === undefined) {
       core.warning(
-        `Project ${project} does not have a container defined. Skipping publish`,
+        `Project '${project}' does not have a container defined. Skipping publish`,
       );
       return;
     } else if (blueprint?.global?.ci?.tagging?.strategy === undefined) {
