@@ -56,5 +56,5 @@ jobs:
       - name: Publish
         uses: ./forge/actions/publish
         with:
-          image: ${{ steps.image.outputs.image }}
+          image: foobar
           project: ${{ steps.image.outputs.project }}
