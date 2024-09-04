@@ -4024,7 +4024,7 @@ async function run() {
         await tagImage(image, taggedImage);
 
         core.info(`Pushing image ${taggedImage}`);
-        //await pushImage(taggedImage);
+        await pushImage(taggedImage);
       }
     }
   } catch (error) {
@@ -4120,7 +4120,7 @@ function parseGitMonorepoTag(tag, project, aliases) {
     if (path === project) {
       return monoTag;
     } else {
-      core.info(`Skipping tag as it does not match the project path`);
+      core.info(`Skipping tag as it does not match the project`);
       return "";
     }
   } else {
