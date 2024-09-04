@@ -40,6 +40,8 @@ async function run() {
     const registries = blueprint.global.ci.registries;
     const tag = getTag(blueprint.global.ci.tagging.strategy);
 
+    core.info(`Ref: ${process.env.GITHUB_REF}`);
+
     for (const registry of registries) {
       const taggedImage = `${registry}/${container}:${tag}`;
 
@@ -47,7 +49,7 @@ async function run() {
       await tagImage(image, taggedImage);
 
       core.info(`Pushing image ${taggedImage}`);
-      await pushImage(taggedImage);
+      //await pushImage(taggedImage);
     }
   } catch (error) {
     core.setFailed(error.message);
