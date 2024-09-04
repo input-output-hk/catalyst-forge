@@ -147,7 +147,11 @@ type Secret struct {
 }
 
 type Tagging struct {
-	// Strategy contains the tagging strategy to use.
+	// Aliases contains the aliases to use for git tags.
+	// +optional
+	Aliases map[string]string `json:"aliases"`
+
+	// Strategy contains the tagging strategy to use for containers.
 	Strategy string `json:"strategy"`
 }
 

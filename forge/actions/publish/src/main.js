@@ -36,20 +36,49 @@ async function run() {
       return;
     }
 
+    const tags = [];
+    const gitTag = parseGitTag(process.env.GITHUB_REF);
+    if (gitTag !== "") {
+      core.info(`Detected Git tag: ${gitTag}`);
+
+      parts = gitTag.split("/");
+      if (parts.lenth > 1) {
+        const path = parts.slice(0, -1).join("/");
+        const tag = parts[parts.length - 1];
+        const projectCleaned = project.trimStart(".").trimEnd("/");
+
+        core.info(`Detected mono-repo tag path=${path} tag=${tag}`);
+        if (Object.keys(blueprint?.global?.ci?.tagging?.aliases) !== undefined) {
+          if (blueprint.global.ci.tagging.aliases[path] === projectCleaned) {
+            tags.push(tag);
+          }
+        } else if (path === projectCleaned) {
+          tags.push(tag);
+        } else {
+          core.info(`Skipping tag as it does not match the project path`);
+        }
+      } else {
+        core.info("Detected non mono-repo tag. Using tag as is.");
+        tags.push(gitTag);
+      }
+    } else {
+      core.info("No Git tag detected");
+    }
+
     const container = blueprint.project.container;
     const registries = blueprint.global.ci.registries;
-    const tag = getTag(blueprint.global.ci.tagging.strategy);
-
-    core.info(`Ref: ${process.env.GITHUB_REF}`);
+    tags.push(getTag(blueprint.global.ci.tagging.strategy));
 
     for (const registry of registries) {
-      const taggedImage = `${registry}/${container}:${tag}`;
+      for (const tag of tags) {
+        const taggedImage = `${registry}/${container}:${tag}`;
 
-      core.info(`Tagging image ${image} as ${taggedImage}`);
-      await tagImage(image, taggedImage);
+        core.info(`Tagging image ${image} as ${taggedImage}`);
+        await tagImage(image, taggedImage);
 
-      core.info(`Pushing image ${taggedImage}`);
-      //await pushImage(taggedImage);
+        core.info(`Pushing image ${taggedImage}`);
+        //await pushImage(taggedImage);
+      }
     }
   } catch (error) {
     core.setFailed(error.message);
@@ -104,6 +133,19 @@ async function imageExists(name) {
   console.log(`Result: ${result}`);
 
   return result === 0;
+}
+
+/**
+ * Parse a Git tag from a ref. If the ref is not a tag, an empty string is returned.
+ * @param {string} ref The ref to parse
+ * @returns {string}   The tag or an empty string
+ */
+function parseGitTag(ref) {
+  if (ref.startsWith("refs/tags/")) {
+    return ref.slice(10);
+  } else {
+    return "";
+  }
 }
 
 /***

@@ -142,7 +142,13 @@ package schema
 }
 version: "1.0"
 #Tagging: {
-	// Strategy contains the tagging strategy to use.
+	// Aliases contains the aliases to use for git tags.
+	// +optional
+	aliases?: {
+		[string]: string
+	} @go(Aliases,map[string]string)
+
+	// Strategy contains the tagging strategy to use for containers.
 	strategy: "commit" @go(Strategy)
 }
 
