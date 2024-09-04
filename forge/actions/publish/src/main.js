@@ -63,9 +63,8 @@ module.exports = {
  * @returns {object}        The blueprint object
  */
 async function getBlueprint(project) {
-  return JSON.parse(
-    await exec.getExecOutput("forge", ["blueprint", "dump", project]),
-  );
+  result = await exec.exec("forge", ["blueprint", "dump", project]);
+  return JSON.parse(result.stdout);
 }
 
 /**
@@ -90,8 +89,12 @@ function getTag(strategy) {
  * @return {boolean}     True if the image exists, false otherwise
  */
 async function imageExists(name) {
-  const ret = await exec.exec("docker", ["inspect", name]);
-  return ret === 0;
+  const result = await exec.exec("docker", ["inspect", name], {
+    ignoreReturnCode: true,
+    silent: true,
+  });
+
+  return result.exitCode === 0;
 }
 
 /***
