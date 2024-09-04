@@ -26,8 +26,8 @@ async function run() {
       );
       return;
     } else if (
-      blueprint?.global?.registry === undefined ||
-      blueprint?.global?.registry.length === 0
+      blueprint?.global?.ci?.registries === undefined ||
+      blueprint?.global?.ci?.registries.length === 0
     ) {
       core.warning(
         `The repository does not have any registries defined. Skipping publish`,
@@ -36,7 +36,7 @@ async function run() {
     }
 
     const container = blueprint.project.container;
-    const registries = blueprint.global.registry;
+    const registries = blueprint.global.ci.registries;
     const tag = getTag(blueprint.global.ci.tagging.strategy);
 
     for (const registry of registries) {
