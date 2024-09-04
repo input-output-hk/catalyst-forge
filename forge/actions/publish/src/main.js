@@ -40,7 +40,7 @@ async function run() {
     const gitTag = parseGitTag(process.env.GITHUB_REF);
     if (gitTag !== "") {
       core.info(`Detected Git tag: ${gitTag}`);
-      const projectCleaned = project.trimStart(".").trimEnd("/");
+      const projectCleaned = project.replace(/^\.\//, "").replace(/\/$/, "");
       const tag = parseGitMonorepoTag(
         gitTag,
         projectCleaned,
