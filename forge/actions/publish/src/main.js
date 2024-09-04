@@ -48,7 +48,9 @@ async function run() {
         const projectCleaned = project.trimStart(".").trimEnd("/");
 
         core.info(`Detected mono-repo tag path=${path} tag=${tag}`);
-        if (Object.keys(blueprint?.global?.ci?.tagging?.aliases) !== undefined) {
+        if (
+          Object.keys(blueprint?.global?.ci?.tagging?.aliases) !== undefined
+        ) {
           if (blueprint.global.ci.tagging.aliases[path] === projectCleaned) {
             tags.push(tag);
           }
