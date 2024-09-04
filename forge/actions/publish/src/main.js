@@ -40,29 +40,15 @@ async function run() {
     const gitTag = parseGitTag(process.env.GITHUB_REF);
     if (gitTag !== "") {
       core.info(`Detected Git tag: ${gitTag}`);
+      const projectCleaned = project.trimStart(".").trimEnd("/");
+      const tag = parseGitMonorepoTag(
+        gitTag,
+        projectCleaned,
+        blueprint.global?.ci?.tagging?.aliases,
+      );
 
-      const parts = gitTag.split("/");
-      if (parts.length > 1) {
-        const path = parts.slice(0, -1).join("/");
-        const tag = parts[parts.length - 1];
-        const projectCleaned = project.trimStart(".").trimEnd("/");
-
-        core.info(`Detected mono-repo tag path=${path} tag=${tag}`);
-        if (
-          blueprint?.global?.ci?.tagging?.aliases &&
-          Object.keys(blueprint.global.ci.tagging.aliases).length > 0
-        ) {
-          if (blueprint.global.ci.tagging.aliases[path] === projectCleaned) {
-            tags.push(tag);
-          }
-        } else if (path === projectCleaned) {
-          tags.push(tag);
-        } else {
-          core.info(`Skipping tag as it does not match the project path`);
-        }
-      } else {
-        core.info("Detected non mono-repo tag. Using tag as is.");
-        tags.push(gitTag);
+      if (tag !== "") {
+        tags.push(tag);
       }
     } else {
       core.info("No Git tag detected");
@@ -148,6 +134,40 @@ function parseGitTag(ref) {
     return ref.slice(10);
   } else {
     return "";
+  }
+}
+
+/**
+ * Parse a Git mono-repo tag
+ * @param {*} tag      The tag to parse
+ * @param {*} project  The project path
+ * @param {*} aliases  The tag aliases to use
+ * @returns {string}   The parsed tag or an empty string
+ */
+function parseGitMonorepoTag(tag, project, aliases) {
+  const parts = tag.split("/");
+  if (parts.length > 1) {
+    const path = parts.slice(0, -1).join("/");
+    const monoTag = parts[parts.length - 1];
+
+    core.info(
+      `Detected mono-repo tag path=${path} tag=${monoTag} currentProject=${project}`,
+    );
+    if (aliases && Object.keys(aliases).length > 0) {
+      if (aliases[path] === project) {
+        return monoTag;
+      }
+    }
+
+    if (path === project) {
+      return monoTag;
+    } else {
+      core.info(`Skipping tag as it does not match the project path`);
+      return "";
+    }
+  } else {
+    core.info("Detected non mono-repo tag. Using tag as is.");
+    return tag;
   }
 }
 
