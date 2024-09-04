@@ -9,7 +9,7 @@ async function run() {
     const exists = await imageExists(image);
     if (!exists) {
       core.setFailed(
-        `Image ${image} does not exist in the local Docker daemon`,
+        `Image '${image}' does not exist in the local Docker daemon`,
       );
       return;
     }
