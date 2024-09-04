@@ -6,7 +6,8 @@ async function run() {
     const project = core.getInput("project", { required: true });
     const image = core.getInput("image", { required: true });
 
-    if (imageExists(image) === false) {
+    const exists = await imageExists(image);
+    if (!exists) {
       core.setFailed(
         `Image ${image} does not exist in the local Docker daemon`,
       );
@@ -58,12 +59,12 @@ module.exports = {
 };
 
 /**
- *
+ * Get the blueprint for a project
  * @param {string} project  The name of the project to get the blueprint for
  * @returns {object}        The blueprint object
  */
 async function getBlueprint(project) {
-  let result = await exec.getExecOutput("forge", [
+  const result = await exec.getExecOutput("forge", [
     "blueprint",
     "dump",
     project,
