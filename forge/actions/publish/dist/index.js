@@ -4000,7 +4000,6 @@ async function run() {
       core.info(`Detected Git tag: ${gitTag}`);
 
       const parts = gitTag.split("/");
-      core.info(`Detected Git tag parts: ${parts} Length: ${parts.length}`);
       if (parts.length > 1) {
         const path = parts.slice(0, -1).join("/");
         const tag = parts[parts.length - 1];
@@ -4008,7 +4007,8 @@ async function run() {
 
         core.info(`Detected mono-repo tag path=${path} tag=${tag}`);
         if (
-          Object.keys(blueprint?.global?.ci?.tagging?.aliases) !== undefined
+          blueprint?.global?.ci?.tagging?.aliases &&
+          Object.keys(blueprint.global.ci.tagging.aliases).length > 0
         ) {
           if (blueprint.global.ci.tagging.aliases[path] === projectCleaned) {
             tags.push(tag);
