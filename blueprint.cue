@@ -28,6 +28,11 @@ global: {
 
 			github: registry: "ghcr.io"
 		}
-		tagging: strategy: "commit"
+		tagging: {
+			aliases: {
+				forge: "forge/cli"
+			}
+			strategy: "commit"
+		}
 	}
 }
