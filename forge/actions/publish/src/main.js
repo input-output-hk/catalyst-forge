@@ -41,7 +41,8 @@ async function run() {
     if (gitTag !== "") {
       core.info(`Detected Git tag: ${gitTag}`);
 
-      let parts = gitTag.split("/");
+      const parts = gitTag.split("/");
+      core.info(`Detected Git tag parts: ${parts} Length: ${parts.length}`);
       if (parts.lenth > 1) {
         const path = parts.slice(0, -1).join("/");
         const tag = parts[parts.length - 1];
