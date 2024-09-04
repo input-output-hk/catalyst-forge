@@ -4056,6 +4056,8 @@ async function imageExists(name) {
     silent: true,
   });
 
+  console.log(`Result: ${result}`);
+
   return result === 0;
 }
 
