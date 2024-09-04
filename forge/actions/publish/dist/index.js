@@ -3964,7 +3964,7 @@ async function run() {
     const project = core.getInput("project", { required: true });
     const image = core.getInput("image", { required: true });
 
-    if (!imageExists(image)) {
+    if (imageExists(image) === false) {
       core.setFailed(
         `Image ${image} does not exist in the local Docker daemon`,
       );
@@ -3978,7 +3978,7 @@ async function run() {
         `Project ${project} does not have a container defined. Skipping publish`,
       );
       return;
-    } else if (blueprint?.global?.tagging?.strategy === undefined) {
+    } else if (blueprint?.global?.ci?.tagging?.strategy === undefined) {
       core.warning(
         `The repository does not have a tagging strategy defined. Skipping publish`,
       );
@@ -3995,7 +3995,7 @@ async function run() {
 
     const container = blueprint.project.container;
     const registries = blueprint.global.registry;
-    const tag = getTag(blueprint.global.tagging.strategy);
+    const tag = getTag(blueprint.global.ci.tagging.strategy);
 
     for (const registry of registries) {
       const taggedImage = `${registry}/${container}:${tag}`;
@@ -4056,7 +4056,7 @@ async function imageExists(name) {
     silent: true,
   });
 
-  return result.exitCode === 0;
+  return result === 0;
 }
 
 /***
