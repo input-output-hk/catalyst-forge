@@ -3961,7 +3961,7 @@ const exec = __nccwpck_require__(514);
 
 async function run() {
   try {
-    const artifact = core.getBooleanInput("artifact", { required: false });
+    const artifact = core.getInput("artifact", { required: false });
     const local = core.getBooleanInput("local", { required: false });
     const path = core.getInput("path", { required: true });
 
