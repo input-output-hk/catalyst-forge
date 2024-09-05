@@ -30,7 +30,7 @@ async function run() {
       return;
     }
 
-    const archiveName = "";
+    let archiveName = "";
     if (gitTag.split("/").length > 1) {
       const prefix = gitTag
         .split("/")
