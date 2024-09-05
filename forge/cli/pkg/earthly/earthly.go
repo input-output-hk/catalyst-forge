@@ -26,7 +26,7 @@ type EarthlySecret struct {
 // earthlyExecutorOptions contains the configuration options for an
 // EarthlyExecutor.
 type earthlyExecutorOptions struct {
-	artifact bool
+	artifact string
 	retries  int
 }
 
@@ -100,8 +100,8 @@ func (e *EarthlyExecutor) buildArguments() []string {
 
 	earthlyArgs = append(earthlyArgs, e.earthlyArgs...)
 
-	if e.opts.artifact {
-		earthlyArgs = append(earthlyArgs, "--artifact", fmt.Sprintf("%s+%s/*", e.earthfile, e.target))
+	if e.opts.artifact != "" {
+		earthlyArgs = append(earthlyArgs, "--artifact", fmt.Sprintf("%s+%s/*", e.earthfile, e.target), e.opts.artifact)
 	} else {
 		earthlyArgs = append(earthlyArgs, fmt.Sprintf("%s+%s", e.earthfile, e.target))
 	}
@@ -186,10 +186,14 @@ func NewEarthlyExecutor(
 }
 
 // WithArtifact is an option for configuring an EarthlyExecutor to output all
-// artifacts contained within the given target into the local working directory.
-func WithArtifact() EarthlyExecutorOption {
+// artifacts contained within the given target to the given path.
+func WithArtifact(path string) EarthlyExecutorOption {
+	if !strings.HasSuffix(path, "/") {
+		path += "/"
+	}
+
 	return func(e *EarthlyExecutor) {
-		e.opts.artifact = true
+		e.opts.artifact = path
 	}
 }
 

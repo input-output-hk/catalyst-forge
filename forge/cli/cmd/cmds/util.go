@@ -58,8 +58,8 @@ func generateOpts(target string, flags *RunCmd, config *schema.Blueprint) []eart
 	}
 
 	if flags != nil {
-		if flags.Artifact {
-			opts = append(opts, earthly.WithArtifact())
+		if flags.Artifact != "" {
+			opts = append(opts, earthly.WithArtifact(flags.Artifact))
 		}
 	}
 

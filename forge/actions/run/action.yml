@@ -2,8 +2,8 @@ name: Run
 description: Execute Earthfiles
 inputs:
   artifact:
-    description: Enable artifact collection
-    default: "false"
+    description: Dump all produced artifacts to the given path (ignored if empty).
+    default: ""
   local:
     description: Forces the target to run locally (ignores satellite).
     default: "false"

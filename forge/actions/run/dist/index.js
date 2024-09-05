@@ -3967,8 +3967,8 @@ async function run() {
 
     let args = ["-vv", "run"];
 
-    if (artifact === true) {
-      args.push("--artifact");
+    if (artifact !== "") {
+      args.push("--artifact", artifact);
     }
 
     if (local === true) {
