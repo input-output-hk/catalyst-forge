@@ -30467,11 +30467,22 @@ async function run() {
       return;
     }
 
-    const archiveName = `${project}-${platform}.tar.gz`;
+    const archiveName = "";
+    if (gitTag.split("/").length > 1) {
+      const prefix = gitTag
+        .split("/")
+        .slice(0, -1)
+        .join("/")
+        .replace(/\//, "-");
+      archiveName = `${prefix}-${platform}.tar.gz`;
+    } else {
+      archiveName = `${github.context.repo.repo}-${platform}.tar.gz`;
+    }
+
     core.info(`Creating archive ${archiveName}`);
     await archive(archiveName, path);
 
-    const releaseName = `${project}-${gitTag}`;
+    const releaseName = gitTag;
     const octokit = github.getOctokit(token);
 
     core.info(`Creating release ${releaseName}`);
@@ -30494,7 +30505,7 @@ async function run() {
       mediaType: {
         format: "application/gzip",
       },
-      data: `@${archiveName}`,
+      data: (__nccwpck_require__(7147).readFileSync)(archiveName),
     });
   } catch (error) {
     core.setFailed(error.message);
