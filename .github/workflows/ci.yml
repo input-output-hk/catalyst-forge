@@ -26,6 +26,7 @@ jobs:
             ^build.*
             ^check.*
             ^test.*
+            publish
 
   check:
     uses: ./.github/workflows/run.yml
@@ -46,4 +47,11 @@ jobs:
     needs: [discover, check, build]
     with:
       earthfiles: ${{ toJson(fromJson(needs.discover.outputs.result)['^test.*']) }}
+      forge_version: ${{ inputs.forge_version }}
+
+  publish:
+    uses: ./.github/workflows/publish.yml
+    needs: [discover, check, build, test]
+    with:
+      earthfiles: ${{ toJson(fromJson(needs.discover.outputs.result)['publish']) }}
       forge_version: ${{ inputs.forge_version }}

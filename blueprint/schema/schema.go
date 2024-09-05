@@ -36,15 +36,12 @@ type Project struct {
 	// Name contains the name of the project.
 	Name string `json:"name"`
 
+	// Container is the name that the container will be built as.
+	Container string `json:"container"`
+
 	// CI contains the configuration for the CI system.
 	// +optional
 	CI ProjectCI `json:"ci"`
-}
-
-type ProjectCI struct {
-	// Targets configures the individual targets that are run by the CI system.
-	// +optional
-	Targets map[string]Target `json:"targets"`
 }
 
 // CI contains the configuration for the CI system.
@@ -56,6 +53,16 @@ type GlobalCI struct {
 	// Registries contains the container registries to push images to.
 	// +optional
 	Registries []string `json:"registries"`
+
+	// Tagging contains the tagging configuration for the CI system.
+	// +optional
+	Tagging Tagging `json:"tagging"`
+}
+
+type ProjectCI struct {
+	// Targets configures the individual targets that are run by the CI system.
+	// +optional
+	Targets map[string]Target `json:"targets"`
 }
 
 // Providers contains the configuration for the providers being used by the CI system.
@@ -137,6 +144,15 @@ type Secret struct {
 	// Maps contains the mappings for the secret.
 	// +optional
 	Maps map[string]string `json:"maps"`
+}
+
+type Tagging struct {
+	// Aliases contains the aliases to use for git tags.
+	// +optional
+	Aliases map[string]string `json:"aliases"`
+
+	// Strategy contains the tagging strategy to use for containers.
+	Strategy string `json:"strategy"`
 }
 
 // Target contains the configuration for a single target.

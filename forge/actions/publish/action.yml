@@ -1,0 +1,13 @@
+name: Publish
+description: Publish container images
+inputs:
+  project:
+    description: The path to the project
+    required: true
+  image:
+    description: The full image name (name:tag) to publish
+    required: true
+
+runs:
+  using: node20
+  main: dist/index.js

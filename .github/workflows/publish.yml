@@ -1,0 +1,62 @@
+on:
+  workflow_call:
+    inputs:
+      earthfiles:
+        description: |
+          A JSON list of Earthfile paths+targets to use for publishing
+        required: true
+        type: string
+      forge_version:
+        description: |
+          The version of the forge CLI to install (use 'local' for testing)
+        required: true
+        type: string
+
+jobs:
+  run:
+    name: ${{ matrix.earthfile }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        earthfile: ${{ fromJson(inputs.earthfiles) }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup CI
+        uses: ./forge/actions/setup
+        with:
+          forge_version: ${{ inputs.forge_version }}
+      - name: Run
+        id: run
+        uses: ./forge/actions/run
+        with:
+          path: ${{ matrix.earthfile }}
+      - name: Get image and project
+        id: image
+        if: github.ref_name == github.event.repository.default_branch
+        run: |
+          EARTHFILE='${{ matrix.earthfile }}'
+          PROJECT="${EARTHFILE%+*}"
+          TARGET="${EARTHFILE#*+}"
+          RESULT='${{ steps.run.outputs.result }}'
+
+          # If the path to the project is just ".", then we omit it
+          if [[ "$PROJECT" == "." ]]; then
+            EARTHFILE="+$TARGET"
+          fi
+
+          IMAGE="$(echo "$RESULT" | jq -r ".images[\"$EARTHFILE\"]")"
+
+          if [[ "$IMAGE" == "null" ]]; then
+            echo "::error file=${PROJECT}/Earthfile::No images produced. Cannot publish."
+            exit 1
+          fi
+
+          echo "image=$IMAGE" >> $GITHUB_OUTPUT
+          echo "project=$PROJECT" >> $GITHUB_OUTPUT
+      - name: Publish
+        uses: ./forge/actions/publish
+        if: github.ref_name == github.event.repository.default_branch
+        with:
+          image: ${{ steps.image.outputs.image }}
+          project: ${{ steps.image.outputs.project }}
