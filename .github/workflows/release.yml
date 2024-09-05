@@ -12,6 +12,9 @@ on:
         required: true
         type: string
 
+env:
+  OUTPUT: ${{ github.workspace }}/output
+
 jobs:
   run:
     name: ${{ matrix.earthfile }}
@@ -30,7 +33,7 @@ jobs:
         id: run
         uses: ./forge/actions/run
         with:
-          artifact: artifacts-out
+          artifact: ${{ env.OUTPUT }}
           path: ${{ matrix.earthfile }}
       - name: Get project and artifacts
         id: artifact
@@ -48,10 +51,12 @@ jobs:
             exit 1
           fi
 
+          ls -l ${{ env.OUTPUT }}
+
           echo "project=$PROJECT" >> $GITHUB_OUTPUT
       - name: Release
         uses: ./forge/actions/release
         if: startsWith(github.ref, 'refs/tags/')
         with:
-          path: artifacts-out
+          path: ${{ env.OUTPUT }}
           project: ${{ steps.artifact.outputs.project }}
