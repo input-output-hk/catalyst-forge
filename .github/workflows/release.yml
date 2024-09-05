@@ -44,7 +44,7 @@ jobs:
           TARGET="${EARTHFILE#*+}"
           RESULT='${{ steps.run.outputs.result }}'
 
-          ARTIFACT_COUNT="$(echo "$RESULT" | jq -r jq '.artifacts | length')"
+          ARTIFACT_COUNT="$(echo "$RESULT" | jq -r '.artifacts | length')"
 
           if [[ $ARTIFACT_COUNT -eq 0 ]]; then
             echo "::error file=${PROJECT}/Earthfile::No artifacts produced. Nothing to release."
