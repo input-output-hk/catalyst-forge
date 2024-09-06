@@ -3,14 +3,14 @@ const exec = require("@actions/exec");
 
 async function run() {
   try {
-    const artifact = core.getBooleanInput("artifact", { required: false });
+    const artifact = core.getInput("artifact", { required: false });
     const local = core.getBooleanInput("local", { required: false });
     const path = core.getInput("path", { required: true });
 
     let args = ["-vv", "run"];
 
-    if (artifact === true) {
-      args.push("--artifact");
+    if (artifact !== "") {
+      args.push("--artifact", artifact);
     }
 
     if (local === true) {

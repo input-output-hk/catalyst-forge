@@ -1,0 +1,21 @@
+name: Release
+description: Create a new GitHub release and upload generated artifacts
+inputs:
+  github_token:
+    description: The token to use for creating a new release
+    required: false
+    default: ${{ github.token }}
+  project:
+    description: The path to the project
+    required: true
+  path:
+    description: The path to generated artifacts
+    required: true
+  platform:
+    description: The platform the artifacts are targeting
+    required: false
+    default: "linux-amd64"
+
+runs:
+  using: node20
+  main: dist/index.js

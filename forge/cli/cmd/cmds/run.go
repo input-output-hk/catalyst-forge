@@ -11,7 +11,7 @@ import (
 )
 
 type RunCmd struct {
-	Artifact bool   `short:"a" help:"Enable artifact collection."`
+	Artifact string `short:"a" help:"Dump all produced artifacts to the given path."`
 	Local    bool   `short:"l" help:"Forces the target to run locally (ignores satellite)."`
 	Path     string `arg:"" help:"The path to the target to execute (i.e., ./dir1+test)."`
 	Pretty   bool   `help:"Pretty print JSON output."`
