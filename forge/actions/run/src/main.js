@@ -1,5 +1,5 @@
 const core = require("@actions/core");
-const exec = require("@actions/exec");
+const forge = require("../../lib/src/forge");
 
 async function run() {
   try {
@@ -7,7 +7,7 @@ async function run() {
     const local = core.getBooleanInput("local", { required: false });
     const path = core.getInput("path", { required: true });
 
-    let args = ["-vv", "run"];
+    const args = ["-vv", "run"];
 
     if (artifact !== "") {
       args.push("--artifact", artifact);
@@ -20,18 +20,9 @@ async function run() {
     args.push(path);
 
     core.info(`Running forge ${args.join(" ")}`);
+    const result = await forge.runForge(args);
 
-    let stdout = "";
-    const options = {};
-    options.listeners = {
-      stdout: (data) => {
-        stdout += data.toString();
-      },
-    };
-
-    await exec.exec("forge", args, options);
-
-    core.setOutput("result", stdout);
+    core.setOutput("result", result.stdout);
   } catch (error) {
     core.setFailed(error.message);
   }
