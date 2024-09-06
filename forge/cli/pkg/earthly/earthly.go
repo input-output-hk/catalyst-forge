@@ -5,7 +5,9 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
+	"path"
 	"regexp"
+	"runtime"
 	"strconv"
 	"strings"
 
@@ -26,9 +28,10 @@ type EarthlySecret struct {
 // earthlyExecutorOptions contains the configuration options for an
 // EarthlyExecutor.
 type earthlyExecutorOptions struct {
-	artifact string
-	ci       bool
-	retries  int
+	artifact  string
+	ci        bool
+	platforms []string
+	retries   int
 }
 
 // EarthlyExecutor is an Executor that runs Earthly targets.
@@ -52,7 +55,7 @@ type EarthlyExecutionResult struct {
 
 // Run executes the Earthly target and returns the resulting images and
 // artifacts.
-func (e EarthlyExecutor) Run() (EarthlyExecutionResult, error) {
+func (e EarthlyExecutor) Run() (map[string]EarthlyExecutionResult, error) {
 	var (
 		err     error
 		secrets []EarthlySecret
@@ -61,7 +64,7 @@ func (e EarthlyExecutor) Run() (EarthlyExecutionResult, error) {
 	if e.secrets != nil {
 		secrets, err = e.buildSecrets()
 		if err != nil {
-			return EarthlyExecutionResult{}, err
+			return nil, err
 		}
 
 		var secretString []string
@@ -75,33 +78,51 @@ func (e EarthlyExecutor) Run() (EarthlyExecutionResult, error) {
 		}
 	}
 
-	var output []byte
-	arguments := e.buildArguments()
-	for i := 0; i < e.opts.retries+1; i++ {
-		e.logger.Info("Executing Earthly", "attempt", i, "retries", e.opts.retries, "arguments", arguments)
-		output, err = e.executor.Execute("earthly", arguments)
-		if err == nil {
-			break
+	if e.opts.platforms == nil {
+		e.opts.platforms = []string{getNativePlatform()}
+	}
+
+	results := make(map[string]EarthlyExecutionResult)
+	for _, platform := range e.opts.platforms {
+		var output []byte
+
+		for i := 0; i < e.opts.retries+1; i++ {
+			arguments := e.buildArguments(platform)
+
+			e.logger.Info("Executing Earthly", "attempt", i, "retries", e.opts.retries, "arguments", arguments, "platform", platform)
+			output, err = e.executor.Execute("earthly", arguments)
+			if err == nil {
+				break
+			}
+
+			e.logger.Error("Failed to run Earthly", "error", err)
 		}
 
-		e.logger.Error("Failed to run Earthly", "error", err)
+		results[platform] = parseResult(string(output))
 	}
 
 	if err != nil {
 		e.logger.Error("Failed to run Earthly", "error", err)
-		return EarthlyExecutionResult{}, fmt.Errorf("failed to run Earthly: %w", err)
+		return nil, fmt.Errorf("failed to run Earthly: %w", err)
 	}
 
-	return parseResult(string(output)), nil
+	return results, nil
 }
 
 // buildArguments constructs the arguments to pass to the Earthly target.
-func (e *EarthlyExecutor) buildArguments() []string {
+func (e *EarthlyExecutor) buildArguments(platform string) []string {
 	var earthlyArgs []string
+
+	if platform != getNativePlatform() {
+		earthlyArgs = append(earthlyArgs, "--platform", platform)
+	}
 
 	earthlyArgs = append(earthlyArgs, e.earthlyArgs...)
 
-	if e.opts.artifact != "" {
+	// If we have an artifact path and multiple platforms, we need to append the platform to the artifact path to avoid conflicts.
+	if e.opts.artifact != "" && len(e.opts.platforms) > 1 {
+		earthlyArgs = append(earthlyArgs, "--artifact", fmt.Sprintf("%s+%s/*", e.earthfile, e.target), path.Join(e.opts.artifact, platform)+"/")
+	} else if e.opts.artifact != "" && len(e.opts.platforms) <= 1 {
 		earthlyArgs = append(earthlyArgs, "--artifact", fmt.Sprintf("%s+%s/*", e.earthfile, e.target), e.opts.artifact)
 	} else {
 		earthlyArgs = append(earthlyArgs, fmt.Sprintf("%s+%s", e.earthfile, e.target))
@@ -184,6 +205,11 @@ func NewEarthlyExecutor(
 	}
 
 	return e
+}
+
+// getNativePlatform returns the native platform of the current machine.
+func getNativePlatform() string {
+	return fmt.Sprintf("%s/%s", runtime.GOOS, runtime.GOARCH)
 }
 
 // parseResult parses the output of an Earthly execution and returns the

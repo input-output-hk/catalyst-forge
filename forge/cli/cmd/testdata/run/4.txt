@@ -1,13 +1,24 @@
-exec forge run ./dir1+test
+exec forge run --ci ./dir1+test
 cmp stdout golden.txt
 
 -- golden.txt --
 earthly
+--platform
+test
 --allow-privileged
+--ci
 ./dir1+test
 Image ./dir1+test output as test
 
-{"artifacts":{},"images":{"./dir1+test":"test"}}
+earthly
+--platform
+test1
+--allow-privileged
+--ci
+./dir1+test
+Image ./dir1+test output as test
+
+{"test":{"artifacts":{},"images":{"./dir1+test":"test"}},"test1":{"artifacts":{},"images":{"./dir1+test":"test"}}}
 -- earthly_stdout.txt --
 Image ./dir1+test output as test
 -- dir1/blueprint.cue --
@@ -17,6 +28,7 @@ project: {
     ci: {
         targets: {
             test: {
+                platforms: ["test", "test1"]
                 privileged: true
             }
         }

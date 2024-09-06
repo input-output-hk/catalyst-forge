@@ -155,6 +155,10 @@ package schema
 	// +optional
 	args?: {[string]: string} @go(Args,map[string]string)
 
+	// Platforms contains the platforms to run the target against.
+	// +optional
+	platforms?: [...string] @go(Platforms,[]string)
+
 	// Privileged determines if the target should run in privileged mode.
 	// +optional
 	privileged?: null | bool @go(Privileged,*bool)

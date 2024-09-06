@@ -161,6 +161,10 @@ type Target struct {
 	// +optional
 	Args map[string]string `json:"args"`
 
+	// Platforms contains the platforms to run the target against.
+	// +optional
+	Platforms []string `json:"platforms"`
+
 	// Privileged determines if the target should run in privileged mode.
 	// +optional
 	Privileged *bool `json:"privileged"`
