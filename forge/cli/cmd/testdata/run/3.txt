@@ -1,8 +1,9 @@
-exec forge run --platform test ./dir1+test
+exec forge run --ci --platform test ./dir1+test
 cmp stdout golden.txt
 
 -- golden.txt --
 earthly
+--ci
 --platform
 test
 ./dir1+test

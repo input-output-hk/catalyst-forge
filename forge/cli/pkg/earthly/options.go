@@ -18,6 +18,13 @@ func WithArtifact(path string) EarthlyExecutorOption {
 	}
 }
 
+func WithCI() EarthlyExecutorOption {
+	return func(e *EarthlyExecutor) {
+		e.opts.ci = true
+		e.earthlyArgs = append(e.earthlyArgs, "--ci")
+	}
+}
+
 // WithPlatform is an option for configuring an EarthlyExecutor to run the
 // Earthly target with the given platform.
 func WithPlatform(platform string) EarthlyExecutorOption {
