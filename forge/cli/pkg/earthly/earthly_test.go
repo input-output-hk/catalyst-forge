@@ -124,6 +124,14 @@ func TestEarthlyExecutor_buildArguments(t *testing.T) {
 			expect: []string{"--artifact", "/test/dir+foo/*", "test/"},
 		},
 		{
+			name: "with platform",
+			e: NewEarthlyExecutor("/test/dir", "foo", nil, secrets.SecretStore{},
+				testutils.NewNoopLogger(),
+				WithPlatform("platform"),
+			),
+			expect: []string{"--platform", "platform", "/test/dir+foo"},
+		},
+		{
 			name: "with privileged",
 			e: NewEarthlyExecutor("/test/dir", "foo", nil, secrets.SecretStore{},
 				testutils.NewNoopLogger(),

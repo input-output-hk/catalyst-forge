@@ -185,56 +185,6 @@ func NewEarthlyExecutor(
 	return e
 }
 
-// WithArtifact is an option for configuring an EarthlyExecutor to output all
-// artifacts contained within the given target to the given path.
-func WithArtifact(path string) EarthlyExecutorOption {
-	if !strings.HasSuffix(path, "/") {
-		path += "/"
-	}
-
-	return func(e *EarthlyExecutor) {
-		e.opts.artifact = path
-	}
-}
-
-// WithPrivileged is an option for configuring an EarthlyExecutor to run the
-// Earthly target with elevated privileges.
-func WithPrivileged() EarthlyExecutorOption {
-	return func(e *EarthlyExecutor) {
-		e.earthlyArgs = append(e.earthlyArgs, "--allow-privileged")
-	}
-}
-
-// WithRetries is an option for configuring an EarthlyExecutor with the number
-// of retries to attempt if the Earthly target fails.
-func WithRetries(retries int) EarthlyExecutorOption {
-	return func(e *EarthlyExecutor) {
-		e.opts.retries = retries
-	}
-}
-
-// WithSatellite is an option for configuring an EarthlyExecutor with the
-// remote satellite to use.
-func WithSatellite(s string) EarthlyExecutorOption {
-	return func(e *EarthlyExecutor) {
-		e.earthlyArgs = append(e.earthlyArgs, "--sat", s)
-	}
-}
-
-// WithEarthlyArgs is an option for configuring an EarthlyExecutor with
-// additional arguments that will be passed to the Earthly target.
-func WithTargetArgs(args ...string) EarthlyExecutorOption {
-	return func(e *EarthlyExecutor) {
-		e.targetArgs = args
-	}
-}
-
-func WithSecrets(secrets []schema.Secret) EarthlyExecutorOption {
-	return func(e *EarthlyExecutor) {
-		e.secrets = secrets
-	}
-}
-
 // parseResult parses the output of an Earthly execution and returns the
 // resulting images and artifacts.
 func parseResult(output string) EarthlyExecutionResult {
