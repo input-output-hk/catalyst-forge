@@ -1,10 +1,11 @@
-exec forge run --artifact ./dir1+test
+exec forge run --artifact output ./dir1+test
 cmp stdout golden.txt
 
 -- golden.txt --
 earthly
 --artifact
 ./dir1+test/*
+output/
 Image ./dir1+test output as test
 Artifact ./dir1+test output as test
 
