@@ -14,6 +14,7 @@ type RunCmd struct {
 	Artifact string `short:"a" help:"Dump all produced artifacts to the given path."`
 	Local    bool   `short:"l" help:"Forces the target to run locally (ignores satellite)."`
 	Path     string `arg:"" help:"The path to the target to execute (i.e., ./dir1+test)."`
+	Platform string `short:"p" help:"Run the target with the given platform."`
 	Pretty   bool   `help:"Pretty print JSON output."`
 }
 
