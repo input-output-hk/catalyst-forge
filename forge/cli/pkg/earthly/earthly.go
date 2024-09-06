@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
+	"path"
 	"regexp"
 	"runtime"
 	"strconv"
@@ -118,7 +119,10 @@ func (e *EarthlyExecutor) buildArguments(platform string) []string {
 
 	earthlyArgs = append(earthlyArgs, e.earthlyArgs...)
 
-	if e.opts.artifact != "" {
+	// If we have an artifact path and multiple platforms, we need to append the platform to the artifact path to avoid conflicts.
+	if e.opts.artifact != "" && len(e.opts.platforms) > 1 {
+		earthlyArgs = append(earthlyArgs, "--artifact", fmt.Sprintf("%s+%s/*", e.earthfile, e.target), path.Join(e.opts.artifact, platform)+"/")
+	} else if e.opts.artifact != "" && len(e.opts.platforms) <= 1 {
 		earthlyArgs = append(earthlyArgs, "--artifact", fmt.Sprintf("%s+%s/*", e.earthfile, e.target), e.opts.artifact)
 	} else {
 		earthlyArgs = append(earthlyArgs, fmt.Sprintf("%s+%s", e.earthfile, e.target))
