@@ -39,6 +39,11 @@ func generateOpts(target string, flags *RunCmd, config *schema.Blueprint) []eart
 				opts = append(opts, earthly.WithTargetArgs(args...))
 			}
 
+			// We only run multiple platforms in CI mode to avoid issues with local builds.
+			if targetConfig.Platforms != nil && flags.CI {
+				opts = append(opts, earthly.WithPlatforms(targetConfig.Platforms...))
+			}
+
 			if targetConfig.Privileged != nil && *targetConfig.Privileged {
 				opts = append(opts, earthly.WithPrivileged())
 			}
@@ -66,8 +71,9 @@ func generateOpts(target string, flags *RunCmd, config *schema.Blueprint) []eart
 			opts = append(opts, earthly.WithCI())
 		}
 
-		if flags.Platform != "" {
-			opts = append(opts, earthly.WithPlatform(flags.Platform))
+		// Users can explicitly set the platforms to use without being in CI mode.
+		if flags.Platform != nil {
+			opts = append(opts, earthly.WithPlatforms(flags.Platform...))
 		}
 	}
 

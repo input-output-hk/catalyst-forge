@@ -25,11 +25,11 @@ func WithCI() EarthlyExecutorOption {
 	}
 }
 
-// WithPlatform is an option for configuring an EarthlyExecutor to run the
-// Earthly target with the given platform.
-func WithPlatform(platform string) EarthlyExecutorOption {
+// WithPlatforms is an option for configuring an EarthlyExecutor to run the
+// Earthly target against the given platforms.
+func WithPlatforms(platforms ...string) EarthlyExecutorOption {
 	return func(e *EarthlyExecutor) {
-		e.earthlyArgs = append(e.earthlyArgs, "--platform", platform)
+		e.opts.platforms = append(e.opts.platforms, platforms...)
 	}
 }
 

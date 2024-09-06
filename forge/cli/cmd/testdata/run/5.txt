@@ -1,16 +1,18 @@
-exec forge run ./dir1+test
+exec forge run --platform test ./dir1+test
 cmp stdout golden.txt
 
 -- dir1/Secretfile --
 {"secret_key": "secret_value"}
 -- golden.txt --
 earthly
+--platform
+test
 --allow-privileged
 ./dir1+test
 EARTHLY_SECRETS=secret_id=secret_value
 Image ./dir1+test output as test
 
-{"artifacts":{},"images":{"./dir1+test":"test"}}
+{"test":{"artifacts":{},"images":{"./dir1+test":"test"}}}
 -- earthly_stdout.txt --
 Image ./dir1+test output as test
 -- dir1/blueprint.cue --
