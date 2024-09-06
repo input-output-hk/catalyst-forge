@@ -27,6 +27,7 @@ type EarthlySecret struct {
 // EarthlyExecutor.
 type earthlyExecutorOptions struct {
 	artifact string
+	ci       bool
 	retries  int
 }
 
