@@ -35,7 +35,7 @@ require (
 	github.com/cockroachdb/apd/v3 v3.2.1 // indirect
 	github.com/go-logfmt/logfmt v0.6.0 // indirect
 	github.com/google/uuid v1.6.0 // indirect
-	github.com/input-output-hk/catalyst-forge/cuetools v0.0.0 // indirect
+	github.com/input-output-hk/catalyst-forge/tools v0.0.0 // indirect
 	github.com/lucasb-eyer/go-colorful v1.2.0 // indirect
 	github.com/mattn/go-isatty v0.0.18 // indirect
 	github.com/mattn/go-runewidth v0.0.15 // indirect
@@ -55,4 +55,4 @@ require (
 
 replace github.com/input-output-hk/catalyst-forge/blueprint => ../../blueprint
 
-replace github.com/input-output-hk/catalyst-forge/cuetools => ../../cuetools
+replace github.com/input-output-hk/catalyst-forge/tools => ../../tools

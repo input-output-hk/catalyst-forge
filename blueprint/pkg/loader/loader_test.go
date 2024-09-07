@@ -12,6 +12,9 @@ import (
 
 	"cuelang.org/go/cue"
 	"github.com/input-output-hk/catalyst-forge/blueprint/pkg/injector"
+	imocks "github.com/input-output-hk/catalyst-forge/blueprint/pkg/injector/mocks"
+	"github.com/input-output-hk/catalyst-forge/tools/pkg/walker"
+	wmocks "github.com/input-output-hk/catalyst-forge/tools/pkg/walker/mocks"
 )
 
 type fieldTest struct {
@@ -181,11 +184,11 @@ func TestBlueprintLoaderLoad(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			walker := &ReverseWalkerMock{
-				WalkFunc: func(startPath string, endPath string, callback WalkerCallback) error {
+			walker := &wmocks.ReverseWalkerMock{
+				WalkFunc: func(startPath string, endPath string, callback walker.WalkerCallback) error {
 					// True when there is no git root, so we simulate only searching for blueprint files in the root path.
 					if startPath == endPath && len(tt.files) > 0 {
-						err := callback(filepath.Join(tt.root, "blueprint.cue"), FileTypeFile, func() (FileSeeker, error) {
+						err := callback(filepath.Join(tt.root, "blueprint.cue"), walker.FileTypeFile, func() (walker.FileSeeker, error) {
 							return NewMockFileSeeker(tt.files[filepath.Join(tt.root, "blueprint.cue")]), nil
 						})
 
@@ -201,11 +204,11 @@ func TestBlueprintLoaderLoad(t *testing.T) {
 					for path, content := range tt.files {
 						var err error
 						if content == "" {
-							err = callback(path, FileTypeDir, func() (FileSeeker, error) {
+							err = callback(path, walker.FileTypeDir, func() (walker.FileSeeker, error) {
 								return nil, nil
 							})
 						} else {
-							err = callback(path, FileTypeFile, func() (FileSeeker, error) {
+							err = callback(path, walker.FileTypeFile, func() (walker.FileSeeker, error) {
 								return NewMockFileSeeker(content), nil
 							})
 						}
@@ -224,7 +227,7 @@ func TestBlueprintLoaderLoad(t *testing.T) {
 			loader := BlueprintLoader{
 				injector: injector.NewInjector(
 					slog.New(slog.NewTextHandler(io.Discard, nil)),
-					&injector.EnvGetterMock{
+					&imocks.EnvGetterMock{
 						GetFunc: func(name string) (string, bool) {
 							return "", false
 						},
@@ -320,10 +323,10 @@ func TestBlueprintLoader_findBlueprints(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			walker := &ReverseWalkerMock{
-				WalkFunc: func(startPath string, endPath string, callback WalkerCallback) error {
+			walker := &wmocks.ReverseWalkerMock{
+				WalkFunc: func(startPath string, endPath string, callback walker.WalkerCallback) error {
 					for path, content := range tt.files {
-						err := callback(path, FileTypeFile, func() (FileSeeker, error) {
+						err := callback(path, walker.FileTypeFile, func() (walker.FileSeeker, error) {
 							return NewMockFileSeeker(content), nil
 						})
 
@@ -393,10 +396,10 @@ func TestBlueprintLoader_findGitRoot(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			var lastPath string
-			walker := &ReverseWalkerMock{
-				WalkFunc: func(startPath string, endPath string, callback WalkerCallback) error {
+			walker := &wmocks.ReverseWalkerMock{
+				WalkFunc: func(startPath string, endPath string, callback walker.WalkerCallback) error {
 					for _, dir := range tt.dirs {
-						err := callback(dir, FileTypeDir, func() (FileSeeker, error) {
+						err := callback(dir, walker.FileTypeDir, func() (walker.FileSeeker, error) {
 							return nil, nil
 						})
 

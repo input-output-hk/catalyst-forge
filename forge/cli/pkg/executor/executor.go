@@ -1,6 +1,6 @@
 package executor
 
-//go:generate go run github.com/matryer/moq@latest -out executor_mock.go . Executor
+//go:generate go run github.com/matryer/moq@latest -pkg mocks -out mocks/executor.go . Executor
 
 // Executor is an interface for executing commands.
 type Executor interface {

@@ -11,8 +11,9 @@ import (
 	"github.com/input-output-hk/catalyst-forge/blueprint/pkg/utils"
 	"github.com/input-output-hk/catalyst-forge/blueprint/schema"
 	"github.com/input-output-hk/catalyst-forge/forge/cli/internal/testutils"
-	"github.com/input-output-hk/catalyst-forge/forge/cli/pkg/executor"
+	emocks "github.com/input-output-hk/catalyst-forge/forge/cli/pkg/executor/mocks"
 	"github.com/input-output-hk/catalyst-forge/forge/cli/pkg/secrets"
+	smocks "github.com/input-output-hk/catalyst-forge/forge/cli/pkg/secrets/mocks"
 )
 
 func TestEarthlyExecutorRun(t *testing.T) {
@@ -20,7 +21,7 @@ func TestEarthlyExecutorRun(t *testing.T) {
 		name        string
 		output      string
 		earthlyExec EarthlyExecutor
-		mockExec    executor.ExecutorMock
+		mockExec    emocks.ExecutorMock
 		expect      map[string]EarthlyExecutionResult
 		expectCalls int
 		expectErr   bool
@@ -30,7 +31,7 @@ func TestEarthlyExecutorRun(t *testing.T) {
 			earthlyExec: NewEarthlyExecutor("/test/dir", "foo", nil, secrets.SecretStore{},
 				testutils.NewNoopLogger(),
 			),
-			mockExec: executor.ExecutorMock{
+			mockExec: emocks.ExecutorMock{
 				ExecuteFunc: func(command string, args []string) ([]byte, error) {
 					return []byte(`foobarbaz
 Image foo output as bar
@@ -56,7 +57,7 @@ Artifact foo output as bar`), nil
 				testutils.NewNoopLogger(),
 				WithRetries(3),
 			),
-			mockExec: executor.ExecutorMock{
+			mockExec: emocks.ExecutorMock{
 				ExecuteFunc: func(command string, args []string) ([]byte, error) {
 					return []byte{}, fmt.Errorf("error")
 				},
@@ -71,7 +72,7 @@ Artifact foo output as bar`), nil
 				testutils.NewNoopLogger(),
 				WithPlatforms("foo", "bar"),
 			),
-			mockExec: executor.ExecutorMock{
+			mockExec: emocks.ExecutorMock{
 				ExecuteFunc: func(command string, args []string) ([]byte, error) {
 					return []byte(`foobarbaz
 Image foo output as bar
@@ -225,7 +226,7 @@ func TestEarthlyExecutor_buildSecrets(t *testing.T) {
 	}{
 		{
 			name: "simple",
-			provider: &secrets.SecretProviderMock{
+			provider: &smocks.SecretProviderMock{
 				GetFunc: func(path string) (string, error) {
 					return `{"key": "value"}`, nil
 				},
@@ -250,7 +251,7 @@ func TestEarthlyExecutor_buildSecrets(t *testing.T) {
 		},
 		{
 			name: "key does not exist",
-			provider: &secrets.SecretProviderMock{
+			provider: &smocks.SecretProviderMock{
 				GetFunc: func(path string) (string, error) {
 					return `{"key": "value"}`, nil
 				},
@@ -270,7 +271,7 @@ func TestEarthlyExecutor_buildSecrets(t *testing.T) {
 		},
 		{
 			name: "invalid JSON",
-			provider: &secrets.SecretProviderMock{
+			provider: &smocks.SecretProviderMock{
 				GetFunc: func(path string) (string, error) {
 					return `invalid`, nil
 				},
@@ -288,7 +289,7 @@ func TestEarthlyExecutor_buildSecrets(t *testing.T) {
 		},
 		{
 			name: "secret provider does not exist",
-			provider: &secrets.SecretProviderMock{
+			provider: &smocks.SecretProviderMock{
 				GetFunc: func(path string) (string, error) {
 					return "", nil
 				},
@@ -306,7 +307,7 @@ func TestEarthlyExecutor_buildSecrets(t *testing.T) {
 		},
 		{
 			name: "secret provider error",
-			provider: &secrets.SecretProviderMock{
+			provider: &smocks.SecretProviderMock{
 				GetFunc: func(path string) (string, error) {
 					return "", fmt.Errorf("error")
 				},

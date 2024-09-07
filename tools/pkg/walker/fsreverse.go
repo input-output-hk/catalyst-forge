@@ -1,4 +1,4 @@
-package loader
+package walker
 
 //go:generate go run github.com/matryer/moq@latest -out ./walker_mock.go . ReverseWalker
 
@@ -6,41 +6,12 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/fs"
 	"log/slog"
 	"path/filepath"
 	"strings"
 
 	"github.com/spf13/afero"
 )
-
-// FileType is an enum that represents the type of a file.
-type FileType int
-
-const (
-	FileTypeFile FileType = iota
-	FileTypeDir
-)
-
-// FileSeeker is an interface that combines the fs.File and io.Seeker interfaces.
-type FileSeeker interface {
-	fs.File
-	io.Seeker
-}
-
-// WalkerCallback is a callback function that is called for each file in the
-// Walk function.
-type WalkerCallback func(string, FileType, func() (FileSeeker, error)) error
-
-// ReverseWalker is an interface that allows reverse walking over a set of
-// files.
-// The start path is the path where the walk starts and the end path is the path
-// where the walk ends.
-type ReverseWalker interface {
-	// Walk performs a reverse walk from the end path to the start path and
-	// calls the given function for each file.
-	Walk(startPath, endPath string, callback WalkerCallback) error
-}
 
 // FSReverseWalker is a ReverseWalker that walks over the local filesystem.
 type FSReverseWalker struct {

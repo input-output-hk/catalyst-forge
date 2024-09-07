@@ -6,7 +6,7 @@ import (
 	"cuelang.org/go/cue/cuecontext"
 	"github.com/Masterminds/semver/v3"
 	"github.com/input-output-hk/catalyst-forge/blueprint/internal/testutils"
-	cuetools "github.com/input-output-hk/catalyst-forge/cuetools/pkg"
+	cuetools "github.com/input-output-hk/catalyst-forge/tools/pkg/cue"
 )
 
 func TestGetVersion(t *testing.T) {

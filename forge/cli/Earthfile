@@ -11,7 +11,7 @@ deps:
     CACHE --persist --sharing shared /go
 
     COPY ../../blueprint+src/src /blueprint
-    COPY ../../cuetools+src/src /cuetools
+    COPY ../../tools+src/src /tools
 
     COPY go.mod go.sum .
     RUN go mod download

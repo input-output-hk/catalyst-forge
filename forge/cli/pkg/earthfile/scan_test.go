@@ -3,13 +3,39 @@ package earthfile
 import (
 	"fmt"
 	"io"
+	"io/fs"
+	"strings"
 	"testing"
 
 	"log/slog"
 
-	"github.com/input-output-hk/catalyst-forge/forge/cli/internal/testutils/mocks"
-	"github.com/input-output-hk/catalyst-forge/forge/cli/pkg/walker"
+	"github.com/input-output-hk/catalyst-forge/tools/pkg/walker"
+	"github.com/input-output-hk/catalyst-forge/tools/pkg/walker/mocks"
 )
+
+type MockFileSeeker struct {
+	*strings.Reader
+}
+
+func (MockFileSeeker) Stat() (fs.FileInfo, error) {
+	return MockFileInfo{}, nil
+}
+
+func (MockFileSeeker) Close() error {
+	return nil
+}
+
+type MockFileInfo struct {
+	fs.FileInfo
+}
+
+func (MockFileInfo) Name() string {
+	return "Earthfile"
+}
+
+func NewMockFileSeeker(s string) MockFileSeeker {
+	return MockFileSeeker{strings.NewReader(s)}
+}
 
 func TestScanEarthfiles(t *testing.T) {
 	tests := []struct {
@@ -93,11 +119,11 @@ foo1:
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			walker := &walker.WalkerMock{
+			walker := &mocks.WalkerMock{
 				WalkFunc: func(rootPath string, callback walker.WalkerCallback) error {
 					for path, content := range tt.files {
 						err := callback(path, walker.FileTypeFile, func() (walker.FileSeeker, error) {
-							return mocks.NewMockFileSeeker(content), tt.callbackErr
+							return NewMockFileSeeker(content), tt.callbackErr
 						})
 
 						if err != nil {

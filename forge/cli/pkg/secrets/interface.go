@@ -1,6 +1,6 @@
 package secrets
 
-//go:generate go run github.com/matryer/moq@latest -out interface_mock.go . SecretProvider
+//go:generate go run github.com/matryer/moq@latest --pkg mocks -out mocks/interface_mock.go . SecretProvider
 
 // SecretProvider is an interface for getting and setting secrets.
 type SecretProvider interface {

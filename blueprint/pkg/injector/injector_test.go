@@ -7,7 +7,8 @@ import (
 
 	"cuelang.org/go/cue"
 	"cuelang.org/go/cue/cuecontext"
-	cuetools "github.com/input-output-hk/catalyst-forge/cuetools/pkg"
+	"github.com/input-output-hk/catalyst-forge/blueprint/pkg/injector/mocks"
+	cuetools "github.com/input-output-hk/catalyst-forge/tools/pkg/cue"
 )
 
 func TestInjectEnv(t *testing.T) {
@@ -96,7 +97,7 @@ func TestInjectEnv(t *testing.T) {
 
 			i := Injector{
 				logger: slog.New(slog.NewTextHandler(io.Discard, nil)),
-				getter: &EnvGetterMock{
+				getter: &mocks.EnvGetterMock{
 					GetFunc: func(key string) (string, bool) {
 						return tt.env[key], true
 					},

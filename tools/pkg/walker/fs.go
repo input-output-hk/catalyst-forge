@@ -8,7 +8,7 @@ import (
 )
 
 // FilesystemWalker is a walker that walks over the local filesystem.
-type FilesystemWalker struct {
+type FSWalker struct {
 	fs     afero.Fs
 	logger *slog.Logger
 }
@@ -16,7 +16,7 @@ type FilesystemWalker struct {
 // Walk walks over the files and directories in the given root path and calls
 // the given function for each entry.
 // The reader passed to the function is closed after the function returns.
-func (w *FilesystemWalker) Walk(rootPath string, callback WalkerCallback) error {
+func (w *FSWalker) Walk(rootPath string, callback WalkerCallback) error {
 	return afero.Walk(w.fs, rootPath, func(path string, info os.FileInfo, err error) error {
 		w.logger.Debug("walking path", "path", path)
 		if err != nil {
@@ -45,9 +45,22 @@ func (w *FilesystemWalker) Walk(rootPath string, callback WalkerCallback) error 
 	})
 }
 
-// NewFilesystemWalker creates a new FilesystemWalker.
-func NewFilesystemWalker(logger *slog.Logger) FilesystemWalker {
-	return FilesystemWalker{
+// NewFilesystemWalker creates a new FSWalker with the given filesystem.
+func NewFSWalker(fs afero.Fs, logger *slog.Logger) FSWalker {
+	return FSWalker{
+		fs:     fs,
+		logger: logger,
+	}
+}
+
+// NewDefaultFilesystemWalker creates a new FSWalker with the default filesystem
+// and an optional logger.
+func NewDefaultFSWalker(logger *slog.Logger) FSWalker {
+	if logger == nil {
+		logger = slog.New(slog.NewTextHandler(os.Stderr, nil))
+	}
+
+	return FSWalker{
 		fs:     afero.NewOsFs(),
 		logger: logger,
 	}
