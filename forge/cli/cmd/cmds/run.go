@@ -11,12 +11,13 @@ import (
 )
 
 type RunCmd struct {
-	Artifact string   `short:"a" help:"Dump all produced artifacts to the given path."`
-	CI       bool     `help:"Run the target in CI mode."`
-	Local    bool     `short:"l" help:"Forces the target to run locally (ignores satellite)."`
-	Path     string   `arg:"" help:"The path to the target to execute (i.e., ./dir1+test)."`
-	Platform []string `short:"p" help:"Run the target with the given platform."`
-	Pretty   bool     `help:"Pretty print JSON output."`
+	Artifact   string   `short:"a" help:"Dump all produced artifacts to the given path."`
+	CI         bool     `help:"Run the target in CI mode."`
+	Local      bool     `short:"l" help:"Forces the target to run locally (ignores satellite)."`
+	Path       string   `arg:"" help:"The path to the target to execute (i.e., ./dir1+test)."`
+	Platform   []string `short:"p" help:"Run the target with the given platform."`
+	Pretty     bool     `help:"Pretty print JSON output."`
+	TargetArgs []string `arg:"" help:"Arguments to pass to the target." default:""`
 }
 
 func (c *RunCmd) Run(logger *slog.Logger) error {

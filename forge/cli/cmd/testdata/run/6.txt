@@ -1,0 +1,38 @@
+exec forge run --platform test ./dir1+test
+cmp stdout golden.txt
+
+-- dir1/Secretfile --
+{"secret_key": "secret_value"}
+-- golden.txt --
+earthly
+--platform
+test
+--allow-privileged
+./dir1+test
+EARTHLY_SECRETS=secret_id=secret_value
+Image ./dir1+test output as test
+
+{"test":{"artifacts":{},"images":{"./dir1+test":"test"}}}
+-- earthly_stdout.txt --
+Image ./dir1+test output as test
+-- dir1/blueprint.cue --
+version: "1.0"
+project: {
+  name: "test"
+  ci: {
+    targets: {
+      test: {
+        privileged: true
+        secrets: [
+          {
+            path: "./dir1/Secretfile"
+            provider: "local"
+            maps: {
+              "secret_key": "secret_id"
+            }
+          }
+        ]
+      }
+    }
+  }
+}

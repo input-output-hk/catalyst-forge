@@ -75,6 +75,10 @@ func generateOpts(target string, flags *RunCmd, config *schema.Blueprint) []eart
 		if flags.Platform != nil {
 			opts = append(opts, earthly.WithPlatforms(flags.Platform...))
 		}
+
+		if flags.TargetArgs != nil && len(flags.TargetArgs) > 0 && flags.TargetArgs[0] != "" {
+			opts = append(opts, earthly.WithTargetArgs(flags.TargetArgs...))
+		}
 	}
 
 	return opts
