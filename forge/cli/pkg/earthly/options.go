@@ -69,6 +69,6 @@ func WithSecrets(secrets []schema.Secret) EarthlyExecutorOption {
 // additional arguments that will be passed to the Earthly target.
 func WithTargetArgs(args ...string) EarthlyExecutorOption {
 	return func(e *EarthlyExecutor) {
-		e.targetArgs = args
+		e.targetArgs = append(e.targetArgs, args...)
 	}
 }

@@ -1,36 +1,29 @@
-exec forge run --ci ./dir1+test
+exec forge run --ci --platform test --platform test1 ./dir1+test
 cmp stdout golden.txt
 
 -- golden.txt --
 earthly
 --platform
 test
---allow-privileged
 --ci
 ./dir1+test
 Image ./dir1+test output as test
+Artifact ./dir1+test output as test
 
 earthly
 --platform
 test1
---allow-privileged
 --ci
 ./dir1+test
 Image ./dir1+test output as test
+Artifact ./dir1+test output as test
 
-{"test":{"artifacts":{},"images":{"./dir1+test":"test"}},"test1":{"artifacts":{},"images":{"./dir1+test":"test"}}}
+{"test":{"artifacts":{"./dir1+test":"test"},"images":{"./dir1+test":"test"}},"test1":{"artifacts":{"./dir1+test":"test"},"images":{"./dir1+test":"test"}}}
 -- earthly_stdout.txt --
 Image ./dir1+test output as test
--- dir1/blueprint.cue --
-version: "1.0"
-project: {
-    name: "test"
-    ci: {
-        targets: {
-            test: {
-                platforms: ["test", "test1"]
-                privileged: true
-            }
-        }
-    }
-}
+Artifact ./dir1+test output as test
+-- dir1/Earthfile --
+VERSION 0.8
+
+foo:
+    RUN echo "foobar"
