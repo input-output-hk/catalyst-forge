@@ -6,7 +6,6 @@ import (
 	"log/slog"
 	"strings"
 
-	"github.com/input-output-hk/catalyst-forge/blueprint/pkg/loader"
 	"github.com/input-output-hk/catalyst-forge/blueprint/schema"
 	"github.com/input-output-hk/catalyst-forge/forge/cli/pkg/secrets"
 )
@@ -41,12 +40,10 @@ func (c *Get) Run(logger *slog.Logger) error {
 	var maps map[string]string
 
 	if c.Blueprint != "" {
-		loader := loader.NewDefaultBlueprintLoader(c.Blueprint, logger)
-		if err := loader.Load(); err != nil {
+		rbp, err := loadRawBlueprint(c.Blueprint, logger)
+		if err != nil {
 			return fmt.Errorf("could not load blueprint: %w", err)
 		}
-
-		rbp := loader.Raw()
 
 		var secret schema.Secret
 		if err := rbp.DecodePath(c.Path, &secret); err != nil {
@@ -132,12 +129,10 @@ func (c *Set) Run(logger *slog.Logger) error {
 	var path, provider string
 
 	if c.Blueprint != "" {
-		loader := loader.NewDefaultBlueprintLoader(c.Blueprint, logger)
-		if err := loader.Load(); err != nil {
+		rbp, err := loadRawBlueprint(c.Blueprint, logger)
+		if err != nil {
 			return fmt.Errorf("could not load blueprint: %w", err)
 		}
-
-		rbp := loader.Raw()
 
 		var secret schema.Secret
 		if err := rbp.DecodePath(c.Path, &secret); err != nil {
