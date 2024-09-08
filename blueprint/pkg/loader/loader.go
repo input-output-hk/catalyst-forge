@@ -14,7 +14,8 @@ import (
 	"github.com/input-output-hk/catalyst-forge/blueprint/pkg/injector"
 	"github.com/input-output-hk/catalyst-forge/blueprint/pkg/version"
 	"github.com/input-output-hk/catalyst-forge/blueprint/schema"
-	cuetools "github.com/input-output-hk/catalyst-forge/cuetools/pkg"
+	cuetools "github.com/input-output-hk/catalyst-forge/tools/pkg/cue"
+	"github.com/input-output-hk/catalyst-forge/tools/pkg/walker"
 )
 
 const BlueprintFileName = "blueprint.cue"
@@ -29,7 +30,7 @@ type BlueprintLoader struct {
 	injector  injector.Injector
 	logger    *slog.Logger
 	rootPath  string
-	walker    ReverseWalker
+	walker    walker.ReverseWalker
 }
 
 func (b *BlueprintLoader) Load() error {
@@ -137,27 +138,31 @@ func (b *BlueprintLoader) Raw() blueprint.RawBlueprint {
 func (b *BlueprintLoader) findBlueprints(startPath, endPath string) (map[string][]byte, error) {
 	bps := make(map[string][]byte)
 
-	err := b.walker.Walk(startPath, endPath, func(path string, fileType FileType, openFile func() (FileSeeker, error)) error {
-		if fileType == FileTypeFile {
-			if filepath.Base(path) == BlueprintFileName {
-				reader, err := openFile()
-				if err != nil {
-					return err
+	err := b.walker.Walk(
+		startPath,
+		endPath,
+		func(path string, fileType walker.FileType, openFile func() (walker.FileSeeker, error)) error {
+			if fileType == walker.FileTypeFile {
+				if filepath.Base(path) == BlueprintFileName {
+					reader, err := openFile()
+					if err != nil {
+						return err
+					}
+
+					defer reader.Close()
+
+					data, err := io.ReadAll(reader)
+					if err != nil {
+						return err
+					}
+
+					bps[path] = data
 				}
-
-				defer reader.Close()
-
-				data, err := io.ReadAll(reader)
-				if err != nil {
-					return err
-				}
-
-				bps[path] = data
 			}
-		}
 
-		return nil
-	})
+			return nil
+		},
+	)
 
 	if err != nil {
 		return nil, err
@@ -171,16 +176,20 @@ func (b *BlueprintLoader) findBlueprints(startPath, endPath string) (map[string]
 // the root is not found.
 func (b *BlueprintLoader) findGitRoot(startPath string) (string, error) {
 	var gitRoot string
-	err := b.walker.Walk(startPath, "/", func(path string, fileType FileType, openFile func() (FileSeeker, error)) error {
-		if fileType == FileTypeDir {
-			if filepath.Base(path) == ".git" {
-				gitRoot = filepath.Dir(path)
-				return io.EOF
+	err := b.walker.Walk(
+		startPath,
+		"/",
+		func(path string, fileType walker.FileType, openFile func() (walker.FileSeeker, error)) error {
+			if fileType == walker.FileTypeDir {
+				if filepath.Base(path) == ".git" {
+					gitRoot = filepath.Dir(path)
+					return io.EOF
+				}
 			}
-		}
 
-		return nil
-	})
+			return nil
+		},
+	)
 
 	if err != nil {
 		return "", err
@@ -202,7 +211,7 @@ func NewDefaultBlueprintLoader(rootPath string,
 		logger = slog.New(slog.NewTextHandler(io.Discard, nil))
 	}
 
-	walker := NewDefaultFSReverseWalker(logger)
+	walker := walker.NewDefaultFSReverseWalker(logger)
 	return BlueprintLoader{
 		injector: injector.NewDefaultInjector(logger),
 		logger:   logger,
@@ -214,7 +223,7 @@ func NewDefaultBlueprintLoader(rootPath string,
 // NewBlueprintLoader creates a new blueprint loader
 func NewBlueprintLoader(rootPath string,
 	logger *slog.Logger,
-	walker ReverseWalker,
+	walker walker.ReverseWalker,
 	injector injector.Injector,
 ) BlueprintLoader {
 	return BlueprintLoader{

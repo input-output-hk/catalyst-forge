@@ -8,7 +8,7 @@ import (
 	"sort"
 
 	"github.com/input-output-hk/catalyst-forge/forge/cli/pkg/earthfile"
-	"github.com/input-output-hk/catalyst-forge/forge/cli/pkg/walker"
+	"github.com/input-output-hk/catalyst-forge/tools/pkg/walker"
 )
 
 type ScanCmd struct {
@@ -20,7 +20,7 @@ type ScanCmd struct {
 }
 
 func (c *ScanCmd) Run(logger *slog.Logger) error {
-	walker := walker.NewFilesystemWalker(logger)
+	walker := walker.NewDefaultFSWalker(logger)
 
 	var rootPath string
 	if c.Absolute {

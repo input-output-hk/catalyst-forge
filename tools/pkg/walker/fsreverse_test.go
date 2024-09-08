@@ -1,32 +1,15 @@
-package loader
+package walker
 
 import (
 	"fmt"
 	"io"
 	"log/slog"
-	"maps"
-	"path/filepath"
 	"testing"
 
-	"github.com/input-output-hk/catalyst-forge/blueprint/internal/testutils"
+	"github.com/input-output-hk/catalyst-forge/tools/pkg/testutils"
 	"github.com/spf13/afero"
+	"github.com/stretchr/testify/assert"
 )
-
-type wrapfs struct {
-	afero.Fs
-
-	attempts  int
-	failAfter int
-	trigger   error
-}
-
-func (w *wrapfs) Open(name string) (afero.File, error) {
-	w.attempts++
-	if w.attempts == w.failAfter {
-		return nil, w.trigger
-	}
-	return afero.Fs.Open(w.Fs, name)
-}
 
 func TestFSReverseWalkerWalk(t *testing.T) {
 	tests := []struct {
@@ -38,7 +21,7 @@ func TestFSReverseWalkerWalk(t *testing.T) {
 		files         map[string]string
 		expectedFiles map[string]string
 		expectErr     bool
-		expectedErr   error
+		expectedErr   string
 	}{
 		{
 			name:        "single directory",
@@ -55,7 +38,7 @@ func TestFSReverseWalkerWalk(t *testing.T) {
 				"/test1/file2": "file2",
 			},
 			expectErr:   false,
-			expectedErr: nil,
+			expectedErr: "",
 		},
 		{
 			name:        "multiple directories",
@@ -74,7 +57,7 @@ func TestFSReverseWalkerWalk(t *testing.T) {
 				"/test1/test2/file3": "file3",
 			},
 			expectErr:   false,
-			expectedErr: nil,
+			expectedErr: "",
 		},
 		{
 			name:        "multiple scoped directories",
@@ -97,7 +80,7 @@ func TestFSReverseWalkerWalk(t *testing.T) {
 				"/test1/test2/file3": "file3",
 			},
 			expectErr:   false,
-			expectedErr: nil,
+			expectedErr: "",
 		},
 		{
 			name:        "error reading directory",
@@ -110,7 +93,7 @@ func TestFSReverseWalkerWalk(t *testing.T) {
 			},
 			expectedFiles: map[string]string{},
 			expectErr:     true,
-			expectedErr:   fmt.Errorf("failed to read directory: failed"),
+			expectedErr:   "failed to read directory: failed",
 		},
 		{
 			name:        "error reading file",
@@ -123,7 +106,7 @@ func TestFSReverseWalkerWalk(t *testing.T) {
 			},
 			expectedFiles: map[string]string{},
 			expectErr:     true,
-			expectedErr:   fmt.Errorf("failed to open file: failed"),
+			expectedErr:   "failed to open file: failed",
 		},
 		{
 			name:        "callback error",
@@ -136,7 +119,7 @@ func TestFSReverseWalkerWalk(t *testing.T) {
 			},
 			expectedFiles: map[string]string{},
 			expectErr:     true,
-			expectedErr:   fmt.Errorf("callback error"),
+			expectedErr:   "callback error",
 		},
 		{
 			name:        "callback EOF",
@@ -149,7 +132,7 @@ func TestFSReverseWalkerWalk(t *testing.T) {
 			},
 			expectedFiles: map[string]string{},
 			expectErr:     false,
-			expectedErr:   nil,
+			expectedErr:   "",
 		},
 		{
 			name:        "start path is not a subdirectory of end path",
@@ -162,7 +145,7 @@ func TestFSReverseWalkerWalk(t *testing.T) {
 			},
 			expectedFiles: map[string]string{},
 			expectErr:     true,
-			expectedErr:   fmt.Errorf("start path is not a subdirectory of end path"),
+			expectedErr:   "start path is not a subdirectory of end path",
 		},
 	}
 
@@ -173,16 +156,7 @@ func TestFSReverseWalkerWalk(t *testing.T) {
 				logger: slog.New(slog.NewTextHandler(io.Discard, nil)),
 			}
 
-			for path, content := range tt.files {
-				dir := filepath.Dir(path)
-				if err := tt.fs.MkdirAll(dir, 0755); err != nil {
-					t.Fatalf("failed to create directory %s: %v", dir, err)
-				}
-
-				if err := afero.WriteFile(tt.fs, path, []byte(content), 0644); err != nil {
-					t.Fatalf("failed to write file %s: %v", path, err)
-				}
-			}
+			testutils.SetupFS(t, tt.fs, tt.files)
 
 			callbackFiles := make(map[string]string)
 			err := walker.Walk(tt.startPath, tt.endPath, func(path string, fileType FileType, openFile func() (FileSeeker, error)) error {
@@ -209,16 +183,11 @@ func TestFSReverseWalkerWalk(t *testing.T) {
 				return nil
 			})
 
-			ret, err := testutils.CheckError(t, err, tt.expectErr, tt.expectedErr)
-			if err != nil {
-				t.Fatal(err)
-			} else if ret {
+			if testutils.AssertError(t, err, tt.expectErr, tt.expectedErr) {
 				return
 			}
 
-			if !maps.Equal(callbackFiles, tt.expectedFiles) {
-				t.Fatalf("expected: %v, got: %v", tt.expectedFiles, callbackFiles)
-			}
+			assert.Equal(t, tt.expectedFiles, callbackFiles)
 		})
 	}
 }

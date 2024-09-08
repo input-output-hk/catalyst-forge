@@ -6,7 +6,7 @@ import (
 	"cuelang.org/go/cue"
 	"github.com/Masterminds/semver/v3"
 	"github.com/input-output-hk/catalyst-forge/blueprint/pkg/version"
-	cuetools "github.com/input-output-hk/catalyst-forge/cuetools/pkg"
+	cuetools "github.com/input-output-hk/catalyst-forge/tools/pkg/cue"
 )
 
 // SchemaFile contains the schema for blueprint files.

@@ -1,11 +1,11 @@
 package providers
 
 import (
-	"fmt"
 	"testing"
 
-	"github.com/input-output-hk/catalyst-forge/forge/cli/internal/testutils"
+	"github.com/input-output-hk/catalyst-forge/tools/pkg/testutils"
 	"github.com/spf13/afero"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestLocalClientGet(t *testing.T) {
@@ -15,7 +15,7 @@ func TestLocalClientGet(t *testing.T) {
 		files       map[string]string
 		expect      string
 		expectErr   bool
-		expectedErr error
+		expectedErr string
 	}{
 		{
 			name: "simple",
@@ -25,7 +25,7 @@ func TestLocalClientGet(t *testing.T) {
 			},
 			expect:      "secret",
 			expectErr:   false,
-			expectedErr: nil,
+			expectedErr: "",
 		},
 		{
 			name: "file not found",
@@ -35,7 +35,7 @@ func TestLocalClientGet(t *testing.T) {
 			},
 			expect:      "",
 			expectErr:   true,
-			expectedErr: fmt.Errorf("open foo: file does not exist"),
+			expectedErr: "open foo: file does not exist",
 		},
 	}
 
@@ -52,18 +52,10 @@ func TestLocalClientGet(t *testing.T) {
 			}
 
 			got, err := client.Get(tt.key)
-
-			ret, err := testutils.CheckError(t, err, tt.expectErr, tt.expectedErr)
-			if err != nil {
-				t.Error(err)
-				return
-			} else if ret {
+			if testutils.AssertError(t, err, tt.expectErr, tt.expectedErr) {
 				return
 			}
-
-			if got != tt.expect {
-				t.Errorf("expected: %s, got: %s", tt.expect, got)
-			}
+			assert.Equal(t, tt.expect, got)
 		})
 	}
 }

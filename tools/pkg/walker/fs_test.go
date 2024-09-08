@@ -4,22 +4,12 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
-	"maps"
-	"path/filepath"
 	"testing"
 
-	"github.com/input-output-hk/catalyst-forge/forge/cli/internal/testutils"
+	"github.com/input-output-hk/catalyst-forge/tools/pkg/testutils"
 	"github.com/spf13/afero"
+	"github.com/stretchr/testify/assert"
 )
-
-type wrapfs struct {
-	afero.Fs
-	trigger error
-}
-
-func (w *wrapfs) Open(name string) (afero.File, error) {
-	return nil, w.trigger
-}
 
 func TestFileSystemWalkerWalk(t *testing.T) {
 	tests := []struct {
@@ -30,7 +20,7 @@ func TestFileSystemWalkerWalk(t *testing.T) {
 		files         map[string]string
 		expectedFiles map[string]string
 		expectErr     bool
-		expectedErr   error
+		expectedErr   string
 	}{
 		{
 			name:        "single directory",
@@ -46,7 +36,7 @@ func TestFileSystemWalkerWalk(t *testing.T) {
 				"/test1/file2": "file2",
 			},
 			expectErr:   false,
-			expectedErr: nil,
+			expectedErr: "",
 		},
 		{
 			name:        "nested directories",
@@ -64,13 +54,14 @@ func TestFileSystemWalkerWalk(t *testing.T) {
 				"/test1/dir1/dir2/file3": "file3",
 			},
 			expectErr:   false,
-			expectedErr: nil,
+			expectedErr: "",
 		},
 		{
 			name: "error opening file",
 			fs: &wrapfs{
-				Fs:      afero.NewMemMapFs(),
-				trigger: fmt.Errorf("fail"),
+				Fs:        afero.NewMemMapFs(),
+				trigger:   fmt.Errorf("fail"),
+				failAfter: 1,
 			},
 			callbackErr: nil,
 			path:        "/test1",
@@ -79,7 +70,7 @@ func TestFileSystemWalkerWalk(t *testing.T) {
 			},
 			expectedFiles: map[string]string{},
 			expectErr:     true,
-			expectedErr:   fmt.Errorf("fail"),
+			expectedErr:   "fail",
 		},
 		{
 			name:        "callback error",
@@ -91,27 +82,18 @@ func TestFileSystemWalkerWalk(t *testing.T) {
 			},
 			expectedFiles: map[string]string{},
 			expectErr:     true,
-			expectedErr:   fmt.Errorf("callback error"),
+			expectedErr:   "callback error",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			walker := FilesystemWalker{
+			walker := FSWalker{
 				fs:     tt.fs,
 				logger: slog.New(slog.NewTextHandler(io.Discard, nil)),
 			}
 
-			for path, content := range tt.files {
-				dir := filepath.Dir(path)
-				if err := tt.fs.MkdirAll(dir, 0755); err != nil {
-					t.Fatalf("failed to create directory %s: %v", dir, err)
-				}
-
-				if err := afero.WriteFile(tt.fs, path, []byte(content), 0644); err != nil {
-					t.Fatalf("failed to write file %s: %v", path, err)
-				}
-			}
+			testutils.SetupFS(t, tt.fs, tt.files)
 
 			callbackFiles := make(map[string]string)
 			err := walker.Walk(tt.path, func(path string, fileType FileType, openFile func() (FileSeeker, error)) error {
@@ -138,16 +120,11 @@ func TestFileSystemWalkerWalk(t *testing.T) {
 				return nil
 			})
 
-			ret, err := testutils.CheckError(t, err, tt.expectErr, tt.expectedErr)
-			if err != nil {
-				t.Fatal(err)
-			} else if ret {
+			if testutils.AssertError(t, err, tt.expectErr, tt.expectedErr) {
 				return
 			}
 
-			if !maps.Equal(callbackFiles, tt.expectedFiles) {
-				t.Fatalf("expected: %v, got: %v", tt.expectedFiles, callbackFiles)
-			}
+			assert.Equal(t, tt.expectedFiles, callbackFiles)
 		})
 	}
 }

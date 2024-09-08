@@ -5,7 +5,7 @@ import (
 
 	"github.com/earthly/earthly/ast"
 	"github.com/earthly/earthly/ast/spec"
-	"github.com/input-output-hk/catalyst-forge/forge/cli/pkg/walker"
+	"github.com/input-output-hk/catalyst-forge/tools/pkg/walker"
 )
 
 // Earthfile represents a parsed Earthfile.

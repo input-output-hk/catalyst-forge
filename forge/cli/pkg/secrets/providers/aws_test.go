@@ -7,7 +7,9 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/service/secretsmanager"
 	"github.com/aws/aws-sdk-go/aws"
-	"github.com/input-output-hk/catalyst-forge/forge/cli/internal/testutils"
+	"github.com/input-output-hk/catalyst-forge/tools/pkg/testutils"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestAWSClientGet(t *testing.T) {
@@ -17,7 +19,7 @@ func TestAWSClientGet(t *testing.T) {
 		mock        SecretsManagerClientMock
 		expect      string
 		expectErr   bool
-		expectedErr error
+		expectedErr string
 		cond        func(*SecretsManagerClientMock) error
 	}{
 		{
@@ -32,7 +34,7 @@ func TestAWSClientGet(t *testing.T) {
 			},
 			expect:      "secret",
 			expectErr:   false,
-			expectedErr: nil,
+			expectedErr: "",
 			cond: func(m *SecretsManagerClientMock) error {
 				if len(m.calls.GetSecretValue) != 1 {
 					return fmt.Errorf("expected GetSecretValue to be called once, got %d", len(m.calls.GetSecretValue))
@@ -54,7 +56,7 @@ func TestAWSClientGet(t *testing.T) {
 			},
 			expect:      "",
 			expectErr:   true,
-			expectedErr: fmt.Errorf("unable to get secret: error"),
+			expectedErr: "unable to get secret: error",
 		},
 	}
 
@@ -68,24 +70,14 @@ func TestAWSClientGet(t *testing.T) {
 
 			got, err := client.Get(tt.path)
 
-			ret, err := testutils.CheckError(t, err, tt.expectErr, tt.expectedErr)
-			if err != nil {
-				t.Error(err)
-				return
-			} else if ret {
+			if testutils.AssertError(t, err, tt.expectErr, tt.expectedErr) {
 				return
 			}
 
 			if tt.cond != nil {
-				if err := tt.cond(&tt.mock); err != nil {
-					t.Error(err)
-					return
-				}
+				require.NoError(t, tt.cond(&tt.mock))
 			}
-
-			if got != tt.expect {
-				t.Errorf("expected: %s, got: %s", tt.expect, got)
-			}
+			assert.Equal(t, tt.expect, got)
 		})
 	}
 }
@@ -96,7 +88,7 @@ func TestAWSClientSet(t *testing.T) {
 		mock        SecretsManagerClientMock
 		expect      string
 		expectErr   bool
-		expectedErr error
+		expectedErr string
 		cond        func(*SecretsManagerClientMock) error
 	}{
 		{
@@ -110,7 +102,7 @@ func TestAWSClientSet(t *testing.T) {
 			},
 			expect:      "version",
 			expectErr:   false,
-			expectedErr: nil,
+			expectedErr: "",
 			cond: func(m *SecretsManagerClientMock) error {
 				if len(m.calls.CreateSecret) != 1 {
 					return fmt.Errorf("expected CreateSecret to be called once, got %d", len(m.calls.CreateSecret))
@@ -137,7 +129,7 @@ func TestAWSClientSet(t *testing.T) {
 			},
 			expect:      "version",
 			expectErr:   false,
-			expectedErr: nil,
+			expectedErr: "",
 			cond: func(m *SecretsManagerClientMock) error {
 				if len(m.calls.CreateSecret) != 1 {
 					return fmt.Errorf("expected CreateSecret to be called once, got %d", len(m.calls.CreateSecret))
@@ -167,7 +159,7 @@ func TestAWSClientSet(t *testing.T) {
 			},
 			expect:      "",
 			expectErr:   true,
-			expectedErr: fmt.Errorf("unable to set secret: error"),
+			expectedErr: "unable to set secret: error",
 		},
 		{
 			name: "error putting secret value",
@@ -181,7 +173,7 @@ func TestAWSClientSet(t *testing.T) {
 			},
 			expect:      "",
 			expectErr:   true,
-			expectedErr: fmt.Errorf("unable to set secret: error"),
+			expectedErr: "unable to set secret: error",
 		},
 	}
 
@@ -195,24 +187,14 @@ func TestAWSClientSet(t *testing.T) {
 
 			got, err := client.Set("path", "value")
 
-			ret, err := testutils.CheckError(t, err, tt.expectErr, tt.expectedErr)
-			if err != nil {
-				t.Error(err)
-				return
-			} else if ret {
+			if testutils.AssertError(t, err, tt.expectErr, tt.expectedErr) {
 				return
 			}
 
 			if tt.cond != nil {
-				if err := tt.cond(&tt.mock); err != nil {
-					t.Error(err)
-					return
-				}
+				assert.NoError(t, tt.cond(&tt.mock))
 			}
-
-			if got != tt.expect {
-				t.Errorf("expected: %s, got: %s", tt.expect, got)
-			}
+			assert.Equal(t, tt.expect, got)
 		})
 	}
 }

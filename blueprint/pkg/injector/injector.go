@@ -1,6 +1,6 @@
 package injector
 
-//go:generate go run github.com/matryer/moq@latest --out ./injector_mock.go . EnvGetter
+//go:generate go run github.com/matryer/moq@latest -skip-ensure --pkg mocks --out ./mocks/injector.go . EnvGetter
 
 import (
 	"fmt"
