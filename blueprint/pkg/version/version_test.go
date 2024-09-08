@@ -5,8 +5,10 @@ import (
 
 	"cuelang.org/go/cue/cuecontext"
 	"github.com/Masterminds/semver/v3"
-	"github.com/input-output-hk/catalyst-forge/blueprint/internal/testutils"
 	cuetools "github.com/input-output-hk/catalyst-forge/tools/pkg/cue"
+	"github.com/input-output-hk/catalyst-forge/tools/pkg/testutils"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestGetVersion(t *testing.T) {
@@ -45,21 +47,14 @@ func TestGetVersion(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			v, err := cuetools.Compile(cuecontext.New(), []byte(tt.input))
-			if err != nil {
-				t.Fatalf("failed to compile cue: %v", err)
-			}
+			require.NoError(t, err, "unexpected error compiling CUE: %v", err)
 
 			got, err := GetVersion(v)
-			if r, err := testutils.CheckError(t, err, tt.expectErr, nil); r || err != nil {
-				if err != nil {
-					t.Fatalf("unexpected error: %v", err)
-				}
+			if testutils.AssertError(t, err, tt.expectErr, "") {
 				return
 			}
 
-			if got.String() != tt.expect {
-				t.Errorf("got %v, want %v", got, tt.expect)
-			}
+			assert.Equal(t, tt.expect, got.String())
 		})
 	}
 }
@@ -70,54 +65,49 @@ func TestValidateVersions(t *testing.T) {
 		user        *semver.Version
 		schema      *semver.Version
 		expectErr   bool
-		expectedErr error
+		expectedErr string
 	}{
 		{
 			name:        "blueprint major version greater than schema",
 			user:        semver.MustParse("2.0.0"),
 			schema:      semver.MustParse("1.0.0"),
 			expectErr:   true,
-			expectedErr: ErrMajorMismatch,
+			expectedErr: ErrMajorMismatch.Error(),
 		},
 		{
 			name:        "blueprint minor version greater than schema",
 			user:        semver.MustParse("1.1.0"),
 			schema:      semver.MustParse("1.0.0"),
 			expectErr:   true,
-			expectedErr: ErrMinorMismatch,
+			expectedErr: ErrMinorMismatch.Error(),
 		},
 		{
 			name:        "blueprint major version equal to schema",
 			user:        semver.MustParse("1.0.0"),
 			schema:      semver.MustParse("1.0.0"),
 			expectErr:   false,
-			expectedErr: nil,
+			expectedErr: "",
 		},
 		{
 			name:        "schema major greater than blueprint",
 			user:        semver.MustParse("1.0.0"),
 			schema:      semver.MustParse("2.0.0"),
 			expectErr:   true,
-			expectedErr: ErrMajorMismatch,
+			expectedErr: ErrMajorMismatch.Error(),
 		},
 		{
 			name:        "schema minor greater than blueprint",
 			user:        semver.MustParse("1.0.0"),
 			schema:      semver.MustParse("1.1.0"),
 			expectErr:   false,
-			expectedErr: nil,
+			expectedErr: "",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			err := ValidateVersions(tt.user, tt.schema)
-			if r, err := testutils.CheckError(t, err, tt.expectErr, tt.expectedErr); r || err != nil {
-				if err != nil {
-					t.Fatalf("unexpected error: %v", err)
-				}
-				return
-			}
+			testutils.AssertError(t, err, tt.expectErr, tt.expectedErr)
 		})
 	}
 }

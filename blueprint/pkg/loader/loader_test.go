@@ -6,15 +6,17 @@ import (
 	"io/fs"
 	"log/slog"
 	"path/filepath"
-	"slices"
 	"strings"
 	"testing"
 
 	"cuelang.org/go/cue"
 	"github.com/input-output-hk/catalyst-forge/blueprint/pkg/injector"
 	imocks "github.com/input-output-hk/catalyst-forge/blueprint/pkg/injector/mocks"
+	"github.com/input-output-hk/catalyst-forge/tools/pkg/testutils"
 	"github.com/input-output-hk/catalyst-forge/tools/pkg/walker"
 	wmocks "github.com/input-output-hk/catalyst-forge/tools/pkg/walker/mocks"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 type fieldTest struct {
@@ -52,11 +54,11 @@ func NewMockFileSeeker(s string) MockFileSeeker {
 
 func TestBlueprintLoaderLoad(t *testing.T) {
 	tests := []struct {
-		name    string
-		root    string
-		files   map[string]string
-		want    []fieldTest
-		wantErr bool
+		name      string
+		root      string
+		files     map[string]string
+		want      []fieldTest
+		expectErr bool
 	}{
 		{
 			name:  "no files",
@@ -69,6 +71,7 @@ func TestBlueprintLoaderLoad(t *testing.T) {
 					fieldValue: "1.0.0", // TODO: This may change
 				},
 			},
+			expectErr: false,
 		},
 		{
 			name: "single file",
@@ -96,6 +99,7 @@ func TestBlueprintLoaderLoad(t *testing.T) {
 					fieldValue: true,
 				},
 			},
+			expectErr: false,
 		},
 		{
 			name: "multiple files",
@@ -143,6 +147,7 @@ func TestBlueprintLoaderLoad(t *testing.T) {
 					fieldValue: int64(3),
 				},
 			},
+			expectErr: false,
 		},
 		{
 			name: "multiple files, no git root",
@@ -179,6 +184,7 @@ func TestBlueprintLoaderLoad(t *testing.T) {
 					fieldValue: true,
 				},
 			},
+			expectErr: false,
 		},
 	}
 
@@ -239,42 +245,27 @@ func TestBlueprintLoaderLoad(t *testing.T) {
 			}
 
 			err := loader.Load()
-			if (err != nil) != tt.wantErr {
-				t.Errorf("got error %v, want error %v", err, tt.wantErr)
+			if testutils.AssertError(t, err, tt.expectErr, "") {
 				return
 			}
 
 			for _, test := range tt.want {
 				value := loader.blueprint.Value().LookupPath(cue.ParsePath(test.fieldPath))
-				if value.Err() != nil {
-					t.Fatalf("failed to lookup field %s: %v", test.fieldPath, value.Err())
-				}
+				assert.Nil(t, value.Err(), "failed to lookup field %s: %v", test.fieldPath, value.Err())
 
 				switch test.fieldType {
 				case "bool":
 					b, err := value.Bool()
-					if err != nil {
-						t.Fatalf("failed to get bool value: %v", err)
-					}
-					if b != test.fieldValue.(bool) {
-						t.Errorf("for %v - got %v, want %v", test.fieldPath, b, test.fieldValue)
-					}
+					require.NoError(t, err, "failed to get bool value: %v", err)
+					assert.Equal(t, b, test.fieldValue.(bool))
 				case "int":
 					i, err := value.Int64()
-					if err != nil {
-						t.Fatalf("failed to get int value: %v", err)
-					}
-					if i != test.fieldValue.(int64) {
-						t.Errorf("for %v - got %v, want %v", test.fieldPath, i, test.fieldValue)
-					}
+					require.NoError(t, err, "failed to get int value: %v", err)
+					assert.Equal(t, i, test.fieldValue.(int64))
 				case "string":
 					s, err := value.String()
-					if err != nil {
-						t.Fatalf("failed to get string value: %v", err)
-					}
-					if s != test.fieldValue.(string) {
-						t.Errorf("for %v - got %v, want %v", test.fieldPath, s, test.fieldValue)
-					}
+					require.NoError(t, err, "failed to get string value: %v", err)
+					assert.Equal(t, s, test.fieldValue.(string))
 				}
 			}
 		})
@@ -283,11 +274,11 @@ func TestBlueprintLoaderLoad(t *testing.T) {
 
 func TestBlueprintLoader_findBlueprints(t *testing.T) {
 	tests := []struct {
-		name    string
-		files   map[string]string
-		walkErr error
-		want    map[string][]byte
-		wantErr bool
+		name      string
+		files     map[string]string
+		walkErr   error
+		want      map[string][]byte
+		expectErr bool
 	}{
 		{
 			name: "simple",
@@ -302,22 +293,23 @@ func TestBlueprintLoader_findBlueprints(t *testing.T) {
 				"/tmp/test1/blueprint.cue":       []byte("test2"),
 				"/tmp/blueprint.cue":             []byte("test3"),
 			},
+			expectErr: false,
 		},
 		{
 			name: "no files",
 			files: map[string]string{
 				"/tmp/test1/foo.bar": "foobar",
 			},
-			want:    map[string][]byte{},
-			wantErr: false,
+			want:      map[string][]byte{},
+			expectErr: false,
 		},
 		{
 			name: "error",
 			files: map[string]string{
 				"/tmp/test1/foo.bar": "foobar",
 			},
-			walkErr: errors.New("error"),
-			wantErr: true,
+			walkErr:   errors.New("error"),
+			expectErr: true,
 		},
 	}
 
@@ -342,19 +334,13 @@ func TestBlueprintLoader_findBlueprints(t *testing.T) {
 				walker: walker,
 			}
 			got, err := loader.findBlueprints("/tmp", "/tmp")
-			if (err != nil) != tt.wantErr {
-				t.Errorf("got error %v, want error %v", err, tt.wantErr)
+			if testutils.AssertError(t, err, tt.expectErr, "") {
 				return
 			}
 
 			for k, v := range got {
-				if _, ok := tt.want[k]; !ok {
-					t.Errorf("got unexpected key %v", k)
-				}
-
-				if !slices.Equal(v, tt.want[k]) {
-					t.Errorf("got %s, want %s", string(v), string(tt.want[k]))
-				}
+				require.Contains(t, tt.want, k)
+				assert.Equal(t, tt.want[k], v)
 			}
 		})
 	}
@@ -362,11 +348,11 @@ func TestBlueprintLoader_findBlueprints(t *testing.T) {
 
 func TestBlueprintLoader_findGitRoot(t *testing.T) {
 	tests := []struct {
-		name    string
-		start   string
-		dirs    []string
-		want    string
-		wantErr bool
+		name      string
+		start     string
+		dirs      []string
+		want      string
+		expectErr bool
 	}{
 		{
 			name:  "simple",
@@ -377,8 +363,8 @@ func TestBlueprintLoader_findGitRoot(t *testing.T) {
 				"/tmp/.git",
 				"/",
 			},
-			want:    "/tmp",
-			wantErr: false,
+			want:      "/tmp",
+			expectErr: false,
 		},
 		{
 			name:  "no git root",
@@ -388,8 +374,8 @@ func TestBlueprintLoader_findGitRoot(t *testing.T) {
 				"/tmp/test1",
 				"/",
 			},
-			want:    "",
-			wantErr: true,
+			want:      "",
+			expectErr: true,
 		},
 	}
 
@@ -418,16 +404,11 @@ func TestBlueprintLoader_findGitRoot(t *testing.T) {
 				walker: walker,
 			}
 			got, err := loader.findGitRoot(tt.start)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("got error %v, want error %v", err, tt.wantErr)
+			if testutils.AssertError(t, err, tt.expectErr, "") {
 				return
 			}
-			if got != tt.want {
-				t.Errorf("got %v, want %v", got, tt.want)
-			}
-			if err == nil && lastPath != filepath.Join(tt.want, ".git") {
-				t.Errorf("got last path %v, want %v", lastPath, tt.want)
-			}
+			assert.Equal(t, tt.want, got)
+			assert.Equal(t, lastPath, filepath.Join(tt.want, ".git"))
 		})
 	}
 }

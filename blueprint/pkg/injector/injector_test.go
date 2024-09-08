@@ -9,6 +9,9 @@ import (
 	"cuelang.org/go/cue/cuecontext"
 	"github.com/input-output-hk/catalyst-forge/blueprint/pkg/injector/mocks"
 	cuetools "github.com/input-output-hk/catalyst-forge/tools/pkg/cue"
+	"github.com/input-output-hk/catalyst-forge/tools/pkg/testutils"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestInjectEnv(t *testing.T) {
@@ -19,7 +22,7 @@ func TestInjectEnv(t *testing.T) {
 		path          string
 		expectedType  envType
 		expectedValue any
-		expectValid   bool
+		expectErr     bool
 	}{
 		{
 			name: "string env",
@@ -32,7 +35,7 @@ func TestInjectEnv(t *testing.T) {
 			path:          "foo",
 			expectedType:  EnvTypeString,
 			expectedValue: "bar",
-			expectValid:   true,
+			expectErr:     false,
 		},
 		{
 			name: "int env",
@@ -45,7 +48,7 @@ func TestInjectEnv(t *testing.T) {
 			path:          "foo",
 			expectedType:  EnvTypeInt,
 			expectedValue: int64(3),
-			expectValid:   true,
+			expectErr:     false,
 		},
 		{
 			name: "bool env",
@@ -58,7 +61,7 @@ func TestInjectEnv(t *testing.T) {
 			path:          "foo",
 			expectedType:  EnvTypeBool,
 			expectedValue: true,
-			expectValid:   true,
+			expectErr:     false,
 		},
 		{
 			name: "bad int",
@@ -71,7 +74,7 @@ func TestInjectEnv(t *testing.T) {
 			path:          "foo",
 			expectedType:  EnvTypeInt,
 			expectedValue: true,
-			expectValid:   false,
+			expectErr:     true,
 		},
 		{
 			name: "mismatched types",
@@ -84,16 +87,14 @@ func TestInjectEnv(t *testing.T) {
 			path:          "foo",
 			expectedType:  EnvTypeString,
 			expectedValue: true,
-			expectValid:   false,
+			expectErr:     true,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			v, err := cuetools.Compile(cuecontext.New(), []byte(tt.raw))
-			if err != nil {
-				t.Fatalf("failed to compile CUE: %v", err)
-			}
+			assert.NoError(t, err)
 
 			i := Injector{
 				logger: slog.New(slog.NewTextHandler(io.Discard, nil)),
@@ -106,42 +107,23 @@ func TestInjectEnv(t *testing.T) {
 			v = i.InjectEnv(v)
 
 			err = v.Validate(cue.Concrete(true))
-			if err != nil && tt.expectValid {
-				t.Fatalf("expected value to be invalid, got %v", err)
-			} else if err == nil && !tt.expectValid {
-				t.Fatalf("expected value to be valid, got none")
-			} else if err != nil && !tt.expectValid {
+			if testutils.AssertError(t, err, tt.expectErr, "") {
 				return
 			}
 
 			switch tt.expectedType {
 			case EnvTypeString:
 				got, err := v.LookupPath(cue.ParsePath(tt.path)).String()
-				if err != nil {
-					t.Fatal("expected value to be string")
-				}
-
-				if got != tt.expectedValue {
-					t.Errorf("expected value to be %v, got %v", tt.expectedValue, got)
-				}
+				assert.NoError(t, err, "expected value to be string")
+				assert.Equal(t, tt.expectedValue, got)
 			case EnvTypeInt:
 				got, err := v.LookupPath(cue.ParsePath(tt.path)).Int64()
-				if err != nil {
-					t.Fatal("expected value to be int")
-				}
-
-				if got != tt.expectedValue {
-					t.Fatalf("expected value to be %v, got %v", tt.expectedValue, got)
-				}
+				assert.NoError(t, err, "expected value to be int")
+				assert.Equal(t, tt.expectedValue, got)
 			case EnvTypeBool:
 				got, err := v.LookupPath(cue.ParsePath(tt.path)).Bool()
-				if err != nil {
-					t.Fatal("expected value to be bool")
-				}
-
-				if got != tt.expectedValue {
-					t.Fatalf("expected value to be %v, got %v", tt.expectedValue, got)
-				}
+				assert.NoError(t, err, "expected value to be bool")
+				assert.Equal(t, tt.expectedValue, got)
 			}
 		})
 	}
@@ -183,9 +165,7 @@ func Test_findEnvAttr(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			v, err := cuetools.Compile(cuecontext.New(), []byte(tt.raw))
-			if err != nil {
-				t.Fatalf("failed to compile CUE: %v", err)
-			}
+			require.NoError(t, err)
 
 			attr := findEnvAttr(v.LookupPath(cue.ParsePath(tt.path)))
 			if attr == nil && tt.expectedBody != "" {
@@ -194,9 +174,7 @@ func Test_findEnvAttr(t *testing.T) {
 				return
 			}
 
-			if got := attr.Contents(); got != tt.expectedBody {
-				t.Errorf("expected body to be %s, got %s", tt.expectedBody, got)
-			}
+			assert.Equal(t, attr.Contents(), tt.expectedBody)
 		})
 	}
 }
@@ -232,31 +210,18 @@ func Test_parseEnvAttr(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			v, err := cuetools.Compile(cuecontext.New(), []byte(tt.raw))
-			if err != nil {
-				t.Fatalf("failed to compile CUE: %v", err)
-			}
+			require.NoError(t, err)
 
 			attr := findEnvAttr(v.LookupPath(cue.ParsePath("foo")))
-			if attr == nil {
-				t.Fatalf("expected to find env attribute")
-			}
+			require.NotNil(t, attr, "expected to find env attribute")
 
 			env, err := parseEnvAttr(attr)
-			if err != nil && tt.expectErr {
+			if testutils.AssertError(t, err, tt.expectErr, "") {
 				return
-			} else if err != nil && !tt.expectErr {
-				t.Fatalf("expected no error, got %v", err)
-			} else if err == nil && tt.expectErr {
-				t.Fatalf("expected error, got none")
 			}
 
-			if env.name != tt.expected.name {
-				t.Errorf("expected name to be %s, got %s", tt.expected.name, env.name)
-			}
-
-			if env.envType != tt.expected.envType {
-				t.Errorf("expected envType to be %s, got %s", tt.expected.envType, env.envType)
-			}
+			assert.Equal(t, tt.expected.name, env.name)
+			assert.Equal(t, tt.expected.envType, env.envType)
 		})
 	}
 }

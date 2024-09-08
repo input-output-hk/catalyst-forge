@@ -7,7 +7,9 @@ import (
 	"cuelang.org/go/cue/cuecontext"
 	"cuelang.org/go/cue/format"
 	"github.com/Masterminds/semver/v3"
-	"github.com/input-output-hk/catalyst-forge/blueprint/internal/testutils"
+	"github.com/input-output-hk/catalyst-forge/tools/pkg/testutils"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestBlueprintFilesUnify(t *testing.T) {
@@ -52,23 +54,15 @@ func TestBlueprintFilesUnify(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx := cuecontext.New()
 			v, err := tt.files.Unify(ctx)
-			if err != nil {
-				t.Fatalf("failed to unify: %v", err)
-			}
+			require.NoError(t, err)
 
 			expectSrc, err := format.Node(tt.expect.Syntax())
-			if err != nil {
-				t.Fatalf("failed to format expect: %v", err)
-			}
+			require.NoError(t, err)
 
 			gotSrc, err := format.Node(v.Syntax())
-			if err != nil {
-				t.Fatalf("failed to format got: %v", err)
-			}
+			require.NoError(t, err)
 
-			if string(gotSrc) != string(expectSrc) {
-				t.Errorf("got %s, want %s", gotSrc, expectSrc)
-			}
+			assert.Equal(t, string(expectSrc), string(gotSrc))
 		})
 	}
 }
@@ -108,11 +102,7 @@ func TestBlueprintFilesValidateMajorVersions(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			err := tt.files.ValidateMajorVersions()
-			if r, err := testutils.CheckError(t, err, tt.expectErr, nil); r || err != nil {
-				if err != nil {
-					t.Fatalf("unexpected error: %v", err)
-				}
-			}
+			testutils.AssertError(t, err, tt.expectErr, "")
 		})
 	}
 }
@@ -157,13 +147,9 @@ func TestBlueprintFilesVersion(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got := tt.files.Version()
-			if got == nil && tt.expect == nil {
-				return
-			} else if got == nil || tt.expect == nil {
-				t.Fatalf("got %v, want %v", got, tt.expect)
-			} else if !got.Equal(tt.expect) {
-				t.Errorf("got %v, want %v", got, tt.expect)
-			}
+			assert.Condition(t, func() bool {
+				return (got == nil && tt.expect == nil) || got.Equal(tt.expect)
+			})
 		})
 	}
 }
