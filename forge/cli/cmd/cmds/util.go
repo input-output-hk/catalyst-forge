@@ -5,7 +5,8 @@ import (
 	"fmt"
 	"log/slog"
 
-	blueprint "github.com/input-output-hk/catalyst-forge/blueprint/pkg/loader"
+	"github.com/input-output-hk/catalyst-forge/blueprint/pkg/blueprint"
+	"github.com/input-output-hk/catalyst-forge/blueprint/pkg/loader"
 	"github.com/input-output-hk/catalyst-forge/blueprint/schema"
 	"github.com/input-output-hk/catalyst-forge/forge/cli/pkg/earthly"
 )
@@ -86,19 +87,23 @@ func generateOpts(target string, flags *RunCmd, config *schema.Blueprint) []eart
 
 // loadBlueprint loads the blueprint file from the given root path.
 func loadBlueprint(rootPath string, logger *slog.Logger) (schema.Blueprint, error) {
-	loader := blueprint.NewDefaultBlueprintLoader(rootPath, logger)
-
-	err := loader.Load()
+	raw, err := loadRawBlueprint(rootPath, logger)
 	if err != nil {
 		return schema.Blueprint{}, fmt.Errorf("failed loading blueprint: %w", err)
 	}
 
-	config, err := loader.Decode()
+	bp, err := raw.Decode()
 	if err != nil {
 		return schema.Blueprint{}, fmt.Errorf("failed decoding blueprint: %w", err)
 	}
 
-	return config, nil
+	return bp, nil
+}
+
+// loadRawBlueprint loads the raw blueprint file from the given root path.
+func loadRawBlueprint(rootPath string, logger *slog.Logger) (blueprint.RawBlueprint, error) {
+	loader := loader.NewDefaultBlueprintLoader(rootPath, logger)
+	return loader.Load()
 }
 
 // printJson prints the given data as a JSON string.

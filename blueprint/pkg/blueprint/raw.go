@@ -1,18 +1,26 @@
 package blueprint
 
-import "cuelang.org/go/cue"
+import (
+	"cuelang.org/go/cue"
+	"github.com/input-output-hk/catalyst-forge/blueprint/schema"
+)
 
 // RawBlueprint represents a raw (undecoded) blueprint.
 type RawBlueprint struct {
 	value cue.Value
 }
 
-// Decode decodes the raw blueprint into the given value.
-func (r RawBlueprint) Decode(x interface{}) error {
-	return r.value.Decode(x)
+// Decode decodes the raw blueprint into a schema.Blueprint.
+func (r *RawBlueprint) Decode() (schema.Blueprint, error) {
+	var cfg schema.Blueprint
+	if err := r.value.Decode(&cfg); err != nil {
+		return schema.Blueprint{}, err
+	}
+
+	return cfg, nil
 }
 
-// DecodePath decodes a value from the raw blueprint.
+// DecodePath decodes a path from the raw blueprint to the given interface.
 func (r RawBlueprint) DecodePath(path string, x interface{}) error {
 	v := r.Get(path)
 	return v.Decode(x)

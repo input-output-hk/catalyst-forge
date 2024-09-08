@@ -9,7 +9,6 @@ import (
 	"strings"
 	"testing"
 
-	"cuelang.org/go/cue"
 	"github.com/input-output-hk/catalyst-forge/blueprint/pkg/injector"
 	imocks "github.com/input-output-hk/catalyst-forge/blueprint/pkg/injector/mocks"
 	"github.com/input-output-hk/catalyst-forge/tools/pkg/testutils"
@@ -230,7 +229,7 @@ func TestBlueprintLoaderLoad(t *testing.T) {
 				},
 			}
 
-			loader := BlueprintLoader{
+			loader := DefaultBlueprintLoader{
 				injector: injector.NewInjector(
 					slog.New(slog.NewTextHandler(io.Discard, nil)),
 					&imocks.EnvGetterMock{
@@ -244,13 +243,13 @@ func TestBlueprintLoaderLoad(t *testing.T) {
 				walker:   walker,
 			}
 
-			err := loader.Load()
+			bp, err := loader.Load()
 			if testutils.AssertError(t, err, tt.expectErr, "") {
 				return
 			}
 
 			for _, test := range tt.want {
-				value := loader.blueprint.Value().LookupPath(cue.ParsePath(test.fieldPath))
+				value := bp.Get(test.fieldPath)
 				assert.Nil(t, value.Err(), "failed to lookup field %s: %v", test.fieldPath, value.Err())
 
 				switch test.fieldType {
@@ -330,7 +329,7 @@ func TestBlueprintLoader_findBlueprints(t *testing.T) {
 				},
 			}
 
-			loader := BlueprintLoader{
+			loader := DefaultBlueprintLoader{
 				walker: walker,
 			}
 			got, err := loader.findBlueprints("/tmp", "/tmp")
@@ -400,7 +399,7 @@ func TestBlueprintLoader_findGitRoot(t *testing.T) {
 				},
 			}
 
-			loader := BlueprintLoader{
+			loader := DefaultBlueprintLoader{
 				walker: walker,
 			}
 			got, err := loader.findGitRoot(tt.start)
