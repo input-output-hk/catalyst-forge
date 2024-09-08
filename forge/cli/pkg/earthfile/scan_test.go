@@ -9,8 +9,11 @@ import (
 
 	"log/slog"
 
+	"github.com/input-output-hk/catalyst-forge/tools/pkg/testutils"
 	"github.com/input-output-hk/catalyst-forge/tools/pkg/walker"
 	"github.com/input-output-hk/catalyst-forge/tools/pkg/walker/mocks"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 type MockFileSeeker struct {
@@ -39,11 +42,11 @@ func NewMockFileSeeker(s string) MockFileSeeker {
 
 func TestScanEarthfiles(t *testing.T) {
 	tests := []struct {
-		callbackErr    error
-		walkErr        error
+		name           string
 		files          map[string]string
 		expectedResult map[string][]string
-		name           string
+		callbackErr    error
+		walkErr        error
 	}{
 		{
 			name: "one earthfile",
@@ -134,36 +137,18 @@ foo1:
 					return tt.walkErr
 				},
 			}
+
 			result, err := ScanEarthfiles("/", walker, slog.New(slog.NewTextHandler(io.Discard, nil)))
-			fmt.Printf("result: %v\n", result)
-
-			if tt.callbackErr != nil && err == nil {
-				t.Error("expected error, got nil")
-			} else if tt.walkErr != nil && err == nil {
-				t.Error("expected error, got nil")
-			} else if tt.callbackErr == nil && tt.walkErr == nil && err != nil {
-				t.Errorf("expected no error, got %v", err)
-			} else {
-				if err != nil {
-					return
-				}
-			}
-
-			if len(result) != len(tt.expectedResult) {
-				t.Errorf("expected %d earthfiles, got %d", len(tt.expectedResult), len(result))
+			if testutils.AssertError(t, err, tt.callbackErr != nil || tt.walkErr != nil, "") {
 				return
 			}
+			require.Equal(t, len(tt.expectedResult), len(result))
 
 			for path, targets := range tt.expectedResult {
-				if len(result[path].Targets()) != len(targets) {
-					t.Errorf("expected %d targets for %s, got %d", len(targets), path, len(result[path].Targets()))
-					return
-				}
+				require.Equal(t, len(targets), len(result[path].Targets()))
 
 				for i, target := range targets {
-					if result[path].Targets()[i] != target {
-						t.Errorf("expected target %s at index %d, got %s", target, i, result[path].Targets()[i])
-					}
+					assert.Equal(t, target, result[path].Targets()[i])
 				}
 			}
 		})

@@ -5,7 +5,8 @@ import (
 	"testing"
 
 	"github.com/earthly/earthly/ast/spec"
-	"github.com/input-output-hk/catalyst-forge/forge/cli/internal/testutils/mocks"
+	"github.com/input-output-hk/catalyst-forge/tools/pkg/testutils"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestEarthfileTargets(t *testing.T) {
@@ -19,17 +20,9 @@ func TestEarthfileTargets(t *testing.T) {
 	}
 
 	targets := earthfile.Targets()
-	if len(targets) != 2 {
-		t.Errorf("expected 2 targets, got %d", len(targets))
-	}
-
-	if targets[0] != "target1" {
-		t.Errorf("expected target1, got %s", targets[0])
-	}
-
-	if targets[1] != "target2" {
-		t.Errorf("expected target2, got %s", targets[1])
-	}
+	assert.Equal(t, 2, len(targets), "expected 2 targets")
+	assert.Equal(t, "target1", targets[0], "expected target1")
+	assert.Equal(t, "target2", targets[1], "expected target2")
 }
 
 func TestEarthfileFilterTargets(t *testing.T) {
@@ -46,43 +39,32 @@ func TestEarthfileFilterTargets(t *testing.T) {
 		return target == "target1"
 	})
 
-	if len(targets) != 1 {
-		t.Errorf("expected 1 target, got %d", len(targets))
-	}
-
-	if targets[0] != "target1" {
-		t.Errorf("expected target1, got %s", targets[0])
-	}
+	assert.Equal(t, 1, len(targets), "expected 1 target")
+	assert.Equal(t, "target1", targets[0], "expected target1")
 }
 
 func TestParseEarthfile(t *testing.T) {
 	tests := []struct {
-		name     string
-		content  string
-		hasError bool
+		name      string
+		content   string
+		expectErr bool
 	}{
 		{
-			name:     "valid earthfile",
-			hasError: false,
+			name: "valid earthfile",
 			content: `
 VERSION 0.7
 
 foo:
   LET foo = bar
 `,
+			expectErr: false,
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			_, err := ParseEarthfile(context.Background(), mocks.NewMockFileSeeker(test.content))
-			if test.hasError && err == nil {
-				t.Error("expected error, got nil")
-			}
-
-			if !test.hasError && err != nil {
-				t.Errorf("expected no error, got %v", err)
-			}
+			_, err := ParseEarthfile(context.Background(), NewMockFileSeeker(test.content))
+			testutils.AssertError(t, err, test.expectErr, "")
 		})
 	}
 }

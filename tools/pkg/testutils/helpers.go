@@ -2,6 +2,8 @@
 package testutils
 
 import (
+	"io"
+	"log/slog"
 	"path/filepath"
 	"testing"
 
@@ -30,6 +32,11 @@ func AssertError(t *testing.T, err error, isExpected bool, expectedErr string) b
 	}
 
 	return false
+}
+
+// NewNoopLogger creates a new logger that discards all logs.
+func NewNoopLogger() *slog.Logger {
+	return slog.New(slog.NewTextHandler(io.Discard, nil))
 }
 
 // SetupFS sets up the filesystem with the given files.

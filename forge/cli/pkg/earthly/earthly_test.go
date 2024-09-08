@@ -3,17 +3,15 @@ package earthly
 import (
 	"fmt"
 	"log/slog"
-	"maps"
-	"reflect"
-	"slices"
 	"testing"
 
 	"github.com/input-output-hk/catalyst-forge/blueprint/pkg/utils"
 	"github.com/input-output-hk/catalyst-forge/blueprint/schema"
-	"github.com/input-output-hk/catalyst-forge/forge/cli/internal/testutils"
 	emocks "github.com/input-output-hk/catalyst-forge/forge/cli/pkg/executor/mocks"
 	"github.com/input-output-hk/catalyst-forge/forge/cli/pkg/secrets"
 	smocks "github.com/input-output-hk/catalyst-forge/forge/cli/pkg/secrets/mocks"
+	"github.com/input-output-hk/catalyst-forge/tools/pkg/testutils"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestEarthlyExecutorRun(t *testing.T) {
@@ -108,19 +106,12 @@ Artifact foo output as bar`), nil
 			tt.earthlyExec.executor = &tt.mockExec
 			got, err := tt.earthlyExec.Run()
 
-			if tt.expectErr && err == nil {
-				t.Errorf("expected error, got nil")
-			} else if !tt.expectErr && err != nil {
-				t.Errorf("unexpected error: %v", err)
+			if testutils.AssertError(t, err, tt.expectErr, "") {
+				return
 			}
 
-			if len(tt.mockExec.ExecuteCalls()) != tt.expectCalls {
-				t.Errorf("expected %d calls to Execute, got %d", tt.expectCalls, len(tt.mockExec.ExecuteCalls()))
-			}
-
-			if !reflect.DeepEqual(got, tt.expect) {
-				t.Errorf("expected %v, got %v", tt.expect, got)
-			}
+			assert.Equal(t, len(tt.mockExec.ExecuteCalls()), tt.expectCalls)
+			assert.Equal(t, tt.expect, got)
 		})
 	}
 }
@@ -208,9 +199,7 @@ func TestEarthlyExecutor_buildArguments(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got := tt.e.buildArguments(tt.platform)
-			if !slices.Equal(got, tt.expect) {
-				t.Errorf("expected %v, got %v", tt.expect, got)
-			}
+			assert.Equal(t, tt.expect, got)
 		})
 	}
 }
@@ -222,7 +211,7 @@ func TestEarthlyExecutor_buildSecrets(t *testing.T) {
 		secrets     []schema.Secret
 		expect      []EarthlySecret
 		expectErr   bool
-		expectedErr error
+		expectedErr string
 	}{
 		{
 			name: "simple",
@@ -247,7 +236,7 @@ func TestEarthlyExecutor_buildSecrets(t *testing.T) {
 				},
 			},
 			expectErr:   false,
-			expectedErr: nil,
+			expectedErr: "",
 		},
 		{
 			name: "key does not exist",
@@ -267,7 +256,7 @@ func TestEarthlyExecutor_buildSecrets(t *testing.T) {
 			},
 			expect:      nil,
 			expectErr:   true,
-			expectedErr: fmt.Errorf("secret key not found in secret values: key1"),
+			expectedErr: "secret key not found in secret values: key1",
 		},
 		{
 			name: "invalid JSON",
@@ -285,7 +274,7 @@ func TestEarthlyExecutor_buildSecrets(t *testing.T) {
 			},
 			expect:      nil,
 			expectErr:   true,
-			expectedErr: fmt.Errorf("unable to unmarshal secret value: invalid character 'i' looking for beginning of value"),
+			expectedErr: "unable to unmarshal secret value: invalid character 'i' looking for beginning of value",
 		},
 		{
 			name: "secret provider does not exist",
@@ -303,7 +292,7 @@ func TestEarthlyExecutor_buildSecrets(t *testing.T) {
 			},
 			expect:      nil,
 			expectErr:   true,
-			expectedErr: fmt.Errorf("unable to create new secret client: unknown secret provider: bad"),
+			expectedErr: "unable to create new secret client: unknown secret provider: bad",
 		},
 		{
 			name: "secret provider error",
@@ -321,7 +310,7 @@ func TestEarthlyExecutor_buildSecrets(t *testing.T) {
 			},
 			expect:      nil,
 			expectErr:   true,
-			expectedErr: fmt.Errorf("unable to get secret path from provider: mock"),
+			expectedErr: "unable to get secret path from provider: mock",
 		},
 	}
 
@@ -337,17 +326,11 @@ func TestEarthlyExecutor_buildSecrets(t *testing.T) {
 			executor.secrets = tt.secrets
 			got, err := executor.buildSecrets()
 
-			ret, err := testutils.CheckError(t, err, tt.expectErr, tt.expectedErr)
-			if err != nil {
-				t.Error(err)
-				return
-			} else if ret {
+			if testutils.AssertError(t, err, tt.expectErr, tt.expectedErr) {
 				return
 			}
 
-			if !slices.Equal(got, tt.expect) {
-				t.Errorf("expected %v, got %v", tt.expect, got)
-			}
+			assert.Equal(t, tt.expect, got)
 		})
 	}
 }
@@ -385,12 +368,8 @@ Artifact foo output as bar`,
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got := parseResult(tt.output)
-			if !maps.Equal(got.Images, tt.expect.Images) {
-				t.Errorf("expected %v, got %v", tt.expect.Images, got.Images)
-			}
-			if !maps.Equal(got.Artifacts, tt.expect.Artifacts) {
-				t.Errorf("expected %v, got %v", tt.expect.Artifacts, got.Artifacts)
-			}
+			assert.Equal(t, tt.expect, got)
+			assert.Equal(t, tt.expect.Images, got.Images)
 		})
 	}
 }
