@@ -45,7 +45,7 @@ jobs:
             EARTHFILE="+$TARGET"
           fi
 
-          IMAGE="$(echo "$RESULT" | jq -r ".images[\"$EARTHFILE\"]")"
+          IMAGE="$(echo "$RESULT" | jq -r ".\"linux/amd64\".images[\"$EARTHFILE\"]")"
 
           if [[ "$IMAGE" == "null" ]]; then
             echo "::error file=${PROJECT}/Earthfile::No images produced. Cannot publish."
