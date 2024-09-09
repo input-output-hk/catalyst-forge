@@ -1,55 +1,49 @@
-exec forge scan --filter check .
-cmp stdout golden_1.txt
+exec git init .
 
-exec forge scan --filter check --filter build .
-cmp stdout golden_2.txt
+exec forge scan --earthfile .
+cmp stdout golden.txt
 
-exec forge scan --filter check --filter build-\w+ --filter test$ .
-cmp stdout golden_3.txt
+exec forge scan --ci --earthfile .
+cmp stdout golden_ci.txt
 
-exec forge scan --enumerate --filter check --filter build-\w+ --filter test$ .
-cmp stdout golden_3_enum.txt
-
--- golden_1.txt --
-{"check":{".":["check"],"./dir3/dir4/dir5":["check-foo"]}}
--- golden_2.txt --
-{"build":{".":["build"],"./dir1":["build"],"./dir1/dir2":["build-thing"]},"check":{".":["check"],"./dir3/dir4/dir5":["check-foo"]}}
--- golden_3.txt --
-{"build-\\w+":{"./dir1/dir2":["build-thing"]},"check":{".":["check"],"./dir3/dir4/dir5":["check-foo"]},"test$":{"./dir3/dir4/dir5":["test"]}}
--- golden_3_enum.txt --
-{"build-\\w+":["./dir1/dir2+build-thing"],"check":[".+check","./dir3/dir4/dir5+check-foo"],"test$":["./dir3/dir4/dir5+test"]}
+-- golden.txt --
+{".":["foo","bar"],"./dir1":["foo","bar"],"./dir1/dir2":["foo","bar"],"./dir3/dir4/dir5":["foo"]}
+-- golden_ci.txt --
+[".+bar",".+foo","./dir1+bar","./dir1+foo","./dir1/dir2+bar","./dir1/dir2+foo","./dir3/dir4/dir5+foo"]
+-- blueprint.cue --
+version: "1.0"
 -- Earthfile --
 VERSION 0.7
 
-check:
+foo:
   LET bar = baz
 
-build:
+bar:
   LET bar = baz
-
+-- dir1/blueprint.cue --
+version: "1.0"
 -- dir1/Earthfile --
 VERSION 0.7
 
-build:
+foo:
   LET bar = baz
 
-publish:
+bar:
   LET bar = baz
-
+-- dir1/dir2/blueprint.cue --
+version: "1.0"
 -- dir1/dir2/Earthfile --
 VERSION 0.7
 
-build-thing:
+foo:
   LET bar = baz
 
-release:
+bar:
   LET bar = baz
-
+-- dir3/dir4/dir5/blueprint.cue --
+version: "1.0"
 -- dir3/dir4/dir5/Earthfile --
 VERSION 0.7
 
-check-foo:
-    LET bar = baz
-
-test:
+foo:
   LET bar = baz

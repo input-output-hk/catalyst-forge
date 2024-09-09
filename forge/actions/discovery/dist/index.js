@@ -3966,14 +3966,10 @@ async function run() {
     const path = core.getInput("path", { required: true });
     const filters = core.getInput("filters", { required: false });
 
-    let args = ["-vv", "scan"];
+    let args = ["-vv", "scan", "--ci", "--earthfile"];
 
     if (absolute === true) {
       args.push("--absolute");
-    }
-
-    if (enumerate === true) {
-      args.push("--enumerate");
     }
 
     args = args.concat(filtersToArgs(filters));

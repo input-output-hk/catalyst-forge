@@ -4,9 +4,6 @@ inputs:
   absolute:
     description: Output absolute paths
     default: "false"
-  enumerate:
-    description: Enumerate results into Earthfile+Target pairs
-    default: "true"
   filters:
     description: A newline separated list of filters to apply
     default: ""

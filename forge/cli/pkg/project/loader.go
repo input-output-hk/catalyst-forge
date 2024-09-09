@@ -14,6 +14,8 @@ import (
 	"github.com/spf13/afero"
 )
 
+//go:generate go run github.com/matryer/moq@latest -skip-ensure --pkg mocks -out mocks/project.go . ProjectLoader
+
 // ProjectLoader is an interface for loading projects.
 type ProjectLoader interface {
 	// Load loads the project.
