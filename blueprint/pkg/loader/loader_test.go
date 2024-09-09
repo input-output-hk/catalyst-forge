@@ -54,15 +54,17 @@ func NewMockFileSeeker(s string) MockFileSeeker {
 func TestBlueprintLoaderLoad(t *testing.T) {
 	tests := []struct {
 		name      string
-		root      string
+		project   string
+		gitRoot   string
 		files     map[string]string
 		want      []fieldTest
 		expectErr bool
 	}{
 		{
-			name:  "no files",
-			root:  "/tmp/dir1/dir2",
-			files: map[string]string{},
+			name:    "no files",
+			project: "/tmp/dir1/dir2",
+			gitRoot: "/tmp/dir1/dir2",
+			files:   map[string]string{},
 			want: []fieldTest{
 				{
 					fieldPath:  "version",
@@ -73,8 +75,9 @@ func TestBlueprintLoaderLoad(t *testing.T) {
 			expectErr: false,
 		},
 		{
-			name: "single file",
-			root: "/tmp/dir1/dir2",
+			name:    "single file",
+			project: "/tmp/dir1/dir2",
+			gitRoot: "/tmp/dir1/dir2",
 			files: map[string]string{
 				"/tmp/dir1/dir2/blueprint.cue": `
 				version: "1.0"
@@ -101,8 +104,9 @@ func TestBlueprintLoaderLoad(t *testing.T) {
 			expectErr: false,
 		},
 		{
-			name: "multiple files",
-			root: "/tmp/dir1/dir2",
+			name:    "multiple files",
+			project: "/tmp/dir1/dir2",
+			gitRoot: "/tmp/dir1",
 			files: map[string]string{
 				"/tmp/dir1/dir2/blueprint.cue": `
 				version: "1.0"
@@ -127,7 +131,6 @@ func TestBlueprintLoaderLoad(t *testing.T) {
 					}
 				}
 				`,
-				"/tmp/dir1/.git": "",
 			},
 			want: []fieldTest{
 				{
@@ -148,43 +151,6 @@ func TestBlueprintLoaderLoad(t *testing.T) {
 			},
 			expectErr: false,
 		},
-		{
-			name: "multiple files, no git root",
-			root: "/tmp/dir1/dir2",
-			files: map[string]string{
-				"/tmp/dir1/dir2/blueprint.cue": `
-				version: "1.0"
-				project: {
-					name: "test"
-					ci: {
-						targets: {
-							test: {
-								privileged: true
-							}
-						}
-					}
-				}
-				`,
-				"/tmp/dir1/blueprint.cue": `
-				version: "1.0"
-				project: ci: {
-					targets: {
-						test: {
-							retries: 3
-						}
-					}
-			    }
-				`,
-			},
-			want: []fieldTest{
-				{
-					fieldPath:  "project.ci.targets.test.privileged",
-					fieldType:  "bool",
-					fieldValue: true,
-				},
-			},
-			expectErr: false,
-		},
 	}
 
 	for _, tt := range tests {
@@ -193,8 +159,8 @@ func TestBlueprintLoaderLoad(t *testing.T) {
 				WalkFunc: func(startPath string, endPath string, callback walker.WalkerCallback) error {
 					// True when there is no git root, so we simulate only searching for blueprint files in the root path.
 					if startPath == endPath && len(tt.files) > 0 {
-						err := callback(filepath.Join(tt.root, "blueprint.cue"), walker.FileTypeFile, func() (walker.FileSeeker, error) {
-							return NewMockFileSeeker(tt.files[filepath.Join(tt.root, "blueprint.cue")]), nil
+						err := callback(filepath.Join(tt.project, "blueprint.cue"), walker.FileTypeFile, func() (walker.FileSeeker, error) {
+							return NewMockFileSeeker(tt.files[filepath.Join(tt.project, "blueprint.cue")]), nil
 						})
 
 						if err != nil {
@@ -238,12 +204,11 @@ func TestBlueprintLoaderLoad(t *testing.T) {
 						},
 					},
 				),
-				logger:   slog.New(slog.NewTextHandler(io.Discard, nil)),
-				rootPath: tt.root,
-				walker:   walker,
+				logger: slog.New(slog.NewTextHandler(io.Discard, nil)),
+				walker: walker,
 			}
 
-			bp, err := loader.Load()
+			bp, err := loader.Load(tt.project, tt.gitRoot)
 			if testutils.AssertError(t, err, tt.expectErr, "") {
 				return
 			}
@@ -341,73 +306,6 @@ func TestBlueprintLoader_findBlueprints(t *testing.T) {
 				require.Contains(t, tt.want, k)
 				assert.Equal(t, tt.want[k], v)
 			}
-		})
-	}
-}
-
-func TestBlueprintLoader_findGitRoot(t *testing.T) {
-	tests := []struct {
-		name      string
-		start     string
-		dirs      []string
-		want      string
-		expectErr bool
-	}{
-		{
-			name:  "simple",
-			start: "/tmp/test1/test2/test3",
-			dirs: []string{
-				"/tmp/test1/test2",
-				"/tmp/test1",
-				"/tmp/.git",
-				"/",
-			},
-			want:      "/tmp",
-			expectErr: false,
-		},
-		{
-			name:  "no git root",
-			start: "/tmp/test1/test2/test3",
-			dirs: []string{
-				"/tmp/test1/test2",
-				"/tmp/test1",
-				"/",
-			},
-			want:      "",
-			expectErr: true,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			var lastPath string
-			walker := &wmocks.ReverseWalkerMock{
-				WalkFunc: func(startPath string, endPath string, callback walker.WalkerCallback) error {
-					for _, dir := range tt.dirs {
-						err := callback(dir, walker.FileTypeDir, func() (walker.FileSeeker, error) {
-							return nil, nil
-						})
-
-						if errors.Is(err, io.EOF) {
-							lastPath = dir
-							return nil
-						} else if err != nil {
-							return err
-						}
-					}
-					return nil
-				},
-			}
-
-			loader := DefaultBlueprintLoader{
-				walker: walker,
-			}
-			got, err := loader.findGitRoot(tt.start)
-			if testutils.AssertError(t, err, tt.expectErr, "") {
-				return
-			}
-			assert.Equal(t, tt.want, got)
-			assert.Equal(t, lastPath, filepath.Join(tt.want, ".git"))
 		})
 	}
 }

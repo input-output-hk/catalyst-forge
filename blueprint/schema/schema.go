@@ -4,6 +4,12 @@ import (
 	_ "embed"
 )
 
+type TagStrategy string
+
+const (
+	TagStrategyGitCommit TagStrategy = "commit"
+)
+
 //go:generate go run cuelang.org/go/cmd/cue@v0.9.2 get go --package schema --local .
 //go:generate go run cuelang.org/go/cmd/cue@v0.9.2 def -fo _embed/schema.cue
 
@@ -152,7 +158,7 @@ type Tagging struct {
 	Aliases map[string]string `json:"aliases"`
 
 	// Strategy contains the tagging strategy to use for containers.
-	Strategy string `json:"strategy"`
+	Strategy TagStrategy `json:"strategy"`
 }
 
 // Target contains the configuration for a single target.

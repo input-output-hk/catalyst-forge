@@ -5,6 +5,8 @@ deps:
 
     WORKDIR /work/cli
 
+    RUN apk add git
+
     RUN mkdir -p /go/cache && mkdir -p /go/modcache
     ENV GOCACHE=/go/cache
     ENV GOMODCACHE=/go/modcache

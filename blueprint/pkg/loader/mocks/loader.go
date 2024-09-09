@@ -19,7 +19,7 @@ var _ loader.BlueprintLoader = &BlueprintLoaderMock{}
 //
 //		// make and configure a mocked loader.BlueprintLoader
 //		mockedBlueprintLoader := &BlueprintLoaderMock{
-//			LoadFunc: func() (blueprint.RawBlueprint, error) {
+//			LoadFunc: func(projectPath string, gitRootPath string) (blueprint.RawBlueprint, error) {
 //				panic("mock out the Load method")
 //			},
 //		}
@@ -30,28 +30,37 @@ var _ loader.BlueprintLoader = &BlueprintLoaderMock{}
 //	}
 type BlueprintLoaderMock struct {
 	// LoadFunc mocks the Load method.
-	LoadFunc func() (blueprint.RawBlueprint, error)
+	LoadFunc func(projectPath string, gitRootPath string) (blueprint.RawBlueprint, error)
 
 	// calls tracks calls to the methods.
 	calls struct {
 		// Load holds details about calls to the Load method.
 		Load []struct {
+			// ProjectPath is the projectPath argument value.
+			ProjectPath string
+			// GitRootPath is the gitRootPath argument value.
+			GitRootPath string
 		}
 	}
 	lockLoad sync.RWMutex
 }
 
 // Load calls LoadFunc.
-func (mock *BlueprintLoaderMock) Load() (blueprint.RawBlueprint, error) {
+func (mock *BlueprintLoaderMock) Load(projectPath string, gitRootPath string) (blueprint.RawBlueprint, error) {
 	if mock.LoadFunc == nil {
 		panic("BlueprintLoaderMock.LoadFunc: method is nil but BlueprintLoader.Load was just called")
 	}
 	callInfo := struct {
-	}{}
+		ProjectPath string
+		GitRootPath string
+	}{
+		ProjectPath: projectPath,
+		GitRootPath: gitRootPath,
+	}
 	mock.lockLoad.Lock()
 	mock.calls.Load = append(mock.calls.Load, callInfo)
 	mock.lockLoad.Unlock()
-	return mock.LoadFunc()
+	return mock.LoadFunc(projectPath, gitRootPath)
 }
 
 // LoadCalls gets all the calls that were made to Load.
@@ -59,8 +68,12 @@ func (mock *BlueprintLoaderMock) Load() (blueprint.RawBlueprint, error) {
 //
 //	len(mockedBlueprintLoader.LoadCalls())
 func (mock *BlueprintLoaderMock) LoadCalls() []struct {
+	ProjectPath string
+	GitRootPath string
 } {
 	var calls []struct {
+		ProjectPath string
+		GitRootPath string
 	}
 	mock.lockLoad.RLock()
 	calls = mock.calls.Load

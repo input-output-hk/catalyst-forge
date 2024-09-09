@@ -1,3 +1,4 @@
+exec git init .
 exec forge run --platform test --artifact output ./dir1+test
 cmp stdout golden.txt
 

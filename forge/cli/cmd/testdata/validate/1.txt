@@ -1,3 +1,4 @@
+exec git init .
 exec forge validate ./
 
 -- blueprint.cue --
