@@ -2,14 +2,19 @@ package project
 
 import (
 	"fmt"
+	"path/filepath"
 	"testing"
 
 	"cuelang.org/go/cue/cuecontext"
+	gg "github.com/go-git/go-git/v5"
+	"github.com/go-git/go-git/v5/plumbing/cache"
+	"github.com/go-git/go-git/v5/storage/filesystem"
 	"github.com/input-output-hk/catalyst-forge/blueprint/pkg/blueprint"
 	"github.com/input-output-hk/catalyst-forge/blueprint/pkg/loader/mocks"
 	"github.com/input-output-hk/catalyst-forge/tools/pkg/testutils"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
+	df "gopkg.in/jfontan/go-billy-desfacer.v0"
 )
 
 type wrapfs struct {
@@ -69,11 +74,10 @@ bar:
 			expectErr:   false,
 			expectedErr: "",
 		},
-
 		{
 			name:        "error loading blueprint",
 			fs:          afero.NewMemMapFs(),
-			path:        "",
+			path:        "/",
 			blueprint:   blueprint.RawBlueprint{},
 			files:       map[string]string{},
 			bpErr:       fmt.Errorf("error"),
@@ -85,12 +89,12 @@ bar:
 			fs:   afero.NewMemMapFs(),
 			path: "/",
 			blueprint: blueprint.NewRawBlueprint(ctx.CompileString(`
-version: 1.0
-			`)),
+		version: 1.0
+					`)),
 			files: map[string]string{
 				"/Earthfile": `
-VERSION 0.8
-`,
+		VERSION 0.8
+		`,
 			},
 			bpErr:       nil,
 			expectErr:   true,
@@ -101,7 +105,7 @@ VERSION 0.8
 			fs: &wrapfs{
 				Fs:        afero.NewMemMapFs(),
 				trigger:   fmt.Errorf("error"),
-				failAfter: 1,
+				failAfter: 5,
 			},
 			path:      "/",
 			blueprint: blueprint.RawBlueprint{},
@@ -130,8 +134,15 @@ VERSION 0.8
 		t.Run(tt.name, func(t *testing.T) {
 			testutils.SetupFS(t, tt.fs, tt.files)
 
+			tt.fs.Mkdir(filepath.Join(tt.path, ".git"), 0755)
+			workdir := afero.NewBasePathFs(tt.fs, tt.path)
+			gitdir := afero.NewBasePathFs(tt.fs, filepath.Join(tt.path, ".git"))
+			storage := filesystem.NewStorage(df.New(gitdir), cache.NewObjectLRUDefault())
+			_, err := gg.Init(storage, df.New(workdir))
+			assert.NoError(t, err)
+
 			bpLoader := &mocks.BlueprintLoaderMock{
-				LoadFunc: func() (blueprint.RawBlueprint, error) {
+				LoadFunc: func(p, g string) (blueprint.RawBlueprint, error) {
 					if tt.bpErr != nil {
 						return blueprint.RawBlueprint{}, tt.bpErr
 					}
@@ -143,10 +154,9 @@ VERSION 0.8
 				blueprintLoader: bpLoader,
 				fs:              tt.fs,
 				logger:          testutils.NewNoopLogger(),
-				path:            tt.path,
 			}
 
-			got, err := loader.Load()
+			got, err := loader.Load(tt.path)
 			if testutils.AssertError(t, err, tt.expectErr, tt.expectedErr) {
 				return
 			}

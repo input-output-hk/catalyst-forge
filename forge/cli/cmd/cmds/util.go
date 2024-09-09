@@ -86,8 +86,8 @@ func generateOpts(target string, flags *RunCmd, config *schema.Blueprint) []eart
 
 // loadProject loads the project from the given root path.
 func loadProject(rootPath string, logger *slog.Logger) (project.Project, error) {
-	loader := project.NewDefaultProjectLoader(rootPath, logger)
-	return loader.Load()
+	loader := project.NewDefaultProjectLoader(logger)
+	return loader.Load(rootPath)
 }
 
 // printJson prints the given data as a JSON string.

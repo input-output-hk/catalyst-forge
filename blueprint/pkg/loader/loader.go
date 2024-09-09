@@ -23,48 +23,27 @@ import (
 const BlueprintFileName = "blueprint.cue"
 
 var (
-	ErrGitRootNotFound = errors.New("git root not found")
 	ErrVersionNotFound = errors.New("version not found")
 )
 
 // BlueprintLoader is an interface for loading blueprints.
 type BlueprintLoader interface {
-
 	// Load loads the blueprint.
-	Load() (blueprint.RawBlueprint, error)
+	Load(projectPath, gitRootPath string) (blueprint.RawBlueprint, error)
 }
 
 // DefaultBlueprintLoader is the default implementation of the BlueprintLoader
 type DefaultBlueprintLoader struct {
 	injector injector.Injector
 	logger   *slog.Logger
-	rootPath string
 	walker   walker.ReverseWalker
 }
 
-func (b *DefaultBlueprintLoader) Load() (blueprint.RawBlueprint, error) {
-	b.logger.Info("Searching for git root", "rootPath", b.rootPath)
-	gitRoot, err := b.findGitRoot(b.rootPath)
-	if err != nil && !errors.Is(err, ErrGitRootNotFound) {
-		b.logger.Error("Failed to find git root", "error", err)
-		return blueprint.RawBlueprint{}, fmt.Errorf("failed to find git root: %w", err)
-	}
-
-	var files map[string][]byte
-	if errors.Is(err, ErrGitRootNotFound) {
-		b.logger.Warn("Git root not found, searching for blueprint files in root path", "rootPath", b.rootPath)
-		files, err = b.findBlueprints(b.rootPath, b.rootPath)
-		if err != nil {
-			b.logger.Error("Failed to find blueprint files", "error", err)
-			return blueprint.RawBlueprint{}, fmt.Errorf("failed to find blueprint files: %w", err)
-		}
-	} else {
-		b.logger.Info("Git root found, searching for blueprint files up to git root", "gitRoot", gitRoot)
-		files, err = b.findBlueprints(b.rootPath, gitRoot)
-		if err != nil {
-			b.logger.Error("Failed to find blueprint files", "error", err)
-			return blueprint.RawBlueprint{}, fmt.Errorf("failed to find blueprint files: %w", err)
-		}
+func (b *DefaultBlueprintLoader) Load(projectPath, gitRootPath string) (blueprint.RawBlueprint, error) {
+	files, err := b.findBlueprints(projectPath, gitRootPath)
+	if err != nil {
+		b.logger.Error("Failed to find blueprint files", "error", err)
+		return blueprint.RawBlueprint{}, fmt.Errorf("failed to find blueprint files: %w", err)
 	}
 
 	ctx := cuecontext.New()
@@ -165,41 +144,8 @@ func (b *DefaultBlueprintLoader) findBlueprints(startPath, endPath string) (map[
 	return bps, nil
 }
 
-// findGitRoot finds the root of a Git repository starting from the given
-// path. It returns the path to the root of the Git repository or an error if
-// the root is not found.
-func (b *DefaultBlueprintLoader) findGitRoot(startPath string) (string, error) {
-	var gitRoot string
-	err := b.walker.Walk(
-		startPath,
-		"/",
-		func(path string, fileType walker.FileType, openFile func() (walker.FileSeeker, error)) error {
-			if fileType == walker.FileTypeDir {
-				if filepath.Base(path) == ".git" {
-					gitRoot = filepath.Dir(path)
-					return io.EOF
-				}
-			}
-
-			return nil
-		},
-	)
-
-	if err != nil {
-		return "", err
-	}
-
-	if gitRoot == "" {
-		return "", ErrGitRootNotFound
-	}
-
-	return gitRoot, nil
-}
-
 // NewDefaultBlueprintLoader creates a new DefaultBlueprintLoader.
-func NewDefaultBlueprintLoader(rootPath string,
-	logger *slog.Logger,
-) DefaultBlueprintLoader {
+func NewDefaultBlueprintLoader(logger *slog.Logger) DefaultBlueprintLoader {
 	if logger == nil {
 		logger = slog.New(slog.NewTextHandler(io.Discard, nil))
 	}
@@ -208,7 +154,6 @@ func NewDefaultBlueprintLoader(rootPath string,
 	return DefaultBlueprintLoader{
 		injector: injector.NewDefaultInjector(logger),
 		logger:   logger,
-		rootPath: rootPath,
 		walker:   &walker,
 	}
 }

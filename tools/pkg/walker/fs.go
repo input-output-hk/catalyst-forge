@@ -65,3 +65,16 @@ func NewDefaultFSWalker(logger *slog.Logger) FSWalker {
 		logger: logger,
 	}
 }
+
+// NewCustomDefaultFilesystemWalker creates a new FSWalker with the given
+// filesystem and an optional logger.
+func NewCustomDefaultFSWalker(fs afero.Fs, logger *slog.Logger) FSWalker {
+	if logger == nil {
+		logger = slog.New(slog.NewTextHandler(os.Stderr, nil))
+	}
+
+	return FSWalker{
+		fs:     fs,
+		logger: logger,
+	}
+}

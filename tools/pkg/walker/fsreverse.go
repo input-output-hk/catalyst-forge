@@ -111,3 +111,16 @@ func NewFSReverseWalker(logger *slog.Logger, fs afero.Fs) FSReverseWalker {
 		logger: logger,
 	}
 }
+
+// NewCustomReverseFSWalker creates a new FSReverseWalker with the given
+// filesystem and an optional logger.
+func NewCustomReverseFSWalker(fs afero.Fs, logger *slog.Logger) FSReverseWalker {
+	if logger == nil {
+		logger = slog.New(slog.NewTextHandler(io.Discard, nil))
+	}
+
+	return FSReverseWalker{
+		fs:     fs,
+		logger: logger,
+	}
+}

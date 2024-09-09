@@ -20,6 +20,7 @@ var cli struct {
 	Run      cmds.RunCmd      `cmd:"" help:"Run an Earthly target."`
 	Scan     cmds.ScanCmd     `cmd:"" help:"Scan for Earthfiles."`
 	Secret   cmds.SecretCmd   `cmd:"" help:"Manage secrets."`
+	Tag      cmds.TagCmd      `cmd:"" help:"Generate a tag for a project."`
 	Validate cmds.ValidateCmd `cmd:"" help:"Validates a project."`
 	Version  VersionCmd       `cmd:"" help:"Print the version."`
 	Verbose  int              `short:"v" type:"counter" help:"Enable verbose logging."`

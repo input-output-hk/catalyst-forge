@@ -1,3 +1,4 @@
+exec git init .
 exec forge run --ci --platform test --platform test1 ./dir1+test
 cmp stdout golden.txt
 

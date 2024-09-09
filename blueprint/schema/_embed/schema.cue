@@ -1,5 +1,11 @@
 package schema
 
+#TagStrategy:     string
+#enumTagStrategy: #TagStrategyGitCommit
+#TagStrategyGitCommit: #TagStrategy & {
+	"commit"
+}
+
 // Blueprint contains the schema for blueprint files.
 #Blueprint: {
 	// Version defines the version of the blueprint schema being used.
@@ -149,7 +155,9 @@ version: "1.0"
 	} @go(Aliases,map[string]string)
 
 	// Strategy contains the tagging strategy to use for containers.
-	strategy: "commit" @go(Strategy)
+	strategy: #TagStrategy & {
+		"commit"
+	} @go(Strategy)
 }
 
 // Target contains the configuration for a single target.
