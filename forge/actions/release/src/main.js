@@ -86,7 +86,6 @@ module.exports = {
  */
 async function getBlueprint(project) {
   const result = await exec.getExecOutput("forge", [
-    "blueprint",
     "dump",
     project,
   ]);

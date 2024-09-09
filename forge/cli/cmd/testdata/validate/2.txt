@@ -1,4 +1,4 @@
-! exec forge blueprint validate ./blueprint.cue
+! exec forge validate ./
 
 -- blueprint.cue --
 version: "1.0"

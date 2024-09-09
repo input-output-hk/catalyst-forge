@@ -5,10 +5,9 @@ import (
 	"fmt"
 	"log/slog"
 
-	"github.com/input-output-hk/catalyst-forge/blueprint/pkg/blueprint"
-	"github.com/input-output-hk/catalyst-forge/blueprint/pkg/loader"
 	"github.com/input-output-hk/catalyst-forge/blueprint/schema"
 	"github.com/input-output-hk/catalyst-forge/forge/cli/pkg/earthly"
+	"github.com/input-output-hk/catalyst-forge/forge/cli/pkg/project"
 )
 
 // enumerate enumerates the Earthfile+Target pairs from the target map.
@@ -85,24 +84,9 @@ func generateOpts(target string, flags *RunCmd, config *schema.Blueprint) []eart
 	return opts
 }
 
-// loadBlueprint loads the blueprint file from the given root path.
-func loadBlueprint(rootPath string, logger *slog.Logger) (schema.Blueprint, error) {
-	raw, err := loadRawBlueprint(rootPath, logger)
-	if err != nil {
-		return schema.Blueprint{}, fmt.Errorf("failed loading blueprint: %w", err)
-	}
-
-	bp, err := raw.Decode()
-	if err != nil {
-		return schema.Blueprint{}, fmt.Errorf("failed decoding blueprint: %w", err)
-	}
-
-	return bp, nil
-}
-
-// loadRawBlueprint loads the raw blueprint file from the given root path.
-func loadRawBlueprint(rootPath string, logger *slog.Logger) (blueprint.RawBlueprint, error) {
-	loader := loader.NewDefaultBlueprintLoader(rootPath, logger)
+// loadProject loads the project from the given root path.
+func loadProject(rootPath string, logger *slog.Logger) (project.Project, error) {
+	loader := project.NewDefaultProjectLoader(rootPath, logger)
 	return loader.Load()
 }
 
