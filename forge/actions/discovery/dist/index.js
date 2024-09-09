@@ -3962,7 +3962,6 @@ const exec = __nccwpck_require__(514);
 async function run() {
   try {
     const absolute = core.getBooleanInput("absolute", { required: false });
-    const enumerate = core.getBooleanInput("enumerate", { required: false });
     const path = core.getInput("path", { required: true });
     const filters = core.getInput("filters", { required: false });
 
