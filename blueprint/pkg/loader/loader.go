@@ -18,6 +18,8 @@ import (
 	"github.com/input-output-hk/catalyst-forge/tools/pkg/walker"
 )
 
+//go:generate go run github.com/matryer/moq@latest --pkg mocks --out ./mocks/loader.go . BlueprintLoader
+
 const BlueprintFileName = "blueprint.cue"
 
 var (
@@ -29,7 +31,7 @@ var (
 type BlueprintLoader interface {
 
 	// Load loads the blueprint.
-	Load() blueprint.RawBlueprint
+	Load() (blueprint.RawBlueprint, error)
 }
 
 // DefaultBlueprintLoader is the default implementation of the BlueprintLoader

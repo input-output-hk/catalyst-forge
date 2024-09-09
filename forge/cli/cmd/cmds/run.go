@@ -28,7 +28,7 @@ func (c *RunCmd) Run(logger *slog.Logger) error {
 	earthfileDir := strings.Split(c.Path, "+")[0]
 	target := strings.Split(c.Path, "+")[1]
 
-	config, err := loadBlueprint(earthfileDir, logger)
+	project, err := loadProject(earthfileDir, logger)
 	if err != nil {
 		return err
 	}
@@ -38,7 +38,7 @@ func (c *RunCmd) Run(logger *slog.Logger) error {
 		executor.WithRedirect(),
 	)
 
-	opts := generateOpts(target, c, &config)
+	opts := generateOpts(target, c, &project.Blueprint)
 	earthlyExec := earthly.NewEarthlyExecutor(
 		earthfileDir,
 		target,

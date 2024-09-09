@@ -16,18 +16,18 @@ const (
 )
 
 type Get struct {
-	Blueprint string `short:"b" help:"Path to a blueprint file (or directory)."`
-	Key       string `short:"k" help:"The key inside of the secret to get."`
-	Provider  string `short:"p" help:"The provider of the secret store." default:"aws"`
-	Path      string `arg:"" help:"The path to the secret (or path in a blueprint if --blueprint is specified)."`
+	Key      string `short:"k" help:"The key inside of the secret to get."`
+	Project  string `help:"Path to a project to use for getting secret configuration."`
+	Provider string `short:"p" help:"The provider of the secret store." default:"aws"`
+	Path     string `arg:"" help:"The path to the secret (or path in a project blueprint if --project is specified)."`
 }
 
 type Set struct {
-	Blueprint string   `short:"b" help:"Path to a blueprint file (or directory)."`
-	Field     []string `short:"f" help:"A secret field to set."`
-	Provider  string   `short:"p" help:"The provider of the secret store." default:"aws"`
-	Path      string   `arg:"" help:"The path to the secret (or path in a blueprint if --blueprint is specified)."`
-	Value     string   `arg:"" help:"The value to set." default:""`
+	Field    []string `short:"f" help:"A secret field to set."`
+	Provider string   `short:"p" help:"The provider of the secret store." default:"aws"`
+	Path     string   `arg:"" help:"The path to the secret (or path in a project blueprint if --project is specified)."`
+	Project  string   `help:"Path to a project to use for getting secret configuration."`
+	Value    string   `arg:"" help:"The value to set." default:""`
 }
 
 type SecretCmd struct {
@@ -39,14 +39,14 @@ func (c *Get) Run(logger *slog.Logger) error {
 	var path, provider string
 	var maps map[string]string
 
-	if c.Blueprint != "" {
-		rbp, err := loadRawBlueprint(c.Blueprint, logger)
+	if c.Project != "" {
+		project, err := loadProject(c.Project, logger)
 		if err != nil {
-			return fmt.Errorf("could not load blueprint: %w", err)
+			return fmt.Errorf("could not load project: %w", err)
 		}
 
 		var secret schema.Secret
-		if err := rbp.DecodePath(c.Path, &secret); err != nil {
+		if err := project.Raw().DecodePath(c.Path, &secret); err != nil {
 			return fmt.Errorf("could not decode secret: %w", err)
 		}
 
@@ -128,14 +128,14 @@ func (c *Get) Run(logger *slog.Logger) error {
 func (c *Set) Run(logger *slog.Logger) error {
 	var path, provider string
 
-	if c.Blueprint != "" {
-		rbp, err := loadRawBlueprint(c.Blueprint, logger)
+	if c.Project != "" {
+		project, err := loadProject(c.Project, logger)
 		if err != nil {
-			return fmt.Errorf("could not load blueprint: %w", err)
+			return fmt.Errorf("could not load project: %w", err)
 		}
 
 		var secret schema.Secret
-		if err := rbp.DecodePath(c.Path, &secret); err != nil {
+		if err := project.Raw().DecodePath(c.Path, &secret); err != nil {
 			return fmt.Errorf("could not decode secret: %w", err)
 		}
 

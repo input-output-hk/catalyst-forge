@@ -44,7 +44,7 @@ runs:
       shell: bash
       run: |
         echo "==== AWS Setup ====="
-        BP=$(forge blueprint dump .)
+        BP=$(forge dump .)
 
         AWS=$(echo "$BP" | jq -r .global.ci.providers.aws)
         if [[ "$AWS" != "null" ]]; then
@@ -74,11 +74,11 @@ runs:
       shell: bash
       run: |
         echo "==== Docker Setup ====="
-        BP=$(forge blueprint dump .)
+        BP=$(forge dump .)
 
         DOCKER=$(echo "$BP" | jq -r .global.ci.providers.docker.credentials)
         if [[ "$DOCKER" != "null" ]]; then
-          SECRET=$(forge secret get -b . global.ci.providers.docker.credentials)
+          SECRET=$(forge secret get --project . global.ci.providers.docker.credentials)
           USERNAME=$(echo "$SECRET" | jq -r .username)
           PASSWORD=$(echo "$SECRET" | jq -r .password)
 
@@ -106,7 +106,7 @@ runs:
       shell: bash
       run: |
         echo "==== GitHub Setup ====="
-        BP=$(forge blueprint dump .)
+        BP=$(forge dump .)
 
         GITHUB=$(echo "$BP" | jq -r .global.ci.providers.github.registry)
         if [[ "$GITHUB" != "null" ]]; then
@@ -128,7 +128,7 @@ runs:
       shell: bash
       run: |
         echo "==== Earthly Setup ====="
-        BP=$(forge blueprint dump .)
+        BP=$(forge dump .)
 
         EARTHLY=$(echo "$BP" | jq -r .global.ci.providers.earthly)
         if [[ "$EARTHLY" != "null" ]]; then
@@ -140,7 +140,7 @@ runs:
 
         EARTHLY_CREDS=$(echo "$BP" | jq -r .global.ci.providers.earthly.credentials)
         if [[ "$EARTHLY_CREDS" != "null" ]]; then
-          SECRET=$(forge secret get -b . global.ci.providers.earthly.credentials)
+          SECRET=$(forge secret get --project . global.ci.providers.earthly.credentials)
           TOKEN=$(echo "$SECRET" | jq -r .token)
 
           if [[ "$TOKEN" == "null" ]]; then
