@@ -4042,11 +4042,7 @@ module.exports = {
  * @returns {object}        The blueprint object
  */
 async function getBlueprint(project) {
-  const result = await exec.getExecOutput("forge", [
-    "blueprint",
-    "dump",
-    project,
-  ]);
+  const result = await exec.getExecOutput("forge", ["dump", project]);
   return JSON.parse(result.stdout);
 }
 

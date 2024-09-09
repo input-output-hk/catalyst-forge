@@ -37,12 +37,12 @@ The final tags the container is published with are determined by the blueprint c
 
 - The `global.ci.tagging.strategy` configuration property determines the default tag given to all images
 - If the git context contains a git tag, then the publish action may or may not publish an image with the tag:
-   - If the tag is in the "mono-repo" style (`some/path/v1.0.0`)
-      - If the path (`some/path`) matches an alias in `global.ci.tagging.strategy.aliases`, and the value of the alias matches the
-        given project, then the tag is used
-      - If the path does not match an alias, but the path itself matches the given project, then the tag is used
-      - If none of the above are true, the tag is assumed to be for a different project and is skipped
-   - If the tag is any other style, it's used as-is (no modifications)
+  - If the tag is in the "mono-repo" style (`some/path/v1.0.0`)
+    - If the path (`some/path`) matches an alias in `global.ci.tagging.strategy.aliases`, and the value of the alias matches the
+      given project, then the tag is used
+    - If the path does not match an alias, but the path itself matches the given project, then the tag is used
+    - If none of the above are true, the tag is assumed to be for a different project and is skipped
+  - If the tag is any other style, it's used as-is (no modifications)
 
 The following table provides an example of how the git tag is used in various contexts:
 
