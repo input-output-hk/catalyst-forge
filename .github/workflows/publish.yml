@@ -35,6 +35,12 @@ jobs:
         with:
           earthly_token: ${{ secrets.earthly_token }}
           forge_version: ${{ inputs.forge_version }}
+      - name: Run
+        id: run
+        uses: ./forge/actions/run
+        with:
+          path: ${{ matrix.earthfile }}
+          target_args: --container ${{ env.CONTAINER }} --tag ${{ env.TAG }}
       - name: Parse Earthfile reference
         id: parse
         run: |
@@ -44,15 +50,10 @@ jobs:
 
           echo "project=$PROJECT" >> $GITHUB_OUTPUT
           echo "target=$TARGET" >> $GITHUB_OUTPUT
-      - name: Run
-        id: run
-        uses: ./forge/actions/run
-        with:
-          path: ${{ matrix.earthfile }}
-          target_args: --container ${{ env.CONTAINER }} --tag ${{ env.TAG }}
       - name: Publish
         uses: ./forge/actions/publish
         with:
           image: "${{ env.CONTAINER }}:${{ env.TAG }}"
           project: ${{ steps.parse.outputs.project }}
+          skip_branch_check: "true"
           target: ${{ steps.parse.outputs.target }}

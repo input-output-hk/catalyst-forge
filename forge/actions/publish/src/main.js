@@ -79,15 +79,46 @@ async function run() {
     const container = blueprint.project.container;
     const registries = blueprint.global.ci.registries;
 
-    for (const registry of registries) {
-      for (const tag of tags) {
-        const taggedImage = `${registry}/${container}:${tag}`;
+    if (platforms.length > 0) {
+      for (const registry of registries) {
+        for (const tag of tags) {
+          const pushed = [];
+          for (const platform of platforms) {
+            const existingImage = images[platform];
+            const taggedImage = `${registry}/${container}:${tag}_${platform.replace("/", "_")}`;
 
-        core.info(`Tagging image ${image} as ${taggedImage}`);
-        await tagImage(image, taggedImage);
+            core.info(`Tagging image ${existingImage} as ${taggedImage}`);
+            await tagImage(existingImage, taggedImage);
 
-        core.info(`Pushing image ${taggedImage}`);
-        await pushImage(taggedImage);
+            core.info(`Pushing image ${taggedImage}`);
+            await pushImage(taggedImage);
+
+            pushed.push(taggedImage);
+          }
+
+          const multiImage = `${registry}/${container}:${tag}`;
+          core.info(`Creating multi-platform image ${multiImage}`);
+          await exec.exec("docker", [
+            "buildx",
+            "create",
+            "--tag",
+            multiImage,
+            ...pushed,
+          ]);
+        }
+      }
+    } else {
+      const image = images["default"];
+      for (const registry of registries) {
+        for (const tag of tags) {
+          const taggedImage = `${registry}/${container}:${tag}`;
+
+          core.info(`Tagging image ${image} as ${taggedImage}`);
+          await tagImage(image, taggedImage);
+
+          core.info(`Pushing image ${taggedImage}`);
+          await pushImage(taggedImage);
+        }
       }
     }
   } catch (error) {
