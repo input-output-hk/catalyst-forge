@@ -11,6 +11,19 @@ import (
 // point to the same commit, the first one found is returned.
 func GetTag(repo *gg.Repository, ref *plumbing.Reference) (string, error) {
 	fmt.Println("Getting tags")
+	// Check if the HEAD is detached
+	if ref.Name() == plumbing.HEAD {
+		fmt.Println("Detached HEAD state")
+
+		tobj, err := repo.TagObject(ref.Hash())
+		if err != nil {
+			fmt.Println("Failed to get tag object")
+			return "", fmt.Errorf("failed to get tag object: %w", err)
+		}
+
+		return tobj.Name, nil
+	}
+
 	tags, err := repo.Tags()
 	if err != nil {
 		return "", fmt.Errorf("failed to get tags: %w", err)

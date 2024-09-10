@@ -5,7 +5,6 @@ import (
 	"log/slog"
 	"strings"
 
-	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/input-output-hk/catalyst-forge/blueprint/schema"
 	"github.com/input-output-hk/catalyst-forge/forge/cli/pkg/tag"
 )
@@ -42,13 +41,6 @@ func (c *TagCmd) Run(logger *slog.Logger) error {
 	ref, err := project.Repo.Head()
 	if err != nil {
 		return err
-	}
-
-	// Check if the HEAD is detached
-	if ref.Name() != plumbing.HEAD {
-		fmt.Println("We are on a branch:", ref.Name())
-	} else {
-		fmt.Println("Detached HEAD state")
 	}
 
 	t, err := tag.GetTag(project.Repo, ref)
