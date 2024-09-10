@@ -129,7 +129,7 @@ func TestEarthlyExecutor_buildArguments(t *testing.T) {
 				testutils.NewNoopLogger(),
 			),
 			platform: getNativePlatform(),
-			expect:   []string{"/test/dir+foo"},
+			expect:   []string{"--platform", getNativePlatform(), "/test/dir+foo"},
 		},
 		{
 			name: "with platform",
@@ -146,7 +146,7 @@ func TestEarthlyExecutor_buildArguments(t *testing.T) {
 				WithTargetArgs("--arg1", "foo", "--arg2", "bar"),
 			),
 			platform: getNativePlatform(),
-			expect:   []string{"/test/dir+foo", "--arg1", "foo", "--arg2", "bar"},
+			expect:   []string{"--platform", getNativePlatform(), "/test/dir+foo", "--arg1", "foo", "--arg2", "bar"},
 		},
 		{
 			name: "with artifact",
@@ -155,7 +155,7 @@ func TestEarthlyExecutor_buildArguments(t *testing.T) {
 				WithArtifact("test"),
 			),
 			platform: getNativePlatform(),
-			expect:   []string{"--artifact", "/test/dir+foo/*", "test/"},
+			expect:   []string{"--platform", getNativePlatform(), "--artifact", "/test/dir+foo/*", "test/"},
 		},
 		{
 			name: "with artifact and platforms",
@@ -168,22 +168,13 @@ func TestEarthlyExecutor_buildArguments(t *testing.T) {
 			expect:   []string{"--platform", "foo", "--artifact", "/test/dir+foo/*", "test/foo/"},
 		},
 		{
-			name: "with ci",
-			e: NewEarthlyExecutor("/test/dir", "foo", nil, secrets.SecretStore{},
-				testutils.NewNoopLogger(),
-				WithCI(),
-			),
-			platform: getNativePlatform(),
-			expect:   []string{"--ci", "/test/dir+foo"},
-		},
-		{
 			name: "with privileged",
 			e: NewEarthlyExecutor("/test/dir", "foo", nil, secrets.SecretStore{},
 				testutils.NewNoopLogger(),
 				WithPrivileged(),
 			),
 			platform: getNativePlatform(),
-			expect:   []string{"--allow-privileged", "/test/dir+foo"},
+			expect:   []string{"--platform", getNativePlatform(), "--allow-privileged", "/test/dir+foo"},
 		},
 		{
 			name: "with satellite",
@@ -192,7 +183,7 @@ func TestEarthlyExecutor_buildArguments(t *testing.T) {
 				WithSatellite("satellite"),
 			),
 			platform: getNativePlatform(),
-			expect:   []string{"--sat", "satellite", "/test/dir+foo"},
+			expect:   []string{"--platform", getNativePlatform(), "--sat", "satellite", "/test/dir+foo"},
 		},
 	}
 
