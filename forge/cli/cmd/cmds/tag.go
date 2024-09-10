@@ -69,7 +69,7 @@ func (c *TagCmd) Run(logger *slog.Logger) error {
 
 		logger.Info("Found monorepo tag", "project", tag.Project, "tag", tag.Tag)
 
-		finalTag, err := handleMonoTag(project, tag, c.Trim)
+		finalTag, err := handleMonoTag(project, tag, c.Trim, logger)
 		if err != nil {
 			return fmt.Errorf("failed to parse monorepo tag: %w", err)
 		}
@@ -108,7 +108,7 @@ func parseGitTag(project project.Project, ci bool) (string, error) {
 }
 
 // handleMonoTag returns the final tag if the project path matches the monorepo tag.
-func handleMonoTag(project project.Project, tag ptag.MonoTag, trim bool) (string, error) {
+func handleMonoTag(project project.Project, tag ptag.MonoTag, trim bool, logger *slog.Logger) (string, error) {
 	projectPath, err := filepath.Abs(project.Path)
 	if err != nil {
 		return "", fmt.Errorf("failed to get project path: %w", err)
@@ -131,6 +131,7 @@ func handleMonoTag(project project.Project, tag ptag.MonoTag, trim bool) (string
 	// Check if the project has an alias
 	if project.Blueprint.Global.CI.Tagging.Aliases != nil {
 		if _, ok := project.Blueprint.Global.CI.Tagging.Aliases[tag.Project]; ok {
+			logger.Info("Found alias", "project", tag.Project, "alias", project.Blueprint.Global.CI.Tagging.Aliases[tag.Project])
 			tag.Project = project.Blueprint.Global.CI.Tagging.Aliases[tag.Project]
 		}
 	}
