@@ -38,6 +38,7 @@ jobs:
       - name: Parse Earthfile reference
         id: parse
         run: |
+          EARTHFILE='${{ matrix.earthfile }}'
           PROJECT="${EARTHFILE%+*}"
           TARGET="${EARTHFILE#*+}"
 
@@ -47,8 +48,8 @@ jobs:
         id: run
         uses: ./forge/actions/run
         with:
-          args: --container ${{ env.CONTAINER }} --tag ${{ env.TAG }}
           path: ${{ matrix.earthfile }}
+          target_args: --container ${{ env.CONTAINER }} --tag ${{ env.TAG }}
       - name: Publish
         uses: ./forge/actions/publish
         with:
