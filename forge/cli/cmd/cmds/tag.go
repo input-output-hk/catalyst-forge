@@ -88,6 +88,7 @@ func (c *TagCmd) Run(logger *slog.Logger) error {
 	return nil
 }
 
+// parseGitTag returns the git tag if it exists.
 func parseGitTag(project project.Project, ci bool) (string, error) {
 	if ci {
 		t, exists := os.LookupEnv("GITHUB_REF")
@@ -106,6 +107,7 @@ func parseGitTag(project project.Project, ci bool) (string, error) {
 	}
 }
 
+// handleMonoTag returns the final tag if the project path matches the monorepo tag.
 func handleMonoTag(project project.Project, tag ptag.MonoTag, trim bool) (string, error) {
 	projectPath, err := filepath.Abs(project.Path)
 	if err != nil {
@@ -124,6 +126,13 @@ func handleMonoTag(project project.Project, tag ptag.MonoTag, trim bool) (string
 	relPath, err := filepath.Rel(repoRoot, projectPath)
 	if err != nil {
 		return "", fmt.Errorf("failed to get relative path: %w", err)
+	}
+
+	// Check if the project has an alias
+	if project.Blueprint.Global.CI.Tagging.Aliases != nil {
+		if _, ok := project.Blueprint.Global.CI.Tagging.Aliases[tag.Project]; ok {
+			tag.Project = project.Blueprint.Global.CI.Tagging.Aliases[tag.Project]
+		}
 	}
 
 	if !ptag.MatchMonoTag(relPath, tag) {
