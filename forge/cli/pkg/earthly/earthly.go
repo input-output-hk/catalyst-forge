@@ -113,10 +113,7 @@ func (e EarthlyExecutor) Run() (map[string]EarthlyExecutionResult, error) {
 func (e *EarthlyExecutor) buildArguments(platform string) []string {
 	var earthlyArgs []string
 
-	if platform != getNativePlatform() {
-		earthlyArgs = append(earthlyArgs, "--platform", platform)
-	}
-
+	earthlyArgs = append(earthlyArgs, "--platform", platform)
 	earthlyArgs = append(earthlyArgs, e.earthlyArgs...)
 
 	// If we have an artifact path and multiple platforms, we need to append the platform to the artifact path to avoid conflicts.
