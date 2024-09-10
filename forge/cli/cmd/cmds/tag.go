@@ -3,15 +3,25 @@ package cmds
 import (
 	"fmt"
 	"log/slog"
+	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/input-output-hk/catalyst-forge/blueprint/schema"
-	"github.com/input-output-hk/catalyst-forge/forge/cli/pkg/tag"
+	"github.com/input-output-hk/catalyst-forge/forge/cli/pkg/project"
+	ptag "github.com/input-output-hk/catalyst-forge/forge/cli/pkg/tag"
 )
 
 type TagCmd struct {
-	Json    bool   `short:"j" help:"Output tags in JSON format."`
+	CI      bool   `help:"Run in CI mode."`
+	Pretty  bool   `short:"p" help:"Pretty print JSON output."`
 	Project string `arg:"" help:"The project to generate tags for."`
+	Trim    bool   `short:"t" help:"Trim the project path from the git tag."`
+}
+
+type TagOutput struct {
+	Generated string `json:"generated"`
+	Git       string `json:"git"`
 }
 
 func (c *TagCmd) Run(logger *slog.Logger) error {
@@ -20,7 +30,7 @@ func (c *TagCmd) Run(logger *slog.Logger) error {
 		return err
 	}
 
-	var tags []string
+	var output TagOutput
 
 	if project.Blueprint.Global.CI.Tagging.Strategy == "" {
 		return fmt.Errorf("no tag strategy defined")
@@ -28,34 +38,101 @@ func (c *TagCmd) Run(logger *slog.Logger) error {
 
 	switch project.Blueprint.Global.CI.Tagging.Strategy {
 	case schema.TagStrategyGitCommit:
-		tag, err := tag.GitCommit(&project)
+		tag, err := ptag.GitCommit(&project)
 		if err != nil {
 			return err
 		}
 
-		tags = append(tags, tag)
+		output.Generated = tag
+
+		logger.Info("Generated tag", "tag", tag, "strategy", project.Blueprint.Global.CI.Tagging.Strategy)
 	default:
 		return fmt.Errorf("unknown tag strategy: %s", project.Blueprint.Global.CI.Tagging.Strategy)
 	}
 
-	ref, err := project.Repo.Head()
+	gitTag, err := parseGitTag(project, c.CI)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to parse git tag: %w", err)
 	}
 
-	t, err := tag.GetTag(project.Repo, ref)
-	if err != nil {
-		return err
-	}
-
-	fmt.Println("Found git tag: ", t)
-
-	if c.Json {
-		printJson(tags, false)
+	if gitTag != "" {
+		logger.Info("Found git tag", "tag", gitTag)
 	} else {
-		strTags := strings.Join(tags, " ")
-		fmt.Println(strTags)
+		logger.Info("No git tag found")
 	}
 
+	if gitTag != "" && ptag.IsMonoTag(gitTag) {
+		tag, err := ptag.ParseMonoTag(gitTag)
+		if err != nil {
+			return fmt.Errorf("failed to parse monorepo tag: %w", err)
+		}
+
+		logger.Info("Found monorepo tag", "project", tag.Project, "tag", tag.Tag)
+
+		finalTag, err := handleMonoTag(project, tag, c.Trim)
+		if err != nil {
+			return fmt.Errorf("failed to parse monorepo tag: %w", err)
+		}
+
+		if finalTag != "" {
+			output.Git = finalTag
+		} else {
+			logger.Warn("Tag does not match project")
+		}
+	} else if gitTag != "" {
+		logger.Warn("Git tag is not a monorepo tag", "tag", gitTag)
+		output.Git = gitTag
+	}
+
+	printJson(output, c.Pretty)
 	return nil
+}
+
+func parseGitTag(project project.Project, ci bool) (string, error) {
+	if ci {
+		t, exists := os.LookupEnv("GITHUB_REF")
+		if exists && strings.HasPrefix(t, "refs/tags/") {
+			return strings.TrimPrefix(t, "refs/tags/"), nil
+		}
+
+		return "", nil
+	} else {
+		tag, err := ptag.GetTag(project.Repo)
+		if err != nil {
+			return "", err
+		}
+
+		return tag, nil
+	}
+}
+
+func handleMonoTag(project project.Project, tag ptag.MonoTag, trim bool) (string, error) {
+	projectPath, err := filepath.Abs(project.Path)
+	if err != nil {
+		return "", fmt.Errorf("failed to get project path: %w", err)
+	}
+
+	repoRoot, err := filepath.Abs(project.RepoRoot)
+	if err != nil {
+		return "", fmt.Errorf("failed to get repo root: %w", err)
+	}
+
+	if !strings.HasPrefix(projectPath, repoRoot) {
+		return "", fmt.Errorf("project path is not a subdirectory of the repo root")
+	}
+
+	relPath, err := filepath.Rel(repoRoot, projectPath)
+	if err != nil {
+		return "", fmt.Errorf("failed to get relative path: %w", err)
+	}
+
+	if !ptag.MatchMonoTag(relPath, tag) {
+		return "", nil
+	} else {
+		if trim {
+			return tag.Tag, nil
+		} else {
+			return tag.Project + "/" + tag.Tag, nil
+		}
+	}
 }
