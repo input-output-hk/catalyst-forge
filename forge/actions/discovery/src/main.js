@@ -4,18 +4,13 @@ const exec = require("@actions/exec");
 async function run() {
   try {
     const absolute = core.getBooleanInput("absolute", { required: false });
-    const enumerate = core.getBooleanInput("enumerate", { required: false });
     const path = core.getInput("path", { required: true });
     const filters = core.getInput("filters", { required: false });
 
-    let args = ["-vv", "scan"];
+    let args = ["-vv", "scan", "--ci", "--earthfile"];
 
     if (absolute === true) {
       args.push("--absolute");
-    }
-
-    if (enumerate === true) {
-      args.push("--enumerate");
     }
 
     args = args.concat(filtersToArgs(filters));

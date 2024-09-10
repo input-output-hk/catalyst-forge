@@ -2,12 +2,38 @@ package earthfile
 
 import (
 	"context"
+	"io/fs"
+	"strings"
 	"testing"
 
 	"github.com/earthly/earthly/ast/spec"
 	"github.com/input-output-hk/catalyst-forge/tools/pkg/testutils"
 	"github.com/stretchr/testify/assert"
 )
+
+type MockFileSeeker struct {
+	*strings.Reader
+}
+
+func (MockFileSeeker) Stat() (fs.FileInfo, error) {
+	return MockFileInfo{}, nil
+}
+
+func (MockFileSeeker) Close() error {
+	return nil
+}
+
+type MockFileInfo struct {
+	fs.FileInfo
+}
+
+func (MockFileInfo) Name() string {
+	return "Earthfile"
+}
+
+func NewMockFileSeeker(s string) MockFileSeeker {
+	return MockFileSeeker{strings.NewReader(s)}
+}
 
 func TestEarthfileTargets(t *testing.T) {
 	earthfile := Earthfile{
