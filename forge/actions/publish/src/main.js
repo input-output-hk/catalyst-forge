@@ -21,6 +21,9 @@ async function run() {
       return;
     }
 
+    core.info(
+      `Current ref: ${github.context.ref}\nDefault branch: ${github.context.payload.repository.default_branch}`,
+    );
     if (
       github.context.ref !== github.context.payload.repository.default_branch
     ) {
