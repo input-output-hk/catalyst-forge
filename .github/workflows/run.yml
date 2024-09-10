@@ -11,6 +11,10 @@ on:
           The version of the forge CLI to install (use 'local' for testing)
         required: true
         type: string
+    secrets:
+      earthly_token:
+        description: Optional Earthly token used to login to Earthly cloud during local builds of Forge CLI
+        required: false
 
 jobs:
   run:
@@ -25,6 +29,7 @@ jobs:
       - name: Setup CI
         uses: ./forge/actions/setup
         with:
+          earthly_token: ${{ secrets.earthly_token }}
           forge_version: ${{ inputs.forge_version }}
       - name: Run
         uses: ./forge/actions/run

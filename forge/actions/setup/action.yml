@@ -1,6 +1,10 @@
 name: Setup CI
 description: Sets up the CI with the configured providers
 inputs:
+  earthly_token:
+    description: Optional Earthly token used to login to Earthly cloud during local builds
+    required: false
+    default: ""
   forge_version:
     description: The version of the forge CLI to install (use 'local' for testing)
     default: latest
@@ -8,11 +12,11 @@ inputs:
     description: Github token assigned to CI
     required: false
     default: ${{ github.token }}
+
 runs:
   using: composite
   steps:
-    # If the local version of forge is requested, we try to build (and cache) it
-    # locally with Earthly
+    # If the local version of forge is requested, we try to build locally with Earthly
     - if: inputs.forge_version == 'local'
       shell: bash
       run: echo "Building Forge CLI locally..."
@@ -21,21 +25,18 @@ runs:
       if: inputs.forge_version == 'local'
       with:
         version: latest
-    - name: Cache Forge CLI binary
+    - name: Login to Earthly Cloud
       if: inputs.forge_version == 'local'
-      id: cache-forge
-      uses: actions/cache@v4
-      with:
-        path: /usr/local/bin/forge
-        key: ${{ runner.os }}-forge-${{ hashFiles('forge/cli/**', 'blueprint/**') }}
-        restore-keys: |
-          ${{ runner.os }}-forge-
+      shell: bash
+      run: |
+        earthly account login --token ${{ inputs.earthly_token }}
+        earthly org select Catalyst
     - name: Build Forge CLI
-      if: steps.cache-forge.outputs.cache-hit != 'true' && inputs.forge_version == 'local'
+      if: inputs.forge_version == 'local'
       shell: bash
       run: |
         echo "::group::Forge CLI Earthly Build"
-        earthly --artifact ./forge/cli+build/forge /usr/local/bin/forge
+        earthly --sat ci --artifact ./forge/cli+build/forge /usr/local/bin/forge
         echo "::endgroup::"
 
     # AWS Provider
@@ -156,16 +157,16 @@ runs:
         echo "token=$TOKEN" >> $GITHUB_OUTPUT
     - name: Install Earthly
       uses: earthly/actions-setup@v1
-      if: inputs.forge_version != 'local'  # Prefer to install Earthly after logging into Docker Hub
+      if: inputs.forge_version != 'local'
       with:
         version: ${{ steps.earthly.outputs.version }}
     - name: Login to Earthly Cloud
-      if: steps.earthly.outputs.token != ''
+      if: steps.earthly.outputs.token != '' && inputs.forge_version != 'local'
       shell: bash
       run: |
         earthly account login --token "${{ steps.earthly.outputs.token }}"
     - name: Set Earthly organization
-      if: steps.earthly.outputs.org != ''
+      if: steps.earthly.outputs.token != '' && inputs.forge_version != 'local'
       shell: bash
       run: |
         earthly org select "${{ steps.earthly.outputs.org }}"

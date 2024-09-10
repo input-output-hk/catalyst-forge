@@ -21,11 +21,6 @@ async function run() {
         `Project '${project}' does not have a container defined. Skipping publish`,
       );
       return;
-    } else if (blueprint?.global?.ci?.tagging?.strategy === undefined) {
-      core.warning(
-        `The repository does not have a tagging strategy defined. Skipping publish`,
-      );
-      return;
     } else if (
       blueprint?.global?.ci?.registries === undefined ||
       blueprint?.global?.ci?.registries.length === 0
@@ -37,26 +32,14 @@ async function run() {
     }
 
     const tags = [];
-    const gitTag = parseGitTag(process.env.GITHUB_REF);
-    if (gitTag !== "") {
-      core.info(`Detected Git tag: ${gitTag}`);
-      const projectCleaned = project.replace(/^\.\//, "").replace(/\/$/, "");
-      const tag = parseGitMonorepoTag(
-        gitTag,
-        projectCleaned,
-        blueprint.global?.ci?.tagging?.aliases,
-      );
-
-      if (tag !== "") {
-        tags.push(tag);
-      }
-    } else {
-      core.info("No Git tag detected");
+    const result = await getTags(project);
+    if (result.git !== "") {
+      tags.push(result.git);
     }
+    tags.push(result.generated);
 
     const container = blueprint.project.container;
     const registries = blueprint.global.ci.registries;
-    tags.push(getTag(blueprint.global.ci.tagging.strategy));
 
     for (const registry of registries) {
       for (const tag of tags) {
@@ -89,19 +72,19 @@ async function getBlueprint(project) {
 }
 
 /**
- * Get the tag to use for the Docker image from the tagging strategy
- * @param {string} strategy  The tagging strategy to use
- * @returns {string}         The tag to use
+ * Generates tags for the given project
+ * @param {string} project  The name of the project to get tags for
+ * @returns {object}        The tags object
  */
-function getTag(strategy) {
-  switch (strategy) {
-    case "commit": {
-      return strategyCommit();
-    }
-    default: {
-      throw new Error(`Unknown tagging strategy: ${strategy}`);
-    }
-  }
+async function getTags(project) {
+  const result = await exec.getExecOutput("forge", [
+    "-vv",
+    "tag",
+    "--ci",
+    "--trim",
+    project,
+  ]);
+  return JSON.parse(result.stdout);
 }
 
 /**
@@ -120,66 +103,13 @@ async function imageExists(name) {
   return result === 0;
 }
 
-/**
- * Parse a Git tag from a ref. If the ref is not a tag, an empty string is returned.
- * @param {string} ref The ref to parse
- * @returns {string}   The tag or an empty string
- */
-function parseGitTag(ref) {
-  if (ref.startsWith("refs/tags/")) {
-    return ref.slice(10);
-  } else {
-    return "";
-  }
-}
-
-/**
- * Parse a Git mono-repo tag
- * @param {*} tag      The tag to parse
- * @param {*} project  The project path
- * @param {*} aliases  The tag aliases to use
- * @returns {string}   The parsed tag or an empty string
- */
-function parseGitMonorepoTag(tag, project, aliases) {
-  const parts = tag.split("/");
-  if (parts.length > 1) {
-    const path = parts.slice(0, -1).join("/");
-    const monoTag = parts[parts.length - 1];
-
-    core.info(
-      `Detected mono-repo tag path=${path} tag=${monoTag} currentProject=${project}`,
-    );
-    if (aliases && Object.keys(aliases).length > 0) {
-      if (aliases[path] === project) {
-        return monoTag;
-      }
-    }
-
-    if (path === project) {
-      return monoTag;
-    } else {
-      core.info(`Skipping tag as it does not match the project`);
-      return "";
-    }
-  } else {
-    core.info("Detected non mono-repo tag. Using tag as is.");
-    return tag;
-  }
-}
-
 /***
  * Push a Docker image to a registry
+ * @param {string} image  The name of the image to push
+ * @returns {Promise<int>} The exit code of the command
  */
 async function pushImage(image) {
   await exec.exec("docker", ["push", image]);
-}
-
-/**
- * The "commit" tagging strategy
- * @returns {string} The commit hash
- */
-function strategyCommit() {
-  return process.env.GITHUB_SHA;
 }
 
 /**

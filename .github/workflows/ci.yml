@@ -6,6 +6,10 @@ on:
           The version of the forge CLI to install (use 'local' for testing)
         required: true
         type: string
+    secrets:
+      earthly_token:
+        description: Optional Earthly token used to login to Earthly cloud during local builds of Forge CLI
+        required: false
 
 jobs:
   discover:
@@ -17,6 +21,7 @@ jobs:
       - name: Setup
         uses: ./forge/actions/setup
         with:
+          earthly_token: ${{ secrets.earthly_token }}
           forge_version: ${{ inputs.forge_version }}
       - name: Discovery
         id: discovery
@@ -35,6 +40,8 @@ jobs:
     with:
       earthfiles: ${{ toJson(fromJson(needs.discover.outputs.result)['^check.*']) }}
       forge_version: ${{ inputs.forge_version }}
+    secrets:
+      earthly_token: ${{ secrets.earthly_token }}
 
   build:
     uses: ./.github/workflows/run.yml
@@ -42,6 +49,8 @@ jobs:
     with:
       earthfiles: ${{ toJson(fromJson(needs.discover.outputs.result)['^build.*']) }}
       forge_version: ${{ inputs.forge_version }}
+    secrets:
+      earthly_token: ${{ secrets.earthly_token }}
 
   test:
     uses: ./.github/workflows/run.yml
@@ -49,6 +58,8 @@ jobs:
     with:
       earthfiles: ${{ toJson(fromJson(needs.discover.outputs.result)['^test.*']) }}
       forge_version: ${{ inputs.forge_version }}
+    secrets:
+      earthly_token: ${{ secrets.earthly_token }}
 
   publish:
     uses: ./.github/workflows/publish.yml
@@ -56,6 +67,8 @@ jobs:
     with:
       earthfiles: ${{ toJson(fromJson(needs.discover.outputs.result)['publish']) }}
       forge_version: ${{ inputs.forge_version }}
+    secrets:
+      earthly_token: ${{ secrets.earthly_token }}
 
   release:
     uses: ./.github/workflows/release.yml
@@ -63,3 +76,5 @@ jobs:
     with:
       earthfiles: ${{ toJson(fromJson(needs.discover.outputs.result)['release']) }}
       forge_version: ${{ inputs.forge_version }}
+    secrets:
+      earthly_token: ${{ secrets.earthly_token }}
