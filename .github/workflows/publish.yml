@@ -38,7 +38,7 @@ jobs:
           path: ${{ matrix.earthfile }}
       - name: Get image and project
         id: image
-        if: github.ref_name == github.event.repository.default_branch
+        #if: github.ref_name == github.event.repository.default_branch
         run: |
           EARTHFILE='${{ matrix.earthfile }}'
           PROJECT="${EARTHFILE%+*}"
