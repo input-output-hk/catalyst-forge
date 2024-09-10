@@ -5,7 +5,7 @@ deps:
 
     WORKDIR /work/cli
 
-    RUN apk add git
+    RUN apk add git file
 
     RUN mkdir -p /go/cache && mkdir -p /go/modcache
     ENV GOCACHE=/go/cache
@@ -35,10 +35,13 @@ check:
 build:
     FROM +src
 
-    ARG version="0.0.0"
+    ARG GOOS
+    ARG GOARCH
+    ARG VERSION="0.0.0"
 
     ENV CGO_ENABLED=0
-    RUN go build -ldflags="-extldflags=-static -X main.version=$version" -o bin/forge cmd/main.go
+    RUN go build -ldflags="-extldflags=-static -X main.version=$VERSION" -o bin/forge cmd/main.go
+    RUN file bin/forge
 
     SAVE ARTIFACT bin/forge forge
 
@@ -48,16 +51,39 @@ test:
     RUN go test ./...
 
 release:
-    FROM +build
+    FROM alpine:3.19
+
+    ARG TARGETOS
+    ARG TARGETARCH
+    ARG USERPLATFORM
+    ARG VERSION="0.0.2"
+
+    COPY \
+        --platform=$USERPLATFORM \
+        (+build/forge \
+        --GOOS=$TARGETOS \
+        --GOARCH=$TARGETARCH \
+        --VERSION=$VERSION) bin/forge
 
     SAVE ARTIFACT bin/forge forge
 
 publish:
     FROM debian:bookworm-slim
     WORKDIR /workspace
+
     ARG tag=latest
 
-    COPY +build/forge /usr/local/bin/forge
+    ARG TARGETOS
+    ARG TARGETARCH
+    ARG USERPLATFORM
+    ARG VERSION="0.0.2"
+
+    COPY \
+        --platform=$USERPLATFORM \
+        (+build/forge \
+        --GOOS=$TARGETOS \
+        --GOARCH=$TARGETARCH \
+        --VERSION=$VERSION) /usr/local/bin/forge
 
     ENTRYPOINT ["/usr/local/bin/forge"]
     SAVE IMAGE forge:${tag}

@@ -21,7 +21,6 @@ func WithArtifact(path string) EarthlyExecutorOption {
 func WithCI() EarthlyExecutorOption {
 	return func(e *EarthlyExecutor) {
 		e.opts.ci = true
-		e.earthlyArgs = append(e.earthlyArgs, "--ci")
 	}
 }
 
