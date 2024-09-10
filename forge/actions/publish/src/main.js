@@ -1,5 +1,6 @@
 const core = require("@actions/core");
 const exec = require("@actions/exec");
+const github = require("@actions/github");
 
 async function run() {
   try {
@@ -8,9 +9,22 @@ async function run() {
 
     const exists = await imageExists(image);
     if (!exists) {
+      core.error(
+        `Unable to find image '${image}' in the local Docker daemon. Did you add a 'container' and 'tag' argument to your target?`,
+        {
+          file: `${project}/Earthfile`,
+        },
+      );
       core.setFailed(
         `Image '${image}' does not exist in the local Docker daemon`,
       );
+      return;
+    }
+
+    if (
+      github.context.ref !== github.context.payload.repository.default_branch
+    ) {
+      core.info("Not on default branch, skipping publish");
       return;
     }
 

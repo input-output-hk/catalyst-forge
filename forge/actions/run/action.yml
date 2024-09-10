@@ -10,6 +10,10 @@ inputs:
   path:
     description: The path to the Earthfile, including target (i.e. path/to/project+target)
     required: true
+  target_args:
+    description: Extra arguments to pass to the target
+    required: false
+    default: ""
 outputs:
   result:
     description: The result of the run

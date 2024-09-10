@@ -16,6 +16,10 @@ on:
         description: Optional Earthly token used to login to Earthly cloud during local builds of Forge CLI
         required: false
 
+env:
+  CONTAINER: container
+  TAG: tag
+
 jobs:
   run:
     name: ${{ matrix.earthfile }}
@@ -31,37 +35,22 @@ jobs:
         with:
           earthly_token: ${{ secrets.earthly_token }}
           forge_version: ${{ inputs.forge_version }}
+      - name: Parse Earthfile reference
+        id: parse
+        run: |
+          PROJECT="${EARTHFILE%+*}"
+          TARGET="${EARTHFILE#*+}"
+
+          echo "project=$PROJECT" >> $GITHUB_OUTPUT
+          echo "target=$TARGET" >> $GITHUB_OUTPUT
       - name: Run
         id: run
         uses: ./forge/actions/run
         with:
+          args: --container ${{ env.CONTAINER }} --tag ${{ env.TAG }}
           path: ${{ matrix.earthfile }}
-      - name: Get image and project
-        id: image
-        if: github.ref_name == github.event.repository.default_branch
-        run: |
-          EARTHFILE='${{ matrix.earthfile }}'
-          PROJECT="${EARTHFILE%+*}"
-          TARGET="${EARTHFILE#*+}"
-          RESULT='${{ steps.run.outputs.result }}'
-
-          # If the path to the project is just ".", then we omit it
-          if [[ "$PROJECT" == "." ]]; then
-            EARTHFILE="+$TARGET"
-          fi
-
-          IMAGE="$(echo "$RESULT" | jq -r ".\"linux/amd64\".images[\"$EARTHFILE\"]")"
-
-          if [[ "$IMAGE" == "null" ]]; then
-            echo "::error file=${PROJECT}/Earthfile::No images produced. Cannot publish."
-            exit 1
-          fi
-
-          echo "image=$IMAGE" >> $GITHUB_OUTPUT
-          echo "project=$PROJECT" >> $GITHUB_OUTPUT
       - name: Publish
         uses: ./forge/actions/publish
-        if: github.ref_name == github.event.repository.default_branch
         with:
-          image: ${{ steps.image.outputs.image }}
-          project: ${{ steps.image.outputs.project }}
+          image: "${{ env.CONTAINER }}:${{ env.TAG }}"
+          project: ${{ steps.parse.outputs.project }}
