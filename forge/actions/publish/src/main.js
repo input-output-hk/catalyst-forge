@@ -26,9 +26,7 @@ async function run() {
     core.info(
       `Current ref: ${currentBranch}\nDefault branch: ${defaultBranch}`,
     );
-    if (
-      currentBranch !== defaultBranch
-    ) {
+    if (currentBranch !== defaultBranch) {
       core.info("Not on default branch, skipping publish");
       return;
     }
