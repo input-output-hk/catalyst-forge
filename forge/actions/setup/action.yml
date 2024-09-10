@@ -1,6 +1,10 @@
 name: Setup CI
 description: Sets up the CI with the configured providers
 inputs:
+  earthly_token:
+    description: Optional Earthly token used to login to Earthly cloud during local builds
+    required: false
+    default: ""
   forge_version:
     description: The version of the forge CLI to install (use 'local' for testing)
     default: latest
@@ -8,6 +12,7 @@ inputs:
     description: Github token assigned to CI
     required: false
     default: ${{ github.token }}
+
 runs:
   using: composite
   steps:
@@ -24,7 +29,7 @@ runs:
       if: inputs.forge_version == 'local'
       shell: bash
       run: |
-        earthly account login --token ${{ secrets.EARTHLY_TOKEN }}
+        earthly account login --token ${{ inputs.earthly_token }}
         earthly org select Catalyst
     - name: Build Forge CLI
       if: inputs.forge_version == 'local'
