@@ -4,20 +4,47 @@ const github = require("@actions/github");
 
 async function run() {
   try {
-    const project = core.getInput("project", { required: true });
-    const image = core.getInput("image", { required: true });
+    const project = core.getInput("project");
+    const image = core.getInput("image");
     const skip_branch_check = core.getBooleanInput("skip_branch_check");
+    const target = core.getInput("target");
 
-    const exists = await imageExists(image);
-    if (!exists) {
-      core.error(
-        `Unable to find image '${image}' in the local Docker daemon. Did you add a 'container' and 'tag' argument to your target?`,
-        {
-          file: `${project}/Earthfile`,
-        },
+    const blueprint = await getBlueprint(project);
+    const targetConfig = blueprint.project?.ci?.targets?.[target];
+    let platforms = [];
+    if (
+      targetConfig !== undefined &&
+      targetConfig.platforms !== undefined &&
+      targetConfig.platforms.length > 0
+    ) {
+      core.info(
+        `Detected multi-platform build for platforms: ${targetConfig.platforms.join(", ")}`,
       );
-      core.setFailed(`Unable to find image: ${image}`);
-      return;
+      platforms = targetConfig.platforms;
+    }
+
+    const images = {};
+    if (platforms.length > 0) {
+      for (const platform of platforms) {
+        images[platform] = `${image}_${platform.replace("/", "_")}`;
+      }
+    } else {
+      images["default"] = image;
+    }
+
+    for (const image in images) {
+      core.info(`Validating image ${image} exists`);
+      const exists = await imageExists(image);
+      if (!exists) {
+        core.error(
+          `Unable to find image '${image}' in the local Docker daemon. Did you add a 'container' and 'tag' argument to your target?`,
+          {
+            file: `${project}/Earthfile`,
+          },
+        );
+        core.setFailed(`Unable to find image: ${image}`);
+        return;
+      }
     }
 
     const currentBranch = github.context.ref.replace("refs/heads/", "");
@@ -26,8 +53,6 @@ async function run() {
       core.info("Not on default branch, skipping publish");
       return;
     }
-
-    const blueprint = await getBlueprint(project);
 
     if (blueprint?.project?.container === undefined) {
       core.warning(
@@ -39,7 +64,7 @@ async function run() {
       blueprint?.global?.ci?.registries.length === 0
     ) {
       core.warning(
-        `The repository does not have any registries defined. Skipping publish`,
+        `The repository does not have any container registries defined. Skipping publish`,
       );
       return;
     }
@@ -110,8 +135,6 @@ async function imageExists(name) {
     ignoreReturnCode: true,
     silent: true,
   });
-
-  console.log(`Result: ${result}`);
 
   return result === 0;
 }

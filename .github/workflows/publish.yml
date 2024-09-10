@@ -55,3 +55,4 @@ jobs:
         with:
           image: "${{ env.CONTAINER }}:${{ env.TAG }}"
           project: ${{ steps.parse.outputs.project }}
+          target: ${{ steps.parse.outputs.target }}

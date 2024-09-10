@@ -11,6 +11,9 @@ inputs:
     description: If true, will always publish images, even on pushes to the non-default branch
     required: false
     default: "false"
+  target:
+    description: The Earthly target that was run
+    required: true
 
 runs:
   using: node20
