@@ -23,6 +23,8 @@ func GetTag(repo *gg.Repository, ref *plumbing.Reference) (string, error) {
 			return nil
 		}
 
+		fmt.Printf("Processing tag: %s\n", tobj.Name)
+
 		if tobj.Target == ref.Hash() {
 			tag = tobj.Name
 			return nil
