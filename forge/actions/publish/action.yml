@@ -7,6 +7,10 @@ inputs:
   image:
     description: The full image name (name:tag) to publish
     required: true
+  skip_branch_check:
+    description: If true, will always publish images, even on pushes to the non-default branch
+    required: false
+    default: "false"
 
 runs:
   using: node20

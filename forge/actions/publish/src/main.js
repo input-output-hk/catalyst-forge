@@ -6,6 +6,7 @@ async function run() {
   try {
     const project = core.getInput("project", { required: true });
     const image = core.getInput("image", { required: true });
+    const skip_branch_check = core.getBooleanInput("skip_branch_check");
 
     const exists = await imageExists(image);
     if (!exists) {
@@ -15,15 +16,13 @@ async function run() {
           file: `${project}/Earthfile`,
         },
       );
-      core.setFailed(
-        `Image '${image}' does not exist in the local Docker daemon`,
-      );
+      core.setFailed(`Unable to find image: ${image}`);
       return;
     }
 
     const currentBranch = github.context.ref.replace("refs/heads/", "");
     const defaultBranch = github.context.payload.repository.default_branch;
-    if (currentBranch !== defaultBranch) {
+    if (currentBranch !== defaultBranch && !skip_branch_check) {
       core.info("Not on default branch, skipping publish");
       return;
     }
