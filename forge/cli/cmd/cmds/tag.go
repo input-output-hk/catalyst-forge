@@ -3,13 +3,15 @@ package cmds
 import (
 	"fmt"
 	"log/slog"
+	"strings"
 
 	"github.com/input-output-hk/catalyst-forge/blueprint/schema"
-	"github.com/input-output-hk/catalyst-forge/forge/cli/pkg/project"
+	"github.com/input-output-hk/catalyst-forge/forge/cli/pkg/tag"
 )
 
 type TagCmd struct {
-	Project string `arg:"" help:"The project to generate a tag for."`
+	Json    bool   `short:"j" help:"Output tags in JSON format."`
+	Project string `arg:"" help:"The project to generate tags for."`
 }
 
 func (c *TagCmd) Run(logger *slog.Logger) error {
@@ -18,35 +20,41 @@ func (c *TagCmd) Run(logger *slog.Logger) error {
 		return err
 	}
 
+	var tags []string
+
 	if project.Blueprint.Global.CI.Tagging.Strategy == "" {
 		return fmt.Errorf("no tag strategy defined")
 	}
 
 	switch project.Blueprint.Global.CI.Tagging.Strategy {
 	case schema.TagStrategyGitCommit:
-		tag, err := strategyGitCommit(&project)
+		tag, err := tag.GitCommit(&project)
 		if err != nil {
 			return err
 		}
 
-		fmt.Println(tag)
+		tags = append(tags, tag)
 	default:
 		return fmt.Errorf("unknown tag strategy: %s", project.Blueprint.Global.CI.Tagging.Strategy)
 	}
 
-	return nil
-}
-
-func strategyGitCommit(project *project.Project) (string, error) {
 	ref, err := project.Repo.Head()
 	if err != nil {
-		return "", fmt.Errorf("failed to get HEAD: %w", err)
+		return err
 	}
-
-	obj, err := project.Repo.CommitObject(ref.Hash())
+	t, err := tag.GetTag(project.Repo, ref)
 	if err != nil {
-		return "", fmt.Errorf("failed to get commit object: %w", err)
+		return err
 	}
 
-	return obj.Hash.String(), nil
+	fmt.Println("Found git tag: ", t)
+
+	if c.Json {
+		printJson(tags, false)
+	} else {
+		strTags := strings.Join(tags, " ")
+		fmt.Println(strTags)
+	}
+
+	return nil
 }
