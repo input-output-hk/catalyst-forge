@@ -23,9 +23,6 @@ async function run() {
 
     const currentBranch = github.context.ref.replace("refs/heads/", "");
     const defaultBranch = github.context.payload.repository.default_branch;
-    core.info(
-      `Current ref: ${currentBranch}\nDefault branch: ${defaultBranch}`,
-    );
     if (currentBranch !== defaultBranch) {
       core.info("Not on default branch, skipping publish");
       return;

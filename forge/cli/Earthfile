@@ -88,4 +88,4 @@ publish:
         --version=$version) /usr/local/bin/forge
 
     ENTRYPOINT ["/usr/local/bin/forge"]
-    SAVE IMAGE ${container}:${tag}
+    SAVE IMAGE wrong:${tag}
