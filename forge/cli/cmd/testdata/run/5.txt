@@ -7,7 +7,6 @@ earthly
 --platform
 test
 --allow-privileged
---ci
 ./dir1+test
 Image ./dir1+test output as test
 
@@ -15,7 +14,6 @@ earthly
 --platform
 test1
 --allow-privileged
---ci
 ./dir1+test
 Image ./dir1+test output as test
 

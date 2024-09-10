@@ -6,7 +6,6 @@ cmp stdout golden.txt
 earthly
 --platform
 test
---ci
 ./dir1+test
 Image ./dir1+test output as test
 Artifact ./dir1+test output as test
@@ -14,7 +13,6 @@ Artifact ./dir1+test output as test
 earthly
 --platform
 test1
---ci
 ./dir1+test
 Image ./dir1+test output as test
 Artifact ./dir1+test output as test
