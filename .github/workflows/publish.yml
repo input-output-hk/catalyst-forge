@@ -61,7 +61,7 @@ jobs:
           echo "project=$PROJECT" >> $GITHUB_OUTPUT
       - name: Publish
         uses: ./forge/actions/publish
-        if: github.ref_name == github.event.repository.default_branch
+        #if: github.ref_name == github.event.repository.default_branch
         with:
           image: ${{ steps.image.outputs.image }}
           project: ${{ steps.image.outputs.project }}
