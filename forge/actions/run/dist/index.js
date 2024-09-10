@@ -3986,7 +3986,7 @@ async function run() {
     const path = core.getInput("path", { required: true });
     const targetArgs = core.getInput("target_args", { required: false });
 
-    const args = ["-vv", "run"];
+    const args = ["-vv", "run", "--ci"];
 
     if (artifact !== "") {
       args.push("--artifact", artifact);

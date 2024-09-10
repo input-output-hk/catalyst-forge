@@ -30469,7 +30469,7 @@ async function run() {
       images["default"] = image;
     }
 
-    for (const image in images) {
+    for (const image of Object.values(images)) {
       core.info(`Validating image ${image} exists`);
       const exists = await imageExists(image);
       if (!exists) {
