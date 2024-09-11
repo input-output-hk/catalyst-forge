@@ -11,6 +11,11 @@ on:
           The version of the forge CLI to install (use 'local' for testing)
         required: true
         type: string
+      skip_branch_check:
+        description: If true, will always publish images, even on pushes to the non-default branch
+        required: false
+        type: string
+        default: "false"
     secrets:
       earthly_token:
         description: Optional Earthly token used to login to Earthly cloud during local builds of Forge CLI
@@ -55,5 +60,5 @@ jobs:
         with:
           image: "${{ env.CONTAINER }}:${{ env.TAG }}"
           project: ${{ steps.parse.outputs.project }}
-          skip_branch_check: "true"
+          skip_branch_check: ${{ inputs.skip_branch_check }}
           target: ${{ steps.parse.outputs.target }}

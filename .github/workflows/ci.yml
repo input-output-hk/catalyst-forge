@@ -34,48 +34,47 @@ jobs:
             publish
             release
 
-  # check:
-  #   uses: ./.github/workflows/run.yml
-  #   needs: [discover]
-  #   with:
-  #     earthfiles: ${{ toJson(fromJson(needs.discover.outputs.result)['^check.*']) }}
-  #     forge_version: ${{ inputs.forge_version }}
-  #   secrets:
-  #     earthly_token: ${{ secrets.earthly_token }}
+  check:
+    uses: ./.github/workflows/run.yml
+    needs: [discover]
+    with:
+      earthfiles: ${{ toJson(fromJson(needs.discover.outputs.result)['^check.*']) }}
+      forge_version: ${{ inputs.forge_version }}
+    secrets:
+      earthly_token: ${{ secrets.earthly_token }}
 
-  # build:
-  #   uses: ./.github/workflows/run.yml
-  #   needs: [discover, check]
-  #   with:
-  #     earthfiles: ${{ toJson(fromJson(needs.discover.outputs.result)['^build.*']) }}
-  #     forge_version: ${{ inputs.forge_version }}
-  #   secrets:
-  #     earthly_token: ${{ secrets.earthly_token }}
+  build:
+    uses: ./.github/workflows/run.yml
+    needs: [discover, check]
+    with:
+      earthfiles: ${{ toJson(fromJson(needs.discover.outputs.result)['^build.*']) }}
+      forge_version: ${{ inputs.forge_version }}
+    secrets:
+      earthly_token: ${{ secrets.earthly_token }}
 
-  # test:
-  #   uses: ./.github/workflows/run.yml
-  #   needs: [discover, check, build]
-  #   with:
-  #     earthfiles: ${{ toJson(fromJson(needs.discover.outputs.result)['^test.*']) }}
-  #     forge_version: ${{ inputs.forge_version }}
-  #   secrets:
-  #     earthly_token: ${{ secrets.earthly_token }}
+  test:
+    uses: ./.github/workflows/run.yml
+    needs: [discover, check, build]
+    with:
+      earthfiles: ${{ toJson(fromJson(needs.discover.outputs.result)['^test.*']) }}
+      forge_version: ${{ inputs.forge_version }}
+    secrets:
+      earthly_token: ${{ secrets.earthly_token }}
 
   publish:
     uses: ./.github/workflows/publish.yml
-    #needs: [discover, check, build, test]
-    needs: [discover]
+    needs: [discover, check, build, test]
     with:
       earthfiles: ${{ toJson(fromJson(needs.discover.outputs.result)['publish']) }}
       forge_version: ${{ inputs.forge_version }}
     secrets:
       earthly_token: ${{ secrets.earthly_token }}
 
-  # release:
-  #   uses: ./.github/workflows/release.yml
-  #   needs: [discover, check, build, test]
-  #   with:
-  #     earthfiles: ${{ toJson(fromJson(needs.discover.outputs.result)['release']) }}
-  #     forge_version: ${{ inputs.forge_version }}
-  #   secrets:
-  #     earthly_token: ${{ secrets.earthly_token }}
+  release:
+    uses: ./.github/workflows/release.yml
+    needs: [discover, check, build, test]
+    with:
+      earthfiles: ${{ toJson(fromJson(needs.discover.outputs.result)['release']) }}
+      forge_version: ${{ inputs.forge_version }}
+    secrets:
+      earthly_token: ${{ secrets.earthly_token }}
