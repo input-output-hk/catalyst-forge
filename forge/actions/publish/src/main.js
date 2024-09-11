@@ -73,8 +73,9 @@ async function run() {
     const result = await getTags(project);
     if (result.git !== "") {
       tags.push(result.git);
+    } else {
+      tags.push(result.generated);
     }
-    tags.push(result.generated);
 
     const container = blueprint.project.container;
     const registries = blueprint.global.ci.registries;
