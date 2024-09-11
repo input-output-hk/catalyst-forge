@@ -5,16 +5,18 @@ inputs:
     description: The token to use for creating a new release
     required: false
     default: ${{ github.token }}
+  native_platform:
+    description: The native platform that this action is being run in
+    required: true
   project:
     description: The path to the project
     required: true
   path:
     description: The path to generated artifacts
     required: true
-  platform:
-    description: The platform the artifacts are targeting
-    required: false
-    default: "linux-amd64"
+  target:
+    description: The Earthly target that was run
+    required: true
 
 runs:
   using: node20

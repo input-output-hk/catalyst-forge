@@ -1,49 +1,74 @@
 const core = require("@actions/core");
 const exec = require("@actions/exec");
+const fs = require("fs");
 const github = require("@actions/github");
 
 async function run() {
   try {
-    const project = core.getInput("project", { required: true });
-    const path = core.getInput("path", { required: true });
-    const platform = core.getInput("platform", { required: false });
-    const token = core.getInput("github_token", { required: false });
+    const nativePlatform = core.getInput("native_platform");
+    const project = core.getInput("project");
+    const path = core.getInput("path");
+    const target = core.getInput("target");
+    const token = core.getInput("github_token");
 
     const blueprint = await getBlueprint(project);
-
-    const gitTag = parseGitTag(process.env.GITHUB_REF);
-    if (gitTag !== "") {
-      core.info(`Detected Git tag: ${gitTag}`);
-      const projectCleaned = project.replace(/^\.\//, "").replace(/\/$/, "");
-      const tag = parseGitMonorepoTag(
-        gitTag,
-        projectCleaned,
-        blueprint.global?.ci?.tagging?.aliases,
+    const targetConfig = blueprint.project?.ci?.targets?.[target];
+    let platforms = [];
+    if (
+      targetConfig !== undefined &&
+      targetConfig.platforms !== undefined &&
+      targetConfig.platforms.length > 0
+    ) {
+      core.info(
+        `Detected multi-platform build for platforms: ${targetConfig.platforms.join(", ")}`,
       );
+      platforms = targetConfig.platforms;
+    } else {
+      platforms = [nativePlatform];
+    }
 
-      if (tag === "") {
-        core.info(`Skipping tag as it does not match the project`);
+    for (const platform of platforms) {
+      core.info(`Validating artifacts for platform ${platform}`);
+      const platformPath = `${path}/${platform}`;
+      if (!fs.existsSync(platformPath)) {
+        core.setFailed(
+          `Unable to find output folder for platform: ${platform}`,
+        );
         return;
       }
-    } else {
-      core.setFailed("No Git tag detected");
+
+      const files = fs.readdirSync(platformPath);
+      if (files.length === 0) {
+        core.setFailed(`No artifacts found for platform: ${platform}`);
+        return;
+      }
+    }
+
+    const result = await getTags(project);
+    if (result.git === "") {
+      core.info("No Git tag detected");
       return;
     }
 
-    let archiveName = "";
-    if (gitTag.split("/").length > 1) {
-      const prefix = gitTag
-        .split("/")
-        .slice(0, -1)
-        .join("/")
-        .replace(/\//, "-");
-      archiveName = `${prefix}-${platform}.tar.gz`;
-    } else {
-      archiveName = `${github.context.repo.repo}-${platform}.tar.gz`;
-    }
+    const assets = [];
+    const gitTag = result.git;
+    for (const platform of platforms) {
+      let archiveName = "";
+      if (gitTag.split("/").length > 1) {
+        const prefix = gitTag
+          .split("/")
+          .slice(0, -1)
+          .join("/")
+          .replace(/\//, "-");
+        archiveName = `${prefix}-${platform.replace("/", "_")}.tar.gz`;
+      } else {
+        archiveName = `${github.context.repo.repo}-${platform.replace("/", "_")}.tar.gz`;
+      }
 
-    core.info(`Creating archive ${archiveName}`);
-    await archive(archiveName, path);
+      core.info(`Creating archive ${archiveName}`);
+      await archive(archiveName, path);
+      assets.push(archiveName);
+    }
 
     const releaseName = gitTag;
     const octokit = github.getOctokit(token);
@@ -59,17 +84,19 @@ async function run() {
       prerelease: false,
     });
 
-    core.info(`Uploading asset ${archiveName}`);
-    await octokit.rest.repos.uploadReleaseAsset({
-      owner: github.context.repo.owner,
-      repo: github.context.repo.repo,
-      release_id: release.data.id,
-      name: archiveName,
-      mediaType: {
-        format: "application/gzip",
-      },
-      data: require("fs").readFileSync(archiveName),
-    });
+    for (const asset of assets) {
+      core.info(`Uploading asset ${asset}`);
+      await octokit.rest.repos.uploadReleaseAsset({
+        owner: github.context.repo.owner,
+        repo: github.context.repo.repo,
+        release_id: release.data.id,
+        name: asset,
+        mediaType: {
+          format: "application/gzip",
+        },
+        data: fs.readFileSync(asset),
+      });
+    }
   } catch (error) {
     core.setFailed(error.message);
   }
@@ -90,49 +117,18 @@ async function getBlueprint(project) {
 }
 
 /**
- * Parse a Git tag from a ref. If the ref is not a tag, an empty string is returned.
- * @param {string} ref The ref to parse
- * @returns {string}   The tag or an empty string
+ * Generates tags for the given project
+ * @param {string} project  The name of the project to get tags for
+ * @returns {object}        The tags object
  */
-function parseGitTag(ref) {
-  if (ref.startsWith("refs/tags/")) {
-    return ref.slice(10);
-  } else {
-    return "";
-  }
-}
-
-/**
- * Parse a Git mono-repo tag
- * @param {*} tag      The tag to parse
- * @param {*} project  The project path
- * @param {*} aliases  The tag aliases to use
- * @returns {string}   The parsed tag or an empty string
- */
-function parseGitMonorepoTag(tag, project, aliases) {
-  const parts = tag.split("/");
-  if (parts.length > 1) {
-    const path = parts.slice(0, -1).join("/");
-    const monoTag = parts[parts.length - 1];
-
-    core.info(
-      `Detected mono-repo tag path=${path} tag=${monoTag} currentProject=${project}`,
-    );
-    if (aliases && Object.keys(aliases).length > 0) {
-      if (aliases[path] === project) {
-        return monoTag;
-      }
-    }
-
-    if (path === project) {
-      return monoTag;
-    } else {
-      return "";
-    }
-  } else {
-    core.info("Detected non mono-repo tag. Using tag as is.");
-    return tag;
-  }
+async function getTags(project) {
+  const result = await exec.getExecOutput("forge", [
+    "-vv",
+    "tag",
+    "--ci",
+    project,
+  ]);
+  return JSON.parse(result.stdout);
 }
 
 /**
