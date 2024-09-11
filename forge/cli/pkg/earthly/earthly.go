@@ -117,7 +117,7 @@ func (e *EarthlyExecutor) buildArguments(platform string) []string {
 	earthlyArgs = append(earthlyArgs, e.earthlyArgs...)
 
 	// If we have an artifact path and multiple platforms, we need to append the platform to the artifact path to avoid conflicts.
-	if e.opts.artifact != "" && len(e.opts.platforms) > 1 {
+	if e.opts.artifact != "" {
 		earthlyArgs = append(earthlyArgs, "--artifact", fmt.Sprintf("%s+%s/*", e.earthfile, e.target), path.Join(e.opts.artifact, platform)+"/")
 	} else if e.opts.artifact != "" && len(e.opts.platforms) <= 1 {
 		earthlyArgs = append(earthlyArgs, "--artifact", fmt.Sprintf("%s+%s/*", e.earthfile, e.target), e.opts.artifact)

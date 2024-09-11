@@ -54,4 +54,4 @@ jobs:
           native_platform: linux/amd64
           path: ${{ env.OUTPUT }}
           project: ${{ steps.parse.outputs.project }}
-          taret: ${{ steps.parse.outputs.target }}
+          target: ${{ steps.parse.outputs.target }}
