@@ -30486,7 +30486,11 @@ async function run() {
 
     const currentBranch = github.context.ref.replace("refs/heads/", "");
     const defaultBranch = github.context.payload.repository.default_branch;
-    if (currentBranch !== defaultBranch && !skip_branch_check) {
+    if (
+      currentBranch !== defaultBranch &&
+      !skip_branch_check &&
+      !github.context.ref.includes("refs/tags/")
+    ) {
       core.info("Not on default branch, skipping publish");
       return;
     }

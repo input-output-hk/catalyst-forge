@@ -53,7 +53,9 @@ async function run() {
     const assets = [];
     const gitTag = result.git;
     for (const platform of platforms) {
+      const platformPath = `${path}/${platform}`;
       let archiveName = "";
+
       if (gitTag.split("/").length > 1) {
         const prefix = gitTag
           .split("/")
@@ -66,7 +68,7 @@ async function run() {
       }
 
       core.info(`Creating archive ${archiveName}`);
-      await archive(archiveName, path);
+      await archive(archiveName, platformPath);
       assets.push(archiveName);
     }
 
