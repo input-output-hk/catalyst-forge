@@ -1,0 +1,12 @@
+[project]
+name = "docs"
+version = "0.1.0"
+description = "Catalyst Forge documentation"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "mkdocs-material>=9.5.34",
+]
+
+[tool.uv]
+dev-dependencies = []
