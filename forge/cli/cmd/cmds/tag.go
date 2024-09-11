@@ -129,9 +129,11 @@ func handleMonoTag(project project.Project, tag ptag.MonoTag, trim bool, logger 
 	}
 
 	// Check if the project has an alias
+	var preAlias string
 	if project.Blueprint.Global.CI.Tagging.Aliases != nil {
 		if _, ok := project.Blueprint.Global.CI.Tagging.Aliases[tag.Project]; ok {
 			logger.Info("Found alias", "project", tag.Project, "alias", project.Blueprint.Global.CI.Tagging.Aliases[tag.Project])
+			preAlias = tag.Project
 			tag.Project = project.Blueprint.Global.CI.Tagging.Aliases[tag.Project]
 		}
 	}
@@ -142,7 +144,11 @@ func handleMonoTag(project project.Project, tag ptag.MonoTag, trim bool, logger 
 		if trim {
 			return tag.Tag, nil
 		} else {
-			return tag.Project + "/" + tag.Tag, nil
+			if preAlias != "" {
+				return preAlias + "/" + tag.Tag, nil
+			} else {
+				return tag.Project + "/" + tag.Tag, nil
+			}
 		}
 	}
 }

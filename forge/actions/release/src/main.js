@@ -60,9 +60,9 @@ async function run() {
           .slice(0, -1)
           .join("/")
           .replace(/\//, "-");
-        archiveName = `${prefix}-${platform.replace("/", "_")}.tar.gz`;
+        archiveName = `${prefix}-${platform.replace("/", "-")}.tar.gz`;
       } else {
-        archiveName = `${github.context.repo.repo}-${platform.replace("/", "_")}.tar.gz`;
+        archiveName = `${github.context.repo.repo}-${platform.replace("/", "-")}.tar.gz`;
       }
 
       core.info(`Creating archive ${archiveName}`);
