@@ -155,7 +155,7 @@ func TestEarthlyExecutor_buildArguments(t *testing.T) {
 				WithArtifact("test"),
 			),
 			platform: getNativePlatform(),
-			expect:   []string{"--platform", getNativePlatform(), "--artifact", "/test/dir+foo/*", "test/"},
+			expect:   []string{"--platform", getNativePlatform(), "--artifact", "/test/dir+foo/*", "test/" + getNativePlatform() + "/"},
 		},
 		{
 			name: "with artifact and platforms",

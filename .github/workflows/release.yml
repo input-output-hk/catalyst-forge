@@ -39,28 +39,19 @@ jobs:
         with:
           artifact: ${{ env.OUTPUT }}
           path: ${{ matrix.earthfile }}
-      - name: Get project and artifacts
-        id: artifact
-        if: startsWith(github.ref, 'refs/tags/')
+      - name: Parse Earthfile reference
+        id: parse
         run: |
           EARTHFILE='${{ matrix.earthfile }}'
           PROJECT="${EARTHFILE%+*}"
           TARGET="${EARTHFILE#*+}"
-          RESULT='${{ steps.run.outputs.result }}'
-
-          ARTIFACT_COUNT="$(echo "$RESULT" | jq -r '.artifacts | length')"
-
-          if [[ $ARTIFACT_COUNT -eq 0 ]]; then
-            echo "::error file=${PROJECT}/Earthfile::No artifacts produced. Nothing to release."
-            exit 1
-          fi
-
-          ls -l ${{ env.OUTPUT }}
 
           echo "project=$PROJECT" >> $GITHUB_OUTPUT
+          echo "target=$TARGET" >> $GITHUB_OUTPUT
       - name: Release
         uses: ./forge/actions/release
-        if: startsWith(github.ref, 'refs/tags/')
         with:
+          native_platform: linux/amd64
           path: ${{ env.OUTPUT }}
-          project: ${{ steps.artifact.outputs.project }}
+          project: ${{ steps.parse.outputs.project }}
+          target: ${{ steps.parse.outputs.target }}

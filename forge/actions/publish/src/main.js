@@ -1,20 +1,58 @@
 const core = require("@actions/core");
 const exec = require("@actions/exec");
+const github = require("@actions/github");
 
 async function run() {
   try {
-    const project = core.getInput("project", { required: true });
-    const image = core.getInput("image", { required: true });
-
-    const exists = await imageExists(image);
-    if (!exists) {
-      core.setFailed(
-        `Image '${image}' does not exist in the local Docker daemon`,
-      );
-      return;
-    }
+    const project = core.getInput("project");
+    const image = core.getInput("image");
+    const skip_branch_check = core.getBooleanInput("skip_branch_check");
+    const target = core.getInput("target");
 
     const blueprint = await getBlueprint(project);
+    const targetConfig = blueprint.project?.ci?.targets?.[target];
+    let platforms = [];
+    if (
+      targetConfig !== undefined &&
+      targetConfig.platforms !== undefined &&
+      targetConfig.platforms.length > 0
+    ) {
+      core.info(
+        `Detected multi-platform build for platforms: ${targetConfig.platforms.join(", ")}`,
+      );
+      platforms = targetConfig.platforms;
+    }
+
+    const images = {};
+    if (platforms.length > 0) {
+      for (const platform of platforms) {
+        images[platform] = `${image}_${platform.replace("/", "_")}`;
+      }
+    } else {
+      images["default"] = image;
+    }
+
+    for (const image of Object.values(images)) {
+      core.info(`Validating image ${image} exists`);
+      const exists = await imageExists(image);
+      if (!exists) {
+        core.error(
+          `Unable to find image '${image}' in the local Docker daemon. Did you add a 'container' and 'tag' argument to your target?`,
+          {
+            file: `${project}/Earthfile`,
+          },
+        );
+        core.setFailed(`Unable to find image: ${image}`);
+        return;
+      }
+    }
+
+    const currentBranch = github.context.ref.replace("refs/heads/", "");
+    const defaultBranch = github.context.payload.repository.default_branch;
+    if (currentBranch !== defaultBranch && !skip_branch_check) {
+      core.info("Not on default branch, skipping publish");
+      return;
+    }
 
     if (blueprint?.project?.container === undefined) {
       core.warning(
@@ -26,7 +64,7 @@ async function run() {
       blueprint?.global?.ci?.registries.length === 0
     ) {
       core.warning(
-        `The repository does not have any registries defined. Skipping publish`,
+        `The repository does not have any container registries defined. Skipping publish`,
       );
       return;
     }
@@ -35,21 +73,54 @@ async function run() {
     const result = await getTags(project);
     if (result.git !== "") {
       tags.push(result.git);
+    } else {
+      tags.push(result.generated);
     }
-    tags.push(result.generated);
 
     const container = blueprint.project.container;
     const registries = blueprint.global.ci.registries;
 
-    for (const registry of registries) {
-      for (const tag of tags) {
-        const taggedImage = `${registry}/${container}:${tag}`;
+    if (platforms.length > 0) {
+      for (const registry of registries) {
+        for (const tag of tags) {
+          const pushed = [];
+          for (const platform of platforms) {
+            const existingImage = images[platform];
+            const taggedImage = `${registry}/${container}:${tag}_${platform.replace("/", "_")}`;
 
-        core.info(`Tagging image ${image} as ${taggedImage}`);
-        await tagImage(image, taggedImage);
+            core.info(`Tagging image ${existingImage} as ${taggedImage}`);
+            await tagImage(existingImage, taggedImage);
 
-        core.info(`Pushing image ${taggedImage}`);
-        await pushImage(taggedImage);
+            core.info(`Pushing image ${taggedImage}`);
+            await pushImage(taggedImage);
+
+            pushed.push(taggedImage);
+          }
+
+          const multiImage = `${registry}/${container}:${tag}`;
+          core.info(`Creating multi-platform image ${multiImage}`);
+          await exec.exec("docker", [
+            "buildx",
+            "imagetools",
+            "create",
+            "--tag",
+            multiImage,
+            ...pushed,
+          ]);
+        }
+      }
+    } else {
+      const image = images["default"];
+      for (const registry of registries) {
+        for (const tag of tags) {
+          const taggedImage = `${registry}/${container}:${tag}`;
+
+          core.info(`Tagging image ${image} as ${taggedImage}`);
+          await tagImage(image, taggedImage);
+
+          core.info(`Pushing image ${taggedImage}`);
+          await pushImage(taggedImage);
+        }
       }
     }
   } catch (error) {
@@ -97,8 +168,6 @@ async function imageExists(name) {
     ignoreReturnCode: true,
     silent: true,
   });
-
-  console.log(`Result: ${result}`);
 
   return result === 0;
 }

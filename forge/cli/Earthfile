@@ -37,10 +37,10 @@ build:
 
     ARG GOOS
     ARG GOARCH
-    ARG VERSION="0.0.0"
+    ARG version="0.0.0"
 
     ENV CGO_ENABLED=0
-    RUN go build -ldflags="-extldflags=-static -X main.version=$VERSION" -o bin/forge cmd/main.go
+    RUN go build -ldflags="-extldflags=-static -X main.version=$version" -o bin/forge cmd/main.go
     RUN file bin/forge
 
     SAVE ARTIFACT bin/forge forge
@@ -51,19 +51,20 @@ test:
     RUN go test ./...
 
 release:
-    FROM alpine:3.19
+    FROM scratch
+
+    ARG version="0.0.0"
 
     ARG TARGETOS
     ARG TARGETARCH
     ARG USERPLATFORM
-    ARG VERSION="0.0.2"
 
     COPY \
         --platform=$USERPLATFORM \
         (+build/forge \
         --GOOS=$TARGETOS \
         --GOARCH=$TARGETARCH \
-        --VERSION=$VERSION) bin/forge
+        --version=$version) bin/forge
 
     SAVE ARTIFACT bin/forge forge
 
@@ -71,19 +72,20 @@ publish:
     FROM debian:bookworm-slim
     WORKDIR /workspace
 
-    ARG tag=latest
+    ARG container="forge"
+    ARG tag="latest"
+    ARG version="0.0.2"
 
     ARG TARGETOS
     ARG TARGETARCH
     ARG USERPLATFORM
-    ARG VERSION="0.0.2"
 
     COPY \
         --platform=$USERPLATFORM \
         (+build/forge \
         --GOOS=$TARGETOS \
         --GOARCH=$TARGETARCH \
-        --VERSION=$VERSION) /usr/local/bin/forge
+        --version=$version) /usr/local/bin/forge
 
     ENTRYPOINT ["/usr/local/bin/forge"]
-    SAVE IMAGE forge:${tag}
+    SAVE IMAGE ${container}:${tag}

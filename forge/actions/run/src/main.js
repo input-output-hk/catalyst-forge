@@ -6,8 +6,9 @@ async function run() {
     const artifact = core.getInput("artifact", { required: false });
     const local = core.getBooleanInput("local", { required: false });
     const path = core.getInput("path", { required: true });
+    const targetArgs = core.getInput("target_args", { required: false });
 
-    const args = ["-vv", "run"];
+    const args = ["-vv", "run", "--ci"];
 
     if (artifact !== "") {
       args.push("--artifact", artifact);
@@ -18,6 +19,10 @@ async function run() {
     }
 
     args.push(path);
+
+    if (targetArgs !== "") {
+      args.push("--", ...targetArgs.split(" "));
+    }
 
     core.info(`Running forge ${args.join(" ")}`);
     const result = await forge.runForge(args);

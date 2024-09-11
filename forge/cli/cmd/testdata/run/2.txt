@@ -8,7 +8,7 @@ earthly
 test
 --artifact
 ./dir1+test/*
-output/
+output/test/
 Image ./dir1+test output as test
 Artifact ./dir1+test output as test
 
