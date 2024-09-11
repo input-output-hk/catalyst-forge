@@ -30537,6 +30537,7 @@ async function run() {
           core.info(`Creating multi-platform image ${multiImage}`);
           await exec.exec("docker", [
             "buildx",
+            "imagetools",
             "create",
             "--tag",
             multiImage,
