@@ -51,7 +51,7 @@ test:
     RUN go test ./...
 
 release:
-    FROM alpine:3.19
+    FROM scratch
 
     ARG version="0.0.0"
 
