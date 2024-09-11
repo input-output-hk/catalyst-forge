@@ -28,7 +28,7 @@ async function run() {
     }
 
     for (const platform of platforms) {
-      core.info(`Validating artifacts for platform ${platform}`);
+      core.info(`Validating artifacts for platform ${platform} at ${path}`);
       const platformPath = `${path}/${platform}`;
       if (!fs.existsSync(platformPath)) {
         core.setFailed(
