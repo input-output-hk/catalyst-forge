@@ -27,6 +27,10 @@ var (
 	ErrVersionNotFound = errors.New("version not found")
 )
 
+// InjectorOverrider is a function that receives a CUE value and returns a map
+// of environment variables to override
+type InjectorOverrider func(value cue.Value) map[string]string
+
 // BlueprintLoader is an interface for loading blueprints.
 type BlueprintLoader interface {
 	// Load loads the blueprint.
@@ -35,9 +39,10 @@ type BlueprintLoader interface {
 
 // DefaultBlueprintLoader is the default implementation of the BlueprintLoader
 type DefaultBlueprintLoader struct {
-	fs       afero.Fs
-	injector injector.Injector
-	logger   *slog.Logger
+	fs        afero.Fs
+	injector  injector.Injector
+	logger    *slog.Logger
+	overrider InjectorOverrider
 }
 
 func (b *DefaultBlueprintLoader) Load(projectPath, gitRootPath string) (blueprint.RawBlueprint, error) {
@@ -106,7 +111,13 @@ func (b *DefaultBlueprintLoader) Load(projectPath, gitRootPath string) (blueprin
 
 		finalVersion = bps.Version()
 		userBlueprint = userBlueprint.FillPath(cue.ParsePath("version"), finalVersion.String())
-		userBlueprint = b.injector.InjectEnv(userBlueprint)
+
+		var overrides map[string]string
+		if b.overrider != nil {
+			overrides = b.overrider(userBlueprint)
+		}
+
+		userBlueprint = b.injector.InjectEnv(userBlueprint, overrides)
 		finalBlueprint = schema.Unify(userBlueprint)
 	} else {
 		b.logger.Warn("No blueprint files found, using default values")
@@ -132,26 +143,35 @@ func (b *DefaultBlueprintLoader) Load(projectPath, gitRootPath string) (blueprin
 }
 
 // NewDefaultBlueprintLoader creates a new DefaultBlueprintLoader.
-func NewDefaultBlueprintLoader(logger *slog.Logger) DefaultBlueprintLoader {
+func NewDefaultBlueprintLoader(overrider InjectorOverrider, logger *slog.Logger) DefaultBlueprintLoader {
 	if logger == nil {
 		logger = slog.New(slog.NewTextHandler(io.Discard, nil))
 	}
 
 	return DefaultBlueprintLoader{
-		fs:       afero.NewOsFs(),
-		injector: injector.NewDefaultInjector(logger),
-		logger:   logger,
+		fs:        afero.NewOsFs(),
+		injector:  injector.NewDefaultInjector(logger),
+		logger:    logger,
+		overrider: overrider,
 	}
 }
 
-func NewCustomBlueprintLoader(fs afero.Fs, injector injector.Injector, logger *slog.Logger) DefaultBlueprintLoader {
+// NewCustomBlueprintLoader creates a new DefaultBlueprintLoader with custom
+// dependencies.
+func NewCustomBlueprintLoader(
+	fs afero.Fs,
+	injector injector.Injector,
+	overrider InjectorOverrider,
+	logger *slog.Logger,
+) DefaultBlueprintLoader {
 	if logger == nil {
 		logger = slog.New(slog.NewTextHandler(io.Discard, nil))
 	}
 
 	return DefaultBlueprintLoader{
-		fs:       fs,
-		injector: injector,
-		logger:   logger,
+		fs:        fs,
+		injector:  injector,
+		logger:    logger,
+		overrider: overrider,
 	}
 }

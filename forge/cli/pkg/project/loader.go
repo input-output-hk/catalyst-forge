@@ -100,7 +100,7 @@ func NewDefaultProjectLoader(logger *slog.Logger) DefaultProjectLoader {
 		logger = slog.New(slog.NewTextHandler(io.Discard, nil))
 	}
 
-	bl := loader.NewDefaultBlueprintLoader(logger)
+	bl := loader.NewDefaultBlueprintLoader(nil, logger)
 	rl := git.NewDefaultRepoLoader()
 	return DefaultProjectLoader{
 		blueprintLoader: &bl,

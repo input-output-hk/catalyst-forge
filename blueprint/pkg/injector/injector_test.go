@@ -19,6 +19,7 @@ func TestInjectEnv(t *testing.T) {
 		name          string
 		raw           string
 		env           map[string]string
+		ovr           map[string]string
 		path          string
 		expectedType  envType
 		expectedValue any
@@ -32,6 +33,7 @@ func TestInjectEnv(t *testing.T) {
 			env: map[string]string{
 				"FOO": "bar",
 			},
+			ovr:           nil,
 			path:          "foo",
 			expectedType:  EnvTypeString,
 			expectedValue: "bar",
@@ -45,6 +47,7 @@ func TestInjectEnv(t *testing.T) {
 			env: map[string]string{
 				"FOO": "3",
 			},
+			ovr:           nil,
 			path:          "foo",
 			expectedType:  EnvTypeInt,
 			expectedValue: int64(3),
@@ -58,9 +61,39 @@ func TestInjectEnv(t *testing.T) {
 			env: map[string]string{
 				"FOO": "true",
 			},
+			ovr:           nil,
 			path:          "foo",
 			expectedType:  EnvTypeBool,
 			expectedValue: true,
+			expectErr:     false,
+		},
+		{
+			name: "override",
+			raw: `
+				foo: string | *"test" @env(name=FOO,type=string)
+			`,
+			env: map[string]string{
+				"FOO": "bar",
+			},
+			ovr: map[string]string{
+				"FOO": "baz",
+			},
+			path:          "foo",
+			expectedType:  EnvTypeString,
+			expectedValue: "baz",
+			expectErr:     false,
+		},
+		{
+			name: "override no env",
+			raw: `
+				foo: string | *"test" @env(name=FOO,type=string)
+			`,
+			ovr: map[string]string{
+				"FOO": "baz",
+			},
+			path:          "foo",
+			expectedType:  EnvTypeString,
+			expectedValue: "baz",
 			expectErr:     false,
 		},
 		{
@@ -71,6 +104,7 @@ func TestInjectEnv(t *testing.T) {
 			env: map[string]string{
 				"FOO": "foo",
 			},
+			ovr:           nil,
 			path:          "foo",
 			expectedType:  EnvTypeInt,
 			expectedValue: true,
@@ -84,6 +118,7 @@ func TestInjectEnv(t *testing.T) {
 			env: map[string]string{
 				"FOO": "foo",
 			},
+			ovr:           nil,
 			path:          "foo",
 			expectedType:  EnvTypeString,
 			expectedValue: true,
@@ -104,7 +139,7 @@ func TestInjectEnv(t *testing.T) {
 					},
 				},
 			}
-			v = i.InjectEnv(v)
+			v = i.InjectEnv(v, tt.ovr)
 
 			err = v.Validate(cue.Concrete(true))
 			if testutils.AssertError(t, err, tt.expectErr, "") {

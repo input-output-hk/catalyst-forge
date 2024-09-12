@@ -59,6 +59,7 @@ func TestBlueprintLoaderLoad(t *testing.T) {
 		name      string
 		fs        afero.Fs
 		injector  injector.Injector
+		overrider InjectorOverrider
 		project   string
 		gitRoot   string
 		files     map[string]string
@@ -66,12 +67,13 @@ func TestBlueprintLoaderLoad(t *testing.T) {
 		expectErr bool
 	}{
 		{
-			name:     "no files",
-			fs:       afero.NewMemMapFs(),
-			injector: defaultInjector(),
-			project:  "/tmp/dir1/dir2",
-			gitRoot:  "/tmp/dir1/dir2",
-			files:    map[string]string{},
+			name:      "no files",
+			fs:        afero.NewMemMapFs(),
+			injector:  defaultInjector(),
+			overrider: nil,
+			project:   "/tmp/dir1/dir2",
+			gitRoot:   "/tmp/dir1/dir2",
+			files:     map[string]string{},
 			cond: func(t *testing.T, v cue.Value) {
 				assert.NoError(t, v.Err())
 				assert.NotEmpty(t, v.LookupPath(cue.ParsePath("version")))
@@ -79,11 +81,12 @@ func TestBlueprintLoaderLoad(t *testing.T) {
 			expectErr: false,
 		},
 		{
-			name:     "single file",
-			fs:       afero.NewMemMapFs(),
-			injector: defaultInjector(),
-			project:  "/tmp/dir1/dir2",
-			gitRoot:  "/tmp/dir1/dir2",
+			name:      "single file",
+			fs:        afero.NewMemMapFs(),
+			injector:  defaultInjector(),
+			overrider: nil,
+			project:   "/tmp/dir1/dir2",
+			gitRoot:   "/tmp/dir1/dir2",
 			files: map[string]string{
 				"/tmp/dir1/dir2/blueprint.cue": `
 				version: "1.0"
@@ -110,11 +113,12 @@ func TestBlueprintLoaderLoad(t *testing.T) {
 			expectErr: false,
 		},
 		{
-			name:     "multiple files",
-			fs:       afero.NewMemMapFs(),
-			injector: defaultInjector(),
-			project:  "/tmp/dir1/dir2",
-			gitRoot:  "/tmp/dir1",
+			name:      "multiple files",
+			fs:        afero.NewMemMapFs(),
+			injector:  defaultInjector(),
+			overrider: nil,
+			project:   "/tmp/dir1/dir2",
+			gitRoot:   "/tmp/dir1",
 			files: map[string]string{
 				"/tmp/dir1/dir2/blueprint.cue": `
 				version: "1.0"
@@ -168,6 +172,43 @@ func TestBlueprintLoaderLoad(t *testing.T) {
 					},
 				},
 			),
+			overrider: nil,
+			project:   "/tmp/dir1/dir2",
+			gitRoot:   "/tmp/dir1/dir2",
+			files: map[string]string{
+				"/tmp/dir1/dir2/blueprint.cue": `
+				version: "1.0"
+				project: {
+					name: "test"
+					ci: {
+						targets: {
+							test: {
+								retries: _ @env(name=RETRIES,type=int)
+							}
+						}
+					}
+				}
+				`,
+				"/tmp/dir1/.git": "",
+			},
+			cond: func(t *testing.T, v cue.Value) {
+				assert.NoError(t, v.Err())
+
+				field, err := v.LookupPath(cue.ParsePath("project.ci.targets.test.retries")).Int64()
+				require.NoError(t, err)
+				assert.Equal(t, int64(5), field)
+			},
+			expectErr: false,
+		},
+		{
+			name:     "with injection overrides",
+			fs:       afero.NewMemMapFs(),
+			injector: defaultInjector(),
+			overrider: func(bp cue.Value) map[string]string {
+				return map[string]string{
+					"RETRIES": "5",
+				}
+			},
 			project: "/tmp/dir1/dir2",
 			gitRoot: "/tmp/dir1/dir2",
 			files: map[string]string{
@@ -202,9 +243,10 @@ func TestBlueprintLoaderLoad(t *testing.T) {
 			testutils.SetupFS(t, tt.fs, tt.files)
 
 			loader := DefaultBlueprintLoader{
-				fs:       tt.fs,
-				injector: tt.injector,
-				logger:   slog.New(slog.NewTextHandler(io.Discard, nil)),
+				fs:        tt.fs,
+				injector:  tt.injector,
+				logger:    slog.New(slog.NewTextHandler(io.Discard, nil)),
+				overrider: tt.overrider,
 			}
 
 			bp, err := loader.Load(tt.project, tt.gitRoot)
