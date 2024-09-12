@@ -29,7 +29,7 @@ func (b BlueprintFiles) Unify(ctx *cue.Context) (cue.Value, error) {
 		v = v.Unify(bp.Value)
 	}
 
-	if err := cuetools.Validate(v, cue.Concrete(true)); err != nil {
+	if err := cuetools.Validate(v); err != nil {
 		return cue.Value{}, err
 	}
 
@@ -91,12 +91,6 @@ func NewBlueprintFile(ctx *cue.Context, path string, contents []byte, inj inject
 	v, err = cuetools.Delete(ctx, v, "version")
 	if err != nil {
 		return BlueprintFile{}, fmt.Errorf("failed to delete version from blueprint file: %w", err)
-	}
-
-	v = inj.InjectEnv(v)
-
-	if err := cuetools.Validate(v, cue.Concrete(true)); err != nil {
-		return BlueprintFile{}, err
 	}
 
 	return BlueprintFile{
