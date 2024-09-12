@@ -9,7 +9,6 @@ import (
 	"github.com/input-output-hk/catalyst-forge/tools/pkg/walker"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
-	"golang.org/x/exp/maps"
 )
 
 func TestScanProjects(t *testing.T) {
@@ -58,7 +57,9 @@ func TestScanProjects(t *testing.T) {
 				return
 			}
 
-			assert.Equal(t, maps.Keys(got), tt.expectedKeys)
+			for _, key := range tt.expectedKeys {
+				assert.Contains(t, got, key)
+			}
 		})
 	}
 }

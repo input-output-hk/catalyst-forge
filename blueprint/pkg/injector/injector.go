@@ -53,7 +53,7 @@ type Injector struct {
 }
 
 // InjectEnv injects environment variables into the given CUE value
-func (i *Injector) InjectEnv(v cue.Value) cue.Value {
+func (i *Injector) InjectEnv(v cue.Value, overrides map[string]string) cue.Value {
 	rv := v
 
 	v.Walk(func(v cue.Value) bool {
@@ -72,19 +72,29 @@ func (i *Injector) InjectEnv(v cue.Value) cue.Value {
 
 		i.logger.Debug("parsed @env() attribute", "name", env.name, "type", env.envType)
 
-		envValue, ok := i.getter.Get(env.name)
-		if !ok {
+		if overrides == nil {
+			overrides = make(map[string]string)
+		}
+
+		var value string
+		envValue, eo := i.getter.Get(env.name)
+		ovrValue, oo := overrides[env.name]
+		if oo {
+			value = ovrValue
+		} else if eo {
+			value = envValue
+		} else {
 			i.logger.Warn("environment variable not found", "name", env.name)
 			return true
 		}
 
 		switch env.envType {
 		case EnvTypeString:
-			rv = rv.FillPath(v.Path(), envValue)
+			rv = rv.FillPath(v.Path(), value)
 		case EnvTypeInt:
-			n, err := strconv.Atoi(envValue)
+			n, err := strconv.Atoi(value)
 			if err != nil {
-				rv = rv.FillPath(v.Path(), fmt.Errorf("invalid int value '%s'", envValue))
+				rv = rv.FillPath(v.Path(), fmt.Errorf("invalid int value '%s'", value))
 			}
 			rv = rv.FillPath(v.Path(), n)
 		case EnvTypeBool:
