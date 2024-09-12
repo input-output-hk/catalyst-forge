@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
+	"os"
 	"path/filepath"
 
 	"cuelang.org/go/cue"
@@ -15,7 +16,7 @@ import (
 	"github.com/input-output-hk/catalyst-forge/blueprint/pkg/version"
 	"github.com/input-output-hk/catalyst-forge/blueprint/schema"
 	cuetools "github.com/input-output-hk/catalyst-forge/tools/pkg/cue"
-	"github.com/input-output-hk/catalyst-forge/tools/pkg/walker"
+	"github.com/spf13/afero"
 )
 
 //go:generate go run github.com/matryer/moq@latest --pkg mocks --out ./mocks/loader.go . BlueprintLoader
@@ -34,16 +35,40 @@ type BlueprintLoader interface {
 
 // DefaultBlueprintLoader is the default implementation of the BlueprintLoader
 type DefaultBlueprintLoader struct {
+	fs       afero.Fs
 	injector injector.Injector
 	logger   *slog.Logger
-	walker   walker.ReverseWalker
 }
 
 func (b *DefaultBlueprintLoader) Load(projectPath, gitRootPath string) (blueprint.RawBlueprint, error) {
-	files, err := b.findBlueprints(projectPath, gitRootPath)
+	files := make(map[string][]byte)
+
+	pbPath := filepath.Join(projectPath, BlueprintFileName)
+	pb, err := afero.ReadFile(b.fs, pbPath)
 	if err != nil {
-		b.logger.Error("Failed to find blueprint files", "error", err)
-		return blueprint.RawBlueprint{}, fmt.Errorf("failed to find blueprint files: %w", err)
+		if os.IsNotExist(err) {
+			b.logger.Warn("No project blueprint file found", "path", pbPath)
+		} else {
+			b.logger.Error("Failed to read blueprint file", "path", pbPath, "error", err)
+			return blueprint.RawBlueprint{}, fmt.Errorf("failed to read blueprint file: %w", err)
+		}
+	} else {
+		files[pbPath] = pb
+	}
+
+	if projectPath != gitRootPath {
+		rootPath := filepath.Join(gitRootPath, BlueprintFileName)
+		rb, err := afero.ReadFile(b.fs, rootPath)
+		if err != nil {
+			if os.IsNotExist(err) {
+				b.logger.Warn("No root blueprint file found", "path", rootPath)
+			} else {
+				b.logger.Error("Failed to read blueprint file", "path", rootPath, "error", err)
+				return blueprint.RawBlueprint{}, fmt.Errorf("failed to read blueprint file: %w", err)
+			}
+		} else {
+			files[rootPath] = rb
+		}
 	}
 
 	ctx := cuecontext.New()
@@ -81,6 +106,7 @@ func (b *DefaultBlueprintLoader) Load(projectPath, gitRootPath string) (blueprin
 
 		finalVersion = bps.Version()
 		userBlueprint = userBlueprint.FillPath(cue.ParsePath("version"), finalVersion.String())
+		userBlueprint = b.injector.InjectEnv(userBlueprint)
 		finalBlueprint = schema.Unify(userBlueprint)
 	} else {
 		b.logger.Warn("No blueprint files found, using default values")
@@ -105,55 +131,27 @@ func (b *DefaultBlueprintLoader) Load(projectPath, gitRootPath string) (blueprin
 	return blueprint.NewRawBlueprint(finalBlueprint), nil
 }
 
-// findBlueprints searches for blueprint files starting from the startPath and
-// ending at the endPath. It returns a map of blueprint file paths to their
-// contents or an error if the search fails.
-func (b *DefaultBlueprintLoader) findBlueprints(startPath, endPath string) (map[string][]byte, error) {
-	bps := make(map[string][]byte)
-
-	err := b.walker.Walk(
-		startPath,
-		endPath,
-		func(path string, fileType walker.FileType, openFile func() (walker.FileSeeker, error)) error {
-			if fileType == walker.FileTypeFile {
-				if filepath.Base(path) == BlueprintFileName {
-					reader, err := openFile()
-					if err != nil {
-						return err
-					}
-
-					defer reader.Close()
-
-					data, err := io.ReadAll(reader)
-					if err != nil {
-						return err
-					}
-
-					bps[path] = data
-				}
-			}
-
-			return nil
-		},
-	)
-
-	if err != nil {
-		return nil, err
-	}
-
-	return bps, nil
-}
-
 // NewDefaultBlueprintLoader creates a new DefaultBlueprintLoader.
 func NewDefaultBlueprintLoader(logger *slog.Logger) DefaultBlueprintLoader {
 	if logger == nil {
 		logger = slog.New(slog.NewTextHandler(io.Discard, nil))
 	}
 
-	walker := walker.NewDefaultFSReverseWalker(logger)
 	return DefaultBlueprintLoader{
+		fs:       afero.NewOsFs(),
 		injector: injector.NewDefaultInjector(logger),
 		logger:   logger,
-		walker:   &walker,
+	}
+}
+
+func NewCustomBlueprintLoader(fs afero.Fs, injector injector.Injector, logger *slog.Logger) DefaultBlueprintLoader {
+	if logger == nil {
+		logger = slog.New(slog.NewTextHandler(io.Discard, nil))
+	}
+
+	return DefaultBlueprintLoader{
+		fs:       fs,
+		injector: injector,
+		logger:   logger,
 	}
 }

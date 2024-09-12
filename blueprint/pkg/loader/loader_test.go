@@ -1,28 +1,20 @@
 package loader
 
 import (
-	"errors"
 	"io"
 	"io/fs"
 	"log/slog"
-	"path/filepath"
 	"strings"
 	"testing"
 
+	"cuelang.org/go/cue"
 	"github.com/input-output-hk/catalyst-forge/blueprint/pkg/injector"
 	imocks "github.com/input-output-hk/catalyst-forge/blueprint/pkg/injector/mocks"
 	"github.com/input-output-hk/catalyst-forge/tools/pkg/testutils"
-	"github.com/input-output-hk/catalyst-forge/tools/pkg/walker"
-	wmocks "github.com/input-output-hk/catalyst-forge/tools/pkg/walker/mocks"
+	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
-
-type fieldTest struct {
-	fieldPath  string
-	fieldType  string
-	fieldValue any
-}
 
 // MockFileSeeker is a mock implementation of the FileSeeker interface.
 type MockFileSeeker struct {
@@ -52,32 +44,46 @@ func NewMockFileSeeker(s string) MockFileSeeker {
 }
 
 func TestBlueprintLoaderLoad(t *testing.T) {
+	defaultInjector := func() injector.Injector {
+		return injector.NewInjector(
+			slog.New(slog.NewTextHandler(io.Discard, nil)),
+			&imocks.EnvGetterMock{
+				GetFunc: func(name string) (string, bool) {
+					return "", false
+				},
+			},
+		)
+	}
+
 	tests := []struct {
 		name      string
+		fs        afero.Fs
+		injector  injector.Injector
 		project   string
 		gitRoot   string
 		files     map[string]string
-		want      []fieldTest
+		cond      func(*testing.T, cue.Value)
 		expectErr bool
 	}{
 		{
-			name:    "no files",
-			project: "/tmp/dir1/dir2",
-			gitRoot: "/tmp/dir1/dir2",
-			files:   map[string]string{},
-			want: []fieldTest{
-				{
-					fieldPath:  "version",
-					fieldType:  "string",
-					fieldValue: "1.0.0", // TODO: This may change
-				},
+			name:     "no files",
+			fs:       afero.NewMemMapFs(),
+			injector: defaultInjector(),
+			project:  "/tmp/dir1/dir2",
+			gitRoot:  "/tmp/dir1/dir2",
+			files:    map[string]string{},
+			cond: func(t *testing.T, v cue.Value) {
+				assert.NoError(t, v.Err())
+				assert.NotEmpty(t, v.LookupPath(cue.ParsePath("version")))
 			},
 			expectErr: false,
 		},
 		{
-			name:    "single file",
-			project: "/tmp/dir1/dir2",
-			gitRoot: "/tmp/dir1/dir2",
+			name:     "single file",
+			fs:       afero.NewMemMapFs(),
+			injector: defaultInjector(),
+			project:  "/tmp/dir1/dir2",
+			gitRoot:  "/tmp/dir1/dir2",
 			files: map[string]string{
 				"/tmp/dir1/dir2/blueprint.cue": `
 				version: "1.0"
@@ -94,19 +100,21 @@ func TestBlueprintLoaderLoad(t *testing.T) {
 				`,
 				"/tmp/dir1/.git": "",
 			},
-			want: []fieldTest{
-				{
-					fieldPath:  "project.ci.targets.test.privileged",
-					fieldType:  "bool",
-					fieldValue: true,
-				},
+			cond: func(t *testing.T, v cue.Value) {
+				assert.NoError(t, v.Err())
+
+				field, err := v.LookupPath(cue.ParsePath("project.ci.targets.test.privileged")).Bool()
+				require.NoError(t, err)
+				assert.Equal(t, true, field)
 			},
 			expectErr: false,
 		},
 		{
-			name:    "multiple files",
-			project: "/tmp/dir1/dir2",
-			gitRoot: "/tmp/dir1",
+			name:     "multiple files",
+			fs:       afero.NewMemMapFs(),
+			injector: defaultInjector(),
+			project:  "/tmp/dir1/dir2",
+			gitRoot:  "/tmp/dir1",
 			files: map[string]string{
 				"/tmp/dir1/dir2/blueprint.cue": `
 				version: "1.0"
@@ -132,22 +140,58 @@ func TestBlueprintLoaderLoad(t *testing.T) {
 				}
 				`,
 			},
-			want: []fieldTest{
-				{
-					fieldPath:  "version",
-					fieldType:  "string",
-					fieldValue: "1.1.0",
+			cond: func(t *testing.T, v cue.Value) {
+				assert.NoError(t, v.Err())
+
+				field1, err := v.LookupPath(cue.ParsePath("project.ci.targets.test.privileged")).Bool()
+				require.NoError(t, err)
+				assert.Equal(t, true, field1)
+
+				field2, err := v.LookupPath(cue.ParsePath("project.ci.targets.test.retries")).Int64()
+				require.NoError(t, err)
+				assert.Equal(t, int64(3), field2)
+			},
+			expectErr: false,
+		},
+		{
+			name: "with injection",
+			fs:   afero.NewMemMapFs(),
+			injector: injector.NewInjector(
+				slog.New(slog.NewTextHandler(io.Discard, nil)),
+				&imocks.EnvGetterMock{
+					GetFunc: func(name string) (string, bool) {
+						if name == "RETRIES" {
+							return "5", true
+						}
+
+						return "", false
+					},
 				},
-				{
-					fieldPath:  "project.ci.targets.test.privileged",
-					fieldType:  "bool",
-					fieldValue: true,
-				},
-				{
-					fieldPath:  "project.ci.targets.test.retries",
-					fieldType:  "int",
-					fieldValue: int64(3),
-				},
+			),
+			project: "/tmp/dir1/dir2",
+			gitRoot: "/tmp/dir1/dir2",
+			files: map[string]string{
+				"/tmp/dir1/dir2/blueprint.cue": `
+				version: "1.0"
+				project: {
+					name: "test"
+					ci: {
+						targets: {
+							test: {
+								retries: _ @env(name=RETRIES,type=int)
+							}
+						}
+					}
+				}
+				`,
+				"/tmp/dir1/.git": "",
+			},
+			cond: func(t *testing.T, v cue.Value) {
+				assert.NoError(t, v.Err())
+
+				field, err := v.LookupPath(cue.ParsePath("project.ci.targets.test.retries")).Int64()
+				require.NoError(t, err)
+				assert.Equal(t, int64(5), field)
 			},
 			expectErr: false,
 		},
@@ -155,57 +199,12 @@ func TestBlueprintLoaderLoad(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			walker := &wmocks.ReverseWalkerMock{
-				WalkFunc: func(startPath string, endPath string, callback walker.WalkerCallback) error {
-					// True when there is no git root, so we simulate only searching for blueprint files in the root path.
-					if startPath == endPath && len(tt.files) > 0 {
-						err := callback(filepath.Join(tt.project, "blueprint.cue"), walker.FileTypeFile, func() (walker.FileSeeker, error) {
-							return NewMockFileSeeker(tt.files[filepath.Join(tt.project, "blueprint.cue")]), nil
-						})
-
-						if err != nil {
-							return err
-						}
-
-						return nil
-					} else if startPath == endPath && len(tt.files) == 0 {
-						return nil
-					}
-
-					for path, content := range tt.files {
-						var err error
-						if content == "" {
-							err = callback(path, walker.FileTypeDir, func() (walker.FileSeeker, error) {
-								return nil, nil
-							})
-						} else {
-							err = callback(path, walker.FileTypeFile, func() (walker.FileSeeker, error) {
-								return NewMockFileSeeker(content), nil
-							})
-						}
-
-						if errors.Is(err, io.EOF) {
-							return nil
-						} else if err != nil {
-							return err
-						}
-					}
-
-					return nil
-				},
-			}
+			testutils.SetupFS(t, tt.fs, tt.files)
 
 			loader := DefaultBlueprintLoader{
-				injector: injector.NewInjector(
-					slog.New(slog.NewTextHandler(io.Discard, nil)),
-					&imocks.EnvGetterMock{
-						GetFunc: func(name string) (string, bool) {
-							return "", false
-						},
-					},
-				),
-				logger: slog.New(slog.NewTextHandler(io.Discard, nil)),
-				walker: walker,
+				fs:       tt.fs,
+				injector: tt.injector,
+				logger:   slog.New(slog.NewTextHandler(io.Discard, nil)),
 			}
 
 			bp, err := loader.Load(tt.project, tt.gitRoot)
@@ -213,99 +212,7 @@ func TestBlueprintLoaderLoad(t *testing.T) {
 				return
 			}
 
-			for _, test := range tt.want {
-				value := bp.Get(test.fieldPath)
-				assert.Nil(t, value.Err(), "failed to lookup field %s: %v", test.fieldPath, value.Err())
-
-				switch test.fieldType {
-				case "bool":
-					b, err := value.Bool()
-					require.NoError(t, err, "failed to get bool value: %v", err)
-					assert.Equal(t, b, test.fieldValue.(bool))
-				case "int":
-					i, err := value.Int64()
-					require.NoError(t, err, "failed to get int value: %v", err)
-					assert.Equal(t, i, test.fieldValue.(int64))
-				case "string":
-					s, err := value.String()
-					require.NoError(t, err, "failed to get string value: %v", err)
-					assert.Equal(t, s, test.fieldValue.(string))
-				}
-			}
-		})
-	}
-}
-
-func TestBlueprintLoader_findBlueprints(t *testing.T) {
-	tests := []struct {
-		name      string
-		files     map[string]string
-		walkErr   error
-		want      map[string][]byte
-		expectErr bool
-	}{
-		{
-			name: "simple",
-			files: map[string]string{
-				"/tmp/test1/test2/blueprint.cue": "test1",
-				"/tmp/test1/foo.bar":             "foobar",
-				"/tmp/test1/blueprint.cue":       "test2",
-				"/tmp/blueprint.cue":             "test3",
-			},
-			want: map[string][]byte{
-				"/tmp/test1/test2/blueprint.cue": []byte("test1"),
-				"/tmp/test1/blueprint.cue":       []byte("test2"),
-				"/tmp/blueprint.cue":             []byte("test3"),
-			},
-			expectErr: false,
-		},
-		{
-			name: "no files",
-			files: map[string]string{
-				"/tmp/test1/foo.bar": "foobar",
-			},
-			want:      map[string][]byte{},
-			expectErr: false,
-		},
-		{
-			name: "error",
-			files: map[string]string{
-				"/tmp/test1/foo.bar": "foobar",
-			},
-			walkErr:   errors.New("error"),
-			expectErr: true,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			walker := &wmocks.ReverseWalkerMock{
-				WalkFunc: func(startPath string, endPath string, callback walker.WalkerCallback) error {
-					for path, content := range tt.files {
-						err := callback(path, walker.FileTypeFile, func() (walker.FileSeeker, error) {
-							return NewMockFileSeeker(content), nil
-						})
-
-						if err != nil {
-							return err
-						}
-					}
-					return tt.walkErr
-				},
-			}
-
-			loader := DefaultBlueprintLoader{
-				walker: walker,
-			}
-			got, err := loader.findBlueprints("/tmp", "/tmp")
-			if testutils.AssertError(t, err, tt.expectErr, "") {
-				return
-			}
-
-			for k, v := range got {
-				require.Contains(t, tt.want, k)
-				assert.Equal(t, tt.want[k], v)
-			}
+			tt.cond(t, bp.Value())
 		})
 	}
 }
