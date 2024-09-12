@@ -44,16 +44,16 @@ func NewMockFileSeeker(s string) MockFileSeeker {
 }
 
 func TestBlueprintLoaderLoad(t *testing.T) {
-	// defaultInjector := func() injector.Injector {
-	// 	return injector.NewInjector(
-	// 		slog.New(slog.NewTextHandler(io.Discard, nil)),
-	// 		&imocks.EnvGetterMock{
-	// 			GetFunc: func(name string) (string, bool) {
-	// 				return "", false
-	// 			},
-	// 		},
-	// 	)
-	// }
+	defaultInjector := func() injector.Injector {
+		return injector.NewInjector(
+			slog.New(slog.NewTextHandler(io.Discard, nil)),
+			&imocks.EnvGetterMock{
+				GetFunc: func(name string) (string, bool) {
+					return "", false
+				},
+			},
+		)
+	}
 
 	tests := []struct {
 		name      string
@@ -65,94 +65,94 @@ func TestBlueprintLoaderLoad(t *testing.T) {
 		cond      func(*testing.T, cue.Value)
 		expectErr bool
 	}{
-		// {
-		// 	name:     "no files",
-		// 	fs:       afero.NewMemMapFs(),
-		// 	injector: defaultInjector(),
-		// 	project:  "/tmp/dir1/dir2",
-		// 	gitRoot:  "/tmp/dir1/dir2",
-		// 	files:    map[string]string{},
-		// 	cond: func(t *testing.T, v cue.Value) {
-		// 		assert.NoError(t, v.Err())
-		// 		assert.NotEmpty(t, v.LookupPath(cue.ParsePath("version")))
-		// 	},
-		// 	expectErr: false,
-		// },
-		// {
-		// 	name:     "single file",
-		// 	fs:       afero.NewMemMapFs(),
-		// 	injector: defaultInjector(),
-		// 	project:  "/tmp/dir1/dir2",
-		// 	gitRoot:  "/tmp/dir1/dir2",
-		// 	files: map[string]string{
-		// 		"/tmp/dir1/dir2/blueprint.cue": `
-		// 		version: "1.0"
-		// 		project: {
-		// 			name: "test"
-		// 			ci: {
-		// 				targets: {
-		// 					test: {
-		// 						privileged: true
-		// 					}
-		// 				}
-		// 			}
-		// 		}
-		// 		`,
-		// 		"/tmp/dir1/.git": "",
-		// 	},
-		// 	cond: func(t *testing.T, v cue.Value) {
-		// 		assert.NoError(t, v.Err())
+		{
+			name:     "no files",
+			fs:       afero.NewMemMapFs(),
+			injector: defaultInjector(),
+			project:  "/tmp/dir1/dir2",
+			gitRoot:  "/tmp/dir1/dir2",
+			files:    map[string]string{},
+			cond: func(t *testing.T, v cue.Value) {
+				assert.NoError(t, v.Err())
+				assert.NotEmpty(t, v.LookupPath(cue.ParsePath("version")))
+			},
+			expectErr: false,
+		},
+		{
+			name:     "single file",
+			fs:       afero.NewMemMapFs(),
+			injector: defaultInjector(),
+			project:  "/tmp/dir1/dir2",
+			gitRoot:  "/tmp/dir1/dir2",
+			files: map[string]string{
+				"/tmp/dir1/dir2/blueprint.cue": `
+				version: "1.0"
+				project: {
+					name: "test"
+					ci: {
+						targets: {
+							test: {
+								privileged: true
+							}
+						}
+					}
+				}
+				`,
+				"/tmp/dir1/.git": "",
+			},
+			cond: func(t *testing.T, v cue.Value) {
+				assert.NoError(t, v.Err())
 
-		// 		field, err := v.LookupPath(cue.ParsePath("project.ci.targets.test.privileged")).Bool()
-		// 		require.NoError(t, err)
-		// 		assert.Equal(t, true, field)
-		// 	},
-		// 	expectErr: false,
-		// },
-		// {
-		// 	name:     "multiple files",
-		// 	fs:       afero.NewMemMapFs(),
-		// 	injector: defaultInjector(),
-		// 	project:  "/tmp/dir1/dir2",
-		// 	gitRoot:  "/tmp/dir1",
-		// 	files: map[string]string{
-		// 		"/tmp/dir1/dir2/blueprint.cue": `
-		// 		version: "1.0"
-		// 		project: {
-		// 			name: "test"
-		// 			ci: {
-		// 				targets: {
-		// 					test: {
-		// 						privileged: true
-		// 					}
-		// 				}
-		// 			}
-		// 		}
-		// 		`,
-		// 		"/tmp/dir1/blueprint.cue": `
-		// 		version: "1.1"
-		// 		project: ci: {
-		// 			targets: {
-		// 				test: {
-		// 					retries: 3
-		// 				}
-		// 			}
-		// 		}
-		// 		`,
-		// 	},
-		// 	cond: func(t *testing.T, v cue.Value) {
-		// 		assert.NoError(t, v.Err())
+				field, err := v.LookupPath(cue.ParsePath("project.ci.targets.test.privileged")).Bool()
+				require.NoError(t, err)
+				assert.Equal(t, true, field)
+			},
+			expectErr: false,
+		},
+		{
+			name:     "multiple files",
+			fs:       afero.NewMemMapFs(),
+			injector: defaultInjector(),
+			project:  "/tmp/dir1/dir2",
+			gitRoot:  "/tmp/dir1",
+			files: map[string]string{
+				"/tmp/dir1/dir2/blueprint.cue": `
+				version: "1.0"
+				project: {
+					name: "test"
+					ci: {
+						targets: {
+							test: {
+								privileged: true
+							}
+						}
+					}
+				}
+				`,
+				"/tmp/dir1/blueprint.cue": `
+				version: "1.1"
+				project: ci: {
+					targets: {
+						test: {
+							retries: 3
+						}
+					}
+				}
+				`,
+			},
+			cond: func(t *testing.T, v cue.Value) {
+				assert.NoError(t, v.Err())
 
-		// 		field1, err := v.LookupPath(cue.ParsePath("project.ci.targets.test.privileged")).Bool()
-		// 		require.NoError(t, err)
-		// 		assert.Equal(t, true, field1)
+				field1, err := v.LookupPath(cue.ParsePath("project.ci.targets.test.privileged")).Bool()
+				require.NoError(t, err)
+				assert.Equal(t, true, field1)
 
-		// 		field2, err := v.LookupPath(cue.ParsePath("project.ci.targets.test.retries")).Int64()
-		// 		require.NoError(t, err)
-		// 		assert.Equal(t, int64(3), field2)
-		// 	},
-		// 	expectErr: false,
-		// },
+				field2, err := v.LookupPath(cue.ParsePath("project.ci.targets.test.retries")).Int64()
+				require.NoError(t, err)
+				assert.Equal(t, int64(3), field2)
+			},
+			expectErr: false,
+		},
 		{
 			name: "with injection",
 			fs:   afero.NewMemMapFs(),
