@@ -136,6 +136,11 @@ func (e *EarthlyExecutor) buildSecrets() ([]EarthlySecret, error) {
 	var secrets []EarthlySecret
 
 	for _, secret := range e.secrets {
+		if secret.Name != nil && len(secret.Maps) > 0 {
+			e.logger.Error("Secret contains both name and maps", "name", *secret.Name, "maps", secret.Maps)
+			return nil, fmt.Errorf("secret contains both name and maps: %s", *secret.Name)
+		}
+
 		secretClient, err := e.secretsStore.NewClient(e.logger, secretstore.Provider(*secret.Provider))
 		if err != nil {
 			e.logger.Error("Unable to create new secret client", "provider", secret.Provider, "error", err)
@@ -148,33 +153,39 @@ func (e *EarthlyExecutor) buildSecrets() ([]EarthlySecret, error) {
 			return secrets, fmt.Errorf("unable to get secret %s from provider: %s", *secret.Path, *secret.Provider)
 		}
 
-		var secretValues map[string]interface{}
-
-		if err := json.Unmarshal([]byte(s), &secretValues); err != nil {
-			e.logger.Error("Unable to unmarshal secret value", "provider", secret.Provider, "path", secret.Path, "error", err)
-			return secrets, fmt.Errorf("unable to unmarshal secret value: %w", err)
-		}
-
-		for sk, eid := range secret.Maps {
-			if _, ok := secretValues[sk]; !ok {
-				e.logger.Error("Secret key not found in secret values", "key", sk, "provider", secret.Provider, "path", secret.Path)
-				return nil, fmt.Errorf("secret key not found in secret values: %s", sk)
+		if len(secret.Maps) == 0 {
+			secrets = append(secrets, EarthlySecret{
+				Id:    *secret.Name,
+				Value: s,
+			})
+		} else {
+			var secretValues map[string]interface{}
+			if err := json.Unmarshal([]byte(s), &secretValues); err != nil {
+				e.logger.Error("Failed to unmarshal secret values", "provider", secret.Provider, "path", secret.Path, "error", err)
+				return nil, fmt.Errorf("failed to unmarshal secret values from provider %s: %w", *secret.Provider, err)
 			}
 
-			s := EarthlySecret{
-				Id: eid,
-			}
+			for sk, eid := range secret.Maps {
+				if _, ok := secretValues[sk]; !ok {
+					e.logger.Error("Secret key not found in secret values", "key", sk, "provider", secret.Provider, "path", secret.Path)
+					return nil, fmt.Errorf("secret key not found in secret values: %s", sk)
+				}
 
-			switch t := secretValues[sk].(type) {
-			case bool:
-				s.Value = strconv.FormatBool(t)
-			case int:
-				s.Value = strconv.FormatInt(int64(t), 10)
-			default:
-				s.Value = t.(string)
-			}
+				s := EarthlySecret{
+					Id: eid,
+				}
 
-			secrets = append(secrets, s)
+				switch t := secretValues[sk].(type) {
+				case bool:
+					s.Value = strconv.FormatBool(t)
+				case int:
+					s.Value = strconv.FormatInt(int64(t), 10)
+				default:
+					s.Value = t.(string)
+				}
+
+				secrets = append(secrets, s)
+			}
 		}
 	}
 
