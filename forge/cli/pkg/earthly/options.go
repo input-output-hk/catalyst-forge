@@ -60,7 +60,7 @@ func WithSatellite(s string) EarthlyExecutorOption {
 // be passed to the Earthly target.
 func WithSecrets(secrets []schema.Secret) EarthlyExecutorOption {
 	return func(e *EarthlyExecutor) {
-		e.secrets = secrets
+		e.secrets = append(e.secrets, secrets...)
 	}
 }
 

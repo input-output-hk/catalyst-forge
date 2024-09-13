@@ -254,6 +254,25 @@ func TestEarthlyExecutor_buildSecrets(t *testing.T) {
 			expectedErr: "",
 		},
 		{
+			name: "optional secret",
+			provider: &smocks.SecretProviderMock{
+				GetFunc: func(path string) (string, error) {
+					return "", fmt.Errorf("not found")
+				},
+			},
+			secrets: []schema.Secret{
+				{
+					Name:     utils.StringPtr("name"),
+					Optional: utils.BoolPtr(true),
+					Path:     utils.StringPtr("path"),
+					Provider: utils.StringPtr("mock"),
+					Maps:     map[string]string{},
+				},
+			},
+			expect:    nil,
+			expectErr: false,
+		},
+		{
 			name: "name and maps defined",
 			provider: &smocks.SecretProviderMock{
 				GetFunc: func(path string) (string, error) {
