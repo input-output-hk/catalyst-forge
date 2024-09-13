@@ -142,9 +142,15 @@ package schema
 	// Provider contains the provider to use for the secret.
 	provider?: null | string @go(Provider,*string)
 
-	// Maps contains the mappings for the secret.
+	// Maps contains mappings for Earthly secret names to JSON keys in the secret.
+	// Mutually exclusive with Name.
 	// +optional
 	maps?: {[string]: string} @go(Maps,map[string]string)
+
+	// Name contains the name of the Earthly secret to use.
+	// Mutually exclusive with Maps.
+	// +optional
+	name?: null | string @go(Name,*string)
 }
 
 #Tagging: {

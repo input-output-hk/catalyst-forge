@@ -230,6 +230,51 @@ func TestEarthlyExecutor_buildSecrets(t *testing.T) {
 			expectedErr: "",
 		},
 		{
+			name: "no JSON",
+			provider: &smocks.SecretProviderMock{
+				GetFunc: func(path string) (string, error) {
+					return "secret", nil
+				},
+			},
+			secrets: []schema.Secret{
+				{
+					Name:     utils.StringPtr("name"),
+					Path:     utils.StringPtr("path"),
+					Provider: utils.StringPtr("mock"),
+					Maps:     map[string]string{},
+				},
+			},
+			expect: []EarthlySecret{
+				{
+					Id:    "name",
+					Value: "secret",
+				},
+			},
+			expectErr:   false,
+			expectedErr: "",
+		},
+		{
+			name: "name and maps defined",
+			provider: &smocks.SecretProviderMock{
+				GetFunc: func(path string) (string, error) {
+					return "", nil
+				},
+			},
+			secrets: []schema.Secret{
+				{
+					Name:     utils.StringPtr("name"),
+					Path:     utils.StringPtr("path"),
+					Provider: utils.StringPtr("mock"),
+					Maps: map[string]string{
+						"key": "id",
+					},
+				},
+			},
+			expect:      nil,
+			expectErr:   true,
+			expectedErr: "secret contains both name and maps: name",
+		},
+		{
 			name: "key does not exist",
 			provider: &smocks.SecretProviderMock{
 				GetFunc: func(path string) (string, error) {
@@ -260,12 +305,14 @@ func TestEarthlyExecutor_buildSecrets(t *testing.T) {
 				{
 					Path:     utils.StringPtr("path"),
 					Provider: utils.StringPtr("mock"),
-					Maps:     map[string]string{},
+					Maps: map[string]string{
+						"key1": "id1",
+					},
 				},
 			},
 			expect:      nil,
 			expectErr:   true,
-			expectedErr: "unable to unmarshal secret value: invalid character 'i' looking for beginning of value",
+			expectedErr: "failed to unmarshal secret values from provider mock: invalid character 'i' looking for beginning of value",
 		},
 		{
 			name: "secret provider does not exist",

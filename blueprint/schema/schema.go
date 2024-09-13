@@ -147,9 +147,15 @@ type Secret struct {
 	// Provider contains the provider to use for the secret.
 	Provider *string `json:"provider"`
 
-	// Maps contains the mappings for the secret.
+	// Maps contains mappings for Earthly secret names to JSON keys in the secret.
+	// Mutually exclusive with Name.
 	// +optional
 	Maps map[string]string `json:"maps"`
+
+	// Name contains the name of the Earthly secret to use.
+	// Mutually exclusive with Maps.
+	// +optional
+	Name *string `json:"name"`
 }
 
 type Tagging struct {
