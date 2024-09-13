@@ -67,14 +67,16 @@ func (e EarthlyExecutor) Run() (map[string]EarthlyExecutionResult, error) {
 			return nil, err
 		}
 
-		var secretString []string
-		for _, secret := range secrets {
-			e.logger.Info("Adding Earthly secret", "earthly_id", secret.Id, "value", secret.Value)
-			secretString = append(secretString, fmt.Sprintf("%s=%s", secret.Id, secret.Value))
-		}
+		if len(secrets) > 0 {
+			var secretString []string
+			for _, secret := range secrets {
+				e.logger.Info("Adding Earthly secret", "earthly_id", secret.Id, "value", secret.Value)
+				secretString = append(secretString, fmt.Sprintf("%s=%s", secret.Id, secret.Value))
+			}
 
-		if err := os.Setenv("EARTHLY_SECRETS", strings.Join(secretString, ",")); err != nil {
-			e.logger.Error("Failed to set secret environment varibles", "envvar", "EARTHLY_SECRETS")
+			if err := os.Setenv("EARTHLY_SECRETS", strings.Join(secretString, ",")); err != nil {
+				e.logger.Error("Failed to set secret environment varibles", "envvar", "EARTHLY_SECRETS")
+			}
 		}
 	}
 
