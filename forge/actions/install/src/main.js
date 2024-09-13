@@ -28,7 +28,11 @@ async function run() {
     }
 
     core.info(`Downloading version ${version} from ${assetUrl}`);
-    const downloadPath = await tc.downloadTool(assetUrl, "", githubToken);
+    const downloadPath = await tc.downloadTool(
+      assetUrl,
+      undefined,
+      `token ${githubToken}`,
+    );
     const extractPath = await tc.extractTar(downloadPath);
     core.addPath(extractPath);
 
