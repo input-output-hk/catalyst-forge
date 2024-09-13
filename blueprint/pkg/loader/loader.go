@@ -35,6 +35,9 @@ type InjectorOverrider func(value cue.Value) map[string]string
 type BlueprintLoader interface {
 	// Load loads the blueprint.
 	Load(projectPath, gitRootPath string) (blueprint.RawBlueprint, error)
+
+	// SetOverrider sets the InjectorOverrider.
+	SetOverrider(overrider InjectorOverrider)
 }
 
 // DefaultBlueprintLoader is the default implementation of the BlueprintLoader
@@ -140,6 +143,11 @@ func (b *DefaultBlueprintLoader) Load(projectPath, gitRootPath string) (blueprin
 	}
 
 	return blueprint.NewRawBlueprint(finalBlueprint), nil
+}
+
+// SetOverrider sets the InjectorOverrider.
+func (b *DefaultBlueprintLoader) SetOverrider(overrider InjectorOverrider) {
+	b.overrider = overrider
 }
 
 // NewDefaultBlueprintLoader creates a new DefaultBlueprintLoader.

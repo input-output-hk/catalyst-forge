@@ -5,8 +5,11 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
+	"os"
 	"path/filepath"
 
+	"cuelang.org/go/cue"
+	"github.com/input-output-hk/catalyst-forge/blueprint/pkg/blueprint"
 	"github.com/input-output-hk/catalyst-forge/blueprint/pkg/loader"
 	"github.com/input-output-hk/catalyst-forge/forge/cli/pkg/earthfile"
 	"github.com/input-output-hk/catalyst-forge/tools/pkg/git"
@@ -28,10 +31,11 @@ type DefaultProjectLoader struct {
 	fs              afero.Fs
 	logger          *slog.Logger
 	repoLoader      git.RepoLoader
+	runtimes        []RuntimeData
 }
 
 func (p *DefaultProjectLoader) Load(projectPath string) (Project, error) {
-	p.logger.Info("Finding git root", "at", projectPath)
+	p.logger.Info("Finding git root", "projectPath", projectPath)
 	w := walker.NewCustomReverseFSWalker(p.fs, p.logger)
 	gitRoot, err := git.FindGitRoot(projectPath, &w)
 	if err != nil {
@@ -39,24 +43,12 @@ func (p *DefaultProjectLoader) Load(projectPath string) (Project, error) {
 		return Project{}, fmt.Errorf("failed to find git root: %w", err)
 	}
 
+	p.logger.Info("Loading repository", "path", gitRoot)
 	rl := git.NewCustomDefaultRepoLoader(p.fs)
 	repo, err := rl.Load(gitRoot)
 	if err != nil {
 		p.logger.Error("Failed to load repository", "error", err)
 		return Project{}, fmt.Errorf("failed to load repository: %w", err)
-	}
-
-	p.logger.Info("Loading blueprint", "path", projectPath)
-	rbp, err := p.blueprintLoader.Load(projectPath, gitRoot)
-	if err != nil {
-		p.logger.Error("Failed to load blueprint", "error", err, "path", projectPath)
-		return Project{}, fmt.Errorf("failed to load blueprint: %w", err)
-	}
-
-	bp, err := rbp.Decode()
-	if err != nil {
-		p.logger.Error("Failed to decode blueprint", "error", err)
-		return Project{}, fmt.Errorf("failed to decode blueprint: %w", err)
 	}
 
 	efPath := filepath.Join(projectPath, "Earthfile")
@@ -83,6 +75,43 @@ func (p *DefaultProjectLoader) Load(projectPath string) (Project, error) {
 		ef = &efs
 	}
 
+	p.logger.Info("Setting blueprint runtime data")
+	p.blueprintLoader.SetOverrider(func(value cue.Value) map[string]string {
+		data := make(map[string]string)
+		for _, r := range p.runtimes {
+			partialProject := Project{
+				Earthfile:    ef,
+				Repo:         repo,
+				Path:         projectPath,
+				RepoRoot:     gitRoot,
+				rawBlueprint: blueprint.NewRawBlueprint(value),
+			}
+
+			for k, v := range r.Load(&partialProject) {
+				if err := os.Setenv(k, v); err != nil {
+					p.logger.Error("Failed to set environment variable", "error", err, "key", k, "value", v)
+				}
+
+				data[k] = v
+			}
+		}
+
+		return data
+	})
+
+	p.logger.Info("Loading blueprint", "path", projectPath)
+	rbp, err := p.blueprintLoader.Load(projectPath, gitRoot)
+	if err != nil {
+		p.logger.Error("Failed to load blueprint", "error", err, "path", projectPath)
+		return Project{}, fmt.Errorf("failed to load blueprint: %w", err)
+	}
+
+	bp, err := rbp.Decode()
+	if err != nil {
+		p.logger.Error("Failed to decode blueprint", "error", err)
+		return Project{}, fmt.Errorf("failed to decode blueprint: %w", err)
+	}
+
 	return Project{
 		Blueprint:    bp,
 		Earthfile:    ef,
@@ -95,7 +124,7 @@ func (p *DefaultProjectLoader) Load(projectPath string) (Project, error) {
 }
 
 // NewDefaultProjectLoader creates a new DefaultProjectLoader.
-func NewDefaultProjectLoader(logger *slog.Logger) DefaultProjectLoader {
+func NewDefaultProjectLoader(runtimes []RuntimeData, logger *slog.Logger) DefaultProjectLoader {
 	if logger == nil {
 		logger = slog.New(slog.NewTextHandler(io.Discard, nil))
 	}
@@ -107,6 +136,7 @@ func NewDefaultProjectLoader(logger *slog.Logger) DefaultProjectLoader {
 		fs:              afero.NewOsFs(),
 		logger:          logger,
 		repoLoader:      &rl,
+		runtimes:        runtimes,
 	}
 }
 
@@ -115,6 +145,7 @@ func NewCustomProjectLoader(
 	fs afero.Fs,
 	bl loader.BlueprintLoader,
 	rl git.RepoLoader,
+	runtimes []RuntimeData,
 	logger *slog.Logger,
 ) DefaultProjectLoader {
 	if logger == nil {
@@ -126,5 +157,6 @@ func NewCustomProjectLoader(
 		fs:              fs,
 		logger:          logger,
 		repoLoader:      rl,
+		runtimes:        runtimes,
 	}
 }

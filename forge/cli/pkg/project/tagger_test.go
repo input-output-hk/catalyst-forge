@@ -1,11 +1,10 @@
-package tag
+package project
 
 import (
 	"os"
 	"testing"
 
 	"github.com/input-output-hk/catalyst-forge/blueprint/schema"
-	"github.com/input-output-hk/catalyst-forge/forge/cli/pkg/project"
 	"github.com/input-output-hk/catalyst-forge/tools/pkg/testutils"
 	"github.com/stretchr/testify/assert"
 )
@@ -127,7 +126,7 @@ func TestTaggerGetGitTag(t *testing.T) {
 				},
 			}
 
-			project := project.Project{
+			project := Project{
 				Blueprint: bp,
 				Earthfile: nil,
 				Name:      "test",
