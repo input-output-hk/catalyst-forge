@@ -10,6 +10,7 @@ import (
 	"github.com/go-git/go-git/v5/plumbing/cache"
 	"github.com/go-git/go-git/v5/storage/filesystem"
 	"github.com/input-output-hk/catalyst-forge/blueprint/pkg/blueprint"
+	"github.com/input-output-hk/catalyst-forge/blueprint/pkg/loader"
 	"github.com/input-output-hk/catalyst-forge/blueprint/pkg/loader/mocks"
 	"github.com/input-output-hk/catalyst-forge/tools/pkg/testutils"
 	"github.com/spf13/afero"
@@ -148,6 +149,7 @@ bar:
 					}
 					return tt.blueprint, nil
 				},
+				SetOverriderFunc: func(overrider loader.InjectorOverrider) {},
 			}
 
 			loader := DefaultProjectLoader{

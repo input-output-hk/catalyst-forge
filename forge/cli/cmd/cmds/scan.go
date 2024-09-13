@@ -26,7 +26,7 @@ type ScanCmd struct {
 
 func (c *ScanCmd) Run(logger *slog.Logger) error {
 	walker := walker.NewDefaultFSWalker(logger)
-	loader := project.NewDefaultProjectLoader(logger)
+	loader := project.NewDefaultProjectLoader(loadRuntimes(logger), logger)
 
 	var rootPath string
 	if c.Absolute {

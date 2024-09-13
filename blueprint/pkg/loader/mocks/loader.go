@@ -22,6 +22,9 @@ var _ loader.BlueprintLoader = &BlueprintLoaderMock{}
 //			LoadFunc: func(projectPath string, gitRootPath string) (blueprint.RawBlueprint, error) {
 //				panic("mock out the Load method")
 //			},
+//			SetOverriderFunc: func(overrider loader.InjectorOverrider)  {
+//				panic("mock out the SetOverrider method")
+//			},
 //		}
 //
 //		// use mockedBlueprintLoader in code that requires loader.BlueprintLoader
@@ -32,6 +35,9 @@ type BlueprintLoaderMock struct {
 	// LoadFunc mocks the Load method.
 	LoadFunc func(projectPath string, gitRootPath string) (blueprint.RawBlueprint, error)
 
+	// SetOverriderFunc mocks the SetOverrider method.
+	SetOverriderFunc func(overrider loader.InjectorOverrider)
+
 	// calls tracks calls to the methods.
 	calls struct {
 		// Load holds details about calls to the Load method.
@@ -41,8 +47,14 @@ type BlueprintLoaderMock struct {
 			// GitRootPath is the gitRootPath argument value.
 			GitRootPath string
 		}
+		// SetOverrider holds details about calls to the SetOverrider method.
+		SetOverrider []struct {
+			// Overrider is the overrider argument value.
+			Overrider loader.InjectorOverrider
+		}
 	}
-	lockLoad sync.RWMutex
+	lockLoad         sync.RWMutex
+	lockSetOverrider sync.RWMutex
 }
 
 // Load calls LoadFunc.
@@ -78,5 +90,37 @@ func (mock *BlueprintLoaderMock) LoadCalls() []struct {
 	mock.lockLoad.RLock()
 	calls = mock.calls.Load
 	mock.lockLoad.RUnlock()
+	return calls
+}
+
+// SetOverrider calls SetOverriderFunc.
+func (mock *BlueprintLoaderMock) SetOverrider(overrider loader.InjectorOverrider) {
+	if mock.SetOverriderFunc == nil {
+		panic("BlueprintLoaderMock.SetOverriderFunc: method is nil but BlueprintLoader.SetOverrider was just called")
+	}
+	callInfo := struct {
+		Overrider loader.InjectorOverrider
+	}{
+		Overrider: overrider,
+	}
+	mock.lockSetOverrider.Lock()
+	mock.calls.SetOverrider = append(mock.calls.SetOverrider, callInfo)
+	mock.lockSetOverrider.Unlock()
+	mock.SetOverriderFunc(overrider)
+}
+
+// SetOverriderCalls gets all the calls that were made to SetOverrider.
+// Check the length with:
+//
+//	len(mockedBlueprintLoader.SetOverriderCalls())
+func (mock *BlueprintLoaderMock) SetOverriderCalls() []struct {
+	Overrider loader.InjectorOverrider
+} {
+	var calls []struct {
+		Overrider loader.InjectorOverrider
+	}
+	mock.lockSetOverrider.RLock()
+	calls = mock.calls.SetOverrider
+	mock.lockSetOverrider.RUnlock()
 	return calls
 }

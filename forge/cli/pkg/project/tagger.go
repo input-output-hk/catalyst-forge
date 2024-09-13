@@ -1,4 +1,4 @@
-package tag
+package project
 
 import (
 	"fmt"
@@ -9,7 +9,7 @@ import (
 	gg "github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/input-output-hk/catalyst-forge/blueprint/schema"
-	"github.com/input-output-hk/catalyst-forge/forge/cli/pkg/project"
+	"github.com/input-output-hk/catalyst-forge/forge/cli/pkg/project/tag"
 )
 
 // MonoTag represents a monorepo tag.
@@ -22,16 +22,18 @@ type MonoTag struct {
 type Tagger struct {
 	ci      bool
 	logger  *slog.Logger
-	project *project.Project
+	project *Project
 	trim    bool
 }
 
 // GenerateTag generates a tag for the project based on the tagging strategy.
 func (t *Tagger) GenerateTag() (string, error) {
 	strategy := t.project.Blueprint.Global.CI.Tagging.Strategy
+
+	t.logger.Info("Generating tag", "strategy", strategy)
 	switch strategy {
 	case schema.TagStrategyGitCommit:
-		tag, err := GitCommit(t.project)
+		tag, err := tag.GitCommit(t.project.Repo)
 		if err != nil {
 			return "", err
 		}
@@ -116,7 +118,7 @@ func (t *Tagger) GetGitTag() (string, error) {
 }
 
 // NewTagger creates a new tagger for the given project.
-func NewTagger(p *project.Project, ci bool, trim bool, logger *slog.Logger) *Tagger {
+func NewTagger(p *Project, ci bool, trim bool, logger *slog.Logger) *Tagger {
 	return &Tagger{
 		ci:      ci,
 		logger:  logger,

@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"log/slog"
 
-	"github.com/input-output-hk/catalyst-forge/forge/cli/pkg/tag"
+	p "github.com/input-output-hk/catalyst-forge/forge/cli/pkg/project"
 )
 
 type TagCmd struct {
@@ -26,7 +26,7 @@ func (c *TagCmd) Run(logger *slog.Logger) error {
 	}
 
 	var output TagOutput
-	tagger := tag.NewTagger(&project, c.CI, c.Trim, logger)
+	tagger := p.NewTagger(&project, c.CI, c.Trim, logger)
 
 	if project.Blueprint.Global.CI.Tagging.Strategy != "" {
 		tag, err := tagger.GenerateTag()
