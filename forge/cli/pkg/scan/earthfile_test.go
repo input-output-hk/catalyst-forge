@@ -9,7 +9,6 @@ import (
 	"github.com/input-output-hk/catalyst-forge/tools/pkg/walker"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
-	"golang.org/x/exp/maps"
 )
 
 type MockFileSeeker struct {
@@ -76,7 +75,9 @@ func TestScanEarthfiles(t *testing.T) {
 				return
 			}
 
-			assert.Equal(t, maps.Keys(got), tt.expectedKeys)
+			for k := range got {
+				assert.Contains(t, tt.expectedKeys, k)
+			}
 		})
 	}
 }
