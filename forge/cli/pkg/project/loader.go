@@ -109,3 +109,22 @@ func NewDefaultProjectLoader(logger *slog.Logger) DefaultProjectLoader {
 		repoLoader:      &rl,
 	}
 }
+
+// NewCustomProjectLoader creates a new DefaultProjectLoader with custom dependencies.
+func NewCustomProjectLoader(
+	fs afero.Fs,
+	bl loader.BlueprintLoader,
+	rl git.RepoLoader,
+	logger *slog.Logger,
+) DefaultProjectLoader {
+	if logger == nil {
+		logger = slog.New(slog.NewTextHandler(io.Discard, nil))
+	}
+
+	return DefaultProjectLoader{
+		blueprintLoader: bl,
+		fs:              fs,
+		logger:          logger,
+		repoLoader:      rl,
+	}
+}
