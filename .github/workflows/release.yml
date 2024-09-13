@@ -39,6 +39,8 @@ jobs:
         with:
           artifact: ${{ env.OUTPUT }}
           path: ${{ matrix.earthfile }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Parse Earthfile reference
         id: parse
         run: |
