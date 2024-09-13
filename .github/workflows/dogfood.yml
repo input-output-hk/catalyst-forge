@@ -12,6 +12,6 @@ jobs:
   ci:
     uses: ./.github/workflows/ci.yml
     with:
-      forge_version: local
+      forge_version: latest
     secrets:
       earthly_token: ${{ secrets.EARTHLY_TOKEN }}
