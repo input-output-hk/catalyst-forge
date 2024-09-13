@@ -33096,7 +33096,7 @@ async function run() {
     }
 
     core.info(`Downloading version ${version} from ${assetUrl}`);
-    const downloadPath = await tc.downloadTool(assetUrl);
+    const downloadPath = await tc.downloadTool(assetUrl, "", githubToken);
     const extractPath = await tc.extractTar(downloadPath);
     core.addPath(extractPath);
 

@@ -126,7 +126,7 @@ async function getVersionedAsset(octokit, version) {
   return asset.browser_download_url;
 }
 
-async function installLocal() { }
+async function installLocal() {}
 
 /**
  * Checks if the given version is a valid semantic version.
