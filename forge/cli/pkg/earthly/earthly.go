@@ -149,11 +149,21 @@ func (e *EarthlyExecutor) buildSecrets() ([]EarthlySecret, error) {
 
 		s, err := secretClient.Get(*secret.Path)
 		if err != nil {
+			if secret.Optional != nil && *secret.Optional {
+				e.logger.Warn("Secret is optional and not found", "provider", *secret.Provider, "path", *secret.Path)
+				continue
+			}
+
 			e.logger.Error("Unable to get secret", "provider", secret.Provider, "path", secret.Path, "error", err)
 			return secrets, fmt.Errorf("unable to get secret %s from provider: %s", *secret.Path, *secret.Provider)
 		}
 
 		if len(secret.Maps) == 0 {
+			if secret.Name == nil {
+				e.logger.Error("Secret does not contain name or maps", "provider", secret.Provider, "path", secret.Path)
+				return nil, fmt.Errorf("secret does not contain name or maps: %s", *secret.Path)
+			}
+
 			secrets = append(secrets, EarthlySecret{
 				Id:    *secret.Name,
 				Value: s,

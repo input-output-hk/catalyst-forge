@@ -60,6 +60,10 @@ func generateOpts(target string, flags *RunCmd, config *schema.Blueprint) []eart
 		if config.Global.CI.Providers.Earthly.Satellite != nil && !flags.Local {
 			opts = append(opts, earthly.WithSatellite(*config.Global.CI.Providers.Earthly.Satellite))
 		}
+
+		if len(config.Global.CI.Secrets) > 0 {
+			opts = append(opts, earthly.WithSecrets(config.Global.CI.Secrets))
+		}
 	}
 
 	if flags != nil {

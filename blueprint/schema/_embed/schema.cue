@@ -52,6 +52,10 @@ package schema
 	// +optional
 	registries?: [...string] @go(Registries,[]string)
 
+	// Secrets contains global secrets that will be passed to all targets.
+	// +optional
+	secrets?: [...#Secret] @go(Secrets,[]Secret)
+
 	// Tagging contains the tagging configuration for the CI system.
 	// +optional
 	tagging?: #Tagging @go(Tagging)
@@ -134,12 +138,6 @@ package schema
 
 // Secret contains the secret provider and a list of mappings
 #Secret: {
-	// Path contains the path to the secret.
-	path?: null | string @go(Path,*string)
-
-	// Provider contains the provider to use for the secret.
-	provider?: null | string @go(Provider,*string)
-
 	// Maps contains mappings for Earthly secret names to JSON keys in the secret.
 	// Mutually exclusive with Name.
 	// +optional
@@ -151,6 +149,16 @@ package schema
 	// Mutually exclusive with Maps.
 	// +optional
 	name?: null | string @go(Name,*string)
+
+	// Optional determines if the secret is optional.
+	// +optional
+	optional?: null | bool @go(Optional,*bool)
+
+	// Path contains the path to the secret.
+	path?: null | string @go(Path,*string)
+
+	// Provider contains the provider to use for the secret.
+	provider?: null | string @go(Provider,*string)
 }
 version: "1.0"
 #Tagging: {

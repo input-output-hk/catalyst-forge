@@ -60,6 +60,10 @@ type GlobalCI struct {
 	// +optional
 	Registries []string `json:"registries"`
 
+	// Secrets contains global secrets that will be passed to all targets.
+	// +optional
+	Secrets []Secret `json:"secrets"`
+
 	// Tagging contains the tagging configuration for the CI system.
 	// +optional
 	Tagging Tagging `json:"tagging"`
@@ -141,12 +145,6 @@ type ProviderGithub struct {
 
 // Secret contains the secret provider and a list of mappings
 type Secret struct {
-	// Path contains the path to the secret.
-	Path *string `json:"path"`
-
-	// Provider contains the provider to use for the secret.
-	Provider *string `json:"provider"`
-
 	// Maps contains mappings for Earthly secret names to JSON keys in the secret.
 	// Mutually exclusive with Name.
 	// +optional
@@ -156,6 +154,16 @@ type Secret struct {
 	// Mutually exclusive with Maps.
 	// +optional
 	Name *string `json:"name"`
+
+	// Optional determines if the secret is optional.
+	// +optional
+	Optional *bool `json:"optional"`
+
+	// Path contains the path to the secret.
+	Path *string `json:"path"`
+
+	// Provider contains the provider to use for the secret.
+	Provider *string `json:"provider"`
 }
 
 type Tagging struct {

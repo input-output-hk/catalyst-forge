@@ -28,6 +28,14 @@ global: {
 
 			github: registry: "ghcr.io"
 		}
+		secrets: [
+			{
+				name:     "GITHUB_TOKEN"
+				optional: true
+				provider: "env"
+				path:     "GITHUB_TOKEN"
+			},
+		]
 		tagging: {
 			aliases: {
 				forge: "forge/cli"
