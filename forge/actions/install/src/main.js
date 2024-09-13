@@ -28,7 +28,7 @@ async function run() {
     }
 
     core.info(`Downloading version ${version} from ${assetUrl}`);
-    const downloadPath = await tc.downloadTool(assetUrl);
+    const downloadPath = await tc.downloadTool(assetUrl, "", githubToken);
     const extractPath = await tc.extractTar(downloadPath);
     core.addPath(extractPath);
 
@@ -126,7 +126,7 @@ async function getVersionedAsset(octokit, version) {
   return asset.browser_download_url;
 }
 
-async function installLocal() {}
+async function installLocal() { }
 
 /**
  * Checks if the given version is a valid semantic version.
