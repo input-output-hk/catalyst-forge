@@ -46,6 +46,8 @@ jobs:
         with:
           path: ${{ matrix.earthfile }}
           target_args: --container ${{ env.CONTAINER }} --tag ${{ env.TAG }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Parse Earthfile reference
         id: parse
         run: |

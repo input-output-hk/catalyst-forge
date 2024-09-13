@@ -70,7 +70,7 @@ func (e EarthlyExecutor) Run() (map[string]EarthlyExecutionResult, error) {
 		if len(secrets) > 0 {
 			var secretString []string
 			for _, secret := range secrets {
-				e.logger.Info("Adding Earthly secret", "earthly_id", secret.Id, "value", secret.Value)
+				e.logger.Info("Adding Earthly secret", "earthly_id", secret.Id)
 				secretString = append(secretString, fmt.Sprintf("%s=%s", secret.Id, secret.Value))
 			}
 
