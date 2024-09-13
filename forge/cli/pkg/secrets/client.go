@@ -16,11 +16,14 @@ type SecretStore struct {
 func NewDefaultSecretStore() SecretStore {
 	return SecretStore{
 		store: map[Provider]func(*slog.Logger) (SecretProvider, error){
-			ProviderLocal: func(logger *slog.Logger) (SecretProvider, error) {
-				return providers.NewLocalClient(logger)
-			},
 			ProviderAWS: func(logger *slog.Logger) (SecretProvider, error) {
 				return providers.NewDefaultAWSClient(logger)
+			},
+			ProviderEnv: func(logger *slog.Logger) (SecretProvider, error) {
+				return providers.NewEnvClient(logger)
+			},
+			ProviderLocal: func(logger *slog.Logger) (SecretProvider, error) {
+				return providers.NewLocalClient(logger)
 			},
 		},
 	}
