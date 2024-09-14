@@ -117,7 +117,7 @@ async function getVersionedAsset(octokit, version) {
   const assetName = getAssetName();
   const releases = await getReleases(octokit);
 
-  const targetRelease = releases.find((r) => r.tag_name === `v${version}`);
+  const targetRelease = releases.find((r) => r.tag_name === `forge/v${version}`);
   if (!targetRelease) {
     throw new Error(`Version ${version} not found`);
   }
