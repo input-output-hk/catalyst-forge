@@ -32,6 +32,9 @@ async function run() {
       assetUrl,
       undefined,
       `token ${githubToken}`,
+      {
+        accept: "application/octet-stream",
+      },
     );
     const extractPath = await tc.extractTar(downloadPath);
     core.addPath(extractPath);
