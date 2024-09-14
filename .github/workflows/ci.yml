@@ -22,7 +22,7 @@ jobs:
       - name: Test
         run: |
           curl -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" -L "https://github.com/input-output-hk/catalyst-forge/releases/download/forge/v0.1.0/forge-linux-amd64.tar.gz" -O
-          ls -la forge-linux-amd64.tar.gz
+          cat forge-linux-amd64.tar.gz
       - name: Install Forge
         uses: ./forge/actions/install
         with:
