@@ -9,6 +9,12 @@ import (
 	"github.com/input-output-hk/catalyst-forge/forge/cli/pkg/project"
 )
 
+type GlobalArgs struct {
+	CI      bool `help:"Run in CI mode."`
+	Local   bool `short:"l" help:"Forces all runs to happen locally (ignores any remote satellites)."`
+	Verbose int  `short:"v" type:"counter" help:"Enable verbose logging."`
+}
+
 // enumerate enumerates the Earthfile+Target pairs from the target map.
 func enumerate(data map[string][]string) []string {
 	var result []string
@@ -23,7 +29,7 @@ func enumerate(data map[string][]string) []string {
 
 // generateOpts generates the options for the Earthly executor based on command
 // flags.
-func generateOpts(flags *RunCmd) []earthly.EarthlyExecutorOption {
+func generateOpts(flags *RunCmd, global *GlobalArgs) []earthly.EarthlyExecutorOption {
 	var opts []earthly.EarthlyExecutorOption
 
 	if flags != nil {
@@ -31,7 +37,7 @@ func generateOpts(flags *RunCmd) []earthly.EarthlyExecutorOption {
 			opts = append(opts, earthly.WithArtifact(flags.Artifact))
 		}
 
-		if flags.CI {
+		if global.CI {
 			opts = append(opts, earthly.WithCI())
 		}
 
@@ -49,8 +55,13 @@ func generateOpts(flags *RunCmd) []earthly.EarthlyExecutorOption {
 }
 
 // loadProject loads the project from the given root path.
-func loadProject(rootPath string, logger *slog.Logger) (project.Project, error) {
-	loader := project.NewDefaultProjectLoader(project.GetDefaultRuntimes(logger), logger)
+func loadProject(global GlobalArgs, rootPath string, logger *slog.Logger) (project.Project, error) {
+	loader := project.NewDefaultProjectLoader(
+		global.CI,
+		global.Local,
+		project.GetDefaultRuntimes(logger),
+		logger,
+	)
 	return loader.Load(rootPath)
 }
 

@@ -10,8 +10,8 @@ type DumpCmd struct {
 	Pretty  bool   `help:"Pretty print JSON output."`
 }
 
-func (c *DumpCmd) Run(logger *slog.Logger) error {
-	project, err := loadProject(c.Project, logger)
+func (c *DumpCmd) Run(logger *slog.Logger, global GlobalArgs) error {
+	project, err := loadProject(global, c.Project, logger)
 	if err != nil {
 		return fmt.Errorf("could not load project: %w", err)
 	}

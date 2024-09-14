@@ -3,7 +3,7 @@ exec git init .
 exec forge scan --earthfile .
 cmp stdout golden.txt
 
-exec forge scan --ci --earthfile .
+exec forge --ci scan --earthfile .
 cmp stdout golden_ci.txt
 
 -- golden.txt --

@@ -35,12 +35,12 @@ type SecretCmd struct {
 	Set *Set `cmd:"" help:"Set a secret."`
 }
 
-func (c *Get) Run(logger *slog.Logger) error {
+func (c *Get) Run(logger *slog.Logger, global GlobalArgs) error {
 	var path, provider string
 	var maps map[string]string
 
 	if c.Project != "" {
-		project, err := loadProject(c.Project, logger)
+		project, err := loadProject(global, c.Project, logger)
 		if err != nil {
 			return fmt.Errorf("could not load project: %w", err)
 		}
@@ -125,11 +125,11 @@ func (c *Get) Run(logger *slog.Logger) error {
 	return nil
 }
 
-func (c *Set) Run(logger *slog.Logger) error {
+func (c *Set) Run(logger *slog.Logger, global GlobalArgs) error {
 	var path, provider string
 
 	if c.Project != "" {
-		project, err := loadProject(c.Project, logger)
+		project, err := loadProject(global, c.Project, logger)
 		if err != nil {
 			return fmt.Errorf("could not load project: %w", err)
 		}
