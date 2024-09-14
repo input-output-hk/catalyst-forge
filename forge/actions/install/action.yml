@@ -1,10 +1,6 @@
 name: Install
 description: Install Forge CLI
 inputs:
-  earthly_token:
-    description: Optional Earthly token used to login to Earthly cloud during local builds
-    required: false
-    default: ""
   github_token:
     description: Github token for querying the API
     required: false
@@ -12,9 +8,6 @@ inputs:
   version:
     description: The version of the CLI to install
     default: "latest"
-outputs:
-  result:
-    description: The result of the run
 
 runs:
   using: node20

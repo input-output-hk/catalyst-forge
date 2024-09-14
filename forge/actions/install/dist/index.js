@@ -33075,21 +33075,18 @@ const repoName = "catalyst-forge";
 
 async function run() {
   try {
-    //const earthlyToken = core.getInput("earthly_token");
     const githubToken = core.getInput("github_token");
     const version = core.getInput("version");
 
     const octokit = github.getOctokit(githubToken);
 
-    if (version !== "latest" && version !== "local" && !isSemVer(version)) {
+    if (version !== "latest" && !isSemVer(version)) {
       core.setFailed("Invalid version");
       return;
     }
 
     let assetUrl;
-    if (version === "local") {
-      await installLocal();
-    } else if (version === "latest") {
+    if (version === "latest") {
       assetUrl = await getLatestAsset(octokit);
     } else {
       assetUrl = await getVersionedAsset(octokit, version);

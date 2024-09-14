@@ -21,11 +21,19 @@ jobs:
       - uses: actions/checkout@v4
       - name: Install Forge
         uses: ./forge/actions/install
+        if: ${{ inputs.forge_version != 'local' }}
+        with:
+          version: ${{ inputs.forge_version }}
+      - name: Install Local Forge
+        uses: ./forge/actions/install
+        if: ${{ inputs.forge_version == 'local' }}
         with:
           earthly_token: ${{ secrets.earthly_token }}
-          version: ${{ inputs.forge_version }}
-      - id: local
+      - name: Check forge version
+        id: local
         run: |
+          forge version
+
           if [[ "${{ inputs.forge_version }}" == "local" ]]; then
             echo "skip=true" >> $GITHUB_OUTPUT
           else

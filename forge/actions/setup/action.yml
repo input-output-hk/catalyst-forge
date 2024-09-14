@@ -13,29 +13,6 @@ inputs:
 runs:
   using: composite
   steps:
-    # If the local version of forge is requested, we try to build locally with Earthly
-    # - if: inputs.forge_version == 'local'
-    #   shell: bash
-    #   run: echo "Building Forge CLI locally..."
-    # - name: Install Earthly
-    #   uses: earthly/actions-setup@v1
-    #   if: inputs.forge_version == 'local'
-    #   with:
-    #     version: latest
-    # - name: Login to Earthly Cloud
-    #   if: inputs.forge_version == 'local'
-    #   shell: bash
-    #   run: |
-    #     earthly account login --token ${{ inputs.earthly_token }}
-    #     earthly org select Catalyst
-    # - name: Build Forge CLI
-    #   if: inputs.forge_version == 'local'
-    #   shell: bash
-    #   run: |
-    #     echo "::group::Forge CLI Earthly Build"
-    #     earthly --sat ci --artifact ./forge/cli+build/forge /usr/local/bin/forge
-    #     echo "::endgroup::"
-
     # AWS Provider
     - name: Get AWS provider configuration
       id: aws

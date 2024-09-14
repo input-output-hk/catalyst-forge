@@ -7,21 +7,18 @@ const repoName = "catalyst-forge";
 
 async function run() {
   try {
-    //const earthlyToken = core.getInput("earthly_token");
     const githubToken = core.getInput("github_token");
     const version = core.getInput("version");
 
     const octokit = github.getOctokit(githubToken);
 
-    if (version !== "latest" && version !== "local" && !isSemVer(version)) {
-      core.setFailed("Invalid version");
+    if (version !== "latest" && !isSemVer(version)) {
+      core.setFailed(`Invalid version: ${version}`);
       return;
     }
 
     let assetUrl;
-    if (version === "local") {
-      await installLocal();
-    } else if (version === "latest") {
+    if (version === "latest") {
       assetUrl = await getLatestAsset(octokit);
     } else {
       assetUrl = await getVersionedAsset(octokit, version);
@@ -133,7 +130,7 @@ async function getVersionedAsset(octokit, version) {
   return asset.url;
 }
 
-async function installLocal() {}
+async function installLocal() { }
 
 /**
  * Checks if the given version is a valid semantic version.
