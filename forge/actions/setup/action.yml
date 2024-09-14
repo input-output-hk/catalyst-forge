@@ -122,7 +122,7 @@ runs:
 
     # Earthly Provider
     - name: Get Earthly provider configuration
-      if: inputs.skip_earthly == "false"
+      if: inputs.skip_earthly == 'false'
       id: earthly
       shell: bash
       run: |
@@ -155,16 +155,16 @@ runs:
         echo "token=$TOKEN" >> $GITHUB_OUTPUT
     - name: Install Earthly
       uses: earthly/actions-setup@v1
-      if: inputs.skip_earthly == "false"
+      if: inputs.skip_earthly == 'false'
       with:
         version: ${{ steps.earthly.outputs.version }}
     - name: Login to Earthly Cloud
-      if: steps.earthly.outputs.token != '' && inputs.skip_earthly == "false"
+      if: steps.earthly.outputs.token != '' && inputs.skip_earthly == 'false'
       shell: bash
       run: |
         earthly account login --token "${{ steps.earthly.outputs.token }}"
     - name: Set Earthly organization
-      if: steps.earthly.outputs.token != '' && inputs.skip_earthly == "false"
+      if: steps.earthly.outputs.token != '' && inputs.skip_earthly == 'false'
       shell: bash
       run: |
         earthly org select "${{ steps.earthly.outputs.org }}"
