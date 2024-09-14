@@ -119,6 +119,7 @@ func (p *DefaultProjectLoader) Load(projectPath string) (Project, error) {
 		Path:         projectPath,
 		Repo:         repo,
 		RepoRoot:     gitRoot,
+		logger:       p.logger,
 		rawBlueprint: rbp,
 	}, nil
 }

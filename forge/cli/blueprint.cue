@@ -22,5 +22,6 @@ project: {
 				"darwin/arm64",
 			]
 		}
+		test: retries: 3
 	}
 }

@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log/slog"
 
-	"github.com/input-output-hk/catalyst-forge/blueprint/schema"
 	"github.com/input-output-hk/catalyst-forge/forge/cli/pkg/earthly"
 	"github.com/input-output-hk/catalyst-forge/forge/cli/pkg/project"
 )
@@ -22,49 +21,10 @@ func enumerate(data map[string][]string) []string {
 	return result
 }
 
-// generateOpts generates the options for the Earthly executor based on the configuration file and flags.
-func generateOpts(target string, flags *RunCmd, config *schema.Blueprint) []earthly.EarthlyExecutorOption {
+// generateOpts generates the options for the Earthly executor based on command
+// flags.
+func generateOpts(flags *RunCmd) []earthly.EarthlyExecutorOption {
 	var opts []earthly.EarthlyExecutorOption
-
-	if config != nil {
-		if _, ok := config.Project.CI.Targets[target]; ok {
-			targetConfig := config.Project.CI.Targets[target]
-
-			if len(targetConfig.Args) > 0 {
-				var args []string
-				for k, v := range targetConfig.Args {
-					args = append(args, fmt.Sprintf("--%s", k), v)
-				}
-
-				opts = append(opts, earthly.WithTargetArgs(args...))
-			}
-
-			// We only run multiple platforms in CI mode to avoid issues with local builds.
-			if targetConfig.Platforms != nil && flags.CI {
-				opts = append(opts, earthly.WithPlatforms(targetConfig.Platforms...))
-			}
-
-			if targetConfig.Privileged != nil && *targetConfig.Privileged {
-				opts = append(opts, earthly.WithPrivileged())
-			}
-
-			if targetConfig.Retries != nil {
-				opts = append(opts, earthly.WithRetries(*targetConfig.Retries))
-			}
-
-			if len(targetConfig.Secrets) > 0 {
-				opts = append(opts, earthly.WithSecrets(targetConfig.Secrets))
-			}
-		}
-
-		if config.Global.CI.Providers.Earthly.Satellite != nil && !flags.Local {
-			opts = append(opts, earthly.WithSatellite(*config.Global.CI.Providers.Earthly.Satellite))
-		}
-
-		if len(config.Global.CI.Secrets) > 0 {
-			opts = append(opts, earthly.WithSecrets(config.Global.CI.Secrets))
-		}
-	}
 
 	if flags != nil {
 		if flags.Artifact != "" {
@@ -80,7 +40,7 @@ func generateOpts(target string, flags *RunCmd, config *schema.Blueprint) []eart
 			opts = append(opts, earthly.WithPlatforms(flags.Platform...))
 		}
 
-		if flags.TargetArgs != nil && len(flags.TargetArgs) > 0 && flags.TargetArgs[0] != "" {
+		if len(flags.TargetArgs) > 0 && flags.TargetArgs[0] != "" {
 			opts = append(opts, earthly.WithTargetArgs(flags.TargetArgs...))
 		}
 	}
@@ -90,15 +50,8 @@ func generateOpts(target string, flags *RunCmd, config *schema.Blueprint) []eart
 
 // loadProject loads the project from the given root path.
 func loadProject(rootPath string, logger *slog.Logger) (project.Project, error) {
-	loader := project.NewDefaultProjectLoader(loadRuntimes(logger), logger)
+	loader := project.NewDefaultProjectLoader(project.GetDefaultRuntimes(logger), logger)
 	return loader.Load(rootPath)
-}
-
-// loadRuntimes loads the all runtime data collectors.
-func loadRuntimes(logger *slog.Logger) []project.RuntimeData {
-	return []project.RuntimeData{
-		project.NewGitRuntime(logger),
-	}
 }
 
 // printJson prints the given data as a JSON string.

@@ -2,6 +2,8 @@ package earthfile
 
 import (
 	"context"
+	"fmt"
+	"strings"
 
 	"github.com/earthly/earthly/ast"
 	"github.com/earthly/earthly/ast/spec"
@@ -11,6 +13,12 @@ import (
 // Earthfile represents a parsed Earthfile.
 type Earthfile struct {
 	spec spec.Earthfile
+}
+
+// EarthfileRef represents a reference to an Earthfile and a target.
+type EarthfileRef struct {
+	Path   string
+	Target string
 }
 
 // Targets returns the names of the targets in the Earthfile.
@@ -49,6 +57,20 @@ func ParseEarthfile(ctx context.Context, earthfile walker.FileSeeker) (Earthfile
 
 	return Earthfile{
 		spec: ef,
+	}, nil
+}
+
+// ParseEarthfileRef parses an Earthfile+Target pair.
+func ParseEarthfileRef(ref string) (EarthfileRef, error) {
+	parts := strings.Split(ref, "+")
+
+	if len(parts) != 2 {
+		return EarthfileRef{}, fmt.Errorf("invalid Earthfile+Target pair: %s", ref)
+	}
+
+	return EarthfileRef{
+		Path:   parts[0],
+		Target: parts[1],
 	}, nil
 }
 

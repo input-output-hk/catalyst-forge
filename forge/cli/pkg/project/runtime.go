@@ -69,8 +69,16 @@ func (g *GitRuntime) Load(project *Project) map[string]string {
 	return data
 }
 
+// NewGitRuntime creates a new GitRuntime.
 func NewGitRuntime(logger *slog.Logger) *GitRuntime {
 	return &GitRuntime{
 		logger: logger,
+	}
+}
+
+// GetDefaultRuntimes returns the default runtime data loaders.
+func GetDefaultRuntimes(logger *slog.Logger) []RuntimeData {
+	return []RuntimeData{
+		NewGitRuntime(logger),
 	}
 }
