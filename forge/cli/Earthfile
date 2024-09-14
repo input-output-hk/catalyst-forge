@@ -23,7 +23,7 @@ src:
 
     CACHE --persist --sharing shared /go
 
-    COPY --dir cmd internal pkg .
+    COPY --dir cmd internal pkg tui .
     RUN go generate ./...
 
 check:
