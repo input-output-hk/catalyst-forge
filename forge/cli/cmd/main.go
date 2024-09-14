@@ -11,7 +11,6 @@ import (
 	"github.com/charmbracelet/log"
 	"github.com/input-output-hk/catalyst-forge/blueprint/schema"
 	"github.com/input-output-hk/catalyst-forge/forge/cli/cmd/cmds"
-	"github.com/input-output-hk/catalyst-forge/forge/cli/tui"
 )
 
 var version = "dev"
@@ -22,16 +21,9 @@ var cli struct {
 	Scan     cmds.ScanCmd     `cmd:"" help:"Scan for Earthfiles."`
 	Secret   cmds.SecretCmd   `cmd:"" help:"Manage secrets."`
 	Tag      cmds.TagCmd      `cmd:"" help:"Generate a tag for a project."`
-	Tui      TUICmd           `cmd:"" help:"Start the TUI."`
 	Validate cmds.ValidateCmd `cmd:"" help:"Validates a project."`
 	Version  VersionCmd       `cmd:"" help:"Print the version."`
 	Verbose  int              `short:"v" type:"counter" help:"Enable verbose logging."`
-}
-
-type TUICmd struct{}
-
-func (c *TUICmd) Run() error {
-	return tui.Start()
 }
 
 type VersionCmd struct{}
