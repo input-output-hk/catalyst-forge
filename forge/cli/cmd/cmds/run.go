@@ -5,7 +5,6 @@ import (
 	"log/slog"
 	"strings"
 
-	"github.com/input-output-hk/catalyst-forge/forge/cli/pkg/earthly"
 	"github.com/input-output-hk/catalyst-forge/forge/cli/pkg/executor"
 	"github.com/input-output-hk/catalyst-forge/forge/cli/pkg/secrets"
 )
@@ -38,18 +37,15 @@ func (c *RunCmd) Run(logger *slog.Logger) error {
 		executor.WithRedirect(),
 	)
 
-	opts := generateOpts(target, c, &project.Blueprint)
-	earthlyExec := earthly.NewEarthlyExecutor(
-		earthfileDir,
+	logger.Info("Executing Earthly target", "project", project.Path, "target", target)
+	result, err := project.RunTarget(
 		target,
+		c.CI,
+		c.Local,
 		localExec,
 		secrets.NewDefaultSecretStore(),
-		logger,
-		opts...,
+		generateOpts(c)...,
 	)
-
-	logger.Info("Executing Earthly target", "earthfile", earthfileDir, "target", target)
-	result, err := earthlyExec.Run()
 	if err != nil {
 		return err
 	}
