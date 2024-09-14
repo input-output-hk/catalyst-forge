@@ -33080,13 +33080,6 @@ async function run() {
     const version = core.getInput("version");
 
     const octokit = github.getOctokit(githubToken);
-    core.info(
-      JSON.stringify(
-        await octokit.rest.oauthAuthorizations.getScopesForToken({
-          token: githubToken,
-        }),
-      ),
-    );
 
     if (version !== "latest" && version !== "local" && !isSemVer(version)) {
       core.setFailed("Invalid version");
