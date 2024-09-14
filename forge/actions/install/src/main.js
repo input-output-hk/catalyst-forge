@@ -117,7 +117,9 @@ async function getVersionedAsset(octokit, version) {
   const assetName = getAssetName();
   const releases = await getReleases(octokit);
 
-  const targetRelease = releases.find((r) => r.tag_name === `forge/v${version}`);
+  const targetRelease = releases.find(
+    (r) => r.tag_name === `forge/v${version}`,
+  );
   if (!targetRelease) {
     throw new Error(`Version ${version} not found`);
   }
@@ -130,7 +132,7 @@ async function getVersionedAsset(octokit, version) {
   return asset.url;
 }
 
-async function installLocal() { }
+async function installLocal() {}
 
 /**
  * Checks if the given version is a valid semantic version.

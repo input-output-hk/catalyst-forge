@@ -33081,7 +33081,7 @@ async function run() {
     const octokit = github.getOctokit(githubToken);
 
     if (version !== "latest" && !isSemVer(version)) {
-      core.setFailed("Invalid version");
+      core.setFailed(`Invalid version: ${version}`);
       return;
     }
 
@@ -33185,7 +33185,9 @@ async function getVersionedAsset(octokit, version) {
   const assetName = getAssetName();
   const releases = await getReleases(octokit);
 
-  const targetRelease = releases.find((r) => r.tag_name === `v${version}`);
+  const targetRelease = releases.find(
+    (r) => r.tag_name === `forge/v${version}`,
+  );
   if (!targetRelease) {
     throw new Error(`Version ${version} not found`);
   }
