@@ -21,7 +21,8 @@ func enumerate(data map[string][]string) []string {
 	return result
 }
 
-// generateOpts generates the options for the Earthly executor based on the configuration file and flags.
+// generateOpts generates the options for the Earthly executor based on command
+// flags.
 func generateOpts(flags *RunCmd) []earthly.EarthlyExecutorOption {
 	var opts []earthly.EarthlyExecutorOption
 
@@ -39,7 +40,7 @@ func generateOpts(flags *RunCmd) []earthly.EarthlyExecutorOption {
 			opts = append(opts, earthly.WithPlatforms(flags.Platform...))
 		}
 
-		if flags.TargetArgs != nil && len(flags.TargetArgs) > 0 && flags.TargetArgs[0] != "" {
+		if len(flags.TargetArgs) > 0 && flags.TargetArgs[0] != "" {
 			opts = append(opts, earthly.WithTargetArgs(flags.TargetArgs...))
 		}
 	}

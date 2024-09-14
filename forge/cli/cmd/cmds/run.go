@@ -1,10 +1,9 @@
 package cmds
 
 import (
-	"fmt"
 	"log/slog"
-	"strings"
 
+	"github.com/input-output-hk/catalyst-forge/forge/cli/pkg/earthfile"
 	"github.com/input-output-hk/catalyst-forge/forge/cli/pkg/executor"
 	"github.com/input-output-hk/catalyst-forge/forge/cli/pkg/secrets"
 )
@@ -20,26 +19,23 @@ type RunCmd struct {
 }
 
 func (c *RunCmd) Run(logger *slog.Logger) error {
-	if !strings.Contains(c.Path, "+") {
-		return fmt.Errorf("invalid Earthfile+Target pair: %s", c.Path)
-	}
-
-	earthfileDir := strings.Split(c.Path, "+")[0]
-	target := strings.Split(c.Path, "+")[1]
-
-	project, err := loadProject(earthfileDir, logger)
+	ref, err := earthfile.ParseEarthfileRef(c.Path)
 	if err != nil {
 		return err
 	}
 
+	project, err := loadProject(ref.Path, logger)
+	if err != nil {
+		return err
+	}
+
+	logger.Info("Executing Earthly target", "project", project.Path, "target", ref.Target)
 	localExec := executor.NewLocalExecutor(
 		logger,
 		executor.WithRedirect(),
 	)
-
-	logger.Info("Executing Earthly target", "project", project.Path, "target", target)
 	result, err := project.RunTarget(
-		target,
+		ref.Target,
 		c.CI,
 		c.Local,
 		localExec,
