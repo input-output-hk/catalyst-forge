@@ -4,8 +4,9 @@ on:
       forge_version:
         description: |
           The version of the forge CLI to install (use 'local' for testing)
-        required: true
         type: string
+        required: false
+        default: latest
     secrets:
       earthly_token:
         description: Optional Earthly token used to login to Earthly cloud during local builds of Forge CLI
@@ -18,11 +19,30 @@ jobs:
       result: ${{ steps.discovery.outputs.result }}
     steps:
       - uses: actions/checkout@v4
-      - name: Setup
-        uses: ./forge/actions/setup
+      - name: Install Forge
+        uses: ./forge/actions/install
+        if: ${{ inputs.forge_version != 'local' }}
+        with:
+          version: ${{ inputs.forge_version }}
+      - name: Install Local Forge
+        uses: ./forge/actions/install-local
+        if: ${{ inputs.forge_version == 'local' }}
         with:
           earthly_token: ${{ secrets.earthly_token }}
-          forge_version: ${{ inputs.forge_version }}
+      - name: Check forge version
+        id: local
+        run: |
+          forge version
+
+          if [[ "${{ inputs.forge_version }}" == "local" ]]; then
+            echo "skip=true" >> $GITHUB_OUTPUT
+          else
+            echo "skip=false" >> $GITHUB_OUTPUT
+          fi
+      - name: Setup CI
+        uses: ./forge/actions/setup
+        with:
+          skip_earthly: ${{ steps.local.outputs.skip }}
       - name: Discovery
         id: discovery
         uses: ./forge/actions/discovery

@@ -35,11 +35,30 @@ jobs:
         earthfile: ${{ fromJson(inputs.earthfiles) }}
     steps:
       - uses: actions/checkout@v4
+      - name: Install Forge
+        uses: ./forge/actions/install
+        if: ${{ inputs.forge_version != 'local' }}
+        with:
+          version: ${{ inputs.forge_version }}
+      - name: Install Local Forge
+        uses: ./forge/actions/install-local
+        if: ${{ inputs.forge_version == 'local' }}
+        with:
+          earthly_token: ${{ secrets.earthly_token }}
+      - name: Check forge version
+        id: local
+        run: |
+          forge version
+
+          if [[ "${{ inputs.forge_version }}" == "local" ]]; then
+            echo "skip=true" >> $GITHUB_OUTPUT
+          else
+            echo "skip=false" >> $GITHUB_OUTPUT
+          fi
       - name: Setup CI
         uses: ./forge/actions/setup
         with:
-          earthly_token: ${{ secrets.earthly_token }}
-          forge_version: ${{ inputs.forge_version }}
+          skip_earthly: ${{ steps.local.outputs.skip }}
       - name: Run
         id: run
         uses: ./forge/actions/run
