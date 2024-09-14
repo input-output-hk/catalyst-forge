@@ -33171,7 +33171,7 @@ async function getLatestAsset(octokit) {
     const asset = releases[i].assets.find((a) => a.name === assetName);
 
     if (asset) {
-      return asset.browser_download_url;
+      return asset.url;
     }
   }
 
@@ -33198,7 +33198,7 @@ async function getVersionedAsset(octokit, version) {
     throw new Error(`No asset found for ${assetName}`);
   }
 
-  return asset.browser_download_url;
+  return asset.url;
 }
 
 async function installLocal() {}
