@@ -47,6 +47,5 @@ func (c *RunCmd) Run(logger *slog.Logger) error {
 	}
 
 	printJson(result, c.Pretty)
-
 	return nil
 }
