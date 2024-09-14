@@ -23,7 +23,9 @@ type TagInfo struct {
 // Project represents a project
 type Project struct {
 	Blueprint    schema.Blueprint
+	CI           bool
 	Earthfile    *earthfile.Earthfile
+	Local        bool
 	Name         string
 	Path         string
 	Repo         *gg.Repository
@@ -73,10 +75,9 @@ func (p *Project) Raw() blueprint.RawBlueprint {
 	return p.rawBlueprint
 }
 
+// RunTarget runs the given Earthly target.
 func (p *Project) RunTarget(
 	target string,
-	ci bool,
-	local bool,
 	exec executor.Executor,
 	store secrets.SecretStore,
 	opts ...earthly.EarthlyExecutorOption,
@@ -87,11 +88,12 @@ func (p *Project) RunTarget(
 		exec,
 		store,
 		p.logger,
-		append(p.generateOpts(target, ci, local), opts...)...,
+		append(p.generateOpts(target), opts...)...,
 	).Run()
 }
 
-func (p *Project) generateOpts(target string, ci, local bool) []earthly.EarthlyExecutorOption {
+// generateOpts generates the options for the Earthly executor.
+func (p *Project) generateOpts(target string) []earthly.EarthlyExecutorOption {
 	var opts []earthly.EarthlyExecutorOption
 
 	if _, ok := p.Blueprint.Project.CI.Targets[target]; ok {
@@ -107,7 +109,7 @@ func (p *Project) generateOpts(target string, ci, local bool) []earthly.EarthlyE
 		}
 
 		// We only run multiple platforms in CI mode to avoid issues with local builds.
-		if targetConfig.Platforms != nil && ci {
+		if targetConfig.Platforms != nil && p.CI {
 			opts = append(opts, earthly.WithPlatforms(targetConfig.Platforms...))
 		}
 
@@ -124,7 +126,7 @@ func (p *Project) generateOpts(target string, ci, local bool) []earthly.EarthlyE
 		}
 	}
 
-	if p.Blueprint.Global.CI.Providers.Earthly.Satellite != nil && !local {
+	if p.Blueprint.Global.CI.Providers.Earthly.Satellite != nil && !p.Local {
 		opts = append(opts, earthly.WithSatellite(*p.Blueprint.Global.CI.Providers.Earthly.Satellite))
 	}
 

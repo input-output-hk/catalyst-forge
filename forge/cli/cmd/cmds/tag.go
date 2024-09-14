@@ -8,7 +8,6 @@ import (
 )
 
 type TagCmd struct {
-	CI      bool   `help:"Run in CI mode."`
 	Pretty  bool   `short:"p" help:"Pretty print JSON output."`
 	Project string `arg:"" help:"The project to generate tags for."`
 	Trim    bool   `short:"t" help:"Trim the project path from the git tag."`
@@ -19,14 +18,14 @@ type TagOutput struct {
 	Git       string `json:"git"`
 }
 
-func (c *TagCmd) Run(logger *slog.Logger) error {
-	project, err := loadProject(c.Project, logger)
+func (c *TagCmd) Run(logger *slog.Logger, global GlobalArgs) error {
+	project, err := loadProject(global, c.Project, logger)
 	if err != nil {
 		return err
 	}
 
 	var output TagOutput
-	tagger := p.NewTagger(&project, c.CI, c.Trim, logger)
+	tagger := p.NewTagger(&project, global.CI, c.Trim, logger)
 
 	if project.Blueprint.Global.CI.Tagging.Strategy != "" {
 		tag, err := tagger.GenerateTag()

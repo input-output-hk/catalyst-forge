@@ -28,7 +28,9 @@ type ProjectLoader interface {
 // DefaultProjectLoader is the default implementation of the ProjectLoader.
 type DefaultProjectLoader struct {
 	blueprintLoader loader.BlueprintLoader
+	ci              bool
 	fs              afero.Fs
+	local           bool
 	logger          *slog.Logger
 	repoLoader      git.RepoLoader
 	runtimes        []RuntimeData
@@ -114,7 +116,9 @@ func (p *DefaultProjectLoader) Load(projectPath string) (Project, error) {
 
 	return Project{
 		Blueprint:    bp,
+		CI:           p.ci,
 		Earthfile:    ef,
+		Local:        p.local,
 		Name:         bp.Project.Name,
 		Path:         projectPath,
 		Repo:         repo,
@@ -125,7 +129,11 @@ func (p *DefaultProjectLoader) Load(projectPath string) (Project, error) {
 }
 
 // NewDefaultProjectLoader creates a new DefaultProjectLoader.
-func NewDefaultProjectLoader(runtimes []RuntimeData, logger *slog.Logger) DefaultProjectLoader {
+func NewDefaultProjectLoader(
+	ci, local bool,
+	runtimes []RuntimeData,
+	logger *slog.Logger,
+) DefaultProjectLoader {
 	if logger == nil {
 		logger = slog.New(slog.NewTextHandler(io.Discard, nil))
 	}
@@ -134,7 +142,9 @@ func NewDefaultProjectLoader(runtimes []RuntimeData, logger *slog.Logger) Defaul
 	rl := git.NewDefaultRepoLoader()
 	return DefaultProjectLoader{
 		blueprintLoader: &bl,
+		ci:              ci,
 		fs:              afero.NewOsFs(),
+		local:           local,
 		logger:          logger,
 		repoLoader:      &rl,
 		runtimes:        runtimes,

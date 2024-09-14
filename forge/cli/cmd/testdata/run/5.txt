@@ -1,5 +1,5 @@
 exec git init .
-exec forge run --ci ./dir1+test
+exec forge --ci run ./dir1+test
 cmp stdout golden.txt
 
 -- golden.txt --

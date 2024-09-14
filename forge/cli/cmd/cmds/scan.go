@@ -17,16 +17,20 @@ import (
 type ScanCmd struct {
 	Absolute  bool     `short:"a" help:"Output absolute paths."`
 	Blueprint bool     `help:"Return the blueprint for each project."`
-	CI        bool     `help:"Run in CI mode."`
 	Earthfile bool     `help:"Return the Earthfile targets for each project."`
 	Filter    []string `short:"f" help:"Filter Earthfile targets by regular expression or blueprint results by path."`
 	Pretty    bool     `help:"Pretty print JSON output."`
 	RootPath  string   `arg:"" help:"Root path to scan for Earthfiles and their respective targets."`
 }
 
-func (c *ScanCmd) Run(logger *slog.Logger) error {
+func (c *ScanCmd) Run(logger *slog.Logger, global GlobalArgs) error {
 	walker := walker.NewDefaultFSWalker(logger)
-	loader := project.NewDefaultProjectLoader(project.GetDefaultRuntimes(logger), logger)
+	loader := project.NewDefaultProjectLoader(
+		false,
+		false,
+		project.GetDefaultRuntimes(logger),
+		logger,
+	)
 
 	var rootPath string
 	if c.Absolute {
@@ -94,7 +98,7 @@ func (c *ScanCmd) Run(logger *slog.Logger) error {
 			}
 		}
 
-		if c.CI {
+		if global.CI {
 			enumerated := make(map[string][]string)
 			for filter, targetMap := range result {
 				enumerated[filter] = enumerate(targetMap)
@@ -113,7 +117,7 @@ func (c *ScanCmd) Run(logger *slog.Logger) error {
 			}
 		}
 
-		if c.CI {
+		if global.CI {
 			enumerated := enumerate(result)
 			sort.Strings(enumerated)
 			printJson(enumerated, c.Pretty)
