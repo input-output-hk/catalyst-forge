@@ -3,7 +3,7 @@ package cmds
 import (
 	"log/slog"
 
-	"github.com/input-output-hk/catalyst-forge/forge/cli/tui/pipeline"
+	"github.com/input-output-hk/catalyst-forge/forge/cli/tui/ci"
 )
 
 type CICmd struct {
@@ -19,5 +19,5 @@ func (c *CICmd) Run(logger *slog.Logger, global GlobalArgs) error {
 	}
 	opts := generateOpts(&flags, &global)
 	filters := []string{"^check.*$", "^build.*$", "^test.*$"}
-	return pipeline.Start(c.Path, filters, global.Local, opts...)
+	return ci.Run(c.Path, filters, global.Local, opts...)
 }

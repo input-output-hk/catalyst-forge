@@ -77,6 +77,10 @@ func WithRedirect() LocalExecutorOption {
 
 // NewLocalExecutor creates a new LocalExecutor with the given options.
 func NewLocalExecutor(logger *slog.Logger, options ...LocalExecutorOption) *LocalExecutor {
+	if logger == nil {
+		logger = slog.New(slog.NewTextHandler(io.Discard, nil))
+	}
+
 	e := &LocalExecutor{
 		logger: logger,
 	}
