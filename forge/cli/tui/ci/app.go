@@ -39,9 +39,20 @@ func (a App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if a.ci.Finished() {
 			a.logger.Info("All CI runs finished for current group")
 			out := a.ci.View()
+
+			if a.ci.Failed() {
+				a.logger.Info("Group failed")
+				a.ci.Stop()
+				return a, tea.Sequence(
+					tea.Println(out),
+					tea.Quit,
+				)
+			}
+
 			cmd, err := a.ci.Next()
 			if err != nil {
 				a.logger.Info("No more runs")
+				a.ci.Stop()
 				return a, tea.Sequence(
 					tea.Println(out),
 					tea.Quit,

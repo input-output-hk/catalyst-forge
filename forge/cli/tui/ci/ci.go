@@ -45,7 +45,13 @@ type CI struct {
 	loader   project.ProjectLoader
 	logger   *slog.Logger
 	options  []earthly.EarthlyExecutorOption
+	running  bool
 	scanPath string
+}
+
+// Failed returns true if the active run group has failed.
+func (c *CI) Failed() bool {
+	return c.groups[c.index].Failed()
 }
 
 // Finished returns true if the active run group has finished.
@@ -96,6 +102,7 @@ func (c *CI) Load() error {
 	}
 
 	c.groups = groups
+	c.running = true
 	return nil
 }
 
@@ -119,7 +126,13 @@ func (c *CI) Run() tea.Cmd {
 			cmds = append(cmds, run.spinner.Tick)
 		}
 	}
+
 	return tea.Batch(cmds...)
+}
+
+// Stop stops the CI simulation.
+func (c *CI) Stop() {
+	c.running = false
 }
 
 // UpdateSpinner updates the spinners of the CI simulation.
@@ -136,7 +149,7 @@ func (c *CI) UpdateSpinners(msg tea.Msg) []tea.Cmd {
 
 // View returns the current view of the CI simulation.
 func (c *CI) View() string {
-	if len(c.groups) > 0 && c.index < len(c.groups) {
+	if c.running {
 		return c.groups[c.index].View()
 	} else {
 		return ""
@@ -166,6 +179,17 @@ func (c *CIRunGroup) View() string {
 	}
 
 	return strings.TrimSuffix(view, "\n")
+}
+
+// Failed returns true if any run in the group has failed.
+func (c *CIRunGroup) Failed() bool {
+	for _, run := range c.Runs {
+		if run.Status == RunStatusFailed {
+			return true
+		}
+	}
+
+	return false
 }
 
 // Finished returns true if all runs in the group have finished.
