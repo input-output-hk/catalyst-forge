@@ -2,6 +2,7 @@ package ci
 
 import (
 	"fmt"
+	"io"
 	"log/slog"
 	"os"
 	"path/filepath"
@@ -107,11 +108,19 @@ func Run(scanPath string,
 	local bool,
 	opts ...earthly.EarthlyExecutorOption,
 ) error {
-	logger, f, err := tui.NewLogger()
-	if err != nil {
-		return err
+	var logger *slog.Logger
+	if _, ok := os.LookupEnv("DEBUG"); ok {
+		var err error
+		var f *os.File
+
+		logger, f, err = tui.NewLogger()
+		if err != nil {
+			return err
+		}
+		defer f.Close()
+	} else {
+		logger = slog.New(slog.NewTextHandler(io.Discard, nil))
 	}
-	defer f.Close()
 
 	loader := project.NewDefaultProjectLoader(
 		false,
@@ -121,7 +130,7 @@ func Run(scanPath string,
 	)
 
 	if scanPath == "" {
-		scanPath, err = findRoot(".", logger)
+		scanPath, err := findRoot(".", logger)
 		if err != nil {
 			return fmt.Errorf("failed to find root of git repository: %w", err)
 		}
