@@ -44,6 +44,9 @@ package schema
 
 // CI contains the configuration for the CI system.
 #GlobalCI: {
+	// Local defines the filters to use when simulating a local CI run.
+	local: [...string] @go(Local,[]string)
+
 	// Providers contains the configuration for the providers being used by the CI system.
 	// +optional
 	providers?: #Providers @go(Providers)

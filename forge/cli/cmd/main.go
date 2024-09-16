@@ -19,6 +19,7 @@ var cli struct {
 	cmds.GlobalArgs
 
 	Dump     cmds.DumpCmd     `cmd:"" help:"Dumps a project's blueprint to JSON."`
+	CI       cmds.CICmd       `cmd:"" help:"Simulate a CI run."`
 	Run      cmds.RunCmd      `cmd:"" help:"Run an Earthly target."`
 	Scan     cmds.ScanCmd     `cmd:"" help:"Scan for Earthfiles."`
 	Secret   cmds.SecretCmd   `cmd:"" help:"Manage secrets."`
