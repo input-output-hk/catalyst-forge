@@ -29,12 +29,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Install Forge
-        uses: ./forge/actions/install
+        uses: ./actions/install
         if: ${{ inputs.forge_version != 'local' }}
         with:
           version: ${{ inputs.forge_version }}
       - name: Install Local Forge
-        uses: ./forge/actions/install-local
+        uses: ./actions/install-local
         if: ${{ inputs.forge_version == 'local' }}
         with:
           earthly_token: ${{ secrets.earthly_token }}
@@ -49,12 +49,12 @@ jobs:
             echo "skip=false" >> $GITHUB_OUTPUT
           fi
       - name: Setup CI
-        uses: ./forge/actions/setup
+        uses: ./actions/setup
         with:
           skip_earthly: ${{ steps.local.outputs.skip }}
       - name: Run
         id: run
-        uses: ./forge/actions/run
+        uses: ./actions/run
         with:
           artifact: ${{ env.OUTPUT }}
           path: ${{ matrix.earthfile }}
@@ -70,7 +70,7 @@ jobs:
           echo "project=$PROJECT" >> $GITHUB_OUTPUT
           echo "target=$TARGET" >> $GITHUB_OUTPUT
       - name: Release
-        uses: ./forge/actions/release
+        uses: ./actions/release
         with:
           native_platform: linux/amd64
           path: ${{ env.OUTPUT }}

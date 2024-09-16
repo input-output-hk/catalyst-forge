@@ -1,0 +1,27 @@
+name: Install local forge CLI
+description: Installs a local version of the forge CLI
+inputs:
+  earthly_token:
+        description: Earthly token used to login to Earthly cloud for local build
+        required: true
+
+runs:
+  using: composite
+  steps:
+    - shell: bash
+      run: echo "Building Forge CLI locally..."
+    - name: Install Earthly
+      uses: earthly/actions-setup@v1
+      with:
+        version: latest
+    - name: Login to Earthly Cloud
+      shell: bash
+      run: |
+        earthly account login --token ${{ inputs.earthly_token }}
+        earthly org select Catalyst
+    - name: Build Forge CLI
+      shell: bash
+      run: |
+        echo "::group::Forge CLI Earthly Build"
+        earthly --sat ci --artifact ./cli+build/forge /usr/local/bin/forge
+        echo "::endgroup::"
