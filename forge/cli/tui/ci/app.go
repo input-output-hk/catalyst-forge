@@ -3,6 +3,8 @@ package ci
 import (
 	"fmt"
 	"log/slog"
+	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/charmbracelet/bubbles/spinner"
@@ -11,6 +13,8 @@ import (
 	"github.com/input-output-hk/catalyst-forge/forge/cli/pkg/earthly"
 	"github.com/input-output-hk/catalyst-forge/forge/cli/pkg/project"
 	"github.com/input-output-hk/catalyst-forge/forge/cli/tui"
+	"github.com/input-output-hk/catalyst-forge/tools/pkg/git"
+	"github.com/input-output-hk/catalyst-forge/tools/pkg/walker"
 )
 
 var (
@@ -100,7 +104,6 @@ func (a App) line() string {
 
 // Run starts the TUI application.
 func Run(scanPath string,
-	filters []string,
 	local bool,
 	opts ...earthly.EarthlyExecutorOption,
 ) error {
@@ -117,17 +120,42 @@ func Run(scanPath string,
 		logger,
 	)
 
+	if scanPath == "" {
+		scanPath, err = findRoot(".", logger)
+		if err != nil {
+			return fmt.Errorf("failed to find root of git repository: %w", err)
+		}
+
+		cwd, err := os.Getwd()
+		if err != nil {
+			return fmt.Errorf("failed to get current working directory: %w", err)
+		}
+
+		scanPath, err = filepath.Rel(cwd, scanPath)
+		if err != nil {
+			return fmt.Errorf("failed to get relative path: %w", err)
+		}
+	}
+
+	project, err := loader.Load(scanPath)
+	if err != nil {
+		return fmt.Errorf("failed to load project: %w", err)
+	}
+	if len(project.Blueprint.Global.CI.Local) <= 0 {
+		return fmt.Errorf("no local CI filters found in project")
+	}
+
 	ci := CI{
-		filters:  filters,
+		filters:  project.Blueprint.Global.CI.Local,
 		loader:   &loader,
 		logger:   logger,
 		options:  opts,
 		scanPath: scanPath,
 	}
 
-	logger.Info("Loading project")
+	logger.Info("Loading CI")
 	if err := ci.Load(); err != nil {
-		return err
+		return fmt.Errorf("failed to load CI: %w", err)
 	}
 
 	app := App{
@@ -138,8 +166,14 @@ func Run(scanPath string,
 	logger.Info("Starting program")
 	p := tea.NewProgram(app)
 	if _, err := p.Run(); err != nil {
-		return err
+		return fmt.Errorf("failed to run program: %w", err)
 	}
 
 	return nil
+}
+
+// findRoot finds the root of a git repository.
+func findRoot(scanPath string, logger *slog.Logger) (string, error) {
+	rw := walker.NewDefaultFSReverseWalker(logger)
+	return git.FindGitRoot(scanPath, &rw)
 }

@@ -52,6 +52,9 @@ type Project struct {
 
 // CI contains the configuration for the CI system.
 type GlobalCI struct {
+	// Local defines the filters to use when simulating a local CI run.
+	Local []string `json:"local"`
+
 	// Providers contains the configuration for the providers being used by the CI system.
 	// +optional
 	Providers Providers `json:"providers"`
