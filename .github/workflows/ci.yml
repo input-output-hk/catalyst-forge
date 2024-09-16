@@ -20,12 +20,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Install Forge
-        uses: ./forge/actions/install
+        uses: ./actions/install
         if: ${{ inputs.forge_version != 'local' }}
         with:
           version: ${{ inputs.forge_version }}
       - name: Install Local Forge
-        uses: ./forge/actions/install-local
+        uses: ./actions/install-local
         if: ${{ inputs.forge_version == 'local' }}
         with:
           earthly_token: ${{ secrets.earthly_token }}
@@ -40,12 +40,12 @@ jobs:
             echo "skip=false" >> $GITHUB_OUTPUT
           fi
       - name: Setup CI
-        uses: ./forge/actions/setup
+        uses: ./actions/setup
         with:
           skip_earthly: ${{ steps.local.outputs.skip }}
       - name: Discovery
         id: discovery
-        uses: ./forge/actions/discovery
+        uses: ./actions/discovery
         with:
           filters: |
             ^build.*
