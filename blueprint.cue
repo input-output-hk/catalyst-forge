@@ -44,9 +44,6 @@ global: {
 			},
 		]
 		tagging: {
-			aliases: {
-				forge: "forge/cli"
-			}
 			strategy: "commit"
 		}
 	}
