@@ -23,5 +23,5 @@ runs:
       shell: bash
       run: |
         echo "::group::Forge CLI Earthly Build"
-        earthly --sat ci --artifact ./forge/cli+build/forge /usr/local/bin/forge
+        earthly --sat ci --artifact ./cli+build/forge /usr/local/bin/forge
         echo "::endgroup::"
