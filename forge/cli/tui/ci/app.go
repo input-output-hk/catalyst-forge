@@ -135,6 +135,10 @@ func Run(scanPath string,
 		if err != nil {
 			return fmt.Errorf("failed to get relative path: %w", err)
 		}
+
+		if scanPath == "" {
+			scanPath = "."
+		}
 	}
 
 	project, err := loader.Load(scanPath)

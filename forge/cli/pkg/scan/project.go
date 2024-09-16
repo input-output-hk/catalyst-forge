@@ -23,17 +23,17 @@ func ScanProjects(rootPath string, l project.ProjectLoader, w walker.Walker, log
 
 		path = filepath.Dir(path)
 
-		logger.Info("loading project", "path", path)
-		p, err := l.Load(path)
-		if err != nil {
-			logger.Error("error loading project", "path", path, "error", err)
-			return fmt.Errorf("error loading %s: %w", path, err)
-		}
-
 		// We need to drop the blueprint suffix and make sure relative paths
 		// include a leading "./" to avoid confusing the Earthly CLI
 		if !strings.HasPrefix(rootPath, "/") && path != "." {
 			path = fmt.Sprintf("./%s", path)
+		}
+
+		logger.Info("loading project", "path", path, "rootPath", rootPath)
+		p, err := l.Load(path)
+		if err != nil {
+			logger.Error("error loading project", "path", path, "error", err)
+			return fmt.Errorf("error loading %s: %w", path, err)
 		}
 
 		projects[path] = p
