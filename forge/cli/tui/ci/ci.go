@@ -1,6 +1,7 @@
 package ci
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -49,8 +50,8 @@ type CI struct {
 	scanPath string
 }
 
-// Failed returns true if the active run group has failed.
-func (c *CI) Failed() bool {
+// Failed returns the failed runs of the active run group.
+func (c *CI) Failed() []*CIRun {
 	return c.groups[c.index].Failed()
 }
 
@@ -181,15 +182,16 @@ func (c *CIRunGroup) View() string {
 	return strings.TrimSuffix(view, "\n")
 }
 
-// Failed returns true if any run in the group has failed.
-func (c *CIRunGroup) Failed() bool {
+// Failed returns the failed runs of the group.
+func (c *CIRunGroup) Failed() []*CIRun {
+	var failed []*CIRun
 	for _, run := range c.Runs {
 		if run.Status == RunStatusFailed {
-			return true
+			failed = append(failed, run)
 		}
 	}
 
-	return false
+	return failed
 }
 
 // Finished returns true if all runs in the group have finished.
@@ -211,6 +213,8 @@ type CIRun struct {
 	logger  *slog.Logger
 	options []earthly.EarthlyExecutorOption
 	spinner spinner.Model
+	stderr  bytes.Buffer
+	stdout  bytes.Buffer
 }
 
 // Run starts the CI run.
@@ -219,7 +223,7 @@ func (c *CIRun) Run() tea.Msg {
 	c.Status = RunStatusRunning
 	_, err := c.Project.RunTarget(
 		c.Target,
-		executor.NewLocalExecutor(c.logger),
+		executor.NewLocalExecutor(c.logger, executor.WithRedirectTo(&c.stdout, &c.stderr)),
 		secrets.NewDefaultSecretStore(),
 		c.options...,
 	)
@@ -235,6 +239,16 @@ func (c *CIRun) Run() tea.Msg {
 	return CIRunFinishedMsg{
 		Run: c,
 	}
+}
+
+// Stdout returns the stdout of the CI run.
+func (c *CIRun) Stdout() string {
+	return c.stdout.String()
+}
+
+// Stderr returns the stderr of the CI run.
+func (c *CIRun) Stderr() string {
+	return c.stderr.String()
 }
 
 // UpdateSpinner updates the spinner of the CI run.

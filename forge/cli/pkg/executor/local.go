@@ -13,8 +13,10 @@ type LocalExecutorOption func(e *LocalExecutor)
 
 // LocalExecutor is an Executor that runs commands locally.
 type LocalExecutor struct {
-	logger   *slog.Logger
-	redirect bool
+	logger       *slog.Logger
+	redirect     bool
+	stderrStream io.Writer
+	stdoutStream io.Writer
 }
 
 func (e *LocalExecutor) Execute(command string, args []string) ([]byte, error) {
@@ -35,8 +37,17 @@ func (e *LocalExecutor) Execute(command string, args []string) ([]byte, error) {
 			return nil, err
 		}
 
-		stdoutWriter := io.MultiWriter(os.Stdout, &buffer)
-		stderrWriter := io.MultiWriter(os.Stderr, &buffer)
+		stdoutWriter := e.stdoutStream
+		if stdoutWriter == nil {
+			stdoutWriter = os.Stdout
+		}
+		stdoutWriter = io.MultiWriter(stdoutWriter, &buffer)
+
+		stderrWriter := e.stderrStream
+		if stderrWriter == nil {
+			stderrWriter = os.Stderr
+		}
+		stderrWriter = io.MultiWriter(stderrWriter, &buffer)
 
 		if err := cmd.Start(); err != nil {
 			return nil, err
@@ -72,6 +83,16 @@ func (e *LocalExecutor) Execute(command string, args []string) ([]byte, error) {
 func WithRedirect() LocalExecutorOption {
 	return func(e *LocalExecutor) {
 		e.redirect = true
+	}
+}
+
+// WithRedirectTo is an option that configures the LocalExecutor to redirect the
+// stdout and stderr of the commands to the given writers.
+func WithRedirectTo(stdout, stderr io.Writer) LocalExecutorOption {
+	return func(e *LocalExecutor) {
+		e.redirect = true
+		e.stdoutStream = stdout
+		e.stderrStream = stderr
 	}
 }
 

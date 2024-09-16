@@ -1,13 +1,21 @@
 package ci
 
 import (
+	"fmt"
 	"log/slog"
+	"strings"
 
 	"github.com/charmbracelet/bubbles/spinner"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
 	"github.com/input-output-hk/catalyst-forge/forge/cli/pkg/earthly"
 	"github.com/input-output-hk/catalyst-forge/forge/cli/pkg/project"
 	"github.com/input-output-hk/catalyst-forge/forge/cli/tui"
+)
+
+var (
+	errStyle     = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("9"))
+	successStyle = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("10"))
 )
 
 // App represents the TUI application.
@@ -40,9 +48,18 @@ func (a App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			a.logger.Info("All CI runs finished for current group")
 			out := a.ci.View()
 
-			if a.ci.Failed() {
+			if failed := a.ci.Failed(); failed != nil {
 				a.logger.Info("Group failed")
 				a.ci.Stop()
+
+				out += strings.Trim(errStyle.Render("\n\nRun failed, dumping logs\n\n"), " ")
+				for _, run := range failed {
+					out += errStyle.Render(
+						fmt.Sprintf("%s+%s\n%s", run.Project.Path, run.Target, a.line()),
+					)
+					out += run.Stderr() + "\n\n"
+				}
+
 				return a, tea.Sequence(
 					tea.Println(out),
 					tea.Quit,
@@ -53,6 +70,8 @@ func (a App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if err != nil {
 				a.logger.Info("No more runs")
 				a.ci.Stop()
+
+				out += strings.Trim(successStyle.Render("\n\nAll runs succeeded"), " ")
 				return a, tea.Sequence(
 					tea.Println(out),
 					tea.Quit,
@@ -72,6 +91,11 @@ func (a App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (a App) View() string {
 	return a.ci.View()
+}
+
+// line returns a line of dashes the width of the window.
+func (a App) line() string {
+	return strings.Repeat("-", a.window.Width)
 }
 
 // Run starts the TUI application.
