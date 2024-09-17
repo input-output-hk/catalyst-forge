@@ -149,6 +149,7 @@ runs:
             echo "token=$TOKEN" >> $GITHUB_OUTPUT
           else
             echo "No configuration found for Earthly Cloud provider"
+          fi
         else
           echo "No configuration found for Earthly Cloud provider"
         fi
