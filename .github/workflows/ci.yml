@@ -20,12 +20,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Install Forge
-        uses: ./actions/install
+        uses: input-output-hk/catalyst-forge/actions/install@master
         if: ${{ inputs.forge_version != 'local' }}
         with:
           version: ${{ inputs.forge_version }}
       - name: Install Local Forge
-        uses: ./actions/install-local
+        uses: input-output-hk/catalyst-forge/actions/install-local@master
         if: ${{ inputs.forge_version == 'local' }}
         with:
           earthly_token: ${{ secrets.earthly_token }}
@@ -40,12 +40,15 @@ jobs:
             echo "skip=false" >> $GITHUB_OUTPUT
           fi
       - name: Setup CI
-        uses: ./actions/setup
+        uses: input-output-hk/catalyst-forge/actions/setup@master
         with:
+          skip_aws: 'true'
+          skip_docker: 'true'
+          skip_github: 'true'
           skip_earthly: ${{ steps.local.outputs.skip }}
       - name: Discovery
         id: discovery
-        uses: ./actions/discovery
+        uses: input-output-hk/catalyst-forge/actions/discovery@master
         with:
           filters: |
             ^build.*
