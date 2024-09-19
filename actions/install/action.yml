@@ -1,0 +1,14 @@
+name: Install
+description: Install Forge CLI
+inputs:
+  github_token:
+    description: Github token for querying the API
+    required: false
+    default: ${{ github.token }}
+  version:
+    description: The version of the CLI to install
+    default: "latest"
+
+runs:
+  using: node20
+  main: dist/index.js

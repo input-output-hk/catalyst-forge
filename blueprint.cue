@@ -1,6 +1,13 @@
 version: "1.0"
 global: {
 	ci: {
+		local: [
+			"^check.*$",
+			"^build.*$",
+			"^test.*$",
+			"^release.*$",
+			"^publish.*$",
+		]
 		registries: [
 			ci.providers.aws.registry,
 		]
@@ -28,10 +35,15 @@ global: {
 
 			github: registry: "ghcr.io"
 		}
+		secrets: [
+			{
+				name:     "GITHUB_TOKEN"
+				optional: true
+				provider: "env"
+				path:     "GITHUB_TOKEN"
+			},
+		]
 		tagging: {
-			aliases: {
-				forge: "forge/cli"
-			}
 			strategy: "commit"
 		}
 	}

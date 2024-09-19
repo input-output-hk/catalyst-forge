@@ -1,0 +1,32 @@
+exec git init .
+
+exec forge scan --earthfile .
+cmp stdout golden_1.txt
+
+exec forge --ci scan --earthfile .
+cmp stdout golden_1_ci.txt
+
+exec forge scan --absolute --earthfile .
+cmpenv stdout golden_2.txt
+
+exec forge --ci scan --absolute --earthfile .
+cmpenv stdout golden_2_ci.txt
+
+-- golden_1.txt --
+{".":["foo","bar"]}
+-- golden_1_ci.txt --
+[".+bar",".+foo"]
+-- golden_2.txt --
+{"$WORK":["foo","bar"]}
+-- golden_2_ci.txt --
+["$WORK+bar","$WORK+foo"]
+-- blueprint.cue --
+version: "1.0"
+-- Earthfile --
+VERSION 0.7
+
+foo:
+  LET bar = baz
+
+bar:
+  LET bar = baz

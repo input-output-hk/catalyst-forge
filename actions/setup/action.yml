@@ -1,0 +1,172 @@
+name: Setup CI
+description: Sets up the CI with the configured providers
+inputs:
+  github_token:
+    description: Github token assigned to CI
+    required: false
+    default: ${{ github.token }}
+  skip_aws:
+    description: If true, skip authenticating with AWS and configuring ECR
+    required: false
+    default: "false"
+  skip_docker:
+    description: If true, skip authenticating to DockerHub
+  skip_earthly:
+    description: If true, skip installing Earthly and authenticating to Earthly Cloud
+    required: false
+    default: "false"
+  skip_github:
+    description: If true, skip authenticating to GitHub Container Registry
+    required: false
+    default: "false"
+
+runs:
+  using: composite
+  steps:
+    # AWS Provider
+    - name: Get AWS provider configuration
+      id: aws
+      if: inputs.skip_aws  == 'false'
+      #continue-on-error: true
+      shell: bash
+      run: |
+        echo "==== AWS Setup ====="
+        BP=$(forge dump .)
+
+        AWS=$(echo "$BP" | jq -r .global.ci.providers.aws)
+        if [[ "$AWS" != "null" ]]; then
+          REGION=$(echo "$BP" | jq -r .global.ci.providers.aws.region)
+          REGISTRY=$(echo "$BP" | jq -r .global.ci.providers.aws.registry)
+          ROLE=$(echo "$BP" | jq -r .global.ci.providers.aws.role)
+
+          echo "region=$REGION" >> $GITHUB_OUTPUT
+          echo "registry=$REGISTRY" >> $GITHUB_OUTPUT
+          echo "role=$ROLE" >> $GITHUB_OUTPUT
+        else
+          echo "No configuration found for AWS provider"
+        fi
+    - name: Login to AWS
+      uses: aws-actions/configure-aws-credentials@v4
+      if: steps.aws.outputs.region  != '' && steps.aws.outputs.role != '' && steps.aws.conclusion == 'success'
+      with:
+        aws-region: ${{ steps.aws.outputs.region }}
+        role-to-assume: ${{ steps.aws.outputs.role }}
+    - name: Login to ECR
+      uses: docker/login-action@v3
+      if: steps.aws.outputs.registry != '' && steps.aws.conclusion == 'success'
+      with:
+        registry: ${{ steps.aws.outputs.registry }}
+
+    # Docker Provider
+    - name: Get Docker provider configuration
+      id: docker
+      if: inputs.skip_docker  == 'false'
+      #continue-on-error: true
+      shell: bash
+      run: |
+        echo "==== Docker Setup ====="
+        BP=$(forge dump .)
+
+        DOCKER=$(echo "$BP" | jq -r .global.ci.providers.docker.credentials)
+        if [[ "$DOCKER" != "null" ]]; then
+          SECRET=$(forge secret get --project . global.ci.providers.docker.credentials)
+          USERNAME=$(echo "$SECRET" | jq -r .username)
+          PASSWORD=$(echo "$SECRET" | jq -r .password)
+
+          if [[ "$USERNAME" == "null" || "$PASSWORD" == "null" ]]; then
+            echo "Error: the docker provider secret must map secret values to 'username' and 'password'"
+            exit 1
+          fi
+
+          echo "::add-mask::$USERNAME"
+          echo "::add-mask::$PASSWORD"
+
+          echo "username=$USERNAME" >> $GITHUB_OUTPUT
+          echo "password=$PASSWORD" >> $GITHUB_OUTPUT
+        else
+          echo "No configuration found for DockerHub provider"
+        fi
+    - name: Login to Docker Hub
+      uses: docker/login-action@v3
+      if: steps.docker.outputs.username != '' && steps.docker.outputs.password != '' && steps.docker.conclusion == 'success'
+      with:
+        username: ${{ steps.docker.outputs.username }}
+        password: ${{ steps.docker.outputs.password }}
+
+    # GitHub Provider
+    - name: Get GitHub provider configuration
+      id: github
+      if: inputs.skip_github  == 'false'
+      shell: bash
+      run: |
+        echo "==== GitHub Setup ====="
+        BP=$(forge dump .)
+
+        GITHUB=$(echo "$BP" | jq -r .global.ci.providers.github.registry)
+        if [[ "$GITHUB" != "null" ]]; then
+          LOGIN=1
+          echo "login=$LOGIN" >> $GITHUB_OUTPUT
+        else
+          echo "No configuration found for GitHub provider"
+        fi
+    - name: Login to GitHub Container Registry
+      uses: docker/login-action@v3
+      if: steps.github.outputs.login && steps.github.conclusion == 'success'
+      with:
+        registry: ghcr.io
+        username: ${{ github.actor }}
+        password: ${{ inputs.github_token }}
+
+    # Earthly Provider
+    - name: Get Earthly provider configuration
+      if: inputs.skip_earthly == 'false'
+      id: earthly
+      shell: bash
+      run: |
+        echo "==== Earthly Setup ====="
+        BP=$(forge dump .)
+
+        VERSION="latest"
+
+        EARTHLY=$(echo "$BP" | jq -r .global.ci.providers.earthly)
+        if [[ "$EARTHLY" != "null" ]]; then
+          ORG=$(echo "$BP" | jq -r .global.ci.providers.earthly.org)
+          VERSION=$(echo "$BP" | jq -r .global.ci.providers.earthly.version)
+
+          echo "org=$ORG" >> $GITHUB_OUTPUT
+
+          EARTHLY_CREDS=$(echo "$BP" | jq -r .global.ci.providers.earthly.credentials)
+          if [[ "$EARTHLY_CREDS" != "null" ]]; then
+            SECRET=$(forge secret get --project . global.ci.providers.earthly.credentials)
+            TOKEN=$(echo "$SECRET" | jq -r .token)
+
+            if [[ "$TOKEN" == "null" ]]; then
+              echo "Error: the earthly provider secret must map the secret value to 'token'"
+              exit 1
+            fi
+
+            echo "::add-mask::$TOKEN"
+            echo "token=$TOKEN" >> $GITHUB_OUTPUT
+          else
+            echo "No configuration found for Earthly Cloud provider"
+          fi
+        else
+          echo "No configuration found for Earthly Cloud provider"
+        fi
+
+        echo "version=$VERSION" >> $GITHUB_OUTPUT
+    - name: Install Earthly
+      uses: earthly/actions-setup@v1
+      if: inputs.skip_earthly == 'false'
+      with:
+        version: ${{ steps.earthly.outputs.version }}
+    - name: Login to Earthly Cloud
+      if: steps.earthly.outputs.token != '' && steps.earthly.conclusion == 'success'
+      shell: bash
+      run: |
+        earthly account login --token "${{ steps.earthly.outputs.token }}"
+    - name: Set Earthly organization
+      if: steps.earthly.outputs.token != '' && steps.earthly.conclusion == 'success'
+      shell: bash
+      run: |
+        earthly org select "${{ steps.earthly.outputs.org }}"

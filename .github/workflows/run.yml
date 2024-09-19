@@ -26,12 +26,33 @@ jobs:
         earthfile: ${{ fromJson(inputs.earthfiles) }}
     steps:
       - uses: actions/checkout@v4
-      - name: Setup CI
-        uses: ./forge/actions/setup
+      - name: Install Forge
+        uses: input-output-hk/catalyst-forge/actions/install@master
+        if: ${{ inputs.forge_version != 'local' }}
+        with:
+          version: ${{ inputs.forge_version }}
+      - name: Install Local Forge
+        uses: input-output-hk/catalyst-forge/actions/install-local@master
+        if: ${{ inputs.forge_version == 'local' }}
         with:
           earthly_token: ${{ secrets.earthly_token }}
-          forge_version: ${{ inputs.forge_version }}
+      - name: Check forge version
+        id: local
+        run: |
+          forge version
+
+          if [[ "${{ inputs.forge_version }}" == "local" ]]; then
+            echo "skip=true" >> $GITHUB_OUTPUT
+          else
+            echo "skip=false" >> $GITHUB_OUTPUT
+          fi
+      - name: Setup CI
+        uses: input-output-hk/catalyst-forge/actions/setup@master
+        with:
+          skip_earthly: ${{ steps.local.outputs.skip }}
       - name: Run
-        uses: ./forge/actions/run
+        uses: input-output-hk/catalyst-forge/actions/run@master
         with:
           path: ${{ matrix.earthfile }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

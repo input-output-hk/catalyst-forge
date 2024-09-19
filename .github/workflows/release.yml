@@ -28,17 +28,38 @@ jobs:
         earthfile: ${{ fromJson(inputs.earthfiles) }}
     steps:
       - uses: actions/checkout@v4
-      - name: Setup CI
-        uses: ./forge/actions/setup
+      - name: Install Forge
+        uses: input-output-hk/catalyst-forge/actions/install@master
+        if: ${{ inputs.forge_version != 'local' }}
+        with:
+          version: ${{ inputs.forge_version }}
+      - name: Install Local Forge
+        uses: input-output-hk/catalyst-forge/actions/install-local@master
+        if: ${{ inputs.forge_version == 'local' }}
         with:
           earthly_token: ${{ secrets.earthly_token }}
-          forge_version: ${{ inputs.forge_version }}
+      - name: Check forge version
+        id: local
+        run: |
+          forge version
+
+          if [[ "${{ inputs.forge_version }}" == "local" ]]; then
+            echo "skip=true" >> $GITHUB_OUTPUT
+          else
+            echo "skip=false" >> $GITHUB_OUTPUT
+          fi
+      - name: Setup CI
+        uses: input-output-hk/catalyst-forge/actions/setup@master
+        with:
+          skip_earthly: ${{ steps.local.outputs.skip }}
       - name: Run
         id: run
-        uses: ./forge/actions/run
+        uses: input-output-hk/catalyst-forge/actions/run@master
         with:
           artifact: ${{ env.OUTPUT }}
           path: ${{ matrix.earthfile }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Parse Earthfile reference
         id: parse
         run: |
@@ -49,7 +70,7 @@ jobs:
           echo "project=$PROJECT" >> $GITHUB_OUTPUT
           echo "target=$TARGET" >> $GITHUB_OUTPUT
       - name: Release
-        uses: ./forge/actions/release
+        uses: input-output-hk/catalyst-forge/actions/release@master
         with:
           native_platform: linux/amd64
           path: ${{ env.OUTPUT }}
