@@ -78,6 +78,7 @@ jobs:
   package:
     uses: ./.github/workflows/run.yml
     needs: [discover, check, build]
+    if: fromJson(needs.discover.outputs.result)['^package(-.*)?$'] != null
     with:
       earthfiles: ${{ toJson(fromJson(needs.discover.outputs.result)['^package(-.*)?$']) }}
       forge_version: ${{ inputs.forge_version }}
