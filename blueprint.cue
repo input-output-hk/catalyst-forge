@@ -2,12 +2,12 @@ version: "1.0"
 global: {
 	ci: {
 		local: [
-			"^check(-.*+)?$",
-			"^build(-.*+)?$",
-			"^package(-.*+)?$",
-			"^test(-.*+)?$",
-			"^release(-.*+)?$",
-			"^publish(-.*+)?$",
+			"^check(-.*)?$",
+			"^build(-.*)?$",
+			"^package(-.*)?$",
+			"^test(-.*)?$",
+			"^release(-.*)?$",
+			"^publish(-.*)?$",
 		]
 		registries: [
 			ci.providers.aws.registry,

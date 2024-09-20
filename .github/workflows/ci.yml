@@ -50,18 +50,18 @@ jobs:
         uses: input-output-hk/catalyst-forge/actions/discovery@master
         with:
           filters: |
-            ^check(-.*+)?$
-            ^build(-.*+)?$
-            ^package(-.*+)?$
-            ^test(-.*+)?$
-            ^release(-.*+)?$
-            ^publish(-.*+)?$
+            ^check(-.*)?$
+            ^build(-.*)?$
+            ^package(-.*)?$
+            ^test(-.*)?$
+            ^release(-.*)?$
+            ^publish(-.*)?$
 
   check:
     uses: ./.github/workflows/run.yml
     needs: [discover]
     with:
-      earthfiles: ${{ toJson(fromJson(needs.discover.outputs.result)['^check(-.*+)?$']) }}
+      earthfiles: ${{ toJson(fromJson(needs.discover.outputs.result)['^check(-.*)?$']) }}
       forge_version: ${{ inputs.forge_version }}
     secrets:
       earthly_token: ${{ secrets.earthly_token }}
@@ -70,7 +70,7 @@ jobs:
     uses: ./.github/workflows/run.yml
     needs: [discover, check]
     with:
-      earthfiles: ${{ toJson(fromJson(needs.discover.outputs.result)['^build(-.*+)?$']) }}
+      earthfiles: ${{ toJson(fromJson(needs.discover.outputs.result)['^build(-.*)?$']) }}
       forge_version: ${{ inputs.forge_version }}
     secrets:
       earthly_token: ${{ secrets.earthly_token }}
@@ -79,7 +79,7 @@ jobs:
     uses: ./.github/workflows/run.yml
     needs: [discover, check, build]
     with:
-      earthfiles: ${{ toJson(fromJson(needs.discover.outputs.result)['^package(-.*+)?$']) }}
+      earthfiles: ${{ toJson(fromJson(needs.discover.outputs.result)['^package(-.*)?$']) }}
       forge_version: ${{ inputs.forge_version }}
     secrets:
       earthly_token: ${{ secrets.earthly_token }}
@@ -88,7 +88,7 @@ jobs:
     uses: ./.github/workflows/run.yml
     needs: [discover, check, build, package]
     with:
-      earthfiles: ${{ toJson(fromJson(needs.discover.outputs.result)['^test(-.*+)?$']) }}
+      earthfiles: ${{ toJson(fromJson(needs.discover.outputs.result)['^test(-.*)?$']) }}
       forge_version: ${{ inputs.forge_version }}
     secrets:
       earthly_token: ${{ secrets.earthly_token }}
@@ -97,7 +97,7 @@ jobs:
     uses: ./.github/workflows/publish.yml
     needs: [discover, check, build, test]
     with:
-      earthfiles: ${{ toJson(fromJson(needs.discover.outputs.result)['^publish(-.*+)?$']) }}
+      earthfiles: ${{ toJson(fromJson(needs.discover.outputs.result)['^publish(-.*)?$']) }}
       forge_version: ${{ inputs.forge_version }}
     secrets:
       earthly_token: ${{ secrets.earthly_token }}
@@ -106,7 +106,7 @@ jobs:
     uses: ./.github/workflows/release.yml
     needs: [discover, check, build, test]
     with:
-      earthfiles: ${{ toJson(fromJson(needs.discover.outputs.result)['^release(-.*+)?$']) }}
+      earthfiles: ${{ toJson(fromJson(needs.discover.outputs.result)['^release(-.*)?$']) }}
       forge_version: ${{ inputs.forge_version }}
     secrets:
       earthly_token: ${{ secrets.earthly_token }}
