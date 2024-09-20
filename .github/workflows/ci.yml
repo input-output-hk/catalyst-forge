@@ -12,6 +12,14 @@ on:
         description: Optional Earthly token used to login to Earthly cloud during local builds of Forge CLI
         required: false
 
+env:
+  FORGE_REGEX_CHECK: ^check(-.*)?$
+  FORGE_REGEX_BUILD: ^build(-.*)?$
+  FORGE_REGEX_PACKAGE: ^package(-.*)?$
+  FORGE_REGEX_TEST: ^test(-.*)?$
+  FORGE_REGEX_RELEASE: ^release(-.*)?$
+  FORGE_REGEX_PUBLISH: ^publish(-.*)?$
+
 jobs:
   discover:
     runs-on: ubuntu-latest
@@ -42,7 +50,6 @@ jobs:
       - name: Setup CI
         uses: input-output-hk/catalyst-forge/actions/setup@master
         with:
-          skip_aws: 'true'
           skip_docker: 'true'
           skip_github: 'true'
           skip_earthly: ${{ steps.local.outputs.skip }}
@@ -51,17 +58,19 @@ jobs:
         uses: input-output-hk/catalyst-forge/actions/discovery@master
         with:
           filters: |
-            ^build.*
-            ^check.*
-            ^test.*
-            publish
-            release
+            ^check(-.*)?$
+            ^build(-.*)?$
+            ^package(-.*)?$
+            ^test(-.*)?$
+            ^release(-.*)?$
+            ^publish(-.*)?$
 
   check:
     uses: ./.github/workflows/run.yml
     needs: [discover]
+    if: (fromJson(needs.discover.outputs.result)['^check(-.*)?$'] != null) && !failure() && !cancelled()
     with:
-      earthfiles: ${{ toJson(fromJson(needs.discover.outputs.result)['^check.*']) }}
+      earthfiles: ${{ toJson(fromJson(needs.discover.outputs.result)['^check(-.*)?$']) }}
       forge_version: ${{ inputs.forge_version }}
     secrets:
       earthly_token: ${{ secrets.earthly_token }}
@@ -69,17 +78,29 @@ jobs:
   build:
     uses: ./.github/workflows/run.yml
     needs: [discover, check]
+    if: (fromJson(needs.discover.outputs.result)['^build(-.*)?$'] != null) && !failure() && !cancelled()
     with:
-      earthfiles: ${{ toJson(fromJson(needs.discover.outputs.result)['^build.*']) }}
+      earthfiles: ${{ toJson(fromJson(needs.discover.outputs.result)['^build(-.*)?$']) }}
+      forge_version: ${{ inputs.forge_version }}
+    secrets:
+      earthly_token: ${{ secrets.earthly_token }}
+
+  package:
+    uses: ./.github/workflows/run.yml
+    needs: [discover, check, build]
+    if: (fromJson(needs.discover.outputs.result)['^package(-.*)?$'] != null) && !failure() && !cancelled()
+    with:
+      earthfiles: ${{ toJson(fromJson(needs.discover.outputs.result)['^package(-.*)?$']) }}
       forge_version: ${{ inputs.forge_version }}
     secrets:
       earthly_token: ${{ secrets.earthly_token }}
 
   test:
     uses: ./.github/workflows/run.yml
-    needs: [discover, check, build]
+    needs: [discover, check, build, package]
+    if: (fromJson(needs.discover.outputs.result)['^test(-.*)?$'] != null) && !failure() && !cancelled()
     with:
-      earthfiles: ${{ toJson(fromJson(needs.discover.outputs.result)['^test.*']) }}
+      earthfiles: ${{ toJson(fromJson(needs.discover.outputs.result)['^test(-.*)?$']) }}
       forge_version: ${{ inputs.forge_version }}
     secrets:
       earthly_token: ${{ secrets.earthly_token }}
@@ -87,8 +108,9 @@ jobs:
   publish:
     uses: ./.github/workflows/publish.yml
     needs: [discover, check, build, test]
+    if: (fromJson(needs.discover.outputs.result)['^publish(-.*)?$'] != null) && !failure() && !cancelled()
     with:
-      earthfiles: ${{ toJson(fromJson(needs.discover.outputs.result)['publish']) }}
+      earthfiles: ${{ toJson(fromJson(needs.discover.outputs.result)['^publish(-.*)?$']) }}
       forge_version: ${{ inputs.forge_version }}
     secrets:
       earthly_token: ${{ secrets.earthly_token }}
@@ -96,8 +118,9 @@ jobs:
   release:
     uses: ./.github/workflows/release.yml
     needs: [discover, check, build, test]
+    if: (fromJson(needs.discover.outputs.result)['^release(-.*)?$'] != null) && !failure() && !cancelled()
     with:
-      earthfiles: ${{ toJson(fromJson(needs.discover.outputs.result)['release']) }}
+      earthfiles: ${{ toJson(fromJson(needs.discover.outputs.result)['^release(-.*)?$']) }}
       forge_version: ${{ inputs.forge_version }}
     secrets:
       earthly_token: ${{ secrets.earthly_token }}
