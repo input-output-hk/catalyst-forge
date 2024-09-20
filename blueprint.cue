@@ -4,8 +4,8 @@ global: {
 		local: [
 			"^check(-.*+)?$",
 			"^build(-.*+)?$",
-			"^test(-.*+)?$",
 			"^package(-.*+)?$",
+			"^test(-.*+)?$",
 			"^release(-.*+)?$",
 			"^publish(-.*+)?$",
 		]

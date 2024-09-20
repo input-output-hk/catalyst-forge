@@ -52,8 +52,8 @@ jobs:
           filters: |
             ^check(-.*+)?$
             ^build(-.*+)?$
-            ^test(-.*+)?$
             ^package(-.*+)?$
+            ^test(-.*+)?$
             ^release(-.*+)?$
             ^publish(-.*+)?$
 
@@ -75,20 +75,20 @@ jobs:
     secrets:
       earthly_token: ${{ secrets.earthly_token }}
 
-  test:
-    uses: ./.github/workflows/run.yml
-    needs: [discover, check, build]
-    with:
-      earthfiles: ${{ toJson(fromJson(needs.discover.outputs.result)['^test(-.*+)?$']) }}
-      forge_version: ${{ inputs.forge_version }}
-    secrets:
-      earthly_token: ${{ secrets.earthly_token }}
-
   package:
     uses: ./.github/workflows/run.yml
     needs: [discover, check, build]
     with:
       earthfiles: ${{ toJson(fromJson(needs.discover.outputs.result)['^package(-.*+)?$']) }}
+      forge_version: ${{ inputs.forge_version }}
+    secrets:
+      earthly_token: ${{ secrets.earthly_token }}
+
+  test:
+    uses: ./.github/workflows/run.yml
+    needs: [discover, check, build, package]
+    with:
+      earthfiles: ${{ toJson(fromJson(needs.discover.outputs.result)['^test(-.*+)?$']) }}
       forge_version: ${{ inputs.forge_version }}
     secrets:
       earthly_token: ${{ secrets.earthly_token }}
