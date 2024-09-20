@@ -42,7 +42,6 @@ jobs:
       - name: Setup CI
         uses: input-output-hk/catalyst-forge/actions/setup@master
         with:
-          skip_aws: 'true'
           skip_docker: 'true'
           skip_github: 'true'
           skip_earthly: ${{ steps.local.outputs.skip }}
