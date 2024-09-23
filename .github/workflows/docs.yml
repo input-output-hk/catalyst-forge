@@ -85,4 +85,4 @@ jobs:
             ${{ env.CLEAN_EXCLUDE }}
           single-commit: true
           target-folder: ${{ env.DEST_DIR }}
-          folder: ${{ env.OUTPUT }}
+          folder: ${{ env.OUTPUT }}/linux/amd64
