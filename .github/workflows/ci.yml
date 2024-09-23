@@ -17,6 +17,7 @@ env:
   FORGE_REGEX_BUILD: ^build(-.*)?$
   FORGE_REGEX_PACKAGE: ^package(-.*)?$
   FORGE_REGEX_TEST: ^test(-.*)?$
+  FORGE_REGEX_DOCS: ^docs(-.*)?$
   FORGE_REGEX_RELEASE: ^release(-.*)?$
   FORGE_REGEX_PUBLISH: ^publish(-.*)?$
 
@@ -101,6 +102,16 @@ jobs:
     if: (fromJson(needs.discover.outputs.result)['^test(-.*)?$'] != null) && !failure() && !cancelled()
     with:
       earthfiles: ${{ toJson(fromJson(needs.discover.outputs.result)['^test(-.*)?$']) }}
+      forge_version: ${{ inputs.forge_version }}
+    secrets:
+      earthly_token: ${{ secrets.earthly_token }}
+
+  docs:
+    uses: ./.github/workflows/docs.yml
+    needs: [discover, check, build, test]
+    if: (fromJson(needs.discover.outputs.result)['^docs(-.*)?$'] != null) && !failure() && !cancelled()
+    with:
+      earthfiles: ${{ toJson(fromJson(needs.discover.outputs.result)['^docs(-.*)?$']) }}
       forge_version: ${{ inputs.forge_version }}
     secrets:
       earthly_token: ${{ secrets.earthly_token }}
