@@ -127,7 +127,7 @@ jobs:
 
   final:
     needs: [check, build, package, test, publish, release]
-    if: !failure() && !cancelled()
+    if: (!failure() && !cancelled())
     runs-on: ubuntu-latest
     steps:
       - name: Final
