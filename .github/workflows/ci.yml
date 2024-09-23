@@ -124,3 +124,10 @@ jobs:
       forge_version: ${{ inputs.forge_version }}
     secrets:
       earthly_token: ${{ secrets.earthly_token }}
+
+  final:
+    needs: [check, build, package, test, publish, release]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Final
+        run: echo "All done"
