@@ -1,0 +1,88 @@
+on:
+  workflow_call:
+    inputs:
+      earthfiles:
+        description: |
+          A JSON list of Earthfile paths+targets to use for publishing
+        required: true
+        type: string
+      forge_version:
+        description: |
+          The version of the forge CLI to install (use 'local' for testing)
+        required: true
+        type: string
+    secrets:
+      earthly_token:
+        description: Optional Earthly token used to login to Earthly cloud during local builds of Forge CLI
+        required: false
+env:
+  OUTPUT: ${{ github.workspace }}/output
+
+jobs:
+  run:
+    name: ${{ matrix.earthfile }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        earthfile: ${{ fromJson(inputs.earthfiles) }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Forge
+        uses: input-output-hk/catalyst-forge/actions/install@master
+        if: ${{ inputs.forge_version != 'local' }}
+        with:
+          version: ${{ inputs.forge_version }}
+      - name: Install Local Forge
+        uses: input-output-hk/catalyst-forge/actions/install-local@master
+        if: ${{ inputs.forge_version == 'local' }}
+        with:
+          earthly_token: ${{ secrets.earthly_token }}
+      - name: Check forge version
+        id: local
+        run: |
+          forge version
+
+          if [[ "${{ inputs.forge_version }}" == "local" ]]; then
+            echo "skip=true" >> $GITHUB_OUTPUT
+          else
+            echo "skip=false" >> $GITHUB_OUTPUT
+          fi
+      - name: Setup CI
+        uses: input-output-hk/catalyst-forge/actions/setup@master
+        with:
+          skip_earthly: ${{ steps.local.outputs.skip }}
+      - name: Run
+        id: run
+        uses: input-output-hk/catalyst-forge/actions/run@master
+        with:
+          artifact: ${{ env.OUTPUT }}
+          path: ${{ matrix.earthfile }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Set env
+        run: |
+          GIT_BRANCH=${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}}
+          if [[ $GIT_BRANCH == "${{ github.event.repository.default_branch }}" ]]; then
+            DEST_DIR="/"
+            {
+            echo 'CLEAN_EXCLUDE<<EOF'
+            echo "/branch/*"
+            echo "/allure-action/*"
+            echo EOF
+            } >> "$GITHUB_ENV"
+          else
+            DEST_DIR="/branch/${GIT_BRANCH//[^a-zA-Z0-9_]/_}"
+            echo "CLEAN_EXCLUDE="/nothing"" >> $GITHUB_ENV
+          fi
+          echo "GIT_BRANCH=$GIT_BRANCH" >> $GITHUB_ENV
+          echo "DEST_DIR=$DEST_DIR" >> $GITHUB_ENV
+      - name: Publish docs
+        uses: JamesIves/github-pages-deploy-action@v4
+        with:
+          clean: true
+          clean-exclude: |
+            ${{ env.CLEAN_EXCLUDE }}
+          single-commit: true
+          target-folder: ${{ env.DEST_DIR }}
+          folder: ${{ env.OUTPUT }}/linux/amd64
