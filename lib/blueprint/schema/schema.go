@@ -30,24 +30,32 @@ type Blueprint struct {
 	Project Project `json:"project"`
 }
 
+// Deployment contains the configuration for the deployment of the project.
+type Deployment struct {
+	// Modules contains the deployment modules to deploy.
+	Modules []DeploymentModule `json:"modules"`
+}
+
+// DeploymentModule contains the configuration for a single deployment module.
+type DeploymentModule struct {
+	// Container contains the name of the container holding the deployment code.
+	Container string `json:"container"`
+
+	// Environment contains the environment to deploy the module to.
+	Environment string `json:"environment"`
+
+	// Values contains the values to pass to the deployment module.
+	Values any `json:"values"`
+
+	// Version contains the version of the deployment module.
+	Version string `json:"version"`
+}
+
 // Global contains the global configuration for the blueprint.
 type Global struct {
 	// CI contains the configuration for the CI system.
 	// +optional
 	CI GlobalCI `json:"ci"`
-}
-
-// Project contains the configuration for the project.
-type Project struct {
-	// Name contains the name of the project.
-	Name string `json:"name"`
-
-	// Container is the name that the container will be built as.
-	Container string `json:"container"`
-
-	// CI contains the configuration for the CI system.
-	// +optional
-	CI ProjectCI `json:"ci"`
 }
 
 // CI contains the configuration for the CI system.
@@ -70,6 +78,32 @@ type GlobalCI struct {
 	// Tagging contains the tagging configuration for the CI system.
 	// +optional
 	Tagging Tagging `json:"tagging"`
+}
+
+// GlobalDeployment contains the configuration for the global deployment of projects.
+type GlobalDeployment struct {
+	// Repo contains the URL of the GitOps repository.
+	Repo string `json:"repo"`
+
+	// Root contains the root deployment directory in the GitOps repository.
+	Root string `json:"root"`
+}
+
+// Project contains the configuration for the project.
+type Project struct {
+	// Name contains the name of the project.
+	Name string `json:"name"`
+
+	// Container is the name that the container will be built as.
+	Container string `json:"container"`
+
+	// CI contains the configuration for the CI system.
+	// +optional
+	CI ProjectCI `json:"ci"`
+
+	// Deployment contains the configuration for the deployment of the project.
+	// +optional
+	Deployment Deployment `json:"deployment"`
 }
 
 type ProjectCI struct {

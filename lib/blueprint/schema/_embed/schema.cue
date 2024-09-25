@@ -20,26 +20,32 @@ package schema
 	project?: #Project @go(Project)
 }
 
+// Deployment contains the configuration for the deployment of the project.
+#Deployment: {
+	// Modules contains the deployment modules to deploy.
+	modules: [...#DeploymentModule] @go(Modules,[]DeploymentModule)
+}
+
+// DeploymentModule contains the configuration for a single deployment module.
+#DeploymentModule: {
+	// Container contains the name of the container holding the deployment code.
+	container: string @go(Container)
+
+	// Environment contains the environment to deploy the module to.
+	environment: string @go(Environment)
+
+	// Values contains the values to pass to the deployment module.
+	values: _ @go(Values,any)
+
+	// Version contains the version of the deployment module.
+	version: string @go(Version)
+}
+
 // Global contains the global configuration for the blueprint.
 #Global: {
 	// CI contains the configuration for the CI system.
 	// +optional
 	ci?: #GlobalCI @go(CI)
-}
-
-// Project contains the configuration for the project.
-#Project: {
-	// Name contains the name of the project.
-	name: =~"^[a-z][a-z0-9_-]*$" @go(Name)
-
-	// Container is the name that the container will be built as.
-	container: (_ | *name) & {
-		string
-	} @go(Container)
-
-	// CI contains the configuration for the CI system.
-	// +optional
-	ci?: #ProjectCI @go(CI)
 }
 
 // CI contains the configuration for the CI system.
@@ -62,6 +68,34 @@ package schema
 	// Tagging contains the tagging configuration for the CI system.
 	// +optional
 	tagging?: #Tagging @go(Tagging)
+}
+
+// GlobalDeployment contains the configuration for the global deployment of projects.
+#GlobalDeployment: {
+	// Repo contains the URL of the GitOps repository.
+	repo: string @go(Repo)
+
+	// Root contains the root deployment directory in the GitOps repository.
+	root: string @go(Root)
+}
+
+// Project contains the configuration for the project.
+#Project: {
+	// Name contains the name of the project.
+	name: =~"^[a-z][a-z0-9_-]*$" @go(Name)
+
+	// Container is the name that the container will be built as.
+	container: (_ | *name) & {
+		string
+	} @go(Container)
+
+	// CI contains the configuration for the CI system.
+	// +optional
+	ci?: #ProjectCI @go(CI)
+
+	// Deployment contains the configuration for the deployment of the project.
+	// +optional
+	deployment?: #Deployment @go(Deployment)
 }
 #ProjectCI: {
 	// Targets configures the individual targets that are run by the CI system.
