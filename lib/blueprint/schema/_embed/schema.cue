@@ -22,17 +22,40 @@ package schema
 
 // Deployment contains the configuration for the deployment of the project.
 #Deployment: {
-	// Modules contains the deployment modules to deploy.
-	modules: [...#DeploymentModule] @go(Modules,[]DeploymentModule)
+	// Modules contains the configuration for the deployment modules for the project.
+	// +optional
+	modules?: null | #DeploymentModules @go(Modules,*DeploymentModules)
 }
 
-// DeploymentModule contains the configuration for a single deployment module.
-#DeploymentModule: {
+// Deployment contains the configuration for the deployment of the project.
+#DeploymentModules: {
+	// Main contains the configuration for the main deployment module.
+	main: #Module @go(Main)
+
+	// Support contains the configuration for the support deployment modules.
+	// +optional
+	support?: {
+		[string]: #Module
+	} @go(Support,map[string]Module)
+}
+version: "1.0"
+
+// Module contains the configuration for a deployment module.
+#Module: {
 	// Container contains the name of the container holding the deployment code.
-	container: string @go(Container)
+	// Defaults to <module_name>-deployment). For the main module, <module_name> is the project name.
+	// +optional
+	container?: null | string @go(Container,*string)
 
 	// Environment contains the environment to deploy the module to.
-	environment: string @go(Environment)
+	environment: (_ | *"dev") & {
+		string
+	} @go(Environment)
+
+	// Namespace contains the namespace to deploy the module to.
+	namespace: (_ | *"default") & {
+		string
+	} @go(Namespace)
 
 	// Values contains the values to pass to the deployment module.
 	values: _ @go(Values,any)
@@ -46,6 +69,10 @@ package schema
 	// CI contains the configuration for the CI system.
 	// +optional
 	ci?: #GlobalCI @go(CI)
+
+	// Deployment contains the global configuration for the deployment of projects.
+	// +optional
+	deployment?: #GlobalDeployment @go(Deployment)
 }
 
 // CI contains the configuration for the CI system.
@@ -72,6 +99,9 @@ package schema
 
 // GlobalDeployment contains the configuration for the global deployment of projects.
 #GlobalDeployment: {
+	// Registry contains the URL of the container registry holding the deployment code.
+	registry: string @go(Registry)
+
 	// Repo contains the URL of the GitOps repository.
 	repo: string @go(Repo)
 
@@ -197,7 +227,6 @@ package schema
 	// Provider contains the provider to use for the secret.
 	provider?: null | string @go(Provider,*string)
 }
-version: "1.0"
 #Tagging: {
 	// Aliases contains the aliases to use for git tags.
 	// +optional

@@ -48,4 +48,9 @@ global: {
 			strategy: "commit"
 		}
 	}
+	deployment: {
+		registry: "332405224602.dkr.ecr.eu-central-1.amazonaws.com"
+		repo:     "github.com/input-output-hk/catalyst-world"
+		root:     "k8s"
+	}
 }

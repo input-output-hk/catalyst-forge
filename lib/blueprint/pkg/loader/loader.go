@@ -13,6 +13,7 @@ import (
 	"github.com/Masterminds/semver/v3"
 	"github.com/input-output-hk/catalyst-forge/lib/blueprint/pkg/blueprint"
 	"github.com/input-output-hk/catalyst-forge/lib/blueprint/pkg/injector"
+	"github.com/input-output-hk/catalyst-forge/lib/blueprint/pkg/loader/defaults"
 	"github.com/input-output-hk/catalyst-forge/lib/blueprint/pkg/version"
 	"github.com/input-output-hk/catalyst-forge/lib/blueprint/schema"
 	cuetools "github.com/input-output-hk/catalyst-forge/lib/tools/pkg/cue"
@@ -126,6 +127,16 @@ func (b *DefaultBlueprintLoader) Load(projectPath, gitRootPath string) (blueprin
 		b.logger.Warn("No blueprint files found, using default values")
 		finalVersion = schema.Version
 		finalBlueprint = schema.Value.FillPath(cue.ParsePath("version"), finalVersion)
+	}
+
+	defaultSetters := defaults.GetDefaultSetters()
+	for _, setter := range defaultSetters {
+		var err error
+		finalBlueprint, err = setter.SetDefault(finalBlueprint)
+		if err != nil {
+			b.logger.Error("Failed to set default values", "error", err)
+			return blueprint.RawBlueprint{}, fmt.Errorf("failed to set default values: %w", err)
+		}
 	}
 
 	if err := cuetools.Validate(finalBlueprint, cue.Concrete(true)); err != nil {

@@ -24,14 +24,10 @@ project: {
 		}
 		test: retries: 3
 	}
-	deployment: modules: [
-		{
-			container:   "forge"
-			environment: "dev"
-			values: {
-				foo: "bar"
-			}
-			version: "1.0.0"
-		},
-	]
+	deployment: modules: main: {
+		version: "1.0.0"
+		values: {
+			foo: "bar"
+		}
+	}
 }

@@ -12,3 +12,8 @@ package schema
 #Tagging: {
 	strategy: _ & "commit"
 }
+
+#Module: {
+	environment: _ | *"dev"
+	namespace:   _ | *"default"
+}

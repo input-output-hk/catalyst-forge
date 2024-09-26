@@ -18,6 +18,7 @@ var version = "dev"
 var cli struct {
 	cmds.GlobalArgs
 
+	Deploy   cmds.DeployCmd   `cmd:"" help:"Deploy a project."`
 	Dump     cmds.DumpCmd     `cmd:"" help:"Dumps a project's blueprint to JSON."`
 	CI       cmds.CICmd       `cmd:"" help:"Simulate a CI run."`
 	Run      cmds.RunCmd      `cmd:"" help:"Run an Earthly target."`

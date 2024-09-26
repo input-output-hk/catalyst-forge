@@ -32,17 +32,33 @@ type Blueprint struct {
 
 // Deployment contains the configuration for the deployment of the project.
 type Deployment struct {
-	// Modules contains the deployment modules to deploy.
-	Modules []DeploymentModule `json:"modules"`
+	// Modules contains the configuration for the deployment modules for the project.
+	// +optional
+	Modules *DeploymentModules `json:"modules"`
 }
 
-// DeploymentModule contains the configuration for a single deployment module.
-type DeploymentModule struct {
+// Deployment contains the configuration for the deployment of the project.
+type DeploymentModules struct {
+	// Main contains the configuration for the main deployment module.
+	Main Module `json:"main"`
+
+	// Support contains the configuration for the support deployment modules.
+	// +optional
+	Support map[string]Module `json:"support"`
+}
+
+// Module contains the configuration for a deployment module.
+type Module struct {
 	// Container contains the name of the container holding the deployment code.
-	Container string `json:"container"`
+	// Defaults to <module_name>-deployment). For the main module, <module_name> is the project name.
+	// +optional
+	Container *string `json:"container"`
 
 	// Environment contains the environment to deploy the module to.
 	Environment string `json:"environment"`
+
+	// Namespace contains the namespace to deploy the module to.
+	Namespace string `json:"namespace"`
 
 	// Values contains the values to pass to the deployment module.
 	Values any `json:"values"`
@@ -56,6 +72,10 @@ type Global struct {
 	// CI contains the configuration for the CI system.
 	// +optional
 	CI GlobalCI `json:"ci"`
+
+	// Deployment contains the global configuration for the deployment of projects.
+	// +optional
+	Deployment GlobalDeployment `json:"deployment"`
 }
 
 // CI contains the configuration for the CI system.
@@ -82,6 +102,9 @@ type GlobalCI struct {
 
 // GlobalDeployment contains the configuration for the global deployment of projects.
 type GlobalDeployment struct {
+	// Registry contains the URL of the container registry holding the deployment code.
+	Registry string `json:"registry"`
+
 	// Repo contains the URL of the GitOps repository.
 	Repo string `json:"repo"`
 
