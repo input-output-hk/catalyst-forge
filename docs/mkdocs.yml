@@ -5,6 +5,16 @@ copyright: © 2024 Input Output Global Ltd.
 
 docs_dir: src
 
+nav:
+  - Overview: index.md
+  - Installation: installation.md
+  - Tutorials:
+    - Getting Started: tutorials/getting_started.md
+  - Concepts:
+    - CI: concepts/ci.md
+  - Reference:
+    - Targets: reference/targets.md
+
 theme:
   name: material
   icon:
