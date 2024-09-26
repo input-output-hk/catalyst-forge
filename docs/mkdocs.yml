@@ -23,12 +23,16 @@ theme:
         icon: material/brightness-4
         name: Switch to light mode
   features:
+    - content.tooltips
     - navigation.instant
     - navigation.instant.prefetch
     - navigation.instant.progress
     - navigation.tracking
 
 markdown_extensions:
+  - abbr
+  - attr_list
   - admonition
   - pymdownx.details
+  - pymdownx.snippets
   - pymdownx.superfences
