@@ -93,4 +93,4 @@ jobs:
           comment_tag: docs
           mode: upsert
           message: |
-            Documentation can be viewed here: [https://${{ github.repository_owner }}.github.io/${{ github.repository }}/${{ env.DEST_DIR }}].
+            Documentation can be viewed [here](https://${{ github.repository_owner }}.github.io/${{ github.repository }}/${{ env.DEST_DIR }}).
