@@ -5,6 +5,16 @@ copyright: © 2024 Input Output Global Ltd.
 
 docs_dir: src
 
+nav:
+  - Overview: index.md
+  - Installation: installation.md
+  - Tutorials:
+    - Getting Started: tutorials/getting_started.md
+  - Concepts:
+    - CI: concepts/ci.md
+  - Reference:
+    - Targets: reference/targets.md
+
 theme:
   name: material
   icon:
@@ -23,12 +33,16 @@ theme:
         icon: material/brightness-4
         name: Switch to light mode
   features:
+    - content.tooltips
     - navigation.instant
     - navigation.instant.prefetch
     - navigation.instant.progress
     - navigation.tracking
 
 markdown_extensions:
+  - abbr
+  - attr_list
   - admonition
   - pymdownx.details
+  - pymdownx.snippets
   - pymdownx.superfences
