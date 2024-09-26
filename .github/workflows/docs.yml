@@ -88,6 +88,9 @@ jobs:
           folder: ${{ env.OUTPUT }}/linux/amd64
       - name: Comment PR
         uses: thollander/actions-comment-pull-request@v2
+        if: github.event_name == 'pull_request'
         with:
+          comment_tag: docs
+          mode: upsert
           message: |
             Documentation has been published to [https://${{ github.repository_owner }}.github.io/${{ github.repository }}/${{ env.DEST_DIR }}].
