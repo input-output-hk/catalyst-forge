@@ -11,6 +11,8 @@ nav:
   - Tutorials:
     - Getting Started: tutorials/getting_started.md
   - Concepts:
+    - Projects: concepts/projects.md
+    - Blueprints: concepts/blueprints.md
     - CI: concepts/ci.md
   - Reference:
     - Targets: reference/targets.md
