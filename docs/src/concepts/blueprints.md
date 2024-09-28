@@ -1,6 +1,6 @@
 # Blueprints
 
-A blueprint contains all of the configuration data necessary for Catalyst Forge to process a project.
+A blueprint contains all of the configuration data necessary for Catalyst Forge to process a [project](./projects.md).
 The configuration is defined in a blueprint file (`blueprint.cue`) that exists in the root directory of a project.
 Blueprints are _not_ optional and must exist for every project.
 

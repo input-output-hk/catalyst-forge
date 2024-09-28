@@ -14,7 +14,7 @@ Adding a new project (along with the associated CI code) is all it takes to inte
 ### Discovery
 
 The CI system is built on a simple discovery mechanism.
-When the system starts, it recursively scans from the root of the repository looking for projects.
+When the system starts, it recursively scans from the root of the repository looking for [projects](./projects.md).
 For each project found, it looks for and parses an associated `Earthfile` and collects all of the defined targets.
 It then filters and orders these targets into discrete target groups using a list of reguar expressions predefined by Forge.
 The name and dependency order of these groups is hardcoded and does not often change.
