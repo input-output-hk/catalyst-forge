@@ -21,7 +21,8 @@ The name and dependency order of these groups is hardcoded and does not often ch
 
 Each of these target groups can be considered _phases_ in the overall CI pipeline.
 Each phase consists of the associated targets and each phase occur in dependency order.
-The name and order of these phases is hardcoded and does not often change.
+The name and order of these phases is hardcoded and can be found
+[here](https://github.com/input-output-hk/catalyst-forge/blob/master/.github/workflows/ci.yml#L15){:target="_blank"}.
 
 ### Execution
 
