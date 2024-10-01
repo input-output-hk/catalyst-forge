@@ -27,6 +27,9 @@ package schema
 
 // Deployment contains the configuration for the deployment of the project.
 #Deployment: {
+	// Environment contains the environment to deploy the module to.
+	environment: string @go(Environment)
+
 	// Modules contains the configuration for the deployment modules for the project.
 	// +optional
 	modules?: null | #DeploymentModules @go(Modules,*DeploymentModules)
@@ -48,9 +51,6 @@ package schema
 	// Defaults to <module_name>-deployment). For the main module, <module_name> is the project name.
 	// +optional
 	container?: null | string @go(Container,*string)
-
-	// Environment contains the environment to deploy the module to.
-	environment: string @go(Environment)
 
 	// Namespace contains the namespace to deploy the module to.
 	namespace: string @go(Namespace)
@@ -100,11 +100,20 @@ package schema
 	// Registry contains the URL of the container registry holding the deployment code.
 	registry: string @go(Registry)
 
-	// Repo contains the URL of the GitOps repository.
-	repo: string @go(Repo)
+	// Repo contains the configuration for the global deployment repository.
+	repo: #GlobalDeploymentRepo @go(Repo)
 
-	// Root contains the root deployment directory in the GitOps repository.
+	// Root contains the root deployment directory in the deployment repository.
 	root: string @go(Root)
+}
+
+// GlobalDeploymentRepo contains the configuration for the global deployment repository.
+#GlobalDeploymentRepo: {
+	// Ref contains the ref to use for the deployment repository.
+	ref: string @go(Ref)
+
+	// URL contains the URL of the deployment repository.
+	url: string @go(Url)
 }
 
 // Project contains the configuration for the project.
@@ -143,6 +152,10 @@ package schema
 	// Earthly contains the configuration for the Earthly Cloud provider.
 	// +optional
 	earthly?: #ProviderEarthly @go(Earthly)
+
+	// Git contains the configuration for the Git provider.
+	// +optional
+	git?: #ProviderGit @go(Git)
 
 	// Github contains the configuration for the Github provider.
 	// +optional
@@ -187,6 +200,13 @@ package schema
 	version?: null | string @go(Version,*string)
 }
 
+// ProviderGit contains the configuration for the Git provider.
+#ProviderGit: {
+	// Credentials contains the credentials to use for interacting with private repositories.
+	// +optional
+	credentials?: null | #Secret @go(Credentials,*Secret)
+}
+
 // ProviderGithub contains the configuration for the Github provider.
 #ProviderGithub: {
 	// Credentials contains the credentials to use for Github
@@ -215,10 +235,10 @@ package schema
 	optional?: null | bool @go(Optional,*bool)
 
 	// Path contains the path to the secret.
-	path?: null | string @go(Path,*string)
+	path: string @go(Path)
 
 	// Provider contains the provider to use for the secret.
-	provider?: null | string @go(Provider,*string)
+	provider: string @go(Provider)
 }
 
 #Tagging: {

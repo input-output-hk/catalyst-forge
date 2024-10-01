@@ -32,13 +32,13 @@ func TestGenerateBundleEncode(t *testing.T) {
 				Project: schema.Project{
 					Name: "test",
 					Deployment: schema.Deployment{
+						Environment: "test",
 						Modules: &schema.DeploymentModules{
 							Main: schema.Module{
-								Container:   pointers.String("test"),
-								Environment: "test",
-								Namespace:   "test",
-								Values:      ctx.CompileString(`{foo: "bar"}`),
-								Version:     "1.0.0",
+								Container: pointers.String("test"),
+								Namespace: "test",
+								Values:    ctx.CompileString(`{foo: "bar"}`),
+								Version:   "1.0.0",
 							},
 						},
 					},
@@ -74,21 +74,20 @@ func TestGenerateBundleEncode(t *testing.T) {
 				Project: schema.Project{
 					Name: "test",
 					Deployment: schema.Deployment{
+						Environment: "test",
 						Modules: &schema.DeploymentModules{
 							Main: schema.Module{
-								Container:   pointers.String("test"),
-								Environment: "test",
-								Namespace:   "test",
-								Values:      ctx.CompileString(`{foo: "bar"}`),
-								Version:     "1.0.0",
+								Container: pointers.String("test"),
+								Namespace: "test",
+								Values:    ctx.CompileString(`{foo: "bar"}`),
+								Version:   "1.0.0",
 							},
 							Support: map[string]schema.Module{
 								"support": {
-									Container:   pointers.String("test"),
-									Environment: "test",
-									Namespace:   "test",
-									Values:      ctx.CompileString(`{foo: "bar"}`),
-									Version:     "1.0.0",
+									Container: pointers.String("test"),
+									Namespace: "test",
+									Values:    ctx.CompileString(`{foo: "bar"}`),
+									Version:   "1.0.0",
 								},
 							},
 						},
@@ -142,12 +141,12 @@ func TestGenerateBundleEncode(t *testing.T) {
 				Project: schema.Project{
 					Name: "test",
 					Deployment: schema.Deployment{
+						Environment: "test",
 						Modules: &schema.DeploymentModules{
 							Main: schema.Module{
-								Container:   pointers.String("test"),
-								Environment: "test",
-								Namespace:   "test",
-								Values:      ctx.CompileString(`{foo: "bar"}`),
+								Container: pointers.String("test"),
+								Namespace: "test",
+								Values:    ctx.CompileString(`{foo: "bar"}`),
 							},
 						},
 					},
@@ -168,13 +167,13 @@ func TestGenerateBundleEncode(t *testing.T) {
 				Project: schema.Project{
 					Name: "test",
 					Deployment: schema.Deployment{
+						Environment: "test",
 						Modules: &schema.DeploymentModules{
 							Main: schema.Module{
-								Container:   pointers.String("test"),
-								Environment: "test",
-								Namespace:   "test",
-								Values:      ctx.CompileString(""),
-								Version:     "1.0.0",
+								Container: pointers.String("test"),
+								Namespace: "test",
+								Values:    ctx.CompileString(""),
+								Version:   "1.0.0",
 							},
 						},
 					},
@@ -192,7 +191,7 @@ func TestGenerateBundleEncode(t *testing.T) {
 				Blueprint: tt.blueprint,
 			}
 
-			bundle, err := GenerateBundle(ctx, &project)
+			bundle, err := GenerateBundle(&project)
 			if testutils.AssertError(t, err, tt.expectErr, tt.expectedErr) {
 				return
 			}

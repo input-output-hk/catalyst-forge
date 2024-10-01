@@ -213,8 +213,8 @@ func TestEarthlyExecutor_buildSecrets(t *testing.T) {
 			},
 			secrets: []schema.Secret{
 				{
-					Path:     utils.StringPtr("path"),
-					Provider: utils.StringPtr("mock"),
+					Path:     "path",
+					Provider: "mock",
 					Maps: map[string]string{
 						"key": "id",
 					},
@@ -239,8 +239,8 @@ func TestEarthlyExecutor_buildSecrets(t *testing.T) {
 			secrets: []schema.Secret{
 				{
 					Name:     utils.StringPtr("name"),
-					Path:     utils.StringPtr("path"),
-					Provider: utils.StringPtr("mock"),
+					Path:     "path",
+					Provider: "mock",
 					Maps:     map[string]string{},
 				},
 			},
@@ -264,8 +264,8 @@ func TestEarthlyExecutor_buildSecrets(t *testing.T) {
 				{
 					Name:     utils.StringPtr("name"),
 					Optional: utils.BoolPtr(true),
-					Path:     utils.StringPtr("path"),
-					Provider: utils.StringPtr("mock"),
+					Path:     "path",
+					Provider: "mock",
 					Maps:     map[string]string{},
 				},
 			},
@@ -282,8 +282,8 @@ func TestEarthlyExecutor_buildSecrets(t *testing.T) {
 			secrets: []schema.Secret{
 				{
 					Name:     utils.StringPtr("name"),
-					Path:     utils.StringPtr("path"),
-					Provider: utils.StringPtr("mock"),
+					Path:     "path",
+					Provider: "mock",
 					Maps: map[string]string{
 						"key": "id",
 					},
@@ -302,8 +302,8 @@ func TestEarthlyExecutor_buildSecrets(t *testing.T) {
 			},
 			secrets: []schema.Secret{
 				{
-					Path:     utils.StringPtr("path"),
-					Provider: utils.StringPtr("mock"),
+					Path:     "path",
+					Provider: "mock",
 					Maps: map[string]string{
 						"key1": "id1",
 					},
@@ -322,8 +322,8 @@ func TestEarthlyExecutor_buildSecrets(t *testing.T) {
 			},
 			secrets: []schema.Secret{
 				{
-					Path:     utils.StringPtr("path"),
-					Provider: utils.StringPtr("mock"),
+					Path:     "path",
+					Provider: "mock",
 					Maps: map[string]string{
 						"key1": "id1",
 					},
@@ -342,8 +342,8 @@ func TestEarthlyExecutor_buildSecrets(t *testing.T) {
 			},
 			secrets: []schema.Secret{
 				{
-					Path:     utils.StringPtr("path"),
-					Provider: utils.StringPtr("bad"),
+					Path:     "path",
+					Provider: "bad",
 					Maps:     map[string]string{},
 				},
 			},
@@ -360,8 +360,8 @@ func TestEarthlyExecutor_buildSecrets(t *testing.T) {
 			},
 			secrets: []schema.Secret{
 				{
-					Path:     utils.StringPtr("path"),
-					Provider: utils.StringPtr("mock"),
+					Path:     "path",
+					Provider: "mock",
 					Maps:     map[string]string{},
 				},
 			},

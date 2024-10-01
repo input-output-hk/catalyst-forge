@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"log/slog"
 
-	"cuelang.org/go/cue/cuecontext"
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/deployment"
+	"github.com/input-output-hk/catalyst-forge/cli/pkg/secrets"
 )
 
 type DeployCmd struct {
@@ -18,17 +18,15 @@ func (c *DeployCmd) Run(logger *slog.Logger, global GlobalArgs) error {
 		return fmt.Errorf("could not load project: %w", err)
 	}
 
-	ctx := cuecontext.New()
-	bundle, err := deployment.GenerateBundle(ctx, &project)
-	if err != nil {
-		return fmt.Errorf("could not generate bundle: %w", err)
+	store := secrets.NewDefaultSecretStore()
+	deployer := deployment.NewGitopsDeployer(&project, &store, logger)
+	if err := deployer.Load(); err != nil {
+		return fmt.Errorf("could not load deployer: %w", err)
 	}
 
-	src, err := bundle.Encode()
-	if err != nil {
-		return fmt.Errorf("could not encode bundle: %w", err)
+	if err := deployer.Deploy(); err != nil {
+		return fmt.Errorf("could not deploy project: %w", err)
 	}
-	fmt.Printf("bundle: %s\n", src)
 
 	return nil
 }

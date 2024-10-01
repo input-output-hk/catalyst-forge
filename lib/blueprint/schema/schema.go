@@ -32,6 +32,9 @@ type Blueprint struct {
 
 // Deployment contains the configuration for the deployment of the project.
 type Deployment struct {
+	// Environment contains the environment to deploy the module to.
+	Environment string `json:"environment"`
+
 	// Modules contains the configuration for the deployment modules for the project.
 	// +optional
 	Modules *DeploymentModules `json:"modules"`
@@ -53,9 +56,6 @@ type Module struct {
 	// Defaults to <module_name>-deployment). For the main module, <module_name> is the project name.
 	// +optional
 	Container *string `json:"container"`
-
-	// Environment contains the environment to deploy the module to.
-	Environment string `json:"environment"`
 
 	// Namespace contains the namespace to deploy the module to.
 	Namespace string `json:"namespace"`
@@ -105,11 +105,20 @@ type GlobalDeployment struct {
 	// Registry contains the URL of the container registry holding the deployment code.
 	Registry string `json:"registry"`
 
-	// Repo contains the URL of the GitOps repository.
-	Repo string `json:"repo"`
+	// Repo contains the configuration for the global deployment repository.
+	Repo GlobalDeploymentRepo `json:"repo"`
 
-	// Root contains the root deployment directory in the GitOps repository.
+	// Root contains the root deployment directory in the deployment repository.
 	Root string `json:"root"`
+}
+
+// GlobalDeploymentRepo contains the configuration for the global deployment repository.
+type GlobalDeploymentRepo struct {
+	// Ref contains the ref to use for the deployment repository.
+	Ref string `json:"ref"`
+
+	// URL contains the URL of the deployment repository.
+	Url string `json:"url"`
 }
 
 // Project contains the configuration for the project.
@@ -148,6 +157,10 @@ type Providers struct {
 	// Earthly contains the configuration for the Earthly Cloud provider.
 	// +optional
 	Earthly ProviderEarthly `json:"earthly"`
+
+	// Git contains the configuration for the Git provider.
+	// +optional
+	Git ProviderGit `json:"git"`
 
 	// Github contains the configuration for the Github provider.
 	// +optional
@@ -192,6 +205,13 @@ type ProviderEarthly struct {
 	Version *string `json:"version"`
 }
 
+// ProviderGit contains the configuration for the Git provider.
+type ProviderGit struct {
+	// Credentials contains the credentials to use for interacting with private repositories.
+	// +optional
+	Credentials *Secret `json:"credentials"`
+}
+
 // ProviderGithub contains the configuration for the Github provider.
 type ProviderGithub struct {
 	// Credentials contains the credentials to use for Github
@@ -220,10 +240,10 @@ type Secret struct {
 	Optional *bool `json:"optional"`
 
 	// Path contains the path to the secret.
-	Path *string `json:"path"`
+	Path string `json:"path"`
 
 	// Provider contains the provider to use for the secret.
-	Provider *string `json:"provider"`
+	Provider string `json:"provider"`
 }
 
 type Tagging struct {

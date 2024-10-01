@@ -4,6 +4,14 @@ package schema
 	version: string & =~"^\\d+\\.\\d+"
 }
 
+#Deployment: {
+	environment: _ | *"dev"
+}
+
+#Module: {
+	namespace: _ | *"default"
+}
+
 #Project: {
 	name:      _ & =~"^[a-z][a-z0-9_-]*$"
 	container: _ | *name
@@ -11,9 +19,4 @@ package schema
 
 #Tagging: {
 	strategy: _ & "commit"
-}
-
-#Module: {
-	environment: _ | *"dev"
-	namespace:   _ | *"default"
 }

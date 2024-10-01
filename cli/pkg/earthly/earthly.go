@@ -143,27 +143,27 @@ func (e *EarthlyExecutor) buildSecrets() ([]EarthlySecret, error) {
 			return nil, fmt.Errorf("secret contains both name and maps: %s", *secret.Name)
 		}
 
-		secretClient, err := e.secretsStore.NewClient(e.logger, secretstore.Provider(*secret.Provider))
+		secretClient, err := e.secretsStore.NewClient(e.logger, secretstore.Provider(secret.Provider))
 		if err != nil {
 			e.logger.Error("Unable to create new secret client", "provider", secret.Provider, "error", err)
 			return secrets, fmt.Errorf("unable to create new secret client: %w", err)
 		}
 
-		s, err := secretClient.Get(*secret.Path)
+		s, err := secretClient.Get(secret.Path)
 		if err != nil {
 			if secret.Optional != nil && *secret.Optional {
-				e.logger.Warn("Secret is optional and not found", "provider", *secret.Provider, "path", *secret.Path)
+				e.logger.Warn("Secret is optional and not found", "provider", secret.Provider, "path", secret.Path)
 				continue
 			}
 
 			e.logger.Error("Unable to get secret", "provider", secret.Provider, "path", secret.Path, "error", err)
-			return secrets, fmt.Errorf("unable to get secret %s from provider: %s", *secret.Path, *secret.Provider)
+			return secrets, fmt.Errorf("unable to get secret %s from provider: %s", secret.Path, secret.Provider)
 		}
 
 		if len(secret.Maps) == 0 {
 			if secret.Name == nil {
 				e.logger.Error("Secret does not contain name or maps", "provider", secret.Provider, "path", secret.Path)
-				return nil, fmt.Errorf("secret does not contain name or maps: %s", *secret.Path)
+				return nil, fmt.Errorf("secret does not contain name or maps: %s", secret.Path)
 			}
 
 			secrets = append(secrets, EarthlySecret{
@@ -174,7 +174,7 @@ func (e *EarthlyExecutor) buildSecrets() ([]EarthlySecret, error) {
 			var secretValues map[string]interface{}
 			if err := json.Unmarshal([]byte(s), &secretValues); err != nil {
 				e.logger.Error("Failed to unmarshal secret values", "provider", secret.Provider, "path", secret.Path, "error", err)
-				return nil, fmt.Errorf("failed to unmarshal secret values from provider %s: %w", *secret.Provider, err)
+				return nil, fmt.Errorf("failed to unmarshal secret values from provider %s: %w", secret.Provider, err)
 			}
 
 			for sk, eid := range secret.Maps {
