@@ -201,7 +201,7 @@ func TestGenerateBundleEncode(t *testing.T) {
 				return
 			}
 
-			assert.Equal(t, tt.expected, src)
+			assert.Equal(t, tt.expected, string(src))
 		})
 	}
 }
