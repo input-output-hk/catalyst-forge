@@ -52,11 +52,11 @@ func (g *GitRuntime) Load(project *Project) map[string]string {
 	data := make(map[string]string)
 	tagger := NewTagger(project, git.InCI(), true, g.logger)
 
-	generated, err := tagger.GenerateTag()
+	generatedTag, err := tagger.GenerateTag()
 	if err != nil {
 		g.logger.Error("Failed to get git tag", "error", err)
-	} else if generated != "" {
-		data["GIT_TAG_GENERATED"] = generated
+	} else if generatedTag != "" {
+		data["GIT_TAG_GENERATED"] = generatedTag
 	}
 
 	gitTag, err := tagger.GetGitTag()
@@ -64,6 +64,12 @@ func (g *GitRuntime) Load(project *Project) map[string]string {
 		g.logger.Error("Failed to get git tag", "error", err)
 	} else if gitTag != "" {
 		data["GIT_TAG"] = gitTag
+	}
+
+	if gitTag != "" {
+		data["GIT_IMAGE_TAG"] = gitTag
+	} else {
+		data["GIT_IMAGE_TAG"] = generatedTag
 	}
 
 	return data
