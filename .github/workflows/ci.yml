@@ -25,7 +25,8 @@ jobs:
   discover:
     runs-on: ubuntu-latest
     outputs:
-      result: ${{ steps.discovery.outputs.result }}
+      deployments: ${{ steps.discovery.outputs.deployments }}
+      earthfiles: ${{ steps.discovery.outputs.earthfiles }}
     steps:
       - uses: actions/checkout@v4
       - name: Install Forge
