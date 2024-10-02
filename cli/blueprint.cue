@@ -24,10 +24,10 @@ project: {
 		}
 		test: retries: 3
 	}
-	deployment: modules: main: {
-		version: "1.3.0"
-		values: {
-			foo: "bar"
-		}
-	}
+	// deployment: modules: main: {
+	// 	version: "1.3.0"
+	// 	values: {
+	// 		foo: "bar"
+	// 	}
+	// }
 }
