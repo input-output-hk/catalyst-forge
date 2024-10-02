@@ -56,7 +56,7 @@ jobs:
           skip_earthly: ${{ steps.local.outputs.skip }}
       - name: Discovery
         id: discovery
-        uses: input-output-hk/catalyst-forge/actions/discovery@master
+        uses: input-output-hk/catalyst-forge/actions/discovery@adds-deployment
         with:
           filters: |
             ${{ env.FORGE_REGEX_CHECK }}
@@ -70,9 +70,9 @@ jobs:
   check:
     uses: ./.github/workflows/run.yml
     needs: [discover]
-    if: (fromJson(needs.discover.outputs.result)['^check(-.*)?$'] != null) && !failure() && !cancelled()
+    if: (fromJson(needs.discover.outputs.earthfiles)['^check(-.*)?$'] != null) && !failure() && !cancelled()
     with:
-      earthfiles: ${{ toJson(fromJson(needs.discover.outputs.result)['^check(-.*)?$']) }}
+      earthfiles: ${{ toJson(fromJson(needs.discover.outputs.earthfiles)['^check(-.*)?$']) }}
       forge_version: ${{ inputs.forge_version }}
     secrets:
       earthly_token: ${{ secrets.earthly_token }}
@@ -80,9 +80,9 @@ jobs:
   build:
     uses: ./.github/workflows/run.yml
     needs: [discover, check]
-    if: (fromJson(needs.discover.outputs.result)['^build(-.*)?$'] != null) && !failure() && !cancelled()
+    if: (fromJson(needs.discover.outputs.earthfiles)['^build(-.*)?$'] != null) && !failure() && !cancelled()
     with:
-      earthfiles: ${{ toJson(fromJson(needs.discover.outputs.result)['^build(-.*)?$']) }}
+      earthfiles: ${{ toJson(fromJson(needs.discover.outputs.earthfiles)['^build(-.*)?$']) }}
       forge_version: ${{ inputs.forge_version }}
     secrets:
       earthly_token: ${{ secrets.earthly_token }}
@@ -90,9 +90,9 @@ jobs:
   package:
     uses: ./.github/workflows/run.yml
     needs: [discover, check, build]
-    if: (fromJson(needs.discover.outputs.result)['^package(-.*)?$'] != null) && !failure() && !cancelled()
+    if: (fromJson(needs.discover.outputs.earthfiles)['^package(-.*)?$'] != null) && !failure() && !cancelled()
     with:
-      earthfiles: ${{ toJson(fromJson(needs.discover.outputs.result)['^package(-.*)?$']) }}
+      earthfiles: ${{ toJson(fromJson(needs.discover.outputs.earthfiles)['^package(-.*)?$']) }}
       forge_version: ${{ inputs.forge_version }}
     secrets:
       earthly_token: ${{ secrets.earthly_token }}
@@ -100,9 +100,9 @@ jobs:
   test:
     uses: ./.github/workflows/run.yml
     needs: [discover, check, build, package]
-    if: (fromJson(needs.discover.outputs.result)['^test(-.*)?$'] != null) && !failure() && !cancelled()
+    if: (fromJson(needs.discover.outputs.earthfiles)['^test(-.*)?$'] != null) && !failure() && !cancelled()
     with:
-      earthfiles: ${{ toJson(fromJson(needs.discover.outputs.result)['^test(-.*)?$']) }}
+      earthfiles: ${{ toJson(fromJson(needs.discover.outputs.earthfiles)['^test(-.*)?$']) }}
       forge_version: ${{ inputs.forge_version }}
     secrets:
       earthly_token: ${{ secrets.earthly_token }}
@@ -110,9 +110,9 @@ jobs:
   docs:
     uses: ./.github/workflows/docs.yml
     needs: [discover, check, build, test]
-    if: (fromJson(needs.discover.outputs.result)['^docs(-.*)?$'] != null) && !failure() && !cancelled()
+    if: (fromJson(needs.discover.outputs.earthfiles)['^docs(-.*)?$'] != null) && !failure() && !cancelled()
     with:
-      earthfiles: ${{ toJson(fromJson(needs.discover.outputs.result)['^docs(-.*)?$']) }}
+      earthfiles: ${{ toJson(fromJson(needs.discover.outputs.earthfiles)['^docs(-.*)?$']) }}
       forge_version: ${{ inputs.forge_version }}
     secrets:
       earthly_token: ${{ secrets.earthly_token }}
@@ -120,9 +120,9 @@ jobs:
   publish:
     uses: ./.github/workflows/publish.yml
     needs: [discover, check, build, test]
-    if: (fromJson(needs.discover.outputs.result)['^publish(-.*)?$'] != null) && !failure() && !cancelled()
+    if: (fromJson(needs.discover.outputs.earthfiles)['^publish(-.*)?$'] != null) && !failure() && !cancelled()
     with:
-      earthfiles: ${{ toJson(fromJson(needs.discover.outputs.result)['^publish(-.*)?$']) }}
+      earthfiles: ${{ toJson(fromJson(needs.discover.outputs.earthfiles)['^publish(-.*)?$']) }}
       forge_version: ${{ inputs.forge_version }}
     secrets:
       earthly_token: ${{ secrets.earthly_token }}
@@ -130,9 +130,9 @@ jobs:
   release:
     uses: ./.github/workflows/release.yml
     needs: [discover, check, build, test]
-    if: (fromJson(needs.discover.outputs.result)['^release(-.*)?$'] != null) && !failure() && !cancelled()
+    if: (fromJson(needs.discover.outputs.earthfiles)['^release(-.*)?$'] != null) && !failure() && !cancelled()
     with:
-      earthfiles: ${{ toJson(fromJson(needs.discover.outputs.result)['^release(-.*)?$']) }}
+      earthfiles: ${{ toJson(fromJson(needs.discover.outputs.earthfiles)['^release(-.*)?$']) }}
       forge_version: ${{ inputs.forge_version }}
     secrets:
       earthly_token: ${{ secrets.earthly_token }}
