@@ -25,6 +25,11 @@ func (c *DeployCmd) Run(logger *slog.Logger, global GlobalArgs) error {
 	}
 
 	if err := deployer.Deploy(); err != nil {
+		if err == deployment.ErrNoChanges {
+			logger.Warn("no changes to deploy")
+			return nil
+		}
+
 		return fmt.Errorf("could not deploy project: %w", err)
 	}
 

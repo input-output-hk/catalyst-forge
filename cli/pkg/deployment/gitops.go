@@ -14,6 +14,7 @@ import (
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/go-git/go-git/v5/plumbing/transport/http"
+	"github.com/go-git/go-git/v5/storage"
 	"github.com/go-git/go-git/v5/storage/memory"
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/project"
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/secrets"
@@ -23,12 +24,32 @@ const GIT_NAME = "Catalyst Forge"
 const GIT_EMAIL = "forge@projectcatalyst.io"
 const GIT_MESSAGE = "chore: automatic deployment for %s"
 
+var ErrNoChanges = fmt.Errorf("no changes to commit")
+
+// gitRemoteInterface is an interface for interacting with a git remote.
+type gitRemoteInterface interface {
+	Clone(s storage.Storer, worktree billy.Filesystem, o *git.CloneOptions) (*git.Repository, error)
+	Push(repo *git.Repository, o *git.PushOptions) error
+}
+
+// gitRemote is a concrete implementation of gitRemoteInterface.
+type gitRemote struct{}
+
+func (g gitRemote) Clone(s storage.Storer, worktree billy.Filesystem, o *git.CloneOptions) (*git.Repository, error) {
+	return git.Clone(s, worktree, o)
+}
+
+func (g gitRemote) Push(repo *git.Repository, o *git.PushOptions) error {
+	return repo.Push(o)
+}
+
 // GitopsDeployer is a deployer that deploys projects to a GitOps repository.
 type GitopsDeployer struct {
 	fs          billy.Filesystem
 	repo        *git.Repository
 	logger      *slog.Logger
 	project     *project.Project
+	remote      gitRemoteInterface
 	secretStore *secrets.SecretStore
 	token       string
 	worktree    *git.Worktree
@@ -103,8 +124,7 @@ func (g *GitopsDeployer) Deploy() error {
 	if err != nil {
 		return fmt.Errorf("could not check if worktree has changes: %w", err)
 	} else if !changes {
-		g.logger.Warn("No changes to commit")
-		return nil
+		return ErrNoChanges
 	}
 
 	g.logger.Info("Committing changes", "path", bundlePath)
@@ -125,7 +145,6 @@ func (g *GitopsDeployer) Load() error {
 	var err error
 	url := g.project.Blueprint.Global.Deployment.Repo.Url
 	ref := g.project.Blueprint.Global.Deployment.Repo.Ref
-	g.fs = memfs.New()
 
 	g.token, err = GetGitToken(g.project, g.secretStore, g.logger)
 	if err != nil {
@@ -160,7 +179,7 @@ func (g *GitopsDeployer) clone(url, ref string) error {
 	ref = fmt.Sprintf("refs/heads/%s", ref)
 
 	g.logger.Debug("Cloning repository", "url", url, "ref", ref)
-	g.repo, err = git.Clone(memory.NewStorage(), g.fs, &git.CloneOptions{
+	g.repo, err = g.remote.Clone(memory.NewStorage(), g.fs, &git.CloneOptions{
 		URL:           url,
 		Depth:         1,
 		ReferenceName: plumbing.ReferenceName(ref),
@@ -220,7 +239,7 @@ func (g *GitopsDeployer) makeBundle() ([]byte, error) {
 
 // push pushes the current worktree to the remote repository.
 func (g *GitopsDeployer) push() error {
-	return g.repo.Push(&git.PushOptions{
+	return g.remote.Push(g.repo, &git.PushOptions{
 		Auth: &http.BasicAuth{
 			Username: "forge", // Note: this field is not used, but it cannot be empty.
 			Password: g.token,
@@ -239,8 +258,10 @@ func NewGitopsDeployer(
 	}
 
 	return GitopsDeployer{
+		fs:          memfs.New(),
 		logger:      logger,
 		project:     project,
+		remote:      gitRemote{},
 		secretStore: store,
 	}
 }

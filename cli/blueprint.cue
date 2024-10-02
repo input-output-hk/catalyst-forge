@@ -25,7 +25,7 @@ project: {
 		test: retries: 3
 	}
 	deployment: modules: main: {
-		version: "1.2.0"
+		version: "1.3.0"
 		values: {
 			foo: "bar"
 		}

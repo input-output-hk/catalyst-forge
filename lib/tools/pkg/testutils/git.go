@@ -1,6 +1,8 @@
 package testutils
 
 import (
+	"io"
+	"os"
 	"testing"
 	"time"
 
@@ -11,6 +13,7 @@ import (
 	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/go-git/go-git/v5/storage/memory"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 // InMemRepo represents an in-memory git repository.
@@ -23,16 +26,22 @@ type InMemRepo struct {
 // AddFile creates a file in the repository and adds it to the worktree.
 func (r *InMemRepo) AddFile(t *testing.T, path, content string) {
 	file, err := r.Fs.Create(path)
-	assert.NoError(t, err, "failed to create file")
+	require.NoError(t, err, "failed to create file")
 
 	_, err = file.Write([]byte(content))
-	assert.NoError(t, err, "failed to write to file")
+	require.NoError(t, err, "failed to write to file")
 
 	err = file.Close()
-	assert.NoError(t, err, "failed to close file")
+	require.NoError(t, err, "failed to close file")
 
-	_, err = r.Worktree.Add("example.txt")
-	assert.NoError(t, err, "failed to add file")
+	_, err = r.Worktree.Add(path)
+	require.NoError(t, err, "failed to add file")
+}
+
+// AddExistingFile adds an existing file to the worktree.
+func (r *InMemRepo) AddExistingFile(t *testing.T, path string) {
+	_, err := r.Worktree.Add(path)
+	require.NoError(t, err, "failed to add file")
 }
 
 // Commit creates a commit in the repository.
@@ -44,9 +53,49 @@ func (r *InMemRepo) Commit(t *testing.T, message string) plumbing.Hash {
 			When:  time.Now(),
 		},
 	})
-	assert.NoError(t, err, "failed to commit")
+	require.NoError(t, err, "failed to commit")
 
 	return commit
+}
+
+// CreateFile creates a file in the repository.
+func (r *InMemRepo) CreateFile(t *testing.T, path, content string) {
+	file, err := r.Fs.Create(path)
+	require.NoError(t, err, "failed to create file")
+
+	_, err = file.Write([]byte(content))
+	require.NoError(t, err, "failed to write to file")
+
+	err = file.Close()
+	require.NoError(t, err, "failed to close file")
+}
+
+// Exists checks if a file exists in the repository.
+func (r *InMemRepo) Exists(t *testing.T, path string) bool {
+	_, err := r.Fs.Stat(path)
+	if err == os.ErrNotExist {
+		return false
+	} else if err != nil {
+		t.Fatalf("failed to check if file exists: %v", err)
+	}
+
+	return true
+}
+
+// MkdirAll creates a directory in the repository.
+func (r *InMemRepo) MkdirAll(t *testing.T, path string) {
+	require.NoError(t, r.Fs.MkdirAll(path, 0755), "failed to create directory")
+}
+
+func (r *InMemRepo) ReadFile(t *testing.T, path string) []byte {
+	file, err := r.Fs.Open(path)
+	require.NoError(t, err, "failed to open file")
+
+	contents, err := io.ReadAll(file)
+	require.NoError(t, err, "failed to read file")
+	require.NoError(t, file.Close(), "failed to close file")
+
+	return contents
 }
 
 // Tag creates a tag in the repository.
@@ -59,7 +108,7 @@ func (r *InMemRepo) Tag(t *testing.T, commit plumbing.Hash, name, message string
 		},
 		Message: message,
 	})
-	assert.NoError(t, err, "failed to create tag")
+	require.NoError(t, err, "failed to create tag")
 
 	return tag
 }
@@ -71,7 +120,7 @@ func NewInMemRepo(t *testing.T) InMemRepo {
 	assert.NoError(t, err, "failed to init repo")
 
 	worktree, err := repo.Worktree()
-	assert.NoError(t, err, "failed to get worktree")
+	require.NoError(t, err, "failed to get worktree")
 
 	return InMemRepo{
 		Fs:       fs,
