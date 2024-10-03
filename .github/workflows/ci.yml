@@ -125,6 +125,7 @@ jobs:
     with:
       earthfiles: ${{ toJson(fromJson(needs.discover.outputs.earthfiles)['^publish(-.*)?$']) }}
       forge_version: ${{ inputs.forge_version }}
+      skip_branch_check: 'true'
     secrets:
       earthly_token: ${{ secrets.earthly_token }}
 

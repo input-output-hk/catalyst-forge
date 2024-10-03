@@ -1,6 +1,6 @@
 version: "1.0"
 project: {
-	name: "foundry"
+	name: "foundry-api"
 	ci: targets: {
 		publish: {
 			args: {
