@@ -89,7 +89,7 @@ func GenerateBundle(project *project.Project) (Bundle, error) {
 
 // buildInstance builds a single instance of a module in a Timoni bundle file.
 func buildInstance(ctx *cue.Context, module schema.Module, registry string) (BundleInstance, error) {
-	url, err := url.JoinPath(registry, *module.Container)
+	url, err := url.JoinPath("oci://", registry, *module.Container)
 	if err != nil {
 		return BundleInstance{}, fmt.Errorf("failed to generate module URL: %w", err)
 	}

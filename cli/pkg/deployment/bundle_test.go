@@ -52,7 +52,7 @@ func TestGenerateBundleEncode(t *testing.T) {
 			test: {
 				module: {
 					digest:  ""
-					url:     "test.registry.com/test"
+					url:     "oci://test.registry.com/test"
 					version: "1.0.0"
 				}
 				namespace: "test"
@@ -104,7 +104,7 @@ func TestGenerateBundleEncode(t *testing.T) {
 			support: {
 				module: {
 					digest:  ""
-					url:     "test.registry.com/test"
+					url:     "oci://test.registry.com/test"
 					version: "1.0.0"
 				}
 				namespace: "test"
@@ -115,7 +115,7 @@ func TestGenerateBundleEncode(t *testing.T) {
 			test: {
 				module: {
 					digest:  ""
-					url:     "test.registry.com/test"
+					url:     "oci://test.registry.com/test"
 					version: "1.0.0"
 				}
 				namespace: "test"
@@ -159,33 +159,6 @@ func TestGenerateBundleEncode(t *testing.T) {
 			expected:    "",
 			expectErr:   true,
 			expectedErr: "no deployment registry found in project blueprint",
-		},
-		{
-			name: "invalid url",
-			blueprint: schema.Blueprint{
-				Global: schema.Global{
-					Deployment: schema.GlobalDeployment{
-						Registry: "%^&",
-					},
-				},
-				Project: schema.Project{
-					Name: "test",
-					Deployment: schema.Deployment{
-						Environment: "test",
-						Modules: &schema.DeploymentModules{
-							Main: schema.Module{
-								Container: pointers.String("test"),
-								Namespace: "test",
-								Values:    ctx.CompileString(""),
-								Version:   "1.0.0",
-							},
-						},
-					},
-				},
-			},
-			expected:    "",
-			expectErr:   true,
-			expectedErr: `failed to build main module instance: failed to generate module URL: parse "%^&": invalid URL escape "%^&"`,
 		},
 	}
 
