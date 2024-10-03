@@ -48,7 +48,15 @@ func (c *DevX) Run(logger *slog.Logger, global GlobalArgs) error {
 		fmt.Printf("Command Group: %s\n", group.name)
 		fmt.Printf("Command Count: %v\n", len(group.commands))
 		for _, cmd := range group.commands {
-			fmt.Printf("  Command (lang: %s, platform: %s):\n%s\n", *cmd.lang, *cmd.platform, cmd.content)
+			fmt.Printf("---\n")
+			fmt.Printf("Command Content: %v", cmd.content)
+
+			if cmd.lang != nil {
+				fmt.Printf("Command Lang: %v\n", *cmd.lang)
+			}
+			if cmd.platform != nil {
+				fmt.Printf("Command Platform: %v\n", *cmd.platform)
+			}
 		}
 	}
 
@@ -61,8 +69,7 @@ func extractCommandGroups(data []byte) ([]commandGroup, error) {
 	doc := md.Parser().Parse(reader)
 
 	// store the command groups and commands
-	var groups []commandGroup
-	var currentGroup *commandGroup
+	groups := []commandGroup{}
 	var currentPlatform *string
 
 	// walk through the ast nodes
@@ -72,20 +79,20 @@ func extractCommandGroups(data []byte) ([]commandGroup, error) {
 				currentPlatform = nil
 				commandName := string(heading.Text(data))
 
-				currentGroup = &commandGroup{
+				groups = append(groups, commandGroup{
 					name:     commandName,
 					commands: []command{},
-				}
-				groups = append(groups, *currentGroup)
+				})
 			}
 
-			if heading.Level == 3 && currentGroup != nil {
+			if heading.Level == 3 && len(groups) > 0 {
 				platform := string(heading.Text(data))
 				currentPlatform = &platform
 			}
 		}
 
-		if block, ok := n.(*ast.FencedCodeBlock); ok && entering && currentGroup != nil {
+		if block, ok := n.(*ast.FencedCodeBlock); ok && entering && len(groups) > 0 {
+			i := len(groups) - 1
 			lang := string(block.Language(data))
 
 			var buf bytes.Buffer
@@ -94,19 +101,16 @@ func extractCommandGroups(data []byte) ([]commandGroup, error) {
 				buf.Write(line.Value(data))
 			}
 
-			currentGroup.commands = append(currentGroup.commands, command{
+			groups[i].commands = append(groups[i].commands, command{
 				content:  buf.String(),
 				lang:     &lang,
 				platform: currentPlatform,
 			})
-
-			fmt.Println(len(currentGroup.commands))
 		}
 
 		return ast.WalkContinue, nil
 	})
 
-	// Check if any groups were found
 	if len(groups) == 0 {
 		return nil, errors.New("no command groups found in the markdown")
 	}
