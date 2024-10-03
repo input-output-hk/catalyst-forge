@@ -3,6 +3,7 @@ name: Dogfood
 on:
   push:
     branches: [master]
+    tags: ['*']
   pull_request:
 
 permissions:
