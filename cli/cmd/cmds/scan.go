@@ -54,10 +54,12 @@ func (c *ScanCmd) Run(logger *slog.Logger, global GlobalArgs) error {
 	case c.Blueprint && len(c.Filter) > 0:
 		result := make(map[string]map[string]cue.Value)
 		for path, project := range projects {
-			result[path] = make(map[string]cue.Value)
 			for _, filter := range c.Filter {
 				v := project.Raw().Get(filter)
 				if v.Exists() {
+					if _, ok := result[path]; !ok {
+						result[path] = make(map[string]cue.Value)
+					}
 					result[path][filter] = v
 				}
 			}

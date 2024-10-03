@@ -30,24 +30,52 @@ type Blueprint struct {
 	Project Project `json:"project"`
 }
 
+// Deployment contains the configuration for the deployment of the project.
+type Deployment struct {
+	// Environment contains the environment to deploy the module to.
+	Environment string `json:"environment"`
+
+	// Modules contains the configuration for the deployment modules for the project.
+	// +optional
+	Modules *DeploymentModules `json:"modules"`
+}
+
+// Deployment contains the configuration for the deployment of the project.
+type DeploymentModules struct {
+	// Main contains the configuration for the main deployment module.
+	Main Module `json:"main"`
+
+	// Support contains the configuration for the support deployment modules.
+	// +optional
+	Support map[string]Module `json:"support"`
+}
+
+// Module contains the configuration for a deployment module.
+type Module struct {
+	// Container contains the name of the container holding the deployment code.
+	// Defaults to <module_name>-deployment). For the main module, <module_name> is the project name.
+	// +optional
+	Container *string `json:"container"`
+
+	// Namespace contains the namespace to deploy the module to.
+	Namespace string `json:"namespace"`
+
+	// Values contains the values to pass to the deployment module.
+	Values any `json:"values"`
+
+	// Version contains the version of the deployment module.
+	Version string `json:"version"`
+}
+
 // Global contains the global configuration for the blueprint.
 type Global struct {
 	// CI contains the configuration for the CI system.
 	// +optional
 	CI GlobalCI `json:"ci"`
-}
 
-// Project contains the configuration for the project.
-type Project struct {
-	// Name contains the name of the project.
-	Name string `json:"name"`
-
-	// Container is the name that the container will be built as.
-	Container string `json:"container"`
-
-	// CI contains the configuration for the CI system.
+	// Deployment contains the global configuration for the deployment of projects.
 	// +optional
-	CI ProjectCI `json:"ci"`
+	Deployment GlobalDeployment `json:"deployment"`
 }
 
 // CI contains the configuration for the CI system.
@@ -72,6 +100,44 @@ type GlobalCI struct {
 	Tagging Tagging `json:"tagging"`
 }
 
+// GlobalDeployment contains the configuration for the global deployment of projects.
+type GlobalDeployment struct {
+	// Registry contains the URL of the container registry holding the deployment code.
+	Registry string `json:"registry"`
+
+	// Repo contains the configuration for the global deployment repository.
+	Repo GlobalDeploymentRepo `json:"repo"`
+
+	// Root contains the root deployment directory in the deployment repository.
+	Root string `json:"root"`
+}
+
+// GlobalDeploymentRepo contains the configuration for the global deployment repository.
+type GlobalDeploymentRepo struct {
+	// Ref contains the ref to use for the deployment repository.
+	Ref string `json:"ref"`
+
+	// URL contains the URL of the deployment repository.
+	Url string `json:"url"`
+}
+
+// Project contains the configuration for the project.
+type Project struct {
+	// Name contains the name of the project.
+	Name string `json:"name"`
+
+	// Container is the name that the container will be built as.
+	Container string `json:"container"`
+
+	// CI contains the configuration for the CI system.
+	// +optional
+	CI ProjectCI `json:"ci"`
+
+	// Deployment contains the configuration for the deployment of the project.
+	// +optional
+	Deployment Deployment `json:"deployment"`
+}
+
 type ProjectCI struct {
 	// Targets configures the individual targets that are run by the CI system.
 	// +optional
@@ -91,6 +157,10 @@ type Providers struct {
 	// Earthly contains the configuration for the Earthly Cloud provider.
 	// +optional
 	Earthly ProviderEarthly `json:"earthly"`
+
+	// Git contains the configuration for the Git provider.
+	// +optional
+	Git ProviderGit `json:"git"`
 
 	// Github contains the configuration for the Github provider.
 	// +optional
@@ -135,6 +205,13 @@ type ProviderEarthly struct {
 	Version *string `json:"version"`
 }
 
+// ProviderGit contains the configuration for the Git provider.
+type ProviderGit struct {
+	// Credentials contains the credentials to use for interacting with private repositories.
+	// +optional
+	Credentials *Secret `json:"credentials"`
+}
+
 // ProviderGithub contains the configuration for the Github provider.
 type ProviderGithub struct {
 	// Credentials contains the credentials to use for Github
@@ -163,10 +240,10 @@ type Secret struct {
 	Optional *bool `json:"optional"`
 
 	// Path contains the path to the secret.
-	Path *string `json:"path"`
+	Path string `json:"path"`
 
 	// Provider contains the provider to use for the secret.
-	Provider *string `json:"provider"`
+	Provider string `json:"provider"`
 }
 
 type Tagging struct {

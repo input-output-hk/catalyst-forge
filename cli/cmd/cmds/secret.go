@@ -50,10 +50,8 @@ func (c *Get) Run(logger *slog.Logger, global GlobalArgs) error {
 			return fmt.Errorf("could not decode secret: %w", err)
 		}
 
-		if secret.Path != nil && secret.Provider != nil {
-			path = *secret.Path
-			provider = *secret.Provider
-		}
+		path = secret.Path
+		provider = secret.Provider
 
 		if len(secret.Maps) > 0 {
 			maps = secret.Maps
@@ -139,10 +137,8 @@ func (c *Set) Run(logger *slog.Logger, global GlobalArgs) error {
 			return fmt.Errorf("could not decode secret: %w", err)
 		}
 
-		if secret.Path != nil && secret.Provider != nil {
-			path = *secret.Path
-			provider = *secret.Provider
-		}
+		path = secret.Path
+		provider = secret.Provider
 	} else {
 		path = c.Path
 		provider = c.Provider

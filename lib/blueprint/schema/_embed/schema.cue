@@ -20,26 +20,58 @@ package schema
 	project?: #Project @go(Project)
 }
 
+// Deployment contains the configuration for the deployment of the project.
+#Deployment: {
+	// Environment contains the environment to deploy the module to.
+	environment: (_ | *"dev") & {
+		string
+	} @go(Environment)
+
+	// Modules contains the configuration for the deployment modules for the project.
+	// +optional
+	modules?: null | #DeploymentModules @go(Modules,*DeploymentModules)
+}
+
+// Deployment contains the configuration for the deployment of the project.
+#DeploymentModules: {
+	// Main contains the configuration for the main deployment module.
+	main: #Module @go(Main)
+
+	// Support contains the configuration for the support deployment modules.
+	// +optional
+	support?: {
+		[string]: #Module
+	} @go(Support,map[string]Module)
+}
+
+// Module contains the configuration for a deployment module.
+#Module: {
+	// Container contains the name of the container holding the deployment code.
+	// Defaults to <module_name>-deployment). For the main module, <module_name> is the project name.
+	// +optional
+	container?: null | string @go(Container,*string)
+
+	// Namespace contains the namespace to deploy the module to.
+	namespace: (_ | *"default") & {
+		string
+	} @go(Namespace)
+
+	// Values contains the values to pass to the deployment module.
+	values: _ @go(Values,any)
+
+	// Version contains the version of the deployment module.
+	version: string @go(Version)
+}
+
 // Global contains the global configuration for the blueprint.
 #Global: {
 	// CI contains the configuration for the CI system.
 	// +optional
 	ci?: #GlobalCI @go(CI)
-}
 
-// Project contains the configuration for the project.
-#Project: {
-	// Name contains the name of the project.
-	name: =~"^[a-z][a-z0-9_-]*$" @go(Name)
-
-	// Container is the name that the container will be built as.
-	container: (_ | *name) & {
-		string
-	} @go(Container)
-
-	// CI contains the configuration for the CI system.
+	// Deployment contains the global configuration for the deployment of projects.
 	// +optional
-	ci?: #ProjectCI @go(CI)
+	deployment?: #GlobalDeployment @go(Deployment)
 }
 
 // CI contains the configuration for the CI system.
@@ -63,6 +95,46 @@ package schema
 	// +optional
 	tagging?: #Tagging @go(Tagging)
 }
+
+// GlobalDeployment contains the configuration for the global deployment of projects.
+#GlobalDeployment: {
+	// Registry contains the URL of the container registry holding the deployment code.
+	registry: string @go(Registry)
+
+	// Repo contains the configuration for the global deployment repository.
+	repo: #GlobalDeploymentRepo @go(Repo)
+
+	// Root contains the root deployment directory in the deployment repository.
+	root: string @go(Root)
+}
+
+// GlobalDeploymentRepo contains the configuration for the global deployment repository.
+#GlobalDeploymentRepo: {
+	// Ref contains the ref to use for the deployment repository.
+	ref: string @go(Ref)
+
+	// URL contains the URL of the deployment repository.
+	url: string @go(Url)
+}
+
+// Project contains the configuration for the project.
+#Project: {
+	// Name contains the name of the project.
+	name: =~"^[a-z][a-z0-9_-]*$" @go(Name)
+
+	// Container is the name that the container will be built as.
+	container: (_ | *name) & {
+		string
+	} @go(Container)
+
+	// CI contains the configuration for the CI system.
+	// +optional
+	ci?: #ProjectCI @go(CI)
+
+	// Deployment contains the configuration for the deployment of the project.
+	// +optional
+	deployment?: #Deployment @go(Deployment)
+}
 #ProjectCI: {
 	// Targets configures the individual targets that are run by the CI system.
 	// +optional
@@ -84,6 +156,10 @@ package schema
 	// Earthly contains the configuration for the Earthly Cloud provider.
 	// +optional
 	earthly?: #ProviderEarthly @go(Earthly)
+
+	// Git contains the configuration for the Git provider.
+	// +optional
+	git?: #ProviderGit @go(Git)
 
 	// Github contains the configuration for the Github provider.
 	// +optional
@@ -128,6 +204,13 @@ package schema
 	version?: null | string @go(Version,*string)
 }
 
+// ProviderGit contains the configuration for the Git provider.
+#ProviderGit: {
+	// Credentials contains the credentials to use for interacting with private repositories.
+	// +optional
+	credentials?: null | #Secret @go(Credentials,*Secret)
+}
+
 // ProviderGithub contains the configuration for the Github provider.
 #ProviderGithub: {
 	// Credentials contains the credentials to use for Github
@@ -158,10 +241,10 @@ package schema
 	optional?: null | bool @go(Optional,*bool)
 
 	// Path contains the path to the secret.
-	path?: null | string @go(Path,*string)
+	path: string @go(Path)
 
 	// Provider contains the provider to use for the secret.
-	provider?: null | string @go(Provider,*string)
+	provider: string @go(Provider)
 }
 version: "1.0"
 #Tagging: {
