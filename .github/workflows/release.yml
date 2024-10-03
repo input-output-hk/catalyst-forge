@@ -29,12 +29,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Install Forge
-        uses: input-output-hk/catalyst-forge/actions/install@master
+        uses: input-output-hk/catalyst-forge/actions/install@ci/v1.1.0
         if: ${{ inputs.forge_version != 'local' }}
         with:
           version: ${{ inputs.forge_version }}
       - name: Install Local Forge
-        uses: input-output-hk/catalyst-forge/actions/install-local@master
+        uses: input-output-hk/catalyst-forge/actions/install-local@ci/v1.1.0
         if: ${{ inputs.forge_version == 'local' }}
         with:
           earthly_token: ${{ secrets.earthly_token }}
@@ -49,12 +49,12 @@ jobs:
             echo "skip=false" >> $GITHUB_OUTPUT
           fi
       - name: Setup CI
-        uses: input-output-hk/catalyst-forge/actions/setup@master
+        uses: input-output-hk/catalyst-forge/actions/setup@ci/v1.1.0
         with:
           skip_earthly: ${{ steps.local.outputs.skip }}
       - name: Run
         id: run
-        uses: input-output-hk/catalyst-forge/actions/run@master
+        uses: input-output-hk/catalyst-forge/actions/run@ci/v1.1.0
         with:
           artifact: ${{ env.OUTPUT }}
           path: ${{ matrix.earthfile }}
@@ -70,7 +70,7 @@ jobs:
           echo "project=$PROJECT" >> $GITHUB_OUTPUT
           echo "target=$TARGET" >> $GITHUB_OUTPUT
       - name: Release
-        uses: input-output-hk/catalyst-forge/actions/release@master
+        uses: input-output-hk/catalyst-forge/actions/release@ci/v1.1.0
         with:
           native_platform: linux/amd64
           path: ${{ env.OUTPUT }}
