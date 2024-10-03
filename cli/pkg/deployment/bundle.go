@@ -35,7 +35,9 @@ type Module struct {
 
 // Encode encodes the bundle into CUE syntax.
 func (b Bundle) Encode() ([]byte, error) {
-	v := b.ctx.Encode(b)
+	v := b.ctx.CompileString("bundle: {}")
+	v = v.FillPath(cue.ParsePath("bundle"), b.ctx.Encode(b))
+
 	if err := v.Validate(); err != nil {
 		return nil, fmt.Errorf("failed to validate bundle: %w", err)
 	}

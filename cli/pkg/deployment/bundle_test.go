@@ -45,18 +45,20 @@ func TestGenerateBundleEncode(t *testing.T) {
 				},
 			},
 			expected: `{
-	apiVersion: "v1alpha1"
-	name:       "test"
-	instances: {
-		test: {
-			module: {
-				digest:  ""
-				url:     "test.registry.com/test"
-				version: "1.0.0"
-			}
-			namespace: "test"
-			values: {
-				foo: "bar"
+	bundle: {
+		apiVersion: "v1alpha1"
+		name:       "test"
+		instances: {
+			test: {
+				module: {
+					digest:  ""
+					url:     "test.registry.com/test"
+					version: "1.0.0"
+				}
+				namespace: "test"
+				values: {
+					foo: "bar"
+				}
 			}
 		}
 	}
@@ -95,29 +97,31 @@ func TestGenerateBundleEncode(t *testing.T) {
 				},
 			},
 			expected: `{
-	apiVersion: "v1alpha1"
-	name:       "test"
-	instances: {
-		support: {
-			module: {
-				digest:  ""
-				url:     "test.registry.com/test"
-				version: "1.0.0"
+	bundle: {
+		apiVersion: "v1alpha1"
+		name:       "test"
+		instances: {
+			support: {
+				module: {
+					digest:  ""
+					url:     "test.registry.com/test"
+					version: "1.0.0"
+				}
+				namespace: "test"
+				values: {
+					foo: "bar"
+				}
 			}
-			namespace: "test"
-			values: {
-				foo: "bar"
-			}
-		}
-		test: {
-			module: {
-				digest:  ""
-				url:     "test.registry.com/test"
-				version: "1.0.0"
-			}
-			namespace: "test"
-			values: {
-				foo: "bar"
+			test: {
+				module: {
+					digest:  ""
+					url:     "test.registry.com/test"
+					version: "1.0.0"
+				}
+				namespace: "test"
+				values: {
+					foo: "bar"
+				}
 			}
 		}
 	}
