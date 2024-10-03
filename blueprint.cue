@@ -57,7 +57,7 @@ global: {
 		registry: ci.providers.aws.registry
 		repo: {
 			url: "https://github.com/input-output-hk/catalyst-world"
-			ref: "deploy-test"
+			ref: "master"
 		}
 		root: "k8s"
 	}
