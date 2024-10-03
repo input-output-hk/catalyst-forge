@@ -6,6 +6,9 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
+	"regexp"
+	"strings"
+	"unicode"
 
 	"github.com/yuin/goldmark"
 	"github.com/yuin/goldmark/ast"
@@ -15,17 +18,6 @@ import (
 type DevX struct {
 	MarkdownPath string `arg:"" help:"Path to the markdown file."`
 	CommandName  string `arg:"" help:"Command to be executed."`
-}
-
-type command struct {
-	content  string
-	lang     *string
-	platform *string
-}
-
-type commandGroup struct {
-	name     string
-	commands []command
 }
 
 func (c *DevX) Run(logger *slog.Logger, global GlobalArgs) error {
@@ -45,8 +37,7 @@ func (c *DevX) Run(logger *slog.Logger, global GlobalArgs) error {
 
 	// Output the command groups
 	for _, group := range commandGroups {
-		fmt.Printf("Command Group: %s\n", group.name)
-		fmt.Printf("Command Count: %v\n", len(group.commands))
+		fmt.Printf("Command Id: %s (%v)\n", group.GetId(), len(group.commands))
 		for _, cmd := range group.commands {
 			fmt.Printf("---\n")
 			fmt.Printf("Command Content: %v", cmd.content)
@@ -63,6 +54,37 @@ func (c *DevX) Run(logger *slog.Logger, global GlobalArgs) error {
 	return nil
 }
 
+type command struct {
+	content  string
+	lang     *string
+	platform *string
+}
+
+type commandGroup struct {
+	name     string
+	commands []command
+}
+
+func (c *commandGroup) GetId() string {
+	var result []rune
+
+	for _, char := range c.name {
+		if unicode.IsLetter(char) || unicode.IsDigit(char) {
+			result = append(result, unicode.ToLower(char))
+		} else if unicode.IsSpace(char) {
+			result = append(result, '-')
+		}
+	}
+
+	joined := string(result)
+
+	re := regexp.MustCompile(`-+`)
+	joined = re.ReplaceAllString(joined, "-")
+
+	// Remove leading or trailing dashes if any
+	return strings.Trim(joined, "-")
+}
+
 func extractCommandGroups(data []byte) ([]commandGroup, error) {
 	md := goldmark.New()
 	reader := text.NewReader(data)
@@ -74,6 +96,7 @@ func extractCommandGroups(data []byte) ([]commandGroup, error) {
 
 	// walk through the ast nodes
 	ast.Walk(doc, func(n ast.Node, entering bool) (ast.WalkStatus, error) {
+		// look up for headers
 		if heading, ok := n.(*ast.Heading); ok && entering {
 			if heading.Level == 2 {
 				currentPlatform = nil
@@ -91,6 +114,7 @@ func extractCommandGroups(data []byte) ([]commandGroup, error) {
 			}
 		}
 
+		// look up for code blocks
 		if block, ok := n.(*ast.FencedCodeBlock); ok && entering && len(groups) > 0 {
 			i := len(groups) - 1
 			lang := string(block.Language(data))
