@@ -17,7 +17,7 @@ project: {
 		environment: "dev"
 		modules: main: {
 			container: "foundry-api-deployment"
-			version:   "0.1.1"
+			version:   "0.1.0"
 			values: {
 				environment: name: "dev"
 				server: image: {
