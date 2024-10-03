@@ -54,7 +54,7 @@ global: {
 		}
 	}
 	deployment: {
-		registry: "332405224602.dkr.ecr.eu-central-1.amazonaws.com"
+		registry: ci.providers.aws.registry
 		repo: {
 			url: "https://github.com/input-output-hk/catalyst-world"
 			ref: "deploy-test"
