@@ -1,6 +1,7 @@
 package cmds
 
 import (
+	"bufio"
 	"bytes"
 	"errors"
 	"fmt"
@@ -31,7 +32,7 @@ func (c *DevX) Run(logger *slog.Logger, global GlobalArgs) error {
 	// parse the file with prepared options
 	commandGroups, err := extractCommandGroups(raw)
 	if err != nil {
-		return fmt.Errorf("%v", err)
+		return err
 	}
 
 	// exec the command
@@ -50,14 +51,30 @@ func (cmd *command) Exec() error {
 		return fmt.Errorf("only commands running with `sh` can be executed")
 	}
 
+	// start executing the command
 	execCmd := exec.Command(executorCmd, formatArgs(executorArgs, cmd.content)...)
 
-	output, err := execCmd.CombinedOutput()
+	stdout, err := execCmd.StdoutPipe()
 	if err != nil {
-		return fmt.Errorf("%s", err)
+		return err
 	}
 
-	fmt.Print(string(output))
+	if err := execCmd.Start(); err != nil {
+		return err
+	}
+
+	scanner := bufio.NewScanner(stdout)
+	for scanner.Scan() {
+		fmt.Println(scanner.Text())
+	}
+
+	if err := scanner.Err(); err != nil {
+		fmt.Println("Error reading output:", err)
+	}
+
+	if err := execCmd.Wait(); err != nil {
+		fmt.Println("Error waiting for command:", err)
+	}
 
 	return nil
 }
@@ -147,7 +164,7 @@ func processCmd(list []commandGroup, cmd string) error {
 	var foundCmd *command
 	for _, v := range list {
 		if v.GetId() == cmd {
-			// TODO: should get the command corresponding to the current host platform
+			// TODO: should get the fisrt (most specified) command corresponding to the current host platform
 			foundCmd = &v.commands[0]
 		}
 	}
@@ -164,6 +181,7 @@ func getLangExecutor(lang *string) (string, []string) {
 		return "", nil
 	}
 
+	// TODO: get more supported commands
 	if *lang == "sh" {
 		return "sh", []string{"-c", "$"}
 	} else {
