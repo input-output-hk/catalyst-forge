@@ -1,26 +1,14 @@
-# Blueprint
+# Project
 
-The `blueprint` package provides the Go API code for loading blueprint files from a given directory.
-It provides all necessary functionality to scan, load, and unify one or more blueprint files.
-Additionally, the `blueprint` package embeds the full schema for blueprint files.
-Every blueprint loaded is automatically validated against the embedded schema.
+The `project` package provides the Go API code for loading projects from a given directory.
+The package also embeds the full schema for blueprint files.
 
 ## Usage
 
-### Loading Blueprint Files
+### Loading Projects
 
-The `BlueprintLoader` can be used to load blueprint files from a given path.
-By default, the loader performs the following:
-
-1. Walks the filesystem searching for `blueprint.cue` files
-   1. If the path is in a git repository, it walks up to the root of the repository
-   2. If the path is not in a git repository, it only searches the given path
-2. Loads and processes all found blueprint files (including things like injecting environment variables)
-3. Unifies all blueprint files into a single blueprint (including handling versions)
-4. Validates the final blueprint against the embedded schema
-
-The loader's `Decode` function can be used to get a `Blueprint` structure that represents the final unified blueprint.
-The following is an example that uses the loader to load blueprints:
+The `ProjectLoader` can be used to load a project from a given path.
+The following is an example that uses the loader to load a project:
 
 ```go
 package main
@@ -28,25 +16,23 @@ package main
 import (
 	"log"
 
-	"github.com/input-output-hk/catalyst-forge/lib/project/pkg/loader"
+	"github.com/input-output-hk/catalyst-forge/lib/project/pkg/project"
 )
 
 func main() {
-	loader := loader.NewDefaultBlueprintLoader("/path/to/load", nil)
-	if err := loader.Load(); err != nil {
-		log.Fatalf("failed to load blueprint: %v", err)
-	}
+	loader := project.NewDefaultProjectLoader(
+		project.GetDefaultRuntimes(nil),
+		nil,
+	)
 
-	bp, err := loader.Decode()
+	project, err := loader.Load("/path/to/load")
 	if err != nil {
 		log.Fatalf("failed to decode blueprint: %v", err)
 	}
 
-	log.Printf("blueprint: %v", bp)
+	log.Printf("Project name: %s", project.Name)
 }
 ```
-
-If no blueprint files are found, the loader will return a `Blueprint` structure with default values provided for all fields.
 
 ### Blueprint Schema
 
