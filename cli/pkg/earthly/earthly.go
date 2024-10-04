@@ -12,7 +12,7 @@ import (
 	"strings"
 
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/executor"
-	secretstore "github.com/input-output-hk/catalyst-forge/cli/pkg/secrets"
+	secretstore "github.com/input-output-hk/catalyst-forge/lib/project/pkg/secrets"
 	"github.com/input-output-hk/catalyst-forge/lib/project/schema"
 )
 

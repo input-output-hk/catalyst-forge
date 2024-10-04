@@ -16,8 +16,8 @@ import (
 	"github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/go-git/go-git/v5/storage"
 	"github.com/go-git/go-git/v5/storage/memory"
-	"github.com/input-output-hk/catalyst-forge/cli/pkg/project"
-	"github.com/input-output-hk/catalyst-forge/cli/pkg/secrets"
+	"github.com/input-output-hk/catalyst-forge/lib/project/pkg/project"
+	"github.com/input-output-hk/catalyst-forge/lib/project/pkg/secrets"
 )
 
 const GIT_NAME = "Catalyst Forge"

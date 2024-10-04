@@ -4,9 +4,9 @@ import (
 	"log/slog"
 	"testing"
 
-	"github.com/input-output-hk/catalyst-forge/cli/pkg/project"
-	"github.com/input-output-hk/catalyst-forge/cli/pkg/secrets"
-	"github.com/input-output-hk/catalyst-forge/cli/pkg/secrets/mocks"
+	"github.com/input-output-hk/catalyst-forge/lib/project/pkg/project"
+	"github.com/input-output-hk/catalyst-forge/lib/project/pkg/secrets"
+	"github.com/input-output-hk/catalyst-forge/lib/project/pkg/secrets/mocks"
 	"github.com/input-output-hk/catalyst-forge/lib/project/schema"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/pkg/testutils"
 	"github.com/stretchr/testify/assert"

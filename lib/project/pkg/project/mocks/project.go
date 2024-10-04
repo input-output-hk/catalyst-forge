@@ -4,7 +4,7 @@
 package mocks
 
 import (
-	"github.com/input-output-hk/catalyst-forge/cli/pkg/project"
+	"github.com/input-output-hk/catalyst-forge/lib/project/pkg/project"
 	"sync"
 )
 

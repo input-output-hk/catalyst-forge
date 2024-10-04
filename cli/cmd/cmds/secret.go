@@ -6,7 +6,8 @@ import (
 	"log/slog"
 	"strings"
 
-	"github.com/input-output-hk/catalyst-forge/cli/pkg/secrets"
+	"github.com/input-output-hk/catalyst-forge/cli/pkg/run"
+	"github.com/input-output-hk/catalyst-forge/lib/project/pkg/secrets"
 	"github.com/input-output-hk/catalyst-forge/lib/project/schema"
 )
 
@@ -35,12 +36,12 @@ type SecretCmd struct {
 	Set *Set `cmd:"" help:"Set a secret."`
 }
 
-func (c *Get) Run(logger *slog.Logger, global GlobalArgs) error {
+func (c *Get) Run(ctx run.RunContext, logger *slog.Logger) error {
 	var path, provider string
 	var maps map[string]string
 
 	if c.Project != "" {
-		project, err := loadProject(global, c.Project, logger)
+		project, err := loadProject(ctx, c.Project, logger)
 		if err != nil {
 			return fmt.Errorf("could not load project: %w", err)
 		}
@@ -123,11 +124,11 @@ func (c *Get) Run(logger *slog.Logger, global GlobalArgs) error {
 	return nil
 }
 
-func (c *Set) Run(logger *slog.Logger, global GlobalArgs) error {
+func (c *Set) Run(ctx run.RunContext, logger *slog.Logger) error {
 	var path, provider string
 
 	if c.Project != "" {
-		project, err := loadProject(global, c.Project, logger)
+		project, err := loadProject(ctx, c.Project, logger)
 		if err != nil {
 			return fmt.Errorf("could not load project: %w", err)
 		}

@@ -13,9 +13,10 @@ import (
 	"github.com/charmbracelet/lipgloss"
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/earthly"
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/executor"
-	"github.com/input-output-hk/catalyst-forge/cli/pkg/project"
+	"github.com/input-output-hk/catalyst-forge/cli/pkg/run"
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/scan"
-	"github.com/input-output-hk/catalyst-forge/cli/pkg/secrets"
+	"github.com/input-output-hk/catalyst-forge/lib/project/pkg/project"
+	"github.com/input-output-hk/catalyst-forge/lib/project/pkg/secrets"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/pkg/walker"
 )
 
@@ -46,6 +47,7 @@ type CI struct {
 	loader   project.ProjectLoader
 	logger   *slog.Logger
 	options  []earthly.EarthlyExecutorOption
+	runctx   run.RunContext
 	running  bool
 	scanPath string
 }
@@ -91,6 +93,7 @@ func (c *CI) Load() error {
 						Target:  target,
 						logger:  c.logger,
 						options: c.options,
+						runctx:  c.runctx,
 						spinner: spinner.New(),
 					})
 				}
@@ -212,6 +215,7 @@ type CIRun struct {
 	Target  string
 	logger  *slog.Logger
 	options []earthly.EarthlyExecutorOption
+	runctx  run.RunContext
 	spinner spinner.Model
 	stderr  bytes.Buffer
 	stdout  bytes.Buffer
@@ -221,12 +225,15 @@ type CIRun struct {
 func (c *CIRun) Run() tea.Msg {
 	c.logger.Info("Running target", "project", c.Project.Path, "target", c.Target)
 	c.Status = RunStatusRunning
-	_, err := c.Project.RunTarget(
-		c.Target,
+
+	runner := run.NewProjectRunner(
+		c.runctx,
 		executor.NewLocalExecutor(c.logger, executor.WithRedirectTo(&c.stdout, &c.stderr)),
+		c.logger,
+		c.Project,
 		secrets.NewDefaultSecretStore(),
-		c.options...,
 	)
+	_, err := runner.RunTarget(c.Target, c.options...)
 
 	if err != nil {
 		c.logger.Error("Failed to run target", "project", c.Project.Path, "target", c.Target, "error", err)

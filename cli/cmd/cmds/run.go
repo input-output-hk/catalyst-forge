@@ -3,9 +3,10 @@ package cmds
 import (
 	"log/slog"
 
-	"github.com/input-output-hk/catalyst-forge/cli/pkg/earthfile"
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/executor"
-	"github.com/input-output-hk/catalyst-forge/cli/pkg/secrets"
+	"github.com/input-output-hk/catalyst-forge/cli/pkg/run"
+	"github.com/input-output-hk/catalyst-forge/lib/project/pkg/secrets"
+	"github.com/input-output-hk/catalyst-forge/lib/tools/pkg/earthfile"
 )
 
 type RunCmd struct {
@@ -16,13 +17,13 @@ type RunCmd struct {
 	TargetArgs []string `arg:"" help:"Arguments to pass to the target." default:""`
 }
 
-func (c *RunCmd) Run(logger *slog.Logger, global GlobalArgs) error {
+func (c *RunCmd) Run(ctx run.RunContext, logger *slog.Logger) error {
 	ref, err := earthfile.ParseEarthfileRef(c.Path)
 	if err != nil {
 		return err
 	}
 
-	project, err := loadProject(global, ref.Path, logger)
+	project, err := loadProject(ctx, ref.Path, logger)
 	if err != nil {
 		return err
 	}
@@ -32,11 +33,10 @@ func (c *RunCmd) Run(logger *slog.Logger, global GlobalArgs) error {
 		logger,
 		executor.WithRedirect(),
 	)
-	result, err := project.RunTarget(
+	runner := run.NewProjectRunner(ctx, localExec, logger, &project, secrets.NewDefaultSecretStore())
+	result, err := runner.RunTarget(
 		ref.Target,
-		localExec,
-		secrets.NewDefaultSecretStore(),
-		generateOpts(c, &global)...,
+		generateOpts(c, ctx)...,
 	)
 	if err != nil {
 		return err

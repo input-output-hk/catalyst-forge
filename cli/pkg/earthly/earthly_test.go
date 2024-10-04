@@ -6,8 +6,8 @@ import (
 	"testing"
 
 	emocks "github.com/input-output-hk/catalyst-forge/cli/pkg/executor/mocks"
-	"github.com/input-output-hk/catalyst-forge/cli/pkg/secrets"
-	smocks "github.com/input-output-hk/catalyst-forge/cli/pkg/secrets/mocks"
+	"github.com/input-output-hk/catalyst-forge/lib/project/pkg/secrets"
+	smocks "github.com/input-output-hk/catalyst-forge/lib/project/pkg/secrets/mocks"
 	"github.com/input-output-hk/catalyst-forge/lib/project/pkg/utils"
 	"github.com/input-output-hk/catalyst-forge/lib/project/schema"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/pkg/testutils"

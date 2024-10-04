@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"log/slog"
 
-	"github.com/input-output-hk/catalyst-forge/cli/pkg/project"
-	"github.com/input-output-hk/catalyst-forge/cli/pkg/secrets"
+	"github.com/input-output-hk/catalyst-forge/lib/project/pkg/project"
+	"github.com/input-output-hk/catalyst-forge/lib/project/pkg/secrets"
 )
 
 // GetGitToken loads the Git token from the project.

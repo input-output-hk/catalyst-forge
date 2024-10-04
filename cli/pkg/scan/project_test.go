@@ -3,8 +3,8 @@ package scan
 import (
 	"testing"
 
-	"github.com/input-output-hk/catalyst-forge/cli/pkg/project"
-	"github.com/input-output-hk/catalyst-forge/cli/pkg/project/mocks"
+	"github.com/input-output-hk/catalyst-forge/lib/project/pkg/project"
+	"github.com/input-output-hk/catalyst-forge/lib/project/pkg/project/mocks"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/pkg/testutils"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/pkg/walker"
 	"github.com/spf13/afero"
