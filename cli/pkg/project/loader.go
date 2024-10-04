@@ -10,8 +10,8 @@ import (
 
 	"cuelang.org/go/cue"
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/earthfile"
-	"github.com/input-output-hk/catalyst-forge/lib/blueprint/pkg/blueprint"
-	"github.com/input-output-hk/catalyst-forge/lib/blueprint/pkg/loader"
+	"github.com/input-output-hk/catalyst-forge/lib/project/pkg/blueprint"
+	"github.com/input-output-hk/catalyst-forge/lib/project/pkg/loader"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/pkg/git"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/pkg/walker"
 	"github.com/spf13/afero"

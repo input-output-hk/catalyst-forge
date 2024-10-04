@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"log/slog"
 
-	"github.com/input-output-hk/catalyst-forge/lib/blueprint/schema"
+	"github.com/input-output-hk/catalyst-forge/lib/project/schema"
 )
 
 // GetSecret returns the secret value for the given secret.

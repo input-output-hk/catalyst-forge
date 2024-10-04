@@ -10,7 +10,7 @@ import (
 	"github.com/alecthomas/kong"
 	"github.com/charmbracelet/log"
 	"github.com/input-output-hk/catalyst-forge/cli/cmd/cmds"
-	"github.com/input-output-hk/catalyst-forge/lib/blueprint/schema"
+	"github.com/input-output-hk/catalyst-forge/lib/project/schema"
 )
 
 var version = "dev"

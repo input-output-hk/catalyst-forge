@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/secrets"
-	"github.com/input-output-hk/catalyst-forge/lib/blueprint/schema"
+	"github.com/input-output-hk/catalyst-forge/lib/project/schema"
 )
 
 const (

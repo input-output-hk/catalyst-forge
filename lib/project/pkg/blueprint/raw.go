@@ -2,7 +2,7 @@ package blueprint
 
 import (
 	"cuelang.org/go/cue"
-	"github.com/input-output-hk/catalyst-forge/lib/blueprint/schema"
+	"github.com/input-output-hk/catalyst-forge/lib/project/schema"
 )
 
 // RawBlueprint represents a raw (undecoded) blueprint.

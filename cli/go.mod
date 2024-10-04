@@ -13,8 +13,9 @@ require (
 	github.com/charmbracelet/lipgloss v0.13.0
 	github.com/charmbracelet/log v0.4.0
 	github.com/earthly/earthly/ast v0.0.2-0.20240228223838-42e8ca204e8a
+	github.com/go-git/go-billy/v5 v5.5.0
 	github.com/go-git/go-git/v5 v5.12.0
-	github.com/input-output-hk/catalyst-forge/lib/blueprint v0.0.0
+	github.com/input-output-hk/catalyst-forge/lib/project v0.0.0
 	github.com/input-output-hk/catalyst-forge/lib/tools v0.0.0
 	github.com/rogpeppe/go-internal v1.12.1-0.20240709150035-ccf4b4329d21
 	github.com/spf13/afero v1.11.0
@@ -51,7 +52,6 @@ require (
 	github.com/emirpasic/gods v1.18.1 // indirect
 	github.com/erikgeiser/coninput v0.0.0-20211004153227-1c3628e74d0f // indirect
 	github.com/go-git/gcfg v1.5.1-0.20230307220236-3a3c6141e376 // indirect
-	github.com/go-git/go-billy/v5 v5.5.0 // indirect
 	github.com/go-logfmt/logfmt v0.6.0 // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/google/uuid v1.6.0 // indirect
@@ -82,6 +82,6 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
-replace github.com/input-output-hk/catalyst-forge/lib/blueprint => ../lib/blueprint
+replace github.com/input-output-hk/catalyst-forge/lib/project => ../lib/project
 
 replace github.com/input-output-hk/catalyst-forge/lib/tools => ../lib/tools

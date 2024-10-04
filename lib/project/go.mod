@@ -1,4 +1,4 @@
-module github.com/input-output-hk/catalyst-forge/lib/blueprint
+module github.com/input-output-hk/catalyst-forge/lib/project
 
 require (
 	cuelang.org/go v0.10.0

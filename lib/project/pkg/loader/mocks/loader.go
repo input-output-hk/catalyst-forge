@@ -4,8 +4,8 @@
 package mocks
 
 import (
-	"github.com/input-output-hk/catalyst-forge/lib/blueprint/pkg/blueprint"
-	"github.com/input-output-hk/catalyst-forge/lib/blueprint/pkg/loader"
+	"github.com/input-output-hk/catalyst-forge/lib/project/pkg/blueprint"
+	"github.com/input-output-hk/catalyst-forge/lib/project/pkg/loader"
 	"sync"
 )
 

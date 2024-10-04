@@ -13,7 +13,7 @@ import (
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/project"
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/secrets"
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/secrets/mocks"
-	"github.com/input-output-hk/catalyst-forge/lib/blueprint/schema"
+	"github.com/input-output-hk/catalyst-forge/lib/project/schema"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/pkg/pointers"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/pkg/testutils"
 	"github.com/stretchr/testify/assert"

@@ -28,7 +28,7 @@ package main
 import (
 	"log"
 
-	"github.com/input-output-hk/catalyst-forge/lib/blueprint/pkg/loader"
+	"github.com/input-output-hk/catalyst-forge/lib/project/pkg/loader"
 )
 
 func main() {
@@ -60,7 +60,7 @@ import (
 	"log"
 
 	"cuelang.org/go/cue/cuecontext"
-	"github.com/input-output-hk/catalyst-forge/lib/blueprint/schema"
+	"github.com/input-output-hk/catalyst-forge/lib/project/schema"
 )
 
 func main() {

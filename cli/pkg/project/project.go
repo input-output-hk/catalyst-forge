@@ -11,8 +11,8 @@ import (
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/earthly"
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/executor"
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/secrets"
-	"github.com/input-output-hk/catalyst-forge/lib/blueprint/pkg/blueprint"
-	"github.com/input-output-hk/catalyst-forge/lib/blueprint/schema"
+	"github.com/input-output-hk/catalyst-forge/lib/project/pkg/blueprint"
+	"github.com/input-output-hk/catalyst-forge/lib/project/schema"
 )
 
 type TagInfo struct {

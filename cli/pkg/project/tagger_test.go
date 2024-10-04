@@ -4,7 +4,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/input-output-hk/catalyst-forge/lib/blueprint/schema"
+	"github.com/input-output-hk/catalyst-forge/lib/project/schema"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/pkg/testutils"
 	"github.com/stretchr/testify/assert"
 )

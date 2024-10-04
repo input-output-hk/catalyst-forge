@@ -5,7 +5,7 @@ import (
 
 	"cuelang.org/go/cue"
 	"github.com/Masterminds/semver/v3"
-	"github.com/input-output-hk/catalyst-forge/lib/blueprint/pkg/version"
+	"github.com/input-output-hk/catalyst-forge/lib/project/pkg/version"
 	cuetools "github.com/input-output-hk/catalyst-forge/lib/tools/pkg/cue"
 )
 

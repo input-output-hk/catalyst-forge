@@ -7,7 +7,7 @@ import (
 
 	"cuelang.org/go/cue"
 	"cuelang.org/go/cue/cuecontext"
-	"github.com/input-output-hk/catalyst-forge/lib/blueprint/pkg/injector/mocks"
+	"github.com/input-output-hk/catalyst-forge/lib/project/pkg/injector/mocks"
 	cuetools "github.com/input-output-hk/catalyst-forge/lib/tools/pkg/cue"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/pkg/testutils"
 	"github.com/stretchr/testify/assert"

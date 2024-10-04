@@ -8,8 +8,8 @@ import (
 	"testing"
 
 	"cuelang.org/go/cue"
-	"github.com/input-output-hk/catalyst-forge/lib/blueprint/pkg/injector"
-	imocks "github.com/input-output-hk/catalyst-forge/lib/blueprint/pkg/injector/mocks"
+	"github.com/input-output-hk/catalyst-forge/lib/project/pkg/injector"
+	imocks "github.com/input-output-hk/catalyst-forge/lib/project/pkg/injector/mocks"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/pkg/testutils"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
