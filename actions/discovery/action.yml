@@ -11,8 +11,10 @@ inputs:
     description: The path to search from
     default: "."
 outputs:
-  result:
-    description: The result of the discovery
+  deployments:
+    description: The deployments discovered
+  earthfiles:
+    description: The earthfiles discovered
 
 runs:
   using: node20

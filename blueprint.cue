@@ -34,6 +34,11 @@ global: {
 				version:   "0.8.15"
 			}
 
+			git: credentials: {
+				provider: "aws"
+				path:     "global/ci/deploy"
+			}
+
 			github: registry: "ghcr.io"
 		}
 		secrets: [
@@ -47,5 +52,13 @@ global: {
 		tagging: {
 			strategy: "commit"
 		}
+	}
+	deployment: {
+		registry: ci.providers.aws.registry
+		repo: {
+			url: "https://github.com/input-output-hk/catalyst-world"
+			ref: "master"
+		}
+		root: "k8s"
 	}
 }

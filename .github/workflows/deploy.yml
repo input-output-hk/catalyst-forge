@@ -1,9 +1,9 @@
 on:
   workflow_call:
     inputs:
-      earthfiles:
+      deployments:
         description: |
-          A JSON list of Earthfile paths+targets to use for publishing
+          The deployments to be executed
         required: true
         type: string
       forge_version:
@@ -11,11 +11,6 @@ on:
           The version of the forge CLI to install (use 'local' for testing)
         required: true
         type: string
-      skip_branch_check:
-        description: If true, will always publish images, even on pushes to the non-default branch
-        required: false
-        type: string
-        default: "false"
     secrets:
       earthly_token:
         description: Optional Earthly token used to login to Earthly cloud during local builds of Forge CLI
@@ -27,12 +22,12 @@ env:
 
 jobs:
   run:
-    name: ${{ matrix.earthfile }}
+    name: ${{ matrix.deployment }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        earthfile: ${{ fromJson(inputs.earthfiles) }}
+        deployment: ${{ fromJson(inputs.deployments) }}
     steps:
       - uses: actions/checkout@v4
       - name: Install Forge
@@ -59,27 +54,6 @@ jobs:
         uses: input-output-hk/catalyst-forge/actions/setup@ci/v1.1.0
         with:
           skip_earthly: ${{ steps.local.outputs.skip }}
-      - name: Run
-        id: run
-        uses: input-output-hk/catalyst-forge/actions/run@ci/v1.1.0
-        with:
-          path: ${{ matrix.earthfile }}
-          target_args: --container ${{ env.CONTAINER }} --tag ${{ env.TAG }}
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - name: Parse Earthfile reference
-        id: parse
+      - name: Deploy
         run: |
-          EARTHFILE='${{ matrix.earthfile }}'
-          PROJECT="${EARTHFILE%+*}"
-          TARGET="${EARTHFILE#*+}"
-
-          echo "project=$PROJECT" >> $GITHUB_OUTPUT
-          echo "target=$TARGET" >> $GITHUB_OUTPUT
-      - name: Publish
-        uses: input-output-hk/catalyst-forge/actions/publish@ci/v1.1.0
-        with:
-          image: "${{ env.CONTAINER }}:${{ env.TAG }}"
-          project: ${{ steps.parse.outputs.project }}
-          skip_branch_check: ${{ inputs.skip_branch_check }}
-          target: ${{ steps.parse.outputs.target }}
+          forge -vv deploy ${{ matrix.deployment }}
