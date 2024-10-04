@@ -6,11 +6,11 @@ import (
 	"testing"
 
 	emocks "github.com/input-output-hk/catalyst-forge/cli/pkg/executor/mocks"
-	"github.com/input-output-hk/catalyst-forge/lib/project/pkg/secrets"
-	smocks "github.com/input-output-hk/catalyst-forge/lib/project/pkg/secrets/mocks"
-	"github.com/input-output-hk/catalyst-forge/lib/project/pkg/utils"
 	"github.com/input-output-hk/catalyst-forge/lib/project/schema"
-	"github.com/input-output-hk/catalyst-forge/lib/tools/pkg/testutils"
+	"github.com/input-output-hk/catalyst-forge/lib/project/secrets"
+	smocks "github.com/input-output-hk/catalyst-forge/lib/project/secrets/mocks"
+	"github.com/input-output-hk/catalyst-forge/lib/project/utils"
+	"github.com/input-output-hk/catalyst-forge/lib/tools/testutils"
 	"github.com/stretchr/testify/assert"
 )
 

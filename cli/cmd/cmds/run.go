@@ -5,8 +5,8 @@ import (
 
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/executor"
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/run"
-	"github.com/input-output-hk/catalyst-forge/lib/project/pkg/secrets"
-	"github.com/input-output-hk/catalyst-forge/lib/tools/pkg/earthfile"
+	"github.com/input-output-hk/catalyst-forge/lib/project/secrets"
+	"github.com/input-output-hk/catalyst-forge/lib/tools/earthfile"
 )
 
 type RunCmd struct {

@@ -10,8 +10,8 @@ import (
 	"cuelang.org/go/cue"
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/run"
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/scan"
-	"github.com/input-output-hk/catalyst-forge/lib/project/pkg/project"
-	"github.com/input-output-hk/catalyst-forge/lib/tools/pkg/walker"
+	"github.com/input-output-hk/catalyst-forge/lib/project/project"
+	"github.com/input-output-hk/catalyst-forge/lib/tools/walker"
 	"golang.org/x/exp/maps"
 )
 

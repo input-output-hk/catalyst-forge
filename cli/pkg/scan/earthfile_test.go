@@ -5,8 +5,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/input-output-hk/catalyst-forge/lib/tools/pkg/testutils"
-	"github.com/input-output-hk/catalyst-forge/lib/tools/pkg/walker"
+	"github.com/input-output-hk/catalyst-forge/lib/tools/testutils"
+	"github.com/input-output-hk/catalyst-forge/lib/tools/walker"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 )

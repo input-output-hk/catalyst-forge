@@ -6,8 +6,8 @@ import (
 
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/earthly"
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/executor"
-	"github.com/input-output-hk/catalyst-forge/lib/project/pkg/project"
-	"github.com/input-output-hk/catalyst-forge/lib/project/pkg/secrets"
+	"github.com/input-output-hk/catalyst-forge/lib/project/project"
+	"github.com/input-output-hk/catalyst-forge/lib/project/secrets"
 )
 
 type ProjectRunner struct {

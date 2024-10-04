@@ -7,8 +7,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/input-output-hk/catalyst-forge/lib/tools/pkg/earthfile"
-	w "github.com/input-output-hk/catalyst-forge/lib/tools/pkg/walker"
+	"github.com/input-output-hk/catalyst-forge/lib/tools/earthfile"
+	w "github.com/input-output-hk/catalyst-forge/lib/tools/walker"
 )
 
 // ScanEarthfiles scans the given root path for Earthfiles and returns a map

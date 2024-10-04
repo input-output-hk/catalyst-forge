@@ -17,7 +17,6 @@ require (
 	github.com/spf13/afero v1.11.0
 	github.com/stretchr/testify v1.9.0
 	golang.org/x/exp v0.0.0-20231006140011-7918f672742d
-	gopkg.in/jfontan/go-billy-desfacer.v0 v0.0.0-20210209210102-b43512b1cad0
 )
 
 require (
@@ -78,6 +77,7 @@ require (
 	golang.org/x/sys v0.24.0 // indirect
 	golang.org/x/text v0.17.0 // indirect
 	golang.org/x/tools v0.24.0 // indirect
+	gopkg.in/jfontan/go-billy-desfacer.v0 v0.0.0-20210209210102-b43512b1cad0 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )

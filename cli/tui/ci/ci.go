@@ -15,9 +15,9 @@ import (
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/executor"
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/run"
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/scan"
-	"github.com/input-output-hk/catalyst-forge/lib/project/pkg/project"
-	"github.com/input-output-hk/catalyst-forge/lib/project/pkg/secrets"
-	"github.com/input-output-hk/catalyst-forge/lib/tools/pkg/walker"
+	"github.com/input-output-hk/catalyst-forge/lib/project/project"
+	"github.com/input-output-hk/catalyst-forge/lib/project/secrets"
+	"github.com/input-output-hk/catalyst-forge/lib/tools/walker"
 )
 
 const (

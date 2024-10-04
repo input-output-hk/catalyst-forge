@@ -5,7 +5,7 @@ import (
 	"log/slog"
 
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/run"
-	p "github.com/input-output-hk/catalyst-forge/lib/project/pkg/project"
+	p "github.com/input-output-hk/catalyst-forge/lib/project/project"
 )
 
 type TagCmd struct {
