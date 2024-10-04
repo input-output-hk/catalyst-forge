@@ -12,7 +12,7 @@ deps:
     ENV GOMODCACHE=/go/modcache
     CACHE --persist --sharing shared /go
 
-    COPY ../lib/blueprint+src/src /lib/blueprint
+    COPY ../lib/project+src/src /lib/project
     COPY ../lib/tools+src/src /lib/tools
 
     COPY go.mod go.sum .
@@ -23,7 +23,7 @@ src:
 
     CACHE --persist --sharing shared /go
 
-    COPY --dir cmd internal pkg tui .
+    COPY . .
     RUN go generate ./...
 
 check:

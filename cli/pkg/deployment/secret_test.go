@@ -4,11 +4,11 @@ import (
 	"log/slog"
 	"testing"
 
-	"github.com/input-output-hk/catalyst-forge/cli/pkg/project"
-	"github.com/input-output-hk/catalyst-forge/cli/pkg/secrets"
-	"github.com/input-output-hk/catalyst-forge/cli/pkg/secrets/mocks"
-	"github.com/input-output-hk/catalyst-forge/lib/blueprint/schema"
-	"github.com/input-output-hk/catalyst-forge/lib/tools/pkg/testutils"
+	"github.com/input-output-hk/catalyst-forge/lib/project/project"
+	"github.com/input-output-hk/catalyst-forge/lib/project/schema"
+	"github.com/input-output-hk/catalyst-forge/lib/project/secrets"
+	"github.com/input-output-hk/catalyst-forge/lib/project/secrets/mocks"
+	"github.com/input-output-hk/catalyst-forge/lib/tools/testutils"
 	"github.com/stretchr/testify/assert"
 )
 

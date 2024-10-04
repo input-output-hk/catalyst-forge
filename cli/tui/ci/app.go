@@ -12,10 +12,11 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/earthly"
-	"github.com/input-output-hk/catalyst-forge/cli/pkg/project"
+	"github.com/input-output-hk/catalyst-forge/cli/pkg/run"
 	"github.com/input-output-hk/catalyst-forge/cli/tui"
-	"github.com/input-output-hk/catalyst-forge/lib/tools/pkg/git"
-	"github.com/input-output-hk/catalyst-forge/lib/tools/pkg/walker"
+	"github.com/input-output-hk/catalyst-forge/lib/project/project"
+	"github.com/input-output-hk/catalyst-forge/lib/tools/git"
+	"github.com/input-output-hk/catalyst-forge/lib/tools/walker"
 )
 
 var (
@@ -105,7 +106,7 @@ func (a App) line() string {
 
 // Run starts the TUI application.
 func Run(scanPath string,
-	local bool,
+	runctx run.RunContext,
 	opts ...earthly.EarthlyExecutorOption,
 ) error {
 	var logger *slog.Logger
@@ -123,8 +124,6 @@ func Run(scanPath string,
 	}
 
 	loader := project.NewDefaultProjectLoader(
-		false,
-		local,
 		project.GetDefaultRuntimes(logger),
 		logger,
 	)

@@ -6,7 +6,8 @@ import (
 	"log/slog"
 
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/earthly"
-	"github.com/input-output-hk/catalyst-forge/cli/pkg/project"
+	"github.com/input-output-hk/catalyst-forge/cli/pkg/run"
+	"github.com/input-output-hk/catalyst-forge/lib/project/project"
 )
 
 type GlobalArgs struct {
@@ -29,7 +30,7 @@ func enumerate(data map[string][]string) []string {
 
 // generateOpts generates the options for the Earthly executor based on command
 // flags.
-func generateOpts(flags *RunCmd, global *GlobalArgs) []earthly.EarthlyExecutorOption {
+func generateOpts(flags *RunCmd, ctx run.RunContext) []earthly.EarthlyExecutorOption {
 	var opts []earthly.EarthlyExecutorOption
 
 	if flags != nil {
@@ -37,7 +38,7 @@ func generateOpts(flags *RunCmd, global *GlobalArgs) []earthly.EarthlyExecutorOp
 			opts = append(opts, earthly.WithArtifact(flags.Artifact))
 		}
 
-		if global.CI {
+		if ctx.CI {
 			opts = append(opts, earthly.WithCI())
 		}
 
@@ -55,10 +56,8 @@ func generateOpts(flags *RunCmd, global *GlobalArgs) []earthly.EarthlyExecutorOp
 }
 
 // loadProject loads the project from the given root path.
-func loadProject(global GlobalArgs, rootPath string, logger *slog.Logger) (project.Project, error) {
+func loadProject(ctx run.RunContext, rootPath string, logger *slog.Logger) (project.Project, error) {
 	loader := project.NewDefaultProjectLoader(
-		global.CI,
-		global.Local,
 		project.GetDefaultRuntimes(logger),
 		logger,
 	)
