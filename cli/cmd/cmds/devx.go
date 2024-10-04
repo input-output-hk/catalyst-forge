@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
+	"os/exec"
 	"regexp"
 	"strings"
 	"unicode"
@@ -21,8 +22,6 @@ type DevX struct {
 }
 
 func (c *DevX) Run(logger *slog.Logger, global GlobalArgs) error {
-	fmt.Println("MarkdownPath:", c.MarkdownPath, "CommandName:", c.CommandName)
-
 	// read the file from the specified path
 	raw, err := os.ReadFile(c.MarkdownPath)
 	if err != nil {
@@ -32,26 +31,11 @@ func (c *DevX) Run(logger *slog.Logger, global GlobalArgs) error {
 	// parse the file with prepared options
 	commandGroups, err := extractCommandGroups(raw)
 	if err != nil {
-		return fmt.Errorf("could not extract commands: %v", err)
+		return fmt.Errorf("%v", err)
 	}
 
-	// Output the command groups
-	for _, group := range commandGroups {
-		fmt.Printf("Command Id: %s (%v)\n", group.GetId(), len(group.commands))
-		for _, cmd := range group.commands {
-			fmt.Printf("---\n")
-			fmt.Printf("Command Content: %v", cmd.content)
-
-			if cmd.lang != nil {
-				fmt.Printf("Command Lang: %v\n", *cmd.lang)
-			}
-			if cmd.platform != nil {
-				fmt.Printf("Command Platform: %v\n", *cmd.platform)
-			}
-		}
-	}
-
-	return nil
+	// exec the command
+	return processCmd(commandGroups, c.CommandName)
 }
 
 type command struct {
@@ -60,15 +44,33 @@ type command struct {
 	platform *string
 }
 
+func (cmd *command) Exec() error {
+	executor := getLangExecutor(cmd.lang)
+	if executor == nil {
+		return fmt.Errorf("only commands running with `sh` can be executed")
+	}
+
+	execCmd := exec.Command(cmd.content)
+
+	output, err := execCmd.CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("%s", err)
+	}
+
+	fmt.Println(string(output))
+
+	return nil
+}
+
 type commandGroup struct {
 	name     string
 	commands []command
 }
 
-func (c *commandGroup) GetId() string {
+func (cg *commandGroup) GetId() string {
 	var result []rune
 
-	for _, char := range c.name {
+	for _, char := range cg.name {
 		if unicode.IsLetter(char) || unicode.IsDigit(char) {
 			result = append(result, unicode.ToLower(char))
 		} else if unicode.IsSpace(char) {
@@ -81,7 +83,6 @@ func (c *commandGroup) GetId() string {
 	re := regexp.MustCompile(`-+`)
 	joined = re.ReplaceAllString(joined, "-")
 
-	// Remove leading or trailing dashes if any
 	return strings.Trim(joined, "-")
 }
 
@@ -98,7 +99,7 @@ func extractCommandGroups(data []byte) ([]commandGroup, error) {
 	ast.Walk(doc, func(n ast.Node, entering bool) (ast.WalkStatus, error) {
 		// look up for headers
 		if heading, ok := n.(*ast.Heading); ok && entering {
-			if heading.Level == 2 {
+			if heading.Level == 3 {
 				currentPlatform = nil
 				commandName := string(heading.Text(data))
 
@@ -108,10 +109,10 @@ func extractCommandGroups(data []byte) ([]commandGroup, error) {
 				})
 			}
 
-			if heading.Level == 3 && len(groups) > 0 {
+			/* if heading.Level == 4 && len(groups) > 0 {
 				platform := string(heading.Text(data))
 				currentPlatform = &platform
-			}
+			} */
 		}
 
 		// look up for code blocks
@@ -140,4 +141,33 @@ func extractCommandGroups(data []byte) ([]commandGroup, error) {
 	}
 
 	return groups, nil
+}
+
+func processCmd(list []commandGroup, cmd string) error {
+	var foundCmd *command
+	for _, v := range list {
+		if v.GetId() == cmd {
+			// TODO: should get the command corresponding to the current host platform
+			foundCmd = &v.commands[0]
+		}
+	}
+
+	if foundCmd == nil {
+		return fmt.Errorf("command not found")
+	}
+
+	return foundCmd.Exec()
+}
+
+func getLangExecutor(lang *string) *string {
+	if lang == nil {
+		return nil
+	}
+
+	if *lang == "sh" {
+		executor := "sh"
+		return &executor
+	} else {
+		return nil
+	}
 }

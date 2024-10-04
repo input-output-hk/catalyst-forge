@@ -1,31 +1,21 @@
 # My cool dev docs
 
-## Run Some Command !!
+### Run Some Command !!
 
 ``` sh
-  echo "the fallback, if nothing else is defined"
+  echo "should run this command"
 ```
-
-### Linux
-
-``` python
-  print("Cool")
-```
-
-### Linux:arm64
 
 ``` sh
-  echo "Because maybe python is broken??"
+  echo "should not run this command"
 ```
 
-### Windows
-
-``` powershell
-  echo "Does this even work in powershell??"
-```
-
-### Mac:Arm64
+### Extra $Cool$ Command
 
 ``` sh
-  echo "Because its always got to be different, even though its really just BSD Unix"
+  echo "should run this command"
+```
+
+``` sh
+  echo "should not run this command"
 ```
