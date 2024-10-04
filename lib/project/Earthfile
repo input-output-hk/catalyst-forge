@@ -20,7 +20,7 @@ src:
 
     CACHE --persist --sharing shared /go
 
-    COPY --dir internal pkg schema .
+    COPY . .
 
     RUN go generate ./...
 
