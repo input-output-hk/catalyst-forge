@@ -45,19 +45,19 @@ type command struct {
 }
 
 func (cmd *command) Exec() error {
-	executor := getLangExecutor(cmd.lang)
-	if executor == nil {
+	executorCmd, executorArgs := getLangExecutor(cmd.lang)
+	if executorCmd == "" {
 		return fmt.Errorf("only commands running with `sh` can be executed")
 	}
 
-	execCmd := exec.Command(cmd.content)
+	execCmd := exec.Command(executorCmd, formatArgs(executorArgs, cmd.content)...)
 
 	output, err := execCmd.CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("%s", err)
 	}
 
-	fmt.Println(string(output))
+	fmt.Print(string(output))
 
 	return nil
 }
@@ -159,15 +159,24 @@ func processCmd(list []commandGroup, cmd string) error {
 	return foundCmd.Exec()
 }
 
-func getLangExecutor(lang *string) *string {
+func getLangExecutor(lang *string) (string, []string) {
 	if lang == nil {
-		return nil
+		return "", nil
 	}
 
 	if *lang == "sh" {
-		executor := "sh"
-		return &executor
+		return "sh", []string{"-c", "$"}
 	} else {
-		return nil
+		return "", nil
 	}
+}
+
+func formatArgs(base []string, replacement string) []string {
+	replaced := make([]string, len(base))
+
+	for i, str := range base {
+		replaced[i] = strings.ReplaceAll(str, "$", replacement)
+	}
+
+	return replaced
 }
