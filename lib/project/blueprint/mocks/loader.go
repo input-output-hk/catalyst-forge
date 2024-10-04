@@ -5,13 +5,12 @@ package mocks
 
 import (
 	"github.com/input-output-hk/catalyst-forge/lib/project/blueprint"
-	"github.com/input-output-hk/catalyst-forge/lib/project/loader"
 	"sync"
 )
 
 // Ensure, that BlueprintLoaderMock does implement loader.BlueprintLoader.
 // If this is not the case, regenerate this file with moq.
-var _ loader.BlueprintLoader = &BlueprintLoaderMock{}
+var _ blueprint.BlueprintLoader = &BlueprintLoaderMock{}
 
 // BlueprintLoaderMock is a mock implementation of loader.BlueprintLoader.
 //
@@ -36,7 +35,7 @@ type BlueprintLoaderMock struct {
 	LoadFunc func(projectPath string, gitRootPath string) (blueprint.RawBlueprint, error)
 
 	// SetOverriderFunc mocks the SetOverrider method.
-	SetOverriderFunc func(overrider loader.InjectorOverrider)
+	SetOverriderFunc func(overrider blueprint.InjectorOverrider)
 
 	// calls tracks calls to the methods.
 	calls struct {
@@ -50,7 +49,7 @@ type BlueprintLoaderMock struct {
 		// SetOverrider holds details about calls to the SetOverrider method.
 		SetOverrider []struct {
 			// Overrider is the overrider argument value.
-			Overrider loader.InjectorOverrider
+			Overrider blueprint.InjectorOverrider
 		}
 	}
 	lockLoad         sync.RWMutex
@@ -94,12 +93,12 @@ func (mock *BlueprintLoaderMock) LoadCalls() []struct {
 }
 
 // SetOverrider calls SetOverriderFunc.
-func (mock *BlueprintLoaderMock) SetOverrider(overrider loader.InjectorOverrider) {
+func (mock *BlueprintLoaderMock) SetOverrider(overrider blueprint.InjectorOverrider) {
 	if mock.SetOverriderFunc == nil {
 		panic("BlueprintLoaderMock.SetOverriderFunc: method is nil but BlueprintLoader.SetOverrider was just called")
 	}
 	callInfo := struct {
-		Overrider loader.InjectorOverrider
+		Overrider blueprint.InjectorOverrider
 	}{
 		Overrider: overrider,
 	}
@@ -114,10 +113,10 @@ func (mock *BlueprintLoaderMock) SetOverrider(overrider loader.InjectorOverrider
 //
 //	len(mockedBlueprintLoader.SetOverriderCalls())
 func (mock *BlueprintLoaderMock) SetOverriderCalls() []struct {
-	Overrider loader.InjectorOverrider
+	Overrider blueprint.InjectorOverrider
 } {
 	var calls []struct {
-		Overrider loader.InjectorOverrider
+		Overrider blueprint.InjectorOverrider
 	}
 	mock.lockSetOverrider.RLock()
 	calls = mock.calls.SetOverrider

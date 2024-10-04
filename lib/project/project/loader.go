@@ -10,7 +10,6 @@ import (
 
 	"cuelang.org/go/cue"
 	"github.com/input-output-hk/catalyst-forge/lib/project/blueprint"
-	"github.com/input-output-hk/catalyst-forge/lib/project/loader"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/earthfile"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/git"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/walker"
@@ -27,7 +26,7 @@ type ProjectLoader interface {
 
 // DefaultProjectLoader is the default implementation of the ProjectLoader.
 type DefaultProjectLoader struct {
-	blueprintLoader loader.BlueprintLoader
+	blueprintLoader blueprint.BlueprintLoader
 	fs              afero.Fs
 	logger          *slog.Logger
 	repoLoader      git.RepoLoader
@@ -133,7 +132,7 @@ func NewDefaultProjectLoader(
 		logger = slog.New(slog.NewTextHandler(io.Discard, nil))
 	}
 
-	bl := loader.NewDefaultBlueprintLoader(nil, logger)
+	bl := blueprint.NewDefaultBlueprintLoader(nil, logger)
 	rl := git.NewDefaultRepoLoader()
 	return DefaultProjectLoader{
 		blueprintLoader: &bl,
@@ -147,7 +146,7 @@ func NewDefaultProjectLoader(
 // NewCustomProjectLoader creates a new DefaultProjectLoader with custom dependencies.
 func NewCustomProjectLoader(
 	fs afero.Fs,
-	bl loader.BlueprintLoader,
+	bl blueprint.BlueprintLoader,
 	rl git.RepoLoader,
 	runtimes []RuntimeData,
 	logger *slog.Logger,

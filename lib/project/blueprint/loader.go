@@ -1,4 +1,4 @@
-package loader
+package blueprint
 
 import (
 	"fmt"
@@ -11,9 +11,8 @@ import (
 	"cuelang.org/go/cue/cuecontext"
 	"cuelang.org/go/cue/errors"
 	"github.com/Masterminds/semver/v3"
-	"github.com/input-output-hk/catalyst-forge/lib/project/blueprint"
+	"github.com/input-output-hk/catalyst-forge/lib/project/blueprint/defaults"
 	"github.com/input-output-hk/catalyst-forge/lib/project/injector"
-	"github.com/input-output-hk/catalyst-forge/lib/project/loader/defaults"
 	"github.com/input-output-hk/catalyst-forge/lib/project/schema"
 	"github.com/input-output-hk/catalyst-forge/lib/project/version"
 	cuetools "github.com/input-output-hk/catalyst-forge/lib/tools/cue"
@@ -35,7 +34,7 @@ type InjectorOverrider func(value cue.Value) map[string]string
 // BlueprintLoader is an interface for loading blueprints.
 type BlueprintLoader interface {
 	// Load loads the blueprint.
-	Load(projectPath, gitRootPath string) (blueprint.RawBlueprint, error)
+	Load(projectPath, gitRootPath string) (RawBlueprint, error)
 
 	// SetOverrider sets the InjectorOverrider.
 	SetOverrider(overrider InjectorOverrider)
@@ -49,7 +48,7 @@ type DefaultBlueprintLoader struct {
 	overrider InjectorOverrider
 }
 
-func (b *DefaultBlueprintLoader) Load(projectPath, gitRootPath string) (blueprint.RawBlueprint, error) {
+func (b *DefaultBlueprintLoader) Load(projectPath, gitRootPath string) (RawBlueprint, error) {
 	files := make(map[string][]byte)
 
 	pbPath := filepath.Join(projectPath, BlueprintFileName)
@@ -59,7 +58,7 @@ func (b *DefaultBlueprintLoader) Load(projectPath, gitRootPath string) (blueprin
 			b.logger.Warn("No project blueprint file found", "path", pbPath)
 		} else {
 			b.logger.Error("Failed to read blueprint file", "path", pbPath, "error", err)
-			return blueprint.RawBlueprint{}, fmt.Errorf("failed to read blueprint file: %w", err)
+			return RawBlueprint{}, fmt.Errorf("failed to read blueprint file: %w", err)
 		}
 	} else {
 		files[pbPath] = pb
@@ -73,7 +72,7 @@ func (b *DefaultBlueprintLoader) Load(projectPath, gitRootPath string) (blueprin
 				b.logger.Warn("No root blueprint file found", "path", rootPath)
 			} else {
 				b.logger.Error("Failed to read blueprint file", "path", rootPath, "error", err)
-				return blueprint.RawBlueprint{}, fmt.Errorf("failed to read blueprint file: %w", err)
+				return RawBlueprint{}, fmt.Errorf("failed to read blueprint file: %w", err)
 			}
 		} else {
 			files[rootPath] = rb
@@ -84,19 +83,19 @@ func (b *DefaultBlueprintLoader) Load(projectPath, gitRootPath string) (blueprin
 	schema, err := schema.LoadSchema(ctx)
 	if err != nil {
 		b.logger.Error("Failed to load schema", "error", err)
-		return blueprint.RawBlueprint{}, fmt.Errorf("failed to load schema: %w", err)
+		return RawBlueprint{}, fmt.Errorf("failed to load schema: %w", err)
 	}
 
 	var finalBlueprint cue.Value
 	var finalVersion *semver.Version
-	var bps blueprint.BlueprintFiles
+	var bps BlueprintFiles
 	if len(files) > 0 {
 		for path, data := range files {
 			b.logger.Info("Loading blueprint file", "path", path)
-			bp, err := blueprint.NewBlueprintFile(ctx, path, data, b.injector)
+			bp, err := NewBlueprintFile(ctx, path, data, b.injector)
 			if err != nil {
 				b.logger.Error("Failed to load blueprint file", "path", path, "error", err)
-				return blueprint.RawBlueprint{}, fmt.Errorf("failed to load blueprint file: %w", err)
+				return RawBlueprint{}, fmt.Errorf("failed to load blueprint file: %w", err)
 			}
 
 			bps = append(bps, bp)
@@ -104,13 +103,13 @@ func (b *DefaultBlueprintLoader) Load(projectPath, gitRootPath string) (blueprin
 
 		if err := bps.ValidateMajorVersions(); err != nil {
 			b.logger.Error("Major version mismatch")
-			return blueprint.RawBlueprint{}, err
+			return RawBlueprint{}, err
 		}
 
 		userBlueprint, err := bps.Unify(ctx)
 		if err != nil {
 			b.logger.Error("Failed to unify blueprint files", "error", err)
-			return blueprint.RawBlueprint{}, fmt.Errorf("failed to unify blueprint files: %w", err)
+			return RawBlueprint{}, fmt.Errorf("failed to unify blueprint files: %w", err)
 		}
 
 		finalVersion = bps.Version()
@@ -135,13 +134,13 @@ func (b *DefaultBlueprintLoader) Load(projectPath, gitRootPath string) (blueprin
 		finalBlueprint, err = setter.SetDefault(finalBlueprint)
 		if err != nil {
 			b.logger.Error("Failed to set default values", "error", err)
-			return blueprint.RawBlueprint{}, fmt.Errorf("failed to set default values: %w", err)
+			return RawBlueprint{}, fmt.Errorf("failed to set default values: %w", err)
 		}
 	}
 
 	if err := cuetools.Validate(finalBlueprint, cue.Concrete(true)); err != nil {
 		b.logger.Error("Failed to validate full blueprint", "error", err)
-		return blueprint.RawBlueprint{}, err
+		return RawBlueprint{}, err
 	}
 
 	if err := version.ValidateVersions(finalVersion, schema.Version); err != nil {
@@ -149,11 +148,11 @@ func (b *DefaultBlueprintLoader) Load(projectPath, gitRootPath string) (blueprin
 			b.logger.Warn("The minor version of the blueprint is greater than the supported version", "version", finalVersion)
 		} else {
 			b.logger.Error("The major version of the blueprint is greater than the supported version", "version", finalVersion)
-			return blueprint.RawBlueprint{}, fmt.Errorf("the major version of the blueprint (%s) is different than the supported version: cannot continue", finalVersion.String())
+			return RawBlueprint{}, fmt.Errorf("the major version of the blueprint (%s) is different than the supported version: cannot continue", finalVersion.String())
 		}
 	}
 
-	return blueprint.NewRawBlueprint(finalBlueprint), nil
+	return NewRawBlueprint(finalBlueprint), nil
 }
 
 // SetOverrider sets the InjectorOverrider.
