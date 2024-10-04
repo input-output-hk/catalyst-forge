@@ -69,11 +69,11 @@ func (cmd *command) Exec() error {
 	}
 
 	if err := scanner.Err(); err != nil {
-		fmt.Println("Error reading output:", err)
+		fmt.Println("error reading output:", err)
 	}
 
 	if err := execCmd.Wait(); err != nil {
-		fmt.Println("Error waiting for command:", err)
+		fmt.Println("error waiting for command:", err)
 	}
 
 	return nil
