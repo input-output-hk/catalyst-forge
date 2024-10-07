@@ -53,6 +53,11 @@ func (cmd *command) Exec() error {
 		return fmt.Errorf("only commands running with `sh` can be executed")
 	}
 
+	// check if the command is available
+	if _, err := exec.LookPath(executorCmd); err != nil {
+		return fmt.Errorf("command '%s' not found in PATH", executorCmd)
+	}
+
 	// start executing the command
 	execCmd := exec.Command(executorCmd, formatArgs(executorArgs, cmd.content)...)
 
