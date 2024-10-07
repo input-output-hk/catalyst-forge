@@ -15,6 +15,8 @@ import (
 	"github.com/yuin/goldmark"
 	"github.com/yuin/goldmark/ast"
 	"github.com/yuin/goldmark/text"
+
+	"github.com/input-output-hk/catalyst-forge/cli/pkg/run"
 )
 
 type DevX struct {
@@ -22,7 +24,7 @@ type DevX struct {
 	CommandName  string `arg:"" help:"Command to be executed."`
 }
 
-func (c *DevX) Run(logger *slog.Logger, global GlobalArgs) error {
+func (c *DevX) Run(ctx run.RunContext, logger *slog.Logger) error {
 	// read the file from the specified path
 	raw, err := os.ReadFile(c.MarkdownPath)
 	if err != nil {
