@@ -10,7 +10,8 @@ import (
 	"github.com/alecthomas/kong"
 	"github.com/charmbracelet/log"
 	"github.com/input-output-hk/catalyst-forge/cli/cmd/cmds"
-	"github.com/input-output-hk/catalyst-forge/lib/blueprint/schema"
+	"github.com/input-output-hk/catalyst-forge/cli/pkg/run"
+	"github.com/input-output-hk/catalyst-forge/lib/project/schema"
 )
 
 var version = "dev"
@@ -62,7 +63,12 @@ func Run() int {
 		handler.SetLevel(log.DebugLevel)
 	}
 
-	ctx.Bind(slog.New(handler), cli.GlobalArgs)
+	runctx := run.RunContext{
+		CI:      cli.GlobalArgs.CI,
+		Local:   cli.GlobalArgs.Local,
+		Verbose: cli.GlobalArgs.Verbose,
+	}
+	ctx.Bind(runctx, slog.New(handler))
 
 	err := ctx.Run()
 	if err != nil {

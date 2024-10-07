@@ -5,15 +5,16 @@ import (
 	"log/slog"
 
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/deployment"
-	"github.com/input-output-hk/catalyst-forge/cli/pkg/secrets"
+	"github.com/input-output-hk/catalyst-forge/cli/pkg/run"
+	"github.com/input-output-hk/catalyst-forge/lib/project/secrets"
 )
 
 type DeployCmd struct {
 	Project string `arg:"" help:"The path to the project to deploy."`
 }
 
-func (c *DeployCmd) Run(logger *slog.Logger, global GlobalArgs) error {
-	project, err := loadProject(global, c.Project, logger)
+func (c *DeployCmd) Run(ctx run.RunContext, logger *slog.Logger) error {
+	project, err := loadProject(ctx, c.Project, logger)
 	if err != nil {
 		return fmt.Errorf("could not load project: %w", err)
 	}

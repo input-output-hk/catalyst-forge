@@ -12,8 +12,8 @@ import (
 	"strings"
 
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/executor"
-	secretstore "github.com/input-output-hk/catalyst-forge/cli/pkg/secrets"
-	"github.com/input-output-hk/catalyst-forge/lib/blueprint/schema"
+	"github.com/input-output-hk/catalyst-forge/lib/project/schema"
+	secretstore "github.com/input-output-hk/catalyst-forge/lib/project/secrets"
 )
 
 // EarthlyExecutorOption is an option for configuring an EarthlyExecutor.

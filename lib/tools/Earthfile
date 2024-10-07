@@ -18,7 +18,7 @@ src:
 
     CACHE --persist --sharing shared /go
 
-    COPY --dir pkg .
+    COPY . .
     RUN go generate ./...
 
     SAVE ARTIFACT . src

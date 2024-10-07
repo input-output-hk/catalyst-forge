@@ -4,10 +4,10 @@ import (
 	"testing"
 
 	"cuelang.org/go/cue/cuecontext"
-	"github.com/input-output-hk/catalyst-forge/cli/pkg/project"
-	"github.com/input-output-hk/catalyst-forge/lib/blueprint/schema"
-	"github.com/input-output-hk/catalyst-forge/lib/tools/pkg/pointers"
-	"github.com/input-output-hk/catalyst-forge/lib/tools/pkg/testutils"
+	"github.com/input-output-hk/catalyst-forge/lib/project/project"
+	"github.com/input-output-hk/catalyst-forge/lib/project/schema"
+	"github.com/input-output-hk/catalyst-forge/lib/tools/pointers"
+	"github.com/input-output-hk/catalyst-forge/lib/tools/testutils"
 	"github.com/stretchr/testify/assert"
 )
 

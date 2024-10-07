@@ -8,9 +8,10 @@ import (
 	"sort"
 
 	"cuelang.org/go/cue"
-	"github.com/input-output-hk/catalyst-forge/cli/pkg/project"
+	"github.com/input-output-hk/catalyst-forge/cli/pkg/run"
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/scan"
-	"github.com/input-output-hk/catalyst-forge/lib/tools/pkg/walker"
+	"github.com/input-output-hk/catalyst-forge/lib/project/project"
+	"github.com/input-output-hk/catalyst-forge/lib/tools/walker"
 	"golang.org/x/exp/maps"
 )
 
@@ -23,11 +24,9 @@ type ScanCmd struct {
 	RootPath  string   `arg:"" help:"Root path to scan for Earthfiles and their respective targets."`
 }
 
-func (c *ScanCmd) Run(logger *slog.Logger, global GlobalArgs) error {
+func (c *ScanCmd) Run(ctx run.RunContext, logger *slog.Logger) error {
 	walker := walker.NewDefaultFSWalker(logger)
 	loader := project.NewDefaultProjectLoader(
-		false,
-		false,
 		project.GetDefaultRuntimes(logger),
 		logger,
 	)
@@ -100,7 +99,7 @@ func (c *ScanCmd) Run(logger *slog.Logger, global GlobalArgs) error {
 			}
 		}
 
-		if global.CI {
+		if ctx.CI {
 			enumerated := make(map[string][]string)
 			for filter, targetMap := range result {
 				enumerated[filter] = enumerate(targetMap)
@@ -119,7 +118,7 @@ func (c *ScanCmd) Run(logger *slog.Logger, global GlobalArgs) error {
 			}
 		}
 
-		if global.CI {
+		if ctx.CI {
 			enumerated := enumerate(result)
 			sort.Strings(enumerated)
 			printJson(enumerated, c.Pretty)
