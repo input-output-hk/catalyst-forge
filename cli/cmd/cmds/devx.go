@@ -25,5 +25,5 @@ func (c *DevX) Run(ctx run.RunContext, logger *slog.Logger) error {
 		return err
 	}
 
-	return prog.ProcessCmd(c.CommandName)
+	return prog.ProcessCmd(c.CommandName, logger)
 }

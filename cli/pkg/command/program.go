@@ -1,12 +1,14 @@
 package command
 
 import (
-	"bufio"
 	"fmt"
+	"log/slog"
 	"os/exec"
 	"regexp"
 	"strings"
 	"unicode"
+
+	"github.com/input-output-hk/catalyst-forge/cli/pkg/executor"
 )
 
 type Program struct {
@@ -25,43 +27,39 @@ type Command struct {
 	platform *string
 }
 
-func (cmd *Command) Exec() error {
+func (prog *Program) ProcessCmd(cmd string, logger *slog.Logger) error {
+	var foundCmd *Command
+	for _, v := range prog.groups {
+		if v.GetId() == cmd {
+			// TODO: should get the fisrt (most specified) command corresponding to the current host platform
+			foundCmd = &v.commands[0]
+		}
+	}
+
+	if foundCmd == nil {
+		return fmt.Errorf("command not found")
+	}
+
+	return foundCmd.exec(logger)
+}
+
+func (cmd *Command) exec(logger *slog.Logger) error {
 	executorCmd, executorArgs := getLangExecutor(cmd.lang)
 	if executorCmd == "" {
 		return fmt.Errorf("only commands running with `sh` can be executed")
 	}
 
-	// check if the command is available
 	if _, err := exec.LookPath(executorCmd); err != nil {
 		return fmt.Errorf("command '%s' not found in PATH", executorCmd)
 	}
 
-	// start executing the command
-	execCmd := exec.Command(executorCmd, formatArgs(executorArgs, cmd.content)...)
+	localExec := executor.NewLocalExecutor(
+		logger,
+		executor.WithRedirect(),
+	)
+	_, err := localExec.Execute(executorCmd, formatArgs(executorArgs, cmd.content))
 
-	stdout, err := execCmd.StdoutPipe()
-	if err != nil {
-		return err
-	}
-
-	if err := execCmd.Start(); err != nil {
-		return err
-	}
-
-	scanner := bufio.NewScanner(stdout)
-	for scanner.Scan() {
-		fmt.Println(scanner.Text())
-	}
-
-	if err := scanner.Err(); err != nil {
-		fmt.Println("error reading output:", err)
-	}
-
-	if err := execCmd.Wait(); err != nil {
-		fmt.Println("error waiting for command:", err)
-	}
-
-	return nil
+	return err
 }
 
 func (cg *CommandGroup) GetId() string {
@@ -81,20 +79,4 @@ func (cg *CommandGroup) GetId() string {
 	joined = re.ReplaceAllString(joined, "-")
 
 	return strings.Trim(joined, "-")
-}
-
-func (prog *Program) ProcessCmd(cmd string) error {
-	var foundCmd *Command
-	for _, v := range prog.groups {
-		if v.GetId() == cmd {
-			// TODO: should get the fisrt (most specified) command corresponding to the current host platform
-			foundCmd = &v.commands[0]
-		}
-	}
-
-	if foundCmd == nil {
-		return fmt.Errorf("command not found")
-	}
-
-	return foundCmd.Exec()
 }
