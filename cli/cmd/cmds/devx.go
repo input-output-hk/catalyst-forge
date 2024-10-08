@@ -15,18 +15,15 @@ type DevX struct {
 }
 
 func (c *DevX) Run(ctx run.RunContext, logger *slog.Logger) error {
-	// read the file from the specified path
 	raw, err := os.ReadFile(c.MarkdownPath)
 	if err != nil {
 		return fmt.Errorf("could not read file at %s: %v", c.MarkdownPath, err)
 	}
 
-	// parse the file with prepared options
 	prog, err := command.ExtractDevXMarkdown(raw)
 	if err != nil {
 		return err
 	}
 
-	// exec the command
 	return prog.ProcessCmd(c.CommandName)
 }
