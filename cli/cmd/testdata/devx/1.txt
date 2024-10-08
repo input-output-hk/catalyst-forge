@@ -1,0 +1,19 @@
+exec git init .
+
+exec forge devx ./Developer.md run-some-command
+cmp stdout expect.txt
+
+-- Developer.md --
+# My cool dev docs
+
+### Run Some Command !!
+
+``` sh
+  echo "should run this command (1)"
+```
+
+``` sh
+  echo "should not run this command (1)"
+```
+-- expect.txt --
+should run this command (1)
