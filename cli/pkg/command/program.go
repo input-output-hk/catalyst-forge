@@ -9,24 +9,24 @@ import (
 	"unicode"
 )
 
-type program struct {
+type Program struct {
 	name   string
-	groups []commandGroup
+	groups []CommandGroup
 }
 
-type commandGroup struct {
+type CommandGroup struct {
 	name     string
-	commands []command
+	commands []Command
 }
 
-type command struct {
+type Command struct {
 	content  string
 	lang     *string
 	platform *string
 }
 
-func (cmd *command) Exec() error {
-	executorCmd, executorArgs := GetLangExecutor(cmd.lang)
+func (cmd *Command) Exec() error {
+	executorCmd, executorArgs := getLangExecutor(cmd.lang)
 	if executorCmd == "" {
 		return fmt.Errorf("only commands running with `sh` can be executed")
 	}
@@ -37,7 +37,7 @@ func (cmd *command) Exec() error {
 	}
 
 	// start executing the command
-	execCmd := exec.Command(executorCmd, FormatArgs(executorArgs, cmd.content)...)
+	execCmd := exec.Command(executorCmd, formatArgs(executorArgs, cmd.content)...)
 
 	stdout, err := execCmd.StdoutPipe()
 	if err != nil {
@@ -64,7 +64,7 @@ func (cmd *command) Exec() error {
 	return nil
 }
 
-func (cg *commandGroup) GetId() string {
+func (cg *CommandGroup) GetId() string {
 	var result []rune
 
 	for _, char := range cg.name {
@@ -81,4 +81,20 @@ func (cg *commandGroup) GetId() string {
 	joined = re.ReplaceAllString(joined, "-")
 
 	return strings.Trim(joined, "-")
+}
+
+func (prog *Program) ProcessCmd(cmd string) error {
+	var foundCmd *Command
+	for _, v := range prog.groups {
+		if v.GetId() == cmd {
+			// TODO: should get the fisrt (most specified) command corresponding to the current host platform
+			foundCmd = &v.commands[0]
+		}
+	}
+
+	if foundCmd == nil {
+		return fmt.Errorf("command not found")
+	}
+
+	return foundCmd.Exec()
 }

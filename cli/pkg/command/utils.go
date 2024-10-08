@@ -3,7 +3,6 @@ package command
 import (
 	"bytes"
 	"errors"
-	"fmt"
 	"strings"
 
 	"github.com/yuin/goldmark"
@@ -11,26 +10,33 @@ import (
 	"github.com/yuin/goldmark/text"
 )
 
-func ExtractCommandMarkdown(data []byte) ([]commandGroup, error) {
+func ExtractDevXMarkdown(data []byte) (*Program, error) {
 	md := goldmark.New()
 	reader := text.NewReader(data)
 	doc := md.Parser().Parse(reader)
 
 	// store the command groups and commands
-	groups := []commandGroup{}
+	groups := []CommandGroup{}
+	var progName *string
 	var currentPlatform *string
 
 	// walk through the ast nodes
 	ast.Walk(doc, func(n ast.Node, entering bool) (ast.WalkStatus, error) {
 		// look up for headers
 		if heading, ok := n.(*ast.Heading); ok && entering {
+			if heading.Level == 1 {
+				title := string(heading.Text(data))
+
+				progName = &title
+			}
+
 			if heading.Level == 3 {
 				currentPlatform = nil
 				commandName := string(heading.Text(data))
 
-				groups = append(groups, commandGroup{
+				groups = append(groups, CommandGroup{
 					name:     commandName,
-					commands: []command{},
+					commands: []Command{},
 				})
 			}
 
@@ -51,7 +57,7 @@ func ExtractCommandMarkdown(data []byte) ([]commandGroup, error) {
 				buf.Write(line.Value(data))
 			}
 
-			groups[i].commands = append(groups[i].commands, command{
+			groups[i].commands = append(groups[i].commands, Command{
 				content:  buf.String(),
 				lang:     &lang,
 				platform: currentPlatform,
@@ -64,27 +70,19 @@ func ExtractCommandMarkdown(data []byte) ([]commandGroup, error) {
 	if len(groups) == 0 {
 		return nil, errors.New("no command groups found in the markdown")
 	}
-
-	return groups, nil
-}
-
-func ProcessCmd(list []commandGroup, cmd string) error {
-	var foundCmd *command
-	for _, v := range list {
-		if v.GetId() == cmd {
-			// TODO: should get the fisrt (most specified) command corresponding to the current host platform
-			foundCmd = &v.commands[0]
-		}
+	if progName == nil {
+		return nil, errors.New("no title found in the markdown")
 	}
 
-	if foundCmd == nil {
-		return fmt.Errorf("command not found")
+	prog := Program{
+		name:   *progName,
+		groups: groups,
 	}
 
-	return foundCmd.Exec()
+	return &prog, nil
 }
 
-func GetLangExecutor(lang *string) (string, []string) {
+func getLangExecutor(lang *string) (string, []string) {
 	if lang == nil {
 		return "", nil
 	}
@@ -97,7 +95,7 @@ func GetLangExecutor(lang *string) (string, []string) {
 	}
 }
 
-func FormatArgs(base []string, replacement string) []string {
+func formatArgs(base []string, replacement string) []string {
 	replaced := make([]string, len(base))
 
 	for i, str := range base {

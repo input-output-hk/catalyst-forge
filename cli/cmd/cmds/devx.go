@@ -5,6 +5,7 @@ import (
 	"log/slog"
 	"os"
 
+	"github.com/input-output-hk/catalyst-forge/cli/pkg/command"
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/run"
 )
 
@@ -21,11 +22,11 @@ func (c *DevX) Run(ctx run.RunContext, logger *slog.Logger) error {
 	}
 
 	// parse the file with prepared options
-	commandGroups, err := extractCommandGroups(raw)
+	prog, err := command.ExtractDevXMarkdown(raw)
 	if err != nil {
 		return err
 	}
 
 	// exec the command
-	return processCmd(commandGroups, c.CommandName)
+	return prog.ProcessCmd(c.CommandName)
 }
