@@ -37,27 +37,30 @@ func (prog *Program) ProcessCmd(cmd string, logger *slog.Logger) error {
 	}
 
 	if foundCmd == nil {
-		return fmt.Errorf("command not found")
+		return fmt.Errorf("command '%s' not found in markdown", cmd)
 	}
 
 	return foundCmd.exec(logger)
 }
 
 func (cmd *Command) exec(logger *slog.Logger) error {
-	executorCmd, executorArgs := getLangExecutor(cmd.lang)
-	if executorCmd == "" {
-		return fmt.Errorf("only commands running with `sh` can be executed")
+	if cmd.lang == nil {
+		return fmt.Errorf("command block without specified language")
 	}
 
-	if _, err := exec.LookPath(executorCmd); err != nil {
-		return fmt.Errorf("command '%s' not found in PATH", executorCmd)
+	lang, ok := NewDefaultLanguageExecutor().executor[*cmd.lang]
+	if !ok {
+		return fmt.Errorf("only commands running with `sh` can be executed")
+	}
+	if _, err := exec.LookPath(lang.GetExecutorCommand()); err != nil {
+		return fmt.Errorf("command '%s' is unavailable", lang.GetExecutorCommand())
 	}
 
 	localExec := executor.NewLocalExecutor(
 		logger,
 		executor.WithRedirect(),
 	)
-	_, err := localExec.Execute(executorCmd, formatArgs(executorArgs, cmd.content))
+	_, err := localExec.Execute(lang.GetExecutorCommand(), lang.GetExecutorArgs(cmd.content))
 
 	return err
 }

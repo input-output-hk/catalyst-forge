@@ -82,19 +82,6 @@ func ExtractDevXMarkdown(data []byte) (*Program, error) {
 	return &prog, nil
 }
 
-func getLangExecutor(lang *string) (string, []string) {
-	if lang == nil {
-		return "", nil
-	}
-
-	// TODO: get more supported commands
-	if *lang == "sh" {
-		return "sh", []string{"-c", "$"}
-	} else {
-		return "", nil
-	}
-}
-
 func formatArgs(base []string, replacement string) []string {
 	replaced := make([]string, len(base))
 
