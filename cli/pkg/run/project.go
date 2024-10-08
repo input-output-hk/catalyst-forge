@@ -80,6 +80,19 @@ func (p *ProjectRunner) generateOpts(target string) []earthly.EarthlyExecutorOpt
 
 func NewProjectRunner(
 	ctx RunContext,
+	project *project.Project,
+) ProjectRunner {
+	return ProjectRunner{
+		ctx:      ctx,
+		exectuor: ctx.Executor,
+		logger:   ctx.Logger,
+		project:  project,
+		store:    ctx.SecretStore,
+	}
+}
+
+func NewCustomProjectRunner(
+	ctx RunContext,
 	exec executor.Executor,
 	logger *slog.Logger,
 	project *project.Project,

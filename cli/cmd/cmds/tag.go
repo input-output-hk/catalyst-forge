@@ -2,7 +2,6 @@ package cmds
 
 import (
 	"fmt"
-	"log/slog"
 
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/run"
 	p "github.com/input-output-hk/catalyst-forge/lib/project/project"
@@ -19,14 +18,14 @@ type TagOutput struct {
 	Git       string `json:"git"`
 }
 
-func (c *TagCmd) Run(ctx run.RunContext, logger *slog.Logger) error {
-	project, err := loadProject(ctx, c.Project, logger)
+func (c *TagCmd) Run(ctx run.RunContext) error {
+	project, err := ctx.ProjectLoader.Load(c.Project)
 	if err != nil {
 		return err
 	}
 
 	var output TagOutput
-	tagger := p.NewTagger(&project, ctx.CI, c.Trim, logger)
+	tagger := p.NewTagger(&project, ctx.CI, c.Trim, ctx.Logger)
 
 	if project.Blueprint.Global.CI.Tagging.Strategy != "" {
 		tag, err := tagger.GenerateTag()

@@ -125,7 +125,6 @@ func (p *DefaultProjectLoader) Load(projectPath string) (Project, error) {
 
 // NewDefaultProjectLoader creates a new DefaultProjectLoader.
 func NewDefaultProjectLoader(
-	runtimes []RuntimeData,
 	logger *slog.Logger,
 ) DefaultProjectLoader {
 	if logger == nil {
@@ -139,7 +138,7 @@ func NewDefaultProjectLoader(
 		fs:              afero.NewOsFs(),
 		logger:          logger,
 		repoLoader:      &rl,
-		runtimes:        runtimes,
+		runtimes:        GetDefaultRuntimes(logger),
 	}
 }
 
