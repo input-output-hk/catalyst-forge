@@ -2,7 +2,6 @@ package cmds
 
 import (
 	"fmt"
-	"log/slog"
 	"path/filepath"
 	"regexp"
 	"sort"
@@ -10,8 +9,6 @@ import (
 	"cuelang.org/go/cue"
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/run"
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/scan"
-	"github.com/input-output-hk/catalyst-forge/lib/project/project"
-	"github.com/input-output-hk/catalyst-forge/lib/tools/walker"
 	"golang.org/x/exp/maps"
 )
 
@@ -24,13 +21,7 @@ type ScanCmd struct {
 	RootPath  string   `arg:"" help:"Root path to scan for Earthfiles and their respective targets."`
 }
 
-func (c *ScanCmd) Run(ctx run.RunContext, logger *slog.Logger) error {
-	walker := walker.NewDefaultFSWalker(logger)
-	loader := project.NewDefaultProjectLoader(
-		project.GetDefaultRuntimes(logger),
-		logger,
-	)
-
+func (c *ScanCmd) Run(ctx run.RunContext) error {
 	var rootPath string
 	if c.Absolute {
 		var err error
@@ -42,7 +33,7 @@ func (c *ScanCmd) Run(ctx run.RunContext, logger *slog.Logger) error {
 		rootPath = c.RootPath
 	}
 
-	projects, err := scan.ScanProjects(rootPath, &loader, &walker, logger)
+	projects, err := scan.ScanProjects(rootPath, ctx.ProjectLoader, &ctx.FSWalker, ctx.Logger)
 	if err != nil {
 		return err
 	}
@@ -94,7 +85,7 @@ func (c *ScanCmd) Run(ctx run.RunContext, logger *slog.Logger) error {
 						result[filter][path] = targets
 					}
 
-					logger.Debug("Filtered Earthfile", "path", path, "targets", targets)
+					ctx.Logger.Debug("Filtered Earthfile", "path", path, "targets", targets)
 				}
 			}
 		}

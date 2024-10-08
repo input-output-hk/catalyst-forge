@@ -1,8 +1,6 @@
 package cmds
 
 import (
-	"log/slog"
-
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/run"
 	"github.com/input-output-hk/catalyst-forge/cli/tui/ci"
 )
@@ -13,7 +11,7 @@ type CICmd struct {
 	Platform []string `short:"p" help:"Run the target with the given platform."`
 }
 
-func (c *CICmd) Run(ctx run.RunContext, logger *slog.Logger) error {
+func (c *CICmd) Run(ctx run.RunContext) error {
 	flags := RunCmd{
 		Artifact: c.Artifact,
 		Platform: c.Platform,
