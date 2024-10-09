@@ -26,6 +26,7 @@ var cli struct {
 	Deploy   cmds.DeployCmd   `cmd:"" help:"Deploy a project."`
 	Dump     cmds.DumpCmd     `cmd:"" help:"Dumps a project's blueprint to JSON."`
 	CI       cmds.CICmd       `cmd:"" help:"Simulate a CI run."`
+	Release  cmds.ReleaseCmd  `cmd:"" help:"Release a project."`
 	Run      cmds.RunCmd      `cmd:"" help:"Run an Earthly target."`
 	Scan     cmds.ScanCmd     `cmd:"" help:"Scan for Earthfiles."`
 	Secret   cmds.SecretCmd   `cmd:"" help:"Manage secrets."`

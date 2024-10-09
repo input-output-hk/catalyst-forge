@@ -24,4 +24,11 @@ project: {
 		}
 		test: retries: 3
 	}
+	release: {
+		docker: {
+			config: {}
+			target: "publish"
+			type:   "docker"
+		}
+	}
 }

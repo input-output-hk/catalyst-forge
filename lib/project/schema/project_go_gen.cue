@@ -19,12 +19,27 @@ package schema
 	// Deployment contains the configuration for the deployment of the project.
 	// +optional
 	deployment?: #Deployment @go(Deployment)
+
+	// Release contains the configuration for the release of the project.
+	release: {[string]: #Release} @go(Release,map[string]Release)
 }
 
 #ProjectCI: {
 	// Targets configures the individual targets that are run by the CI system.
 	// +optional
 	targets?: {[string]: #Target} @go(Targets,map[string]Target)
+}
+
+// Release contains the configuration for a project release.
+#Release: {
+	// Config contains the configuration to pass to the release.
+	config: _ @go(Config,any)
+
+	// Target is the Earthly target to run for this release.
+	target: string @go(Target)
+
+	// Type is the type of releaser to use.
+	type: string @go(Type)
 }
 
 // Target contains the configuration for a single target.
