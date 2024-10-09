@@ -1,6 +1,7 @@
 package project
 
 import (
+	"fmt"
 	"os"
 	"testing"
 
@@ -110,10 +111,15 @@ func TestTaggerGetGitTag(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			repo := initRepo(t, tt.tag)
-
+			var repo testutils.InMemRepo
 			if tt.ci {
-				_ = os.Setenv("GITHUB_REF", "refs/tags/"+tt.tag)
+				repo = testutils.InMemRepo{}
+				_ = os.Setenv("GITHUB_ACTIONS", "1")
+				_ = os.Setenv("GITHUB_REF", fmt.Sprintf("refs/tags/%s", tt.tag))
+			} else {
+				_ = os.Unsetenv("GITHUB_ACTIONS")
+				_ = os.Unsetenv("GITHUB_REF")
+				repo = initRepo(t, tt.tag)
 			}
 
 			bp := schema.Blueprint{
