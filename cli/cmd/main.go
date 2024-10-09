@@ -10,8 +10,12 @@ import (
 	"github.com/alecthomas/kong"
 	"github.com/charmbracelet/log"
 	"github.com/input-output-hk/catalyst-forge/cli/cmd/cmds"
+	"github.com/input-output-hk/catalyst-forge/cli/pkg/executor"
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/run"
+	"github.com/input-output-hk/catalyst-forge/lib/project/project"
 	"github.com/input-output-hk/catalyst-forge/lib/project/schema"
+	"github.com/input-output-hk/catalyst-forge/lib/project/secrets"
+	"github.com/input-output-hk/catalyst-forge/lib/tools/walker"
 )
 
 var version = "dev"
@@ -63,12 +67,22 @@ func Run() int {
 		handler.SetLevel(log.DebugLevel)
 	}
 
+	logger := slog.New(handler)
+	loader := project.NewDefaultProjectLoader(logger)
 	runctx := run.RunContext{
-		CI:      cli.GlobalArgs.CI,
-		Local:   cli.GlobalArgs.Local,
-		Verbose: cli.GlobalArgs.Verbose,
+		CI: cli.GlobalArgs.CI,
+		Executor: executor.NewLocalExecutor(
+			logger,
+			executor.WithRedirect(),
+		),
+		FSWalker:      walker.NewDefaultFSWalker(logger),
+		Local:         cli.GlobalArgs.Local,
+		Logger:        logger,
+		ProjectLoader: &loader,
+		SecretStore:   secrets.NewDefaultSecretStore(),
+		Verbose:       cli.GlobalArgs.Verbose,
 	}
-	ctx.Bind(runctx, slog.New(handler))
+	ctx.Bind(runctx)
 
 	err := ctx.Run()
 	if err != nil {

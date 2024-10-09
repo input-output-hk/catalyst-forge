@@ -67,6 +67,7 @@ func (c *CI) Load() error {
 	w := walker.NewDefaultFSWalker(nil)
 	var groups []*CIRunGroup
 
+	c.logger.Info("Scanning projects", "path", c.scanPath)
 	projects, err := scan.ScanProjects(c.scanPath, c.loader, &w, c.logger)
 	if err != nil {
 		return err
@@ -87,6 +88,7 @@ func (c *CI) Load() error {
 				})
 
 				for _, target := range targets {
+					c.logger.Info("Adding target", "project", project.Name, "target", target)
 					runs = append(runs, &CIRun{
 						Project: &project,
 						Status:  RunStatusIdle,
@@ -100,9 +102,12 @@ func (c *CI) Load() error {
 			}
 		}
 
-		groups = append(groups, &CIRunGroup{
-			Runs: runs,
-		})
+		if len(runs) > 0 {
+			groups = append(groups, &CIRunGroup{
+				logger: c.logger,
+				Runs:   runs,
+			})
+		}
 	}
 
 	c.groups = groups
@@ -162,7 +167,8 @@ func (c *CI) View() string {
 
 // CIRunGroup represents a group of CI runs.
 type CIRunGroup struct {
-	Runs []*CIRun
+	logger *slog.Logger
+	Runs   []*CIRun
 }
 
 // Run starts the CI run group.
@@ -226,7 +232,7 @@ func (c *CIRun) Run() tea.Msg {
 	c.logger.Info("Running target", "project", c.Project.Path, "target", c.Target)
 	c.Status = RunStatusRunning
 
-	runner := run.NewProjectRunner(
+	runner := run.NewCustomProjectRunner(
 		c.runctx,
 		executor.NewLocalExecutor(c.logger, executor.WithRedirectTo(&c.stdout, &c.stderr)),
 		c.logger,

@@ -123,10 +123,7 @@ func Run(scanPath string,
 		logger = slog.New(slog.NewTextHandler(io.Discard, nil))
 	}
 
-	loader := project.NewDefaultProjectLoader(
-		project.GetDefaultRuntimes(logger),
-		logger,
-	)
+	loader := project.NewDefaultProjectLoader(logger)
 
 	if scanPath == "" {
 		scanPath, err := findRoot(".", logger)
@@ -162,6 +159,7 @@ func Run(scanPath string,
 		loader:   &loader,
 		logger:   logger,
 		options:  opts,
+		runctx:   runctx,
 		scanPath: scanPath,
 	}
 

@@ -3,7 +3,6 @@ package cmds
 import (
 	"encoding/json"
 	"fmt"
-	"log/slog"
 	"strings"
 
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/run"
@@ -36,12 +35,12 @@ type SecretCmd struct {
 	Set *Set `cmd:"" help:"Set a secret."`
 }
 
-func (c *Get) Run(ctx run.RunContext, logger *slog.Logger) error {
+func (c *Get) Run(ctx run.RunContext) error {
 	var path, provider string
 	var maps map[string]string
 
 	if c.Project != "" {
-		project, err := loadProject(ctx, c.Project, logger)
+		project, err := ctx.ProjectLoader.Load(c.Project)
 		if err != nil {
 			return fmt.Errorf("could not load project: %w", err)
 		}
@@ -65,10 +64,9 @@ func (c *Get) Run(ctx run.RunContext, logger *slog.Logger) error {
 		maps = make(map[string]string)
 	}
 
-	store := secrets.NewDefaultSecretStore()
-	client, err := store.NewClient(logger, secrets.Provider(provider))
+	client, err := ctx.SecretStore.NewClient(ctx.Logger, secrets.Provider(provider))
 	if err != nil {
-		logger.Error("Unable to create secret client.", "err", err)
+		ctx.Logger.Error("Unable to create secret client.", "err", err)
 		return fmt.Errorf("unable to create secret client: %w", err)
 	}
 
@@ -124,11 +122,11 @@ func (c *Get) Run(ctx run.RunContext, logger *slog.Logger) error {
 	return nil
 }
 
-func (c *Set) Run(ctx run.RunContext, logger *slog.Logger) error {
+func (c *Set) Run(ctx run.RunContext) error {
 	var path, provider string
 
 	if c.Project != "" {
-		project, err := loadProject(ctx, c.Project, logger)
+		project, err := ctx.ProjectLoader.Load(c.Project)
 		if err != nil {
 			return fmt.Errorf("could not load project: %w", err)
 		}
@@ -145,10 +143,9 @@ func (c *Set) Run(ctx run.RunContext, logger *slog.Logger) error {
 		provider = c.Provider
 	}
 
-	store := secrets.NewDefaultSecretStore()
-	client, err := store.NewClient(logger, secrets.Provider(provider))
+	client, err := ctx.SecretStore.NewClient(ctx.Logger, secrets.Provider(provider))
 	if err != nil {
-		logger.Error("Unable to create secret client.", "err", err)
+		ctx.Logger.Error("Unable to create secret client.", "err", err)
 		return fmt.Errorf("unable to create secret client: %w", err)
 	}
 
@@ -174,11 +171,11 @@ func (c *Set) Run(ctx run.RunContext, logger *slog.Logger) error {
 
 	id, err := client.Set(path, string(data))
 	if err != nil {
-		logger.Error("could not set secret", "err", err)
+		ctx.Logger.Error("could not set secret", "err", err)
 		return err
 	}
 
-	logger.Info("Successfully set secret in AWS Secretsmanager.", "id", id)
+	ctx.Logger.Info("Successfully set secret in AWS Secretsmanager.", "id", id)
 
 	return nil
 }

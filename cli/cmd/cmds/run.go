@@ -1,11 +1,7 @@
 package cmds
 
 import (
-	"log/slog"
-
-	"github.com/input-output-hk/catalyst-forge/cli/pkg/executor"
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/run"
-	"github.com/input-output-hk/catalyst-forge/lib/project/secrets"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/earthfile"
 )
 
@@ -17,23 +13,19 @@ type RunCmd struct {
 	TargetArgs []string `arg:"" help:"Arguments to pass to the target." default:""`
 }
 
-func (c *RunCmd) Run(ctx run.RunContext, logger *slog.Logger) error {
+func (c *RunCmd) Run(ctx run.RunContext) error {
 	ref, err := earthfile.ParseEarthfileRef(c.Path)
 	if err != nil {
 		return err
 	}
 
-	project, err := loadProject(ctx, ref.Path, logger)
+	project, err := ctx.ProjectLoader.Load(ref.Path)
 	if err != nil {
 		return err
 	}
 
-	logger.Info("Executing Earthly target", "project", project.Path, "target", ref.Target)
-	localExec := executor.NewLocalExecutor(
-		logger,
-		executor.WithRedirect(),
-	)
-	runner := run.NewProjectRunner(ctx, localExec, logger, &project, secrets.NewDefaultSecretStore())
+	ctx.Logger.Info("Executing Earthly target", "project", project.Path, "target", ref.Target)
+	runner := run.NewProjectRunner(ctx, &project)
 	result, err := runner.RunTarget(
 		ref.Target,
 		generateOpts(c, ctx)...,

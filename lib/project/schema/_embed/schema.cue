@@ -1,68 +1,5 @@
 package schema
 
-#TagStrategy:     string
-#enumTagStrategy: #TagStrategyGitCommit
-#TagStrategyGitCommit: #TagStrategy & {
-	"commit"
-}
-
-// Blueprint contains the schema for blueprint files.
-#Blueprint: {
-	// Version defines the version of the blueprint schema being used.
-	version: =~"^\\d+\\.\\d+" @go(Version)
-
-	// Global contains the global configuration for the blueprint.
-	// +optional
-	global?: #Global @go(Global)
-
-	// Project contains the configuration for the project.
-	// +optional
-	project?: #Project @go(Project)
-}
-
-// Deployment contains the configuration for the deployment of the project.
-#Deployment: {
-	// Environment contains the environment to deploy the module to.
-	environment: (_ | *"dev") & {
-		string
-	} @go(Environment)
-
-	// Modules contains the configuration for the deployment modules for the project.
-	// +optional
-	modules?: null | #DeploymentModules @go(Modules,*DeploymentModules)
-}
-
-// Deployment contains the configuration for the deployment of the project.
-#DeploymentModules: {
-	// Main contains the configuration for the main deployment module.
-	main: #Module @go(Main)
-
-	// Support contains the configuration for the support deployment modules.
-	// +optional
-	support?: {
-		[string]: #Module
-	} @go(Support,map[string]Module)
-}
-
-// Module contains the configuration for a deployment module.
-#Module: {
-	// Container contains the name of the container holding the deployment code.
-	// Defaults to <module_name>-deployment). For the main module, <module_name> is the project name.
-	// +optional
-	container?: null | string @go(Container,*string)
-
-	// Namespace contains the namespace to deploy the module to.
-	namespace: (_ | *"default") & {
-		string
-	} @go(Namespace)
-
-	// Values contains the values to pass to the deployment module.
-	values: _ @go(Values,any)
-
-	// Version contains the version of the deployment module.
-	version: string @go(Version)
-}
-
 // Global contains the global configuration for the blueprint.
 #Global: {
 	// CI contains the configuration for the CI system.
@@ -115,32 +52,6 @@ package schema
 
 	// URL contains the URL of the deployment repository.
 	url: string @go(Url)
-}
-
-// Project contains the configuration for the project.
-#Project: {
-	// Name contains the name of the project.
-	name: =~"^[a-z][a-z0-9_-]*$" @go(Name)
-
-	// Container is the name that the container will be built as.
-	container: (_ | *name) & {
-		string
-	} @go(Container)
-
-	// CI contains the configuration for the CI system.
-	// +optional
-	ci?: #ProjectCI @go(CI)
-
-	// Deployment contains the configuration for the deployment of the project.
-	// +optional
-	deployment?: #Deployment @go(Deployment)
-}
-#ProjectCI: {
-	// Targets configures the individual targets that are run by the CI system.
-	// +optional
-	targets?: {
-		[string]: #Target
-	} @go(Targets,map[string]Target)
 }
 
 // Providers contains the configuration for the providers being used by the CI system.
@@ -210,43 +121,95 @@ package schema
 	// +optional
 	credentials?: null | #Secret @go(Credentials,*Secret)
 }
-
-// ProviderGithub contains the configuration for the Github provider.
-#ProviderGithub: {
-	// Credentials contains the credentials to use for Github
-	//  +optional
-	credentials?: #Secret @go(Credentials)
-
-	// Registry contains the Github registry to use.
-	// +optional
-	registry?: null | string @go(Registry,*string)
+#TagStrategy:     string
+#enumTagStrategy: #TagStrategyGitCommit
+#TagStrategyGitCommit: #TagStrategy & {
+	"commit"
 }
 
-// Secret contains the secret provider and a list of mappings
-#Secret: {
-	// Maps contains mappings for Earthly secret names to JSON keys in the secret.
-	// Mutually exclusive with Name.
+// Blueprint contains the schema for blueprint files.
+#Blueprint: {
+	// Version defines the version of the blueprint schema being used.
+	version: =~"^\\d+\\.\\d+" @go(Version)
+
+	// Global contains the global configuration for the blueprint.
 	// +optional
-	maps?: {
-		[string]: string
-	} @go(Maps,map[string]string)
+	global?: #Global @go(Global)
 
-	// Name contains the name of the Earthly secret to use.
-	// Mutually exclusive with Maps.
+	// Project contains the configuration for the project.
 	// +optional
-	name?: null | string @go(Name,*string)
+	project?: #Project @go(Project)
+}
 
-	// Optional determines if the secret is optional.
+// Deployment contains the configuration for the deployment of the project.
+#Deployment: {
+	// Environment contains the environment to deploy the module to.
+	environment: (_ | *"dev") & {
+		string
+	} @go(Environment)
+
+	// Modules contains the configuration for the deployment modules for the project.
 	// +optional
-	optional?: null | bool @go(Optional,*bool)
+	modules?: null | #DeploymentModules @go(Modules,*DeploymentModules)
+}
 
-	// Path contains the path to the secret.
-	path: string @go(Path)
+// Deployment contains the configuration for the deployment of the project.
+#DeploymentModules: {
+	// Main contains the configuration for the main deployment module.
+	main: #Module @go(Main)
 
-	// Provider contains the provider to use for the secret.
-	provider: string @go(Provider)
+	// Support contains the configuration for the support deployment modules.
+	// +optional
+	support?: {
+		[string]: #Module
+	} @go(Support,map[string]Module)
 }
 version: "1.0"
+
+// Module contains the configuration for a deployment module.
+#Module: {
+	// Container contains the name of the container holding the deployment code.
+	// Defaults to <module_name>-deployment). For the main module, <module_name> is the project name.
+	// +optional
+	container?: null | string @go(Container,*string)
+
+	// Namespace contains the namespace to deploy the module to.
+	namespace: (_ | *"default") & {
+		string
+	} @go(Namespace)
+
+	// Values contains the values to pass to the deployment module.
+	values: _ @go(Values,any)
+
+	// Version contains the version of the deployment module.
+	version: string @go(Version)
+}
+
+// Project contains the configuration for the project.
+#Project: {
+	// Name contains the name of the project.
+	name: =~"^[a-z][a-z0-9_-]*$" @go(Name)
+
+	// Container is the name that the container will be built as.
+	container: (_ | *name) & {
+		string
+	} @go(Container)
+
+	// CI contains the configuration for the CI system.
+	// +optional
+	ci?: #ProjectCI @go(CI)
+
+	// Deployment contains the configuration for the deployment of the project.
+	// +optional
+	deployment?: #Deployment @go(Deployment)
+}
+#ProjectCI: {
+	// Targets configures the individual targets that are run by the CI system.
+	// +optional
+	targets?: {
+		[string]: #Target
+	} @go(Targets,map[string]Target)
+}
 #Tagging: {
 	// Aliases contains the aliases to use for git tags.
 	// +optional
@@ -283,4 +246,40 @@ version: "1.0"
 	// Secrets contains the secrets to pass to the target.
 	// +optional
 	secrets?: [...#Secret] @go(Secrets,[]Secret)
+}
+
+// ProviderGithub contains the configuration for the Github provider.
+#ProviderGithub: {
+	// Credentials contains the credentials to use for Github
+	//  +optional
+	credentials?: #Secret @go(Credentials)
+
+	// Registry contains the Github registry to use.
+	// +optional
+	registry?: null | string @go(Registry,*string)
+}
+
+// Secret contains the secret provider and a list of mappings
+#Secret: {
+	// Maps contains mappings for Earthly secret names to JSON keys in the secret.
+	// Mutually exclusive with Name.
+	// +optional
+	maps?: {
+		[string]: string
+	} @go(Maps,map[string]string)
+
+	// Name contains the name of the Earthly secret to use.
+	// Mutually exclusive with Maps.
+	// +optional
+	name?: null | string @go(Name,*string)
+
+	// Optional determines if the secret is optional.
+	// +optional
+	optional?: null | bool @go(Optional,*bool)
+
+	// Path contains the path to the secret.
+	path: string @go(Path)
+
+	// Provider contains the provider to use for the secret.
+	provider: string @go(Provider)
 }
