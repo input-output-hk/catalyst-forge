@@ -10,7 +10,6 @@ import (
 	"github.com/alecthomas/kong"
 	"github.com/charmbracelet/log"
 	"github.com/input-output-hk/catalyst-forge/cli/cmd/cmds"
-	"github.com/input-output-hk/catalyst-forge/cli/pkg/executor"
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/run"
 	"github.com/input-output-hk/catalyst-forge/lib/project/project"
 	"github.com/input-output-hk/catalyst-forge/lib/project/schema"
@@ -70,11 +69,7 @@ func Run() int {
 	logger := slog.New(handler)
 	loader := project.NewDefaultProjectLoader(logger)
 	runctx := run.RunContext{
-		CI: cli.GlobalArgs.CI,
-		Executor: executor.NewLocalExecutor(
-			logger,
-			executor.WithRedirect(),
-		),
+		CI:            cli.GlobalArgs.CI,
 		FSWalker:      walker.NewDefaultFSWalker(logger),
 		Local:         cli.GlobalArgs.Local,
 		Logger:        logger,

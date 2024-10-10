@@ -82,9 +82,14 @@ func NewProjectRunner(
 	ctx RunContext,
 	project *project.Project,
 ) ProjectRunner {
+	e := executor.NewLocalExecutor(
+		ctx.Logger,
+		executor.WithRedirect(),
+	)
+
 	return ProjectRunner{
 		ctx:      ctx,
-		exectuor: ctx.Executor,
+		exectuor: e,
 		logger:   ctx.Logger,
 		project:  project,
 		store:    ctx.SecretStore,

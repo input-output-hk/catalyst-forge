@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/earthly"
+	"github.com/input-output-hk/catalyst-forge/cli/pkg/executor"
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/run"
 	"github.com/input-output-hk/catalyst-forge/lib/project/project"
 	"github.com/input-output-hk/catalyst-forge/lib/project/schema"
@@ -20,6 +21,7 @@ const (
 
 type DockerReleaser struct {
 	ctx     run.RunContext
+	docker  executor.WrappedExecuter
 	logger  *slog.Logger
 	project project.Project
 	release schema.Release
@@ -44,8 +46,10 @@ func (r *DockerReleaser) Release() error {
 // imageExists checks if the image exists in the Docker daemon.
 func (r *DockerReleaser) imageExists(image string) bool {
 	r.logger.Info("Validating image exists", "image", image)
-	cmd := exec.Command(DOCKER_BINARY, "inspect", image)
-	if err := cmd.Run(); err != nil {
+	out, err := r.docker.Execute("inspect", image)
+	if err != nil {
+		r.logger.Error("Failed to inspect image", "image", image, "error", err)
+		r.logger.Error(string(out))
 		return false
 	}
 
@@ -96,8 +100,10 @@ func (r *DockerReleaser) validateImages() error {
 
 // NewDockerReleaser creates a new Docker releaser.
 func NewDockerReleaser(ctx run.RunContext, project project.Project, release schema.Release) (*DockerReleaser, error) {
+	docker := executor.NewLocalWrappedExecutor(executor.NewLocalExecutor(ctx.Logger), "docker")
 	return &DockerReleaser{
 		ctx:     ctx,
+		docker:  docker,
 		logger:  ctx.Logger,
 		project: project,
 		release: release,
