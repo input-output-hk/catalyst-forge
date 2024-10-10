@@ -6,10 +6,22 @@ import (
 	"log/slog"
 	"strings"
 
-	strats "github.com/input-output-hk/catalyst-forge/lib/project/project/tag"
+	strats "github.com/input-output-hk/catalyst-forge/lib/project/project/strategies"
 	"github.com/input-output-hk/catalyst-forge/lib/project/schema"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/git"
 )
+
+// MonoTag represents a monorepo tag.
+type MonoTag struct {
+	Project string
+	Tag     string
+}
+
+// TagInfo represents tag information.
+type TagInfo struct {
+	Generated string `json:"generated"`
+	Git       string `json:"git"`
+}
 
 // Tagger parses tag information from projects.
 type Tagger struct {
@@ -17,6 +29,24 @@ type Tagger struct {
 	logger  *slog.Logger
 	project *Project
 	trim    bool
+}
+
+// GetTagInfo returns tag information for the project.
+func (t *Tagger) GetTagInfo() (TagInfo, error) {
+	gen, err := t.GenerateTag()
+	if err != nil {
+		return TagInfo{}, fmt.Errorf("failed to generate tag: %w", err)
+	}
+
+	git, err := t.GetGitTag()
+	if err != nil {
+		return TagInfo{}, fmt.Errorf("failed to get git tag: %w", err)
+	}
+
+	return TagInfo{
+		Generated: gen,
+		Git:       git,
+	}, nil
 }
 
 // GenerateTag generates a tag for the project based on the tagging strategy.
