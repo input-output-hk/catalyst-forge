@@ -25,6 +25,7 @@ type DockerReleaser struct {
 	logger  *slog.Logger
 	project project.Project
 	release schema.Release
+	runner  run.ProjectRunner
 }
 
 func (r *DockerReleaser) Release() error {
@@ -69,8 +70,7 @@ func (r *DockerReleaser) getPlatforms() []string {
 
 // run runs the release target.
 func (r *DockerReleaser) run() error {
-	runner := run.NewProjectRunner(r.ctx, &r.project)
-	_, err := runner.RunTarget(
+	_, err := r.runner.RunTarget(
 		r.release.Target,
 		earthly.WithTargetArgs("--container", CONTAINER_NAME, "--tag", TAG_NAME),
 	)
@@ -101,11 +101,13 @@ func (r *DockerReleaser) validateImages() error {
 // NewDockerReleaser creates a new Docker releaser.
 func NewDockerReleaser(ctx run.RunContext, project project.Project, release schema.Release) (*DockerReleaser, error) {
 	docker := executor.NewLocalWrappedExecutor(executor.NewLocalExecutor(ctx.Logger), "docker")
+	runner := run.NewDefaultProjectRunner(ctx, &project)
 	return &DockerReleaser{
 		ctx:     ctx,
 		docker:  docker,
 		logger:  ctx.Logger,
 		project: project,
 		release: release,
+		runner:  &runner,
 	}, nil
 }

@@ -10,7 +10,13 @@ import (
 	"github.com/input-output-hk/catalyst-forge/lib/project/secrets"
 )
 
-type ProjectRunner struct {
+//go:generate go run github.com/matryer/moq@latest -pkg mocks -out mocks/runner.go . ProjectRunner
+
+type ProjectRunner interface {
+	RunTarget(target string, opts ...earthly.EarthlyExecutorOption) (map[string]earthly.EarthlyExecutionResult, error)
+}
+
+type DefaultProjectRunner struct {
 	ctx      RunContext
 	exectuor executor.Executor
 	logger   *slog.Logger
@@ -19,7 +25,7 @@ type ProjectRunner struct {
 }
 
 // RunTarget runs the given Earthly target.
-func (p *ProjectRunner) RunTarget(
+func (p *DefaultProjectRunner) RunTarget(
 	target string,
 	opts ...earthly.EarthlyExecutorOption,
 ) (map[string]earthly.EarthlyExecutionResult, error) {
@@ -34,7 +40,7 @@ func (p *ProjectRunner) RunTarget(
 }
 
 // generateOpts generates the options for the Earthly executor.
-func (p *ProjectRunner) generateOpts(target string) []earthly.EarthlyExecutorOption {
+func (p *DefaultProjectRunner) generateOpts(target string) []earthly.EarthlyExecutorOption {
 	var opts []earthly.EarthlyExecutorOption
 
 	if _, ok := p.project.Blueprint.Project.CI.Targets[target]; ok {
@@ -78,16 +84,16 @@ func (p *ProjectRunner) generateOpts(target string) []earthly.EarthlyExecutorOpt
 	return opts
 }
 
-func NewProjectRunner(
+func NewDefaultProjectRunner(
 	ctx RunContext,
 	project *project.Project,
-) ProjectRunner {
+) DefaultProjectRunner {
 	e := executor.NewLocalExecutor(
 		ctx.Logger,
 		executor.WithRedirect(),
 	)
 
-	return ProjectRunner{
+	return DefaultProjectRunner{
 		ctx:      ctx,
 		exectuor: e,
 		logger:   ctx.Logger,
@@ -96,14 +102,14 @@ func NewProjectRunner(
 	}
 }
 
-func NewCustomProjectRunner(
+func NewCustomDefaultProjectRunner(
 	ctx RunContext,
 	exec executor.Executor,
 	logger *slog.Logger,
 	project *project.Project,
 	store secrets.SecretStore,
-) ProjectRunner {
-	return ProjectRunner{
+) DefaultProjectRunner {
+	return DefaultProjectRunner{
 		ctx:      ctx,
 		exectuor: exec,
 		logger:   logger,

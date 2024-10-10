@@ -25,7 +25,7 @@ func (c *RunCmd) Run(ctx run.RunContext) error {
 	}
 
 	ctx.Logger.Info("Executing Earthly target", "project", project.Path, "target", ref.Target)
-	runner := run.NewProjectRunner(ctx, &project)
+	runner := run.NewDefaultProjectRunner(ctx, &project)
 	result, err := runner.RunTarget(
 		ref.Target,
 		generateOpts(c, ctx)...,
