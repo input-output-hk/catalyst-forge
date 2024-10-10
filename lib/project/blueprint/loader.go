@@ -12,10 +12,8 @@ import (
 	"cuelang.org/go/cue/errors"
 	"github.com/Masterminds/semver/v3"
 	"github.com/input-output-hk/catalyst-forge/lib/project/blueprint/defaults"
-	"github.com/input-output-hk/catalyst-forge/lib/project/injector"
 	"github.com/input-output-hk/catalyst-forge/lib/project/schema"
 	"github.com/input-output-hk/catalyst-forge/lib/project/version"
-	cuetools "github.com/input-output-hk/catalyst-forge/lib/tools/cue"
 	"github.com/spf13/afero"
 )
 
@@ -27,25 +25,16 @@ var (
 	ErrVersionNotFound = errors.New("version not found")
 )
 
-// InjectorOverrider is a function that receives a CUE value and returns a map
-// of environment variables to override
-type InjectorOverrider func(value cue.Value) map[string]string
-
 // BlueprintLoader is an interface for loading blueprints.
 type BlueprintLoader interface {
 	// Load loads the blueprint.
 	Load(projectPath, gitRootPath string) (RawBlueprint, error)
-
-	// SetOverrider sets the InjectorOverrider.
-	SetOverrider(overrider InjectorOverrider)
 }
 
 // DefaultBlueprintLoader is the default implementation of the BlueprintLoader
 type DefaultBlueprintLoader struct {
-	fs        afero.Fs
-	injector  injector.Injector
-	logger    *slog.Logger
-	overrider InjectorOverrider
+	fs     afero.Fs
+	logger *slog.Logger
 }
 
 func (b *DefaultBlueprintLoader) Load(projectPath, gitRootPath string) (RawBlueprint, error) {
@@ -92,7 +81,7 @@ func (b *DefaultBlueprintLoader) Load(projectPath, gitRootPath string) (RawBluep
 	if len(files) > 0 {
 		for path, data := range files {
 			b.logger.Info("Loading blueprint file", "path", path)
-			bp, err := NewBlueprintFile(ctx, path, data, b.injector)
+			bp, err := NewBlueprintFile(ctx, path, data)
 			if err != nil {
 				b.logger.Error("Failed to load blueprint file", "path", path, "error", err)
 				return RawBlueprint{}, fmt.Errorf("failed to load blueprint file: %w", err)
@@ -114,13 +103,6 @@ func (b *DefaultBlueprintLoader) Load(projectPath, gitRootPath string) (RawBluep
 
 		finalVersion = bps.Version()
 		userBlueprint = userBlueprint.FillPath(cue.ParsePath("version"), finalVersion.String())
-
-		var overrides map[string]string
-		if b.overrider != nil {
-			overrides = b.overrider(userBlueprint)
-		}
-
-		userBlueprint = b.injector.InjectEnv(userBlueprint, overrides)
 		finalBlueprint = schema.Unify(userBlueprint)
 	} else {
 		b.logger.Warn("No blueprint files found, using default values")
@@ -138,11 +120,6 @@ func (b *DefaultBlueprintLoader) Load(projectPath, gitRootPath string) (RawBluep
 		}
 	}
 
-	if err := cuetools.Validate(finalBlueprint, cue.Concrete(true)); err != nil {
-		b.logger.Error("Failed to validate full blueprint", "error", err)
-		return RawBlueprint{}, err
-	}
-
 	if err := version.ValidateVersions(finalVersion, schema.Version); err != nil {
 		if errors.Is(err, version.ErrMinorMismatch) {
 			b.logger.Warn("The minor version of the blueprint is greater than the supported version", "version", finalVersion)
@@ -152,25 +129,18 @@ func (b *DefaultBlueprintLoader) Load(projectPath, gitRootPath string) (RawBluep
 		}
 	}
 
-	return NewRawBlueprint(finalBlueprint), nil
-}
-
-// SetOverrider sets the InjectorOverrider.
-func (b *DefaultBlueprintLoader) SetOverrider(overrider InjectorOverrider) {
-	b.overrider = overrider
+	return NewRawBlueprint(ctx, finalBlueprint), nil
 }
 
 // NewDefaultBlueprintLoader creates a new DefaultBlueprintLoader.
-func NewDefaultBlueprintLoader(overrider InjectorOverrider, logger *slog.Logger) DefaultBlueprintLoader {
+func NewDefaultBlueprintLoader(logger *slog.Logger) DefaultBlueprintLoader {
 	if logger == nil {
 		logger = slog.New(slog.NewTextHandler(io.Discard, nil))
 	}
 
 	return DefaultBlueprintLoader{
-		fs:        afero.NewOsFs(),
-		injector:  injector.NewDefaultInjector(logger),
-		logger:    logger,
-		overrider: overrider,
+		fs:     afero.NewOsFs(),
+		logger: logger,
 	}
 }
 
@@ -178,8 +148,6 @@ func NewDefaultBlueprintLoader(overrider InjectorOverrider, logger *slog.Logger)
 // dependencies.
 func NewCustomBlueprintLoader(
 	fs afero.Fs,
-	injector injector.Injector,
-	overrider InjectorOverrider,
 	logger *slog.Logger,
 ) DefaultBlueprintLoader {
 	if logger == nil {
@@ -187,9 +155,7 @@ func NewCustomBlueprintLoader(
 	}
 
 	return DefaultBlueprintLoader{
-		fs:        fs,
-		injector:  injector,
-		logger:    logger,
-		overrider: overrider,
+		fs:     fs,
+		logger: logger,
 	}
 }

@@ -12,11 +12,6 @@ import (
 	"github.com/input-output-hk/catalyst-forge/lib/tools/earthfile"
 )
 
-type TagInfo struct {
-	Generated string `json:"generated"`
-	Git       string `json:"git"`
-}
-
 // Project represents a project
 type Project struct {
 	Blueprint    schema.Blueprint
@@ -25,7 +20,7 @@ type Project struct {
 	Path         string
 	Repo         *gg.Repository
 	RepoRoot     string
-	Tags         TagInfo
+	TagInfo      TagInfo
 	logger       *slog.Logger
 	rawBlueprint blueprint.RawBlueprint
 }

@@ -4,7 +4,7 @@ project: {
 	ci: targets: {
 		publish: {
 			args: {
-				version: string | *"dev" @env(name="GIT_TAG",type="string")
+				version: string | *"dev" @forge(name="GIT_TAG")
 			}
 			platforms: [
 				"linux/amd64",
@@ -13,7 +13,7 @@ project: {
 		}
 		release: {
 			args: {
-				version: string | *"dev" @env(name="GIT_TAG",type="string")
+				version: string | *"dev" @forge(name="GIT_TAG")
 			}
 			platforms: [
 				"linux/amd64",

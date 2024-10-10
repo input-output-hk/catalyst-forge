@@ -3,11 +3,18 @@ package blueprint
 import (
 	"cuelang.org/go/cue"
 	"github.com/input-output-hk/catalyst-forge/lib/project/schema"
+	tools "github.com/input-output-hk/catalyst-forge/lib/tools/cue"
 )
 
 // RawBlueprint represents a raw (undecoded) blueprint.
 type RawBlueprint struct {
+	ctx   *cue.Context
 	value cue.Value
+}
+
+// Context returns the CUE context used to create the raw blueprint.
+func (r RawBlueprint) Context() *cue.Context {
+	return r.ctx
 }
 
 // Decode decodes the raw blueprint into a schema.Blueprint.
@@ -41,7 +48,15 @@ func (r RawBlueprint) Value() cue.Value {
 	return r.value
 }
 
+// Validate validates the raw blueprint is valid with concrete values.
+func (r RawBlueprint) Validate() error {
+	return tools.Validate(r.value, cue.Concrete(true))
+}
+
 // NewRawBlueprint creates a new raw blueprint.
-func NewRawBlueprint(v cue.Value) RawBlueprint {
-	return RawBlueprint{value: v}
+func NewRawBlueprint(ctx *cue.Context, v cue.Value) RawBlueprint {
+	return RawBlueprint{
+		ctx:   ctx,
+		value: v,
+	}
 }

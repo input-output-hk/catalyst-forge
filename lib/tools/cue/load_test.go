@@ -62,7 +62,7 @@ func TestValidate(t *testing.T) {
 			name:        "invalid value",
 			v:           ctx.CompileString("{a: 1}").FillPath(cue.ParsePath("a"), fmt.Errorf("invalid value")),
 			expectErr:   true,
-			expectedErr: "failed to validate: invalid value",
+			expectedErr: "invalid value",
 		},
 	}
 

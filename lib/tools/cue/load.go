@@ -1,8 +1,6 @@
 package cue
 
 import (
-	"fmt"
-
 	"cuelang.org/go/cue"
 	"cuelang.org/go/cue/errors"
 )
@@ -33,7 +31,7 @@ func Validate(c cue.Value, opts ...cue.Option) error {
 				errStr += e.Error() + "\n"
 			}
 		}
-		return fmt.Errorf("failed to validate: %s", errStr)
+		return errors.New(errStr)
 	}
 
 	return nil
