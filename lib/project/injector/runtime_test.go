@@ -43,8 +43,8 @@ func TestBlueprintRuntimeInjectorInject(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			injector := NewBlueprintRuntimeInjector(tt.data, testutils.NewNoopLogger())
-			bp := blueprint.NewRawBlueprint(ctx, tt.in)
+			injector := NewBlueprintRuntimeInjector(ctx, tt.data, testutils.NewNoopLogger())
+			bp := blueprint.NewRawBlueprint(tt.in)
 			out := injector.Inject(bp)
 
 			tt.validate(t, out.Value())

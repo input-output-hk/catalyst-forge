@@ -48,8 +48,9 @@ func TestGitRuntimeLoad(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			logger := testutils.NewNoopLogger()
 			project := &Project{
+				ctx:          ctx,
 				TagInfo:      tt.tagInfo,
-				rawBlueprint: blueprint.NewRawBlueprint(ctx, ctx.CompileString("{}")),
+				rawBlueprint: blueprint.NewRawBlueprint(ctx.CompileString("{}")),
 			}
 
 			runtime := NewGitRuntime(logger)

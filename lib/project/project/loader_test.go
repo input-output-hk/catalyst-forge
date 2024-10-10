@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"cuelang.org/go/cue/cuecontext"
 	gg "github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing/cache"
 	"github.com/go-git/go-git/v5/storage/filesystem"
@@ -18,7 +19,7 @@ import (
 )
 
 func TestDefaultProjectLoaderLoad(t *testing.T) {
-	//ctx := cuecontext.New()
+	ctx := cuecontext.New()
 
 	earthfile := `
 VERSION 0.8
@@ -87,7 +88,7 @@ project: {
 `,
 			},
 			injectors: []injector.BlueprintInjector{
-				injector.NewBlueprintEnvInjector(testutils.NewNoopLogger()),
+				injector.NewBlueprintEnvInjector(ctx, testutils.NewNoopLogger()),
 			},
 			runtimes: []RuntimeData{},
 			env: map[string]string{
@@ -115,7 +116,7 @@ project: {
 `,
 			},
 			injectors: []injector.BlueprintInjector{
-				injector.NewBlueprintEnvInjector(testutils.NewNoopLogger()),
+				injector.NewBlueprintEnvInjector(ctx, testutils.NewNoopLogger()),
 			},
 			runtimes: []RuntimeData{
 				NewGitRuntime(testutils.NewNoopLogger()),
@@ -263,9 +264,10 @@ project: {
 				repo.Tag(t, head.Hash(), "v0.1.0", "Initial tag")
 			}
 
-			bpLoader := blueprint.NewCustomBlueprintLoader(tt.fs, logger)
+			bpLoader := blueprint.NewCustomBlueprintLoader(ctx, tt.fs, logger)
 			loader := DefaultProjectLoader{
 				blueprintLoader: &bpLoader,
+				ctx:             ctx,
 				fs:              tt.fs,
 				injectors:       tt.injectors,
 				logger:          logger,

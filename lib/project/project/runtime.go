@@ -21,11 +21,10 @@ func (g *GitRuntime) Load(project *Project) map[string]cue.Value {
 	g.logger.Debug("Loading git runtime data")
 
 	data := make(map[string]cue.Value)
-	ctx := project.Raw().Context()
 
-	data["GIT_TAG_GENERATED"] = ctx.CompileString(fmt.Sprintf(`"%s"`, project.TagInfo.Generated))
+	data["GIT_TAG_GENERATED"] = project.ctx.CompileString(fmt.Sprintf(`"%s"`, project.TagInfo.Generated))
 	if project.TagInfo.Git != "" {
-		v := ctx.CompileString(fmt.Sprintf(`"%s"`, project.TagInfo.Git))
+		v := project.ctx.CompileString(fmt.Sprintf(`"%s"`, project.TagInfo.Git))
 		data["GIT_TAG"] = v
 		data["GIT_IMAGE_TAG"] = v
 	} else {

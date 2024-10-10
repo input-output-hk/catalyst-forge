@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 
 	"cuelang.org/go/cue"
+	"cuelang.org/go/cue/cuecontext"
 	"github.com/input-output-hk/catalyst-forge/lib/project/blueprint"
 	"github.com/input-output-hk/catalyst-forge/lib/project/injector"
 	"github.com/input-output-hk/catalyst-forge/lib/project/schema"
@@ -28,6 +29,7 @@ type ProjectLoader interface {
 // DefaultProjectLoader is the default implementation of the ProjectLoader.
 type DefaultProjectLoader struct {
 	blueprintLoader blueprint.BlueprintLoader
+	ctx             *cue.Context
 	fs              afero.Fs
 	injectors       []injector.BlueprintInjector
 	logger          *slog.Logger
@@ -98,6 +100,7 @@ func (p *DefaultProjectLoader) Load(projectPath string) (Project, error) {
 						},
 					},
 				},
+				ctx:       p.ctx,
 				Earthfile: ef,
 				Repo:      repo,
 				RepoRoot:  gitRoot,
@@ -117,6 +120,7 @@ func (p *DefaultProjectLoader) Load(projectPath string) (Project, error) {
 	runtimeData := make(map[string]cue.Value)
 	for _, r := range p.runtimes {
 		d := r.Load(&Project{
+			ctx:          p.ctx,
 			Earthfile:    ef,
 			Repo:         repo,
 			rawBlueprint: rbp,
@@ -129,7 +133,7 @@ func (p *DefaultProjectLoader) Load(projectPath string) (Project, error) {
 	}
 
 	p.logger.Info("Injecting blueprint")
-	p.injectors = append(p.injectors, injector.NewBlueprintRuntimeInjector(runtimeData, p.logger))
+	p.injectors = append(p.injectors, injector.NewBlueprintRuntimeInjector(p.ctx, runtimeData, p.logger))
 	for _, inj := range p.injectors {
 		rbp = inj.Inject(rbp)
 	}
@@ -147,6 +151,7 @@ func (p *DefaultProjectLoader) Load(projectPath string) (Project, error) {
 
 	return Project{
 		Blueprint:    bp,
+		ctx:          p.ctx,
 		Earthfile:    ef,
 		Name:         bp.Project.Name,
 		Path:         projectPath,
@@ -166,13 +171,15 @@ func NewDefaultProjectLoader(
 		logger = slog.New(slog.NewTextHandler(io.Discard, nil))
 	}
 
-	bl := blueprint.NewDefaultBlueprintLoader(logger)
+	ctx := cuecontext.New()
+	bl := blueprint.NewDefaultBlueprintLoader(ctx, logger)
 	rl := git.NewDefaultRepoLoader()
 	return DefaultProjectLoader{
 		blueprintLoader: &bl,
+		ctx:             ctx,
 		fs:              afero.NewOsFs(),
 		injectors: []injector.BlueprintInjector{
-			injector.NewBlueprintEnvInjector(logger),
+			injector.NewBlueprintEnvInjector(ctx, logger),
 		},
 		logger:     logger,
 		repoLoader: &rl,
@@ -182,6 +189,7 @@ func NewDefaultProjectLoader(
 
 // NewCustomProjectLoader creates a new DefaultProjectLoader with custom dependencies.
 func NewCustomProjectLoader(
+	ctx *cue.Context,
 	fs afero.Fs,
 	bl blueprint.BlueprintLoader,
 	injectors []injector.BlueprintInjector,
@@ -195,6 +203,7 @@ func NewCustomProjectLoader(
 
 	return DefaultProjectLoader{
 		blueprintLoader: bl,
+		ctx:             ctx,
 		fs:              fs,
 		injectors:       injectors,
 		logger:          logger,

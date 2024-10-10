@@ -42,10 +42,11 @@ func (b BlueprintInjectorEnvMap) Get(ctx *cue.Context, name string, attrType Att
 	}
 }
 
-func NewBlueprintEnvInjector(logger *slog.Logger) *BlueprintEnvInjector {
+func NewBlueprintEnvInjector(ctx *cue.Context, logger *slog.Logger) *BlueprintEnvInjector {
 	return &BlueprintEnvInjector{
 		base: BaseInjector{
 			attrName:     "env",
+			ctx:          ctx,
 			logger:       logger,
 			imap:         BlueprintInjectorEnvMap{},
 			typeOptional: false,

@@ -118,7 +118,7 @@ func TestBaseInjectorInject(t *testing.T) {
 				typeOptional: tt.typeOptional,
 			}
 
-			bp := blueprint.NewRawBlueprint(ctx, tt.in)
+			bp := blueprint.NewRawBlueprint(tt.in)
 			out := base.Inject(bp)
 
 			tt.validate(t, out.Value())

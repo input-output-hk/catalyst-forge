@@ -35,6 +35,7 @@ var (
 
 type BaseInjector struct {
 	attrName     string
+	ctx          *cue.Context
 	logger       *slog.Logger
 	imap         BlueprintInjectorMap
 	typeOptional bool
@@ -60,7 +61,7 @@ func (b *BaseInjector) Inject(bp blueprint.RawBlueprint) blueprint.RawBlueprint 
 
 		b.logger.Debug("parsed attribute", "attr", b.attrName, "name", pAttr.Name, "type", pAttr.Type)
 
-		attrValue, err := b.imap.Get(bp.Context(), pAttr.Name, pAttr.Type)
+		attrValue, err := b.imap.Get(b.ctx, pAttr.Name, pAttr.Type)
 		if errors.Is(err, ErrNotFound) {
 			b.logger.Debug("attr name not found", "attr", b.attrName, "name", pAttr.Name)
 			return true
@@ -74,7 +75,7 @@ func (b *BaseInjector) Inject(bp blueprint.RawBlueprint) blueprint.RawBlueprint 
 		return true
 	}, func(v cue.Value) {})
 
-	return blueprint.NewRawBlueprint(bp.Context(), rv)
+	return blueprint.NewRawBlueprint(rv)
 }
 
 // parseBaseAttr parses a base attribute from the given CUE attribute

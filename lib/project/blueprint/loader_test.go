@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"cuelang.org/go/cue"
+	"cuelang.org/go/cue/cuecontext"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/testutils"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
@@ -143,6 +144,7 @@ func TestBlueprintLoaderLoad(t *testing.T) {
 			testutils.SetupFS(t, tt.fs, tt.files)
 
 			loader := DefaultBlueprintLoader{
+				ctx:    cuecontext.New(),
 				fs:     tt.fs,
 				logger: slog.New(slog.NewTextHandler(io.Discard, nil)),
 			}

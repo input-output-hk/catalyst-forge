@@ -118,8 +118,8 @@ func TestBlueprintEnvInjectorInject(t *testing.T) {
 				require.NoError(t, os.Setenv(k, v))
 			}
 
-			injector := NewBlueprintEnvInjector(testutils.NewNoopLogger())
-			bp := blueprint.NewRawBlueprint(ctx, tt.in)
+			injector := NewBlueprintEnvInjector(ctx, testutils.NewNoopLogger())
+			bp := blueprint.NewRawBlueprint(tt.in)
 			out := injector.Inject(bp)
 
 			tt.validate(t, out.Value())

@@ -8,7 +8,6 @@ import (
 	"path/filepath"
 
 	"cuelang.org/go/cue"
-	"cuelang.org/go/cue/cuecontext"
 	"cuelang.org/go/cue/errors"
 	"github.com/Masterminds/semver/v3"
 	"github.com/input-output-hk/catalyst-forge/lib/project/blueprint/defaults"
@@ -33,6 +32,7 @@ type BlueprintLoader interface {
 
 // DefaultBlueprintLoader is the default implementation of the BlueprintLoader
 type DefaultBlueprintLoader struct {
+	ctx    *cue.Context
 	fs     afero.Fs
 	logger *slog.Logger
 }
@@ -68,8 +68,7 @@ func (b *DefaultBlueprintLoader) Load(projectPath, gitRootPath string) (RawBluep
 		}
 	}
 
-	ctx := cuecontext.New()
-	schema, err := schema.LoadSchema(ctx)
+	schema, err := schema.LoadSchema(b.ctx)
 	if err != nil {
 		b.logger.Error("Failed to load schema", "error", err)
 		return RawBlueprint{}, fmt.Errorf("failed to load schema: %w", err)
@@ -81,7 +80,7 @@ func (b *DefaultBlueprintLoader) Load(projectPath, gitRootPath string) (RawBluep
 	if len(files) > 0 {
 		for path, data := range files {
 			b.logger.Info("Loading blueprint file", "path", path)
-			bp, err := NewBlueprintFile(ctx, path, data)
+			bp, err := NewBlueprintFile(b.ctx, path, data)
 			if err != nil {
 				b.logger.Error("Failed to load blueprint file", "path", path, "error", err)
 				return RawBlueprint{}, fmt.Errorf("failed to load blueprint file: %w", err)
@@ -95,7 +94,7 @@ func (b *DefaultBlueprintLoader) Load(projectPath, gitRootPath string) (RawBluep
 			return RawBlueprint{}, err
 		}
 
-		userBlueprint, err := bps.Unify(ctx)
+		userBlueprint, err := bps.Unify(b.ctx)
 		if err != nil {
 			b.logger.Error("Failed to unify blueprint files", "error", err)
 			return RawBlueprint{}, fmt.Errorf("failed to unify blueprint files: %w", err)
@@ -129,16 +128,17 @@ func (b *DefaultBlueprintLoader) Load(projectPath, gitRootPath string) (RawBluep
 		}
 	}
 
-	return NewRawBlueprint(ctx, finalBlueprint), nil
+	return NewRawBlueprint(finalBlueprint), nil
 }
 
 // NewDefaultBlueprintLoader creates a new DefaultBlueprintLoader.
-func NewDefaultBlueprintLoader(logger *slog.Logger) DefaultBlueprintLoader {
+func NewDefaultBlueprintLoader(ctx *cue.Context, logger *slog.Logger) DefaultBlueprintLoader {
 	if logger == nil {
 		logger = slog.New(slog.NewTextHandler(io.Discard, nil))
 	}
 
 	return DefaultBlueprintLoader{
+		ctx:    ctx,
 		fs:     afero.NewOsFs(),
 		logger: logger,
 	}
@@ -147,6 +147,7 @@ func NewDefaultBlueprintLoader(logger *slog.Logger) DefaultBlueprintLoader {
 // NewCustomBlueprintLoader creates a new DefaultBlueprintLoader with custom
 // dependencies.
 func NewCustomBlueprintLoader(
+	ctx *cue.Context,
 	fs afero.Fs,
 	logger *slog.Logger,
 ) DefaultBlueprintLoader {
@@ -155,6 +156,7 @@ func NewCustomBlueprintLoader(
 	}
 
 	return DefaultBlueprintLoader{
+		ctx:    ctx,
 		fs:     fs,
 		logger: logger,
 	}

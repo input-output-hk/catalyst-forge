@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"cuelang.org/go/cue"
 	gg "github.com/go-git/go-git/v5"
 	"github.com/input-output-hk/catalyst-forge/lib/project/blueprint"
 	"github.com/input-output-hk/catalyst-forge/lib/project/schema"
@@ -15,6 +16,7 @@ import (
 // Project represents a project
 type Project struct {
 	Blueprint    schema.Blueprint
+	ctx          *cue.Context
 	Earthfile    *earthfile.Earthfile
 	Name         string
 	Path         string

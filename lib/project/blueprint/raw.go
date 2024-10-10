@@ -8,13 +8,7 @@ import (
 
 // RawBlueprint represents a raw (undecoded) blueprint.
 type RawBlueprint struct {
-	ctx   *cue.Context
 	value cue.Value
-}
-
-// Context returns the CUE context used to create the raw blueprint.
-func (r RawBlueprint) Context() *cue.Context {
-	return r.ctx
 }
 
 // Decode decodes the raw blueprint into a schema.Blueprint.
@@ -54,9 +48,8 @@ func (r RawBlueprint) Validate() error {
 }
 
 // NewRawBlueprint creates a new raw blueprint.
-func NewRawBlueprint(ctx *cue.Context, v cue.Value) RawBlueprint {
+func NewRawBlueprint(v cue.Value) RawBlueprint {
 	return RawBlueprint{
-		ctx:   ctx,
 		value: v,
 	}
 }
