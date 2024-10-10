@@ -102,6 +102,7 @@ func (p *DefaultProjectLoader) Load(projectPath string) (Project, error) {
 				},
 				ctx:       p.ctx,
 				Earthfile: ef,
+				Path:      projectPath,
 				Repo:      repo,
 				RepoRoot:  gitRoot,
 			},
@@ -125,7 +126,9 @@ func (p *DefaultProjectLoader) Load(projectPath string) (Project, error) {
 		d := r.Load(&Project{
 			ctx:          p.ctx,
 			Earthfile:    ef,
+			Path:         projectPath,
 			Repo:         repo,
+			RepoRoot:     gitRoot,
 			rawBlueprint: rbp,
 			TagInfo:      tagInfo,
 		})
