@@ -11,19 +11,43 @@ import (
 	"github.com/input-output-hk/catalyst-forge/lib/project/blueprint"
 	"github.com/input-output-hk/catalyst-forge/lib/project/schema"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/earthfile"
+	"github.com/input-output-hk/catalyst-forge/lib/tools/git"
 )
+
+// TagInfo represents tag information.
+type TagInfo struct {
+	// Generated is the generated tag.
+	Generated git.Tag `json:"generated"`
+
+	// Git is the git tag.
+	Git git.Tag `json:"git"`
+}
 
 // Project represents a project
 type Project struct {
-	Blueprint    schema.Blueprint
-	ctx          *cue.Context
-	Earthfile    *earthfile.Earthfile
-	Name         string
-	Path         string
-	Repo         *gg.Repository
-	RepoRoot     string
-	TagInfo      TagInfo
+	// Blueprint is the project blueprint.
+	Blueprint schema.Blueprint
+
+	// Earthfile is the project Earthfile.
+	Earthfile *earthfile.Earthfile
+
+	// Name is the project name.
+	Name string
+
+	// Path is the project path.
+	Path string
+
+	// Repo is the project git repository.
+	Repo *gg.Repository
+
+	// RepoRoot is the path to the repository root.
+	RepoRoot string
+
+	// TagInfo is the project tag information.
+	TagInfo TagInfo
+
 	logger       *slog.Logger
+	ctx          *cue.Context
 	rawBlueprint blueprint.RawBlueprint
 }
 
@@ -60,6 +84,25 @@ func (p *Project) GetRelativePath() (string, error) {
 	}
 
 	return relPath, nil
+}
+
+// MatchesTag returns true if the project matches the given tag.
+func (p *Project) MatchesTag(tag git.MonoTag) (bool, error) {
+	relPath, err := p.GetRelativePath()
+	if err != nil {
+		return false, err
+	}
+
+	if relPath == tag.Project {
+		return true, nil
+	}
+
+	alias, ok := p.Blueprint.Global.CI.Tagging.Aliases[tag.Project]
+	if ok && relPath == alias {
+		return true, nil
+	}
+
+	return false, nil
 }
 
 // Raw returns the raw blueprint.

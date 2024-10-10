@@ -50,6 +50,9 @@ global: {
 			},
 		]
 		tagging: {
+			aliases: {
+				forge: "cli"
+			}
 			strategy: "commit"
 		}
 	}

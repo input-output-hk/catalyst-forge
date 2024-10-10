@@ -25,6 +25,10 @@ type MonoTag struct {
 	Tag string
 }
 
+func (m MonoTag) String() string {
+	return m.Full
+}
+
 // Tag represents a git tag.
 type Tag string
 

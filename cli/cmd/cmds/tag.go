@@ -19,28 +19,34 @@ type TagOutput struct {
 }
 
 func (c *TagCmd) Run(ctx run.RunContext) error {
+	var output TagOutput
+
 	project, err := ctx.ProjectLoader.Load(c.Project)
 	if err != nil {
 		return err
 	}
 
-	var output TagOutput
 	tagger := p.NewTagger(&project, ctx.CI, c.Trim, ctx.Logger)
-
-	if project.Blueprint.Global.CI.Tagging.Strategy != "" {
-		tag, err := tagger.GenerateTag()
-		if err != nil {
-			return fmt.Errorf("failed to generate tag: %w", err)
-		}
-
-		output.Generated = tag
-	}
-
-	gitTag, err := tagger.GetGitTag()
+	tagInfo, err := tagger.GetTagInfo()
 	if err != nil {
-		return fmt.Errorf("failed to get git tag: %w", err)
+		return fmt.Errorf("failed to get tag info: %w", err)
 	}
-	output.Git = gitTag
+
+	output.Generated = string(tagInfo.Generated)
+	if tagInfo.Git.IsMono() {
+		matches, err := project.MatchesTag(tagInfo.Git.ToMono())
+		if err != nil {
+			return fmt.Errorf("failed to match project tag: %w", err)
+		} else if matches {
+			if c.Trim {
+				output.Git = tagInfo.Git.ToMono().Tag
+			} else {
+				output.Git = string(tagInfo.Git)
+			}
+		}
+	} else {
+		output.Git = string(tagInfo.Git)
+	}
 
 	printJson(output, c.Pretty)
 	return nil
