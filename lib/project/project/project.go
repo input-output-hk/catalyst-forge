@@ -44,7 +44,7 @@ type Project struct {
 	RepoRoot string
 
 	// TagInfo is the project tag information.
-	TagInfo TagInfo
+	TagInfo *TagInfo
 
 	logger       *slog.Logger
 	ctx          *cue.Context
@@ -86,18 +86,25 @@ func (p *Project) GetRelativePath() (string, error) {
 	return relPath, nil
 }
 
-// MatchesTag returns true if the project matches the given tag.
-func (p *Project) MatchesTag(tag git.MonoTag) (bool, error) {
+// TagMatches checks if the git tag matches the project.
+func (p *Project) TagMatches() (bool, error) {
+	if p.TagInfo.Git == "" {
+		return false, nil
+	} else if !p.TagInfo.Git.IsMono() {
+		return true, nil
+	}
+
+	mtag := p.TagInfo.Git.ToMono()
 	relPath, err := p.GetRelativePath()
 	if err != nil {
 		return false, err
 	}
 
-	if relPath == tag.Project {
+	if relPath == mtag.Project {
 		return true, nil
 	}
 
-	alias, ok := p.Blueprint.Global.CI.Tagging.Aliases[tag.Project]
+	alias, ok := p.Blueprint.Global.CI.Tagging.Aliases[mtag.Project]
 	if ok && relPath == alias {
 		return true, nil
 	}

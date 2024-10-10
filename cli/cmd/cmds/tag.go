@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/run"
-	p "github.com/input-output-hk/catalyst-forge/lib/project/project"
 )
 
 type TagCmd struct {
@@ -26,26 +25,27 @@ func (c *TagCmd) Run(ctx run.RunContext) error {
 		return err
 	}
 
-	tagger := p.NewTagger(&project, ctx.CI, c.Trim, ctx.Logger)
-	tagInfo, err := tagger.GetTagInfo()
-	if err != nil {
-		return fmt.Errorf("failed to get tag info: %w", err)
+	if project.TagInfo == nil {
+		return fmt.Errorf("failed to get tag info")
 	}
 
-	output.Generated = string(tagInfo.Generated)
-	if tagInfo.Git.IsMono() {
-		matches, err := project.MatchesTag(tagInfo.Git.ToMono())
-		if err != nil {
-			return fmt.Errorf("failed to match project tag: %w", err)
-		} else if matches {
+	output.Generated = string(project.TagInfo.Generated)
+	matches, err := project.TagMatches()
+	if err != nil {
+		return fmt.Errorf("failed to check if tag matches: %w", err)
+	}
+
+	if matches {
+		if project.TagInfo.Git.IsMono() {
+			m := project.TagInfo.Git.ToMono()
 			if c.Trim {
-				output.Git = tagInfo.Git.ToMono().Tag
+				output.Git = m.Tag
 			} else {
-				output.Git = string(tagInfo.Git)
+				output.Git = m.Full
 			}
+		} else {
+			output.Git = string(project.TagInfo.Git)
 		}
-	} else {
-		output.Git = string(tagInfo.Git)
 	}
 
 	printJson(output, c.Pretty)
