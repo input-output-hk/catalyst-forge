@@ -22,7 +22,7 @@ func (t *Tagger) GetTagInfo() (TagInfo, error) {
 	var err error
 
 	if t.project.Blueprint.Global.CI.Tagging.Strategy != "" {
-		gen, err = t.GenerateTag()
+		gen, err = t.generateTag()
 		if err != nil {
 			return TagInfo{}, fmt.Errorf("failed to generate tag: %w", err)
 		}
@@ -30,7 +30,7 @@ func (t *Tagger) GetTagInfo() (TagInfo, error) {
 		t.logger.Warn("No tag strategy defined, skipping tag generation")
 	}
 
-	git, err = t.GetGitTag()
+	git, err = t.getGitTag()
 	if err != nil {
 		return TagInfo{}, fmt.Errorf("failed to get git tag: %w", err)
 	}
@@ -42,7 +42,7 @@ func (t *Tagger) GetTagInfo() (TagInfo, error) {
 }
 
 // GenerateTag generates a tag for the project based on the tagging strategy.
-func (t *Tagger) GenerateTag() (git.Tag, error) {
+func (t *Tagger) generateTag() (git.Tag, error) {
 	strategy := t.project.Blueprint.Global.CI.Tagging.Strategy
 
 	t.logger.Info("Generating tag", "strategy", strategy)
@@ -60,7 +60,7 @@ func (t *Tagger) GenerateTag() (git.Tag, error) {
 }
 
 // GetGitTag returns the git tag of the project, if it exists.
-func (t *Tagger) GetGitTag() (git.Tag, error) {
+func (t *Tagger) getGitTag() (git.Tag, error) {
 
 	gitTag, err := git.GetTag(t.project.Repo)
 	if errors.Is(err, git.ErrTagNotFound) {
