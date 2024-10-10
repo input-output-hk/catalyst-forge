@@ -93,7 +93,7 @@ func (e EarthlyExecutor) Run() (map[string]EarthlyExecutionResult, error) {
 
 			os.Setenv("GIT_TAG", "v0.0.0")
 			e.logger.Info("Executing Earthly", "attempt", i, "retries", e.opts.retries, "arguments", arguments, "platform", platform)
-			output, err = e.executor.Execute("earthly", arguments)
+			output, err = e.executor.Execute("earthly", arguments...)
 			if err == nil {
 				break
 			}

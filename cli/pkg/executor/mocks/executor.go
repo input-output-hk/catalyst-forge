@@ -18,8 +18,11 @@ var _ executor.Executor = &ExecutorMock{}
 //
 //		// make and configure a mocked executor.Executor
 //		mockedExecutor := &ExecutorMock{
-//			ExecuteFunc: func(command string, args []string) ([]byte, error) {
+//			ExecuteFunc: func(command string, args ...string) ([]byte, error) {
 //				panic("mock out the Execute method")
+//			},
+//			ExecuteQuietFunc: func(command string, args ...string) error {
+//				panic("mock out the ExecuteQuiet method")
 //			},
 //		}
 //
@@ -29,7 +32,10 @@ var _ executor.Executor = &ExecutorMock{}
 //	}
 type ExecutorMock struct {
 	// ExecuteFunc mocks the Execute method.
-	ExecuteFunc func(command string, args []string) ([]byte, error)
+	ExecuteFunc func(command string, args ...string) ([]byte, error)
+
+	// ExecuteQuietFunc mocks the ExecuteQuiet method.
+	ExecuteQuietFunc func(command string, args ...string) error
 
 	// calls tracks calls to the methods.
 	calls struct {
@@ -40,12 +46,20 @@ type ExecutorMock struct {
 			// Args is the args argument value.
 			Args []string
 		}
+		// ExecuteQuiet holds details about calls to the ExecuteQuiet method.
+		ExecuteQuiet []struct {
+			// Command is the command argument value.
+			Command string
+			// Args is the args argument value.
+			Args []string
+		}
 	}
-	lockExecute sync.RWMutex
+	lockExecute      sync.RWMutex
+	lockExecuteQuiet sync.RWMutex
 }
 
 // Execute calls ExecuteFunc.
-func (mock *ExecutorMock) Execute(command string, args []string) ([]byte, error) {
+func (mock *ExecutorMock) Execute(command string, args ...string) ([]byte, error) {
 	if mock.ExecuteFunc == nil {
 		panic("ExecutorMock.ExecuteFunc: method is nil but Executor.Execute was just called")
 	}
@@ -59,7 +73,7 @@ func (mock *ExecutorMock) Execute(command string, args []string) ([]byte, error)
 	mock.lockExecute.Lock()
 	mock.calls.Execute = append(mock.calls.Execute, callInfo)
 	mock.lockExecute.Unlock()
-	return mock.ExecuteFunc(command, args)
+	return mock.ExecuteFunc(command, args...)
 }
 
 // ExecuteCalls gets all the calls that were made to Execute.
@@ -77,5 +91,41 @@ func (mock *ExecutorMock) ExecuteCalls() []struct {
 	mock.lockExecute.RLock()
 	calls = mock.calls.Execute
 	mock.lockExecute.RUnlock()
+	return calls
+}
+
+// ExecuteQuiet calls ExecuteQuietFunc.
+func (mock *ExecutorMock) ExecuteQuiet(command string, args ...string) error {
+	if mock.ExecuteQuietFunc == nil {
+		panic("ExecutorMock.ExecuteQuietFunc: method is nil but Executor.ExecuteQuiet was just called")
+	}
+	callInfo := struct {
+		Command string
+		Args    []string
+	}{
+		Command: command,
+		Args:    args,
+	}
+	mock.lockExecuteQuiet.Lock()
+	mock.calls.ExecuteQuiet = append(mock.calls.ExecuteQuiet, callInfo)
+	mock.lockExecuteQuiet.Unlock()
+	return mock.ExecuteQuietFunc(command, args...)
+}
+
+// ExecuteQuietCalls gets all the calls that were made to ExecuteQuiet.
+// Check the length with:
+//
+//	len(mockedExecutor.ExecuteQuietCalls())
+func (mock *ExecutorMock) ExecuteQuietCalls() []struct {
+	Command string
+	Args    []string
+} {
+	var calls []struct {
+		Command string
+		Args    []string
+	}
+	mock.lockExecuteQuiet.RLock()
+	calls = mock.calls.ExecuteQuiet
+	mock.lockExecuteQuiet.RUnlock()
 	return calls
 }

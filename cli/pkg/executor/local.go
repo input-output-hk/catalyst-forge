@@ -19,7 +19,7 @@ type LocalExecutor struct {
 	stdoutStream io.Writer
 }
 
-func (e *LocalExecutor) Execute(command string, args []string) ([]byte, error) {
+func (e *LocalExecutor) Execute(command string, args ...string) ([]byte, error) {
 	cmd := exec.Command(command, args...)
 	e.logger.Debug("Executing local command", "command", cmd.String())
 
@@ -77,6 +77,13 @@ func (e *LocalExecutor) Execute(command string, args []string) ([]byte, error) {
 	return cmd.CombinedOutput()
 }
 
+func (e *LocalExecutor) ExecuteQuiet(command string, args ...string) error {
+	cmd := exec.Command(command, args...)
+
+	e.logger.Debug("Executing local command quietly", "command", cmd.String())
+	return cmd.Run()
+}
+
 // WithRedirect is an option that configures the LocalExecutor to redirect the
 // stdout and stderr of the commands to the stdout and stderr of the local
 // process.
@@ -96,6 +103,15 @@ func WithRedirectTo(stdout, stderr io.Writer) LocalExecutorOption {
 	}
 }
 
+type WrappedLocalExecutor struct {
+	Executor
+	command string
+}
+
+func (e WrappedLocalExecutor) Execute(args ...string) ([]byte, error) {
+	return e.Executor.Execute(e.command, args...)
+}
+
 // NewLocalExecutor creates a new LocalExecutor with the given options.
 func NewLocalExecutor(logger *slog.Logger, options ...LocalExecutorOption) *LocalExecutor {
 	if logger == nil {
@@ -111,4 +127,11 @@ func NewLocalExecutor(logger *slog.Logger, options ...LocalExecutorOption) *Loca
 	}
 
 	return e
+}
+
+func NewLocalWrappedExecutor(e Executor, command string) WrappedLocalExecutor {
+	return WrappedLocalExecutor{
+		Executor: e,
+		command:  command,
+	}
 }

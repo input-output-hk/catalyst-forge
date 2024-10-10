@@ -87,7 +87,7 @@ func (p *DefaultProjectLoader) Load(projectPath string) (Project, error) {
 
 	p.logger.Info("Loading tag data")
 	var tagConfig schema.Tagging
-	var tagInfo TagInfo
+	var tagInfo *TagInfo
 	if err := rbp.Get("global.ci.tagging").Decode(&tagConfig); err != nil {
 		p.logger.Warn("Failed to load tag config", "error", err)
 	} else {
@@ -102,6 +102,7 @@ func (p *DefaultProjectLoader) Load(projectPath string) (Project, error) {
 				},
 				ctx:       p.ctx,
 				Earthfile: ef,
+				Path:      projectPath,
 				Repo:      repo,
 				RepoRoot:  gitRoot,
 			},
@@ -110,9 +111,12 @@ func (p *DefaultProjectLoader) Load(projectPath string) (Project, error) {
 			p.logger,
 		)
 
-		tagInfo, err = tagger.GetTagInfo()
+		t, err := tagger.GetTagInfo()
 		if err != nil {
 			p.logger.Error("Failed to get tag info", "error", err)
+			tagInfo = nil
+		} else {
+			tagInfo = &t
 		}
 	}
 
@@ -122,7 +126,9 @@ func (p *DefaultProjectLoader) Load(projectPath string) (Project, error) {
 		d := r.Load(&Project{
 			ctx:          p.ctx,
 			Earthfile:    ef,
+			Path:         projectPath,
 			Repo:         repo,
+			RepoRoot:     gitRoot,
 			rawBlueprint: rbp,
 			TagInfo:      tagInfo,
 		})

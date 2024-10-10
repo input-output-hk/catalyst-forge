@@ -68,8 +68,8 @@ project: name: "foo"
 
 				head, err := p.Repo.Head()
 				require.NoError(t, err)
-				assert.Equal(t, head.Hash().String(), p.TagInfo.Generated)
-				assert.Equal(t, "v0.1.0", p.TagInfo.Git)
+				assert.Equal(t, head.Hash().String(), string(p.TagInfo.Generated))
+				assert.Equal(t, "v0.1.0", string(p.TagInfo.Git))
 			},
 		},
 		{
@@ -225,7 +225,7 @@ project: {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			logger := testutils.NewStdoutLogger()
+			logger := testutils.NewNoopLogger()
 
 			defer func() {
 				for k := range tt.env {

@@ -232,7 +232,7 @@ func (c *CIRun) Run() tea.Msg {
 	c.logger.Info("Running target", "project", c.Project.Path, "target", c.Target)
 	c.Status = RunStatusRunning
 
-	runner := run.NewCustomProjectRunner(
+	runner := run.NewCustomDefaultProjectRunner(
 		c.runctx,
 		executor.NewLocalExecutor(c.logger, executor.WithRedirectTo(&c.stdout, &c.stderr)),
 		c.logger,

@@ -16,24 +16,55 @@ func TestGitRuntimeLoad(t *testing.T) {
 
 	tests := []struct {
 		name     string
-		tagInfo  TagInfo
+		tagInfo  *TagInfo
+		repoPath string
+		prjPath  string
 		expected map[string]cue.Value
 	}{
 		{
 			name: "with tag",
-			tagInfo: TagInfo{
+			tagInfo: &TagInfo{
 				Generated: "generated",
-				Git:       "tag",
+				Git:       "v1.0.0",
 			},
+			repoPath: "/repo",
+			prjPath:  "/repo/project",
 			expected: map[string]cue.Value{
 				"GIT_TAG_GENERATED": ctx.CompileString(`"generated"`),
-				"GIT_TAG":           ctx.CompileString(`"tag"`),
-				"GIT_IMAGE_TAG":     ctx.CompileString(`"tag"`),
+				"GIT_TAG":           ctx.CompileString(`"v1.0.0"`),
+				"GIT_IMAGE_TAG":     ctx.CompileString(`"v1.0.0"`),
+			},
+		},
+		{
+			name: "with mono tag",
+			tagInfo: &TagInfo{
+				Generated: "generated",
+				Git:       "project/v1.0.0",
+			},
+			repoPath: "/repo",
+			prjPath:  "/repo/project",
+			expected: map[string]cue.Value{
+				"GIT_TAG_GENERATED": ctx.CompileString(`"generated"`),
+				"GIT_TAG":           ctx.CompileString(`"v1.0.0"`),
+				"GIT_IMAGE_TAG":     ctx.CompileString(`"v1.0.0"`),
+			},
+		},
+		{
+			name: "with non-matching tag",
+			tagInfo: &TagInfo{
+				Generated: "generated",
+				Git:       "project1/v1.0.0",
+			},
+			repoPath: "/repo",
+			prjPath:  "/repo/project",
+			expected: map[string]cue.Value{
+				"GIT_TAG_GENERATED": ctx.CompileString(`"generated"`),
+				"GIT_IMAGE_TAG":     ctx.CompileString(`"generated"`),
 			},
 		},
 		{
 			name: "with no tag",
-			tagInfo: TagInfo{
+			tagInfo: &TagInfo{
 				Generated: "generated",
 				Git:       "",
 			},
@@ -42,6 +73,11 @@ func TestGitRuntimeLoad(t *testing.T) {
 				"GIT_IMAGE_TAG":     ctx.CompileString(`"generated"`),
 			},
 		},
+		{
+			name:     "with no tag info",
+			tagInfo:  nil,
+			expected: map[string]cue.Value{},
+		},
 	}
 
 	for _, tt := range tests {
@@ -49,6 +85,8 @@ func TestGitRuntimeLoad(t *testing.T) {
 			logger := testutils.NewNoopLogger()
 			project := &Project{
 				ctx:          ctx,
+				RepoRoot:     tt.repoPath,
+				Path:         tt.prjPath,
 				TagInfo:      tt.tagInfo,
 				rawBlueprint: blueprint.NewRawBlueprint(ctx.CompileString("{}")),
 			}
@@ -66,7 +104,7 @@ func TestGitRuntimeLoad(t *testing.T) {
 				ev, err := expected.String()
 				require.NoError(t, err)
 
-				assert.Equal(t, ev, sv)
+				assert.Equal(t, ev, sv, "unexpected value for key %q", key)
 			}
 		})
 	}

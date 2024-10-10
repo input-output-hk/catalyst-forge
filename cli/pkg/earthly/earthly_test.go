@@ -30,7 +30,7 @@ func TestEarthlyExecutorRun(t *testing.T) {
 				testutils.NewNoopLogger(),
 			),
 			mockExec: emocks.ExecutorMock{
-				ExecuteFunc: func(command string, args []string) ([]byte, error) {
+				ExecuteFunc: func(command string, args ...string) ([]byte, error) {
 					return []byte(`foobarbaz
 Image foo output as bar
 Artifact foo output as bar`), nil
@@ -56,7 +56,7 @@ Artifact foo output as bar`), nil
 				WithRetries(3),
 			),
 			mockExec: emocks.ExecutorMock{
-				ExecuteFunc: func(command string, args []string) ([]byte, error) {
+				ExecuteFunc: func(command string, args ...string) ([]byte, error) {
 					return []byte{}, fmt.Errorf("error")
 				},
 			},
@@ -71,7 +71,7 @@ Artifact foo output as bar`), nil
 				WithPlatforms("foo", "bar"),
 			),
 			mockExec: emocks.ExecutorMock{
-				ExecuteFunc: func(command string, args []string) ([]byte, error) {
+				ExecuteFunc: func(command string, args ...string) ([]byte, error) {
 					return []byte(`foobarbaz
 Image foo output as bar
 Artifact foo output as bar`), nil
