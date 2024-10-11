@@ -4042,7 +4042,7 @@ async function runReleaseScan(absolute, path) {
     Object.keys(value["project.release"]).map((name) => ({ project, name })),
   );
 
-  core.info(`Found releases: ${releaseMap}`);
+  core.info(`Found releases: ${JSON.stringify(releaseMap)}`);
   core.setOutput("releases", JSON.stringify(releaseMap));
 }
 
