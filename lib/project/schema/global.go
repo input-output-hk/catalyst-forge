@@ -13,6 +13,10 @@ type Global struct {
 
 // CI contains the configuration for the CI system.
 type GlobalCI struct {
+	// DefaultBranch contains the default branch of the repository.
+	// +optional
+	DefaultBranch *string `json:"defaultBranch"`
+
 	// Local defines the filters to use when simulating a local CI run.
 	Local []string `json:"local"`
 

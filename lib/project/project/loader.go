@@ -100,11 +100,13 @@ func (p *DefaultProjectLoader) Load(projectPath string) (Project, error) {
 						},
 					},
 				},
-				ctx:       p.ctx,
-				Earthfile: ef,
-				Path:      projectPath,
-				Repo:      repo,
-				RepoRoot:  gitRoot,
+				Earthfile:    ef,
+				Path:         projectPath,
+				Repo:         repo,
+				RepoRoot:     gitRoot,
+				ctx:          p.ctx,
+				logger:       p.logger,
+				rawBlueprint: rbp,
 			},
 			git.InCI(),
 			true,
@@ -124,13 +126,14 @@ func (p *DefaultProjectLoader) Load(projectPath string) (Project, error) {
 	runtimeData := make(map[string]cue.Value)
 	for _, r := range p.runtimes {
 		d := r.Load(&Project{
-			ctx:          p.ctx,
 			Earthfile:    ef,
 			Path:         projectPath,
 			Repo:         repo,
 			RepoRoot:     gitRoot,
-			rawBlueprint: rbp,
 			TagInfo:      tagInfo,
+			ctx:          p.ctx,
+			logger:       p.logger,
+			rawBlueprint: rbp,
 		})
 
 		for k, v := range d {

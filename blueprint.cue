@@ -1,6 +1,7 @@
 version: "1.0"
 global: {
 	ci: {
+		defaultBranch: "master"
 		local: [
 			"^check(-.*)?$",
 			"^build(-.*)?$",

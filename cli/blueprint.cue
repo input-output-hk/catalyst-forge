@@ -27,6 +27,7 @@ project: {
 	release: {
 		docker: {
 			config: {}
+			on: ["merge", "tag"]
 			target: "publish"
 			type:   "docker"
 		}

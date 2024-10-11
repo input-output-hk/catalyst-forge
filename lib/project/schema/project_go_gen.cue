@@ -35,6 +35,9 @@ package schema
 	// Config contains the configuration to pass to the release.
 	config: _ @go(Config,any)
 
+	// On contains the events that trigger the release.
+	on: [...string] @go(On,[]string)
+
 	// Target is the Earthly target to run for this release.
 	target: string @go(Target)
 

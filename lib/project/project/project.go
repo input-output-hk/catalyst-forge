@@ -89,26 +89,33 @@ func (p *Project) GetRelativePath() (string, error) {
 // TagMatches checks if the git tag matches the project.
 func (p *Project) TagMatches() (bool, error) {
 	if p.TagInfo.Git == "" {
+		p.logger.Debug("No git tag found")
 		return false, nil
 	} else if !p.TagInfo.Git.IsMono() {
+		p.logger.Debug("Found regular tag", "tag", p.TagInfo.Git)
 		return true, nil
 	}
 
-	mtag := p.TagInfo.Git.ToMono()
 	relPath, err := p.GetRelativePath()
 	if err != nil {
 		return false, err
 	}
 
+	mtag := p.TagInfo.Git.ToMono()
+	p.logger.Debug("Found mono tag", "tag", mtag.Full, "project", mtag.Project, "tag", mtag.Tag)
+
 	if relPath == mtag.Project {
+		p.logger.Debug("Tag matches project")
 		return true, nil
 	}
 
 	alias, ok := p.Blueprint.Global.CI.Tagging.Aliases[mtag.Project]
 	if ok && relPath == alias {
+		p.logger.Debug("Tag matches alias", "alias", alias)
 		return true, nil
 	}
 
+	p.logger.Debug("Tag does not match project")
 	return false, nil
 }
 

@@ -13,6 +13,10 @@ package schema
 
 // CI contains the configuration for the CI system.
 #GlobalCI: {
+	// DefaultBranch contains the default branch of the repository.
+	// +optional
+	defaultBranch?: null | string @go(DefaultBranch,*string)
+
 	// Local defines the filters to use when simulating a local CI run.
 	local: [...string] @go(Local,[]string)
 
@@ -220,6 +224,9 @@ version: "1.0"
 #Release: {
 	// Config contains the configuration to pass to the release.
 	config: _ @go(Config,any)
+
+	// On contains the events that trigger the release.
+	on: [...string] @go(On,[]string)
 
 	// Target is the Earthly target to run for this release.
 	target: string @go(Target)

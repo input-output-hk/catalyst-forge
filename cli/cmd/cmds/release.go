@@ -8,6 +8,7 @@ import (
 )
 
 type ReleaseCmd struct {
+	Force   bool   `short:"f" help:"Force the release to run."`
 	Project string `arg:"" help:"Path to the project."`
 	Release string `arg:"" help:"Name of the release."`
 }
@@ -31,6 +32,7 @@ func (c *ReleaseCmd) Run(ctx run.RunContext) error {
 		ctx,
 		project,
 		project.Blueprint.Project.Release[c.Release],
+		c.Force,
 	)
 	if err != nil {
 		return fmt.Errorf("failed to initialize releaser: %w", err)

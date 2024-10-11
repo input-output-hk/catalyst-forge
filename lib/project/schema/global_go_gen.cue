@@ -17,6 +17,10 @@ package schema
 
 // CI contains the configuration for the CI system.
 #GlobalCI: {
+	// DefaultBranch contains the default branch of the repository.
+	// +optional
+	defaultBranch?: null | string @go(DefaultBranch,*string)
+
 	// Local defines the filters to use when simulating a local CI run.
 	local: [...string] @go(Local,[]string)
 
