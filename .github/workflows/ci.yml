@@ -152,7 +152,7 @@ jobs:
   release_new:
     uses: input-output-hk/catalyst-forge/.github/workflows/release_new.yml@adds-release-cm
     needs: [discover, check, build, test]
-    if: (fromJson(needs.discover.outputs.releases)[0] != null)
+    if: (fromJson(needs.discover.outputs.releases)[0] != null) && !failure() && !cancelled()
     with:
       releases: ${{ needs.discover.outputs.releases }}
       forge_version: ${{ inputs.forge_version }}
