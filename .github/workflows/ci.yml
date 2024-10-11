@@ -68,11 +68,6 @@ jobs:
             ${{ env.FORGE_REGEX_DOCS }}
             ${{ env.FORGE_REGEX_RELEASE }}
             ${{ env.FORGE_REGEX_PUBLISH }}
-      - name: Debug
-        run: |
-          echo "Deployments: ${{ steps.discovery.outputs.deployments }}"
-          echo "Earthfiles: ${{ steps.discovery.outputs.earthfiles }}"
-          echo "Releases: ${{ steps.discovery.outputs.releases }}"
 
   # check:
   #   uses: input-output-hk/catalyst-forge/.github/workflows/run.yml@adds-release-cm
