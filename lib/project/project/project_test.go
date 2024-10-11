@@ -3,6 +3,7 @@ package project
 import (
 	"testing"
 
+	"github.com/input-output-hk/catalyst-forge/lib/tools/testutils"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -62,6 +63,7 @@ func TestProjectTagMatches(t *testing.T) {
 				Path:     tt.projectPath,
 				RepoRoot: tt.rootPath,
 				TagInfo:  tt.info,
+				logger:   testutils.NewNoopLogger(),
 			}
 
 			matches, err := project.TagMatches()
