@@ -17,6 +17,7 @@ type Project struct {
 	Deployment Deployment `json:"deployment"`
 
 	// Release contains the configuration for the release of the project.
+	// +optional
 	Release map[string]Release `json:"release"`
 }
 

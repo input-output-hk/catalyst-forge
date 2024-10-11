@@ -27,15 +27,16 @@ jobs:
     outputs:
       deployments: ${{ steps.discovery.outputs.deployments }}
       earthfiles: ${{ steps.discovery.outputs.earthfiles }}
+      releases: ${{ steps.discovery.outputs.releases }}
     steps:
       - uses: actions/checkout@v4
       - name: Install Forge
-        uses: input-output-hk/catalyst-forge/actions/install@ci/v1.1.0
+        uses: input-output-hk/catalyst-forge/actions/install@adds-release-cm
         if: ${{ inputs.forge_version != 'local' }}
         with:
           version: ${{ inputs.forge_version }}
       - name: Install Local Forge
-        uses: input-output-hk/catalyst-forge/actions/install-local@ci/v1.1.0
+        uses: input-output-hk/catalyst-forge/actions/install-local@adds-release-cm
         if: ${{ inputs.forge_version == 'local' }}
         with:
           earthly_token: ${{ secrets.earthly_token }}
@@ -50,14 +51,14 @@ jobs:
             echo "skip=false" >> $GITHUB_OUTPUT
           fi
       - name: Setup CI
-        uses: input-output-hk/catalyst-forge/actions/setup@ci/v1.1.0
+        uses: input-output-hk/catalyst-forge/actions/setup@adds-release-cm
         with:
           skip_docker: 'true'
           skip_github: 'true'
           skip_earthly: ${{ steps.local.outputs.skip }}
       - name: Discovery
         id: discovery
-        uses: input-output-hk/catalyst-forge/actions/discovery@ci/v1.1.0
+        uses: input-output-hk/catalyst-forge/actions/discovery@adds-release-cm
         with:
           filters: |
             ${{ env.FORGE_REGEX_CHECK }}
@@ -69,7 +70,7 @@ jobs:
             ${{ env.FORGE_REGEX_PUBLISH }}
 
   check:
-    uses: input-output-hk/catalyst-forge/.github/workflows/run.yml@ci/v1.1.0
+    uses: input-output-hk/catalyst-forge/.github/workflows/run.yml@adds-release-cm
     needs: [discover]
     if: (fromJson(needs.discover.outputs.earthfiles)['^check(-.*)?$'] != null) && !failure() && !cancelled()
     with:
@@ -79,7 +80,7 @@ jobs:
       earthly_token: ${{ secrets.earthly_token }}
 
   build:
-    uses: input-output-hk/catalyst-forge/.github/workflows/run.yml@ci/v1.1.0
+    uses: input-output-hk/catalyst-forge/.github/workflows/run.yml@adds-release-cm
     needs: [discover, check]
     if: (fromJson(needs.discover.outputs.earthfiles)['^build(-.*)?$'] != null) && !failure() && !cancelled()
     with:
@@ -89,7 +90,7 @@ jobs:
       earthly_token: ${{ secrets.earthly_token }}
 
   package:
-    uses: input-output-hk/catalyst-forge/.github/workflows/run.yml@ci/v1.1.0
+    uses: input-output-hk/catalyst-forge/.github/workflows/run.yml@adds-release-cm
     needs: [discover, check, build]
     if: (fromJson(needs.discover.outputs.earthfiles)['^package(-.*)?$'] != null) && !failure() && !cancelled()
     with:
@@ -99,7 +100,7 @@ jobs:
       earthly_token: ${{ secrets.earthly_token }}
 
   test:
-    uses: input-output-hk/catalyst-forge/.github/workflows/run.yml@ci/v1.1.0
+    uses: input-output-hk/catalyst-forge/.github/workflows/run.yml@adds-release-cm
     needs: [discover, check, build, package]
     if: (fromJson(needs.discover.outputs.earthfiles)['^test(-.*)?$'] != null) && !failure() && !cancelled()
     with:
@@ -109,7 +110,7 @@ jobs:
       earthly_token: ${{ secrets.earthly_token }}
 
   docs:
-    uses: input-output-hk/catalyst-forge/.github/workflows/docs.yml@ci/v1.1.0
+    uses: input-output-hk/catalyst-forge/.github/workflows/docs.yml@adds-release-cm
     needs: [discover, check, build, test]
     if: (fromJson(needs.discover.outputs.earthfiles)['^docs(-.*)?$'] != null) && !failure() && !cancelled()
     with:
@@ -119,7 +120,7 @@ jobs:
       earthly_token: ${{ secrets.earthly_token }}
 
   publish:
-    uses: input-output-hk/catalyst-forge/.github/workflows/publish.yml@ci/v1.1.0
+    uses: input-output-hk/catalyst-forge/.github/workflows/publish.yml@adds-release-cm
     needs: [discover, check, build, test]
     if: (fromJson(needs.discover.outputs.earthfiles)['^publish(-.*)?$'] != null) && !failure() && !cancelled()
     with:
@@ -129,7 +130,7 @@ jobs:
       earthly_token: ${{ secrets.earthly_token }}
 
   deploy:
-    uses: input-output-hk/catalyst-forge/.github/workflows/deploy.yml@ci/v1.1.0
+    uses: input-output-hk/catalyst-forge/.github/workflows/deploy.yml@adds-release-cm
     needs: [discover, check, build, test, publish]
     if: (fromJson(needs.discover.outputs.deployments)[0] != null) && github.ref == format('refs/heads/{0}', github.event.repository.default_branch) && !failure() && !cancelled()
     with:
@@ -139,7 +140,7 @@ jobs:
       earthly_token: ${{ secrets.earthly_token }}
 
   release:
-    uses: input-output-hk/catalyst-forge/.github/workflows/release.yml@ci/v1.1.0
+    uses: input-output-hk/catalyst-forge/.github/workflows/release.yml@adds-release-cm
     needs: [discover, check, build, test]
     if: (fromJson(needs.discover.outputs.earthfiles)['^release(-.*)?$'] != null) && !failure() && !cancelled()
     with:

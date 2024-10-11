@@ -208,7 +208,8 @@ version: "1.0"
 	deployment?: #Deployment @go(Deployment)
 
 	// Release contains the configuration for the release of the project.
-	release: {
+	// +optional
+	release?: {
 		[string]: #Release
 	} @go(Release,map[string]Release)
 }

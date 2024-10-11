@@ -26,4 +26,18 @@ project: {
 			}
 		}
 	}
+	release: {
+		docker: {
+			config: {}
+			on: ["merge", "tag"]
+			target: "publish"
+			type:   "docker"
+		}
+		github: {
+			config: {}
+			on: ["merge", "tag"]
+			target: "release"
+			type:   "github"
+		}
+	}
 }

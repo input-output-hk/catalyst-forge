@@ -21,7 +21,8 @@ package schema
 	deployment?: #Deployment @go(Deployment)
 
 	// Release contains the configuration for the release of the project.
-	release: {[string]: #Release} @go(Release,map[string]Release)
+	// +optional
+	release?: {[string]: #Release} @go(Release,map[string]Release)
 }
 
 #ProjectCI: {
