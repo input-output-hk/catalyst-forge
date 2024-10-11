@@ -149,6 +149,16 @@ jobs:
     secrets:
       earthly_token: ${{ secrets.earthly_token }}
 
+  release_new:
+    uses: input-output-hk/catalyst-forge/.github/workflows/release_new.yml@adds-release-cm
+    needs: [discover, check, build, test]
+    if: (fromJson(needs.discover.outputs.releases)[0] != null)
+    with:
+      releases: ${{ needs.discover.outputs.releases }}
+      forge_version: ${{ inputs.forge_version }}
+    secrets:
+      earthly_token: ${{ secrets.earthly_token }}
+
   final:
     needs: [check, build, package, test, publish, release]
     if: (!failure() && !cancelled())
