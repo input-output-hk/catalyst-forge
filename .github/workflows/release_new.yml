@@ -20,7 +20,7 @@ env:
 
 jobs:
   run:
-    name: Release (${{ matrix.release.name}}) - ${{ matrix.release.project }}
+    name: ${{ matrix.release.project }} (${{ matrix.release.name}})
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
