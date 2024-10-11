@@ -73,7 +73,7 @@ func (r *DockerReleaser) Release() error {
 				curImage := fmt.Sprintf("%s:%s_%s", CONTAINER_NAME, TAG_NAME, platformSuffix)
 				newImage := fmt.Sprintf("%s/%s:%s_%s", registry, container, imageTag, platformSuffix)
 
-				r.logger.Info("Tagging image", "old", curImage, "new", newImage)
+				r.logger.Debug("Tagging image", "tag", newImage)
 				if err := r.tagImage(curImage, newImage); err != nil {
 					return fmt.Errorf("failed to tag image: %w", err)
 				}
