@@ -21,8 +21,8 @@ var _ executor.Executor = &ExecutorMock{}
 //			ExecuteFunc: func(command string, args ...string) ([]byte, error) {
 //				panic("mock out the Execute method")
 //			},
-//			ExecuteQuietFunc: func(command string, args ...string) error {
-//				panic("mock out the ExecuteQuiet method")
+//			LookPathFunc: func(file string) (string, error) {
+//				panic("mock out the LookPath method")
 //			},
 //		}
 //
@@ -34,8 +34,8 @@ type ExecutorMock struct {
 	// ExecuteFunc mocks the Execute method.
 	ExecuteFunc func(command string, args ...string) ([]byte, error)
 
-	// ExecuteQuietFunc mocks the ExecuteQuiet method.
-	ExecuteQuietFunc func(command string, args ...string) error
+	// LookPathFunc mocks the LookPath method.
+	LookPathFunc func(file string) (string, error)
 
 	// calls tracks calls to the methods.
 	calls struct {
@@ -46,16 +46,14 @@ type ExecutorMock struct {
 			// Args is the args argument value.
 			Args []string
 		}
-		// ExecuteQuiet holds details about calls to the ExecuteQuiet method.
-		ExecuteQuiet []struct {
-			// Command is the command argument value.
-			Command string
-			// Args is the args argument value.
-			Args []string
+		// LookPath holds details about calls to the LookPath method.
+		LookPath []struct {
+			// File is the file argument value.
+			File string
 		}
 	}
-	lockExecute      sync.RWMutex
-	lockExecuteQuiet sync.RWMutex
+	lockExecute  sync.RWMutex
+	lockLookPath sync.RWMutex
 }
 
 // Execute calls ExecuteFunc.
@@ -94,38 +92,34 @@ func (mock *ExecutorMock) ExecuteCalls() []struct {
 	return calls
 }
 
-// ExecuteQuiet calls ExecuteQuietFunc.
-func (mock *ExecutorMock) ExecuteQuiet(command string, args ...string) error {
-	if mock.ExecuteQuietFunc == nil {
-		panic("ExecutorMock.ExecuteQuietFunc: method is nil but Executor.ExecuteQuiet was just called")
+// LookPath calls LookPathFunc.
+func (mock *ExecutorMock) LookPath(file string) (string, error) {
+	if mock.LookPathFunc == nil {
+		panic("ExecutorMock.LookPathFunc: method is nil but Executor.LookPath was just called")
 	}
 	callInfo := struct {
-		Command string
-		Args    []string
+		File string
 	}{
-		Command: command,
-		Args:    args,
+		File: file,
 	}
-	mock.lockExecuteQuiet.Lock()
-	mock.calls.ExecuteQuiet = append(mock.calls.ExecuteQuiet, callInfo)
-	mock.lockExecuteQuiet.Unlock()
-	return mock.ExecuteQuietFunc(command, args...)
+	mock.lockLookPath.Lock()
+	mock.calls.LookPath = append(mock.calls.LookPath, callInfo)
+	mock.lockLookPath.Unlock()
+	return mock.LookPathFunc(file)
 }
 
-// ExecuteQuietCalls gets all the calls that were made to ExecuteQuiet.
+// LookPathCalls gets all the calls that were made to LookPath.
 // Check the length with:
 //
-//	len(mockedExecutor.ExecuteQuietCalls())
-func (mock *ExecutorMock) ExecuteQuietCalls() []struct {
-	Command string
-	Args    []string
+//	len(mockedExecutor.LookPathCalls())
+func (mock *ExecutorMock) LookPathCalls() []struct {
+	File string
 } {
 	var calls []struct {
-		Command string
-		Args    []string
+		File string
 	}
-	mock.lockExecuteQuiet.RLock()
-	calls = mock.calls.ExecuteQuiet
-	mock.lockExecuteQuiet.RUnlock()
+	mock.lockLookPath.RLock()
+	calls = mock.calls.LookPath
+	mock.lockLookPath.RUnlock()
 	return calls
 }

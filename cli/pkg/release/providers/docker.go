@@ -3,7 +3,6 @@ package providers
 import (
 	"fmt"
 	"log/slog"
-	"os/exec"
 	"strings"
 
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/earthly"
@@ -21,9 +20,9 @@ const (
 )
 
 type DockerReleaser struct {
-	ctx     run.RunContext
 	docker  executor.WrappedExecuter
 	force   bool
+	handler events.ReleaseEventHandler
 	logger  *slog.Logger
 	project project.Project
 	release schema.Release
@@ -31,12 +30,6 @@ type DockerReleaser struct {
 }
 
 func (r *DockerReleaser) Release() error {
-	if _, err := exec.LookPath(DOCKER_BINARY); err != nil {
-		return fmt.Errorf("failed to find Docker binary: %w", err)
-	} else if r.project.TagInfo == nil {
-		return fmt.Errorf("no tag information found")
-	}
-
 	r.logger.Info("Running release target", "project", r.project.Name, "target", r.release.Target)
 	if err := r.run(); err != nil {
 		return fmt.Errorf("failed to run release target: %w", err)
@@ -46,7 +39,7 @@ func (r *DockerReleaser) Release() error {
 		return fmt.Errorf("failed to validate images: %w", err)
 	}
 
-	if !r.fire() && !r.force {
+	if !r.handler.Firing(r.release.On) && !r.force {
 		r.logger.Info("No release event is firing, skipping release")
 		return nil
 	}
@@ -118,11 +111,6 @@ func (r *DockerReleaser) Release() error {
 
 	r.logger.Info("Release complete")
 	return nil
-}
-
-// fire checks if the release should be fired.
-func (r *DockerReleaser) fire() bool {
-	return events.Firing(&r.project, r.release.On, r.logger)
 }
 
 // getPlatforms returns the platforms present in the release target, if any.
@@ -224,12 +212,20 @@ func NewDockerReleaser(
 	release schema.Release,
 	force bool,
 ) (*DockerReleaser, error) {
-	docker := executor.NewLocalWrappedExecutor(executor.NewLocalExecutor(ctx.Logger), "docker")
+	exec := executor.NewLocalExecutor(ctx.Logger)
+	if _, ok := exec.LookPath(DOCKER_BINARY); ok != nil {
+		return nil, fmt.Errorf("failed to find Docker binary: %w", ok)
+	} else if project.TagInfo == nil {
+		return nil, fmt.Errorf("cannot publish without tag information")
+	}
+
+	docker := executor.NewLocalWrappedExecutor(exec, "docker")
+	handler := events.NewDefaultReleaseEventHandler(&project, ctx.Logger)
 	runner := run.NewDefaultProjectRunner(ctx, &project)
 	return &DockerReleaser{
-		ctx:     ctx,
 		docker:  docker,
 		force:   force,
+		handler: &handler,
 		logger:  ctx.Logger,
 		project: project,
 		release: release,

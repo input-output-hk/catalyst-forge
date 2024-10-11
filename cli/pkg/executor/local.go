@@ -77,11 +77,8 @@ func (e *LocalExecutor) Execute(command string, args ...string) ([]byte, error) 
 	return cmd.CombinedOutput()
 }
 
-func (e *LocalExecutor) ExecuteQuiet(command string, args ...string) error {
-	cmd := exec.Command(command, args...)
-
-	e.logger.Debug("Executing local command quietly", "command", cmd.String())
-	return cmd.Run()
+func (e *LocalExecutor) LookPath(file string) (string, error) {
+	return exec.LookPath(file)
 }
 
 // WithRedirect is an option that configures the LocalExecutor to redirect the

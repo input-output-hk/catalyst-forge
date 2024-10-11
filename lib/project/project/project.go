@@ -123,3 +123,25 @@ func (p *Project) TagMatches() (bool, error) {
 func (p *Project) Raw() blueprint.RawBlueprint {
 	return p.rawBlueprint
 }
+
+func NewProject(
+	logger *slog.Logger,
+	ctx *cue.Context,
+	repo *gg.Repository,
+	earthfile *earthfile.Earthfile,
+	name, path, repoRoot string,
+	blueprint schema.Blueprint,
+	tagInfo *TagInfo,
+) Project {
+	return Project{
+		Blueprint: blueprint,
+		Earthfile: earthfile,
+		Name:      name,
+		Path:      path,
+		Repo:      repo,
+		RepoRoot:  repoRoot,
+		TagInfo:   tagInfo,
+		ctx:       ctx,
+		logger:    logger,
+	}
+}
