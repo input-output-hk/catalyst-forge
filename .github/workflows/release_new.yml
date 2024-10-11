@@ -6,6 +6,12 @@ on:
           A JSON list of releases to run
         required: true
         type: string
+      force:
+        description: |
+          Force the release to run even if no events are triggered
+        required: false
+        type: string
+        default: "false"
       forge_version:
         description: |
           The version of the forge CLI to install (use 'local' for testing)
@@ -54,4 +60,10 @@ jobs:
           skip_earthly: ${{ steps.local.outputs.skip }}
       - name: Run
         run: |
-          forge -vv release ${{ matrix.release.project }} ${{ matrix.release.name }}
+          if [[ ${{ inputs.force }} == "true" ]]; then
+            forge -vv release --force ${{ matrix.release.project }} ${{ matrix.release.name }}
+          else
+            forge -vv release ${{ matrix.release.project }} ${{ matrix.release.name }}
+          fi
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

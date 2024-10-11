@@ -157,6 +157,7 @@ jobs:
     with:
       releases: ${{ needs.discover.outputs.releases }}
       forge_version: ${{ inputs.forge_version }}
+      force: "true"
     secrets:
       earthly_token: ${{ secrets.earthly_token }}
 
