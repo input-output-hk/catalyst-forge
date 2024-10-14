@@ -27,6 +27,14 @@ type Command struct {
 	platform *string
 }
 
+func (prog *Program) ListCommands() []string {
+	res := []string{}
+	for _, v := range prog.groups {
+		res = append(res, v.GetId())
+	}
+	return res
+}
+
 func (prog *Program) ProcessCmd(cmd string, logger *slog.Logger) error {
 	var foundCmd *Command
 	for _, v := range prog.groups {

@@ -7,11 +7,17 @@ import (
 
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/command"
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/run"
+	// "github.com/willabides/kongplete"
+	// "github.com/alecthomas/kong"
+	// "github.com/posener/complete"
+	// "github.com/willabides/kongplete"
 )
 
 type DevX struct {
 	MarkdownPath string `arg:"" help:"Path to the markdown file."`
 	CommandName  string `arg:"" help:"Command to be executed."`
+
+	// InstallCompletions kongplete.InstallCompletions `cmd:"" help:"install shell completions"`
 }
 
 func (c *DevX) Run(ctx run.RunContext, logger *slog.Logger) error {
