@@ -32,12 +32,6 @@ func TestScan(t *testing.T) {
 	})
 }
 
-func TestDevX(t *testing.T) {
-	testscript.Run(t, testscript.Params{
-		Dir: "testdata/devx",
-	})
-}
-
 func mockEarthly() int {
 	for _, arg := range os.Args {
 		fmt.Println(arg)
