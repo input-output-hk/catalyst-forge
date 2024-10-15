@@ -7,10 +7,6 @@ import (
 
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/command"
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/run"
-	// "github.com/willabides/kongplete"
-	// "github.com/alecthomas/kong"
-	// "github.com/posener/complete"
-	// "github.com/willabides/kongplete"
 )
 
 type DevX struct {
