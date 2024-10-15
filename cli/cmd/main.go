@@ -27,7 +27,6 @@ var cli struct {
 
 	Deploy   cmds.DeployCmd   `kong:"cmd" help:"Deploy a project." `
 	Dump     cmds.DumpCmd     `kong:"cmd" help:"Dumps a project's blueprint to JSON."`
-	Devx     cmds.DevX        `kong:"cmd" help:"Reads a forge markdown file and executes a command."`
 	CI       cmds.CICmd       `kong:"cmd" help:"Simulate a CI run."`
 	Run      cmds.RunCmd      `kong:"cmd" help:"Run an Earthly target."`
 	Scan     cmds.ScanCmd     `kong:"cmd" help:"Scan for Earthfiles."`
@@ -63,7 +62,6 @@ func Run() int {
 
 	kongplete.Complete(parser,
 		kongplete.WithPredictor("path", complete.PredictFiles("*")),
-		kongplete.WithPredictor("devx-commands", complete.PredictSet("tmp1", "tmp2", "tmp3")),
 	)
 
 	handler := log.New(os.Stderr)
