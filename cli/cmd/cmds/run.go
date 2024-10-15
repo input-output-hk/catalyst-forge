@@ -7,7 +7,7 @@ import (
 
 type RunCmd struct {
 	Artifact   string   `short:"a" help:"Dump all produced artifacts to the given path."`
-	Path       string   `kong:"arg,predictor=path" help:"The path to the target to execute (i.e., ./dir1+test)."`
+	Path       string   `arg:"" help:"The path to the target to execute (i.e., ./dir1+test)."`
 	Platform   []string `short:"p" help:"Run the target with the given platform."`
 	Pretty     bool     `help:"Pretty print JSON output."`
 	TargetArgs []string `arg:"" help:"Arguments to pass to the target." default:""`

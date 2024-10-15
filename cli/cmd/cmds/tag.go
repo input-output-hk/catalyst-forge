@@ -9,7 +9,7 @@ import (
 
 type TagCmd struct {
 	Pretty  bool   `short:"p" help:"Pretty print JSON output."`
-	Project string `kong:"arg,predictor=path" help:"The project to generate tags for."`
+	Project string `arg:"" help:"The project to generate tags for."`
 	Trim    bool   `short:"t" help:"Trim the project path from the git tag."`
 }
 

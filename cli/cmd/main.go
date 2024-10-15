@@ -16,8 +16,6 @@ import (
 	"github.com/input-output-hk/catalyst-forge/lib/project/schema"
 	"github.com/input-output-hk/catalyst-forge/lib/project/secrets"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/walker"
-	"github.com/posener/complete"
-	"github.com/willabides/kongplete"
 )
 
 var version = "dev"
@@ -25,17 +23,15 @@ var version = "dev"
 var cli struct {
 	cmds.GlobalArgs
 
-	Deploy   cmds.DeployCmd   `kong:"cmd" help:"Deploy a project." `
-	Dump     cmds.DumpCmd     `kong:"cmd" help:"Dumps a project's blueprint to JSON."`
-	CI       cmds.CICmd       `kong:"cmd" help:"Simulate a CI run."`
-	Run      cmds.RunCmd      `kong:"cmd" help:"Run an Earthly target."`
-	Scan     cmds.ScanCmd     `kong:"cmd" help:"Scan for Earthfiles."`
-	Secret   cmds.SecretCmd   `kong:"cmd" help:"Manage secrets."`
-	Tag      cmds.TagCmd      `kong:"cmd" help:"Generate a tag for a project."`
-	Validate cmds.ValidateCmd `kong:"cmd" help:"Validates a project."`
-	Version  VersionCmd       `kong:"cmd" help:"Print the version."`
-
-	InstallCompletions kongplete.InstallCompletions `cmd:"" help:"install shell completions"`
+	Deploy   cmds.DeployCmd   `cmd:"" help:"Deploy a project."`
+	Dump     cmds.DumpCmd     `cmd:"" help:"Dumps a project's blueprint to JSON."`
+	CI       cmds.CICmd       `cmd:"" help:"Simulate a CI run."`
+	Run      cmds.RunCmd      `cmd:"" help:"Run an Earthly target."`
+	Scan     cmds.ScanCmd     `cmd:"" help:"Scan for Earthfiles."`
+	Secret   cmds.SecretCmd   `cmd:"" help:"Manage secrets."`
+	Tag      cmds.TagCmd      `cmd:"" help:"Generate a tag for a project."`
+	Validate cmds.ValidateCmd `cmd:"" help:"Validates a project."`
+	Version  VersionCmd       `cmd:"" help:"Print the version."`
 }
 
 type VersionCmd struct{}
@@ -54,15 +50,9 @@ func (c *VersionCmd) Run() error {
 
 // Run is the entrypoint for the CLI tool.
 func Run() int {
-	cliArgs := os.Args[1:]
-
-	parser := kong.Must(&cli,
+	ctx := kong.Parse(&cli,
 		kong.Name("forge"),
 		kong.Description("The CLI tool powering Catalyst Forge"))
-
-	kongplete.Complete(parser,
-		kongplete.WithPredictor("path", complete.PredictFiles("*")),
-	)
 
 	handler := log.New(os.Stderr)
 	switch cli.Verbose {
@@ -74,12 +64,6 @@ func Run() int {
 		handler.SetLevel(log.InfoLevel)
 	case 3:
 		handler.SetLevel(log.DebugLevel)
-	}
-
-	ctx, err := parser.Parse(cliArgs)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "forge: %v\n", err)
-		return 1
 	}
 
 	logger := slog.New(handler)
@@ -99,8 +83,9 @@ func Run() int {
 	}
 	ctx.Bind(runctx)
 
-	if err := ctx.Run(); err != nil {
-		fmt.Fprintf(os.Stderr, "forge: %v\n", err)
+	err := ctx.Run()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "forge: %v", err)
 		return 1
 	}
 

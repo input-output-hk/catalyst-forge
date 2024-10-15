@@ -18,7 +18,7 @@ type ScanCmd struct {
 	Earthfile bool     `help:"Return the Earthfile targets for each project."`
 	Filter    []string `short:"f" help:"Filter Earthfile targets by regular expression or blueprint results by path."`
 	Pretty    bool     `help:"Pretty print JSON output."`
-	RootPath  string   `kong:"arg,predictor=path" help:"Root path to scan for Earthfiles and their respective targets."`
+	RootPath  string   `arg:"" help:"Root path to scan for Earthfiles and their respective targets."`
 }
 
 func (c *ScanCmd) Run(ctx run.RunContext) error {
