@@ -4,12 +4,12 @@ project: {
 	ci: targets: {
 		publish: {
 			args: {
-				version: string | *"dev" @env(name="GIT_TAG",type="string")
+				version: string | *"dev" @forge(name="GIT_TAG")
 			}
 		}
 		release: {
 			args: {
-				version: string | *"dev" @env(name="GIT_TAG",type="string")
+				version: string | *"dev" @forge(name="GIT_TAG")
 			}
 		}
 	}
@@ -21,7 +21,7 @@ project: {
 			values: {
 				environment: name: "dev"
 				server: image: {
-					tag: _ @env(name="GIT_IMAGE_TAG",type="string")
+					tag: _ @forge(name="GIT_IMAGE_TAG")
 				}
 			}
 		}

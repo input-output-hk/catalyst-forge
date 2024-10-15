@@ -1,0 +1,64 @@
+package schema
+
+// Global contains the global configuration for the blueprint.
+type Global struct {
+	// CI contains the configuration for the CI system.
+	// +optional
+	CI GlobalCI `json:"ci"`
+
+	// Deployment contains the global configuration for the deployment of projects.
+	// +optional
+	Deployment GlobalDeployment `json:"deployment"`
+}
+
+// CI contains the configuration for the CI system.
+type GlobalCI struct {
+	// Local defines the filters to use when simulating a local CI run.
+	Local []string `json:"local"`
+
+	// Providers contains the configuration for the providers being used by the CI system.
+	// +optional
+	Providers Providers `json:"providers"`
+
+	// Registries contains the container registries to push images to.
+	// +optional
+	Registries []string `json:"registries"`
+
+	// Secrets contains global secrets that will be passed to all targets.
+	// +optional
+	Secrets []Secret `json:"secrets"`
+
+	// Tagging contains the tagging configuration for the CI system.
+	// +optional
+	Tagging Tagging `json:"tagging"`
+}
+
+// GlobalDeployment contains the configuration for the global deployment of projects.
+type GlobalDeployment struct {
+	// Registry contains the URL of the container registry holding the deployment code.
+	Registry string `json:"registry"`
+
+	// Repo contains the configuration for the global deployment repository.
+	Repo GlobalDeploymentRepo `json:"repo"`
+
+	// Root contains the root deployment directory in the deployment repository.
+	Root string `json:"root"`
+}
+
+// GlobalDeploymentRepo contains the configuration for the global deployment repository.
+type GlobalDeploymentRepo struct {
+	// Ref contains the ref to use for the deployment repository.
+	Ref string `json:"ref"`
+
+	// URL contains the URL of the deployment repository.
+	Url string `json:"url"`
+}
+
+type Tagging struct {
+	// Aliases contains the aliases to use for git tags.
+	// +optional
+	Aliases map[string]string `json:"aliases"`
+
+	// Strategy contains the tagging strategy to use for containers.
+	Strategy TagStrategy `json:"strategy"`
+}

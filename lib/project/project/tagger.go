@@ -8,7 +8,7 @@ import (
 
 	gg "github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
-	"github.com/input-output-hk/catalyst-forge/lib/project/project/tag"
+	strats "github.com/input-output-hk/catalyst-forge/lib/project/project/strategies"
 	"github.com/input-output-hk/catalyst-forge/lib/project/schema"
 )
 
@@ -16,6 +16,12 @@ import (
 type MonoTag struct {
 	Project string
 	Tag     string
+}
+
+// TagInfo represents tag information.
+type TagInfo struct {
+	Generated string `json:"generated"`
+	Git       string `json:"git"`
 }
 
 // Tagger parses tag information from projects.
@@ -26,6 +32,24 @@ type Tagger struct {
 	trim    bool
 }
 
+// GetTagInfo returns tag information for the project.
+func (t *Tagger) GetTagInfo() (TagInfo, error) {
+	gen, err := t.GenerateTag()
+	if err != nil {
+		return TagInfo{}, fmt.Errorf("failed to generate tag: %w", err)
+	}
+
+	git, err := t.GetGitTag()
+	if err != nil {
+		return TagInfo{}, fmt.Errorf("failed to get git tag: %w", err)
+	}
+
+	return TagInfo{
+		Generated: gen,
+		Git:       git,
+	}, nil
+}
+
 // GenerateTag generates a tag for the project based on the tagging strategy.
 func (t *Tagger) GenerateTag() (string, error) {
 	strategy := t.project.Blueprint.Global.CI.Tagging.Strategy
@@ -33,7 +57,7 @@ func (t *Tagger) GenerateTag() (string, error) {
 	t.logger.Info("Generating tag", "strategy", strategy)
 	switch strategy {
 	case schema.TagStrategyGitCommit:
-		tag, err := tag.GitCommit(t.project.Repo)
+		tag, err := strats.GitCommit(t.project.Repo)
 		if err != nil {
 			return "", err
 		}

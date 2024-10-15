@@ -10,9 +10,13 @@ import (
 	"github.com/alecthomas/kong"
 	"github.com/charmbracelet/log"
 	"github.com/input-output-hk/catalyst-forge/cli/cmd/cmds"
+	"github.com/input-output-hk/catalyst-forge/cli/pkg/executor"
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/run"
+	"github.com/input-output-hk/catalyst-forge/lib/project/project"
 	"github.com/input-output-hk/catalyst-forge/lib/project/schema"
-	"github.com/posener/complete"
+  "github.com/input-output-hk/catalyst-forge/lib/project/secrets"
+	"github.com/input-output-hk/catalyst-forge/lib/tools/walker"
+  "github.com/posener/complete"
 	"github.com/willabides/kongplete"
 )
 
@@ -74,18 +78,28 @@ func Run() int {
 		handler.SetLevel(log.DebugLevel)
 	}
 
-	ctx, err := parser.Parse(cliArgs)
+  ctx, err := parser.Parse(cliArgs)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "forge: %v\n", err)
 		return 1
 	}
-
+  
+	logger := slog.New(handler)
+	loader := project.NewDefaultProjectLoader(logger)
 	runctx := run.RunContext{
-		CI:      cli.GlobalArgs.CI,
-		Local:   cli.GlobalArgs.Local,
-		Verbose: cli.GlobalArgs.Verbose,
+		CI: cli.GlobalArgs.CI,
+		Executor: executor.NewLocalExecutor(
+			logger,
+			executor.WithRedirect(),
+		),
+		FSWalker:      walker.NewDefaultFSWalker(logger),
+		Local:         cli.GlobalArgs.Local,
+		Logger:        logger,
+		ProjectLoader: &loader,
+		SecretStore:   secrets.NewDefaultSecretStore(),
+		Verbose:       cli.GlobalArgs.Verbose,
 	}
-	ctx.Bind(runctx, slog.New(handler))
+	ctx.Bind(runctx)
 
 	if err := ctx.Run(); err != nil {
 		fmt.Fprintf(os.Stderr, "forge: %v\n", err)

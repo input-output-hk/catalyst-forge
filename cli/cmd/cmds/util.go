@@ -3,11 +3,9 @@ package cmds
 import (
 	"encoding/json"
 	"fmt"
-	"log/slog"
 
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/earthly"
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/run"
-	"github.com/input-output-hk/catalyst-forge/lib/project/project"
 )
 
 type GlobalArgs struct {
@@ -53,15 +51,6 @@ func generateOpts(flags *RunCmd, ctx run.RunContext) []earthly.EarthlyExecutorOp
 	}
 
 	return opts
-}
-
-// loadProject loads the project from the given root path.
-func loadProject(ctx run.RunContext, rootPath string, logger *slog.Logger) (project.Project, error) {
-	loader := project.NewDefaultProjectLoader(
-		project.GetDefaultRuntimes(logger),
-		logger,
-	)
-	return loader.Load(rootPath)
 }
 
 // printJson prints the given data as a JSON string.

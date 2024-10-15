@@ -5,11 +5,13 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
-	"os"
 	"path/filepath"
 
 	"cuelang.org/go/cue"
+	"cuelang.org/go/cue/cuecontext"
 	"github.com/input-output-hk/catalyst-forge/lib/project/blueprint"
+	"github.com/input-output-hk/catalyst-forge/lib/project/injector"
+	"github.com/input-output-hk/catalyst-forge/lib/project/schema"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/earthfile"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/git"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/walker"
@@ -27,7 +29,9 @@ type ProjectLoader interface {
 // DefaultProjectLoader is the default implementation of the ProjectLoader.
 type DefaultProjectLoader struct {
 	blueprintLoader blueprint.BlueprintLoader
+	ctx             *cue.Context
 	fs              afero.Fs
+	injectors       []injector.BlueprintInjector
 	logger          *slog.Logger
 	repoLoader      git.RepoLoader
 	runtimes        []RuntimeData
@@ -74,35 +78,69 @@ func (p *DefaultProjectLoader) Load(projectPath string) (Project, error) {
 		ef = &efs
 	}
 
-	p.logger.Info("Setting blueprint runtime data")
-	p.blueprintLoader.SetOverrider(func(value cue.Value) map[string]string {
-		data := make(map[string]string)
-		for _, r := range p.runtimes {
-			partialProject := Project{
-				Earthfile:    ef,
-				Repo:         repo,
-				Path:         projectPath,
-				RepoRoot:     gitRoot,
-				rawBlueprint: blueprint.NewRawBlueprint(value),
-			}
-
-			for k, v := range r.Load(&partialProject) {
-				if err := os.Setenv(k, v); err != nil {
-					p.logger.Error("Failed to set environment variable", "error", err, "key", k, "value", v)
-				}
-
-				data[k] = v
-			}
-		}
-
-		return data
-	})
-
 	p.logger.Info("Loading blueprint", "path", projectPath)
 	rbp, err := p.blueprintLoader.Load(projectPath, gitRoot)
 	if err != nil {
 		p.logger.Error("Failed to load blueprint", "error", err, "path", projectPath)
 		return Project{}, fmt.Errorf("failed to load blueprint: %w", err)
+	}
+
+	p.logger.Info("Loading tag data")
+	var tagConfig schema.Tagging
+	var tagInfo TagInfo
+	if err := rbp.Get("global.ci.tagging").Decode(&tagConfig); err != nil {
+		p.logger.Warn("Failed to load tag config", "error", err)
+	} else {
+		tagger := NewTagger(
+			&Project{
+				Blueprint: schema.Blueprint{
+					Global: schema.Global{
+						CI: schema.GlobalCI{
+							Tagging: tagConfig,
+						},
+					},
+				},
+				ctx:       p.ctx,
+				Earthfile: ef,
+				Repo:      repo,
+				RepoRoot:  gitRoot,
+			},
+			git.InCI(),
+			true,
+			p.logger,
+		)
+
+		tagInfo, err = tagger.GetTagInfo()
+		if err != nil {
+			p.logger.Error("Failed to get tag info", "error", err)
+		}
+	}
+
+	p.logger.Info("Gathering runtime data")
+	runtimeData := make(map[string]cue.Value)
+	for _, r := range p.runtimes {
+		d := r.Load(&Project{
+			ctx:          p.ctx,
+			Earthfile:    ef,
+			Repo:         repo,
+			rawBlueprint: rbp,
+			TagInfo:      tagInfo,
+		})
+
+		for k, v := range d {
+			runtimeData[k] = v
+		}
+	}
+
+	p.logger.Info("Injecting blueprint")
+	p.injectors = append(p.injectors, injector.NewBlueprintRuntimeInjector(p.ctx, runtimeData, p.logger))
+	for _, inj := range p.injectors {
+		rbp = inj.Inject(rbp)
+	}
+
+	if err := rbp.Validate(); err != nil {
+		p.logger.Error("Failed to validate blueprint", "error", err)
+		return Project{}, fmt.Errorf("failed to validate blueprint: %w", err)
 	}
 
 	bp, err := rbp.Decode()
@@ -113,6 +151,7 @@ func (p *DefaultProjectLoader) Load(projectPath string) (Project, error) {
 
 	return Project{
 		Blueprint:    bp,
+		ctx:          p.ctx,
 		Earthfile:    ef,
 		Name:         bp.Project.Name,
 		Path:         projectPath,
@@ -120,33 +159,40 @@ func (p *DefaultProjectLoader) Load(projectPath string) (Project, error) {
 		RepoRoot:     gitRoot,
 		logger:       p.logger,
 		rawBlueprint: rbp,
+		TagInfo:      tagInfo,
 	}, nil
 }
 
 // NewDefaultProjectLoader creates a new DefaultProjectLoader.
 func NewDefaultProjectLoader(
-	runtimes []RuntimeData,
 	logger *slog.Logger,
 ) DefaultProjectLoader {
 	if logger == nil {
 		logger = slog.New(slog.NewTextHandler(io.Discard, nil))
 	}
 
-	bl := blueprint.NewDefaultBlueprintLoader(nil, logger)
+	ctx := cuecontext.New()
+	bl := blueprint.NewDefaultBlueprintLoader(ctx, logger)
 	rl := git.NewDefaultRepoLoader()
 	return DefaultProjectLoader{
 		blueprintLoader: &bl,
+		ctx:             ctx,
 		fs:              afero.NewOsFs(),
-		logger:          logger,
-		repoLoader:      &rl,
-		runtimes:        runtimes,
+		injectors: []injector.BlueprintInjector{
+			injector.NewBlueprintEnvInjector(ctx, logger),
+		},
+		logger:     logger,
+		repoLoader: &rl,
+		runtimes:   GetDefaultRuntimes(logger),
 	}
 }
 
 // NewCustomProjectLoader creates a new DefaultProjectLoader with custom dependencies.
 func NewCustomProjectLoader(
+	ctx *cue.Context,
 	fs afero.Fs,
 	bl blueprint.BlueprintLoader,
+	injectors []injector.BlueprintInjector,
 	rl git.RepoLoader,
 	runtimes []RuntimeData,
 	logger *slog.Logger,
@@ -157,7 +203,9 @@ func NewCustomProjectLoader(
 
 	return DefaultProjectLoader{
 		blueprintLoader: bl,
+		ctx:             ctx,
 		fs:              fs,
+		injectors:       injectors,
 		logger:          logger,
 		repoLoader:      rl,
 		runtimes:        runtimes,
