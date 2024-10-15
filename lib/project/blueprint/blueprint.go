@@ -6,7 +6,6 @@ import (
 
 	"cuelang.org/go/cue"
 	"github.com/Masterminds/semver/v3"
-	"github.com/input-output-hk/catalyst-forge/lib/project/injector"
 	"github.com/input-output-hk/catalyst-forge/lib/project/version"
 	cuetools "github.com/input-output-hk/catalyst-forge/lib/tools/cue"
 )
@@ -75,7 +74,7 @@ func (b BlueprintFiles) Version() *semver.Version {
 // injecting any necessary environment variables. Additionally, the version is
 // extracted from the CUE value. If the version is not found or invalid, or the
 // final CUE value is invalid, an error is returned.
-func NewBlueprintFile(ctx *cue.Context, path string, contents []byte, inj injector.Injector) (BlueprintFile, error) {
+func NewBlueprintFile(ctx *cue.Context, path string, contents []byte) (BlueprintFile, error) {
 	v, err := cuetools.Compile(ctx, contents)
 	if err != nil {
 		return BlueprintFile{}, fmt.Errorf("failed to compile CUE file: %w", err)
