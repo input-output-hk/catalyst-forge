@@ -12,6 +12,8 @@ import (
 	"github.com/input-output-hk/catalyst-forge/cli/cmd/cmds"
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/run"
 	"github.com/input-output-hk/catalyst-forge/lib/project/schema"
+	"github.com/posener/complete"
+	"github.com/willabides/kongplete"
 )
 
 var version = "dev"
@@ -29,6 +31,8 @@ var cli struct {
 	Tag      cmds.TagCmd      `cmd:"" help:"Generate a tag for a project."`
 	Validate cmds.ValidateCmd `cmd:"" help:"Validates a project."`
 	Version  VersionCmd       `cmd:"" help:"Print the version."`
+
+	InstallCompletions kongplete.InstallCompletions `cmd:"" help:"install shell completions"`
 }
 
 type VersionCmd struct{}
@@ -47,9 +51,18 @@ func (c *VersionCmd) Run() error {
 
 // Run is the entrypoint for the CLI tool.
 func Run() int {
-	ctx := kong.Parse(&cli,
+	parser := kong.Must(&cli,
 		kong.Name("forge"),
 		kong.Description("The CLI tool powering Catalyst Forge"))
+
+	subcommands := []string{}
+	for _, k := range parser.Model.Children {
+		subcommands = append(subcommands, k.Name)
+	}
+
+	kongplete.Complete(parser,
+		kongplete.WithPredictor("subcommands", complete.PredictSet(subcommands...)),
+	)
 
 	handler := log.New(os.Stderr)
 	switch cli.Verbose {
@@ -63,6 +76,12 @@ func Run() int {
 		handler.SetLevel(log.DebugLevel)
 	}
 
+	ctx, err := parser.Parse(os.Args[1:])
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "forge: %v", err)
+		return 1
+	}
+
 	runctx := run.RunContext{
 		CI:      cli.GlobalArgs.CI,
 		Local:   cli.GlobalArgs.Local,
@@ -70,7 +89,7 @@ func Run() int {
 	}
 	ctx.Bind(runctx, slog.New(handler))
 
-	err := ctx.Run()
+	err = ctx.Run()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "forge: %v", err)
 		return 1
