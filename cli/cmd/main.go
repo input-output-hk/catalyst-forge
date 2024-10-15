@@ -51,17 +51,20 @@ func (c *VersionCmd) Run() error {
 
 // Run is the entrypoint for the CLI tool.
 func Run() int {
+	cliArgs := os.Args[1:]
+
 	parser := kong.Must(&cli,
 		kong.Name("forge"),
 		kong.Description("The CLI tool powering Catalyst Forge"))
 
+	// list all subcommands and install bash completion
 	subcommands := []string{}
 	for _, k := range parser.Model.Children {
 		subcommands = append(subcommands, k.Name)
 	}
 
 	kongplete.Complete(parser,
-		kongplete.WithPredictor("subcommands", complete.PredictSet(subcommands...)),
+		kongplete.WithPredictor("commands", complete.PredictSet(subcommands...)),
 	)
 
 	handler := log.New(os.Stderr)
@@ -76,9 +79,9 @@ func Run() int {
 		handler.SetLevel(log.DebugLevel)
 	}
 
-	ctx, err := parser.Parse(os.Args[1:])
+	ctx, err := parser.Parse(cliArgs)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "forge: %v", err)
+		fmt.Fprintf(os.Stderr, "forge: %v\n", err)
 		return 1
 	}
 
@@ -89,9 +92,8 @@ func Run() int {
 	}
 	ctx.Bind(runctx, slog.New(handler))
 
-	err = ctx.Run()
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "forge: %v", err)
+	if err := ctx.Run(); err != nil {
+		fmt.Fprintf(os.Stderr, "forge: %v\n", err)
 		return 1
 	}
 

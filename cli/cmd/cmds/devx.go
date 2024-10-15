@@ -16,8 +16,6 @@ import (
 type DevX struct {
 	MarkdownPath string `arg:"" help:"Path to the markdown file."`
 	CommandName  string `arg:"" help:"Command to be executed."`
-
-	// InstallCompletions kongplete.InstallCompletions `cmd:"" help:"install shell completions"`
 }
 
 func (c *DevX) Run(ctx run.RunContext, logger *slog.Logger) error {
