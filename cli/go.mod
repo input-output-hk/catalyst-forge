@@ -13,9 +13,12 @@ require (
 	github.com/go-git/go-git/v5 v5.12.0
 	github.com/input-output-hk/catalyst-forge/lib/project v0.0.0
 	github.com/input-output-hk/catalyst-forge/lib/tools v0.0.0
+	github.com/posener/complete v1.2.3
 	github.com/rogpeppe/go-internal v1.12.1-0.20240709150035-ccf4b4329d21
 	github.com/spf13/afero v1.11.0
 	github.com/stretchr/testify v1.9.0
+	github.com/willabides/kongplete v0.4.0
+	github.com/yuin/goldmark v1.7.4
 	golang.org/x/exp v0.0.0-20231006140011-7918f672742d
 )
 
@@ -68,14 +71,11 @@ require (
 	github.com/pjbgf/sha1cd v0.3.0 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
-	github.com/posener/complete v1.2.3 // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect
 	github.com/riywo/loginshell v0.0.0-20200815045211-7d26008be1ab // indirect
 	github.com/sergi/go-diff v1.3.2-0.20230802210424-5b0b94c5c0d3 // indirect
 	github.com/skeema/knownhosts v1.2.2 // indirect
-	github.com/willabides/kongplete v0.4.0 // indirect
 	github.com/xanzy/ssh-agent v0.3.3 // indirect
-	github.com/yuin/goldmark v1.7.4 // indirect
 	golang.org/x/crypto v0.26.0 // indirect
 	golang.org/x/mod v0.20.0 // indirect
 	golang.org/x/net v0.28.0 // indirect

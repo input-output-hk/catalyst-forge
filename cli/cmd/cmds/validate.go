@@ -5,7 +5,7 @@ import (
 )
 
 type ValidateCmd struct {
-	Project string `arg:"" help:"Path to the project."`
+	Project string `kong:"arg,predictor=path" help:"Path to the project."`
 }
 
 func (c *ValidateCmd) Run(ctx run.RunContext) error {
