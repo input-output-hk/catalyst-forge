@@ -14,9 +14,9 @@ import (
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/run"
 	"github.com/input-output-hk/catalyst-forge/lib/project/project"
 	"github.com/input-output-hk/catalyst-forge/lib/project/schema"
-  "github.com/input-output-hk/catalyst-forge/lib/project/secrets"
+	"github.com/input-output-hk/catalyst-forge/lib/project/secrets"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/walker"
-  "github.com/posener/complete"
+	"github.com/posener/complete"
 	"github.com/willabides/kongplete"
 )
 
@@ -78,12 +78,12 @@ func Run() int {
 		handler.SetLevel(log.DebugLevel)
 	}
 
-  ctx, err := parser.Parse(cliArgs)
+	ctx, err := parser.Parse(cliArgs)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "forge: %v\n", err)
 		return 1
 	}
-  
+
 	logger := slog.New(handler)
 	loader := project.NewDefaultProjectLoader(logger)
 	runctx := run.RunContext{
