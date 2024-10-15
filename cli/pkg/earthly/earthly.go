@@ -6,8 +6,6 @@ import (
 	"log/slog"
 	"os"
 	"path"
-	"regexp"
-	"runtime"
 	"strconv"
 	"strings"
 
@@ -55,7 +53,7 @@ type EarthlyExecutionResult struct {
 
 // Run executes the Earthly target and returns the resulting images and
 // artifacts.
-func (e EarthlyExecutor) Run() (map[string]EarthlyExecutionResult, error) {
+func (e EarthlyExecutor) Run() error {
 	var (
 		err     error
 		secrets []EarthlySecret
@@ -64,7 +62,7 @@ func (e EarthlyExecutor) Run() (map[string]EarthlyExecutionResult, error) {
 	if e.secrets != nil {
 		secrets, err = e.buildSecrets()
 		if err != nil {
-			return nil, err
+			return err
 		}
 
 		if len(secrets) > 0 {
@@ -81,42 +79,39 @@ func (e EarthlyExecutor) Run() (map[string]EarthlyExecutionResult, error) {
 	}
 
 	if e.opts.platforms == nil {
-		e.opts.platforms = []string{getNativePlatform()}
+		e.opts.platforms = []string{"native"}
 	}
 
-	results := make(map[string]EarthlyExecutionResult)
 	for _, platform := range e.opts.platforms {
-		var output []byte
-
 		for i := 0; i < e.opts.retries+1; i++ {
 			arguments := e.buildArguments(platform)
 
 			os.Setenv("GIT_TAG", "v0.0.0")
 			e.logger.Info("Executing Earthly", "attempt", i, "retries", e.opts.retries, "arguments", arguments, "platform", platform)
-			output, err = e.executor.Execute("earthly", arguments)
+			_, err = e.executor.Execute("earthly", arguments)
 			if err == nil {
 				break
 			}
 
 			e.logger.Error("Failed to run Earthly", "error", err)
 		}
-
-		results[platform] = parseResult(string(output))
 	}
 
 	if err != nil {
 		e.logger.Error("Failed to run Earthly", "error", err)
-		return nil, fmt.Errorf("failed to run Earthly: %w", err)
+		return fmt.Errorf("failed to run Earthly: %w", err)
 	}
 
-	return results, nil
+	return nil
 }
 
 // buildArguments constructs the arguments to pass to the Earthly target.
 func (e *EarthlyExecutor) buildArguments(platform string) []string {
 	var earthlyArgs []string
 
-	earthlyArgs = append(earthlyArgs, "--platform", platform)
+	if platform != "native" {
+		earthlyArgs = append(earthlyArgs, "--platform", platform)
+	}
 	earthlyArgs = append(earthlyArgs, e.earthlyArgs...)
 
 	// If we have an artifact path and multiple platforms, we need to append the platform to the artifact path to avoid conflicts.
@@ -226,33 +221,4 @@ func NewEarthlyExecutor(
 	}
 
 	return e
-}
-
-// getNativePlatform returns the native platform of the current machine.
-func getNativePlatform() string {
-	return fmt.Sprintf("%s/%s", runtime.GOOS, runtime.GOARCH)
-}
-
-// parseResult parses the output of an Earthly execution and returns the
-// resulting images and artifacts.
-func parseResult(output string) EarthlyExecutionResult {
-	images := make(map[string]string)
-	artifacts := make(map[string]string)
-	imageExpr := regexp.MustCompile(`^Image (.*?) output as (.*?)$`)
-	artifactExpr := regexp.MustCompile(`Artifact (.*?) output as (.*?)$`)
-
-	for _, line := range strings.Split(string(output), "\n") {
-		if matches := imageExpr.FindStringSubmatch(line); matches != nil {
-			images[matches[1]] = matches[2]
-		}
-
-		if matches := artifactExpr.FindStringSubmatch(line); matches != nil {
-			artifacts[matches[1]] = matches[2]
-		}
-	}
-
-	return EarthlyExecutionResult{
-		Artifacts: artifacts,
-		Images:    images,
-	}
 }

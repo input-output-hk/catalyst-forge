@@ -22,7 +22,7 @@ type ProjectRunner struct {
 func (p *ProjectRunner) RunTarget(
 	target string,
 	opts ...earthly.EarthlyExecutorOption,
-) (map[string]earthly.EarthlyExecutionResult, error) {
+) error {
 	return earthly.NewEarthlyExecutor(
 		p.project.Path,
 		target,
