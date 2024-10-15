@@ -239,9 +239,7 @@ func (c *CIRun) Run() tea.Msg {
 		c.Project,
 		secrets.NewDefaultSecretStore(),
 	)
-	_, err := runner.RunTarget(c.Target, c.options...)
-
-	if err != nil {
+	if err := runner.RunTarget(c.Target, c.options...); err != nil {
 		c.logger.Error("Failed to run target", "project", c.Project.Path, "target", c.Target, "error", err)
 		c.Status = RunStatusFailed
 	} else {
