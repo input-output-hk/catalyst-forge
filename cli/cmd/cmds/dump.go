@@ -7,7 +7,7 @@ import (
 )
 
 type DumpCmd struct {
-	Project string `arg:"" help:"Path to the project." kong:"arg,predictor=path"`
+	Project string `arg:"" help:"Path to the project."`
 	Pretty  bool   `help:"Pretty print JSON output."`
 }
 

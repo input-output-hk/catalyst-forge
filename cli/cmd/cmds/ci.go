@@ -7,7 +7,7 @@ import (
 
 type CICmd struct {
 	Artifact string   `short:"a" help:"Dump all produced artifacts to the given path."`
-	Path     string   `kong:"arg,predictor=path" default:"" help:"The path to scan from."`
+	Path     string   `arg:"" default:"" help:"The path to scan from."`
 	Platform []string `short:"p" help:"Run the target with the given platform."`
 }
 
