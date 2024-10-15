@@ -79,14 +79,13 @@ func (e EarthlyExecutor) Run() error {
 	}
 
 	if e.opts.platforms == nil {
-		e.opts.platforms = []string{"native"}
+		e.opts.platforms = []string{GetBuildPlatform()}
 	}
 
 	for _, platform := range e.opts.platforms {
 		for i := 0; i < e.opts.retries+1; i++ {
 			arguments := e.buildArguments(platform)
 
-			os.Setenv("GIT_TAG", "v0.0.0")
 			e.logger.Info("Executing Earthly", "attempt", i, "retries", e.opts.retries, "arguments", arguments, "platform", platform)
 			_, err = e.executor.Execute("earthly", arguments...)
 			if err == nil {
@@ -109,7 +108,7 @@ func (e EarthlyExecutor) Run() error {
 func (e *EarthlyExecutor) buildArguments(platform string) []string {
 	var earthlyArgs []string
 
-	if platform != "native" {
+	if platform != GetBuildPlatform() {
 		earthlyArgs = append(earthlyArgs, "--platform", platform)
 	}
 	earthlyArgs = append(earthlyArgs, e.earthlyArgs...)

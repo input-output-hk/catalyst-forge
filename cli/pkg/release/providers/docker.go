@@ -154,12 +154,10 @@ func (r *DockerReleaser) pushMultiPlatformImage(image string, images ...string) 
 
 // run runs the release target.
 func (r *DockerReleaser) run() error {
-	_, err := r.runner.RunTarget(
+	return r.runner.RunTarget(
 		r.release.Target,
 		earthly.WithTargetArgs("--container", CONTAINER_NAME, "--tag", TAG_NAME),
 	)
-
-	return err
 }
 
 // tagImage tags the image with the given tag.

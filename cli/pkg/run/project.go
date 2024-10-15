@@ -13,7 +13,7 @@ import (
 //go:generate go run github.com/matryer/moq@latest -pkg mocks -out mocks/runner.go . ProjectRunner
 
 type ProjectRunner interface {
-	RunTarget(target string, opts ...earthly.EarthlyExecutorOption) (map[string]earthly.EarthlyExecutionResult, error)
+	RunTarget(target string, opts ...earthly.EarthlyExecutorOption) error
 }
 
 type DefaultProjectRunner struct {

@@ -19,7 +19,7 @@ var _ run.ProjectRunner = &ProjectRunnerMock{}
 //
 //		// make and configure a mocked run.ProjectRunner
 //		mockedProjectRunner := &ProjectRunnerMock{
-//			RunTargetFunc: func(target string, opts ...earthly.EarthlyExecutorOption) (map[string]earthly.EarthlyExecutionResult, error) {
+//			RunTargetFunc: func(target string, opts ...earthly.EarthlyExecutorOption) error {
 //				panic("mock out the RunTarget method")
 //			},
 //		}
@@ -30,7 +30,7 @@ var _ run.ProjectRunner = &ProjectRunnerMock{}
 //	}
 type ProjectRunnerMock struct {
 	// RunTargetFunc mocks the RunTarget method.
-	RunTargetFunc func(target string, opts ...earthly.EarthlyExecutorOption) (map[string]earthly.EarthlyExecutionResult, error)
+	RunTargetFunc func(target string, opts ...earthly.EarthlyExecutorOption) error
 
 	// calls tracks calls to the methods.
 	calls struct {
@@ -46,7 +46,7 @@ type ProjectRunnerMock struct {
 }
 
 // RunTarget calls RunTargetFunc.
-func (mock *ProjectRunnerMock) RunTarget(target string, opts ...earthly.EarthlyExecutorOption) (map[string]earthly.EarthlyExecutionResult, error) {
+func (mock *ProjectRunnerMock) RunTarget(target string, opts ...earthly.EarthlyExecutorOption) error {
 	if mock.RunTargetFunc == nil {
 		panic("ProjectRunnerMock.RunTargetFunc: method is nil but ProjectRunner.RunTarget was just called")
 	}

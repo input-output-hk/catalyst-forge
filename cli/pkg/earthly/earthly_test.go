@@ -117,7 +117,7 @@ func TestEarthlyExecutor_buildArguments(t *testing.T) {
 			e: NewEarthlyExecutor("/test/dir", "foo", nil, secrets.SecretStore{},
 				testutils.NewNoopLogger(),
 			),
-			platform: "native",
+			platform: GetBuildPlatform(),
 			expect:   []string{"/test/dir+foo"},
 		},
 		{
@@ -134,7 +134,7 @@ func TestEarthlyExecutor_buildArguments(t *testing.T) {
 				testutils.NewNoopLogger(),
 				WithTargetArgs("--arg1", "foo", "--arg2", "bar"),
 			),
-			platform: "native",
+			platform: GetBuildPlatform(),
 			expect:   []string{"/test/dir+foo", "--arg1", "foo", "--arg2", "bar"},
 		},
 		{
@@ -143,8 +143,8 @@ func TestEarthlyExecutor_buildArguments(t *testing.T) {
 				testutils.NewNoopLogger(),
 				WithArtifact("test"),
 			),
-			platform: "linux/amd64",
-			expect:   []string{"--platform", "linux/amd64", "--artifact", "/test/dir+foo/*", "test/linux/amd64/"},
+			platform: "linux/amd65",
+			expect:   []string{"--platform", "linux/amd65", "--artifact", "/test/dir+foo/*", "test/linux/amd65/"},
 		},
 		{
 			name: "with artifact and platforms",
@@ -162,7 +162,7 @@ func TestEarthlyExecutor_buildArguments(t *testing.T) {
 				testutils.NewNoopLogger(),
 				WithPrivileged(),
 			),
-			platform: "native",
+			platform: GetBuildPlatform(),
 			expect:   []string{"--allow-privileged", "/test/dir+foo"},
 		},
 		{
@@ -171,7 +171,7 @@ func TestEarthlyExecutor_buildArguments(t *testing.T) {
 				testutils.NewNoopLogger(),
 				WithSatellite("satellite"),
 			),
-			platform: "native",
+			platform: GetBuildPlatform(),
 			expect:   []string{"--sat", "satellite", "/test/dir+foo"},
 		},
 	}

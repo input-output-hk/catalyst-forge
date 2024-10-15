@@ -4,9 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
-	"os"
 	"path/filepath"
-	"runtime"
 	"strings"
 
 	"github.com/google/go-github/v66/github"
@@ -36,17 +34,17 @@ type GithubReleaser struct {
 }
 
 func (r *GithubReleaser) Release() error {
-	// tmp, err := afero.TempDir(r.fs, "", "catalyst-forge-")
-	// if err != nil {
-	// 	return fmt.Errorf("failed to create temporary directory: %w", err)
-	// }
+	tmp, err := afero.TempDir(r.fs, "", "catalyst-forge-")
+	if err != nil {
+		return fmt.Errorf("failed to create temporary directory: %w", err)
+	}
 
-	// r.logger.Info("Running release target", "project", r.project.Name, "target", r.release.Target, "dir", tmp)
-	// if err := r.run(tmp); err != nil {
-	// 	return fmt.Errorf("failed to run release target: %w", err)
-	// }
+	r.logger.Info("Running release target", "project", r.project.Name, "target", r.release.Target, "dir", tmp)
+	if err := r.run(tmp); err != nil {
+		return fmt.Errorf("failed to run release target: %w", err)
+	}
 
-	tmp := "/tmp/catalyst-forge-802916104"
+	//tmp := "/tmp/catalyst-forge-802916104"
 	if err := r.validateArtifacts(tmp); err != nil {
 		return fmt.Errorf("failed to validate artifacts: %w", err)
 	}
@@ -65,24 +63,59 @@ func (r *GithubReleaser) Release() error {
 		assets = append(assets, filename)
 	}
 
-	var owner, repo string
-	if gr, ok := os.LookupEnv("GITHUB_REPOSITORY"); ok {
-		parts := strings.Split(gr, "/")
-		owner, repo = parts[0], parts[1]
-	} else {
-		parts := strings.Split(r.project.Blueprint.Global.Repo.Name, "/")
-		owner, repo = parts[0], parts[1]
-	}
+	parts := strings.Split(r.project.Blueprint.Global.Repo.Name, "/")
+	owner, repo := parts[0], parts[1]
 
 	//releaseName := string(r.project.TagInfo.Git)
 	releaseName := "testing"
 	ctx := context.Background()
-	_, _, err := r.client.Repositories.CreateRelease(ctx, owner, repo, &github.RepositoryRelease{
-		Name:    &releaseName,
-		TagName: &releaseName,
-	})
-	if err != nil {
-		return fmt.Errorf("failed to create release: %w", err)
+
+	release, resp, err := r.client.Repositories.GetReleaseByTag(ctx, owner, repo, releaseName)
+	if resp.StatusCode == 404 {
+		r.logger.Info("Creating release", "name", releaseName)
+		release, _, err = r.client.Repositories.CreateRelease(ctx, owner, repo, &github.RepositoryRelease{
+			Name:    &releaseName,
+			TagName: &releaseName,
+		})
+
+		if err != nil {
+			return fmt.Errorf("failed to create release: %w", err)
+		}
+	} else if err != nil {
+		return fmt.Errorf("failed to get release: %w", err)
+	} else {
+		r.logger.Info("Release already exists", "name", releaseName)
+	}
+
+	for _, asset := range assets {
+		if assetExists(*release, asset) {
+			r.logger.Warn("Asset already exists", "asset", asset)
+			continue
+		}
+
+		r.logger.Info("Uploading asset", "asset", asset)
+		f, err := r.fs.Open(filepath.Join(tmp, asset))
+		if err != nil {
+			return fmt.Errorf("failed to open asset: %w", err)
+		}
+
+		stat, err := f.Stat()
+		if err != nil {
+			return fmt.Errorf("failed to stat asset: %w", err)
+		}
+
+		url := fmt.Sprintf("repos/%s/%s/releases/%d/assets?name=%s", owner, repo, *release.ID, asset)
+		req, err := r.client.NewUploadRequest(url, f, stat.Size(), "application/gzip")
+		if err != nil {
+			return fmt.Errorf("failed to create upload request: %w", err)
+		}
+
+		_, err = r.client.Do(ctx, req, nil)
+		if err != nil {
+			return fmt.Errorf("failed to upload asset: %w", err)
+		}
+
+		f.Close()
 	}
 
 	return nil
@@ -94,7 +127,7 @@ func (r *GithubReleaser) getPlatforms() []string {
 	platforms = getPlatforms(&r.project, r.release.Target)
 
 	if platforms == nil {
-		platforms = []string{fmt.Sprintf("%s/%s", runtime.GOOS, runtime.GOARCH)}
+		platforms = []string{earthly.GetBuildPlatform()}
 	}
 
 	return platforms
@@ -102,12 +135,10 @@ func (r *GithubReleaser) getPlatforms() []string {
 
 // run runs the release target.
 func (r *GithubReleaser) run(path string) error {
-	_, err := r.runner.RunTarget(
+	return r.runner.RunTarget(
 		r.release.Target,
 		earthly.WithArtifact(path),
 	)
-
-	return err
 }
 
 func (r *GithubReleaser) validateArtifacts(path string) error {
@@ -132,6 +163,17 @@ func (r *GithubReleaser) validateArtifacts(path string) error {
 	}
 
 	return nil
+}
+
+// assetExists checks if an asset exists in a release.
+func assetExists(release github.RepositoryRelease, name string) bool {
+	for _, asset := range release.Assets {
+		if *asset.Name == name {
+			return true
+		}
+	}
+
+	return false
 }
 
 func NewGithubReleaser(
