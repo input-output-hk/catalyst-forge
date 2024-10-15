@@ -42,8 +42,8 @@ func TestMergeEventFiring(t *testing.T) {
 			project := project.Project{
 				Blueprint: schema.Blueprint{
 					Global: schema.Global{
-						CI: schema.GlobalCI{
-							DefaultBranch: &tt.defaultBranch,
+						Repo: schema.GlobalRepo{
+							DefaultBranch: tt.defaultBranch,
 						},
 					},
 				},

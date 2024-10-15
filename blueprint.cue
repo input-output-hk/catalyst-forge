@@ -1,7 +1,6 @@
 version: "1.0"
 global: {
 	ci: {
-		defaultBranch: "master"
 		local: [
 			"^check(-.*)?$",
 			"^build(-.*)?$",
@@ -64,5 +63,9 @@ global: {
 			ref: "master"
 		}
 		root: "k8s"
+	}
+	repo: {
+		defaultBranch: "master"
+		name:          "input-output-hk/catalyst-forge"
 	}
 }

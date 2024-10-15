@@ -13,14 +13,13 @@ package schema
 	// Deployment contains the global configuration for the deployment of projects.
 	// +optional
 	deployment?: #GlobalDeployment @go(Deployment)
+
+	// Repo contains the configuration for the GitHub repository.
+	repo: #GlobalRepo @go(Repo)
 }
 
 // CI contains the configuration for the CI system.
 #GlobalCI: {
-	// DefaultBranch contains the default branch of the repository.
-	// +optional
-	defaultBranch?: null | string @go(DefaultBranch,*string)
-
 	// Local defines the filters to use when simulating a local CI run.
 	local: [...string] @go(Local,[]string)
 
@@ -60,6 +59,14 @@ package schema
 
 	// URL contains the URL of the deployment repository.
 	url: string @go(Url)
+}
+
+#GlobalRepo: {
+	// Name contains the name of the repository (e.g. "owner/repo-name").
+	name: string @go(Name)
+
+	// DefaultBranch contains the default branch of the repository.
+	defaultBranch: string @go(DefaultBranch)
 }
 
 #Tagging: {

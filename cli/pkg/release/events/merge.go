@@ -15,15 +15,11 @@ type MergeEvent struct {
 }
 
 func (m *MergeEvent) Firing() (bool, error) {
-	if m.project.Blueprint.Global.CI.DefaultBranch == nil {
-		return false, fmt.Errorf("default branch not set")
-	}
-
 	branch, err := git.GetBranch(m.project.Repo)
 	if err != nil {
 		return false, fmt.Errorf("failed to get branch: %w", err)
 	}
 
-	m.logger.Debug("Checking branch", "branch", branch, "default", *m.project.Blueprint.Global.CI.DefaultBranch)
-	return branch == *m.project.Blueprint.Global.CI.DefaultBranch, nil
+	m.logger.Debug("Checking branch", "branch", branch, "default", m.project.Blueprint.Global.Repo.DefaultBranch)
+	return branch == m.project.Blueprint.Global.Repo.DefaultBranch, nil
 }

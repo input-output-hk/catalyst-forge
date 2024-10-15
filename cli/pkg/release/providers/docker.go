@@ -64,11 +64,12 @@ func (r *DockerReleaser) Release() error {
 		imageTag = string(r.project.TagInfo.Generated)
 	}
 
-	if len(r.getPlatforms()) > 0 {
+	platforms := getPlatforms(&r.project, r.release.Target)
+	if len(platforms) > 0 {
 		for _, registry := range registries {
 			var pushed []string
 
-			for _, platform := range r.getPlatforms() {
+			for _, platform := range platforms {
 				platformSuffix := strings.Replace(platform, "/", "_", -1)
 				curImage := fmt.Sprintf("%s:%s_%s", CONTAINER_NAME, TAG_NAME, platformSuffix)
 				newImage := fmt.Sprintf("%s/%s:%s_%s", registry, container, imageTag, platformSuffix)
@@ -110,17 +111,6 @@ func (r *DockerReleaser) Release() error {
 	}
 
 	r.logger.Info("Release complete")
-	return nil
-}
-
-// getPlatforms returns the platforms present in the release target, if any.
-func (r *DockerReleaser) getPlatforms() []string {
-	if _, ok := r.project.Blueprint.Project.CI.Targets[r.release.Target]; ok {
-		if len(r.project.Blueprint.Project.CI.Targets[r.release.Target].Platforms) > 1 {
-			return r.project.Blueprint.Project.CI.Targets[r.release.Target].Platforms
-		}
-	}
-
 	return nil
 }
 
@@ -187,7 +177,7 @@ func (r *DockerReleaser) tagImage(image, tag string) error {
 
 // validateImages validates that the expected images exist in the Docker daemon.
 func (r *DockerReleaser) validateImages() error {
-	platforms := r.getPlatforms()
+	platforms := getPlatforms(&r.project, r.release.Target)
 	if len(platforms) > 0 {
 		for _, platform := range platforms {
 			image := fmt.Sprintf("%s:%s_%s", CONTAINER_NAME, TAG_NAME, strings.Replace(platform, "/", "_", -1))
@@ -209,9 +199,14 @@ func (r *DockerReleaser) validateImages() error {
 func NewDockerReleaser(
 	ctx run.RunContext,
 	project project.Project,
-	release schema.Release,
+	name string,
 	force bool,
 ) (*DockerReleaser, error) {
+	release, ok := project.Blueprint.Project.Release[name]
+	if !ok {
+		return nil, fmt.Errorf("unknown release: %s", name)
+	}
+
 	exec := executor.NewLocalExecutor(ctx.Logger)
 	if _, ok := exec.LookPath(DOCKER_BINARY); ok != nil {
 		return nil, fmt.Errorf("failed to find Docker binary: %w", ok)

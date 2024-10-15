@@ -9,14 +9,13 @@ type Global struct {
 	// Deployment contains the global configuration for the deployment of projects.
 	// +optional
 	Deployment GlobalDeployment `json:"deployment"`
+
+	// Repo contains the configuration for the GitHub repository.
+	Repo GlobalRepo `json:"repo"`
 }
 
 // CI contains the configuration for the CI system.
 type GlobalCI struct {
-	// DefaultBranch contains the default branch of the repository.
-	// +optional
-	DefaultBranch *string `json:"defaultBranch"`
-
 	// Local defines the filters to use when simulating a local CI run.
 	Local []string `json:"local"`
 
@@ -56,6 +55,14 @@ type GlobalDeploymentRepo struct {
 
 	// URL contains the URL of the deployment repository.
 	Url string `json:"url"`
+}
+
+type GlobalRepo struct {
+	// Name contains the name of the repository (e.g. "owner/repo-name").
+	Name string `json:"name"`
+
+	// DefaultBranch contains the default branch of the repository.
+	DefaultBranch string `json:"defaultBranch"`
 }
 
 type Tagging struct {

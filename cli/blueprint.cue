@@ -17,9 +17,9 @@ project: {
 			}
 			platforms: [
 				"linux/amd64",
-				"linux/arm64",
-				"darwin/amd64",
-				"darwin/arm64",
+				// "linux/arm64",
+				// "darwin/amd64",
+				// "darwin/arm64",
 			]
 		}
 		test: retries: 3
@@ -30,6 +30,17 @@ project: {
 			on: ["merge", "tag"]
 			target: "publish"
 			type:   "docker"
+		}
+		github: {
+			config: {
+				token: {
+					provider: "env"
+					path:     "GITHUB_TOKEN"
+				}
+			}
+			on: ["tag"]
+			target: "release"
+			type:   "github"
 		}
 	}
 }

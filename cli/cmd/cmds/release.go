@@ -19,19 +19,19 @@ func (c *ReleaseCmd) Run(ctx run.RunContext) error {
 		return err
 	}
 
-	if _, ok := project.Blueprint.Project.Release[c.Release]; !ok {
+	config, ok := project.Blueprint.Project.Release[c.Release]
+	if !ok {
 		return fmt.Errorf("unknown release: %s", c.Release)
 	}
 
 	// Always release in CI mode
 	ctx.CI = true
-
 	releasers := release.NewDefaultReleaserStore()
 	releaser, err := releasers.GetReleaser(
-		release.ReleaserTypeDocker,
+		release.ReleaserType(config.Type),
 		ctx,
 		project,
-		project.Blueprint.Project.Release[c.Release],
+		c.Release,
 		c.Force,
 	)
 	if err != nil {
