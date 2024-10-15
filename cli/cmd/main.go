@@ -21,16 +21,16 @@ var version = "dev"
 var cli struct {
 	cmds.GlobalArgs
 
-	Deploy   cmds.DeployCmd   `cmd:"" help:"Deploy a project."`
-	Dump     cmds.DumpCmd     `cmd:"" help:"Dumps a project's blueprint to JSON."`
-	Devx     cmds.DevX        `cmd:"" help:"Reads a forge markdown file and executes a command."`
-	CI       cmds.CICmd       `cmd:"" help:"Simulate a CI run."`
-	Run      cmds.RunCmd      `cmd:"" help:"Run an Earthly target."`
-	Scan     cmds.ScanCmd     `cmd:"" help:"Scan for Earthfiles."`
-	Secret   cmds.SecretCmd   `cmd:"" help:"Manage secrets."`
-	Tag      cmds.TagCmd      `cmd:"" help:"Generate a tag for a project."`
-	Validate cmds.ValidateCmd `cmd:"" help:"Validates a project."`
-	Version  VersionCmd       `cmd:"" help:"Print the version."`
+	Deploy   cmds.DeployCmd   `cmd:"" kong:"cmd" help:"Deploy a project." `
+	Dump     cmds.DumpCmd     `cmd:"" kong:"cmd" help:"Dumps a project's blueprint to JSON."`
+	Devx     cmds.DevX        `cmd:"" kong:"cmd" help:"Reads a forge markdown file and executes a command."`
+	CI       cmds.CICmd       `cmd:"" kong:"cmd" help:"Simulate a CI run."`
+	Run      cmds.RunCmd      `cmd:"" kong:"cmd" help:"Run an Earthly target."`
+	Scan     cmds.ScanCmd     `cmd:"" kong:"cmd" help:"Scan for Earthfiles."`
+	Secret   cmds.SecretCmd   `cmd:"" kong:"cmd" help:"Manage secrets."`
+	Tag      cmds.TagCmd      `cmd:"" kong:"cmd" help:"Generate a tag for a project."`
+	Validate cmds.ValidateCmd `cmd:"" kong:"cmd" help:"Validates a project."`
+	Version  VersionCmd       `cmd:"" kong:"cmd" help:"Print the version."`
 
 	InstallCompletions kongplete.InstallCompletions `cmd:"" help:"install shell completions"`
 }
@@ -57,14 +57,9 @@ func Run() int {
 		kong.Name("forge"),
 		kong.Description("The CLI tool powering Catalyst Forge"))
 
-	// list all subcommands and install bash completion
-	subcommands := []string{}
-	for _, k := range parser.Model.Children {
-		subcommands = append(subcommands, k.Name)
-	}
-
 	kongplete.Complete(parser,
-		kongplete.WithPredictor("commands", complete.PredictSet(subcommands...)),
+		kongplete.WithPredictor("file", complete.PredictFiles("*")),
+		kongplete.WithPredictor("devx-commands", complete.PredictSet("tmp1", "tmp2", "tmp3")),
 	)
 
 	handler := log.New(os.Stderr)

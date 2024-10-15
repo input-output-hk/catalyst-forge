@@ -14,8 +14,8 @@ import (
 )
 
 type DevX struct {
-	MarkdownPath string `arg:"" help:"Path to the markdown file."`
-	CommandName  string `arg:"" help:"Command to be executed."`
+	MarkdownPath string `arg:"" help:"Path to the markdown file." kong:"arg,predictor=file"`
+	CommandName  string `arg:"" help:"Command to be executed." kong:"arg,predictor=devx-commands"`
 }
 
 func (c *DevX) Run(ctx run.RunContext, logger *slog.Logger) error {
