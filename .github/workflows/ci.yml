@@ -119,38 +119,8 @@ jobs:
     secrets:
       earthly_token: ${{ secrets.earthly_token }}
 
-  publish:
-    uses: input-output-hk/catalyst-forge/.github/workflows/publish.yml@adds-release-cm
-    needs: [discover, check, build, test]
-    if: (fromJson(needs.discover.outputs.earthfiles)['^publish(-.*)?$'] != null) && !failure() && !cancelled()
-    with:
-      earthfiles: ${{ toJson(fromJson(needs.discover.outputs.earthfiles)['^publish(-.*)?$']) }}
-      forge_version: ${{ inputs.forge_version }}
-    secrets:
-      earthly_token: ${{ secrets.earthly_token }}
-
-  deploy:
-    uses: input-output-hk/catalyst-forge/.github/workflows/deploy.yml@adds-release-cm
-    needs: [discover, check, build, test, publish]
-    if: (fromJson(needs.discover.outputs.deployments)[0] != null) && github.ref == format('refs/heads/{0}', github.event.repository.default_branch) && !failure() && !cancelled()
-    with:
-      deployments: ${{ needs.discover.outputs.deployments }}
-      forge_version: ${{ inputs.forge_version }}
-    secrets:
-      earthly_token: ${{ secrets.earthly_token }}
-
   release:
     uses: input-output-hk/catalyst-forge/.github/workflows/release.yml@adds-release-cm
-    needs: [discover, check, build, test]
-    if: (fromJson(needs.discover.outputs.earthfiles)['^release(-.*)?$'] != null) && !failure() && !cancelled()
-    with:
-      earthfiles: ${{ toJson(fromJson(needs.discover.outputs.earthfiles)['^release(-.*)?$']) }}
-      forge_version: ${{ inputs.forge_version }}
-    secrets:
-      earthly_token: ${{ secrets.earthly_token }}
-
-  release_new:
-    uses: input-output-hk/catalyst-forge/.github/workflows/release_new.yml@adds-release-cm
     needs: [discover, check, build, test]
     if: (fromJson(needs.discover.outputs.releases)[0] != null) && !failure() && !cancelled()
     with:
@@ -159,8 +129,18 @@ jobs:
     secrets:
       earthly_token: ${{ secrets.earthly_token }}
 
+  deploy:
+    uses: input-output-hk/catalyst-forge/.github/workflows/deploy.yml@adds-release-cm
+    needs: [discover, check, build, test, release]
+    if: (fromJson(needs.discover.outputs.deployments)[0] != null) && github.ref == format('refs/heads/{0}', github.event.repository.default_branch) && !failure() && !cancelled()
+    with:
+      deployments: ${{ needs.discover.outputs.deployments }}
+      forge_version: ${{ inputs.forge_version }}
+    secrets:
+      earthly_token: ${{ secrets.earthly_token }}
+
   final:
-    needs: [check, build, package, test, publish, release]
+    needs: [check, build, package, test, release]
     if: (!failure() && !cancelled())
     runs-on: ubuntu-latest
     steps:

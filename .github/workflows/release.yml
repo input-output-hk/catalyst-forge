@@ -1,11 +1,17 @@
 on:
   workflow_call:
     inputs:
-      earthfiles:
+      releases:
         description: |
-          A JSON list of Earthfile paths+targets to use for publishing
+          A JSON list of releases to run
         required: true
         type: string
+      force:
+        description: |
+          Force the release to run even if no events are triggered
+        required: false
+        type: string
+        default: "false"
       forge_version:
         description: |
           The version of the forge CLI to install (use 'local' for testing)
@@ -20,12 +26,12 @@ env:
 
 jobs:
   run:
-    name: ${{ matrix.earthfile }}
+    name: ${{ matrix.release.project }} (${{ matrix.release.name}})
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        earthfile: ${{ fromJson(inputs.earthfiles) }}
+        release: ${{ fromJson(inputs.releases) }}
     steps:
       - uses: actions/checkout@v4
       - name: Install Forge
@@ -53,26 +59,11 @@ jobs:
         with:
           skip_earthly: ${{ steps.local.outputs.skip }}
       - name: Run
-        id: run
-        uses: input-output-hk/catalyst-forge/actions/run@adds-release-cm
-        with:
-          artifact: ${{ env.OUTPUT }}
-          path: ${{ matrix.earthfile }}
+        run: |
+          if [[ ${{ inputs.force }} == "true" ]]; then
+            forge -vv release --force ${{ matrix.release.project }} ${{ matrix.release.name }}
+          else
+            forge -vv release ${{ matrix.release.project }} ${{ matrix.release.name }}
+          fi
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - name: Parse Earthfile reference
-        id: parse
-        run: |
-          EARTHFILE='${{ matrix.earthfile }}'
-          PROJECT="${EARTHFILE%+*}"
-          TARGET="${EARTHFILE#*+}"
-
-          echo "project=$PROJECT" >> $GITHUB_OUTPUT
-          echo "target=$TARGET" >> $GITHUB_OUTPUT
-      - name: Release
-        uses: input-output-hk/catalyst-forge/actions/release@adds-release-cm
-        with:
-          native_platform: linux/amd64
-          path: ${{ env.OUTPUT }}
-          project: ${{ steps.parse.outputs.project }}
-          target: ${{ steps.parse.outputs.target }}
