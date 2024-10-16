@@ -18,6 +18,10 @@ import (
 	"github.com/spf13/afero"
 )
 
+type GithubClient interface {
+	RepositoriesGetReleaseByTag(ctx context.Context, owner, repo, tag string) (*github.RepositoryRelease, *github.Response, error)
+}
+
 type GithubReleaserConfig struct {
 	Token schema.Secret `json:"token"`
 }
@@ -31,29 +35,29 @@ type GithubReleaser struct {
 	project project.Project
 	release schema.Release
 	runner  run.ProjectRunner
+	workdir string
 }
 
 func (r *GithubReleaser) Release() error {
-	tmp, err := afero.TempDir(r.fs, "", "catalyst-forge-")
-	if err != nil {
-		return fmt.Errorf("failed to create temporary directory: %w", err)
-	}
-
-	r.logger.Info("Running release target", "project", r.project.Name, "target", r.release.Target, "dir", tmp)
-	if err := r.run(tmp); err != nil {
+	r.logger.Info("Running release target", "project", r.project.Name, "target", r.release.Target, "dir", r.workdir)
+	if err := r.run(r.workdir); err != nil {
 		return fmt.Errorf("failed to run release target: %w", err)
 	}
 
-	//tmp := "/tmp/catalyst-forge-802916104"
-	if err := r.validateArtifacts(tmp); err != nil {
+	if err := r.validateArtifacts(r.workdir); err != nil {
 		return fmt.Errorf("failed to validate artifacts: %w", err)
+	}
+
+	if !r.handler.Firing(r.release.On) && !r.force {
+		r.logger.Info("No release event is firing, skipping release")
+		return nil
 	}
 
 	var assets []string
 	for _, platform := range r.getPlatforms() {
 		filename := fmt.Sprintf("%s-%s.tar.gz", r.project.Name, strings.Replace(platform, "/", "-", -1))
-		destpath := filepath.Join(tmp, filename)
-		srcpath := filepath.Join(tmp, platform)
+		destpath := filepath.Join(r.workdir, filename)
+		srcpath := filepath.Join(r.workdir, platform)
 
 		r.logger.Info("Creating archive", "srcpath", srcpath, "filename", filename)
 		if err := archive.ArchiveAndCompress(r.fs, srcpath, destpath); err != nil {
@@ -66,8 +70,7 @@ func (r *GithubReleaser) Release() error {
 	parts := strings.Split(r.project.Blueprint.Global.Repo.Name, "/")
 	owner, repo := parts[0], parts[1]
 
-	//releaseName := string(r.project.TagInfo.Git)
-	releaseName := "testing"
+	releaseName := string(r.project.TagInfo.Git)
 	ctx := context.Background()
 
 	release, resp, err := r.client.Repositories.GetReleaseByTag(ctx, owner, repo, releaseName)
@@ -94,7 +97,7 @@ func (r *GithubReleaser) Release() error {
 		}
 
 		r.logger.Info("Uploading asset", "asset", asset)
-		f, err := r.fs.Open(filepath.Join(tmp, asset))
+		f, err := r.fs.Open(filepath.Join(r.workdir, asset))
 		if err != nil {
 			return fmt.Errorf("failed to open asset: %w", err)
 		}
@@ -197,17 +200,24 @@ func NewGithubReleaser(
 		return nil, fmt.Errorf("failed to get GitHub token: %w", err)
 	}
 
+	fs := afero.NewOsFs()
+	workdir, err := afero.TempDir(fs, "", "catalyst-forge-")
+	if err != nil {
+		return nil, fmt.Errorf("failed to create temporary directory: %w", err)
+	}
+
 	client := github.NewClient(nil).WithAuthToken(token)
 	handler := events.NewDefaultReleaseEventHandler(&project, ctx.Logger)
 	runner := run.NewDefaultProjectRunner(ctx, &project)
 	return &GithubReleaser{
 		client:  client,
 		force:   force,
-		fs:      afero.NewOsFs(),
+		fs:      fs,
 		handler: &handler,
 		logger:  ctx.Logger,
 		project: project,
 		release: release,
 		runner:  &runner,
+		workdir: workdir,
 	}, nil
 }
