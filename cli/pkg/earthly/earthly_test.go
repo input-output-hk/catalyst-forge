@@ -118,7 +118,7 @@ func TestEarthlyExecutor_buildArguments(t *testing.T) {
 				testutils.NewNoopLogger(),
 			),
 			platform: GetBuildPlatform(),
-			expect:   []string{"/test/dir+foo"},
+			expect:   []string{"--platform", GetBuildPlatform(), "/test/dir+foo"},
 		},
 		{
 			name: "with platform",
@@ -135,7 +135,7 @@ func TestEarthlyExecutor_buildArguments(t *testing.T) {
 				WithTargetArgs("--arg1", "foo", "--arg2", "bar"),
 			),
 			platform: GetBuildPlatform(),
-			expect:   []string{"/test/dir+foo", "--arg1", "foo", "--arg2", "bar"},
+			expect:   []string{"--platform", GetBuildPlatform(), "/test/dir+foo", "--arg1", "foo", "--arg2", "bar"},
 		},
 		{
 			name: "with artifact",
@@ -143,8 +143,8 @@ func TestEarthlyExecutor_buildArguments(t *testing.T) {
 				testutils.NewNoopLogger(),
 				WithArtifact("test"),
 			),
-			platform: "linux/amd65",
-			expect:   []string{"--platform", "linux/amd65", "--artifact", "/test/dir+foo/*", "test/linux/amd65/"},
+			platform: "linux/amd64",
+			expect:   []string{"--platform", "linux/amd64", "--artifact", "/test/dir+foo/*", "test/linux/amd64/"},
 		},
 		{
 			name: "with artifact and platforms",
@@ -163,7 +163,7 @@ func TestEarthlyExecutor_buildArguments(t *testing.T) {
 				WithPrivileged(),
 			),
 			platform: GetBuildPlatform(),
-			expect:   []string{"--allow-privileged", "/test/dir+foo"},
+			expect:   []string{"--platform", GetBuildPlatform(), "--allow-privileged", "/test/dir+foo"},
 		},
 		{
 			name: "with satellite",
@@ -172,7 +172,7 @@ func TestEarthlyExecutor_buildArguments(t *testing.T) {
 				WithSatellite("satellite"),
 			),
 			platform: GetBuildPlatform(),
-			expect:   []string{"--sat", "satellite", "/test/dir+foo"},
+			expect:   []string{"--platform", GetBuildPlatform(), "--sat", "satellite", "/test/dir+foo"},
 		},
 	}
 
