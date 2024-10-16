@@ -142,8 +142,8 @@ func (p *DefaultProjectLoader) Load(projectPath string) (Project, error) {
 	}
 
 	p.logger.Info("Injecting blueprint")
-	p.injectors = append(p.injectors, injector.NewBlueprintRuntimeInjector(p.ctx, runtimeData, p.logger))
-	for _, inj := range p.injectors {
+	injs := append(p.injectors, injector.NewBlueprintRuntimeInjector(p.ctx, runtimeData, p.logger))
+	for _, inj := range injs {
 		rbp = inj.Inject(rbp)
 	}
 
