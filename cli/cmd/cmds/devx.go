@@ -2,7 +2,6 @@ package cmds
 
 import (
 	"fmt"
-	"log/slog"
 	"os"
 
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/command"
@@ -14,7 +13,7 @@ type DevX struct {
 	CommandName  string `arg:"" help:"Command to be executed."`
 }
 
-func (c *DevX) Run(ctx run.RunContext, logger *slog.Logger) error {
+func (c *DevX) Run(ctx run.RunContext) error {
 	raw, err := os.ReadFile(c.MarkdownPath)
 	if err != nil {
 		return fmt.Errorf("could not read file at %s: %v", c.MarkdownPath, err)
@@ -25,5 +24,5 @@ func (c *DevX) Run(ctx run.RunContext, logger *slog.Logger) error {
 		return err
 	}
 
-	return prog.ProcessCmd(c.CommandName, logger)
+	return prog.ProcessCmd(c.CommandName, ctx.Logger)
 }
