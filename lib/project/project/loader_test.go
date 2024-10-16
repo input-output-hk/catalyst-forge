@@ -32,7 +32,13 @@ bar:
 `
 	bp := `
 version: "1.0"
-global: ci: tagging: strategy: "commit"
+global: {
+  ci: tagging: strategy: "commit"
+  repo: {
+    name: "foo"
+	defaultBranch: "main"
+  }
+}
 project: name: "foo"
 `
 
@@ -80,7 +86,13 @@ project: name: "foo"
 				"/project/Earthfile": earthfile,
 				"/project/blueprint.cue": `
 version: "1.0"
-global: ci: tagging: strategy: "commit"
+global: {
+  ci: tagging: strategy: "commit"
+  repo: {
+    name: "foo"
+	defaultBranch: "main"
+  }
+}
 project: {
   name: "foo"
   ci: targets: foo: args: foo: _ @env(name="FOO",type="string")
@@ -108,7 +120,13 @@ project: {
 				"/project/Earthfile": earthfile,
 				"/project/blueprint.cue": `
 version: "1.0"
-global: ci: tagging: strategy: "commit"
+global: {
+  ci: tagging: strategy: "commit"
+  repo: {
+    name: "foo"
+	defaultBranch: "main"
+  }
+}
 project: {
   name: "foo"
   ci: targets: foo: args: foo: _ @forge(name="GIT_TAG_GENERATED")
@@ -201,7 +219,13 @@ project: {
 				"/project/Earthfile": earthfile,
 				"/project/blueprint.cue": `
 version: "1.0"
-global: ci: tagging: strategy: "commit"
+global: {
+  ci: tagging: strategy: "commit"
+  repo: {
+    name: "foo"
+	defaultBranch: "main"
+  }
+}
 project: {
   name: "foo"
   ci: targets: foo: args: foo: _ @env(name="INVALID",type="string")
