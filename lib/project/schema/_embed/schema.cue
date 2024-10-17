@@ -234,7 +234,9 @@ version: "1.0"
 	config?: _ @go(Config,any)
 
 	// On contains the events that trigger the release.
-	on: [...string] @go(On,[]string)
+	on: {
+		...
+	} @go(On,map[string]any)
 
 	// Target is the Earthly target to run for this release.
 	// Defaults to release name.

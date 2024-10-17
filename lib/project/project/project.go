@@ -37,6 +37,9 @@ type Project struct {
 	// Path is the project path.
 	Path string
 
+	// RawBlueprint is the raw blueprint.
+	RawBlueprint blueprint.RawBlueprint
+
 	// Repo is the project git repository.
 	Repo *gg.Repository
 
@@ -46,9 +49,8 @@ type Project struct {
 	// TagInfo is the project tag information.
 	TagInfo *TagInfo
 
-	logger       *slog.Logger
-	ctx          *cue.Context
-	rawBlueprint blueprint.RawBlueprint
+	logger *slog.Logger
+	ctx    *cue.Context
 }
 
 // GetRelativePath returns the relative path of the project from the repo root.
@@ -86,6 +88,22 @@ func (p *Project) GetRelativePath() (string, error) {
 	return relPath, nil
 }
 
+// GetReleaseEvents returns the release events for a release.
+func (p *Project) GetReleaseEvents(releaseName string) map[string]cue.Value {
+	release, ok := p.Blueprint.Project.Release[releaseName]
+	if !ok {
+		return nil
+	}
+
+	events := make(map[string]cue.Value)
+	for event := range release.On {
+		config := p.RawBlueprint.Get(fmt.Sprintf("project.release.%s.on.%s", releaseName, event))
+		events[event] = config
+	}
+
+	return events
+}
+
 // TagMatches checks if the git tag matches the project.
 func (p *Project) TagMatches() (bool, error) {
 	if p.TagInfo.Git == "" {
@@ -121,7 +139,7 @@ func (p *Project) TagMatches() (bool, error) {
 
 // Raw returns the raw blueprint.
 func (p *Project) Raw() blueprint.RawBlueprint {
-	return p.rawBlueprint
+	return p.RawBlueprint
 }
 
 func NewProject(

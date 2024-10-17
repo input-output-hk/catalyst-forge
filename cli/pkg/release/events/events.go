@@ -3,6 +3,7 @@ package events
 import (
 	"log/slog"
 
+	"cuelang.org/go/cue"
 	"github.com/input-output-hk/catalyst-forge/lib/project/project"
 )
 
@@ -19,13 +20,13 @@ const (
 // ReleaseEvent represents a release event.
 type ReleaseEvent interface {
 	// Firing returns true if the release event is firing.
-	Firing() (bool, error)
+	Firing(p *project.Project, config cue.Value) (bool, error)
 }
 
 // ReleaseEventHandler handles release events.
 type ReleaseEventHandler interface {
-	// Firing returns true if any of the given release events are firing.
-	Firing(events []string) bool
+	// Firing returns true if any of the events are firing for the given release.
+	Firing(p *project.Project, releaseName string) bool
 }
 
 // DefaultReleaseEventHandler is the default release event handler.
@@ -35,23 +36,29 @@ type DefaultReleaseEventHandler struct {
 }
 
 // Fires returns true if any of the given release events are firing.
-func (r *DefaultReleaseEventHandler) Firing(events []string) bool {
-	for _, event := range events {
-		r.logger.Debug("checking release event", "event", event)
-		releaseEvent, ok := r.store[EventType(event)]
+func (r *DefaultReleaseEventHandler) Firing(p *project.Project, releaseName string) bool {
+	_, ok := p.Blueprint.Project.Release[releaseName]
+	if !ok {
+		r.logger.Error("unknown release", "release", releaseName)
+		return false
+	}
+
+	for event, config := range p.GetReleaseEvents(releaseName) {
+		r.logger.Debug("checking event", "event", event)
+		event, ok := r.store[EventType(event)]
 		if !ok {
-			r.logger.Error("unknown release event", "event", event)
+			r.logger.Error("unknown event", "event", event)
 			continue
 		}
 
-		firing, err := releaseEvent.Firing()
+		firing, err := event.Firing(p, config)
 		if err != nil {
-			r.logger.Error("failed to check if release event is firing", "error", err)
+			r.logger.Error("failed to check if event is firing", "error", err)
 			continue
 		}
 
 		if firing {
-			r.logger.Debug("release event is firing", "event", event)
+			r.logger.Debug("event is firing", "event", event)
 			return true
 		}
 	}
@@ -60,23 +67,16 @@ func (r *DefaultReleaseEventHandler) Firing(events []string) bool {
 }
 
 // NewDefaultReleaseEventHandler returns a new default release event handler.
-func NewDefaultReleaseEventHandler(project *project.Project, logger *slog.Logger) DefaultReleaseEventHandler {
+func NewDefaultReleaseEventHandler(logger *slog.Logger) DefaultReleaseEventHandler {
 	return DefaultReleaseEventHandler{
 		logger: logger,
-		store:  newEventStore(project, logger),
-	}
-}
-
-// newEventStore returns a map of release events.
-func newEventStore(project *project.Project, logger *slog.Logger) map[EventType]ReleaseEvent {
-	return map[EventType]ReleaseEvent{
-		MergeEventName: &MergeEvent{
-			logger:  logger,
-			project: project,
-		},
-		TagEventName: &TagEvent{
-			logger:  logger,
-			project: project,
+		store: map[EventType]ReleaseEvent{
+			MergeEventName: &MergeEvent{
+				logger: logger,
+			},
+			TagEventName: &TagEvent{
+				logger: logger,
+			},
 		},
 	}
 }

@@ -3,6 +3,7 @@ package events
 import (
 	"testing"
 
+	"cuelang.org/go/cue"
 	"github.com/input-output-hk/catalyst-forge/lib/project/project"
 	"github.com/input-output-hk/catalyst-forge/lib/project/schema"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/testutils"
@@ -65,11 +66,10 @@ func TestTagEventFiring(t *testing.T) {
 			)
 
 			event := TagEvent{
-				logger:  testutils.NewNoopLogger(),
-				project: &project,
+				logger: testutils.NewNoopLogger(),
 			}
 
-			firing, err := event.Firing()
+			firing, err := event.Firing(&project, cue.Value{})
 			if testutils.AssertError(t, err, tt.expectErr, "") {
 				return
 			}

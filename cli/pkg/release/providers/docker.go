@@ -20,13 +20,14 @@ const (
 )
 
 type DockerReleaser struct {
-	docker  executor.WrappedExecuter
-	force   bool
-	handler events.ReleaseEventHandler
-	logger  *slog.Logger
-	project project.Project
-	release schema.Release
-	runner  run.ProjectRunner
+	docker      executor.WrappedExecuter
+	force       bool
+	handler     events.ReleaseEventHandler
+	logger      *slog.Logger
+	project     project.Project
+	release     schema.Release
+	releaseName string
+	runner      run.ProjectRunner
 }
 
 func (r *DockerReleaser) Release() error {
@@ -39,7 +40,7 @@ func (r *DockerReleaser) Release() error {
 		return fmt.Errorf("failed to validate images: %w", err)
 	}
 
-	if !r.handler.Firing(r.release.On) && !r.force {
+	if !r.handler.Firing(&r.project, r.releaseName) && !r.force {
 		r.logger.Info("No release event is firing, skipping release")
 		return nil
 	}
@@ -213,15 +214,16 @@ func NewDockerReleaser(
 	}
 
 	docker := executor.NewLocalWrappedExecutor(exec, "docker")
-	handler := events.NewDefaultReleaseEventHandler(&project, ctx.Logger)
+	handler := events.NewDefaultReleaseEventHandler(ctx.Logger)
 	runner := run.NewDefaultProjectRunner(ctx, &project)
 	return &DockerReleaser{
-		docker:  docker,
-		force:   force,
-		handler: &handler,
-		logger:  ctx.Logger,
-		project: project,
-		release: release,
-		runner:  &runner,
+		docker:      docker,
+		force:       force,
+		handler:     &handler,
+		logger:      ctx.Logger,
+		project:     project,
+		release:     release,
+		releaseName: name,
+		runner:      &runner,
 	}, nil
 }

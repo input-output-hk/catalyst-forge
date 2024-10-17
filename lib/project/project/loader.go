@@ -102,11 +102,11 @@ func (p *DefaultProjectLoader) Load(projectPath string) (Project, error) {
 				},
 				Earthfile:    ef,
 				Path:         projectPath,
+				RawBlueprint: rbp,
 				Repo:         repo,
 				RepoRoot:     gitRoot,
 				ctx:          p.ctx,
 				logger:       p.logger,
-				rawBlueprint: rbp,
 			},
 			git.InCI(),
 			true,
@@ -128,12 +128,12 @@ func (p *DefaultProjectLoader) Load(projectPath string) (Project, error) {
 		d := r.Load(&Project{
 			Earthfile:    ef,
 			Path:         projectPath,
+			RawBlueprint: rbp,
 			Repo:         repo,
 			RepoRoot:     gitRoot,
 			TagInfo:      tagInfo,
 			ctx:          p.ctx,
 			logger:       p.logger,
-			rawBlueprint: rbp,
 		})
 
 		for k, v := range d {
@@ -164,10 +164,10 @@ func (p *DefaultProjectLoader) Load(projectPath string) (Project, error) {
 		Earthfile:    ef,
 		Name:         bp.Project.Name,
 		Path:         projectPath,
+		RawBlueprint: rbp,
 		Repo:         repo,
 		RepoRoot:     gitRoot,
 		logger:       p.logger,
-		rawBlueprint: rbp,
 		TagInfo:      tagInfo,
 	}, nil
 }

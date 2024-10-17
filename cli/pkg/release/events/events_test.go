@@ -4,7 +4,11 @@ import (
 	"fmt"
 	"testing"
 
+	"cuelang.org/go/cue"
 	"github.com/input-output-hk/catalyst-forge/cli/internal/testutils"
+	"github.com/input-output-hk/catalyst-forge/lib/project/blueprint"
+	"github.com/input-output-hk/catalyst-forge/lib/project/project"
+	"github.com/input-output-hk/catalyst-forge/lib/project/schema"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -66,7 +70,24 @@ func TestDefaultEventHandlerFiring(t *testing.T) {
 				logger: testutils.NewNoopLogger(),
 				store:  tt.store,
 			}
-			actual := handler.Firing(tt.events)
+
+			on := make(map[string]any)
+			for _, event := range tt.events {
+				on[event] = nil
+			}
+			p := project.Project{
+				Blueprint: schema.Blueprint{
+					Project: schema.Project{
+						Release: map[string]schema.Release{
+							"release": {
+								On: on,
+							},
+						},
+					},
+				},
+				RawBlueprint: blueprint.NewRawBlueprint(cue.Value{}),
+			}
+			actual := handler.Firing(&p, "release")
 			assert.Equal(t, tt.expected, actual)
 		})
 	}
@@ -77,7 +98,7 @@ type mockReleaseEvent struct {
 	err    error
 }
 
-func (m mockReleaseEvent) Firing() (bool, error) {
+func (m mockReleaseEvent) Firing(p *project.Project, config cue.Value) (bool, error) {
 	return m.firing, m.err
 }
 

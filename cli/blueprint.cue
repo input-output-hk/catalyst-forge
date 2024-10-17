@@ -26,11 +26,14 @@ project: {
 	}
 	release: {
 		docker: {
-			on: ["merge", "tag"]
+			on: {
+				merge: {}
+				tag: {}
+			}
 			config: {}
 		}
 		github: {
-			on: ["tag"]
+			on: tag: {}
 			config: {
 				token: {
 					provider: "env"

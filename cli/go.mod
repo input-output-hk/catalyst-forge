@@ -1,6 +1,6 @@
 module github.com/input-output-hk/catalyst-forge/cli
 
-go 1.22.3
+go 1.23.0
 
 require (
 	cuelang.org/go v0.10.0

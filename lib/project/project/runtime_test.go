@@ -87,9 +87,9 @@ func TestGitRuntimeLoad(t *testing.T) {
 				ctx:          ctx,
 				RepoRoot:     tt.repoPath,
 				Path:         tt.prjPath,
+				RawBlueprint: blueprint.NewRawBlueprint(ctx.CompileString("{}")),
 				TagInfo:      tt.tagInfo,
 				logger:       logger,
-				rawBlueprint: blueprint.NewRawBlueprint(ctx.CompileString("{}")),
 			}
 
 			runtime := NewGitRuntime(logger)

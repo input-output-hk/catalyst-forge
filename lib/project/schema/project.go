@@ -34,7 +34,7 @@ type Release struct {
 	Config any `json:"config"`
 
 	// On contains the events that trigger the release.
-	On []string `json:"on"`
+	On map[string]any `json:"on"`
 
 	// Target is the Earthly target to run for this release.
 	// Defaults to release name.

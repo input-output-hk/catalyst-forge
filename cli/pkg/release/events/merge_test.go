@@ -1,8 +1,11 @@
 package events
 
 import (
+	"fmt"
 	"testing"
 
+	"cuelang.org/go/cue"
+	"cuelang.org/go/cue/cuecontext"
 	"github.com/input-output-hk/catalyst-forge/lib/project/project"
 	"github.com/input-output-hk/catalyst-forge/lib/project/schema"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/testutils"
@@ -15,12 +18,20 @@ func TestMergeEventFiring(t *testing.T) {
 		name          string
 		branch        string
 		defaultBranch string
+		configBranch  string
 		expected      bool
 	}{
 		{
-			name:          "firing",
+			name:          "firing on default",
 			branch:        "main",
 			defaultBranch: "main",
+			expected:      true,
+		},
+		{
+			name:          "firing on config",
+			branch:        "test",
+			defaultBranch: "",
+			configBranch:  "test",
 			expected:      true,
 		},
 		{
@@ -51,11 +62,16 @@ func TestMergeEventFiring(t *testing.T) {
 			}
 
 			event := MergeEvent{
-				logger:  testutils.NewNoopLogger(),
-				project: &project,
+				logger: testutils.NewNoopLogger(),
 			}
 
-			firing, err := event.Firing()
+			ctx := cuecontext.New()
+			var config cue.Value
+			if tt.configBranch != "" {
+				config = ctx.CompileString(fmt.Sprintf(`{branch: "%s"}`, tt.configBranch))
+			}
+
+			firing, err := event.Firing(&project, config)
 			require.NoError(t, err)
 			assert.Equal(t, tt.expected, firing)
 		})

@@ -27,15 +27,16 @@ type GithubReleaserConfig struct {
 }
 
 type GithubReleaser struct {
-	client  *github.Client
-	force   bool
-	fs      afero.Fs
-	handler events.ReleaseEventHandler
-	logger  *slog.Logger
-	project project.Project
-	release schema.Release
-	runner  run.ProjectRunner
-	workdir string
+	client      *github.Client
+	force       bool
+	fs          afero.Fs
+	handler     events.ReleaseEventHandler
+	logger      *slog.Logger
+	project     project.Project
+	release     schema.Release
+	releaseName string
+	runner      run.ProjectRunner
+	workdir     string
 }
 
 func (r *GithubReleaser) Release() error {
@@ -48,7 +49,7 @@ func (r *GithubReleaser) Release() error {
 		return fmt.Errorf("failed to validate artifacts: %w", err)
 	}
 
-	if !r.handler.Firing(r.release.On) && !r.force {
+	if !r.handler.Firing(&r.project, r.releaseName) && !r.force {
 		r.logger.Info("No release event is firing, skipping release")
 		return nil
 	}
@@ -208,17 +209,18 @@ func NewGithubReleaser(
 	}
 
 	client := github.NewClient(nil).WithAuthToken(token)
-	handler := events.NewDefaultReleaseEventHandler(&project, ctx.Logger)
+	handler := events.NewDefaultReleaseEventHandler(ctx.Logger)
 	runner := run.NewDefaultProjectRunner(ctx, &project)
 	return &GithubReleaser{
-		client:  client,
-		force:   force,
-		fs:      fs,
-		handler: &handler,
-		logger:  ctx.Logger,
-		project: project,
-		release: release,
-		runner:  &runner,
-		workdir: workdir,
+		client:      client,
+		force:       force,
+		fs:          fs,
+		handler:     &handler,
+		logger:      ctx.Logger,
+		project:     project,
+		release:     release,
+		releaseName: name,
+		runner:      &runner,
+		workdir:     workdir,
 	}, nil
 }

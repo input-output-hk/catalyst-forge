@@ -5,6 +5,7 @@ package mocks
 
 import (
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/release/events"
+	"github.com/input-output-hk/catalyst-forge/lib/project/project"
 	"sync"
 )
 
@@ -18,7 +19,7 @@ var _ events.ReleaseEventHandler = &ReleaseEventHandlerMock{}
 //
 //		// make and configure a mocked events.ReleaseEventHandler
 //		mockedReleaseEventHandler := &ReleaseEventHandlerMock{
-//			FiringFunc: func(events []string) bool {
+//			FiringFunc: func(p *project.Project, releaseName string) bool {
 //				panic("mock out the Firing method")
 //			},
 //		}
@@ -29,33 +30,37 @@ var _ events.ReleaseEventHandler = &ReleaseEventHandlerMock{}
 //	}
 type ReleaseEventHandlerMock struct {
 	// FiringFunc mocks the Firing method.
-	FiringFunc func(events []string) bool
+	FiringFunc func(p *project.Project, releaseName string) bool
 
 	// calls tracks calls to the methods.
 	calls struct {
 		// Firing holds details about calls to the Firing method.
 		Firing []struct {
-			// Events is the events argument value.
-			Events []string
+			// P is the p argument value.
+			P *project.Project
+			// ReleaseName is the releaseName argument value.
+			ReleaseName string
 		}
 	}
 	lockFiring sync.RWMutex
 }
 
 // Firing calls FiringFunc.
-func (mock *ReleaseEventHandlerMock) Firing(events []string) bool {
+func (mock *ReleaseEventHandlerMock) Firing(p *project.Project, releaseName string) bool {
 	if mock.FiringFunc == nil {
 		panic("ReleaseEventHandlerMock.FiringFunc: method is nil but ReleaseEventHandler.Firing was just called")
 	}
 	callInfo := struct {
-		Events []string
+		P           *project.Project
+		ReleaseName string
 	}{
-		Events: events,
+		P:           p,
+		ReleaseName: releaseName,
 	}
 	mock.lockFiring.Lock()
 	mock.calls.Firing = append(mock.calls.Firing, callInfo)
 	mock.lockFiring.Unlock()
-	return mock.FiringFunc(events)
+	return mock.FiringFunc(p, releaseName)
 }
 
 // FiringCalls gets all the calls that were made to Firing.
@@ -63,10 +68,12 @@ func (mock *ReleaseEventHandlerMock) Firing(events []string) bool {
 //
 //	len(mockedReleaseEventHandler.FiringCalls())
 func (mock *ReleaseEventHandlerMock) FiringCalls() []struct {
-	Events []string
+	P           *project.Project
+	ReleaseName string
 } {
 	var calls []struct {
-		Events []string
+		P           *project.Project
+		ReleaseName string
 	}
 	mock.lockFiring.RLock()
 	calls = mock.calls.Firing
