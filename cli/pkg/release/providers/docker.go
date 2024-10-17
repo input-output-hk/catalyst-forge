@@ -6,8 +6,8 @@ import (
 	"strings"
 
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/earthly"
+	"github.com/input-output-hk/catalyst-forge/cli/pkg/events"
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/executor"
-	"github.com/input-output-hk/catalyst-forge/cli/pkg/release/events"
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/run"
 	"github.com/input-output-hk/catalyst-forge/lib/project/project"
 	"github.com/input-output-hk/catalyst-forge/lib/project/schema"
@@ -22,7 +22,7 @@ const (
 type DockerReleaser struct {
 	docker      executor.WrappedExecuter
 	force       bool
-	handler     events.ReleaseEventHandler
+	handler     events.EventHandler
 	logger      *slog.Logger
 	project     project.Project
 	release     schema.Release
@@ -40,7 +40,7 @@ func (r *DockerReleaser) Release() error {
 		return fmt.Errorf("failed to validate images: %w", err)
 	}
 
-	if !r.handler.Firing(&r.project, r.releaseName) && !r.force {
+	if !r.handler.Firing(&r.project, r.project.GetReleaseEvents(r.releaseName)) && !r.force {
 		r.logger.Info("No release event is firing, skipping release")
 		return nil
 	}
@@ -214,7 +214,7 @@ func NewDockerReleaser(
 	}
 
 	docker := executor.NewLocalWrappedExecutor(exec, "docker")
-	handler := events.NewDefaultReleaseEventHandler(ctx.Logger)
+	handler := events.NewDefaultEventHandler(ctx.Logger)
 	runner := run.NewDefaultProjectRunner(ctx, &project)
 	return &DockerReleaser{
 		docker:      docker,
