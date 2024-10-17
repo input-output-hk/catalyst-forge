@@ -192,8 +192,8 @@ func NewGithubReleaser(
 	}
 
 	var config GithubReleaserConfig
-	if err := project.Raw().DecodePath(fmt.Sprintf("project.release.%s.config", name), &config); err != nil {
-		return nil, fmt.Errorf("failed to decode release config: %w", err)
+	if err := parseConfig(&project, name, &config); err != nil {
+		return nil, fmt.Errorf("failed to parse release config: %w", err)
 	}
 
 	token, err := secrets.GetSecret(&config.Token, &ctx.SecretStore, ctx.Logger)

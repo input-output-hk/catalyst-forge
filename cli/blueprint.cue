@@ -26,21 +26,17 @@ project: {
 	}
 	release: {
 		docker: {
-			config: {}
 			on: ["merge", "tag"]
-			target: "publish"
-			type:   "docker"
+			config: {}
 		}
 		github: {
+			on: ["tag"]
 			config: {
 				token: {
 					provider: "env"
 					path:     "GITHUB_TOKEN"
 				}
 			}
-			on: ["tag"]
-			target: "release"
-			type:   "github"
 		}
 	}
 }

@@ -19,7 +19,7 @@ func (c *ReleaseCmd) Run(ctx run.RunContext) error {
 		return err
 	}
 
-	config, ok := project.Blueprint.Project.Release[c.Release]
+	_, ok := project.Blueprint.Project.Release[c.Release]
 	if !ok {
 		return fmt.Errorf("unknown release: %s", c.Release)
 	}
@@ -28,7 +28,7 @@ func (c *ReleaseCmd) Run(ctx run.RunContext) error {
 	ctx.CI = true
 	releasers := release.NewDefaultReleaserStore()
 	releaser, err := releasers.GetReleaser(
-		release.ReleaserType(config.Type),
+		release.ReleaserType(c.Release),
 		ctx,
 		project,
 		c.Release,

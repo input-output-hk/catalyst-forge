@@ -50,7 +50,7 @@ test:
 
     RUN go test ./...
 
-release:
+github:
     FROM scratch
 
     ARG version="dev"
@@ -68,7 +68,7 @@ release:
 
     SAVE ARTIFACT bin/forge forge
 
-publish:
+docker:
     FROM debian:bookworm-slim
     WORKDIR /workspace
 

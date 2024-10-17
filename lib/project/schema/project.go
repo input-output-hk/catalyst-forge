@@ -30,16 +30,16 @@ type ProjectCI struct {
 // Release contains the configuration for a project release.
 type Release struct {
 	// Config contains the configuration to pass to the release.
+	// +optional
 	Config any `json:"config"`
 
 	// On contains the events that trigger the release.
 	On []string `json:"on"`
 
 	// Target is the Earthly target to run for this release.
+	// Defaults to release name.
+	// +optional
 	Target string `json:"target"`
-
-	// Type is the type of releaser to use.
-	Type string `json:"type"`
 }
 
 // Target contains the configuration for a single target.
