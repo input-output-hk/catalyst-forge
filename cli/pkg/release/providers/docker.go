@@ -56,7 +56,7 @@ func (r *DockerReleaser) Release() error {
 	var imageTag string
 	if r.project.TagInfo.Git != "" {
 		if r.project.TagInfo.Git.IsMono() {
-			imageTag = string(r.project.TagInfo.Git)
+			imageTag = string(r.project.TagInfo.Git.ToMono().Tag)
 		} else {
 			imageTag = string(r.project.TagInfo.Git)
 		}
