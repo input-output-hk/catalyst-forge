@@ -79,6 +79,7 @@ func (r *GithubReleaser) Release() error {
 		release, _, err = r.client.Repositories.CreateRelease(ctx, owner, repo, &github.RepositoryRelease{
 			Name:    &releaseName,
 			TagName: &releaseName,
+			Draft:   github.Bool(false),
 		})
 
 		if err != nil {
