@@ -1,5 +1,4 @@
 const core = require("@actions/core");
-const forge = require("../../lib/src/forge");
 
 async function run() {
   try {
@@ -25,12 +24,16 @@ async function run() {
     }
 
     core.info(`Running forge ${args.join(" ")}`);
-    const result = await forge.runForge(args);
+    const result = await runForge(args);
 
     core.setOutput("result", result.stdout);
   } catch (error) {
     core.setFailed(error.message);
   }
+}
+
+async function runForge(args) {
+  return await exec.getExecOutput("forge", args);
 }
 
 module.exports = {
