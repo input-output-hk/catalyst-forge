@@ -25,7 +25,7 @@ async function run() {
     const forgeArgs = ["--ci"];
 
     if (verbosityLevel > 0) {
-      forgeArgs.push("-" + "v".repeat(verbosityLevel));
+      forgeArgs.push(`-${"v".repeat(verbosityLevel)}`);
     }
 
     if (local === true) {
@@ -42,8 +42,8 @@ async function run() {
       forgeArgs.push("--", ...targetArgs.split(" "));
     }
 
-    core.info(`Running forge ${args.join(" ")}`);
-    const result = await runForge(args);
+    core.info(`Running forge ${forgeArgs.join(" ")}`);
+    const result = await runForge(forgeArgs);
 
     core.setOutput("result", result.stdout);
   } catch (error) {
