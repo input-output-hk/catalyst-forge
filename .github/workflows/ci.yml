@@ -7,6 +7,16 @@ on:
         type: string
         required: false
         default: latest
+      local:
+        description: Forces local mode
+        required: false
+        type: string
+        default: "false"
+      verbosity:
+        description: The verbosity level to use
+        required: false
+        type: string
+        default: "info"
     secrets:
       earthly_token:
         description: Optional Earthly token used to login to Earthly cloud during local builds of Forge CLI
@@ -31,12 +41,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Install Forge
-        uses: input-output-hk/catalyst-forge/actions/install@master
+        uses: input-output-hk/catalyst-forge/actions/install@upddate-run-action
         if: ${{ inputs.forge_version != 'local' }}
         with:
           version: ${{ inputs.forge_version }}
       - name: Install Local Forge
-        uses: input-output-hk/catalyst-forge/actions/install-local@master
+        uses: input-output-hk/catalyst-forge/actions/install-local@upddate-run-action
         if: ${{ inputs.forge_version == 'local' }}
         with:
           earthly_token: ${{ secrets.earthly_token }}
@@ -51,14 +61,14 @@ jobs:
             echo "skip=false" >> $GITHUB_OUTPUT
           fi
       - name: Setup CI
-        uses: input-output-hk/catalyst-forge/actions/setup@master
+        uses: input-output-hk/catalyst-forge/actions/setup@upddate-run-action
         with:
           skip_docker: 'true'
           skip_github: 'true'
           skip_earthly: ${{ steps.local.outputs.skip }}
       - name: Discovery
         id: discovery
-        uses: input-output-hk/catalyst-forge/actions/discovery@master
+        uses: input-output-hk/catalyst-forge/actions/discovery@upddate-run-action
         with:
           filters: |
             ${{ env.FORGE_REGEX_CHECK }}
@@ -70,47 +80,55 @@ jobs:
             ${{ env.FORGE_REGEX_PUBLISH }}
 
   check:
-    uses: input-output-hk/catalyst-forge/.github/workflows/run.yml@master
+    uses: input-output-hk/catalyst-forge/.github/workflows/run.yml@upddate-run-action
     needs: [discover]
     if: (fromJson(needs.discover.outputs.earthfiles)['^check(-.*)?$'] != null) && !failure() && !cancelled()
     with:
       earthfiles: ${{ toJson(fromJson(needs.discover.outputs.earthfiles)['^check(-.*)?$']) }}
       forge_version: ${{ inputs.forge_version }}
+      local: ${{ inputs.local }}
+      verbosity: ${{ inputs.verbosity }}
     secrets:
       earthly_token: ${{ secrets.earthly_token }}
 
   build:
-    uses: input-output-hk/catalyst-forge/.github/workflows/run.yml@master
+    uses: input-output-hk/catalyst-forge/.github/workflows/run.yml@upddate-run-action
     needs: [discover, check]
     if: (fromJson(needs.discover.outputs.earthfiles)['^build(-.*)?$'] != null) && !failure() && !cancelled()
     with:
       earthfiles: ${{ toJson(fromJson(needs.discover.outputs.earthfiles)['^build(-.*)?$']) }}
       forge_version: ${{ inputs.forge_version }}
+      local: ${{ inputs.local }}
+      verbosity: ${{ inputs.verbosity }}
     secrets:
       earthly_token: ${{ secrets.earthly_token }}
 
   package:
-    uses: input-output-hk/catalyst-forge/.github/workflows/run.yml@master
+    uses: input-output-hk/catalyst-forge/.github/workflows/run.yml@upddate-run-action
     needs: [discover, check, build]
     if: (fromJson(needs.discover.outputs.earthfiles)['^package(-.*)?$'] != null) && !failure() && !cancelled()
     with:
       earthfiles: ${{ toJson(fromJson(needs.discover.outputs.earthfiles)['^package(-.*)?$']) }}
       forge_version: ${{ inputs.forge_version }}
+      local: ${{ inputs.local }}
+      verbosity: ${{ inputs.verbosity }}
     secrets:
       earthly_token: ${{ secrets.earthly_token }}
 
   test:
-    uses: input-output-hk/catalyst-forge/.github/workflows/run.yml@master
+    uses: input-output-hk/catalyst-forge/.github/workflows/run.yml@upddate-run-action
     needs: [discover, check, build, package]
     if: (fromJson(needs.discover.outputs.earthfiles)['^test(-.*)?$'] != null) && !failure() && !cancelled()
     with:
       earthfiles: ${{ toJson(fromJson(needs.discover.outputs.earthfiles)['^test(-.*)?$']) }}
       forge_version: ${{ inputs.forge_version }}
+      local: ${{ inputs.local }}
+      verbosity: ${{ inputs.verbosity }}
     secrets:
       earthly_token: ${{ secrets.earthly_token }}
 
   docs:
-    uses: input-output-hk/catalyst-forge/.github/workflows/docs.yml@master
+    uses: input-output-hk/catalyst-forge/.github/workflows/docs.yml@upddate-run-action
     needs: [discover, check, build, test]
     if: (fromJson(needs.discover.outputs.earthfiles)['^docs(-.*)?$'] != null) && !failure() && !cancelled()
     with:
@@ -120,22 +138,26 @@ jobs:
       earthly_token: ${{ secrets.earthly_token }}
 
   release:
-    uses: input-output-hk/catalyst-forge/.github/workflows/release.yml@master
+    uses: input-output-hk/catalyst-forge/.github/workflows/release.yml@upddate-run-action
     needs: [discover, check, build, test]
     if: (fromJson(needs.discover.outputs.releases)[0] != null) && !failure() && !cancelled()
     with:
       releases: ${{ needs.discover.outputs.releases }}
       forge_version: ${{ inputs.forge_version }}
+      local: ${{ inputs.local }}
+      verbosity: ${{ inputs.verbosity }}
     secrets:
       earthly_token: ${{ secrets.earthly_token }}
 
   deploy:
-    uses: input-output-hk/catalyst-forge/.github/workflows/deploy.yml@master
+    uses: input-output-hk/catalyst-forge/.github/workflows/deploy.yml@upddate-run-action
     needs: [discover, check, build, test, release]
     if: (fromJson(needs.discover.outputs.deployments)[0] != null) && github.ref == format('refs/heads/{0}', github.event.repository.default_branch) && !failure() && !cancelled()
     with:
       deployments: ${{ needs.discover.outputs.deployments }}
       forge_version: ${{ inputs.forge_version }}
+      local: ${{ inputs.local }}
+      verbosity: ${{ inputs.verbosity }}
     secrets:
       earthly_token: ${{ secrets.earthly_token }}
 

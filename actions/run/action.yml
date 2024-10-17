@@ -1,22 +1,28 @@
 name: Run
 description: Execute Earthfiles
 inputs:
-  artifact:
-    description: Dump all produced artifacts to the given path (ignored if empty).
-    default: ""
-  local:
-    description: Forces the target to run locally (ignores satellite).
-    default: "false"
-  path:
-    description: The path to the Earthfile, including target (i.e. path/to/project+target)
-    required: true
-  target_args:
-    description: Extra arguments to pass to the target
+  args:
+    description: The arguments to pass
     required: false
     default: ""
+  command:
+    description: The command to run
+    required: true
+  local:
+    description: Forces local mode
+    required: false
+    default: "false"
+  target_args:
+    description: Extra arguments to pass to the target (if command is "run")
+    required: false
+    default: ""
+  verbosity:
+    description: The verbosity level to use
+    required: false
+    default: "info"
 outputs:
   result:
-    description: The result of the run
+    description: The result of running the command
 
 runs:
   using: node20

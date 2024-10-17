@@ -11,6 +11,21 @@ on:
           The version of the forge CLI to install (use 'local' for testing)
         required: true
         type: string
+      local:
+        description: Forces local mode
+        required: false
+        type: string
+        default: "false"
+      target_args:
+        description: Extra arguments to pass to the target (if command is "run")
+        required: false
+        type: string
+        default: ""
+      verbosity:
+        description: The verbosity level to use
+        required: false
+        type: string
+        default: "info"
     secrets:
       earthly_token:
         description: Optional Earthly token used to login to Earthly cloud during local builds of Forge CLI
@@ -29,12 +44,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Install Forge
-        uses: input-output-hk/catalyst-forge/actions/install@master
+        uses: input-output-hk/catalyst-forge/actions/install@upddate-run-action
         if: ${{ inputs.forge_version != 'local' }}
         with:
           version: ${{ inputs.forge_version }}
       - name: Install Local Forge
-        uses: input-output-hk/catalyst-forge/actions/install-local@master
+        uses: input-output-hk/catalyst-forge/actions/install-local@upddate-run-action
         if: ${{ inputs.forge_version == 'local' }}
         with:
           earthly_token: ${{ secrets.earthly_token }}
@@ -49,15 +64,16 @@ jobs:
             echo "skip=false" >> $GITHUB_OUTPUT
           fi
       - name: Setup CI
-        uses: input-output-hk/catalyst-forge/actions/setup@master
+        uses: input-output-hk/catalyst-forge/actions/setup@upddate-run-action
         with:
           skip_earthly: ${{ steps.local.outputs.skip }}
       - name: Run
-        id: run
-        uses: input-output-hk/catalyst-forge/actions/run@master
+        uses: input-output-hk/catalyst-forge/actions/run@upddate-run-action
         with:
-          artifact: ${{ env.OUTPUT }}
-          path: ${{ matrix.earthfile }}
+          command: run
+          args: --artifact ${{ env.OUTPUT }} ${{ matrix.earthfile }}
+          local: ${{ inputs.local }}
+          verbosity: ${{ inputs.verbosity }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Set env
