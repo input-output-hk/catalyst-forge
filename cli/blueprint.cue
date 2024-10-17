@@ -2,7 +2,7 @@ version: "1.0"
 project: {
 	name: "forge"
 	ci: targets: {
-		publish: {
+		docker: {
 			args: {
 				version: string | *"dev" @forge(name="GIT_TAG")
 			}
@@ -11,7 +11,7 @@ project: {
 				"linux/arm64",
 			]
 		}
-		release: {
+		github: {
 			args: {
 				version: string | *"dev" @forge(name="GIT_TAG")
 			}
