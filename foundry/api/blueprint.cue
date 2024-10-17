@@ -2,12 +2,12 @@ version: "1.0"
 project: {
 	name: "foundry-api"
 	ci: targets: {
-		publish: {
+		docker: {
 			args: {
 				version: string | *"dev" @forge(name="GIT_TAG")
 			}
 		}
-		release: {
+		github: {
 			args: {
 				version: string | *"dev" @forge(name="GIT_TAG")
 			}
@@ -22,6 +22,24 @@ project: {
 				environment: name: "dev"
 				server: image: {
 					tag: _ @forge(name="GIT_IMAGE_TAG")
+				}
+			}
+		}
+	}
+	release: {
+		docker: {
+			on: {
+				merge: {}
+				tag: {}
+			}
+			config: {}
+		}
+		github: {
+			on: tag: {}
+			config: {
+				token: {
+					provider: "env"
+					path:     "GITHUB_TOKEN"
 				}
 			}
 		}

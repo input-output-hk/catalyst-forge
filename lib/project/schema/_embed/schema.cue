@@ -9,6 +9,9 @@ package schema
 	// Deployment contains the global configuration for the deployment of projects.
 	// +optional
 	deployment?: #GlobalDeployment @go(Deployment)
+
+	// Repo contains the configuration for the GitHub repository.
+	repo: #GlobalRepo @go(Repo)
 }
 
 // CI contains the configuration for the CI system.
@@ -52,6 +55,13 @@ package schema
 
 	// URL contains the URL of the deployment repository.
 	url: string @go(Url)
+}
+#GlobalRepo: {
+	// Name contains the name of the repository (e.g. "owner/repo-name").
+	name: string @go(Name)
+
+	// DefaultBranch contains the default branch of the repository.
+	defaultBranch: string @go(DefaultBranch)
 }
 
 // Providers contains the configuration for the providers being used by the CI system.
@@ -202,6 +212,12 @@ version: "1.0"
 	// Deployment contains the configuration for the deployment of the project.
 	// +optional
 	deployment?: #Deployment @go(Deployment)
+
+	// Release contains the configuration for the release of the project.
+	// +optional
+	release?: {
+		[string]: #Release
+	} @go(Release,map[string]Release)
 }
 #ProjectCI: {
 	// Targets configures the individual targets that are run by the CI system.
@@ -209,6 +225,23 @@ version: "1.0"
 	targets?: {
 		[string]: #Target
 	} @go(Targets,map[string]Target)
+}
+
+// Release contains the configuration for a project release.
+#Release: {
+	// Config contains the configuration to pass to the release.
+	// +optional
+	config?: _ @go(Config,any)
+
+	// On contains the events that trigger the release.
+	on: {
+		...
+	} @go(On,map[string]any)
+
+	// Target is the Earthly target to run for this release.
+	// Defaults to release name.
+	// +optional
+	target?: string @go(Target)
 }
 #Tagging: {
 	// Aliases contains the aliases to use for git tags.

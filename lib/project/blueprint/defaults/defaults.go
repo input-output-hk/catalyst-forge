@@ -13,5 +13,6 @@ type DefaultSetter interface {
 func GetDefaultSetters() []DefaultSetter {
 	return []DefaultSetter{
 		DeploymentModuleSetter{},
+		ReleaseTargetSetter{},
 	}
 }
