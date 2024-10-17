@@ -64,6 +64,12 @@ func Run() int {
 		kongplete.WithPredictor("path", complete.PredictFiles("*")),
 	)
 
+	ctx, err := parser.Parse(cliArgs)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "forge: %v\n", err)
+		return 1
+	}
+
 	handler := log.New(os.Stderr)
 	switch cli.Verbose {
 	case 0:
@@ -74,12 +80,6 @@ func Run() int {
 		handler.SetLevel(log.InfoLevel)
 	case 3:
 		handler.SetLevel(log.DebugLevel)
-	}
-
-	ctx, err := parser.Parse(cliArgs)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "forge: %v\n", err)
-		return 1
 	}
 
 	logger := slog.New(handler)
