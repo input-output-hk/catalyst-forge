@@ -3,29 +3,47 @@ const exec = require("@actions/exec");
 
 async function run() {
   try {
-    const artifact = core.getInput("artifact", { required: false });
+    const args = core.getInput("args", { required: false });
+    const command = core.getInput("command", { required: true });
     const local = core.getBooleanInput("local", { required: false });
-    const path = core.getInput("path", { required: true });
     const targetArgs = core.getInput("target_args", { required: false });
+    const verbosity = core.getInput("verbosity", { required: false });
 
-    const args = ["-vv", "run", "--ci"];
+    let verbosityLevel = 0;
+    switch (verbosity) {
+      case "error":
+        verbosityLevel = 1;
+        break;
+      case "info":
+        verbosityLevel = 2;
+        break;
+      case "debug":
+        verbosityLevel = 3;
+        break;
+    }
 
-    if (artifact !== "") {
-      args.push("--artifact", artifact);
+    const forgeArgs = ["--ci"];
+
+    if (verbosityLevel > 0) {
+      forgeArgs.push(`-${"v".repeat(verbosityLevel)}`);
     }
 
     if (local === true) {
-      args.push("--local");
+      forgeArgs.push("--local");
     }
 
-    args.push(path);
+    forgeArgs.push(command);
+
+    if (args !== "") {
+      forgeArgs.push(...args.split(" "));
+    }
 
     if (targetArgs !== "") {
-      args.push("--", ...targetArgs.split(" "));
+      forgeArgs.push("--", ...targetArgs.split(" "));
     }
 
-    core.info(`Running forge ${args.join(" ")}`);
-    const result = await runForge(args);
+    core.info(`Running forge ${forgeArgs.join(" ")}`);
+    const result = await runForge(forgeArgs);
 
     core.setOutput("result", result.stdout);
   } catch (error) {

@@ -7,6 +7,16 @@ on:
         type: string
         required: false
         default: latest
+      local:
+        description: Forces local mode
+        required: false
+        type: string
+        default: "false"
+      verbosity:
+        description: The verbosity level to use
+        required: false
+        type: string
+        default: "info"
     secrets:
       earthly_token:
         description: Optional Earthly token used to login to Earthly cloud during local builds of Forge CLI
@@ -76,6 +86,8 @@ jobs:
     with:
       earthfiles: ${{ toJson(fromJson(needs.discover.outputs.earthfiles)['^check(-.*)?$']) }}
       forge_version: ${{ inputs.forge_version }}
+      local: ${{ inputs.local }}
+      verbosity: ${{ inputs.verbosity }}
     secrets:
       earthly_token: ${{ secrets.earthly_token }}
 
@@ -86,6 +98,8 @@ jobs:
     with:
       earthfiles: ${{ toJson(fromJson(needs.discover.outputs.earthfiles)['^build(-.*)?$']) }}
       forge_version: ${{ inputs.forge_version }}
+      local: ${{ inputs.local }}
+      verbosity: ${{ inputs.verbosity }}
     secrets:
       earthly_token: ${{ secrets.earthly_token }}
 
@@ -96,6 +110,8 @@ jobs:
     with:
       earthfiles: ${{ toJson(fromJson(needs.discover.outputs.earthfiles)['^package(-.*)?$']) }}
       forge_version: ${{ inputs.forge_version }}
+      local: ${{ inputs.local }}
+      verbosity: ${{ inputs.verbosity }}
     secrets:
       earthly_token: ${{ secrets.earthly_token }}
 
@@ -106,6 +122,8 @@ jobs:
     with:
       earthfiles: ${{ toJson(fromJson(needs.discover.outputs.earthfiles)['^test(-.*)?$']) }}
       forge_version: ${{ inputs.forge_version }}
+      local: ${{ inputs.local }}
+      verbosity: ${{ inputs.verbosity }}
     secrets:
       earthly_token: ${{ secrets.earthly_token }}
 
@@ -126,6 +144,8 @@ jobs:
     with:
       releases: ${{ needs.discover.outputs.releases }}
       forge_version: ${{ inputs.forge_version }}
+      local: ${{ inputs.local }}
+      verbosity: ${{ inputs.verbosity }}
     secrets:
       earthly_token: ${{ secrets.earthly_token }}
 
@@ -136,6 +156,8 @@ jobs:
     with:
       deployments: ${{ needs.discover.outputs.deployments }}
       forge_version: ${{ inputs.forge_version }}
+      local: ${{ inputs.local }}
+      verbosity: ${{ inputs.verbosity }}
     secrets:
       earthly_token: ${{ secrets.earthly_token }}
 

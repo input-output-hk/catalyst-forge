@@ -17,6 +17,16 @@ on:
           The version of the forge CLI to install (use 'local' for testing)
         required: true
         type: string
+      local:
+        description: Forces local mode
+        required: false
+        type: string
+        default: "false"
+      verbosity:
+        description: The verbosity level to use
+        required: false
+        type: string
+        default: "info"
     secrets:
       earthly_token:
         description: Optional Earthly token used to login to Earthly cloud during local builds of Forge CLI
@@ -58,12 +68,12 @@ jobs:
         uses: input-output-hk/catalyst-forge/actions/setup@master
         with:
           skip_earthly: ${{ steps.local.outputs.skip }}
-      - name: Run
-        run: |
-          if [[ ${{ inputs.force }} == "true" ]]; then
-            forge -vv release --force ${{ matrix.release.project }} ${{ matrix.release.name }}
-          else
-            forge -vv release ${{ matrix.release.project }} ${{ matrix.release.name }}
-          fi
+      - name: Release
+        uses: input-output-hk/catalyst-forge/actions/run@master
+        with:
+          command: release
+          args: ${{ matrix.release.project }} ${{ matrix.release.name }}
+          local: ${{ inputs.local }}
+          verbosity: ${{ inputs.verbosity }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -11,6 +11,21 @@ on:
           The version of the forge CLI to install (use 'local' for testing)
         required: true
         type: string
+      local:
+        description: Forces local mode
+        required: false
+        type: string
+        default: "false"
+      target_args:
+        description: Extra arguments to pass to the target (if command is "run")
+        required: false
+        type: string
+        default: ""
+      verbosity:
+        description: The verbosity level to use
+        required: false
+        type: string
+        default: "info"
     secrets:
       earthly_token:
         description: Optional Earthly token used to login to Earthly cloud during local builds of Forge CLI
@@ -53,6 +68,10 @@ jobs:
       - name: Run
         uses: input-output-hk/catalyst-forge/actions/run@master
         with:
-          path: ${{ matrix.earthfile }}
+          command: run
+          args: ${{ matrix.earthfile }}
+          local: ${{ inputs.local }}
+          target_args: ${{ inputs.target_args }}
+          verbosity: ${{ inputs.verbosity }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

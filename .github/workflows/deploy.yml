@@ -11,6 +11,16 @@ on:
           The version of the forge CLI to install (use 'local' for testing)
         required: true
         type: string
+      local:
+        description: Forces local mode
+        required: false
+        type: string
+        default: "false"
+      verbosity:
+        description: The verbosity level to use
+        required: false
+        type: string
+        default: "info"
     secrets:
       earthly_token:
         description: Optional Earthly token used to login to Earthly cloud during local builds of Forge CLI
@@ -55,5 +65,11 @@ jobs:
         with:
           skip_earthly: ${{ steps.local.outputs.skip }}
       - name: Deploy
-        run: |
-          forge -vv deploy ${{ matrix.deployment }}
+        uses: input-output-hk/catalyst-forge/actions/run@master
+        with:
+          command: deploy
+          args: ${{ matrix.deployment }}
+          local: ${{ inputs.local }}
+          verbosity: ${{ inputs.verbosity }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

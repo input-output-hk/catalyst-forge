@@ -15,7 +15,7 @@ var (
 func GetBranch(repo *gg.Repository) (string, error) {
 	if InCI() {
 		ref, ok := os.LookupEnv("GITHUB_HEAD_REF")
-		if !ok {
+		if !ok || ref == "" {
 			if strings.HasPrefix(os.Getenv("GITHUB_REF"), "refs/heads/") {
 				return strings.TrimPrefix(os.Getenv("GITHUB_REF"), "refs/heads/"), nil
 			}
