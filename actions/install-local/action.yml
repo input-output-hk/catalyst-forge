@@ -14,12 +14,20 @@ runs:
       uses: earthly/actions-setup@v1
       with:
         version: latest
+    - name: Cache binary
+      id: cache-binary
+      uses: actions/cache@v4
+      with:
+        path: /usr/local/bin/forge
+        key: ${{ runner.os }}-${{ github.sha }}
     - name: Login to Earthly Cloud
+      if: cache-binary.outputs.cache-hit == 'false'
       shell: bash
       run: |
         earthly account login --token ${{ inputs.earthly_token }}
         earthly org select Catalyst
     - name: Build Forge CLI
+      if: cache-binary.outputs.cache-hit == 'false'
       shell: bash
       run: |
         echo "::group::Forge CLI Earthly Build"
