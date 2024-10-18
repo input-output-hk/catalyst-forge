@@ -8,7 +8,7 @@ import (
 )
 
 type DeployCmd struct {
-	Project string `arg:"" help:"The path to the project to deploy."`
+	Project string `arg:"" help:"The path to the project to deploy." kong:"arg,predictor=path"`
 }
 
 func (c *DeployCmd) Run(ctx run.RunContext) error {
