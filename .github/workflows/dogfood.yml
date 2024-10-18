@@ -2,7 +2,7 @@ name: Dogfood
 
 on:
   push:
-    branches: [master]
+    branches: ['**']
     tags: ['**']
   pull_request:
 
