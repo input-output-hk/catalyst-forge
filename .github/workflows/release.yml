@@ -68,6 +68,9 @@ jobs:
         uses: input-output-hk/catalyst-forge/actions/setup@upddate-run-action
         with:
           skip_earthly: ${{ steps.local.outputs.skip }}
+      - name: Test
+        run: |
+          echo "Ref: ${GITHUB_REF}"
       - name: Release
         uses: input-output-hk/catalyst-forge/actions/run@upddate-run-action
         with:
