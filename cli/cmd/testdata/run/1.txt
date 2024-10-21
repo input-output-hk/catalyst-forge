@@ -8,8 +8,6 @@ earthly
 test
 ./dir1+test
 Image ./dir1+test output as test
-
-{"test":{"artifacts":{},"images":{"./dir1+test":"test"}}}
 -- earthly_stdout.txt --
 Image ./dir1+test output as test
 -- dir1/Earthfile --

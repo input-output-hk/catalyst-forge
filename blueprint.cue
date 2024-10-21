@@ -50,6 +50,9 @@ global: {
 			},
 		]
 		tagging: {
+			aliases: {
+				forge: "cli"
+			}
 			strategy: "commit"
 		}
 	}
@@ -60,5 +63,9 @@ global: {
 			ref: "master"
 		}
 		root: "k8s"
+	}
+	repo: {
+		defaultBranch: "master"
+		name:          "input-output-hk/catalyst-forge"
 	}
 }

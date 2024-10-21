@@ -18,8 +18,11 @@ var _ executor.Executor = &ExecutorMock{}
 //
 //		// make and configure a mocked executor.Executor
 //		mockedExecutor := &ExecutorMock{
-//			ExecuteFunc: func(command string, args []string) ([]byte, error) {
+//			ExecuteFunc: func(command string, args ...string) ([]byte, error) {
 //				panic("mock out the Execute method")
+//			},
+//			LookPathFunc: func(file string) (string, error) {
+//				panic("mock out the LookPath method")
 //			},
 //		}
 //
@@ -29,7 +32,10 @@ var _ executor.Executor = &ExecutorMock{}
 //	}
 type ExecutorMock struct {
 	// ExecuteFunc mocks the Execute method.
-	ExecuteFunc func(command string, args []string) ([]byte, error)
+	ExecuteFunc func(command string, args ...string) ([]byte, error)
+
+	// LookPathFunc mocks the LookPath method.
+	LookPathFunc func(file string) (string, error)
 
 	// calls tracks calls to the methods.
 	calls struct {
@@ -40,12 +46,18 @@ type ExecutorMock struct {
 			// Args is the args argument value.
 			Args []string
 		}
+		// LookPath holds details about calls to the LookPath method.
+		LookPath []struct {
+			// File is the file argument value.
+			File string
+		}
 	}
-	lockExecute sync.RWMutex
+	lockExecute  sync.RWMutex
+	lockLookPath sync.RWMutex
 }
 
 // Execute calls ExecuteFunc.
-func (mock *ExecutorMock) Execute(command string, args []string) ([]byte, error) {
+func (mock *ExecutorMock) Execute(command string, args ...string) ([]byte, error) {
 	if mock.ExecuteFunc == nil {
 		panic("ExecutorMock.ExecuteFunc: method is nil but Executor.Execute was just called")
 	}
@@ -59,7 +71,7 @@ func (mock *ExecutorMock) Execute(command string, args []string) ([]byte, error)
 	mock.lockExecute.Lock()
 	mock.calls.Execute = append(mock.calls.Execute, callInfo)
 	mock.lockExecute.Unlock()
-	return mock.ExecuteFunc(command, args)
+	return mock.ExecuteFunc(command, args...)
 }
 
 // ExecuteCalls gets all the calls that were made to Execute.
@@ -77,5 +89,37 @@ func (mock *ExecutorMock) ExecuteCalls() []struct {
 	mock.lockExecute.RLock()
 	calls = mock.calls.Execute
 	mock.lockExecute.RUnlock()
+	return calls
+}
+
+// LookPath calls LookPathFunc.
+func (mock *ExecutorMock) LookPath(file string) (string, error) {
+	if mock.LookPathFunc == nil {
+		panic("ExecutorMock.LookPathFunc: method is nil but Executor.LookPath was just called")
+	}
+	callInfo := struct {
+		File string
+	}{
+		File: file,
+	}
+	mock.lockLookPath.Lock()
+	mock.calls.LookPath = append(mock.calls.LookPath, callInfo)
+	mock.lockLookPath.Unlock()
+	return mock.LookPathFunc(file)
+}
+
+// LookPathCalls gets all the calls that were made to LookPath.
+// Check the length with:
+//
+//	len(mockedExecutor.LookPathCalls())
+func (mock *ExecutorMock) LookPathCalls() []struct {
+	File string
+} {
+	var calls []struct {
+		File string
+	}
+	mock.lockLookPath.RLock()
+	calls = mock.calls.LookPath
+	mock.lockLookPath.RUnlock()
 	return calls
 }
