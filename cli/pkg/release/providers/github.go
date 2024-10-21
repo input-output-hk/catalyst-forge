@@ -23,11 +23,14 @@ type GithubClient interface {
 }
 
 type GithubReleaserConfig struct {
-	Token schema.Secret `json:"token"`
+	Prefix string        `json:"prefix"`
+	Name   string        `json:"name"`
+	Token  schema.Secret `json:"token"`
 }
 
 type GithubReleaser struct {
 	client      *github.Client
+	config      GithubReleaserConfig
 	force       bool
 	fs          afero.Fs
 	handler     events.EventHandler
@@ -54,9 +57,13 @@ func (r *GithubReleaser) Release() error {
 		return nil
 	}
 
+	if r.project.Tag == nil {
+		return fmt.Errorf("cannot create a release without a git tag")
+	}
+
 	var assets []string
 	for _, platform := range r.getPlatforms() {
-		filename := fmt.Sprintf("%s-%s.tar.gz", r.project.Name, strings.Replace(platform, "/", "-", -1))
+		filename := fmt.Sprintf("%s-%s.tar.gz", r.config.Prefix, strings.Replace(platform, "/", "-", -1))
 		destpath := filepath.Join(r.workdir, filename)
 		srcpath := filepath.Join(r.workdir, platform)
 
@@ -71,15 +78,14 @@ func (r *GithubReleaser) Release() error {
 	parts := strings.Split(r.project.Blueprint.Global.Repo.Name, "/")
 	owner, repo := parts[0], parts[1]
 
-	releaseName := string(r.project.Tag.Full)
 	ctx := context.Background()
 
-	release, resp, err := r.client.Repositories.GetReleaseByTag(ctx, owner, repo, releaseName)
+	release, resp, err := r.client.Repositories.GetReleaseByTag(ctx, owner, repo, r.project.Tag.Full)
 	if resp.StatusCode == 404 {
-		r.logger.Info("Creating release", "name", releaseName)
+		r.logger.Info("Creating release", "name", r.config.Name)
 		release, _, err = r.client.Repositories.CreateRelease(ctx, owner, repo, &github.RepositoryRelease{
-			Name:    &releaseName,
-			TagName: &releaseName,
+			Name:    &r.config.Name,
+			TagName: &r.project.Tag.Full,
 			Draft:   github.Bool(false),
 		})
 
@@ -89,7 +95,7 @@ func (r *GithubReleaser) Release() error {
 	} else if err != nil {
 		return fmt.Errorf("failed to get release: %w", err)
 	} else {
-		r.logger.Info("Release already exists", "name", releaseName)
+		r.logger.Info("Release already exists", "name", r.config.Name)
 	}
 
 	for _, asset := range assets {
@@ -212,6 +218,7 @@ func NewGithubReleaser(
 	handler := events.NewDefaultEventHandler(ctx.Logger)
 	runner := run.NewDefaultProjectRunner(ctx, &project)
 	return &GithubReleaser{
+		config:      config,
 		client:      client,
 		force:       force,
 		fs:          fs,

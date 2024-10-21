@@ -64,6 +64,7 @@ func TestGithubReleaserRelease(t *testing.T) {
 		project    project.Project
 		release    schema.Release
 		ghRelease  github.RepositoryRelease
+		config     GithubReleaserConfig
 		files      map[string]string
 		firing     bool
 		force      bool
@@ -83,6 +84,10 @@ func TestGithubReleaserRelease(t *testing.T) {
 			),
 			release:   newRelease(),
 			ghRelease: github.RepositoryRelease{},
+			config: GithubReleaserConfig{
+				Prefix: "project",
+				Name:   "project/v1.0.0",
+			},
 			files: map[string]string{
 				"linux/amd64/test": "test",
 			},
@@ -135,6 +140,10 @@ func TestGithubReleaserRelease(t *testing.T) {
 			),
 			release:   newRelease(),
 			ghRelease: github.RepositoryRelease{},
+			config: GithubReleaserConfig{
+				Prefix: "project",
+				Name:   "project/v1.0.0",
+			},
 			files: map[string]string{
 				"linux/amd64/test":  "test",
 				"darwin/amd64/test": "test",
@@ -188,6 +197,7 @@ func TestGithubReleaserRelease(t *testing.T) {
 			),
 			release:   newRelease(),
 			ghRelease: github.RepositoryRelease{},
+			config:    GithubReleaserConfig{},
 			files: map[string]string{
 				"linux/amd64/test": "test",
 			},
@@ -208,6 +218,7 @@ func TestGithubReleaserRelease(t *testing.T) {
 			),
 			release:   newRelease(),
 			ghRelease: github.RepositoryRelease{},
+			config:    GithubReleaserConfig{},
 			files:     map[string]string{},
 			firing:    true,
 			validate: func(t *testing.T, fs afero.Fs, uploads map[string][]byte, created bool, err error) {
@@ -227,6 +238,10 @@ func TestGithubReleaserRelease(t *testing.T) {
 			release: newRelease(),
 			ghRelease: github.RepositoryRelease{
 				ID: github.Int64(123456),
+			},
+			config: GithubReleaserConfig{
+				Prefix: "project",
+				Name:   "name",
 			},
 			files: map[string]string{
 				"linux/amd64/test": "test",
@@ -248,6 +263,10 @@ func TestGithubReleaserRelease(t *testing.T) {
 			),
 			release:   newRelease(),
 			ghRelease: github.RepositoryRelease{},
+			config: GithubReleaserConfig{
+				Prefix: "project",
+				Name:   "project/v1.0.0",
+			},
 			files: map[string]string{
 				"linux/amd64/test": "test",
 			},
@@ -269,6 +288,10 @@ func TestGithubReleaserRelease(t *testing.T) {
 			),
 			release:   newRelease(),
 			ghRelease: github.RepositoryRelease{},
+			config: GithubReleaserConfig{
+				Prefix: "project",
+				Name:   "project/v1.0.0",
+			},
 			files: map[string]string{
 				"linux/amd64/test": "test",
 			},
@@ -294,6 +317,10 @@ func TestGithubReleaserRelease(t *testing.T) {
 				Assets: []*github.ReleaseAsset{
 					newAsset("project-linux-amd64.tar.gz"),
 				},
+			},
+			config: GithubReleaserConfig{
+				Prefix: "project",
+				Name:   "project/v1.0.0",
 			},
 			files: map[string]string{
 				"linux/amd64/test": "test",
@@ -379,10 +406,11 @@ func TestGithubReleaserRelease(t *testing.T) {
 
 			releaser := GithubReleaser{
 				client:  client,
+				config:  tt.config,
 				force:   tt.force,
 				fs:      fs,
 				handler: newReleaseEventHandlerMock(tt.firing),
-				logger:  testutils.NewNoopLogger(),
+				logger:  testutils.NewStdoutLogger(),
 				project: tt.project,
 				release: tt.release,
 				runner:  newProjectRunnerMock(tt.runFail),

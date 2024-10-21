@@ -30,10 +30,6 @@ type GlobalCI struct {
 	// Secrets contains global secrets that will be passed to all targets.
 	// +optional
 	Secrets []Secret `json:"secrets"`
-
-	// Tagging contains the tagging configuration for the CI system.
-	// +optional
-	Tagging Tagging `json:"tagging"`
 }
 
 // GlobalDeployment contains the configuration for the global deployment of projects.
@@ -63,13 +59,4 @@ type GlobalRepo struct {
 
 	// DefaultBranch contains the default branch of the repository.
 	DefaultBranch string `json:"defaultBranch"`
-}
-
-type Tagging struct {
-	// Aliases contains the aliases to use for git tags.
-	// +optional
-	Aliases map[string]string `json:"aliases"`
-
-	// Strategy contains the tagging strategy to use for containers.
-	Strategy TagStrategy `json:"strategy"`
 }

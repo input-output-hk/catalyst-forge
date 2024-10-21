@@ -36,14 +36,5 @@ project: {
 				tag: _ @forge(name="GIT_COMMIT_HASH")
 			}
 		}
-		github: {
-			on: tag: {}
-			config: {
-				token: {
-					provider: "env"
-					path:     "GITHUB_TOKEN"
-				}
-			}
-		}
 	}
 }
