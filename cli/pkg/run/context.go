@@ -3,7 +3,6 @@ package run
 import (
 	"log/slog"
 
-	"github.com/input-output-hk/catalyst-forge/cli/pkg/executor"
 	"github.com/input-output-hk/catalyst-forge/lib/project/project"
 	"github.com/input-output-hk/catalyst-forge/lib/project/secrets"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/walker"
@@ -13,9 +12,6 @@ import (
 type RunContext struct {
 	// CI is true if the run is happening in a CI environment.
 	CI bool
-
-	// Executor is the executor to use for running commands.
-	Executor executor.Executor
 
 	// FSWalker is the walker to use for walking the filesystem.
 	FSWalker walker.FSWalker

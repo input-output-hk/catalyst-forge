@@ -87,7 +87,7 @@ func (p *DefaultProjectLoader) Load(projectPath string) (Project, error) {
 
 	p.logger.Info("Loading tag data")
 	var tagConfig schema.Tagging
-	var tagInfo TagInfo
+	var tagInfo *TagInfo
 	if err := rbp.Get("global.ci.tagging").Decode(&tagConfig); err != nil {
 		p.logger.Warn("Failed to load tag config", "error", err)
 	} else {
@@ -100,19 +100,25 @@ func (p *DefaultProjectLoader) Load(projectPath string) (Project, error) {
 						},
 					},
 				},
-				ctx:       p.ctx,
-				Earthfile: ef,
-				Repo:      repo,
-				RepoRoot:  gitRoot,
+				Earthfile:    ef,
+				Path:         projectPath,
+				RawBlueprint: rbp,
+				Repo:         repo,
+				RepoRoot:     gitRoot,
+				ctx:          p.ctx,
+				logger:       p.logger,
 			},
 			git.InCI(),
 			true,
 			p.logger,
 		)
 
-		tagInfo, err = tagger.GetTagInfo()
+		t, err := tagger.GetTagInfo()
 		if err != nil {
 			p.logger.Error("Failed to get tag info", "error", err)
+			tagInfo = nil
+		} else {
+			tagInfo = &t
 		}
 	}
 
@@ -120,11 +126,14 @@ func (p *DefaultProjectLoader) Load(projectPath string) (Project, error) {
 	runtimeData := make(map[string]cue.Value)
 	for _, r := range p.runtimes {
 		d := r.Load(&Project{
-			ctx:          p.ctx,
 			Earthfile:    ef,
+			Path:         projectPath,
+			RawBlueprint: rbp,
 			Repo:         repo,
-			rawBlueprint: rbp,
+			RepoRoot:     gitRoot,
 			TagInfo:      tagInfo,
+			ctx:          p.ctx,
+			logger:       p.logger,
 		})
 
 		for k, v := range d {
@@ -133,8 +142,8 @@ func (p *DefaultProjectLoader) Load(projectPath string) (Project, error) {
 	}
 
 	p.logger.Info("Injecting blueprint")
-	p.injectors = append(p.injectors, injector.NewBlueprintRuntimeInjector(p.ctx, runtimeData, p.logger))
-	for _, inj := range p.injectors {
+	injs := append(p.injectors, injector.NewBlueprintRuntimeInjector(p.ctx, runtimeData, p.logger))
+	for _, inj := range injs {
 		rbp = inj.Inject(rbp)
 	}
 
@@ -155,10 +164,10 @@ func (p *DefaultProjectLoader) Load(projectPath string) (Project, error) {
 		Earthfile:    ef,
 		Name:         bp.Project.Name,
 		Path:         projectPath,
+		RawBlueprint: rbp,
 		Repo:         repo,
 		RepoRoot:     gitRoot,
 		logger:       p.logger,
-		rawBlueprint: rbp,
 		TagInfo:      tagInfo,
 	}, nil
 }

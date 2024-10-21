@@ -47,7 +47,7 @@ test:
 
     RUN go test ./...
 
-release:
+github:
     FROM scratch
 
     ARG version="dev"
@@ -65,7 +65,7 @@ release:
 
     SAVE ARTIFACT bin/foundry foundry
 
-publish:
+docker:
     FROM debian:bookworm-slim
     WORKDIR /app
 

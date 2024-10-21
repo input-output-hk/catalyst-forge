@@ -10,7 +10,6 @@ import (
 	"github.com/alecthomas/kong"
 	"github.com/charmbracelet/log"
 	"github.com/input-output-hk/catalyst-forge/cli/cmd/cmds"
-	"github.com/input-output-hk/catalyst-forge/cli/pkg/executor"
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/run"
 	"github.com/input-output-hk/catalyst-forge/lib/project/project"
 	"github.com/input-output-hk/catalyst-forge/lib/project/schema"
@@ -27,6 +26,7 @@ var cli struct {
 	Dump     cmds.DumpCmd     `cmd:"" help:"Dumps a project's blueprint to JSON."`
 	Devx     cmds.DevX        `cmd:"" help:"Reads a forge markdown file and executes a command."`
 	CI       cmds.CICmd       `cmd:"" help:"Simulate a CI run."`
+	Release  cmds.ReleaseCmd  `cmd:"" help:"Release a project."`
 	Run      cmds.RunCmd      `cmd:"" help:"Run an Earthly target."`
 	Scan     cmds.ScanCmd     `cmd:"" help:"Scan for Earthfiles."`
 	Secret   cmds.SecretCmd   `cmd:"" help:"Manage secrets."`
@@ -70,11 +70,7 @@ func Run() int {
 	logger := slog.New(handler)
 	loader := project.NewDefaultProjectLoader(logger)
 	runctx := run.RunContext{
-		CI: cli.GlobalArgs.CI,
-		Executor: executor.NewLocalExecutor(
-			logger,
-			executor.WithRedirect(),
-		),
+		CI:            cli.GlobalArgs.CI,
 		FSWalker:      walker.NewDefaultFSWalker(logger),
 		Local:         cli.GlobalArgs.Local,
 		Logger:        logger,

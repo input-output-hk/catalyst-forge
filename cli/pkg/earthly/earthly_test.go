@@ -30,20 +30,10 @@ func TestEarthlyExecutorRun(t *testing.T) {
 				testutils.NewNoopLogger(),
 			),
 			mockExec: emocks.ExecutorMock{
-				ExecuteFunc: func(command string, args []string) ([]byte, error) {
+				ExecuteFunc: func(command string, args ...string) ([]byte, error) {
 					return []byte(`foobarbaz
 Image foo output as bar
 Artifact foo output as bar`), nil
-				},
-			},
-			expect: map[string]EarthlyExecutionResult{
-				getNativePlatform(): {
-					Images: map[string]string{
-						"foo": "bar",
-					},
-					Artifacts: map[string]string{
-						"foo": "bar",
-					},
 				},
 			},
 			expectErr:   false,
@@ -56,7 +46,7 @@ Artifact foo output as bar`), nil
 				WithRetries(3),
 			),
 			mockExec: emocks.ExecutorMock{
-				ExecuteFunc: func(command string, args []string) ([]byte, error) {
+				ExecuteFunc: func(command string, args ...string) ([]byte, error) {
 					return []byte{}, fmt.Errorf("error")
 				},
 			},
@@ -71,7 +61,7 @@ Artifact foo output as bar`), nil
 				WithPlatforms("foo", "bar"),
 			),
 			mockExec: emocks.ExecutorMock{
-				ExecuteFunc: func(command string, args []string) ([]byte, error) {
+				ExecuteFunc: func(command string, args ...string) ([]byte, error) {
 					return []byte(`foobarbaz
 Image foo output as bar
 Artifact foo output as bar`), nil
@@ -104,14 +94,13 @@ Artifact foo output as bar`), nil
 		tt := &tests[i] // Required to avoid copying the generaetd RWMutex
 		t.Run(tt.name, func(t *testing.T) {
 			tt.earthlyExec.executor = &tt.mockExec
-			got, err := tt.earthlyExec.Run()
+			err := tt.earthlyExec.Run()
 
 			if testutils.AssertError(t, err, tt.expectErr, "") {
 				return
 			}
 
 			assert.Equal(t, len(tt.mockExec.ExecuteCalls()), tt.expectCalls)
-			assert.Equal(t, tt.expect, got)
 		})
 	}
 }
@@ -128,8 +117,8 @@ func TestEarthlyExecutor_buildArguments(t *testing.T) {
 			e: NewEarthlyExecutor("/test/dir", "foo", nil, secrets.SecretStore{},
 				testutils.NewNoopLogger(),
 			),
-			platform: getNativePlatform(),
-			expect:   []string{"--platform", getNativePlatform(), "/test/dir+foo"},
+			platform: GetBuildPlatform(),
+			expect:   []string{"--platform", GetBuildPlatform(), "/test/dir+foo"},
 		},
 		{
 			name: "with platform",
@@ -145,8 +134,8 @@ func TestEarthlyExecutor_buildArguments(t *testing.T) {
 				testutils.NewNoopLogger(),
 				WithTargetArgs("--arg1", "foo", "--arg2", "bar"),
 			),
-			platform: getNativePlatform(),
-			expect:   []string{"--platform", getNativePlatform(), "/test/dir+foo", "--arg1", "foo", "--arg2", "bar"},
+			platform: GetBuildPlatform(),
+			expect:   []string{"--platform", GetBuildPlatform(), "/test/dir+foo", "--arg1", "foo", "--arg2", "bar"},
 		},
 		{
 			name: "with artifact",
@@ -154,8 +143,8 @@ func TestEarthlyExecutor_buildArguments(t *testing.T) {
 				testutils.NewNoopLogger(),
 				WithArtifact("test"),
 			),
-			platform: getNativePlatform(),
-			expect:   []string{"--platform", getNativePlatform(), "--artifact", "/test/dir+foo/*", "test/" + getNativePlatform() + "/"},
+			platform: "linux/amd64",
+			expect:   []string{"--platform", "linux/amd64", "--artifact", "/test/dir+foo/*", "test/linux/amd64/"},
 		},
 		{
 			name: "with artifact and platforms",
@@ -173,8 +162,8 @@ func TestEarthlyExecutor_buildArguments(t *testing.T) {
 				testutils.NewNoopLogger(),
 				WithPrivileged(),
 			),
-			platform: getNativePlatform(),
-			expect:   []string{"--platform", getNativePlatform(), "--allow-privileged", "/test/dir+foo"},
+			platform: GetBuildPlatform(),
+			expect:   []string{"--platform", GetBuildPlatform(), "--allow-privileged", "/test/dir+foo"},
 		},
 		{
 			name: "with satellite",
@@ -182,8 +171,8 @@ func TestEarthlyExecutor_buildArguments(t *testing.T) {
 				testutils.NewNoopLogger(),
 				WithSatellite("satellite"),
 			),
-			platform: getNativePlatform(),
-			expect:   []string{"--platform", getNativePlatform(), "--sat", "satellite", "/test/dir+foo"},
+			platform: GetBuildPlatform(),
+			expect:   []string{"--platform", GetBuildPlatform(), "--sat", "satellite", "/test/dir+foo"},
 		},
 	}
 
@@ -388,45 +377,6 @@ func TestEarthlyExecutor_buildSecrets(t *testing.T) {
 			}
 
 			assert.Equal(t, tt.expect, got)
-		})
-	}
-}
-
-func Test_parseOutput(t *testing.T) {
-	tests := []struct {
-		expect EarthlyExecutionResult
-		name   string
-		output string
-	}{
-		{
-			name: "simple",
-			output: `foobarbaz
-Image foo output as bar
-Artifact foo output as bar`,
-			expect: EarthlyExecutionResult{
-				Images: map[string]string{
-					"foo": "bar",
-				},
-				Artifacts: map[string]string{
-					"foo": "bar",
-				},
-			},
-		},
-		{
-			name:   "no output",
-			output: "",
-			expect: EarthlyExecutionResult{
-				Images:    map[string]string{},
-				Artifacts: map[string]string{},
-			},
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got := parseResult(tt.output)
-			assert.Equal(t, tt.expect, got)
-			assert.Equal(t, tt.expect.Images, got.Images)
 		})
 	}
 }
