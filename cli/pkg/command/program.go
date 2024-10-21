@@ -60,7 +60,7 @@ func (cmd *Command) exec(logger *slog.Logger) error {
 		logger,
 		executor.WithRedirect(),
 	)
-	_, err := localExec.Execute(lang.GetExecutorCommand(), lang.GetExecutorArgs(cmd.content))
+	_, err := localExec.Execute(lang.GetExecutorCommand(), lang.GetExecutorArgs(cmd.content)...)
 
 	return err
 }
