@@ -5,6 +5,7 @@ import (
 	"log/slog"
 
 	"cuelang.org/go/cue"
+	"github.com/go-git/go-git/v5"
 )
 
 // RuntimeData is an interface for runtime data loaders.
@@ -19,33 +20,20 @@ type GitRuntime struct {
 
 func (g *GitRuntime) Load(project *Project) map[string]cue.Value {
 	g.logger.Debug("Loading git runtime data")
-
 	data := make(map[string]cue.Value)
-	if project.TagInfo == nil {
-		g.logger.Error("No tag info found")
-		return data
-	}
 
-	data["GIT_TAG_GENERATED"] = project.ctx.CompileString(fmt.Sprintf(`"%s"`, project.TagInfo.Generated))
-	data["GIT_IMAGE_TAG"] = data["GIT_TAG_GENERATED"]
-
-	matches, err := project.TagMatches()
+	hash, err := getCommitHash(project.Repo)
 	if err != nil {
-		g.logger.Error("Failed to check if tag matches", "error", err)
-		return data
+		g.logger.Warn("Failed to get commit hash", "error", err)
+	} else {
+		data["GIT_COMMIT_HASH"] = project.ctx.CompileString(fmt.Sprintf(`"%s"`, hash))
 	}
 
-	if matches {
-		var tag string
-
-		if project.TagInfo.Git.IsMono() {
-			tag = project.TagInfo.Git.ToMono().Tag
-		} else {
-			tag = string(project.TagInfo.Git)
-		}
-
-		data["GIT_TAG"] = project.ctx.CompileString(fmt.Sprintf(`"%s"`, tag))
-		data["GIT_IMAGE_TAG"] = data["GIT_TAG"]
+	if project.Tag != nil {
+		data["GIT_TAG"] = project.ctx.CompileString(fmt.Sprintf(`"%s"`, project.Tag.Full))
+		data["GIT_TAG_VERSION"] = project.ctx.CompileString(fmt.Sprintf(`"%s"`, project.Tag.Version))
+	} else {
+		g.logger.Debug("No project tag found")
 	}
 
 	return data
@@ -63,4 +51,19 @@ func GetDefaultRuntimes(logger *slog.Logger) []RuntimeData {
 	return []RuntimeData{
 		NewGitRuntime(logger),
 	}
+}
+
+// getCommitHash returns the commit hash of the HEAD commit.
+func getCommitHash(repo *git.Repository) (string, error) {
+	ref, err := repo.Head()
+	if err != nil {
+		return "", fmt.Errorf("failed to get HEAD: %w", err)
+	}
+
+	obj, err := repo.CommitObject(ref.Hash())
+	if err != nil {
+		return "", fmt.Errorf("failed to get commit object: %w", err)
+	}
+
+	return obj.Hash.String(), nil
 }

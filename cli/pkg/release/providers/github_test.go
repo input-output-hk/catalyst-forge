@@ -13,7 +13,6 @@ import (
 	"github.com/google/go-github/v66/github"
 	"github.com/input-output-hk/catalyst-forge/lib/project/project"
 	"github.com/input-output-hk/catalyst-forge/lib/project/schema"
-	"github.com/input-output-hk/catalyst-forge/lib/tools/git"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/testutils"
 	"github.com/migueleliasweb/go-github-mock/src/mock"
 	"github.com/spf13/afero"
@@ -41,8 +40,8 @@ func TestGithubReleaserRelease(t *testing.T) {
 					},
 				},
 			},
-			TagInfo: &project.TagInfo{
-				Git: git.Tag(tag),
+			Tag: &project.ProjectTag{
+				Full: tag,
 			},
 		}
 	}

@@ -32,7 +32,9 @@ project: {
 				merge: {}
 				tag: {}
 			}
-			config: {}
+			config: {
+				tag: _ @forge(name="GIT_COMMIT_HASH")
+			}
 		}
 		github: {
 			on: tag: {}

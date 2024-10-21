@@ -47,6 +47,7 @@ project: name: "foo"
 		fs          afero.Fs
 		projectPath string
 		files       map[string]string
+		tag         string
 		injectors   []injector.BlueprintInjector
 		runtimes    []RuntimeData
 		env         map[string]string
@@ -61,6 +62,7 @@ project: name: "foo"
 				"/project/Earthfile":     earthfile,
 				"/project/blueprint.cue": bp,
 			},
+			tag:       "foo/v1.0.0",
 			injectors: []injector.BlueprintInjector{},
 			runtimes:  []RuntimeData{},
 			env:       map[string]string{},
@@ -72,10 +74,10 @@ project: name: "foo"
 				assert.Equal(t, "foo", p.Name)
 				assert.Equal(t, []string{"foo", "bar"}, p.Earthfile.Targets())
 
-				head, err := p.Repo.Head()
 				require.NoError(t, err)
-				assert.Equal(t, head.Hash().String(), string(p.TagInfo.Generated))
-				assert.Equal(t, "v0.1.0", string(p.TagInfo.Git))
+				assert.Equal(t, "foo/v1.0.0", p.Tag.Full)
+				assert.Equal(t, "foo", p.Tag.Project)
+				assert.Equal(t, "v1.0.0", string(p.Tag.Version))
 			},
 		},
 		{
@@ -129,7 +131,7 @@ global: {
 }
 project: {
   name: "foo"
-  ci: targets: foo: args: foo: _ @forge(name="GIT_TAG_GENERATED")
+  ci: targets: foo: args: foo: _ @forge(name="GIT_COMMIT_HASH")
 }
 `,
 			},
@@ -285,7 +287,9 @@ project: {
 
 				head, err := repo.Repo.Head()
 				require.NoError(t, err)
-				repo.Tag(t, head.Hash(), "v0.1.0", "Initial tag")
+				if tt.tag != "" {
+					repo.Tag(t, head.Hash(), tt.tag, "Initial tag")
+				}
 			}
 
 			bpLoader := blueprint.NewCustomBlueprintLoader(ctx, tt.fs, logger)

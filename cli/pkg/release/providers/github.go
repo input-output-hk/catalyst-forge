@@ -71,7 +71,7 @@ func (r *GithubReleaser) Release() error {
 	parts := strings.Split(r.project.Blueprint.Global.Repo.Name, "/")
 	owner, repo := parts[0], parts[1]
 
-	releaseName := string(r.project.TagInfo.Git)
+	releaseName := string(r.project.Tag.Full)
 	ctx := context.Background()
 
 	release, resp, err := r.client.Repositories.GetReleaseByTag(ctx, owner, repo, releaseName)
