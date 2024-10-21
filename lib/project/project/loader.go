@@ -11,14 +11,11 @@ import (
 	"cuelang.org/go/cue/cuecontext"
 	"github.com/input-output-hk/catalyst-forge/lib/project/blueprint"
 	"github.com/input-output-hk/catalyst-forge/lib/project/injector"
+	"github.com/input-output-hk/catalyst-forge/lib/project/schema"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/earthfile"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/git"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/walker"
 	"github.com/spf13/afero"
-)
-
-var (
-	ErrNotAProject = fmt.Errorf("not a project")
 )
 
 //go:generate go run github.com/matryer/moq@latest -skip-ensure --pkg mocks -out mocks/project.go . ProjectLoader
@@ -65,7 +62,22 @@ func (p *DefaultProjectLoader) Load(projectPath string) (Project, error) {
 	}
 
 	if !rbp.Get("project").Exists() {
-		return Project{}, ErrNotAProject
+		p.logger.Debug("No project config found in blueprint, assuming root config")
+		bp, err := validateAndDecode(rbp)
+		if err != nil {
+			p.logger.Error("Failed loading blueprint", "error", err)
+			return Project{}, fmt.Errorf("failed loading blueprint: %w", err)
+		}
+
+		return Project{
+			Blueprint:    bp,
+			Path:         projectPath,
+			RawBlueprint: rbp,
+			Repo:         repo,
+			RepoRoot:     gitRoot,
+			logger:       p.logger,
+			ctx:          p.ctx,
+		}, nil
 	}
 
 	var name string
@@ -212,4 +224,18 @@ func NewCustomProjectLoader(
 		repoLoader:      rl,
 		runtimes:        runtimes,
 	}
+}
+
+// validateAndDecode validates and decodes a raw blueprint.
+func validateAndDecode(rbp blueprint.RawBlueprint) (schema.Blueprint, error) {
+	if err := rbp.Validate(); err != nil {
+		return schema.Blueprint{}, fmt.Errorf("failed to validate blueprint: %w", err)
+	}
+
+	bp, err := rbp.Decode()
+	if err != nil {
+		return schema.Blueprint{}, fmt.Errorf("failed to decode blueprint: %w", err)
+	}
+
+	return bp, nil
 }

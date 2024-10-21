@@ -32,9 +32,6 @@ func ScanProjects(rootPath string, l project.ProjectLoader, w walker.Walker, log
 		logger.Info("loading project", "path", path, "rootPath", rootPath)
 		p, err := l.Load(path)
 		if err != nil {
-			if err == project.ErrNotAProject {
-				return nil
-			}
 			logger.Error("error loading project", "path", path, "error", err)
 			return fmt.Errorf("error loading %s: %w", path, err)
 		}
