@@ -33,7 +33,6 @@ bar:
 	bp := `
 version: "1.0"
 global: {
-  ci: tagging: strategy: "commit"
   repo: {
     name: "foo"
 	defaultBranch: "main"
@@ -89,7 +88,6 @@ project: name: "foo"
 				"/project/blueprint.cue": `
 version: "1.0"
 global: {
-  ci: tagging: strategy: "commit"
   repo: {
     name: "foo"
 	defaultBranch: "main"
@@ -123,7 +121,6 @@ project: {
 				"/project/blueprint.cue": `
 version: "1.0"
 global: {
-  ci: tagging: strategy: "commit"
   repo: {
     name: "foo"
 	defaultBranch: "main"
@@ -222,7 +219,6 @@ project: {
 				"/project/blueprint.cue": `
 version: "1.0"
 global: {
-  ci: tagging: strategy: "commit"
   repo: {
     name: "foo"
 	defaultBranch: "main"
