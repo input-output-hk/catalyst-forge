@@ -37,7 +37,7 @@ project: {
 		github: {
 			on: tag: {}
 			config: {
-				name:   _ @forge(name="GIT_TAG")
+				name:   string | *"dev" @forge(name="GIT_TAG")
 				prefix: project.name
 				token: {
 					provider: "env"
