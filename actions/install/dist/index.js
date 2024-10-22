@@ -33070,7 +33070,8 @@ const core = __nccwpck_require__(2186);
 const github = __nccwpck_require__(5438);
 const tc = __nccwpck_require__(7784);
 
-const projectName = "cli";
+const assetPrefix = "forge-cli";
+const releaseName = "forge-cli";
 const repoOwner = "input-output-hk";
 const repoName = "catalyst-forge";
 
@@ -33139,7 +33140,7 @@ function getAssetName() {
       throw new Error(`Unsupported platform: ${platform}`);
   }
 
-  return `${projectName}-${platformSuffix}.tar.gz`;
+  return `${assetPrefix}-${platformSuffix}.tar.gz`;
 }
 
 /**
@@ -33187,7 +33188,7 @@ async function getVersionedAsset(octokit, version) {
   const releases = await getReleases(octokit);
 
   const targetRelease = releases.find(
-    (r) => r.tag_name === `${projectName}/v${version}`,
+    (r) => r.tag_name === `${releaseName}/v${version}`,
   );
   if (!targetRelease) {
     throw new Error(`Version ${version} not found`);

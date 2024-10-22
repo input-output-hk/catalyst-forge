@@ -31,7 +31,6 @@ var cli struct {
 	Run      cmds.RunCmd      `kong:"cmd" help:"Run an Earthly target."`
 	Scan     cmds.ScanCmd     `kong:"cmd" help:"Scan for Earthfiles."`
 	Secret   cmds.SecretCmd   `kong:"cmd" help:"Manage secrets."`
-	Tag      cmds.TagCmd      `kong:"cmd" help:"Generate a tag for a project."`
 	Validate cmds.ValidateCmd `kong:"cmd" help:"Validates a project."`
 	Version  VersionCmd       `kong:"cmd" help:"Print the version."`
 

@@ -34,10 +34,6 @@ package schema
 	// Secrets contains global secrets that will be passed to all targets.
 	// +optional
 	secrets?: [...#Secret] @go(Secrets,[]Secret)
-
-	// Tagging contains the tagging configuration for the CI system.
-	// +optional
-	tagging?: #Tagging @go(Tagging)
 }
 
 // GlobalDeployment contains the configuration for the global deployment of projects.
@@ -67,13 +63,4 @@ package schema
 
 	// DefaultBranch contains the default branch of the repository.
 	defaultBranch: string @go(DefaultBranch)
-}
-
-#Tagging: {
-	// Aliases contains the aliases to use for git tags.
-	// +optional
-	aliases?: {[string]: string} @go(Aliases,map[string]string)
-
-	// Strategy contains the tagging strategy to use for containers.
-	strategy: #TagStrategy @go(Strategy)
 }

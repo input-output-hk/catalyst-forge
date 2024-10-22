@@ -30,10 +30,6 @@ package schema
 	// Secrets contains global secrets that will be passed to all targets.
 	// +optional
 	secrets?: [...#Secret] @go(Secrets,[]Secret)
-
-	// Tagging contains the tagging configuration for the CI system.
-	// +optional
-	tagging?: #Tagging @go(Tagging)
 }
 
 // GlobalDeployment contains the configuration for the global deployment of projects.
@@ -55,13 +51,6 @@ package schema
 
 	// URL contains the URL of the deployment repository.
 	url: string @go(Url)
-}
-#GlobalRepo: {
-	// Name contains the name of the repository (e.g. "owner/repo-name").
-	name: string @go(Name)
-
-	// DefaultBranch contains the default branch of the repository.
-	defaultBranch: string @go(DefaultBranch)
 }
 
 // Providers contains the configuration for the providers being used by the CI system.
@@ -243,17 +232,12 @@ version: "1.0"
 	// +optional
 	target?: string @go(Target)
 }
-#Tagging: {
-	// Aliases contains the aliases to use for git tags.
-	// +optional
-	aliases?: {
-		[string]: string
-	} @go(Aliases,map[string]string)
+#GlobalRepo: {
+	// Name contains the name of the repository (e.g. "owner/repo-name").
+	name: string @go(Name)
 
-	// Strategy contains the tagging strategy to use for containers.
-	strategy: #TagStrategy & {
-		"commit"
-	} @go(Strategy)
+	// DefaultBranch contains the default branch of the repository.
+	defaultBranch: string @go(DefaultBranch)
 }
 
 // Target contains the configuration for a single target.
@@ -315,4 +299,7 @@ version: "1.0"
 
 	// Provider contains the provider to use for the secret.
 	provider: string @go(Provider)
+}
+#Tagging: {
+	strategy: "commit"
 }
