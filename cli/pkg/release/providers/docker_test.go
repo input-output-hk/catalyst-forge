@@ -19,7 +19,7 @@ func TestDockerReleaserRelease(t *testing.T) {
 		container string,
 		registries []string,
 		platforms []string,
-		tagInfo project.TagInfo,
+		tag *project.ProjectTag,
 	) project.Project {
 		return project.Project{
 			Blueprint: schema.Blueprint{
@@ -39,7 +39,7 @@ func TestDockerReleaserRelease(t *testing.T) {
 					},
 				},
 			},
-			TagInfo: &tagInfo,
+			Tag: tag,
 		}
 	}
 
@@ -53,6 +53,7 @@ func TestDockerReleaserRelease(t *testing.T) {
 		name       string
 		project    project.Project
 		release    schema.Release
+		config     DockerReleaserConfig
 		firing     bool
 		force      bool
 		runFail    bool
@@ -65,12 +66,12 @@ func TestDockerReleaserRelease(t *testing.T) {
 				"test",
 				[]string{"test.com"},
 				[]string{},
-				project.TagInfo{
-					Generated: "test",
-					Git:       "test",
-				},
+				nil,
 			),
 			release: newRelease(),
+			config: DockerReleaserConfig{
+				Tag: "test",
+			},
 			firing:  true,
 			force:   false,
 			runFail: false,
@@ -82,17 +83,41 @@ func TestDockerReleaserRelease(t *testing.T) {
 			},
 		},
 		{
+			name: "with git tag",
+			project: newProject(
+				"test",
+				[]string{"test.com"},
+				[]string{},
+				&project.ProjectTag{
+					Version: "v1.0.0",
+				},
+			),
+			release: newRelease(),
+			config: DockerReleaserConfig{
+				Tag: "test",
+			},
+			firing:  true,
+			force:   false,
+			runFail: false,
+			validate: func(t *testing.T, calls []string, err error) {
+				require.NoError(t, err)
+				assert.Contains(t, calls, fmt.Sprintf("inspect %s:%s", CONTAINER_NAME, TAG_NAME))
+				assert.Contains(t, calls, fmt.Sprintf("tag %s:%s test.com/test:v1.0.0", CONTAINER_NAME, TAG_NAME))
+				assert.Contains(t, calls, "push test.com/test:v1.0.0")
+			},
+		},
+		{
 			name: "multiple platforms",
 			project: newProject(
 				"test",
 				[]string{"test.com"},
 				[]string{"linux", "windows"},
-				project.TagInfo{
-					Generated: "test",
-					Git:       "test",
-				},
+				nil,
 			),
 			release: newRelease(),
+			config: DockerReleaserConfig{
+				Tag: "test",
+			},
 			firing:  true,
 			force:   false,
 			runFail: false,
@@ -107,6 +132,24 @@ func TestDockerReleaserRelease(t *testing.T) {
 
 				assert.Contains(t, calls, fmt.Sprintf("tag %s:%s_windows test.com/test:test_windows", CONTAINER_NAME, TAG_NAME))
 				assert.Contains(t, calls, "push test.com/test:test_windows")
+			},
+		},
+		{
+			name: "no image tag",
+			project: newProject(
+				"test",
+				[]string{"test.com"},
+				[]string{"linux", "windows"},
+				nil,
+			),
+			release: schema.Release{},
+			config:  DockerReleaserConfig{},
+			firing:  true,
+			force:   false,
+			runFail: false,
+			validate: func(t *testing.T, calls []string, err error) {
+				require.Error(t, err)
+				assert.ErrorContains(t, err, "no image tag specified")
 			},
 		},
 		{
@@ -127,10 +170,7 @@ func TestDockerReleaserRelease(t *testing.T) {
 				"test",
 				[]string{"test.com"},
 				[]string{},
-				project.TagInfo{
-					Generated: "test",
-					Git:       "test",
-				},
+				nil,
 			),
 			release:    newRelease(),
 			firing:     true,
@@ -149,10 +189,7 @@ func TestDockerReleaserRelease(t *testing.T) {
 				"test",
 				[]string{"test.com"},
 				[]string{},
-				project.TagInfo{
-					Generated: "test",
-					Git:       "test",
-				},
+				nil,
 			),
 			release: newRelease(),
 			firing:  false,
@@ -169,12 +206,12 @@ func TestDockerReleaserRelease(t *testing.T) {
 				"test",
 				[]string{"test.com"},
 				[]string{},
-				project.TagInfo{
-					Generated: "test",
-					Git:       "test",
-				},
+				nil,
 			),
 			release: newRelease(),
+			config: DockerReleaserConfig{
+				Tag: "test",
+			},
 			firing:  false,
 			force:   true,
 			runFail: false,
@@ -191,6 +228,7 @@ func TestDockerReleaserRelease(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			var calls []string
 			releaser := DockerReleaser{
+				config:  tt.config,
 				docker:  newWrappedExecuterMock(&calls, tt.execFailOn),
 				force:   tt.force,
 				handler: newReleaseEventHandlerMock(tt.firing),

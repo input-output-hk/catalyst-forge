@@ -11,17 +11,7 @@ import (
 	"github.com/input-output-hk/catalyst-forge/lib/project/blueprint"
 	"github.com/input-output-hk/catalyst-forge/lib/project/schema"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/earthfile"
-	"github.com/input-output-hk/catalyst-forge/lib/tools/git"
 )
-
-// TagInfo represents tag information.
-type TagInfo struct {
-	// Generated is the generated tag.
-	Generated git.Tag `json:"generated"`
-
-	// Git is the git tag.
-	Git git.Tag `json:"git"`
-}
 
 // Project represents a project
 type Project struct {
@@ -46,8 +36,11 @@ type Project struct {
 	// RepoRoot is the path to the repository root.
 	RepoRoot string
 
+	// Tag is the project tag, if it exists in the current context.
+	Tag *ProjectTag
+
 	// TagInfo is the project tag information.
-	TagInfo *TagInfo
+	//TagInfo *TagInfo
 
 	logger *slog.Logger
 	ctx    *cue.Context
@@ -104,39 +97,6 @@ func (p *Project) GetReleaseEvents(releaseName string) map[string]cue.Value {
 	return events
 }
 
-// TagMatches checks if the git tag matches the project.
-func (p *Project) TagMatches() (bool, error) {
-	if p.TagInfo.Git == "" {
-		p.logger.Debug("No git tag found")
-		return false, nil
-	} else if !p.TagInfo.Git.IsMono() {
-		p.logger.Debug("Found regular tag", "tag", p.TagInfo.Git)
-		return true, nil
-	}
-
-	relPath, err := p.GetRelativePath()
-	if err != nil {
-		return false, err
-	}
-
-	mtag := p.TagInfo.Git.ToMono()
-	p.logger.Debug("Found mono tag", "tag", mtag.Full, "project", mtag.Project, "tag", mtag.Tag)
-
-	if relPath == mtag.Project {
-		p.logger.Debug("Tag matches project")
-		return true, nil
-	}
-
-	alias, ok := p.Blueprint.Global.CI.Tagging.Aliases[mtag.Project]
-	if ok && relPath == alias {
-		p.logger.Debug("Tag matches alias", "alias", alias)
-		return true, nil
-	}
-
-	p.logger.Debug("Tag does not match project")
-	return false, nil
-}
-
 // Raw returns the raw blueprint.
 func (p *Project) Raw() blueprint.RawBlueprint {
 	return p.RawBlueprint
@@ -149,7 +109,7 @@ func NewProject(
 	earthfile *earthfile.Earthfile,
 	name, path, repoRoot string,
 	blueprint schema.Blueprint,
-	tagInfo *TagInfo,
+	tag *ProjectTag,
 ) Project {
 	return Project{
 		Blueprint: blueprint,
@@ -158,8 +118,8 @@ func NewProject(
 		Path:      path,
 		Repo:      repo,
 		RepoRoot:  repoRoot,
-		TagInfo:   tagInfo,
 		ctx:       ctx,
 		logger:    logger,
+		Tag:       tag,
 	}
 }

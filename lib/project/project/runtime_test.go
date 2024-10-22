@@ -5,6 +5,8 @@ import (
 
 	"cuelang.org/go/cue"
 	"cuelang.org/go/cue/cuecontext"
+	"github.com/go-git/go-git/v5"
+	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/input-output-hk/catalyst-forge/lib/project/blueprint"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/testutils"
 	"github.com/stretchr/testify/assert"
@@ -16,97 +18,54 @@ func TestGitRuntimeLoad(t *testing.T) {
 
 	tests := []struct {
 		name     string
-		tagInfo  *TagInfo
-		repoPath string
-		prjPath  string
-		expected map[string]cue.Value
+		tag      *ProjectTag
+		validate func(*testing.T, *git.Repository, *plumbing.Hash, map[string]cue.Value)
 	}{
 		{
 			name: "with tag",
-			tagInfo: &TagInfo{
-				Generated: "generated",
-				Git:       "v1.0.0",
+			tag: &ProjectTag{
+				Full:    "project/v1.0.0",
+				Project: "project",
+				Version: "v1.0.0",
 			},
-			repoPath: "/repo",
-			prjPath:  "/repo/project",
-			expected: map[string]cue.Value{
-				"GIT_TAG_GENERATED": ctx.CompileString(`"generated"`),
-				"GIT_TAG":           ctx.CompileString(`"v1.0.0"`),
-				"GIT_IMAGE_TAG":     ctx.CompileString(`"v1.0.0"`),
+			validate: func(t *testing.T, repo *git.Repository, hash *plumbing.Hash, data map[string]cue.Value) {
+				assert.Contains(t, data, "GIT_COMMIT_HASH")
+				assert.Equal(t, hash.String(), getString(t, data["GIT_COMMIT_HASH"]))
+
+				assert.Contains(t, data, "GIT_TAG")
+				assert.Equal(t, "project/v1.0.0", getString(t, data["GIT_TAG"]))
+
+				assert.Contains(t, data, "GIT_TAG_VERSION")
+				assert.Equal(t, "v1.0.0", getString(t, data["GIT_TAG_VERSION"]))
 			},
-		},
-		{
-			name: "with mono tag",
-			tagInfo: &TagInfo{
-				Generated: "generated",
-				Git:       "project/v1.0.0",
-			},
-			repoPath: "/repo",
-			prjPath:  "/repo/project",
-			expected: map[string]cue.Value{
-				"GIT_TAG_GENERATED": ctx.CompileString(`"generated"`),
-				"GIT_TAG":           ctx.CompileString(`"v1.0.0"`),
-				"GIT_IMAGE_TAG":     ctx.CompileString(`"v1.0.0"`),
-			},
-		},
-		{
-			name: "with non-matching tag",
-			tagInfo: &TagInfo{
-				Generated: "generated",
-				Git:       "project1/v1.0.0",
-			},
-			repoPath: "/repo",
-			prjPath:  "/repo/project",
-			expected: map[string]cue.Value{
-				"GIT_TAG_GENERATED": ctx.CompileString(`"generated"`),
-				"GIT_IMAGE_TAG":     ctx.CompileString(`"generated"`),
-			},
-		},
-		{
-			name: "with no tag",
-			tagInfo: &TagInfo{
-				Generated: "generated",
-				Git:       "",
-			},
-			expected: map[string]cue.Value{
-				"GIT_TAG_GENERATED": ctx.CompileString(`"generated"`),
-				"GIT_IMAGE_TAG":     ctx.CompileString(`"generated"`),
-			},
-		},
-		{
-			name:     "with no tag info",
-			tagInfo:  nil,
-			expected: map[string]cue.Value{},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			logger := testutils.NewNoopLogger()
+
+			repo := testutils.NewInMemRepo(t)
+			repo.AddFile(t, "example.txt", "example content")
+			commit := repo.Commit(t, "Initial commit")
+
 			project := &Project{
 				ctx:          ctx,
-				RepoRoot:     tt.repoPath,
-				Path:         tt.prjPath,
 				RawBlueprint: blueprint.NewRawBlueprint(ctx.CompileString("{}")),
-				TagInfo:      tt.tagInfo,
+				Repo:         repo.Repo,
+				Tag:          tt.tag,
 				logger:       logger,
 			}
 
 			runtime := NewGitRuntime(logger)
 			data := runtime.Load(project)
-
-			for key, expected := range tt.expected {
-				actual, ok := data[key]
-				require.True(t, ok, "missing value for key %q", key)
-
-				sv, err := actual.String()
-				require.NoError(t, err)
-
-				ev, err := expected.String()
-				require.NoError(t, err)
-
-				assert.Equal(t, ev, sv, "unexpected value for key %q", key)
-			}
+			tt.validate(t, repo.Repo, &commit, data)
 		})
 	}
+}
+
+func getString(t *testing.T, v cue.Value) string {
+	s, err := v.String()
+	require.NoError(t, err)
+	return s
 }
