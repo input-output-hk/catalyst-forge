@@ -32,7 +32,7 @@ async function run() {
       forgeArgs.push("--local");
     }
 
-    forgeArgs.push(command);
+    forgeArgs.push(...command.split(" "));
 
     if (args !== "") {
       forgeArgs.push(...args.split(" "));
