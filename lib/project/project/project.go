@@ -11,17 +11,7 @@ import (
 	"github.com/input-output-hk/catalyst-forge/lib/project/blueprint"
 	"github.com/input-output-hk/catalyst-forge/lib/project/schema"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/earthfile"
-	"github.com/input-output-hk/catalyst-forge/lib/tools/git"
 )
-
-// TagInfo represents tag information.
-type TagInfo struct {
-	// Generated is the generated tag.
-	Generated git.Tag `json:"generated"`
-
-	// Git is the git tag.
-	Git git.Tag `json:"git"`
-}
 
 // Project represents a project
 type Project struct {

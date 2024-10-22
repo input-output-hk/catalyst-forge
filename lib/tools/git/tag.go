@@ -13,47 +13,8 @@ var (
 	ErrTagNotFound = fmt.Errorf("tag not found")
 )
 
-// MonoTag represents a monorepo git tag.
-type MonoTag struct {
-	// Full is the full tag string.
-	Full string
-
-	// Project is the project path.
-	Project string
-
-	// Tag is the tag name.
-	Tag string
-}
-
-func (m MonoTag) String() string {
-	return m.Full
-}
-
-// Tag represents a git tag.
-type Tag string
-
-// IsMono returns true if the tag is a monorepo tag.
-func (t Tag) IsMono() bool {
-	parts := strings.Split(string(t), "/")
-	if len(parts) < 2 {
-		return false
-	} else {
-		return true
-	}
-}
-
-// ToMono parses a monorepo tag into its project and tag components.
-func (t Tag) ToMono() MonoTag {
-	parts := strings.Split(string(t), "/")
-	return MonoTag{
-		Full:    string(t),
-		Project: strings.Join(parts[:len(parts)-1], "/"),
-		Tag:     parts[len(parts)-1],
-	}
-}
-
 // GetTag returns the tag of the current HEAD commit.
-func GetTag(repo *gg.Repository) (Tag, error) {
+func GetTag(repo *gg.Repository) (string, error) {
 	var tag string
 	var err error
 	if InCI() {
@@ -68,7 +29,7 @@ func GetTag(repo *gg.Repository) (Tag, error) {
 		}
 	}
 
-	return Tag(tag), nil
+	return tag, nil
 }
 
 // getCITag returns the tag from the CI environment if it exists.
