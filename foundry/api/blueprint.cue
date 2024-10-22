@@ -21,7 +21,7 @@ project: {
 			values: {
 				environment: name: "dev"
 				server: image: {
-					tag: _ @forge(name="GIT_IMAGE_TAG")
+					tag: _ @forge(name="GIT_COMMIT_HASH")
 				}
 			}
 		}
@@ -32,15 +32,8 @@ project: {
 				merge: {}
 				tag: {}
 			}
-			config: {}
-		}
-		github: {
-			on: tag: {}
 			config: {
-				token: {
-					provider: "env"
-					path:     "GITHUB_TOKEN"
-				}
+				tag: _ @forge(name="GIT_COMMIT_HASH")
 			}
 		}
 	}

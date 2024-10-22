@@ -3,3 +3,10 @@ debug.log
 
 # Node
 node_modules
+
+# .vscode ignore local changes to config, but not the recommended settings/launch/extensions
+/.vscode/*
+!/.vscode/extensions.json
+!/.vscode/launch.recommended.json
+!/.vscode/settings.recommended.json
+!/.vscode/tasks.recommended.json

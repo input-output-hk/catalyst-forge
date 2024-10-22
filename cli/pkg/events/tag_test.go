@@ -13,7 +13,7 @@ import (
 func TestTagEventFiring(t *testing.T) {
 	tests := []struct {
 		name        string
-		tagInfo     *project.TagInfo
+		tag         *project.ProjectTag
 		projectPath string
 		gitRoot     string
 		expected    bool
@@ -21,33 +21,19 @@ func TestTagEventFiring(t *testing.T) {
 	}{
 		{
 			name: "firing",
-			tagInfo: &project.TagInfo{
-				Git: "v1.0.0",
+			tag: &project.ProjectTag{
+				Full:    "test/v1.0.0",
+				Project: "test",
+				Version: "v1.0.0",
 			},
 			expected:  true,
 			expectErr: false,
 		},
 		{
-			name: "not firing",
-			tagInfo: &project.TagInfo{
-				Git: "foo/v1.0.0",
-			},
+			name:      "not firing",
+			tag:       nil,
 			expected:  false,
 			expectErr: false,
-		},
-		{
-			name: "no git tag",
-			tagInfo: &project.TagInfo{
-				Git: "",
-			},
-			expected:  false,
-			expectErr: false,
-		},
-		{
-			name:      "no tag info",
-			tagInfo:   nil,
-			expected:  false,
-			expectErr: true,
 		},
 	}
 
@@ -59,10 +45,10 @@ func TestTagEventFiring(t *testing.T) {
 				nil,
 				nil,
 				"test",
-				tt.projectPath,
-				tt.gitRoot,
+				"",
+				"",
 				schema.Blueprint{},
-				tt.tagInfo,
+				tt.tag,
 			)
 
 			event := TagEvent{

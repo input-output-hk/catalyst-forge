@@ -6,8 +6,6 @@ global: {
 			"^build(-.*)?$",
 			"^package(-.*)?$",
 			"^test(-.*)?$",
-			"^release(-.*)?$",
-			"^publish(-.*)?$",
 		]
 		registries: [
 			ci.providers.aws.registry,
@@ -49,12 +47,6 @@ global: {
 				path:     "GITHUB_TOKEN"
 			},
 		]
-		tagging: {
-			aliases: {
-				forge: "cli"
-			}
-			strategy: "commit"
-		}
 	}
 	deployment: {
 		registry: ci.providers.aws.registry

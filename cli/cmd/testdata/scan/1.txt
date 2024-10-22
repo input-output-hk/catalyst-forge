@@ -7,5 +7,7 @@ cmp stdout golden.txt
 ["./dir1","./dir2"]
 -- dir1/blueprint.cue --
 version: "1.0"
+project: name: "dir1"
 -- dir2/blueprint.cue --
 version: "1.0"
+project: name: "dir2"
