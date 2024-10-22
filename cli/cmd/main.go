@@ -26,6 +26,7 @@ var cli struct {
 
 	Deploy   cmds.DeployCmd   `kong:"cmd" help:"Deploy a project."`
 	Dump     cmds.DumpCmd     `kong:"cmd" help:"Dumps a project's blueprint to JSON."`
+	Devx     cmds.DevX        `kong:"cmd" help:"Reads a forge markdown file and executes a command."`
 	CI       cmds.CICmd       `kong:"cmd" help:"Simulate a CI run."`
 	Release  cmds.ReleaseCmd  `kong:"cmd" help:"Release a project."`
 	Run      cmds.RunCmd      `kong:"cmd" help:"Run an Earthly target."`
