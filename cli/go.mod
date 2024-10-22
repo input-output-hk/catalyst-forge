@@ -19,8 +19,8 @@ require (
 	github.com/rogpeppe/go-internal v1.12.1-0.20240709150035-ccf4b4329d21
 	github.com/spf13/afero v1.11.0
 	github.com/stretchr/testify v1.9.0
-	github.com/yuin/goldmark v1.7.4
 	github.com/willabides/kongplete v0.4.0
+	github.com/yuin/goldmark v1.7.4
 	golang.org/x/exp v0.0.0-20231006140011-7918f672742d
 )
 
