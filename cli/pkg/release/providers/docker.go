@@ -19,7 +19,12 @@ const (
 	TAG_NAME       = "tag"
 )
 
+type DockerReleaserConfig struct {
+	Tag string `json:"tag"`
+}
+
 type DockerReleaser struct {
+	config      DockerReleaserConfig
 	docker      executor.WrappedExecuter
 	force       bool
 	handler     events.EventHandler
@@ -55,14 +60,12 @@ func (r *DockerReleaser) Release() error {
 	registries := r.project.Blueprint.Global.CI.Registries
 
 	var imageTag string
-	if r.project.TagInfo.Git != "" {
-		if r.project.TagInfo.Git.IsMono() {
-			imageTag = string(r.project.TagInfo.Git.ToMono().Tag)
-		} else {
-			imageTag = string(r.project.TagInfo.Git)
-		}
+	if r.project.Tag != nil {
+		imageTag = r.project.Tag.Version
+	} else if r.config.Tag != "" {
+		imageTag = r.config.Tag
 	} else {
-		imageTag = string(r.project.TagInfo.Generated)
+		return fmt.Errorf("no image tag specified")
 	}
 
 	platforms := getPlatforms(&r.project, r.release.Target)
@@ -209,14 +212,18 @@ func NewDockerReleaser(
 	exec := executor.NewLocalExecutor(ctx.Logger)
 	if _, ok := exec.LookPath(DOCKER_BINARY); ok != nil {
 		return nil, fmt.Errorf("failed to find Docker binary: %w", ok)
-	} else if project.TagInfo == nil {
-		return nil, fmt.Errorf("cannot publish without tag information")
+	}
+
+	var config DockerReleaserConfig
+	if err := parseConfig(&project, name, &config); err != nil {
+		return nil, fmt.Errorf("failed to parse release config: %w", err)
 	}
 
 	docker := executor.NewLocalWrappedExecutor(exec, "docker")
 	handler := events.NewDefaultEventHandler(ctx.Logger)
 	runner := run.NewDefaultProjectRunner(ctx, &project)
 	return &DockerReleaser{
+		config:      config,
 		docker:      docker,
 		force:       force,
 		handler:     &handler,

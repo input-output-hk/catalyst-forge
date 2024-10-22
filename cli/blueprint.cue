@@ -1,16 +1,7 @@
 version: "1.0"
 project: {
-	name: "forge"
+	name: "forge-cli"
 	ci: targets: {
-		docker: {
-			args: {
-				version: string | *"dev" @forge(name="GIT_TAG")
-			}
-			platforms: [
-				"linux/amd64",
-				"linux/arm64",
-			]
-		}
 		github: {
 			args: {
 				version: string | *"dev" @forge(name="GIT_TAG")
@@ -25,16 +16,11 @@ project: {
 		test: retries: 3
 	}
 	release: {
-		docker: {
-			on: {
-				merge: {}
-				tag: {}
-			}
-			config: {}
-		}
 		github: {
 			on: tag: {}
 			config: {
+				name:   string | *"dev" @forge(name="GIT_TAG")
+				prefix: project.name
 				token: {
 					provider: "env"
 					path:     "GITHUB_TOKEN"
