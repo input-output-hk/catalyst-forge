@@ -9,11 +9,26 @@ import (
 )
 
 type DevX struct {
-	MarkdownPath string `arg:"" help:"Path to the markdown file."`
-	CommandName  string `arg:"" help:"Command to be executed."`
+	Discover     bool   `kong:"short=d" help:"List all markdown files available in the project or all commands in the markdown file if file is specified."`
+	MarkdownPath string `kong:"arg,predictor=path,optional" help:"Path to the markdown file."`
+	CommandName  string `kong:"arg,optional" help:"Command to be executed."`
 }
 
 func (c *DevX) Run(ctx run.RunContext) error {
+	// for the "-d" flag
+	if c.Discover {
+		return nil
+	}
+
+	// validate args if without "-d" flag
+	if c.MarkdownPath == "" {
+		return fmt.Errorf("expected \"<markdown-path> <command-name>\"")
+	}
+	if c.MarkdownPath != "" && c.CommandName == "" {
+		return fmt.Errorf("expected \"<command-name>\"")
+	}
+
+	// read the markdown and execute the command
 	raw, err := os.ReadFile(c.MarkdownPath)
 	if err != nil {
 		return fmt.Errorf("could not read file at %s: %v", c.MarkdownPath, err)
