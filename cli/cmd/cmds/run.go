@@ -1,6 +1,7 @@
 package cmds
 
 import (
+	"github.com/input-output-hk/catalyst-forge/cli/pkg/earthly"
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/run"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/earthfile"
 )
@@ -34,4 +35,31 @@ func (c *RunCmd) Run(ctx run.RunContext) error {
 	}
 
 	return nil
+}
+
+// generateOpts generates the options for the Earthly executor based on command
+// flags.
+func generateOpts(flags *RunCmd, ctx run.RunContext) []earthly.EarthlyExecutorOption {
+	var opts []earthly.EarthlyExecutorOption
+
+	if flags != nil {
+		if flags.Artifact != "" {
+			opts = append(opts, earthly.WithArtifact(flags.Artifact))
+		}
+
+		if ctx.CI {
+			opts = append(opts, earthly.WithCI())
+		}
+
+		// Users can explicitly set the platforms to use without being in CI mode.
+		if flags.Platform != nil {
+			opts = append(opts, earthly.WithPlatforms(flags.Platform...))
+		}
+
+		if len(flags.TargetArgs) > 0 && flags.TargetArgs[0] != "" {
+			opts = append(opts, earthly.WithTargetArgs(flags.TargetArgs...))
+		}
+	}
+
+	return opts
 }

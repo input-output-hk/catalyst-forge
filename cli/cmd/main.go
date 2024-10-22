@@ -10,6 +10,7 @@ import (
 	"github.com/alecthomas/kong"
 	"github.com/charmbracelet/log"
 	"github.com/input-output-hk/catalyst-forge/cli/cmd/cmds"
+	"github.com/input-output-hk/catalyst-forge/cli/cmd/cmds/deploy"
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/run"
 	"github.com/input-output-hk/catalyst-forge/lib/project/project"
 	"github.com/input-output-hk/catalyst-forge/lib/project/schema"
@@ -21,18 +22,24 @@ import (
 
 var version = "dev"
 
-var cli struct {
-	cmds.GlobalArgs
+type GlobalArgs struct {
+	CI      bool `help:"Run in CI mode."`
+	Local   bool `short:"l" help:"Forces all runs to happen locally (ignores any remote satellites)."`
+	Verbose int  `short:"v" type:"counter" help:"Enable verbose logging."`
+}
 
-	Deploy   cmds.DeployCmd   `kong:"cmd" help:"Deploy a project."`
-	Dump     cmds.DumpCmd     `kong:"cmd" help:"Dumps a project's blueprint to JSON."`
-	CI       cmds.CICmd       `kong:"cmd" help:"Simulate a CI run."`
-	Release  cmds.ReleaseCmd  `kong:"cmd" help:"Release a project."`
-	Run      cmds.RunCmd      `kong:"cmd" help:"Run an Earthly target."`
-	Scan     cmds.ScanCmd     `kong:"cmd" help:"Scan for Earthfiles."`
-	Secret   cmds.SecretCmd   `kong:"cmd" help:"Manage secrets."`
-	Validate cmds.ValidateCmd `kong:"cmd" help:"Validates a project."`
-	Version  VersionCmd       `kong:"cmd" help:"Print the version."`
+var cli struct {
+	GlobalArgs
+
+	Deploy   deploy.DeployCmd `kong:"cmd" help:"Deploy a project."`
+	Dump     cmds.DumpCmd     `cmd:"" help:"Dumps a project's blueprint to JSON."`
+	CI       cmds.CICmd       `cmd:"" help:"Simulate a CI run."`
+	Release  cmds.ReleaseCmd  `cmd:"" help:"Release a project."`
+	Run      cmds.RunCmd      `cmd:"" help:"Run an Earthly target."`
+	Scan     cmds.ScanCmd     `cmd:"" help:"Scan for Earthfiles."`
+	Secret   cmds.SecretCmd   `cmd:"" help:"Manage secrets."`
+	Validate cmds.ValidateCmd `cmd:"" help:"Validates a project."`
+	Version  VersionCmd       `cmd:"" help:"Print the version."`
 
 	InstallCompletions kongplete.InstallCompletions `cmd:"" help:"install shell completions"`
 }
