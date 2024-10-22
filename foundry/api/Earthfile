@@ -47,24 +47,6 @@ test:
 
     RUN go test ./...
 
-github:
-    FROM scratch
-
-    ARG version="dev"
-
-    ARG TARGETOS
-    ARG TARGETARCH
-    ARG USERPLATFORM
-
-    COPY \
-        --platform=$USERPLATFORM \
-        (+build/foundry \
-        --GOOS=$TARGETOS \
-        --GOARCH=$TARGETARCH \
-        --version=$version) bin/foundry
-
-    SAVE ARTIFACT bin/foundry foundry
-
 docker:
     FROM debian:bookworm-slim
     WORKDIR /app
