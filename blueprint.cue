@@ -8,7 +8,7 @@ global: {
 			"^test(-.*)?$",
 		]
 		registries: [
-			ci.providers.aws.registry,
+			"ghcr.io/input-output-hk/catalyst-forge",
 		]
 		providers: {
 			aws: {
