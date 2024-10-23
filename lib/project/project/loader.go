@@ -61,30 +61,6 @@ func (p *DefaultProjectLoader) Load(projectPath string) (Project, error) {
 		return Project{}, fmt.Errorf("failed to load blueprint: %w", err)
 	}
 
-	if !rbp.Get("project").Exists() {
-		p.logger.Debug("No project config found in blueprint, assuming root config")
-		bp, err := validateAndDecode(rbp)
-		if err != nil {
-			p.logger.Error("Failed loading blueprint", "error", err)
-			return Project{}, fmt.Errorf("failed loading blueprint: %w", err)
-		}
-
-		return Project{
-			Blueprint:    bp,
-			Path:         projectPath,
-			RawBlueprint: rbp,
-			Repo:         repo,
-			RepoRoot:     gitRoot,
-			logger:       p.logger,
-			ctx:          p.ctx,
-		}, nil
-	}
-
-	var name string
-	if err := rbp.DecodePath("project.name", &name); err != nil {
-		return Project{}, fmt.Errorf("failed to get project name: %w", err)
-	}
-
 	efPath := filepath.Join(projectPath, "Earthfile")
 	exists, err := afero.Exists(p.fs, efPath)
 	if err != nil {
@@ -107,6 +83,31 @@ func (p *DefaultProjectLoader) Load(projectPath string) (Project, error) {
 		}
 
 		ef = &efs
+	}
+
+	if !rbp.Get("project").Exists() {
+		p.logger.Debug("No project config found in blueprint, assuming root config")
+		bp, err := validateAndDecode(rbp)
+		if err != nil {
+			p.logger.Error("Failed loading blueprint", "error", err)
+			return Project{}, fmt.Errorf("failed loading blueprint: %w", err)
+		}
+
+		return Project{
+			Blueprint:    bp,
+			Earthfile:    ef,
+			Path:         projectPath,
+			RawBlueprint: rbp,
+			Repo:         repo,
+			RepoRoot:     gitRoot,
+			logger:       p.logger,
+			ctx:          p.ctx,
+		}, nil
+	}
+
+	var name string
+	if err := rbp.DecodePath("project.name", &name); err != nil {
+		return Project{}, fmt.Errorf("failed to get project name: %w", err)
 	}
 
 	p.logger.Info("Loading tag data")
