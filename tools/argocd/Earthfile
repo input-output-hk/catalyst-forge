@@ -20,7 +20,7 @@ docker:
     ARG TARGETARCH
     ARG USERPLATFORM
 
-    RUN useradd -m argocd
+    RUN useradd -m -u 999 argocd
 
     USER argocd
     WORKDIR /home/argocd
