@@ -20,6 +20,7 @@ docker:
     ARG TARGETARCH
     ARG USERPLATFORM
 
+    RUN apt-get update && apt-get install -y ca-certificates
     RUN useradd -m -u 999 argocd
 
     USER argocd
