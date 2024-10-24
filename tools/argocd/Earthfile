@@ -37,7 +37,7 @@ docker:
     RUN mkdir -p cmp-server/config
     COPY plugin.yml cmp-server/config/plugin.yaml
 
+    COPY init.sh /home/argocd/init.sh
+
     ENTRYPOINT [ "/var/run/argocd/argocd-cmp-server" ]
     SAVE IMAGE ${container}:${tag}
-
-
