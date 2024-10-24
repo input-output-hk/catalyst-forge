@@ -3,7 +3,7 @@ VERSION 0.8
 timoni:
     FROM golang:1.23.0
 
-    ARG TIMONI_VERSION=v0.22.1
+    ARG TIMONI_VERSION=v0.17.0
 
     WORKDIR /work
 
