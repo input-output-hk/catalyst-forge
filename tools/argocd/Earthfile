@@ -20,7 +20,7 @@ docker:
     ARG TARGETARCH
     ARG USERPLATFORM
 
-    RUN apt-get update && apt-get install -y ca-certificates
+    RUN apt-get update && apt-get install -y ca-certificates amazon-ecr-credential-helper
     RUN useradd -m -u 999 argocd
 
     USER argocd
