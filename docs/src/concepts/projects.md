@@ -11,6 +11,8 @@ building, testing, and potentially deploying.
     While there's no hierarchical order enforced by Forge, it's against best practices to have projects live at the root of a
     repository.
     The only exception to this case is where the repository only has a single deliverable.
+    Since the global blueprint at the root of a repository is always unified with project blueprints, trying to configure a project
+    in the global blueprint will result in overlapping values and will cause the parsing process to fail.
 
 Catalyst Forge does not enforce projects live in any particular folder within the repository.
 Developers are encouraged to organize the repository in whatever way makes sense for them.
@@ -34,8 +36,25 @@ Optionally, a project may also contain an `Earthfile` that contains definitions 
 The CI system automatically checks for the existence of this file after it discovers a project.
 However, it's important to recognize the existence of an `Earthfile` _does not_ define a project according to Forge.
 
-## Project Configuration
+## Blueprints
 
-A project's configuration is defined within the blueprint file contained at the root of the project folder.
-How this file is configured is outside the scope of this document.
-See the [blueprints](./blueprints.md) section for more details.
+A blueprint file contains the configuration for a project.
+By convention, the blueprint file is named `blueprint.cue` and is placed at the root of the project folder.
+A blueprint contains several options for configuring a project.
+Please refer to the [reference documentation](../reference/blueprint.md) for more information.
+
+In addition to project blueprint files, a _global_ blueprint file can also be provided at the root of the repository.
+This blueprint configures global options that impact every project in the repository.
+The final configuration always consists of a unification of the project and global blueprints.
+
+## Tagging
+
+When tagging a repository, it's recommended to use the following format:
+
+```
+<project_name>/<version>
+```
+
+Various systems within Forge are configured to automatically detect and parse this tag structure.
+For example, the `tag` event when configuring releases only triggers when a tag matching the current project name is found.
+This structure also ensures that projects are versioned separately and are easy to identify when examining tags.
