@@ -49,7 +49,7 @@ The final configuration always consists of a unification of the project and glob
 
 ## Tagging
 
-When tagging a repository, it's recommended to use the following format:
+When tagging a project, it's recommended to use the following format:
 
 ```
 <project_name>/<version>
