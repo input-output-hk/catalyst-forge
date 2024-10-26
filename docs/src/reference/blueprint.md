@@ -82,14 +82,6 @@ In the above example, the `version` field will set to the version suffix of the 
 `project/v1.0.0`).
 If no tag is detected, the value will default to `dev`.
 
-
-When a project is loaded, the Forge runtime will automatically load and parse the associated blueprint file using CUE.
-For more information on CUE, please refer to the [CUE documentation](https://cuelang.org/docs/).
-
-A blueprint contains configuration for a [project](./projects.md).
-Every valid project _must_ have one single accompanying blueprint file.
-By convention, the blueprint file is named `blueprint.cue`.
-
 ### Schema
 
 The schema for blueprint files is defined in both Go and CUE.

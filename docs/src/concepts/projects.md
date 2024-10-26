@@ -26,7 +26,7 @@ If a library is used by more than one project, or is consumed externally, it's r
 ## Project Components
 
 Forge discovers projects within a repository using a specific set of rules.
-Namely, a valid project is any folder within the repository that contains a [blueprint](./blueprints.md) (`blueprint.cue`).
+Namely, a valid project is any folder within the repository that contains a blueprint (`blueprint.cue`).
 This is the _only_ requirement for forge to classify that directory as a project.
 While a project may consist of one or more _other_ files or directories, the blueprint should always exist at the root of the
 project folder.
