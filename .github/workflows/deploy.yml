@@ -67,7 +67,7 @@ jobs:
       - name: Deploy
         uses: input-output-hk/catalyst-forge/actions/run@ci/v1.2.2
         with:
-          command: deploy
+          command: deploy push
           args: ${{ matrix.deployment }}
           local: ${{ inputs.local }}
           verbosity: ${{ inputs.verbosity }}

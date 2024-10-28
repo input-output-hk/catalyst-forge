@@ -7,9 +7,9 @@ exec forge --ci scan --earthfile .
 cmp stdout golden_ci.txt
 
 -- golden.txt --
-{"./dir1":["foo","bar"],"./dir1/dir2":["foo","bar"],"./dir3/dir4/dir5":["foo"]}
+{".":["foo","bar"],"./dir1":["foo","bar"],"./dir1/dir2":["foo","bar"],"./dir3/dir4/dir5":["foo"]}
 -- golden_ci.txt --
-["./dir1+bar","./dir1+foo","./dir1/dir2+bar","./dir1/dir2+foo","./dir3/dir4/dir5+foo"]
+[".+bar",".+foo","./dir1+bar","./dir1+foo","./dir1/dir2+bar","./dir1/dir2+foo","./dir3/dir4/dir5+foo"]
 -- blueprint.cue --
 version: "1.0"
 -- Earthfile --
