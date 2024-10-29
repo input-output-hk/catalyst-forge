@@ -40,5 +40,5 @@ docker:
     COPY init.sh /home/argocd/init.sh
     RUN chmod +x /home/argocd/init.sh
 
-    ENTRYPOINT [ "/var/run/argocd/argocd-cmp-server" ]
+    ENTRYPOINT [ "/var/run/argocd/argocd-cmp-server", "--loglevel=info" ]
     SAVE IMAGE ${container}:${tag}
