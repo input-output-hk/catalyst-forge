@@ -79,7 +79,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Release Temp
         uses: input-output-hk/catalyst-forge/actions/run@master
-        if: matrix.release.project == './tools/argocd'
+        if: matrix.release.project == './foundry/api'
         with:
           command: release
           args: --force ${{ matrix.release.project }} ${{ matrix.release.name }}

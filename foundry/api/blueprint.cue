@@ -16,6 +16,7 @@ project: {
 	deployment: {
 		environment: "dev"
 		modules: main: {
+			namespace: string | *"default" @env(name="NAMESPACE",type="string")
 			container: "foundry-api-deployment"
 			version:   "0.1.1"
 			values: {
