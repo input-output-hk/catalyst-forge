@@ -23,107 +23,26 @@ Prior to starting this tutorial, please ensure you have the following available 
 
 1. The latest version of the [forge CLI](https://github.com/input-output-hk/catalyst-forge/releases)
 2. A recent version of [Earthly](https://earthly.dev/) installed and configured
-1. (Optional) The [`uv` Python tool](https://github.com/astral-sh/uv)
-
-If you would like to use a differnet Python package manager, or just use vanilla tooling, then you will need to adapt some of the
-below steps for those specific tools.
-This tutorial is focused on introducing Catalyst Forge and `uv` is only being used to simplify the tutorial.
 
 ## Project Setup
 
 To begin, clone the [catalyst-forge-playground](https://github.com/input-output-hk/catalyst-forge-playground) locally.
-Make a new folder under the `users` directory in the root of the repository using your GitHub username.
-Inside of your newly created folder, initialize a new Python project:
+Next, copy the `examples/python` directory to a new directory under `users` using your GitHub username:
 
 ```shell
-uv init
+cp -r examples/python users/myusername
 ```
 
-From the same folder, add the `click` package by running:
-
-```shell
-uv add click
-```
-
-Finally, add `black`, `ruff`, and `pytest`:
-
-```shell
-uv add black pytest ruff --optional dev
-```
-
-Since we are creating a CLI, we will need to modify the structure of the project:
-
-```shell
-$ mkdir -p src/hello
-$ mv hello.py src/hello/hello.py
-$ touch src/hello/__init__.py
-```
-
-And then modify our `pyproject.toml` to include the following:
-
-```toml
-[project.scripts]
-hello = "hello.hello:cli"
-
-[build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
-
-[tool.hatch.build.targets.wheel]
-packages = ["src/hello"]
-```
-
-## Create CLI
-
-Modify the `src/hello/hello.py` file with the following code:
-
-```python
-import click
-
-def hello(name: str = "World") -> str:
-    return f"Hello, {name}!"
-
-@click.command()
-@click.argument('name', required=False, default="World")
-def cli(name):
-    click.echo(hello(name))
-
-if __name__ == '__main__':
-    cli()
-```
-
-Now add a simple test in `tests/hello_test.py`:
-
-```python
-from hello.hello import hello
-
-
-def test_hello():
-    assert hello("Alice") == "Hello, Alice!"
-    assert hello() == "Hello, World!"
-```
-
-Validate everything works:
-
-```shell
-$ uv run hello test
-Hello, test!
-
-$ uv run pytest .
-=========================================================== test session starts ===========================================================
-platform linux -- Python 3.12.5, pytest-8.3.3, pluggy-1.5.0
-rootdir: /var/home/josh/work/catalyst-forge-playground/users/jmgilman
-configfile: pyproject.toml
-collected 2 items
-
-hello_test.py ..                                                                                                                    [100%]
-
-============================================================ 2 passed in 0.01s ============================================================
-```
+The example consists of a simple Python CLI that takes a single argument and prints: `"Hello, <arg>!` to the screen.
+The project was created using the [uv](https://docs.astral.sh/uv/) CLI.
+The Python package has already been configured to install itself as a script named `hello`.
 
 ## Creating an Earthfile
 
-Catalyst Forge uses [Earthly](https://earthly.dev/) underneath the hood for building applications.
+Catalyst Forge uses [Earthly](https://earthly.dev/) underneath the hood for creating the CI pipeline.
+It's recommended you take time to become familiar with Earthly and run through their onboarding documentation.
+In this tutorial we will create various Earthly "targets" that will be responsible for performing specific steps in the pipeline.
+
 To begin, we will create a simple `Earthfile` in our folder that will validate our code for us:
 
 ```earthly
@@ -184,6 +103,25 @@ During CI runs, the `forge` CLI is used to execute all Earthly targets.
 This ensures more consistency between running the target locally and when running it in CI, as the CLI adds several additional
 features that are not natively present in Earthly.
 
+### Building
+
+We will build our CLI as a Python wheel to make distributing/publishing it easier.
+To do this, add a new `build` target to the `Earthfile`:
+
+```earthfile
+build:
+    FROM +src
+
+    RUN uv build --wheel
+
+    SAVE ARTIFACT dist dist
+```
+
+Like the previous target, the `build` target is also called by CI.
+This ensures that the `build` can run successfully before calling additional targets that might rely on it (it also caches it).
+In the above case, `uv` will build our wheel and place it in the `dist/` folder for us.
+We save the entire folder as an artifact for later targets to use.
+
 ### Testing
 
 For running our tests, we will add a `test` target to the `Earthfile`:
@@ -202,32 +140,19 @@ Like the `check` target, the `test` target is also called by CI.
 It's intended to be used for running all tests in a project (including unit and integration tests).
 Since we're using `pytest`, we only need to call it for our simple unit test to run.
 
-### Building
+### Containerizing
 
-We will build our CLI as a Python wheel to make distributing/publishing it easier.
-To do this, add a new `build` target to the `Earthfile`:
+We will now create our first "release" target.
+These targets are special in that they each serve different purposes but generally fall into the "release" category.
+Unlike the other targets, release targets are not required to be a specific name, although it's common to use the same name as the
+release type.
 
-```earthfile
-build:
-    FROM +src
-
-    RUN uv build --wheel
-
-    SAVE ARTIFACT dist dist
-```
-
-Like the previous targets, the `build` target is also called by CI.
-This ensures that the `build` can run successfully before calling additional targets that might rely on it (it also caches it).
-In the above case, `uv` will build our wheel and place it in the `dist/` folder for us.
-We save the entire folder as an artifact for later targets to use.
-
-### Publishing
-
-We will now create the container that will be responsible for running our CLI.
-To do this, add a new `publish` target to the `Earthfile`:
+We will start by creating our `docker` release target.
+As the name suggests, this release type is responsible for building the container that will be published to configured registries.
+To do this, add a new `docker` target to the `Earthfile`:
 
 ```earthfile
-publish:
+docker:
     FROM python:3.12-slim
 
 	ARG container=hello
@@ -242,30 +167,32 @@ publish:
 	SAVE IMAGE ${container}:${tag}
 ```
 
-The target copies the wheel from the `build` target and then globally installs it into the container.
+This target copies the wheel from the `build` target and then globally installs it into the container.
 Since we've configured a script entry in our `pyproject.toml`, the CLI can be run by executing `hello`.
 
 The CI will automatically pass in the `container` and `tag` arguments in order to set the container name.
-These arguments are not optional and must be included in all `publish` targets.
+These arguments are not optional and must be included in all docker release targets.
 
 Let's now build our image and make sure it works:
 
 ```shell
-$ forge run +publish
+$ forge run +docker
 $ docker run hello:latest test
 Hello, test!
 ```
 
-Like the other targets, the CI system will automatically run the `publish` target in the pipeline.
-Unlike the other targets, the `publish` target is special in that the CI system expects it to produce a container image.
-During certain contexts, the CI system will automatically tag and publish the image for us.
+Unlike the other targets, all release targets are run in parallel in a single step of the CI pipeline.
+The release targets are generally run towards the end of the CI pipeline after all projects have been built and validated.
+We will configure the specifics of this release target in a later step.
 
 ### Releasing
 
-As a last step, we will create a `release` target that will expose our wheel from the `build` target:
+The second release target, and our final target in the tutorial, will be the `github` target.
+This release type is responsible for building and uploading artifacts from our project into a new GitHub release.
+Like the previous release type, we will add a `github` target to the Earthfile:
 
 ```earthfile
-release:
+github:
     FROM scratch
 
     COPY +build/dist dist
@@ -273,8 +200,10 @@ release:
     SAVE ARTIFACT dist/* hello.whl
 ```
 
-Like the `publish` target, the `release` target is special and the CI system expects it to produce at least one artifact.
-During certain contexts, the CI system will publish a release using any artifacts produced by the target.
+This release type expects artifacts to be produced by the target.
+All artifacts are archived, compressed, and uploaded as assets when a new release is created.
+
+In this case, we output our Python wheel as an artifact, which is itself a sort of archive.
 You can validate this behavior by running the following:
 
 ```shell
@@ -303,7 +232,7 @@ Add a new file in the root of the project folder called `blueprint.cue` with the
 ```cue
 version: "1.0.0"
 project: {
-	name: "hello-jmgilman"
+	name: "hello-jmgilman" // Replace "jmgilman" with your GitHub username
 }
 ```
 
@@ -315,6 +244,45 @@ For example, without this file, our `Earthfile` would be ignored by the CI syste
 The only required field in a blueprint file is the project name (shown as `hello-jmgilman` above).
 This name should be unique across all repositories and is used to distinguish the project in several area (i.e. the container name).
 There are many more useful fields exposed in a blueprint file that can be explored later in the documentation.
+
+### Configuring Releases
+
+The last step before pushing our code is to configure our releases in the blueprint file.
+
+```cue
+version: "1.0.0"
+project: {
+	name: "hello-jmgilman"
+	release: {
+		docker: {
+			on: {
+				merge: {}
+				tag: {}
+			}
+			config: {
+				tag: _ @forge(name="GIT_COMMIT_HASH")
+			}
+		}
+		github: {
+			on: tag: {}
+			config: {
+				name:   string | *"dev" @forge(name="GIT_TAG")
+				prefix: project.name
+				token: {
+					provider: "env"
+					path:     "GITHUB_TOKEN"
+				}
+			}
+		}
+	}
+}
+```
+
+We've configured two releases: `docker` and `github`.
+The "type" of the release is the same as the name.
+Each release has an `on` field that specifies when the release is run and a `config` field that specifies type-specific options for
+the release.
+To learn more about releases, see the appropriate section in the documentation.
 
 ## Testing Locally
 
@@ -358,28 +326,28 @@ After the merge, a new GitHub Workflow will run for this particular commit.
 Allow the workflow to run to completion before proceeding.
 
 Once the workflow has completed, you'll notice a new package created for the GitHub Container Registry.
-The package will have the same name as the name as defined in `project.name` and will, by default, have a tag created that matches
-the commit hash of the merge commit.
-Whenever a new PR is merged into the default branch, all projects with a publish target will have their respective container images
-pushed to configured registries using the commit hash as the tag.
+The package will have the same name as the one defined in `project.name` and, as we configured, will have a tag created that
+matches the commit hash of the merge commit.
+Since we configured the `docker` release to run on `merge` events (which defaults to merges to the main branch), it automatically
+ran and published our container image.
 
 For the final step, we will tag the repository with an application specific tag:
 
 ```shell
-git tag -a "examples/<username>/v1.0.0" -m "My first version"
+git tag -a "hello-jmgilman/v1.0.0" -m "My first version"
 git push origin master
 ```
 
-This creates a new tag using the traditional "mono repo" style tag.
-The prefix is the path to the project in the repository and the suffix is the semantic version for that project.
+The convention used above is important: `<project_name>/<version>`.
+By default, the `tag` event used in our `github` release type only triggers when a tag matching the project name is pushed.
+This ensures that projects are all versioned separately in the repository.
 After creating and pushing this tag, a new workflow is created and the CI pipeline runs again.
 Allow the new workflow to run to completion before proceeding.
 
-Once the workflow is completed, you'll notice that a new release is created on GitHub with the name set to our git tag.
-The release will contain a single artifact which is the Python wheel created by our `release` target.
+Once the workflow is completed, you'll notice that a new release is created on GitHub with the name set to our git tag (this is
+what we configured the name to earlier).
+The release will contain a single artifact which is the Python wheel created by our `github` release.
 Notice that no other projects had a release added.
-This is the default behavior: only projects which "match" the mono repo tag will create a new release and upload assets.
-All other projects will skip this step.
 
 ## Conclusion
 
