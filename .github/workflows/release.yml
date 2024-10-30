@@ -77,6 +77,9 @@ jobs:
           verbosity: ${{ inputs.verbosity }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: test
+        run: |
+          echo "${{ matrix.release.project }}"
       - name: Release Temp
         uses: input-output-hk/catalyst-forge/actions/run@master
         if: matrix.release.project == './foundry/api'
