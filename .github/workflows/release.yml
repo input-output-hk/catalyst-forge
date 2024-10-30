@@ -70,9 +70,8 @@ jobs:
           skip_earthly: ${{ steps.local.outputs.skip }}
       - name: test
         run: |
-          git rev-parse FETCH_HEAD
-          git rev-parse HEAD
-          git rev-parse HEAD^2
+          echo "$GITHUB_EVENT_PATH"
+          cat "$GITHUB_EVENT_PATH"
       # - name: Release
       #   uses: input-output-hk/catalyst-forge/actions/run@mve
       #   with:
