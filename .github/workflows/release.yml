@@ -77,13 +77,3 @@ jobs:
           verbosity: ${{ inputs.verbosity }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - name: Release Temp
-        uses: input-output-hk/catalyst-forge/actions/run@master
-        if: matrix.release.project == './tools/argocd'
-        with:
-          command: release
-          args: --force ${{ matrix.release.project }} ${{ matrix.release.name }}
-          local: ${{ inputs.local }}
-          verbosity: ${{ inputs.verbosity }}
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
