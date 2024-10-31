@@ -13,8 +13,9 @@ import (
 type EventType string
 
 const (
-	MergeEventName EventType = "merge"
-	TagEventName   EventType = "tag"
+	AlwaysEventName EventType = "always"
+	MergeEventName  EventType = "merge"
+	TagEventName    EventType = "tag"
 )
 
 // Event represents a CI event.
@@ -65,6 +66,7 @@ func NewDefaultEventHandler(logger *slog.Logger) DefaultEventHandler {
 	return DefaultEventHandler{
 		logger: logger,
 		store: map[EventType]Event{
+			AlwaysEventName: &AlwaysEvent{},
 			MergeEventName: &MergeEvent{
 				logger: logger,
 			},
