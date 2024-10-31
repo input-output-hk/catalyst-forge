@@ -11,7 +11,9 @@ import (
 	"cuelang.org/go/cue/cuecontext"
 	"github.com/input-output-hk/catalyst-forge/lib/project/blueprint"
 	"github.com/input-output-hk/catalyst-forge/lib/project/injector"
+	"github.com/input-output-hk/catalyst-forge/lib/project/providers"
 	"github.com/input-output-hk/catalyst-forge/lib/project/schema"
+	"github.com/input-output-hk/catalyst-forge/lib/project/secrets"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/earthfile"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/git"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/walker"
@@ -46,19 +48,19 @@ func (p *DefaultProjectLoader) Load(projectPath string) (Project, error) {
 		return Project{}, fmt.Errorf("failed to find git root: %w", err)
 	}
 
+	p.logger.Info("Loading blueprint", "path", projectPath)
+	rbp, err := p.blueprintLoader.Load(projectPath, gitRoot)
+	if err != nil {
+		p.logger.Error("Failed to load blueprint", "error", err, "path", projectPath)
+		return Project{}, fmt.Errorf("failed to load blueprint: %w", err)
+	}
+
 	p.logger.Info("Loading repository", "path", gitRoot)
 	rl := git.NewCustomDefaultRepoLoader(p.fs)
 	repo, err := rl.Load(gitRoot)
 	if err != nil {
 		p.logger.Error("Failed to load repository", "error", err)
 		return Project{}, fmt.Errorf("failed to load repository: %w", err)
-	}
-
-	p.logger.Info("Loading blueprint", "path", projectPath)
-	rbp, err := p.blueprintLoader.Load(projectPath, gitRoot)
-	if err != nil {
-		p.logger.Error("Failed to load blueprint", "error", err, "path", projectPath)
-		return Project{}, fmt.Errorf("failed to load blueprint: %w", err)
 	}
 
 	efPath := filepath.Join(projectPath, "Earthfile")
@@ -128,19 +130,22 @@ func (p *DefaultProjectLoader) Load(projectPath string) (Project, error) {
 		p.logger.Debug("No git tag found")
 	}
 
+	partialProject := Project{
+		Earthfile:    ef,
+		Name:         name,
+		Path:         projectPath,
+		RawBlueprint: rbp,
+		Repo:         repo,
+		RepoRoot:     gitRoot,
+		Tag:          tag,
+		ctx:          p.ctx,
+		logger:       p.logger,
+	}
+
 	p.logger.Info("Gathering runtime data")
 	runtimeData := make(map[string]cue.Value)
 	for _, r := range p.runtimes {
-		d := r.Load(&Project{
-			Earthfile:    ef,
-			Path:         projectPath,
-			RawBlueprint: rbp,
-			Repo:         repo,
-			RepoRoot:     gitRoot,
-			Tag:          tag,
-			ctx:          p.ctx,
-			logger:       p.logger,
-		})
+		d := r.Load(&partialProject)
 
 		for k, v := range d {
 			runtimeData[k] = v
@@ -187,18 +192,23 @@ func NewDefaultProjectLoader(
 	}
 
 	ctx := cuecontext.New()
+	fs := afero.NewOsFs()
 	bl := blueprint.NewDefaultBlueprintLoader(ctx, logger)
 	rl := git.NewDefaultRepoLoader()
+	store := secrets.NewDefaultSecretStore()
+	ghp := providers.NewGithubProvider(fs, logger, &store)
 	return DefaultProjectLoader{
 		blueprintLoader: &bl,
 		ctx:             ctx,
-		fs:              afero.NewOsFs(),
+		fs:              fs,
 		injectors: []injector.BlueprintInjector{
 			injector.NewBlueprintEnvInjector(ctx, logger),
 		},
 		logger:     logger,
 		repoLoader: &rl,
-		runtimes:   GetDefaultRuntimes(logger),
+		runtimes: []RuntimeData{
+			NewGitRuntime(&ghp, logger),
+		},
 	}
 }
 

@@ -37,7 +37,13 @@ global: {
 				path:     "global/ci/deploy"
 			}
 
-			github: registry: "ghcr.io"
+			github: {
+				credentials: {
+					provider: "aws"
+					path:     "global/ci/github"
+				}
+				registry: "ghcr.io"
+			}
 		}
 		secrets: [
 			{
