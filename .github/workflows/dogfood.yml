@@ -2,9 +2,9 @@ name: Dogfood
 
 on:
   push:
-    branches: [master]
-    tags: ['**']
-  pull_request:
+    #branches: [master]
+    #tags: ['**']
+  #pull_request:
 
 permissions:
   id-token: write
@@ -23,16 +23,17 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Install Local Forge
-        uses: input-output-hk/catalyst-forge/actions/install-local@master
-        with:
-          earthly_token: ${{ secrets.EARTHLY_TOKEN }}
-      - name: Setup CI
-        uses: input-output-hk/catalyst-forge/actions/setup@master
-        with:
-          skip_docker: 'true'
-          skip_github: 'true'
-          skip_earthly: 'true'
+      # - name: Install Local Forge
+      #   uses: input-output-hk/catalyst-forge/actions/install-local@master
+      #   with:
+      #     earthly_token: ${{ secrets.EARTHLY_TOKEN }}
+      # - name: Setup CI
+      #   uses: input-output-hk/catalyst-forge/actions/setup@master
+      #   with:
+      #     skip_docker: 'true'
+      #     skip_github: 'true'
+      #     skip_earthly: 'true'
       - name: Test
         run: |
-          forge -vvv dump ./foundry/api
+          cat ${GITHUB_EVENT_PATH}
+          #forge -vvv dump ./foundry/api
