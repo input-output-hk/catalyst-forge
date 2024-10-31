@@ -46,7 +46,7 @@ func (g *GitRuntime) Load(project *Project) map[string]cue.Value {
 func (g *GitRuntime) getCommitHash(repo *git.Repository) (string, error) {
 	if g.provider.HasEvent() {
 		if g.provider.GetEventType() == "pull_request" {
-			g.logger.Debug("Found pull request GitHub event")
+			g.logger.Debug("Found GitHub pull request event")
 			event, err := g.provider.GetEventPayload()
 			if err != nil {
 				return "", fmt.Errorf("failed to get event payload: %w", err)
@@ -63,7 +63,7 @@ func (g *GitRuntime) getCommitHash(repo *git.Repository) (string, error) {
 
 			return *pr.PullRequest.Head.SHA, nil
 		} else if g.provider.GetEventType() == "push" {
-			g.logger.Debug("Found push GitHub event")
+			g.logger.Debug("Found GitHub push event")
 			event, err := g.provider.GetEventPayload()
 			if err != nil {
 				return "", fmt.Errorf("failed to get event payload: %w", err)
