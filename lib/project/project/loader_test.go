@@ -11,6 +11,7 @@ import (
 	"github.com/go-git/go-git/v5/storage/filesystem"
 	"github.com/input-output-hk/catalyst-forge/lib/project/blueprint"
 	"github.com/input-output-hk/catalyst-forge/lib/project/injector"
+	"github.com/input-output-hk/catalyst-forge/lib/project/providers"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/testutils"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
@@ -20,6 +21,7 @@ import (
 
 func TestDefaultProjectLoaderLoad(t *testing.T) {
 	ctx := cuecontext.New()
+	githubProvider := providers.NewGithubProvider(nil, testutils.NewNoopLogger(), nil)
 
 	earthfile := `
 VERSION 0.8
@@ -136,7 +138,10 @@ project: {
 				injector.NewBlueprintEnvInjector(ctx, testutils.NewNoopLogger()),
 			},
 			runtimes: []RuntimeData{
-				NewGitRuntime(testutils.NewNoopLogger()),
+				NewGitRuntime(
+					&githubProvider,
+					testutils.NewNoopLogger(),
+				),
 			},
 			env:     map[string]string{},
 			initGit: true,
