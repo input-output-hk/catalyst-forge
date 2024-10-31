@@ -18,6 +18,10 @@ import (
 func TestGitRuntimeLoad(t *testing.T) {
 	ctx := cuecontext.New()
 	prPayload, err := os.ReadFile("testdata/event_pr.json")
+	require.NoError(t, err)
+
+	pushPayload, err := os.ReadFile("testdata/event_push.json")
+	require.NoError(t, err)
 
 	tests := []struct {
 		name     string
@@ -56,7 +60,22 @@ func TestGitRuntimeLoad(t *testing.T) {
 				"/event.json": string(prPayload),
 			},
 			validate: func(t *testing.T, repo *git.Repository, data map[string]cue.Value) {
-				assert.NoError(t, err)
+				require.NoError(t, err)
+				assert.Contains(t, data, "GIT_COMMIT_HASH")
+				assert.Equal(t, "0000000000000000000000000000000000000000", getString(t, data["GIT_COMMIT_HASH"]))
+			},
+		},
+		{
+			name: "with push event",
+			env: map[string]string{
+				"GITHUB_EVENT_NAME": "push",
+				"GITHUB_EVENT_PATH": "/event.json",
+			},
+			files: map[string]string{
+				"/event.json": string(pushPayload),
+			},
+			validate: func(t *testing.T, repo *git.Repository, data map[string]cue.Value) {
+				require.NoError(t, err)
 				assert.Contains(t, data, "GIT_COMMIT_HASH")
 				assert.Equal(t, "0000000000000000000000000000000000000000", getString(t, data["GIT_COMMIT_HASH"]))
 			},

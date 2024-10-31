@@ -35,5 +35,4 @@ jobs:
       #     skip_earthly: 'true'
       - name: Test
         run: |
-          cat ${GITHUB_EVENT_PATH}
-          #forge -vvv dump ./foundry/api
+          forge -vvv dump ./foundry/api

@@ -74,11 +74,11 @@ func (g *GitRuntime) getCommitHash(repo *git.Repository) (string, error) {
 				return "", fmt.Errorf("unexpected event type")
 			}
 
-			if push.HeadCommit.SHA == nil {
+			if push.After == nil {
 				return "", fmt.Errorf("push event after SHA is empty")
 			}
 
-			return *push.HeadCommit.SHA, nil
+			return *push.After, nil
 		}
 	}
 
