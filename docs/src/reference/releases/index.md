@@ -26,6 +26,11 @@ Doing so helps prevent merging a potentially broken release configuration.
 
 The supported events are documented below.
 
+#### `always` event
+
+The `always` event is the most straight-forward event in that it always triggers, no matter what.
+This is sometimes useful for previewing or debugging a release.
+
 #### `merge` event
 
 | Field    | Description            | Type   | Default                                  |
