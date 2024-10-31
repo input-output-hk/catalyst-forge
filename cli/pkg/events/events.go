@@ -38,9 +38,9 @@ type DefaultEventHandler struct {
 
 // Fires returns true if any of the given events are firing.
 func (r *DefaultEventHandler) Firing(p *project.Project, events map[string]cue.Value) bool {
-	for event, config := range events {
-		r.logger.Debug("checking event", "event", event)
-		event, ok := r.store[EventType(event)]
+	for eventName, config := range events {
+		r.logger.Debug("checking event", "event", eventName)
+		event, ok := r.store[EventType(eventName)]
 		if !ok {
 			r.logger.Error("unknown event", "event", event)
 			continue
@@ -53,7 +53,7 @@ func (r *DefaultEventHandler) Firing(p *project.Project, events map[string]cue.V
 		}
 
 		if firing {
-			r.logger.Debug("event is firing", "event", event)
+			r.logger.Debug("event is firing", "event", eventName)
 			return true
 		}
 	}
