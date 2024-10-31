@@ -68,26 +68,12 @@ jobs:
         uses: input-output-hk/catalyst-forge/actions/setup@mve
         with:
           skip_earthly: ${{ steps.local.outputs.skip }}
-      - name: test
-        run: |
-          echo "$GITHUB_EVENT_PATH"
-          cat "$GITHUB_EVENT_PATH"
-      # - name: Release
-      #   uses: input-output-hk/catalyst-forge/actions/run@mve
-      #   with:
-      #     command: release
-      #     args: ${{ matrix.release.project }} ${{ matrix.release.name }}
-      #     local: ${{ inputs.local }}
-      #     verbosity: ${{ inputs.verbosity }}
-      #   env:
-      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      # - name: Release Temp
-      #   uses: input-output-hk/catalyst-forge/actions/run@mve
-      #   if: matrix.release.project == './foundry/api'
-      #   with:
-      #     command: release
-      #     args: --force ${{ matrix.release.project }} ${{ matrix.release.name }}
-      #     local: ${{ inputs.local }}
-      #     verbosity: ${{ inputs.verbosity }}
-      #   env:
-      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Release
+        uses: input-output-hk/catalyst-forge/actions/run@mve
+        with:
+          command: release
+          args: ${{ matrix.release.project }} ${{ matrix.release.name }}
+          local: ${{ inputs.local }}
+          verbosity: ${{ inputs.verbosity }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
