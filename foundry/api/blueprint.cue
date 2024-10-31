@@ -16,8 +16,9 @@ project: {
 	deployment: {
 		environment: "dev"
 		modules: main: {
+			namespace: string | *"default" @env(name="ARGOCD_APP_NAMESPACE",type="string")
 			container: "foundry-api-deployment"
-			version:   "0.1.0"
+			version:   "0.1.1"
 			values: {
 				environment: name: "dev"
 				server: image: {
@@ -29,8 +30,9 @@ project: {
 	release: {
 		docker: {
 			on: {
-				merge: {}
-				tag: {}
+				//merge: {}
+				//tag: {}
+				always: {}
 			}
 			config: {
 				tag: _ @forge(name="GIT_COMMIT_HASH")
