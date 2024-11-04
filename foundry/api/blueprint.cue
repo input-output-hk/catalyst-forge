@@ -21,7 +21,7 @@ project: {
 			version:   "0.1.0"
 			values: {
 				environment: name: "dev"
-				server: image: {
+				app: image: {
 					tag: _ @forge(name="GIT_COMMIT_HASH")
 				}
 			}
