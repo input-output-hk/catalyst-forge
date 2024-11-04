@@ -20,9 +20,11 @@ project: {
 			container: "foundry-api-new-deployment"
 			version:   "0.1.0"
 			values: {
-				environment: name: "dev"
-				app: image: {
-					tag: _ @forge(name="GIT_COMMIT_HASH")
+				app: {
+					environment: "dev"
+					image: {
+						tag: _ @forge(name="GIT_COMMIT_HASH")
+					}
 				}
 			}
 		}
