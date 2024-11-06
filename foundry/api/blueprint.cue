@@ -18,7 +18,7 @@ project: {
 		modules: main: {
 			namespace: string | *"default" @env(name="ARGOCD_APP_NAMESPACE",type="string")
 			container: "foundry-api-new-deployment"
-			version:   "0.1.12"
+			version:   "0.1.13"
 			values: {
 				app: {
 					environment: "dev"
