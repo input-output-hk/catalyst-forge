@@ -16,12 +16,22 @@ project: {
 	deployment: {
 		environment: "dev"
 		modules: main: {
-			container: "foundry-api-deployment"
-			version:   "0.1.0"
+			namespace: string | *"default" @env(name="ARGOCD_APP_NAMESPACE",type="string")
+			container: "foundry-api-new-deployment"
+			version:   "0.1.15"
 			values: {
-				environment: name: "dev"
-				server: image: {
-					tag: _ @forge(name="GIT_COMMIT_HASH")
+				app: {
+					environment: "dev"
+					image: {
+						tag: _ @forge(name="GIT_COMMIT_HASH")
+					}
+					presync: {
+						repoName:      "catalyst-forge"
+						repoOwner:     "input-output-hk"
+						commitHash:    _ @forge(name="GIT_COMMIT_HASH")
+						checkInterval: 5
+						timeout:       300
+					}
 				}
 			}
 		}
@@ -29,8 +39,9 @@ project: {
 	release: {
 		docker: {
 			on: {
-				merge: {}
-				tag: {}
+				//merge: {}
+				//tag: {}
+				always: {}
 			}
 			config: {
 				tag: _ @forge(name="GIT_COMMIT_HASH")
