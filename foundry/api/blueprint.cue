@@ -18,7 +18,7 @@ project: {
 		modules: main: {
 			namespace: string | *"default" @env(name="ARGOCD_APP_NAMESPACE",type="string")
 			container: "foundry-api-new-deployment"
-			version:   "0.1.5"
+			version:   "0.1.8"
 			values: {
 				app: {
 					environment: "dev"
@@ -26,13 +26,9 @@ project: {
 						tag: _ @forge(name="GIT_COMMIT_HASH")
 					}
 					presync: {
-						repoName:   "catalyst-forge"
-						repoOwner:  "input-output-hk"
-						commitHash: _ @forge(name="GIT_COMMIT_HASH")
-						githubToken: {
-							name: "ci-bot"
-							key:  "token"
-						}
+						repoName:      "catalyst-forge"
+						repoOwner:     "input-output-hk"
+						commitHash:    _ @forge(name="GIT_COMMIT_HASH")
 						checkInterval: 5
 						timeout:       300
 					}
