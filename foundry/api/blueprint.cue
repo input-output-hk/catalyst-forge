@@ -25,15 +25,15 @@ project: {
 					image: {
 						tag: _ @forge(name="GIT_COMMIT_HASH")
 					}
-          presync: {
-            repoName: "catalyst-forge"
-            repoOwner: "input-output-hk"
-            commitHash: @forge(name="GIT_COMMIT_HASH")
-            gitHubToken: {
-              name: "ci-bot"
-              key: "token"
-            }
-          }
+					presync: {
+						repoName:   "catalyst-forge"
+						repoOwner:  "input-output-hk"
+						commitHash: _ @forge(name="GIT_COMMIT_HASH")
+						gitHubToken: {
+							name: "ci-bot"
+							key:  "token"
+						}
+					}
 				}
 			}
 		}
