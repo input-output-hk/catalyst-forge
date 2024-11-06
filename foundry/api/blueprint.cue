@@ -18,7 +18,7 @@ project: {
 		modules: main: {
 			namespace: string | *"default" @env(name="ARGOCD_APP_NAMESPACE",type="string")
 			container: "foundry-api-new-deployment"
-			version:   "0.1.4"
+			version:   "0.1.5"
 			values: {
 				app: {
 					environment: "dev"
@@ -33,6 +33,8 @@ project: {
 							name: "ci-bot"
 							key:  "token"
 						}
+						checkInterval: 5
+						timeout:       300
 					}
 				}
 			}
