@@ -29,7 +29,7 @@ project: {
 						repoName:   "catalyst-forge"
 						repoOwner:  "input-output-hk"
 						commitHash: _ @forge(name="GIT_COMMIT_HASH")
-						gitHubToken: {
+						githubToken: {
 							name: "ci-bot"
 							key:  "token"
 						}
