@@ -18,13 +18,22 @@ project: {
 		modules: main: {
 			namespace: string | *"default" @env(name="ARGOCD_APP_NAMESPACE",type="string")
 			container: "foundry-api-new-deployment"
-			version:   "0.1.3"
+			version:   "0.1.4"
 			values: {
 				app: {
 					environment: "dev"
 					image: {
 						tag: _ @forge(name="GIT_COMMIT_HASH")
 					}
+          presync: {
+            repoName: "catalyst-forge"
+            repoOwner: "input-output-hk"
+            commitHash: @forge(name="GIT_COMMIT_HASH")
+            gitHubToken: {
+              name: "ci-bot"
+              key: "token"
+            }
+          }
 				}
 			}
 		}
