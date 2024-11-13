@@ -50,8 +50,8 @@ test:
 
     RUN go test ./...
 
-github:
-    FROM scratch
+docker:
+    FROM alpine:3
 
     ARG version="dev"
 

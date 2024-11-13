@@ -2,7 +2,7 @@ version: "1.0"
 project: {
 	name: "gh-job-checker"
 	ci: targets: {
-		github: {
+		docker: {
 			args: {
 				version: string | *"dev" @forge(name="GIT_TAG")
 			}
