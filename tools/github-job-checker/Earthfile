@@ -1,7 +1,7 @@
 VERSION 0.8
 
 deps:
-    FROM golang:1.23.0-alpine3.19
+    FROM golang:1.23.2-alpine3.19
 
     WORKDIR /work
 
@@ -11,9 +11,6 @@ deps:
     ENV GOCACHE=/go/cache
     ENV GOMODCACHE=/go/modcache
     CACHE --persist --sharing shared /go
-
-    COPY ../lib/project+src/src /lib/project
-    COPY ../lib/tools+src/src /lib/tools
 
     COPY go.mod go.sum .
     RUN go mod download
@@ -60,10 +57,9 @@ docker:
     ARG USERPLATFORM
 
     COPY \
-        --platform=$USERPLATFORM \
         (+build/gh-job-checker \
         --GOOS=$TARGETOS \
         --GOARCH=$TARGETARCH \
         --version=$version) bin/gh-job-checker
 
-    SAVE ARTIFACT bin/gh-job-checker gh-job-checker
+    SAVE IMAGE --push 332405224602.dkr.ecr.eu-central-1.amazonaws.com/github-job-checker:$version
