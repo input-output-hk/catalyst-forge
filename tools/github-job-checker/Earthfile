@@ -37,10 +37,10 @@ build:
     ARG version="0.0.0"
 
     ENV CGO_ENABLED=0
-    RUN go build -ldflags="-extldflags=-static -X main.version=$version" -o bin/gh-job-checker main.go
-    RUN file bin/gh-job-checker
+    RUN go build -ldflags="-extldflags=-static -X main.version=$version" -o bin/github-job-checker main.go
+    RUN file bin/github-job-checker
 
-    SAVE ARTIFACT bin/gh-job-checker gh-job-checker
+    SAVE ARTIFACT bin/github-job-checker github-job-checker
 
 test:
     FROM +build
@@ -57,9 +57,11 @@ docker:
     ARG USERPLATFORM
 
     COPY \
-        (+build/gh-job-checker \
+        (+build/github-job-checker \
         --GOOS=$TARGETOS \
         --GOARCH=$TARGETARCH \
-        --version=$version) bin/gh-job-checker
+        --version=$version) bin/github-job-checker
+
+    ENTRYPOINT ["bin/github-job-checker"]
 
     SAVE IMAGE --push 332405224602.dkr.ecr.eu-central-1.amazonaws.com/github-job-checker:$version
