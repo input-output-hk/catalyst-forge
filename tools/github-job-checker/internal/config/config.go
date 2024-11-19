@@ -44,7 +44,7 @@ func LoadConfig() (*Config, error) {
 	}
 
 	// Set environment variable prefixes.
-	viper.SetEnvPrefix("GITHUB")
+	viper.SetEnvPrefix("GHJC")
 	viper.SetEnvKeyReplacer(strings.NewReplacer("-", "_"))
 	viper.AutomaticEnv()
 

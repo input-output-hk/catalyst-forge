@@ -60,12 +60,12 @@ func TestLoadConfig_FromFlags(t *testing.T) {
 func TestLoadConfig_FromEnv(t *testing.T) {
 	resetConfig()
 
-	os.Setenv("GITHUB_OWNER", "env-owner")
-	os.Setenv("GITHUB_REPO", "env-repo")
-	os.Setenv("GITHUB_REF", "env-ref")
-	os.Setenv("GITHUB_TOKEN", "env-token")
-	os.Setenv("GITHUB_CHECK_INTERVAL", "20s")
-	os.Setenv("GITHUB_TIMEOUT", "500s")
+	os.Setenv("GHJC_OWNER", "env-owner")
+	os.Setenv("GHJC_REPO", "env-repo")
+	os.Setenv("GHJC_REF", "env-ref")
+	os.Setenv("GHJC_TOKEN", "env-token")
+	os.Setenv("GHJC_CHECK_INTERVAL", "20s")
+	os.Setenv("GHJC_TIMEOUT", "500s")
 
 	cfg, err := config.LoadConfig()
 	if err != nil {
@@ -145,10 +145,10 @@ func TestLoadConfig_DefaultsAndRequiredFields(t *testing.T) {
 	resetConfig()
 
 	// Set only the required fields
-	os.Setenv("GITHUB_OWNER", "default-owner")
-	os.Setenv("GITHUB_REPO", "default-repo")
-	os.Setenv("GITHUB_REF", "default-ref")
-	os.Setenv("GITHUB_TOKEN", "default-token")
+	os.Setenv("GHJC_OWNER", "default-owner")
+	os.Setenv("GHJC_REPO", "default-repo")
+	os.Setenv("GHJC_REF", "default-ref")
+	os.Setenv("GHJC_TOKEN", "default-token")
 
 	cfg, err := config.LoadConfig()
 	if err != nil {
@@ -172,36 +172,36 @@ func TestLoadConfig_MissingRequiredFields(t *testing.T) {
 		{
 			name: "missing owner",
 			env: map[string]string{
-				"GITHUB_REPO":  "repo",
-				"GITHUB_REF":   "ref",
-				"GITHUB_TOKEN": "token",
+				"GHJC_REPO":  "repo",
+				"GHJC_REF":   "ref",
+				"GHJC_TOKEN": "token",
 			},
 			expectedError: "owner is required",
 		},
 		{
 			name: "missing repo",
 			env: map[string]string{
-				"GITHUB_OWNER": "owner",
-				"GITHUB_REF":   "ref",
-				"GITHUB_TOKEN": "token",
+				"GHJC_OWNER": "owner",
+				"GHJC_REF":   "ref",
+				"GHJC_TOKEN": "token",
 			},
 			expectedError: "repo is required",
 		},
 		{
 			name: "missing ref",
 			env: map[string]string{
-				"GITHUB_OWNER": "owner",
-				"GITHUB_REPO":  "repo",
-				"GITHUB_TOKEN": "token",
+				"GHJC_OWNER": "owner",
+				"GHJC_REPO":  "repo",
+				"GHJC_TOKEN": "token",
 			},
 			expectedError: "ref is required",
 		},
 		{
 			name: "missing token",
 			env: map[string]string{
-				"GITHUB_OWNER": "owner",
-				"GITHUB_REPO":  "repo",
-				"GITHUB_REF":   "ref",
+				"GHJC_OWNER": "owner",
+				"GHJC_REPO":  "repo",
+				"GHJC_REF":   "ref",
 			},
 			expectedError: "token is required",
 		},
