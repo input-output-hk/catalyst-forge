@@ -59,7 +59,7 @@ func (r *TimoniReleaser) Release() error {
 	}
 
 	for _, registry := range registries {
-		fullContainer := fmt.Sprintf("oci://%s/%s:%s", registry, container, tag)
+		fullContainer := fmt.Sprintf("oci://%s/%s", registry, container)
 		path, err := r.project.GetRelativePath()
 		if err != nil {
 			return fmt.Errorf("failed to get relative path: %w", err)
