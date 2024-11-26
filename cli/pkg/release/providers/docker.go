@@ -59,12 +59,8 @@ func (r *DockerReleaser) Release() error {
 	container := r.project.Blueprint.Project.Container
 	registries := r.project.Blueprint.Global.CI.Registries
 
-	var imageTag string
-	if r.project.Tag != nil {
-		imageTag = r.project.Tag.Version
-	} else if r.config.Tag != "" {
-		imageTag = r.config.Tag
-	} else {
+	imageTag := r.config.Tag
+	if imageTag == "" {
 		return fmt.Errorf("no image tag specified")
 	}
 
