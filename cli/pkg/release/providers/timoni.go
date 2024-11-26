@@ -65,7 +65,7 @@ func (r *TimoniReleaser) Release() error {
 			return fmt.Errorf("failed to get relative path: %w", err)
 		}
 
-		r.logger.Info("Publishing module", "path", path, "module", fullContainer)
+		r.logger.Info("Publishing module", "path", path, "container", fullContainer, "tag", tag)
 		out, err := r.timoni.Execute("mod", "push", "--version", tag, "--latest=false", path, fullContainer)
 		if err != nil {
 			r.logger.Error("Failed to push module", "module", fullContainer, "error", err, "output", string(out))
