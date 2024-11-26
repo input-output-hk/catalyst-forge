@@ -89,6 +89,9 @@ package schema
 
 // TimoniProvider contains the configuration for the Timoni provider.
 #TimoniProvider: {
+	// Install contains whether to install Timoni in the CI environment.
+	install?: null | bool @go(Install,*bool)
+
 	// Registries contains the registries to use for publishing Timoni modules
 	registries: [...string] @go(Registries,[]string)
 }

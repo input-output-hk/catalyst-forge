@@ -44,6 +44,12 @@ global: {
 				}
 				registry: "ghcr.io"
 			}
+			timoni: {
+				install: true
+				registries: [
+					aws.registry,
+				]
+			}
 		}
 		secrets: [
 			{
