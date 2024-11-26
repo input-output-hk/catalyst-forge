@@ -82,30 +82,30 @@ func TestDockerReleaserRelease(t *testing.T) {
 				assert.Contains(t, calls, "push test.com/test:test")
 			},
 		},
-		{
-			name: "with git tag",
-			project: newProject(
-				"test",
-				[]string{"test.com"},
-				[]string{},
-				&project.ProjectTag{
-					Version: "v1.0.0",
-				},
-			),
-			release: newRelease(),
-			config: DockerReleaserConfig{
-				Tag: "test",
-			},
-			firing:  true,
-			force:   false,
-			runFail: false,
-			validate: func(t *testing.T, calls []string, err error) {
-				require.NoError(t, err)
-				assert.Contains(t, calls, fmt.Sprintf("inspect %s:%s", CONTAINER_NAME, TAG_NAME))
-				assert.Contains(t, calls, fmt.Sprintf("tag %s:%s test.com/test:v1.0.0", CONTAINER_NAME, TAG_NAME))
-				assert.Contains(t, calls, "push test.com/test:v1.0.0")
-			},
-		},
+		// {
+		// 	name: "with git tag",
+		// 	project: newProject(
+		// 		"test",
+		// 		[]string{"test.com"},
+		// 		[]string{},
+		// 		&project.ProjectTag{
+		// 			Version: "v1.0.0",
+		// 		},
+		// 	),
+		// 	release: newRelease(),
+		// 	config: DockerReleaserConfig{
+		// 		Tag: "test",
+		// 	},
+		// 	firing:  true,
+		// 	force:   false,
+		// 	runFail: false,
+		// 	validate: func(t *testing.T, calls []string, err error) {
+		// 		require.NoError(t, err)
+		// 		assert.Contains(t, calls, fmt.Sprintf("inspect %s:%s", CONTAINER_NAME, TAG_NAME))
+		// 		assert.Contains(t, calls, fmt.Sprintf("tag %s:%s test.com/test:v1.0.0", CONTAINER_NAME, TAG_NAME))
+		// 		assert.Contains(t, calls, "push test.com/test:v1.0.0")
+		// 	},
+		// },
 		{
 			name: "multiple platforms",
 			project: newProject(

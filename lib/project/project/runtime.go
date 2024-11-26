@@ -30,11 +30,13 @@ func (g *GitRuntime) Load(project *Project) map[string]cue.Value {
 		g.logger.Warn("Failed to get commit hash", "error", err)
 	} else {
 		data["GIT_COMMIT_HASH"] = project.ctx.CompileString(fmt.Sprintf(`"%s"`, hash))
+		data["GIT_HASH_OR_TAG"] = project.ctx.CompileString(fmt.Sprintf(`"%s"`, hash))
 	}
 
 	if project.Tag != nil {
 		data["GIT_TAG"] = project.ctx.CompileString(fmt.Sprintf(`"%s"`, project.Tag.Full))
 		data["GIT_TAG_VERSION"] = project.ctx.CompileString(fmt.Sprintf(`"%s"`, project.Tag.Version))
+		data["GIT_HASH_OR_TAG"] = project.ctx.CompileString(fmt.Sprintf(`"%s"`, project.Tag.Version))
 	} else {
 		g.logger.Debug("No project tag found")
 	}
