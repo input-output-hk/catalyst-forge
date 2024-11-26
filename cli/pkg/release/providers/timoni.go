@@ -3,7 +3,6 @@ package providers
 import (
 	"fmt"
 	"log/slog"
-	"strings"
 
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/events"
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/executor"
@@ -49,13 +48,9 @@ func (r *TimoniReleaser) Release() error {
 		container = fmt.Sprintf("%s-%s", r.project.Name, "deployment")
 	}
 
-	var tag string
-	if r.project.Tag != nil {
-		tag = strings.TrimPrefix(r.project.Tag.Version, "v")
-	} else if r.config.Tag != "" {
-		tag = r.config.Tag
-	} else {
-		return fmt.Errorf("no tag found")
+	tag := r.config.Tag
+	if tag == "" {
+		return fmt.Errorf("no tag specified")
 	}
 
 	for _, registry := range registries {

@@ -73,6 +73,33 @@ func TestTimoniReleaserRelease(t *testing.T) {
 			},
 		},
 		{
+			name:    "not firing",
+			project: newProject("test", []string{"test.com"}),
+			firing:  false,
+			force:   false,
+			failOn:  "",
+			validate: func(t *testing.T, calls []string, err error) {
+				require.NoError(t, err)
+				assert.Len(t, calls, 0)
+			},
+		},
+		{
+			name:    "forced",
+			project: newProject("test", []string{"test.com"}),
+			release: schema.Release{},
+			config: TimoniReleaserConfig{
+				Container: "test",
+				Tag:       "test",
+			},
+			firing: false,
+			force:  true,
+			failOn: "",
+			validate: func(t *testing.T, calls []string, err error) {
+				require.NoError(t, err)
+				assert.Contains(t, calls, "mod push --version test --latest=false . oci://test.com/test")
+			},
+		},
+		{
 			name:    "push fails",
 			project: newProject("test", []string{"test.com"}),
 			release: schema.Release{},
