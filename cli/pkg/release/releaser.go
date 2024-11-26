@@ -13,6 +13,7 @@ type ReleaserType string
 const (
 	ReleaserTypeDocker ReleaserType = "docker"
 	ReleaserTypeGithub ReleaserType = "github"
+	ReleaserTypeTimoni ReleaserType = "timoni"
 )
 
 type Releaser interface {
@@ -48,6 +49,9 @@ func NewDefaultReleaserStore() *ReleaserStore {
 			},
 			ReleaserTypeGithub: func(ctx run.RunContext, project project.Project, name string, force bool) (Releaser, error) {
 				return providers.NewGithubReleaser(ctx, project, name, force)
+			},
+			ReleaserTypeTimoni: func(ctx run.RunContext, project project.Project, name string, force bool) (Releaser, error) {
+				return providers.NewTimoniReleaser(ctx, project, name, force)
 			},
 		},
 	}

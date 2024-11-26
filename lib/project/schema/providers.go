@@ -21,6 +21,10 @@ type Providers struct {
 	// Github contains the configuration for the Github provider.
 	// +optional
 	Github ProviderGithub `json:"github"`
+
+	// Timoni contains the configuration for the Timoni provider.
+	// +optional
+	Timoni TimoniProvider `json:"timoni"`
 }
 
 // ProviderAWS contains the configuration for the AWS provider.
@@ -77,4 +81,10 @@ type ProviderGithub struct {
 	// Registry contains the Github registry to use.
 	// +optional
 	Registry *string `json:"registry"`
+}
+
+// TimoniProvider contains the configuration for the Timoni provider.
+type TimoniProvider struct {
+	// Registries contains the registries to use for publishing Timoni modules
+	Registries []string `json:"registries"`
 }

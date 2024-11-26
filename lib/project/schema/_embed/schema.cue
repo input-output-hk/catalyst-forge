@@ -74,6 +74,10 @@ package schema
 	// Github contains the configuration for the Github provider.
 	// +optional
 	github?: #ProviderGithub @go(Github)
+
+	// Timoni contains the configuration for the Timoni provider.
+	// +optional
+	timoni?: #TimoniProvider @go(Timoni)
 }
 
 // ProviderAWS contains the configuration for the AWS provider.
@@ -119,6 +123,17 @@ package schema
 	// Credentials contains the credentials to use for interacting with private repositories.
 	// +optional
 	credentials?: null | #Secret @go(Credentials,*Secret)
+}
+
+// ProviderGithub contains the configuration for the Github provider.
+#ProviderGithub: {
+	// Credentials contains the credentials to use for Github
+	//  +optional
+	credentials?: #Secret @go(Credentials)
+
+	// Registry contains the Github registry to use.
+	// +optional
+	registry?: null | string @go(Registry,*string)
 }
 #TagStrategy:     string
 #enumTagStrategy: #TagStrategyGitCommit
@@ -265,15 +280,10 @@ version: "1.0"
 	secrets?: [...#Secret] @go(Secrets,[]Secret)
 }
 
-// ProviderGithub contains the configuration for the Github provider.
-#ProviderGithub: {
-	// Credentials contains the credentials to use for Github
-	//  +optional
-	credentials?: #Secret @go(Credentials)
-
-	// Registry contains the Github registry to use.
-	// +optional
-	registry?: null | string @go(Registry,*string)
+// TimoniProvider contains the configuration for the Timoni provider.
+#TimoniProvider: {
+	// Registries contains the registries to use for publishing Timoni modules
+	registries: [...string] @go(Registries,[]string)
 }
 
 // Secret contains the secret provider and a list of mappings
