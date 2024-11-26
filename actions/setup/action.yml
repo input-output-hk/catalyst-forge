@@ -185,7 +185,7 @@ runs:
         BP=$(forge dump .)
 
         TIMONI=$(echo "$BP" | jq -r .global.ci.providers.timoni.install)
-        if [[ "$TIMONI" != "true" ]]; then
+        if [[ "$TIMONI" == "true" ]]; then
           INSTALL=1
           echo "install=$INSTALL" >> $GITHUB_OUTPUT
         else
