@@ -61,8 +61,9 @@ func (r *TimoniReleaser) Release() error {
 		fullContainer := fmt.Sprintf("oci://%s/%s:%s", registry, container, tag)
 
 		r.logger.Info("Publishing module", "module", fullContainer)
-		_, err := r.timoni.Execute("mod", "push", "--version", tag, "--latest=false", fullContainer)
+		out, err := r.timoni.Execute("mod", "push", "--version", tag, "--latest=false", fullContainer)
 		if err != nil {
+			r.logger.Error("Failed to push module", "module", fullContainer, "error", err, "output", out)
 			return fmt.Errorf("failed to push module: %w", err)
 		}
 	}
