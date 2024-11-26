@@ -4,12 +4,11 @@ project: {
 	release: {
 		docker: {
 			on: {
-				//merge: {}
-				//tag: {}
-				always: {}
+				merge: {}
+				tag: {}
 			}
 			config: {
-				tag: _ @forge(name="GIT_COMMIT_HASH")
+				tag: _ @forge(name="GIT_HASH_OR_TAG")
 			}
 		}
 	}
