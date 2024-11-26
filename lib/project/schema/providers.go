@@ -90,4 +90,8 @@ type TimoniProvider struct {
 
 	// Registries contains the registries to use for publishing Timoni modules
 	Registries []string `json:"registries"`
+
+	// The version of Timoni to use in CI.
+	// +optional
+	Version string `json:"version"`
 }

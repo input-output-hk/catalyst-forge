@@ -247,6 +247,9 @@ version: "1.0"
 	// +optional
 	target?: string @go(Target)
 }
+#Tagging: {
+	strategy: "commit"
+}
 #GlobalRepo: {
 	// Name contains the name of the repository (e.g. "owner/repo-name").
 	name: string @go(Name)
@@ -287,6 +290,12 @@ version: "1.0"
 
 	// Registries contains the registries to use for publishing Timoni modules
 	registries: [...string] @go(Registries,[]string)
+
+	// The version of Timoni to use in CI.
+	// +optional
+	version: (_ | *"latest") & {
+		string
+	} @go(Version)
 }
 
 // Secret contains the secret provider and a list of mappings
@@ -312,7 +321,4 @@ version: "1.0"
 
 	// Provider contains the provider to use for the secret.
 	provider: string @go(Provider)
-}
-#Tagging: {
-	strategy: "commit"
 }

@@ -20,3 +20,7 @@ package schema
 #Tagging: {
 	strategy: _ & "commit"
 }
+
+#TimoniProvider: {
+	version: _ | *"latest"
+}

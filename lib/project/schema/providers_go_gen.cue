@@ -94,4 +94,8 @@ package schema
 
 	// Registries contains the registries to use for publishing Timoni modules
 	registries: [...string] @go(Registries,[]string)
+
+	// The version of Timoni to use in CI.
+	// +optional
+	version?: string @go(Version)
 }

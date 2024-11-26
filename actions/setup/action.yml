@@ -187,7 +187,9 @@ runs:
         TIMONI=$(echo "$BP" | jq -r .global.ci.providers.timoni.install)
         if [[ "$TIMONI" == "true" ]]; then
           INSTALL=1
+          VERSION=$(echo "$BP" | jq -r .global.ci.providers.timoni.version)
           echo "install=$INSTALL" >> $GITHUB_OUTPUT
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
         else
           echo "Not installing Timoni CLI"
         fi
@@ -195,4 +197,4 @@ runs:
       uses: stefanprodan/timoni/actions/setup@main
       if: steps.timoni.outputs.install && steps.timoni.conclusion == 'success'
       with:
-        version: latest
+        version: ${{ steps.timoni.outputs.version }}
