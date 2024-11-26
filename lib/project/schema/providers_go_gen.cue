@@ -25,6 +25,10 @@ package schema
 	// Github contains the configuration for the Github provider.
 	// +optional
 	github?: #ProviderGithub @go(Github)
+
+	// Timoni contains the configuration for the Timoni provider.
+	// +optional
+	timoni?: #TimoniProvider @go(Timoni)
 }
 
 // ProviderAWS contains the configuration for the AWS provider.
@@ -81,4 +85,18 @@ package schema
 	// Registry contains the Github registry to use.
 	// +optional
 	registry?: null | string @go(Registry,*string)
+}
+
+// TimoniProvider contains the configuration for the Timoni provider.
+#TimoniProvider: {
+	// Install contains whether to install Timoni in the CI environment.
+	// +optional
+	install?: null | bool @go(Install,*bool)
+
+	// Registries contains the registries to use for publishing Timoni modules
+	registries: [...string] @go(Registries,[]string)
+
+	// The version of Timoni to use in CI.
+	// +optional
+	version?: string @go(Version)
 }

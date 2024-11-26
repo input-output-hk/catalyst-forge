@@ -74,6 +74,10 @@ package schema
 	// Github contains the configuration for the Github provider.
 	// +optional
 	github?: #ProviderGithub @go(Github)
+
+	// Timoni contains the configuration for the Timoni provider.
+	// +optional
+	timoni?: #TimoniProvider @go(Timoni)
 }
 
 // ProviderAWS contains the configuration for the AWS provider.
@@ -119,6 +123,17 @@ package schema
 	// Credentials contains the credentials to use for interacting with private repositories.
 	// +optional
 	credentials?: null | #Secret @go(Credentials,*Secret)
+}
+
+// ProviderGithub contains the configuration for the Github provider.
+#ProviderGithub: {
+	// Credentials contains the credentials to use for Github
+	//  +optional
+	credentials?: #Secret @go(Credentials)
+
+	// Registry contains the Github registry to use.
+	// +optional
+	registry?: null | string @go(Registry,*string)
 }
 #TagStrategy:     string
 #enumTagStrategy: #TagStrategyGitCommit
@@ -232,6 +247,9 @@ version: "1.0"
 	// +optional
 	target?: string @go(Target)
 }
+#Tagging: {
+	strategy: "commit"
+}
 #GlobalRepo: {
 	// Name contains the name of the repository (e.g. "owner/repo-name").
 	name: string @go(Name)
@@ -265,15 +283,20 @@ version: "1.0"
 	secrets?: [...#Secret] @go(Secrets,[]Secret)
 }
 
-// ProviderGithub contains the configuration for the Github provider.
-#ProviderGithub: {
-	// Credentials contains the credentials to use for Github
-	//  +optional
-	credentials?: #Secret @go(Credentials)
-
-	// Registry contains the Github registry to use.
+// TimoniProvider contains the configuration for the Timoni provider.
+#TimoniProvider: {
+	// Install contains whether to install Timoni in the CI environment.
 	// +optional
-	registry?: null | string @go(Registry,*string)
+	install: (null | bool) & (_ | *true) @go(Install,*bool)
+
+	// Registries contains the registries to use for publishing Timoni modules
+	registries: [...string] @go(Registries,[]string)
+
+	// The version of Timoni to use in CI.
+	// +optional
+	version: (_ | *"latest") & {
+		string
+	} @go(Version)
 }
 
 // Secret contains the secret provider and a list of mappings
@@ -299,7 +322,4 @@ version: "1.0"
 
 	// Provider contains the provider to use for the secret.
 	provider: string @go(Provider)
-}
-#Tagging: {
-	strategy: "commit"
 }
