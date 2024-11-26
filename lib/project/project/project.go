@@ -42,8 +42,8 @@ type Project struct {
 	// TagInfo is the project tag information.
 	//TagInfo *TagInfo
 
-	logger *slog.Logger
 	ctx    *cue.Context
+	logger *slog.Logger
 }
 
 // GetRelativePath returns the relative path of the project from the repo root.
@@ -118,8 +118,8 @@ func NewProject(
 		Path:      path,
 		Repo:      repo,
 		RepoRoot:  repoRoot,
+		Tag:       tag,
 		ctx:       ctx,
 		logger:    logger,
-		Tag:       tag,
 	}
 }

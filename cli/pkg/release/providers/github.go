@@ -18,10 +18,6 @@ import (
 	"github.com/spf13/afero"
 )
 
-type GithubClient interface {
-	RepositoriesGetReleaseByTag(ctx context.Context, owner, repo, tag string) (*github.RepositoryRelease, *github.Response, error)
-}
-
 type GithubReleaserConfig struct {
 	Prefix string        `json:"prefix"`
 	Name   string        `json:"name"`
