@@ -6,7 +6,7 @@ project: {
 			on: always: {}
 			config: {
 				container: "timoni-test"
-				tag:       "v1.0.0"
+				tag:       "1.0.0"
 			}
 		}
 	}

@@ -3,6 +3,7 @@ package providers
 import (
 	"fmt"
 	"log/slog"
+	"strings"
 
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/events"
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/executor"
@@ -50,7 +51,7 @@ func (r *TimoniReleaser) Release() error {
 
 	var tag string
 	if r.project.Tag != nil {
-		tag = r.project.Tag.Version
+		tag = strings.TrimPrefix(r.project.Tag.Version, "v")
 	} else if r.config.Tag != "" {
 		tag = r.config.Tag
 	} else {
