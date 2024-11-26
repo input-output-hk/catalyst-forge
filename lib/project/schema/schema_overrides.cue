@@ -22,5 +22,6 @@ package schema
 }
 
 #TimoniProvider: {
+	install: _ | *true
 	version: _ | *"latest"
 }

@@ -286,7 +286,8 @@ version: "1.0"
 // TimoniProvider contains the configuration for the Timoni provider.
 #TimoniProvider: {
 	// Install contains whether to install Timoni in the CI environment.
-	install?: null | bool @go(Install,*bool)
+	// +optional
+	install: (null | bool) & (_ | *true) @go(Install,*bool)
 
 	// Registries contains the registries to use for publishing Timoni modules
 	registries: [...string] @go(Registries,[]string)

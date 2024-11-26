@@ -86,6 +86,7 @@ type ProviderGithub struct {
 // TimoniProvider contains the configuration for the Timoni provider.
 type TimoniProvider struct {
 	// Install contains whether to install Timoni in the CI environment.
+	// +optional
 	Install *bool `json:"install"`
 
 	// Registries contains the registries to use for publishing Timoni modules
