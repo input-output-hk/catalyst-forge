@@ -60,9 +60,13 @@ func (r *TimoniReleaser) Release() error {
 
 	for _, registry := range registries {
 		fullContainer := fmt.Sprintf("oci://%s/%s:%s", registry, container, tag)
+		path, err := r.project.GetRelativePath()
+		if err != nil {
+			return fmt.Errorf("failed to get relative path: %w", err)
+		}
 
-		r.logger.Info("Publishing module", "module", fullContainer)
-		out, err := r.timoni.Execute("mod", "push", "--version", tag, "--latest=false", fullContainer)
+		r.logger.Info("Publishing module", "path", path, "module", fullContainer)
+		out, err := r.timoni.Execute("mod", "push", "--version", tag, "--latest=false", path, fullContainer)
 		if err != nil {
 			r.logger.Error("Failed to push module", "module", fullContainer, "error", err, "output", string(out))
 			return fmt.Errorf("failed to push module: %w", err)
