@@ -58,6 +58,22 @@ func TestTimoniReleaserRelease(t *testing.T) {
 			},
 		},
 		{
+			name:    "with v prefix",
+			project: newProject("test", []string{"test.com"}),
+			release: schema.Release{},
+			config: TimoniReleaserConfig{
+				Container: "test",
+				Tag:       "v1.0.0",
+			},
+			firing: true,
+			force:  false,
+			failOn: "",
+			validate: func(t *testing.T, calls []string, err error) {
+				require.NoError(t, err)
+				assert.Contains(t, calls, "mod push --version 1.0.0 --latest=false . oci://test.com/test")
+			},
+		},
+		{
 			name:    "no container",
 			project: newProject("test", []string{"test.com"}),
 			release: schema.Release{},
