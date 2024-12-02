@@ -3,8 +3,9 @@ project: {
 	name: "forge-docs"
 	release: {
 		docs: {
-			on: merge: {}
+			on: always: {}
 			config: {
+				branch: "gh-pages"
 				token: {
 					provider: "env"
 					path:     "GITHUB_TOKEN"

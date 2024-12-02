@@ -5,6 +5,8 @@ import (
 	"log/slog"
 	"path/filepath"
 
+	"github.com/go-git/go-git/v5"
+	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/earthly"
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/events"
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/run"
@@ -15,7 +17,15 @@ import (
 )
 
 type DocsReleaserConfig struct {
-	Token schema.Secret `json:"token"`
+	Branch     string                     `json:"branch"`
+	Branches   DocsReleaserBranchesConfig `json:"branches"`
+	TargetPath string                     `json:"targetPath"`
+	Token      schema.Secret              `json:"token"`
+}
+
+type DocsReleaserBranchesConfig struct {
+	Enabled bool   `json:"enabled"`
+	Path    string `json:"path"`
 }
 
 type DocsReleaser struct {
@@ -47,6 +57,40 @@ func (r *DocsReleaser) Release() error {
 		return nil
 	}
 
+	if err := r.checkoutBranch(); err != nil {
+		return fmt.Errorf("failed to checkout branch: %w", err)
+	}
+
+	return nil
+}
+
+func (r *DocsReleaser) checkoutBranch() error {
+	if r.config.Branch == "" {
+		return fmt.Errorf("must specify a branch to checkout")
+	}
+
+	r.logger.Info("Checking out branch", "branch", r.config.Branch)
+	wt, err := r.project.Repo.Worktree()
+	if err != nil {
+		return fmt.Errorf("failed to get git worktree: %w", err)
+	}
+
+	status, err := wt.Status()
+	if err != nil {
+		return fmt.Errorf("failed to get git worktree status: %w", err)
+	}
+
+	if !status.IsClean() {
+		return fmt.Errorf("refusing to proceed due to dirty git worktree")
+	}
+
+	if err := wt.Checkout(&git.CheckoutOptions{
+		Branch: plumbing.NewBranchReferenceName(r.config.Branch),
+		Create: true,
+	}); err != nil {
+		return fmt.Errorf("failed to checkout branch: %w", err)
+	}
+
 	return nil
 }
 
@@ -58,6 +102,7 @@ func (r *DocsReleaser) run(path string) error {
 	)
 }
 
+// validateArtifacts checks if the artifacts exist.
 func (r *DocsReleaser) validateArtifacts(path string) error {
 	r.logger.Info("Validating artifacts")
 	path = filepath.Join(path, earthly.GetBuildPlatform())
