@@ -20,6 +20,7 @@ require (
 	github.com/spf13/afero v1.11.0
 	github.com/stretchr/testify v1.9.0
 	github.com/willabides/kongplete v0.4.0
+	go.nhat.io/aferocopy/v2 v2.0.2
 	golang.org/x/exp v0.0.0-20231006140011-7918f672742d
 )
 
@@ -85,7 +86,7 @@ require (
 	golang.org/x/net v0.28.0 // indirect
 	golang.org/x/sync v0.8.0 // indirect
 	golang.org/x/sys v0.24.0 // indirect
-	golang.org/x/text v0.17.0 // indirect
+	golang.org/x/text v0.18.0 // indirect
 	golang.org/x/time v0.5.0 // indirect
 	golang.org/x/tools v0.24.0 // indirect
 	gopkg.in/jfontan/go-billy-desfacer.v0 v0.0.0-20210209210102-b43512b1cad0 // indirect

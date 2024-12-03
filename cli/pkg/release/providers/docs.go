@@ -14,6 +14,7 @@ import (
 	"github.com/input-output-hk/catalyst-forge/lib/project/secrets"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/git"
 	"github.com/spf13/afero"
+	"go.nhat.io/aferocopy/v2"
 )
 
 type DocsReleaserConfig struct {
@@ -84,6 +85,11 @@ func (r *DocsReleaser) Release() error {
 		return fmt.Errorf("failed to clean target path: %w", err)
 	}
 
+	r.logger.Info("Copying artifacts", "from", r.workdir, "to", targetPath)
+	if err := aferocopy.Copy(r.workdir, targetPath, aferocopy.Options{SrcFs: r.fs}); err != nil {
+		return fmt.Errorf("failed to copy artifacts: %w", err)
+	}
+
 	// r.logger.Debug("Restoring branch", "branch", curBranch)
 	// if err := git.CheckoutBranch(r.project.Repo, curBranch, git.GitCheckoutCreate()); err != nil {
 	// 	return fmt.Errorf("failed to checkout branch: %w", err)
@@ -120,9 +126,9 @@ func (r *DocsReleaser) clean(targetPath string) error {
 		}
 
 		r.logger.Debug("Removing file", "path", path)
-		// if err := r.fs.Remove(path); err != nil {
-		// 	return fmt.Errorf("failed to remove file: %w", err)
-		// }
+		if err := r.fs.Remove(path); err != nil {
+			return fmt.Errorf("failed to remove file: %w", err)
+		}
 
 		return nil
 	})
