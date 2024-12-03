@@ -21,6 +21,7 @@ var (
 type gitCheckoutOptions struct {
 	create     bool
 	forceClean bool
+	orphan     bool
 	remote     bool
 }
 
@@ -43,6 +44,14 @@ func GitCheckoutForceClean() GitCheckoutOption {
 	}
 }
 
+// GitCheckoutOrphan sets the orphan option for the Git checkout.
+func GitCheckoutOrphan() GitCheckoutOption {
+	return func(o *gitCheckoutOptions) {
+		o.orphan = true
+	}
+}
+
+// GitCheckoutRemote sets the remote option for the Git checkout.
 func GitCheckoutRemote() GitCheckoutOption {
 	return func(o *gitCheckoutOptions) {
 		o.remote = true
@@ -115,15 +124,20 @@ func CheckoutBranch(r *git.Repository, branch string, opts ...GitCheckoutOption)
 		create = false
 	}
 
-	var branchRef string
+	var branchRef plumbing.ReferenceName
 	if options.remote {
-		branchRef = fmt.Sprintf("refs/remotes/origin/%s", branch)
+		branchRef = plumbing.ReferenceName(fmt.Sprintf("refs/remotes/origin/%s", branch))
+	} else if options.orphan {
+		branchRef = plumbing.NewHashReference(
+			plumbing.NewBranchReferenceName(branch),
+			plumbing.ZeroHash,
+		).Name()
 	} else {
-		branchRef = fmt.Sprintf("refs/heads/%s", branch)
+		branchRef = plumbing.NewBranchReferenceName(branch)
 	}
 
 	if err := wt.Checkout(&git.CheckoutOptions{
-		Branch: plumbing.ReferenceName(branchRef),
+		Branch: branchRef,
 		Create: create,
 	}); err != nil {
 		return fmt.Errorf("failed to checkout branch: %w", err)

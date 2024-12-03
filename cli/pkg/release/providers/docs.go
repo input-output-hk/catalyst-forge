@@ -5,6 +5,7 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/earthly"
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/events"
@@ -82,7 +83,22 @@ func (r *DocsReleaser) Release() error {
 	}
 
 	r.logger.Info("Checking out branch", "branch", r.config.Branch)
-	if err := git.CheckoutBranch(r.project.Repo, r.config.Branch, git.GitCheckoutRemote()); err != nil {
+	if err := git.CheckoutBranch(
+		r.project.Repo,
+		r.config.Branch,
+		git.GitCheckoutRemote(),
+	); err != nil {
+		return fmt.Errorf("failed to checkout branch: %w", err)
+	}
+
+	tempBranch := generateTempBranch()
+	r.logger.Info("Creating orphan branch", "branch", tempBranch)
+	if err := git.CheckoutBranch(
+		r.project.Repo,
+		tempBranch,
+		git.GitCheckoutOrphan(),
+		git.GitCheckoutCreate(),
+	); err != nil {
 		return fmt.Errorf("failed to checkout branch: %w", err)
 	}
 
@@ -189,6 +205,12 @@ func (r *DocsReleaser) clean(targetPath string) error {
 	}
 
 	return nil
+}
+
+// generateBranchName generates a temporary branch name.
+func generateTempBranch() string {
+	timestamp := time.Now().Format("20060102-150405")
+	return fmt.Sprintf("%s-%s", "forge-gh-pages", timestamp)
 }
 
 // run runs the release target.
