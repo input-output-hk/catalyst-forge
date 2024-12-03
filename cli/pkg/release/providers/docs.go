@@ -5,6 +5,7 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	gg "github.com/go-git/go-git/v5"
@@ -87,7 +88,13 @@ func (r *DocsReleaser) Release() error {
 	if curBranch == r.project.Blueprint.Global.Repo.DefaultBranch {
 		targetPath = filepath.Join(r.project.RepoRoot, r.config.TargetPath)
 	} else {
-		targetPath = filepath.Join(r.project.RepoRoot, r.config.Branches.Path, curBranch, r.config.TargetPath)
+		curBranchCleaned := strings.ReplaceAll(curBranch, "-", "_")
+		targetPath = filepath.Join(
+			r.project.RepoRoot,
+			r.config.Branches.Path,
+			curBranchCleaned,
+			r.config.TargetPath,
+		)
 	}
 
 	if err := r.clean(targetPath); err != nil {
