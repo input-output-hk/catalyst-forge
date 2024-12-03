@@ -7,6 +7,8 @@ import (
 	"path/filepath"
 	"time"
 
+	gg "github.com/go-git/go-git/v5"
+	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/earthly"
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/events"
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/run"
@@ -92,13 +94,29 @@ func (r *DocsReleaser) Release() error {
 	}
 
 	tempBranch := generateTempBranch()
-	r.logger.Info("Creating orphan branch", "branch", tempBranch)
-	if err := git.CheckoutBranch(
-		r.project.Repo,
-		tempBranch,
-		git.GitCheckoutOrphan(),
-		git.GitCheckoutCreate(),
-	); err != nil {
+	wt, err := r.project.Repo.Worktree()
+	if err != nil {
+		return fmt.Errorf("failed to get git worktree: %w", err)
+	}
+
+	branchRef := plumbing.NewHashReference(
+		plumbing.NewBranchReferenceName(tempBranch),
+		plumbing.ZeroHash,
+	)
+	if err := r.project.Repo.Storer.SetReference(branchRef); err != nil {
+		return fmt.Errorf("failed to create branch reference: %w", err)
+	}
+
+	// Then update HEAD to point to our new branch properly
+	head := plumbing.NewSymbolicReference(plumbing.HEAD, branchRef.Name())
+	if err := r.project.Repo.Storer.SetReference(head); err != nil {
+		return fmt.Errorf("failed to update HEAD: %w", err)
+	}
+
+	// Checkout to update the working tree
+	if err := wt.Checkout(&gg.CheckoutOptions{
+		Branch: branchRef.Name(),
+	}); err != nil {
 		return fmt.Errorf("failed to checkout branch: %w", err)
 	}
 
