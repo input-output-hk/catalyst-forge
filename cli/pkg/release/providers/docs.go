@@ -160,6 +160,8 @@ func (r *DocsReleaser) clean(targetPath string) error {
 				r.logger.Debug("Skipping git path", "path", path)
 				return filepath.SkipDir
 			}
+
+			return nil
 		}
 
 		r.logger.Debug("Removing file", "path", path)
