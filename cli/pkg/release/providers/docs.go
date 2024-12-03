@@ -92,30 +92,8 @@ func (r *DocsReleaser) Release() error {
 		return fmt.Errorf("failed to checkout branch: %w", err)
 	}
 
-	tempBranch := generateTempBranch()
-	branchRef := plumbing.NewHashReference(
-		plumbing.NewBranchReferenceName(tempBranch),
-		plumbing.ZeroHash,
-	)
-	if err := r.project.Repo.Storer.SetReference(branchRef); err != nil {
-		return fmt.Errorf("failed to create branch reference: %w", err)
-	}
-
-	// Then update HEAD to point to our new branch properly
-	head := plumbing.NewSymbolicReference(plumbing.HEAD, branchRef.Name())
-	if err := r.project.Repo.Storer.SetReference(head); err != nil {
-		return fmt.Errorf("failed to update HEAD: %w", err)
-	}
-
-	// Reset the index to unstage everything
-	idx, err := r.project.Repo.Storer.Index()
-	if err != nil {
-		return fmt.Errorf("failed to get index: %w", err)
-	}
-	idx.Entries = nil
-	if err := r.project.Repo.Storer.SetIndex(idx); err != nil {
-		return fmt.Errorf("failed to clean index: %w", err)
-	}
+	tempBranch := plumbing.ReferenceName(generateTempBranch())
+	r.project.Repo.Storer.SetReference(plumbing.NewSymbolicReference(plumbing.HEAD, tempBranch))
 
 	// r.logger.Info("Checking out branch", "branch", r.config.Branch, "current", curBranch)
 	// if err := git.CheckoutBranch(
