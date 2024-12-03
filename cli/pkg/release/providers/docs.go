@@ -111,15 +111,13 @@ func (r *DocsReleaser) clean() error {
 		}
 
 		if info.IsDir() {
-			return nil
-		}
-
-		if filepath.Dir(path) == branchPath {
-			r.logger.Debug("Skipping branch path", "path", path)
-			return filepath.SkipDir
-		} else if filepath.Dir(path) == ".git" {
-			r.logger.Debug("Skipping git path", "path", path)
-			return nil
+			if path == branchPath {
+				r.logger.Debug("Skipping branch path", "path", path)
+				return filepath.SkipDir
+			} else if path == ".git" {
+				r.logger.Debug("Skipping git path", "path", path)
+				return filepath.SkipDir
+			}
 		}
 
 		r.logger.Debug("Removing file", "path", path)
