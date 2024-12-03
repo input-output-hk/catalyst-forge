@@ -7,7 +7,6 @@ import (
 	"path/filepath"
 	"time"
 
-	gg "github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/earthly"
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/events"
@@ -94,11 +93,6 @@ func (r *DocsReleaser) Release() error {
 	}
 
 	tempBranch := generateTempBranch()
-	wt, err := r.project.Repo.Worktree()
-	if err != nil {
-		return fmt.Errorf("failed to get git worktree: %w", err)
-	}
-
 	branchRef := plumbing.NewHashReference(
 		plumbing.NewBranchReferenceName(tempBranch),
 		plumbing.ZeroHash,
@@ -113,11 +107,14 @@ func (r *DocsReleaser) Release() error {
 		return fmt.Errorf("failed to update HEAD: %w", err)
 	}
 
-	// Checkout to update the working tree
-	if err := wt.Checkout(&gg.CheckoutOptions{
-		Branch: branchRef.Name(),
-	}); err != nil {
-		return fmt.Errorf("failed to checkout branch: %w", err)
+	// Reset the index to unstage everything
+	idx, err := r.project.Repo.Storer.Index()
+	if err != nil {
+		return fmt.Errorf("failed to get index: %w", err)
+	}
+	idx.Entries = nil
+	if err := r.project.Repo.Storer.SetIndex(idx); err != nil {
+		return fmt.Errorf("failed to clean index: %w", err)
 	}
 
 	// r.logger.Info("Checking out branch", "branch", r.config.Branch, "current", curBranch)
