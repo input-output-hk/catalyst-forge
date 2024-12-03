@@ -213,7 +213,7 @@ runs:
         BP=$(forge dump .)
 
         CUE=$(echo "$BP" | jq -r .global.ci.providers.cue.install)
-        if [[ "$TIMONI" == "true" ]]; then
+        if [[ "$CUE" == "true" ]]; then
           INSTALL=1
           VERSION=$(echo "$BP" | jq -r .global.ci.providers.cue.version)
           echo "install=$INSTALL" >> $GITHUB_OUTPUT
