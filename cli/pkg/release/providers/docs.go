@@ -3,16 +3,16 @@ package providers
 import (
 	"fmt"
 	"log/slog"
+	"os"
 	"path/filepath"
 
-	"github.com/go-git/go-git/v5"
-	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/earthly"
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/events"
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/run"
 	"github.com/input-output-hk/catalyst-forge/lib/project/project"
 	"github.com/input-output-hk/catalyst-forge/lib/project/schema"
 	"github.com/input-output-hk/catalyst-forge/lib/project/secrets"
+	"github.com/input-output-hk/catalyst-forge/lib/tools/git"
 	"github.com/spf13/afero"
 )
 
@@ -57,38 +57,80 @@ func (r *DocsReleaser) Release() error {
 		return nil
 	}
 
-	if err := r.checkoutBranch(); err != nil {
+	r.logger.Debug("Getting current branch")
+	curBranch, err := git.GetCurrentBranch(r.project.Repo)
+	if err != nil {
+		return fmt.Errorf("failed to get current branch: %w", err)
+	}
+
+	r.logger.Info("Checking out branch", "branch", r.config.Branch, "current", curBranch)
+	if err := git.CheckoutBranch(
+		r.project.Repo,
+		r.config.Branch,
+		git.GitCheckoutCreate(),
+		git.GitCheckoutForceClean(),
+	); err != nil {
 		return fmt.Errorf("failed to checkout branch: %w", err)
 	}
+
+	if err := r.clean(); err != nil {
+		return fmt.Errorf("failed to clean target path: %w", err)
+	}
+
+	// r.logger.Debug("Restoring branch", "branch", curBranch)
+	// if err := git.CheckoutBranch(r.project.Repo, curBranch, git.GitCheckoutCreate()); err != nil {
+	// 	return fmt.Errorf("failed to checkout branch: %w", err)
+	// }
 
 	return nil
 }
 
-func (r *DocsReleaser) checkoutBranch() error {
-	if r.config.Branch == "" {
-		return fmt.Errorf("must specify a branch to checkout")
-	}
+func (r *DocsReleaser) clean() error {
+	targetPath := filepath.Join(r.project.RepoRoot, r.config.TargetPath)
 
-	r.logger.Info("Checking out branch", "branch", r.config.Branch)
-	wt, err := r.project.Repo.Worktree()
+	_, err := os.Stat(targetPath)
 	if err != nil {
-		return fmt.Errorf("failed to get git worktree: %w", err)
+		if !os.IsNotExist(err) {
+			return fmt.Errorf("failed to get file info: %w", err)
+		} else {
+			r.logger.Debug("Target path does not exist, skipping clean", "path", targetPath)
+			return nil
+		}
 	}
 
-	status, err := wt.Status()
+	var branchPath string
+	if r.config.Branches.Enabled {
+		branchPath = filepath.Join(targetPath, r.config.Branches.Path)
+		r.logger.Debug("Cleaning branch path", "path", branchPath)
+	}
+
+	r.logger.Info("Cleaning target path", "path", targetPath)
+	err = afero.Walk(r.fs, targetPath, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return fmt.Errorf("failed to walk path: %w", err)
+		}
+
+		if info.IsDir() {
+			return nil
+		}
+
+		if filepath.Dir(path) == branchPath {
+			r.logger.Debug("Skipping branch path", "path", path)
+			return filepath.SkipDir
+		} else if filepath.Dir(path) == ".git" {
+			r.logger.Debug("Skipping git path", "path", path)
+			return nil
+		}
+
+		if err := r.fs.Remove(path); err != nil {
+			return fmt.Errorf("failed to remove file: %w", err)
+		}
+
+		return nil
+	})
+
 	if err != nil {
-		return fmt.Errorf("failed to get git worktree status: %w", err)
-	}
-
-	if !status.IsClean() {
-		return fmt.Errorf("refusing to proceed due to dirty git worktree")
-	}
-
-	if err := wt.Checkout(&git.CheckoutOptions{
-		Branch: plumbing.NewBranchReferenceName(r.config.Branch),
-		Create: true,
-	}); err != nil {
-		return fmt.Errorf("failed to checkout branch: %w", err)
+		return fmt.Errorf("failed to clean target path: %w", err)
 	}
 
 	return nil
@@ -139,6 +181,18 @@ func NewDocsReleaser(
 	var config DocsReleaserConfig
 	if err := parseConfig(&project, name, &config); err != nil {
 		return nil, fmt.Errorf("failed to parse release config: %w", err)
+	}
+
+	if config.Branch == "" {
+		return nil, fmt.Errorf("must specify a branch to checkout")
+	} else if config.TargetPath == "" {
+		return nil, fmt.Errorf("must specify a target path")
+	} else if filepath.IsAbs(config.TargetPath) {
+		return nil, fmt.Errorf("target path must be relative")
+	} else if config.Branches.Enabled && config.Branches.Path == "" {
+		return nil, fmt.Errorf("must specify a branch path if branches are enabled")
+	} else if config.Branches.Enabled && filepath.IsAbs(config.Branches.Path) {
+		return nil, fmt.Errorf("branch path must be relative")
 	}
 
 	token, err := secrets.GetSecret(&config.Token, &ctx.SecretStore, ctx.Logger)
