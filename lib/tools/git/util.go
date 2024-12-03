@@ -41,6 +41,22 @@ func GitCheckoutForceClean() GitCheckoutOption {
 	}
 }
 
+// AddAll adds all changes in the Git repository to the index.
+func AddAll(r *git.Repository) error {
+	wt, err := r.Worktree()
+	if err != nil {
+		return fmt.Errorf("failed to get git worktree: %w", err)
+	}
+
+	if err := wt.AddWithOptions(&git.AddOptions{
+		All: true,
+	}); err != nil {
+		return fmt.Errorf("failed to add all changes: %w", err)
+	}
+
+	return nil
+}
+
 // BranchExists checks if the given branch exists in the given Git repository.
 func BranchExists(r *git.Repository, branch string) (bool, error) {
 	branchRef := plumbing.NewBranchReferenceName(branch)
@@ -101,6 +117,24 @@ func CheckoutBranch(r *git.Repository, branch string, opts ...GitCheckoutOption)
 	return nil
 }
 
+// CommitAll commits all changes in the Git repository.
+func CommitAll(r *git.Repository, message string, opts *git.CommitOptions) error {
+	wt, err := r.Worktree()
+	if err != nil {
+		return fmt.Errorf("failed to get git worktree: %w", err)
+	}
+
+	if err := AddAll(r); err != nil {
+		return fmt.Errorf("failed to add all changes: %w", err)
+	}
+
+	if _, err := wt.Commit(message, opts); err != nil {
+		return fmt.Errorf("failed to commit changes: %w", err)
+	}
+
+	return nil
+}
+
 // FindGitRoot finds the root of a Git repository starting from the given
 // path. It returns the path to the root of the Git repository or an error if
 // the root is not found.
@@ -144,6 +178,21 @@ func GetCurrentBranch(r *git.Repository) (string, error) {
 	}
 
 	return head.Name().Short(), nil
+}
+
+// HasChanges checks if the Git repository has any changes.
+func HasChanges(r *git.Repository) (bool, error) {
+	wt, err := r.Worktree()
+	if err != nil {
+		return false, fmt.Errorf("failed to get git worktree: %w", err)
+	}
+
+	status, err := wt.Status()
+	if err != nil {
+		return false, fmt.Errorf("failed to get git worktree status: %w", err)
+	}
+
+	return !status.IsClean(), nil
 }
 
 // InCI returns true if the code is running in a CI environment.

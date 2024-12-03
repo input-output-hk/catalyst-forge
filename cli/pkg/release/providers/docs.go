@@ -17,6 +17,12 @@ import (
 	"go.nhat.io/aferocopy/v2"
 )
 
+const (
+	GIT_NAME    = "Catalyst Forge"
+	GIT_EMAIL   = "forge@projectcatalyst.io"
+	GIT_MESSAGE = "chore: automatic docs deployment"
+)
+
 type DocsReleaserConfig struct {
 	Branch     string                     `json:"branch"`
 	Branches   DocsReleaserBranchesConfig `json:"branches"`
@@ -86,8 +92,29 @@ func (r *DocsReleaser) Release() error {
 	}
 
 	r.logger.Info("Copying artifacts", "from", r.workdir, "to", targetPath)
-	if err := aferocopy.Copy(r.workdir, targetPath, aferocopy.Options{SrcFs: r.fs}); err != nil {
+	if err := aferocopy.Copy(
+		filepath.Join(r.workdir, earthly.GetBuildPlatform()),
+		targetPath, aferocopy.Options{SrcFs: r.fs},
+	); err != nil {
 		return fmt.Errorf("failed to copy artifacts: %w", err)
+	}
+
+	changes, err := git.HasChanges(r.project.Repo)
+	if err != nil {
+		return fmt.Errorf("failed to check for git changes: %w", err)
+	}
+
+	if changes {
+		r.logger.Info("Committing changes")
+		// if err := git.CommitAll(r.project.Repo, GIT_MESSAGE, &gg.CommitOptions{
+		// 	Author: &object.Signature{
+		// 		Name:  GIT_NAME,
+		// 		Email: GIT_EMAIL,
+		// 		When:  time.Now(),
+		// 	},
+		// }); err != nil {
+		// 	return fmt.Errorf("failed to commit changes: %w", err)
+		// }
 	}
 
 	// r.logger.Debug("Restoring branch", "branch", curBranch)

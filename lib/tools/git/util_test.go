@@ -14,6 +14,22 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestAddAll(t *testing.T) {
+	r := testutils.NewInMemRepo(t)
+
+	r.AddFile(t, "test.txt", "test")
+	r.Commit(t, "Initial commit")
+
+	r.CreateFile(t, "test2.txt", "test")
+
+	err := AddAll(r.Repo)
+	assert.NoError(t, err)
+
+	status, err := r.Worktree.Status()
+	assert.NoError(t, err)
+	assert.NotEqual(t, status.File("test2.txt").Staging, git.Untracked)
+}
+
 func TestBranchExists(t *testing.T) {
 	r := testutils.NewInMemRepo(t)
 
@@ -82,6 +98,28 @@ func TestCheckoutBranch(t *testing.T) {
 			tt.validate(t, r.Repo, err)
 		})
 	}
+}
+
+func TestCommitAll(t *testing.T) {
+	r := testutils.NewInMemRepo(t)
+
+	r.AddFile(t, "test.txt", "test")
+	r.Commit(t, "Initial commit")
+
+	r.CreateFile(t, "test2.txt", "test")
+
+	err := CommitAll(r.Repo, "Test commit", &git.CommitOptions{})
+	assert.NoError(t, err)
+
+	status, err := r.Worktree.Status()
+	assert.NoError(t, err)
+	assert.True(t, status.IsClean())
+
+	head, err := r.Repo.Head()
+	assert.NoError(t, err)
+	commit, err := r.Repo.CommitObject(head.Hash())
+	assert.NoError(t, err)
+	assert.Equal(t, "Test commit", commit.Message)
 }
 
 func TestFindGitRoot(t *testing.T) {
@@ -172,4 +210,21 @@ func TestGetCurrentBranch(t *testing.T) {
 
 	_, err = GetCurrentBranch(r.Repo)
 	assert.Error(t, err)
+}
+
+func TestHasChanges(t *testing.T) {
+	r := testutils.NewInMemRepo(t)
+
+	r.AddFile(t, "test.txt", "test")
+	r.Commit(t, "Initial commit")
+
+	hasChanges, err := HasChanges(r.Repo)
+	assert.NoError(t, err)
+	assert.False(t, hasChanges)
+
+	r.CreateFile(t, "test2.txt", "test")
+
+	hasChanges, err = HasChanges(r.Repo)
+	assert.NoError(t, err)
+	assert.True(t, hasChanges)
 }
