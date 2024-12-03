@@ -114,7 +114,7 @@ func (r *DocsReleaser) clean() error {
 			if path == branchPath {
 				r.logger.Debug("Skipping branch path", "path", path)
 				return filepath.SkipDir
-			} else if path == ".git" {
+			} else if path == filepath.Join(r.project.RepoRoot, ".git") {
 				r.logger.Debug("Skipping git path", "path", path)
 				return filepath.SkipDir
 			}
