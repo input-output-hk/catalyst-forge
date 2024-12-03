@@ -5,7 +5,10 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
+	"time"
 
+	gg "github.com/go-git/go-git/v5"
+	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/earthly"
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/events"
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/run"
@@ -106,15 +109,15 @@ func (r *DocsReleaser) Release() error {
 
 	if changes {
 		r.logger.Info("Committing changes")
-		// if err := git.CommitAll(r.project.Repo, GIT_MESSAGE, &gg.CommitOptions{
-		// 	Author: &object.Signature{
-		// 		Name:  GIT_NAME,
-		// 		Email: GIT_EMAIL,
-		// 		When:  time.Now(),
-		// 	},
-		// }); err != nil {
-		// 	return fmt.Errorf("failed to commit changes: %w", err)
-		// }
+		if err := git.CommitAll(r.project.Repo, GIT_MESSAGE, &gg.CommitOptions{
+			Author: &object.Signature{
+				Name:  GIT_NAME,
+				Email: GIT_EMAIL,
+				When:  time.Now(),
+			},
+		}); err != nil {
+			return fmt.Errorf("failed to commit changes: %w", err)
+		}
 	}
 
 	// r.logger.Debug("Restoring branch", "branch", curBranch)
