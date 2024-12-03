@@ -132,6 +132,7 @@ func CheckoutBranch(r *git.Repository, branch string, opts ...GitCheckoutOption)
 			plumbing.NewBranchReferenceName(branch),
 			plumbing.ZeroHash,
 		).Name()
+		fmt.Println("ref: ", branchRef)
 	} else {
 		branchRef = plumbing.NewBranchReferenceName(branch)
 	}
