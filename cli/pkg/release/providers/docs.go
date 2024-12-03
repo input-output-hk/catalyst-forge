@@ -122,9 +122,10 @@ func (r *DocsReleaser) clean() error {
 			return nil
 		}
 
-		if err := r.fs.Remove(path); err != nil {
-			return fmt.Errorf("failed to remove file: %w", err)
-		}
+		r.logger.Debug("Removing file", "path", path)
+		// if err := r.fs.Remove(path); err != nil {
+		// 	return fmt.Errorf("failed to remove file: %w", err)
+		// }
 
 		return nil
 	})
