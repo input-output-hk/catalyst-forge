@@ -54,8 +54,12 @@ package schema
 	// +optional
 	install?: null | bool @go(Install,*bool)
 
-	// Registries contains the registries to use for publishing CUE modules
-	registries: [...string] @go(Registries,[]string)
+	// Registry contains the CUE registry to use.
+	registry?: null | string @go(Registry,*string)
+
+	// RegistryPrefix contains the prefix to use for CUE registries.
+	// +optional
+	registryPrefix?: null | string @go(RegistryPrefix,*string)
 
 	// The version of CUE to use in CI.
 	// +optional

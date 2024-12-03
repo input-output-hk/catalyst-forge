@@ -50,8 +50,12 @@ type ProviderCue struct {
 	// +optional
 	Install *bool `json:"install"`
 
-	// Registries contains the registries to use for publishing CUE modules
-	Registries []string `json:"registries"`
+	// Registry contains the CUE registry to use.
+	Registry *string `json:"registry"`
+
+	// RegistryPrefix contains the prefix to use for CUE registries.
+	// +optional
+	RegistryPrefix *string `json:"registryPrefix"`
 
 	// The version of CUE to use in CI.
 	// +optional

@@ -18,9 +18,10 @@ global: {
 			}
 
 			cue: {
-				install: true
-				registries: [aws.registry]
-				version: "0.11.0"
+				install:        true
+				registry:       aws.registry
+				registryPrefix: "cue"
+				version:        "0.11.0"
 			}
 
 			docker: credentials: {
