@@ -73,7 +73,14 @@ func (r *DocsReleaser) Release() error {
 		return fmt.Errorf("failed to checkout branch: %w", err)
 	}
 
-	if err := r.clean(); err != nil {
+	var targetPath string
+	if curBranch == r.project.Blueprint.Global.Repo.DefaultBranch {
+		targetPath = filepath.Join(r.project.RepoRoot, r.config.TargetPath)
+	} else {
+		targetPath = filepath.Join(r.project.RepoRoot, r.config.Branches.Path, curBranch, r.config.TargetPath)
+	}
+
+	if err := r.clean(targetPath); err != nil {
 		return fmt.Errorf("failed to clean target path: %w", err)
 	}
 
@@ -85,9 +92,7 @@ func (r *DocsReleaser) Release() error {
 	return nil
 }
 
-func (r *DocsReleaser) clean() error {
-	targetPath := filepath.Join(r.project.RepoRoot, r.config.TargetPath)
-
+func (r *DocsReleaser) clean(targetPath string) error {
 	_, err := os.Stat(targetPath)
 	if err != nil {
 		if !os.IsNotExist(err) {
@@ -98,12 +103,6 @@ func (r *DocsReleaser) clean() error {
 		}
 	}
 
-	var branchPath string
-	if r.config.Branches.Enabled {
-		branchPath = filepath.Join(targetPath, r.config.Branches.Path)
-		r.logger.Debug("Cleaning branch path", "path", branchPath)
-	}
-
 	r.logger.Info("Cleaning target path", "path", targetPath)
 	err = afero.Walk(r.fs, targetPath, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
@@ -111,7 +110,7 @@ func (r *DocsReleaser) clean() error {
 		}
 
 		if info.IsDir() {
-			if path == branchPath {
+			if r.config.Branches.Enabled && path == filepath.Join(r.project.RepoRoot, r.config.Branches.Path) {
 				r.logger.Debug("Skipping branch path", "path", path)
 				return filepath.SkipDir
 			} else if path == filepath.Join(r.project.RepoRoot, ".git") {
