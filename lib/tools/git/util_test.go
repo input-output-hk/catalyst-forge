@@ -122,6 +122,42 @@ func TestCommitAll(t *testing.T) {
 	assert.Equal(t, "Test commit", commit.Message)
 }
 
+func TestCreateBranchFromExisting(t *testing.T) {
+	r := testutils.NewInMemRepo(t)
+	wt, err := r.Repo.Worktree()
+	assert.NoError(t, err)
+
+	r.AddFile(t, "test.txt", "test")
+	r.Commit(t, "Initial commit")
+
+	r.Worktree.Checkout(&git.CheckoutOptions{
+		Branch: plumbing.NewBranchReferenceName("test-branch"),
+		Create: true,
+	})
+
+	r.AddFile(t, "test2.txt", "test")
+	r.Commit(t, "Second commit")
+
+	err = wt.Checkout(&git.CheckoutOptions{
+		Branch: plumbing.NewBranchReferenceName("master"),
+	})
+	assert.NoError(t, err)
+
+	err = CreateBranchFromExisting(r.Repo, "test-branch", "new-branch")
+	assert.NoError(t, err)
+
+	err = wt.Checkout(&git.CheckoutOptions{
+		Branch: plumbing.NewBranchReferenceName("new-branch"),
+	})
+	assert.NoError(t, err)
+
+	head, err := r.Repo.Head()
+	assert.NoError(t, err)
+	commit, err := r.Repo.CommitObject(head.Hash())
+	assert.NoError(t, err)
+	assert.Equal(t, "Second commit", commit.Message)
+}
+
 func TestFindGitRoot(t *testing.T) {
 	tests := []struct {
 		name      string

@@ -5,11 +5,7 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
-	"strings"
-	"time"
 
-	gg "github.com/go-git/go-git/v5"
-	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/earthly"
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/events"
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/run"
@@ -18,7 +14,6 @@ import (
 	"github.com/input-output-hk/catalyst-forge/lib/project/secrets"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/git"
 	"github.com/spf13/afero"
-	"go.nhat.io/aferocopy/v2"
 )
 
 const (
@@ -68,64 +63,81 @@ func (r *DocsReleaser) Release() error {
 		return nil
 	}
 
+	changes, err := git.HasChanges(r.project.Repo)
+	if err != nil {
+		return fmt.Errorf("failed to check for git changes: %w", err)
+	} else if changes {
+		return fmt.Errorf("there are uncommitted changes in the repository")
+	}
+
 	r.logger.Debug("Getting current branch")
-	curBranch, err := git.GetCurrentBranch(r.project.Repo)
+	_, err = git.GetCurrentBranch(r.project.Repo)
 	if err != nil {
 		return fmt.Errorf("failed to get current branch: %w", err)
 	}
 
-	r.logger.Info("Checking out branch", "branch", r.config.Branch, "current", curBranch)
-	if err := git.CheckoutBranch(
-		r.project.Repo,
-		r.config.Branch,
-		git.GitCheckoutCreate(),
-		git.GitCheckoutForceClean(),
-	); err != nil {
+	r.logger.Info("Fetching remote", "remote", "origin", "branch", r.config.Branch)
+	if err := git.FetchRemote(r.project.Repo, "origin", r.config.Branch); err != nil {
+		return fmt.Errorf("failed to fetch remote: %w", err)
+	}
+
+	r.logger.Info("Checking out branch", "branch", r.config.Branch)
+	if err := git.CheckoutBranch(r.project.Repo, r.config.Branch, git.GitCheckoutRemote()); err != nil {
 		return fmt.Errorf("failed to checkout branch: %w", err)
 	}
 
-	var targetPath string
-	if curBranch == r.project.Blueprint.Global.Repo.DefaultBranch {
-		targetPath = filepath.Join(r.project.RepoRoot, r.config.TargetPath)
-	} else {
-		curBranchCleaned := strings.ReplaceAll(curBranch, "-", "_")
-		targetPath = filepath.Join(
-			r.project.RepoRoot,
-			r.config.Branches.Path,
-			curBranchCleaned,
-			r.config.TargetPath,
-		)
-	}
+	// r.logger.Info("Checking out branch", "branch", r.config.Branch, "current", curBranch)
+	// if err := git.CheckoutBranch(
+	// 	r.project.Repo,
+	// 	r.config.Branch,
+	// 	git.GitCheckoutCreate(),
+	// 	git.GitCheckoutForceClean(),
+	// ); err != nil {
+	// 	return fmt.Errorf("failed to checkout branch: %w", err)
+	// }
 
-	if err := r.clean(targetPath); err != nil {
-		return fmt.Errorf("failed to clean target path: %w", err)
-	}
+	// var targetPath string
+	// if curBranch == r.project.Blueprint.Global.Repo.DefaultBranch {
+	// 	targetPath = filepath.Join(r.project.RepoRoot, r.config.TargetPath)
+	// } else {
+	// 	curBranchCleaned := strings.ReplaceAll(curBranch, "-", "_")
+	// 	targetPath = filepath.Join(
+	// 		r.project.RepoRoot,
+	// 		r.config.Branches.Path,
+	// 		curBranchCleaned,
+	// 		r.config.TargetPath,
+	// 	)
+	// }
 
-	r.logger.Info("Copying artifacts", "from", r.workdir, "to", targetPath)
-	if err := aferocopy.Copy(
-		filepath.Join(r.workdir, earthly.GetBuildPlatform()),
-		targetPath, aferocopy.Options{SrcFs: r.fs},
-	); err != nil {
-		return fmt.Errorf("failed to copy artifacts: %w", err)
-	}
+	// if err := r.clean(targetPath); err != nil {
+	// 	return fmt.Errorf("failed to clean target path: %w", err)
+	// }
 
-	changes, err := git.HasChanges(r.project.Repo)
-	if err != nil {
-		return fmt.Errorf("failed to check for git changes: %w", err)
-	}
+	// r.logger.Info("Copying artifacts", "from", r.workdir, "to", targetPath)
+	// if err := aferocopy.Copy(
+	// 	filepath.Join(r.workdir, earthly.GetBuildPlatform()),
+	// 	targetPath, aferocopy.Options{SrcFs: r.fs},
+	// ); err != nil {
+	// 	return fmt.Errorf("failed to copy artifacts: %w", err)
+	// }
 
-	if changes {
-		r.logger.Info("Committing changes")
-		if err := git.CommitAll(r.project.Repo, GIT_MESSAGE, &gg.CommitOptions{
-			Author: &object.Signature{
-				Name:  GIT_NAME,
-				Email: GIT_EMAIL,
-				When:  time.Now(),
-			},
-		}); err != nil {
-			return fmt.Errorf("failed to commit changes: %w", err)
-		}
-	}
+	// changes, err := git.HasChanges(r.project.Repo)
+	// if err != nil {
+	// 	return fmt.Errorf("failed to check for git changes: %w", err)
+	// }
+
+	// if changes {
+	// 	r.logger.Info("Committing changes")
+	// 	if err := git.CommitAll(r.project.Repo, GIT_MESSAGE, &gg.CommitOptions{
+	// 		Author: &object.Signature{
+	// 			Name:  GIT_NAME,
+	// 			Email: GIT_EMAIL,
+	// 			When:  time.Now(),
+	// 		},
+	// 	}); err != nil {
+	// 		return fmt.Errorf("failed to commit changes: %w", err)
+	// 	}
+	// }
 
 	// r.logger.Debug("Restoring branch", "branch", curBranch)
 	// if err := git.CheckoutBranch(r.project.Repo, curBranch, git.GitCheckoutCreate()); err != nil {

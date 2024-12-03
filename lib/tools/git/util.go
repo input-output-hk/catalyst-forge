@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 
 	"github.com/go-git/go-git/v5"
+	"github.com/go-git/go-git/v5/config"
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/walker"
 )
@@ -20,6 +21,7 @@ var (
 type gitCheckoutOptions struct {
 	create     bool
 	forceClean bool
+	remote     bool
 }
 
 // GitCheckoutOption is a helper type for setting Git checkout options.
@@ -38,6 +40,12 @@ func GitCheckoutCreate() GitCheckoutOption {
 func GitCheckoutForceClean() GitCheckoutOption {
 	return func(o *gitCheckoutOptions) {
 		o.forceClean = true
+	}
+}
+
+func GitCheckoutRemote() GitCheckoutOption {
+	return func(o *gitCheckoutOptions) {
+		o.remote = true
 	}
 }
 
@@ -107,8 +115,15 @@ func CheckoutBranch(r *git.Repository, branch string, opts ...GitCheckoutOption)
 		create = false
 	}
 
+	var branchRef string
+	if options.remote {
+		branchRef = fmt.Sprintf("refs/remotes/origin/%s", branch)
+	} else {
+		branchRef = fmt.Sprintf("refs/heads/%s", branch)
+	}
+
 	if err := wt.Checkout(&git.CheckoutOptions{
-		Branch: plumbing.NewBranchReferenceName(branch),
+		Branch: plumbing.ReferenceName(branchRef),
 		Create: create,
 	}); err != nil {
 		return fmt.Errorf("failed to checkout branch: %w", err)
@@ -130,6 +145,48 @@ func CommitAll(r *git.Repository, message string, opts *git.CommitOptions) error
 
 	if _, err := wt.Commit(message, opts); err != nil {
 		return fmt.Errorf("failed to commit changes: %w", err)
+	}
+
+	return nil
+}
+
+// CreateBranchFromExisting creates a new branch from an existing branch in the
+// given Git repository.
+// It does not checkout the new branch.
+func CreateBranchFromExisting(r *git.Repository, srcBranch, destBranch string, opts ...GitCheckoutOption) error {
+	var options gitCheckoutOptions
+	for _, opt := range opts {
+		opt(&options)
+	}
+
+	sourceRef, err := r.Reference(plumbing.NewBranchReferenceName(srcBranch), true)
+	if err != nil {
+		return fmt.Errorf("failed to get source branch reference: %w", err)
+	}
+
+	newBranchRef := plumbing.NewHashReference(
+		plumbing.NewBranchReferenceName(destBranch),
+		sourceRef.Hash(),
+	)
+
+	err = r.Storer.SetReference(newBranchRef)
+	if err != nil {
+		return fmt.Errorf("failed to create new branch: %w", err)
+	}
+
+	return nil
+}
+
+// FetchRemote fetches the given branch from the given remote in the given Git
+// repository.
+func FetchRemote(r *git.Repository, remote, branch string) error {
+	err := r.Fetch(&git.FetchOptions{
+		RefSpecs: []config.RefSpec{
+			config.RefSpec(fmt.Sprintf("refs/heads/%s:refs/remotes/%s/%s", branch, remote, branch)),
+		},
+	})
+	if err != nil && err != git.NoErrAlreadyUpToDate {
+		return err
 	}
 
 	return nil
