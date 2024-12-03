@@ -79,67 +79,68 @@ jobs:
             ${{ env.FORGE_REGEX_RELEASE }}
             ${{ env.FORGE_REGEX_PUBLISH }}
 
-  check:
-    uses: input-output-hk/catalyst-forge/.github/workflows/run.yml@adds-cue-release
-    needs: [discover]
-    if: (fromJson(needs.discover.outputs.earthfiles)['^check(-.*)?$'] != null) && !failure() && !cancelled()
-    with:
-      earthfiles: ${{ toJson(fromJson(needs.discover.outputs.earthfiles)['^check(-.*)?$']) }}
-      forge_version: ${{ inputs.forge_version }}
-      local: ${{ inputs.local }}
-      verbosity: ${{ inputs.verbosity }}
-    secrets:
-      earthly_token: ${{ secrets.earthly_token }}
+  # check:
+  #   uses: input-output-hk/catalyst-forge/.github/workflows/run.yml@adds-cue-release
+  #   needs: [discover]
+  #   if: (fromJson(needs.discover.outputs.earthfiles)['^check(-.*)?$'] != null) && !failure() && !cancelled()
+  #   with:
+  #     earthfiles: ${{ toJson(fromJson(needs.discover.outputs.earthfiles)['^check(-.*)?$']) }}
+  #     forge_version: ${{ inputs.forge_version }}
+  #     local: ${{ inputs.local }}
+  #     verbosity: ${{ inputs.verbosity }}
+  #   secrets:
+  #     earthly_token: ${{ secrets.earthly_token }}
 
-  build:
-    uses: input-output-hk/catalyst-forge/.github/workflows/run.yml@adds-cue-release
-    needs: [discover, check]
-    if: (fromJson(needs.discover.outputs.earthfiles)['^build(-.*)?$'] != null) && !failure() && !cancelled()
-    with:
-      earthfiles: ${{ toJson(fromJson(needs.discover.outputs.earthfiles)['^build(-.*)?$']) }}
-      forge_version: ${{ inputs.forge_version }}
-      local: ${{ inputs.local }}
-      verbosity: ${{ inputs.verbosity }}
-    secrets:
-      earthly_token: ${{ secrets.earthly_token }}
+  # build:
+  #   uses: input-output-hk/catalyst-forge/.github/workflows/run.yml@adds-cue-release
+  #   needs: [discover, check]
+  #   if: (fromJson(needs.discover.outputs.earthfiles)['^build(-.*)?$'] != null) && !failure() && !cancelled()
+  #   with:
+  #     earthfiles: ${{ toJson(fromJson(needs.discover.outputs.earthfiles)['^build(-.*)?$']) }}
+  #     forge_version: ${{ inputs.forge_version }}
+  #     local: ${{ inputs.local }}
+  #     verbosity: ${{ inputs.verbosity }}
+  #   secrets:
+  #     earthly_token: ${{ secrets.earthly_token }}
 
-  package:
-    uses: input-output-hk/catalyst-forge/.github/workflows/run.yml@adds-cue-release
-    needs: [discover, check, build]
-    if: (fromJson(needs.discover.outputs.earthfiles)['^package(-.*)?$'] != null) && !failure() && !cancelled()
-    with:
-      earthfiles: ${{ toJson(fromJson(needs.discover.outputs.earthfiles)['^package(-.*)?$']) }}
-      forge_version: ${{ inputs.forge_version }}
-      local: ${{ inputs.local }}
-      verbosity: ${{ inputs.verbosity }}
-    secrets:
-      earthly_token: ${{ secrets.earthly_token }}
+  # package:
+  #   uses: input-output-hk/catalyst-forge/.github/workflows/run.yml@adds-cue-release
+  #   needs: [discover, check, build]
+  #   if: (fromJson(needs.discover.outputs.earthfiles)['^package(-.*)?$'] != null) && !failure() && !cancelled()
+  #   with:
+  #     earthfiles: ${{ toJson(fromJson(needs.discover.outputs.earthfiles)['^package(-.*)?$']) }}
+  #     forge_version: ${{ inputs.forge_version }}
+  #     local: ${{ inputs.local }}
+  #     verbosity: ${{ inputs.verbosity }}
+  #   secrets:
+  #     earthly_token: ${{ secrets.earthly_token }}
 
-  test:
-    uses: input-output-hk/catalyst-forge/.github/workflows/run.yml@adds-cue-release
-    needs: [discover, check, build, package]
-    if: (fromJson(needs.discover.outputs.earthfiles)['^test(-.*)?$'] != null) && !failure() && !cancelled()
-    with:
-      earthfiles: ${{ toJson(fromJson(needs.discover.outputs.earthfiles)['^test(-.*)?$']) }}
-      forge_version: ${{ inputs.forge_version }}
-      local: ${{ inputs.local }}
-      verbosity: ${{ inputs.verbosity }}
-    secrets:
-      earthly_token: ${{ secrets.earthly_token }}
+  # test:
+  #   uses: input-output-hk/catalyst-forge/.github/workflows/run.yml@adds-cue-release
+  #   needs: [discover, check, build, package]
+  #   if: (fromJson(needs.discover.outputs.earthfiles)['^test(-.*)?$'] != null) && !failure() && !cancelled()
+  #   with:
+  #     earthfiles: ${{ toJson(fromJson(needs.discover.outputs.earthfiles)['^test(-.*)?$']) }}
+  #     forge_version: ${{ inputs.forge_version }}
+  #     local: ${{ inputs.local }}
+  #     verbosity: ${{ inputs.verbosity }}
+  #   secrets:
+  #     earthly_token: ${{ secrets.earthly_token }}
 
-  docs:
-    uses: input-output-hk/catalyst-forge/.github/workflows/docs.yml@adds-cue-release
-    needs: [discover, check, build, test]
-    if: (fromJson(needs.discover.outputs.earthfiles)['^docs(-.*)?$'] != null) && !failure() && !cancelled()
-    with:
-      earthfiles: ${{ toJson(fromJson(needs.discover.outputs.earthfiles)['^docs(-.*)?$']) }}
-      forge_version: ${{ inputs.forge_version }}
-    secrets:
-      earthly_token: ${{ secrets.earthly_token }}
+  # docs:
+  #   uses: input-output-hk/catalyst-forge/.github/workflows/docs.yml@adds-cue-release
+  #   needs: [discover, check, build, test]
+  #   if: (fromJson(needs.discover.outputs.earthfiles)['^docs(-.*)?$'] != null) && !failure() && !cancelled()
+  #   with:
+  #     earthfiles: ${{ toJson(fromJson(needs.discover.outputs.earthfiles)['^docs(-.*)?$']) }}
+  #     forge_version: ${{ inputs.forge_version }}
+  #   secrets:
+  #     earthly_token: ${{ secrets.earthly_token }}
 
   release:
     uses: input-output-hk/catalyst-forge/.github/workflows/release.yml@adds-cue-release
-    needs: [discover, check, build, test]
+    #needs: [discover, check, build, test]
+    needs: [discover]
     if: (fromJson(needs.discover.outputs.releases)[0] != null) && !failure() && !cancelled()
     with:
       releases: ${{ needs.discover.outputs.releases }}
@@ -149,22 +150,22 @@ jobs:
     secrets:
       earthly_token: ${{ secrets.earthly_token }}
 
-  deploy:
-    uses: input-output-hk/catalyst-forge/.github/workflows/deploy.yml@adds-cue-release
-    needs: [discover, check, build, test, release]
-    if: (fromJson(needs.discover.outputs.deployments)[0] != null) && github.ref == format('refs/heads/{0}', github.event.repository.default_branch) && !failure() && !cancelled()
-    with:
-      deployments: ${{ needs.discover.outputs.deployments }}
-      forge_version: ${{ inputs.forge_version }}
-      local: ${{ inputs.local }}
-      verbosity: ${{ inputs.verbosity }}
-    secrets:
-      earthly_token: ${{ secrets.earthly_token }}
+  # deploy:
+  #   uses: input-output-hk/catalyst-forge/.github/workflows/deploy.yml@adds-cue-release
+  #   needs: [discover, check, build, test, release]
+  #   if: (fromJson(needs.discover.outputs.deployments)[0] != null) && github.ref == format('refs/heads/{0}', github.event.repository.default_branch) && !failure() && !cancelled()
+  #   with:
+  #     deployments: ${{ needs.discover.outputs.deployments }}
+  #     forge_version: ${{ inputs.forge_version }}
+  #     local: ${{ inputs.local }}
+  #     verbosity: ${{ inputs.verbosity }}
+  #   secrets:
+  #     earthly_token: ${{ secrets.earthly_token }}
 
-  final:
-    needs: [check, build, package, test, release]
-    if: (!failure() && !cancelled())
-    runs-on: ubuntu-latest
-    steps:
-      - name: Final
-        run: echo "All done"
+  # final:
+  #   needs: [check, build, package, test, release]
+  #   if: (!failure() && !cancelled())
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - name: Final
+  #       run: echo "All done"

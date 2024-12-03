@@ -90,7 +90,7 @@ func NewCueReleaser(ctx run.RunContext,
 		return nil, fmt.Errorf("failed to parse release config: %w", err)
 	}
 
-	cue := executor.NewLocalWrappedExecutor(exec, "timoni")
+	cue := executor.NewLocalWrappedExecutor(exec, CUE_BINARY)
 	handler := events.NewDefaultEventHandler(ctx.Logger)
 	return &CueReleaser{
 		config:      config,
