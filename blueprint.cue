@@ -17,6 +17,12 @@ global: {
 				role:     "arn:aws:iam::332405224602:role/ci"
 			}
 
+			cue: {
+				install: true
+				registries: [aws.registry]
+				version: "0.11.0"
+			}
+
 			docker: credentials: {
 				provider: "aws"
 				path:     "global/ci/docker"

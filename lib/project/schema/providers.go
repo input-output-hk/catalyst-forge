@@ -6,6 +6,10 @@ type Providers struct {
 	// +optional
 	AWS ProviderAWS `json:"aws"`
 
+	// CUE contains the configuration for the CUE provider.
+	// +optional
+	CUE ProviderCue `json:"cue"`
+
 	// Docker contains the configuration for the DockerHub provider.
 	// +optional
 	Docker ProviderDocker `json:"docker"`
@@ -38,6 +42,20 @@ type ProviderAWS struct {
 	// Registry contains the ECR registry to use.
 	// +optional
 	Registry *string `json:"registry"`
+}
+
+// ProviderCue contains the configuration for the CUE provider.
+type ProviderCue struct {
+	// Install contains whether to install CUE in the CI environment.
+	// +optional
+	Install *bool `json:"install"`
+
+	// Registries contains the registries to use for publishing CUE modules
+	Registries []string `json:"registries"`
+
+	// The version of CUE to use in CI.
+	// +optional
+	Version string `json:"version"`
 }
 
 // ProviderDocker contains the configuration for the DockerHub provider.

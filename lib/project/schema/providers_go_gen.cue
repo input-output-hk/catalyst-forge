@@ -10,6 +10,10 @@ package schema
 	// +optional
 	aws?: #ProviderAWS @go(AWS)
 
+	// CUE contains the configuration for the CUE provider.
+	// +optional
+	cue?: #ProviderCue @go(CUE)
+
 	// Docker contains the configuration for the DockerHub provider.
 	// +optional
 	docker?: #ProviderDocker @go(Docker)
@@ -42,6 +46,20 @@ package schema
 	// Registry contains the ECR registry to use.
 	// +optional
 	registry?: null | string @go(Registry,*string)
+}
+
+// ProviderCue contains the configuration for the CUE provider.
+#ProviderCue: {
+	// Install contains whether to install CUE in the CI environment.
+	// +optional
+	install?: null | bool @go(Install,*bool)
+
+	// Registries contains the registries to use for publishing CUE modules
+	registries: [...string] @go(Registries,[]string)
+
+	// The version of CUE to use in CI.
+	// +optional
+	version?: string @go(Version)
 }
 
 // ProviderDocker contains the configuration for the DockerHub provider.
