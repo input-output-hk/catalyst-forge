@@ -80,7 +80,7 @@ func NewCueReleaser(ctx run.RunContext,
 		return nil, fmt.Errorf("unknown release: %s", name)
 	}
 
-	exec := executor.NewLocalExecutor(ctx.Logger)
+	exec := executor.NewLocalExecutor(ctx.Logger, executor.WithWorkdir(project.Path))
 	if _, ok := exec.LookPath(CUE_BINARY); ok != nil {
 		return nil, fmt.Errorf("failed to find cue binary: %w", ok)
 	}

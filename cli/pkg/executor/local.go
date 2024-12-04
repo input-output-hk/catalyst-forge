@@ -17,12 +17,17 @@ type LocalExecutor struct {
 	redirect     bool
 	stderrStream io.Writer
 	stdoutStream io.Writer
+	workdir      string
 }
 
 func (e *LocalExecutor) Execute(command string, args ...string) ([]byte, error) {
 	cmd := exec.Command(command, args...)
-	e.logger.Debug("Executing local command", "command", cmd.String())
 
+	if e.workdir != "" {
+		cmd.Dir = e.workdir
+	}
+
+	e.logger.Debug("Executing local command", "command", cmd.String(), "workdir", cmd.Dir)
 	if e.redirect {
 		var buffer bytes.Buffer
 		errChan := make(chan error, 2)
@@ -97,6 +102,14 @@ func WithRedirectTo(stdout, stderr io.Writer) LocalExecutorOption {
 		e.redirect = true
 		e.stdoutStream = stdout
 		e.stderrStream = stderr
+	}
+}
+
+// WithWorkdir is an option that configures the LocalExecutor to run commands in
+// the given working directory.
+func WithWorkdir(workdir string) LocalExecutorOption {
+	return func(e *LocalExecutor) {
+		e.workdir = workdir
 	}
 }
 
