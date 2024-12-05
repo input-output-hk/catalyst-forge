@@ -11,6 +11,7 @@ import (
 type ReleaserType string
 
 const (
+	ReleaserTypeCue    ReleaserType = "cue"
 	ReleaserTypeDocker ReleaserType = "docker"
 	ReleaserTypeGithub ReleaserType = "github"
 	ReleaserTypeTimoni ReleaserType = "timoni"
@@ -44,6 +45,9 @@ func (r *ReleaserStore) GetReleaser(
 func NewDefaultReleaserStore() *ReleaserStore {
 	return &ReleaserStore{
 		releasers: map[ReleaserType]ReleaserFactory{
+			ReleaserTypeCue: func(ctx run.RunContext, project project.Project, name string, force bool) (Releaser, error) {
+				return providers.NewCueReleaser(ctx, project, name, force)
+			},
 			ReleaserTypeDocker: func(ctx run.RunContext, project project.Project, name string, force bool) (Releaser, error) {
 				return providers.NewDockerReleaser(ctx, project, name, force)
 			},
