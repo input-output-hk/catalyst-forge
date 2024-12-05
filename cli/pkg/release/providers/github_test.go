@@ -410,7 +410,7 @@ func TestGithubReleaserRelease(t *testing.T) {
 				force:   tt.force,
 				fs:      fs,
 				handler: newReleaseEventHandlerMock(tt.firing),
-				logger:  testutils.NewStdoutLogger(),
+				logger:  testutils.NewNoopLogger(),
 				project: tt.project,
 				release: tt.release,
 				runner:  newProjectRunnerMock(tt.runFail),

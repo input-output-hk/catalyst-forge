@@ -12,9 +12,19 @@ global: {
 		]
 		providers: {
 			aws: {
-				region:   "eu-central-1"
-				registry: "332405224602.dkr.ecr.eu-central-1.amazonaws.com"
-				role:     "arn:aws:iam::332405224602:role/ci"
+				ecr: {
+					autoCreate: true
+					registry:   "332405224602.dkr.ecr.eu-central-1.amazonaws.com"
+				}
+				region: "eu-central-1"
+				role:   "arn:aws:iam::332405224602:role/ci"
+			}
+
+			cue: {
+				install:        true
+				registry:       aws.ecr.registry
+				registryPrefix: "cue"
+				version:        "0.11.0"
 			}
 
 			docker: credentials: {
@@ -55,7 +65,7 @@ global: {
 		]
 	}
 	deployment: {
-		registry: ci.providers.aws.registry
+		registry: ci.providers.aws.ecr.registry
 		repo: {
 			url: "https://github.com/input-output-hk/catalyst-world"
 			ref: "master"
