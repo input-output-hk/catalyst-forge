@@ -14,6 +14,9 @@ project: {
 		}
 	}
 	deployment: {
+		on: {
+			always: {}
+		}
 		environment: "dev"
 		modules: main: {
 			container: "foundry-api-deployment"
@@ -21,7 +24,7 @@ project: {
 			values: {
 				environment: name: "dev"
 				server: image: {
-					tag: _ @forge(name="GIT_COMMIT_HASH")
+					tag: _ @forge(name="GIT_HASH_OR_TAG")
 				}
 			}
 		}

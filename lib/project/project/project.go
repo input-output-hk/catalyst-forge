@@ -81,6 +81,17 @@ func (p *Project) GetRelativePath() (string, error) {
 	return relPath, nil
 }
 
+// GetDeploymentEvents returns the deployment events for a project.
+func (p *Project) GetDeploymentEvents() map[string]cue.Value {
+	events := make(map[string]cue.Value)
+	for event := range p.Blueprint.Project.Deployment.On {
+		config := p.RawBlueprint.Get(fmt.Sprintf("project.deployment.on.%s", event))
+		events[event] = config
+	}
+
+	return events
+}
+
 // GetReleaseEvents returns the release events for a release.
 func (p *Project) GetReleaseEvents(releaseName string) map[string]cue.Value {
 	release, ok := p.Blueprint.Project.Release[releaseName]
