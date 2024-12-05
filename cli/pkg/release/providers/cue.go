@@ -45,7 +45,7 @@ func (r *CueReleaser) Release() error {
 	}
 
 	registry := r.project.Blueprint.Global.CI.Providers.CUE.Registry
-	if registry == nil {
+	if registry == nil || *registry == "" {
 		return fmt.Errorf("must specify at least one CUE registry")
 	}
 
@@ -55,7 +55,7 @@ func (r *CueReleaser) Release() error {
 
 	var fullRegistry string
 	prefix := r.project.Blueprint.Global.CI.Providers.CUE.RegistryPrefix
-	if prefix != nil {
+	if prefix != nil && *prefix != "" {
 		fullRegistry = fmt.Sprintf("%s/%s", *registry, *prefix)
 	} else {
 		fullRegistry = *registry
