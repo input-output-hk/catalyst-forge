@@ -86,13 +86,22 @@ package schema
 
 // ProviderAWS contains the configuration for the AWS provider.
 #ProviderAWS: {
+	// ECR contains the configuration for AWS ECR.
+	// +optional
+	ecr?: #ProviderAWSECR @go(ECR)
+
 	// Role contains the role to assume.
-	role?: null | string @go(Role,*string)
+	role: string @go(Role)
 
 	// Region contains the region to use.
-	region?: null | string @go(Region,*string)
+	region: string @go(Region)
+}
+#ProviderAWSECR: {
+	// AutoCreate contains whether to automatically create ECR repositories.
+	// +optional
+	autoCreate?: null | bool @go(AutoCreate,*bool)
 
-	// Registry contains the ECR registry to use.
+	// Registry is the ECR registry to login to during CI operations.
 	// +optional
 	registry?: null | string @go(Registry,*string)
 }

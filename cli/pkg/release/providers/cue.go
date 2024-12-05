@@ -4,12 +4,19 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
+	"path/filepath"
+	"strings"
 
+	"cuelang.org/go/cue"
+	"cuelang.org/go/cue/cuecontext"
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/events"
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/executor"
+	"github.com/input-output-hk/catalyst-forge/cli/pkg/providers/aws"
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/run"
 	"github.com/input-output-hk/catalyst-forge/lib/project/project"
 	"github.com/input-output-hk/catalyst-forge/lib/project/schema"
+	lc "github.com/input-output-hk/catalyst-forge/lib/tools/cue"
+	"github.com/spf13/afero"
 )
 
 const CUE_BINARY = "cue"
@@ -21,7 +28,9 @@ type CueReleaserConfig struct {
 type CueReleaser struct {
 	config      CueReleaserConfig
 	cue         executor.WrappedExecuter
+	ecr         aws.ECRClient
 	force       bool
+	fs          afero.Fs
 	handler     events.EventHandler
 	logger      *slog.Logger
 	project     project.Project
@@ -52,6 +61,19 @@ func (r *CueReleaser) Release() error {
 		fullRegistry = *registry
 	}
 
+	module, err := r.loadModule()
+	if err != nil {
+		return fmt.Errorf("failed to load module: %w", err)
+	}
+
+	fullRepoName := fmt.Sprintf("%s/%s", *registry, module)
+	if aws.IsECRRegistry(fullRepoName) {
+		r.logger.Info("Detected ECR registry, checking if repository exists", "registry", fullRepoName)
+		if err := createECRRepoIfNotExists(r.ecr, &r.project, fullRepoName, r.logger); err != nil {
+			return fmt.Errorf("failed to create ECR repository: %w", err)
+		}
+	}
+
 	os.Setenv("CUE_REGISTRY", fullRegistry)
 	defer os.Unsetenv("CUE_REGISTRY")
 
@@ -68,6 +90,39 @@ func (r *CueReleaser) Release() error {
 	}
 
 	return nil
+}
+
+// loadModule loads the CUE module file.
+func (r *CueReleaser) loadModule() (string, error) {
+	modulePath := filepath.Join(r.project.Path, "cue.mod", "module.cue")
+	if exists, err := afero.Exists(r.fs, modulePath); err != nil {
+		return "", fmt.Errorf("failed to check if module file exists: %w", err)
+	} else if !exists {
+		return "", fmt.Errorf("module file does not exist: %s", modulePath)
+	}
+
+	r.logger.Info("Loading module", "path", modulePath)
+	contents, err := afero.ReadFile(r.fs, modulePath)
+	if err != nil {
+		return "", fmt.Errorf("failed to read module file: %w", err)
+	}
+
+	v, err := lc.Compile(cuecontext.New(), contents)
+	if err != nil {
+		return "", fmt.Errorf("failed to parse module: %w", err)
+	}
+
+	moduleName := v.LookupPath(cue.ParsePath("module"))
+	if !moduleName.Exists() {
+		return "", fmt.Errorf("module file does not contain a module definition")
+	}
+
+	moduleNameString, err := moduleName.String()
+	if err != nil {
+		return "", fmt.Errorf("failed to get module name: %w", err)
+	}
+
+	return strings.Split(moduleNameString, "@")[0], nil
 }
 
 func NewCueReleaser(ctx run.RunContext,
@@ -90,11 +145,18 @@ func NewCueReleaser(ctx run.RunContext,
 		return nil, fmt.Errorf("failed to parse release config: %w", err)
 	}
 
+	ecr, err := aws.NewECRClient(ctx.Logger)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create ECR client: %w", err)
+	}
+
 	cue := executor.NewLocalWrappedExecutor(exec, CUE_BINARY)
 	handler := events.NewDefaultEventHandler(ctx.Logger)
 	return &CueReleaser{
 		config:      config,
 		cue:         cue,
+		ecr:         ecr,
+		fs:          afero.NewOsFs(),
 		force:       force,
 		handler:     &handler,
 		logger:      ctx.Logger,

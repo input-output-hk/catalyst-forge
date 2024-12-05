@@ -44,7 +44,7 @@ runs:
         AWS=$(echo "$BP" | jq -r .global.ci.providers.aws)
         if [[ "$AWS" != "null" ]]; then
           REGION=$(echo "$BP" | jq -r .global.ci.providers.aws.region)
-          REGISTRY=$(echo "$BP" | jq -r .global.ci.providers.aws.registry)
+          REGISTRY=$(echo "$BP" | jq -r .global.ci.providers.aws.ecr.registry)
           ROLE=$(echo "$BP" | jq -r .global.ci.providers.aws.role)
 
           echo "region=$REGION" >> $GITHUB_OUTPUT

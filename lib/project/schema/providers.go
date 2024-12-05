@@ -33,13 +33,23 @@ type Providers struct {
 
 // ProviderAWS contains the configuration for the AWS provider.
 type ProviderAWS struct {
+	// ECR contains the configuration for AWS ECR.
+	// +optional
+	ECR ProviderAWSECR `json:"ecr"`
+
 	// Role contains the role to assume.
-	Role *string `json:"role"`
+	Role string `json:"role"`
 
 	// Region contains the region to use.
-	Region *string `json:"region"`
+	Region string `json:"region"`
+}
 
-	// Registry contains the ECR registry to use.
+type ProviderAWSECR struct {
+	// AutoCreate contains whether to automatically create ECR repositories.
+	// +optional
+	AutoCreate *bool `json:"autoCreate"`
+
+	// Registry is the ECR registry to login to during CI operations.
 	// +optional
 	Registry *string `json:"registry"`
 }
