@@ -15,7 +15,8 @@ project: {
 	}
 	deployment: {
 		on: {
-			always: {}
+			merge: {}
+			tag: {}
 		}
 		environment: "dev"
 		modules: main: {
