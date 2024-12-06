@@ -152,7 +152,7 @@ jobs:
   deploy:
     uses: input-output-hk/catalyst-forge/.github/workflows/deploy.yml@master
     needs: [discover, check, build, test, release]
-    if: (fromJson(needs.discover.outputs.deployments)[0] != null) && github.ref == format('refs/heads/{0}', github.event.repository.default_branch) && !failure() && !cancelled()
+    if: (fromJson(needs.discover.outputs.deployments)[0] != null) && !failure() && !cancelled()
     with:
       deployments: ${{ needs.discover.outputs.deployments }}
       forge_version: ${{ inputs.forge_version }}
