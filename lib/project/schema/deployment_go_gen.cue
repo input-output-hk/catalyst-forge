@@ -9,6 +9,9 @@ package schema
 	// Environment contains the environment to deploy the module to.
 	environment: string @go(Environment)
 
+	// On contains the events that trigger the deployment.
+	on: {...} @go(On,map[string]any)
+
 	// Modules contains the configuration for the deployment modules for the project.
 	// +optional
 	modules?: null | #DeploymentModules @go(Modules,*DeploymentModules)

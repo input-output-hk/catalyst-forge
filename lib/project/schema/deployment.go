@@ -5,6 +5,9 @@ type Deployment struct {
 	// Environment contains the environment to deploy the module to.
 	Environment string `json:"environment"`
 
+	// On contains the events that trigger the deployment.
+	On map[string]any `json:"on"`
+
 	// Modules contains the configuration for the deployment modules for the project.
 	// +optional
 	Modules *DeploymentModules `json:"modules"`
