@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/deployment"
+	"github.com/input-output-hk/catalyst-forge/cli/pkg/events"
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/run"
 )
 
@@ -15,6 +16,12 @@ func (c *PushCmd) Run(ctx run.RunContext) error {
 	project, err := ctx.ProjectLoader.Load(c.Project)
 	if err != nil {
 		return fmt.Errorf("could not load project: %w", err)
+	}
+
+	eh := events.NewDefaultEventHandler(ctx.Logger)
+	if !eh.Firing(&project, project.GetDeploymentEvents()) {
+		ctx.Logger.Info("No deployment event is firing, skipping deployment")
+		return nil
 	}
 
 	deployer := deployment.NewGitopsDeployer(&project, &ctx.SecretStore, ctx.Logger)
