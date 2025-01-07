@@ -9,6 +9,10 @@ inputs:
     description: If true, skip authenticating with AWS and configuring ECR
     required: false
     default: "false"
+  skip_cue:
+    description: If true, skips installing CUE CLI if the provider is configured
+    required: false
+    default: "false"
   skip_docker:
     description: If true, skip authenticating to DockerHub
   skip_earthly:
@@ -17,6 +21,10 @@ inputs:
     default: "false"
   skip_github:
     description: If true, skip authenticating to GitHub Container Registry
+    required: false
+    default: "false"
+  skip_timoni:
+    description: If true, skips installing Timoni CLI if the provider is configured
     required: false
     default: "false"
 
@@ -36,7 +44,7 @@ runs:
         AWS=$(echo "$BP" | jq -r .global.ci.providers.aws)
         if [[ "$AWS" != "null" ]]; then
           REGION=$(echo "$BP" | jq -r .global.ci.providers.aws.region)
-          REGISTRY=$(echo "$BP" | jq -r .global.ci.providers.aws.registry)
+          REGISTRY=$(echo "$BP" | jq -r .global.ci.providers.aws.ecr.registry)
           ROLE=$(echo "$BP" | jq -r .global.ci.providers.aws.role)
 
           echo "region=$REGION" >> $GITHUB_OUTPUT
@@ -170,3 +178,51 @@ runs:
       shell: bash
       run: |
         earthly org select "${{ steps.earthly.outputs.org }}"
+
+    # Timoni Provider
+    - name: Get Timoni provider configuration
+      id: timoni
+      if: inputs.skip_timoni  == 'false'
+      shell: bash
+      run: |
+        echo "==== Timoni Setup ====="
+        BP=$(forge dump .)
+
+        TIMONI=$(echo "$BP" | jq -r .global.ci.providers.timoni.install)
+        if [[ "$TIMONI" == "true" ]]; then
+          INSTALL=1
+          VERSION=$(echo "$BP" | jq -r .global.ci.providers.timoni.version)
+          echo "install=$INSTALL" >> $GITHUB_OUTPUT
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+        else
+          echo "Not installing Timoni CLI"
+        fi
+    - name: Install Timoni
+      uses: stefanprodan/timoni/actions/setup@main
+      if: steps.timoni.outputs.install && steps.timoni.conclusion == 'success'
+      with:
+        version: ${{ steps.timoni.outputs.version }}
+
+    # CUE Provider
+    - name: Get CUE provider configuration
+      id: cue
+      if: inputs.skip_cue  == 'false'
+      shell: bash
+      run: |
+        echo "==== CUE Setup ====="
+        BP=$(forge dump .)
+
+        CUE=$(echo "$BP" | jq -r .global.ci.providers.cue.install)
+        if [[ "$CUE" == "true" ]]; then
+          INSTALL=1
+          VERSION=$(echo "$BP" | jq -r .global.ci.providers.cue.version)
+          echo "install=$INSTALL" >> $GITHUB_OUTPUT
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+        else
+          echo "Not installing CUE CLI"
+        fi
+    - name: Install CUE
+      uses: cue-lang/setup-cue@v1.0.0
+      if: steps.cue.outputs.install && steps.cue.conclusion == 'success'
+      with:
+        version: v${{ steps.cue.outputs.version }}

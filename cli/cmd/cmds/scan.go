@@ -9,6 +9,7 @@ import (
 	"cuelang.org/go/cue"
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/run"
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/scan"
+	"github.com/input-output-hk/catalyst-forge/cli/pkg/utils"
 	"golang.org/x/exp/maps"
 )
 
@@ -18,7 +19,7 @@ type ScanCmd struct {
 	Earthfile bool     `help:"Return the Earthfile targets for each project."`
 	Filter    []string `short:"f" help:"Filter Earthfile targets by regular expression or blueprint results by path."`
 	Pretty    bool     `help:"Pretty print JSON output."`
-	RootPath  string   `arg:"" help:"Root path to scan for Earthfiles and their respective targets."`
+	RootPath  string   `kong:"arg,predictor=path" help:"Root path to scan for Earthfiles and their respective targets."`
 }
 
 func (c *ScanCmd) Run(ctx run.RunContext) error {
@@ -55,14 +56,14 @@ func (c *ScanCmd) Run(ctx run.RunContext) error {
 			}
 		}
 
-		printJson(result, c.Pretty)
+		utils.PrintJson(result, c.Pretty)
 	case c.Blueprint:
 		result := make(map[string]cue.Value)
 		for path, project := range projects {
 			result[path] = project.Raw().Value()
 		}
 
-		printJson(result, c.Pretty)
+		utils.PrintJson(result, c.Pretty)
 	case c.Earthfile && len(c.Filter) > 0:
 		result := make(map[string]map[string][]string)
 		for _, filter := range c.Filter {
@@ -97,9 +98,9 @@ func (c *ScanCmd) Run(ctx run.RunContext) error {
 				sort.Strings(enumerated[filter])
 			}
 
-			printJson(enumerated, c.Pretty)
+			utils.PrintJson(enumerated, c.Pretty)
 		} else {
-			printJson(result, c.Pretty)
+			utils.PrintJson(result, c.Pretty)
 		}
 	case c.Earthfile:
 		result := make(map[string][]string)
@@ -112,15 +113,27 @@ func (c *ScanCmd) Run(ctx run.RunContext) error {
 		if ctx.CI {
 			enumerated := enumerate(result)
 			sort.Strings(enumerated)
-			printJson(enumerated, c.Pretty)
+			utils.PrintJson(enumerated, c.Pretty)
 		} else {
-			printJson(result, c.Pretty)
+			utils.PrintJson(result, c.Pretty)
 		}
 	default:
 		keys := maps.Keys(projects)
 		sort.Strings(keys)
-		printJson(keys, c.Pretty)
+		utils.PrintJson(keys, c.Pretty)
 	}
 
 	return nil
+}
+
+// enumerate enumerates the Earthfile+Target pairs from the target map.
+func enumerate(data map[string][]string) []string {
+	var result []string
+	for path, targets := range data {
+		for _, target := range targets {
+			result = append(result, fmt.Sprintf("%s+%s", path, target))
+		}
+	}
+
+	return result
 }

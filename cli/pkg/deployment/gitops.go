@@ -93,22 +93,9 @@ func (g *GitopsDeployer) Deploy() error {
 	}
 
 	g.logger.Info("Writing bundle to filesystem", "path", bundlePath)
-	exists, err = fileExists(g.fs, bundlePath)
+	bundleFile, err := g.fs.Create(bundlePath)
 	if err != nil {
-		return fmt.Errorf("could not check if bundle exists: %w", err)
-	}
-
-	var bundleFile billy.File
-	if exists {
-		bundleFile, err = g.fs.OpenFile(bundlePath, os.O_RDWR, os.ModePerm)
-		if err != nil {
-			return fmt.Errorf("could not open bundle file: %w", err)
-		}
-	} else {
-		bundleFile, err = g.fs.Create(bundlePath)
-		if err != nil {
-			return fmt.Errorf("could not create bundle file: %w", err)
-		}
+		return fmt.Errorf("could not create bundle file: %w", err)
 	}
 
 	_, err = bundleFile.Write(bundle)

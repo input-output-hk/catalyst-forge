@@ -13,11 +13,12 @@ foo
 bar
 Image ./dir1+test output as test
 Artifact ./dir1+test output as test
-
-{"test":{"artifacts":{"./dir1+test":"test"},"images":{"./dir1+test":"test"}}}
 -- earthly_stdout.txt --
 Image ./dir1+test output as test
 Artifact ./dir1+test output as test
+-- dir1/blueprint.cue --
+version: "1.0.0"
+project: name: "dir1"
 -- dir1/Earthfile --
 VERSION 0.8
 

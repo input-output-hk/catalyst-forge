@@ -2,27 +2,42 @@ version: "1.0"
 project: {
 	name: "foundry-api"
 	ci: targets: {
-		publish: {
+		docker: {
 			args: {
 				version: string | *"dev" @forge(name="GIT_TAG")
 			}
 		}
-		release: {
+		github: {
 			args: {
 				version: string | *"dev" @forge(name="GIT_TAG")
 			}
 		}
 	}
 	deployment: {
+		on: {
+			merge: {}
+			tag: {}
+		}
 		environment: "dev"
 		modules: main: {
 			container: "foundry-api-deployment"
-			version:   "0.1.0"
+			version:   "0.1.1"
 			values: {
 				environment: name: "dev"
 				server: image: {
-					tag: _ @forge(name="GIT_IMAGE_TAG")
+					tag: _ @forge(name="GIT_HASH_OR_TAG")
 				}
+			}
+		}
+	}
+	release: {
+		docker: {
+			on: {
+				merge: {}
+				tag: {}
+			}
+			config: {
+				tag: _ @forge(name="GIT_HASH_OR_TAG")
 			}
 		}
 	}

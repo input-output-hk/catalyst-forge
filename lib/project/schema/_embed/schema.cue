@@ -9,6 +9,9 @@ package schema
 	// Deployment contains the global configuration for the deployment of projects.
 	// +optional
 	deployment?: #GlobalDeployment @go(Deployment)
+
+	// Repo contains the configuration for the GitHub repository.
+	repo: #GlobalRepo @go(Repo)
 }
 
 // CI contains the configuration for the CI system.
@@ -27,10 +30,6 @@ package schema
 	// Secrets contains global secrets that will be passed to all targets.
 	// +optional
 	secrets?: [...#Secret] @go(Secrets,[]Secret)
-
-	// Tagging contains the tagging configuration for the CI system.
-	// +optional
-	tagging?: #Tagging @go(Tagging)
 }
 
 // GlobalDeployment contains the configuration for the global deployment of projects.
@@ -60,6 +59,10 @@ package schema
 	// +optional
 	aws?: #ProviderAWS @go(AWS)
 
+	// CUE contains the configuration for the CUE provider.
+	// +optional
+	cue?: #ProviderCue @go(CUE)
+
 	// Docker contains the configuration for the DockerHub provider.
 	// +optional
 	docker?: #ProviderDocker @go(Docker)
@@ -75,19 +78,50 @@ package schema
 	// Github contains the configuration for the Github provider.
 	// +optional
 	github?: #ProviderGithub @go(Github)
+
+	// Timoni contains the configuration for the Timoni provider.
+	// +optional
+	timoni?: #TimoniProvider @go(Timoni)
 }
 
 // ProviderAWS contains the configuration for the AWS provider.
 #ProviderAWS: {
+	// ECR contains the configuration for AWS ECR.
+	// +optional
+	ecr?: #ProviderAWSECR @go(ECR)
+
 	// Role contains the role to assume.
-	role?: null | string @go(Role,*string)
+	role: string @go(Role)
 
 	// Region contains the region to use.
-	region?: null | string @go(Region,*string)
+	region: string @go(Region)
+}
+#ProviderAWSECR: {
+	// AutoCreate contains whether to automatically create ECR repositories.
+	// +optional
+	autoCreate?: null | bool @go(AutoCreate,*bool)
 
-	// Registry contains the ECR registry to use.
+	// Registry is the ECR registry to login to during CI operations.
 	// +optional
 	registry?: null | string @go(Registry,*string)
+}
+
+// ProviderCue contains the configuration for the CUE provider.
+#ProviderCue: {
+	// Install contains whether to install CUE in the CI environment.
+	// +optional
+	install?: null | bool @go(Install,*bool)
+
+	// Registry contains the CUE registry to use.
+	registry?: null | string @go(Registry,*string)
+
+	// RegistryPrefix contains the prefix to use for CUE registries.
+	// +optional
+	registryPrefix?: null | string @go(RegistryPrefix,*string)
+
+	// The version of CUE to use in CI.
+	// +optional
+	version?: string @go(Version)
 }
 
 // ProviderDocker contains the configuration for the DockerHub provider.
@@ -121,6 +155,17 @@ package schema
 	// +optional
 	credentials?: null | #Secret @go(Credentials,*Secret)
 }
+
+// ProviderGithub contains the configuration for the Github provider.
+#ProviderGithub: {
+	// Credentials contains the credentials to use for Github
+	//  +optional
+	credentials?: #Secret @go(Credentials)
+
+	// Registry contains the Github registry to use.
+	// +optional
+	registry?: null | string @go(Registry,*string)
+}
 #TagStrategy:     string
 #enumTagStrategy: #TagStrategyGitCommit
 #TagStrategyGitCommit: #TagStrategy & {
@@ -147,6 +192,11 @@ package schema
 	environment: (_ | *"dev") & {
 		string
 	} @go(Environment)
+
+	// On contains the events that trigger the deployment.
+	on: {
+		...
+	} @go(On,map[string]any)
 
 	// Modules contains the configuration for the deployment modules for the project.
 	// +optional
@@ -202,6 +252,12 @@ version: "1.0"
 	// Deployment contains the configuration for the deployment of the project.
 	// +optional
 	deployment?: #Deployment @go(Deployment)
+
+	// Release contains the configuration for the release of the project.
+	// +optional
+	release?: {
+		[string]: #Release
+	} @go(Release,map[string]Release)
 }
 #ProjectCI: {
 	// Targets configures the individual targets that are run by the CI system.
@@ -210,17 +266,32 @@ version: "1.0"
 		[string]: #Target
 	} @go(Targets,map[string]Target)
 }
-#Tagging: {
-	// Aliases contains the aliases to use for git tags.
-	// +optional
-	aliases?: {
-		[string]: string
-	} @go(Aliases,map[string]string)
 
-	// Strategy contains the tagging strategy to use for containers.
-	strategy: #TagStrategy & {
-		"commit"
-	} @go(Strategy)
+// Release contains the configuration for a project release.
+#Release: {
+	// Config contains the configuration to pass to the release.
+	// +optional
+	config?: _ @go(Config,any)
+
+	// On contains the events that trigger the release.
+	on: {
+		...
+	} @go(On,map[string]any)
+
+	// Target is the Earthly target to run for this release.
+	// Defaults to release name.
+	// +optional
+	target?: string @go(Target)
+}
+#Tagging: {
+	strategy: "commit"
+}
+#GlobalRepo: {
+	// Name contains the name of the repository (e.g. "owner/repo-name").
+	name: string @go(Name)
+
+	// DefaultBranch contains the default branch of the repository.
+	defaultBranch: string @go(DefaultBranch)
 }
 
 // Target contains the configuration for a single target.
@@ -248,15 +319,20 @@ version: "1.0"
 	secrets?: [...#Secret] @go(Secrets,[]Secret)
 }
 
-// ProviderGithub contains the configuration for the Github provider.
-#ProviderGithub: {
-	// Credentials contains the credentials to use for Github
-	//  +optional
-	credentials?: #Secret @go(Credentials)
-
-	// Registry contains the Github registry to use.
+// TimoniProvider contains the configuration for the Timoni provider.
+#TimoniProvider: {
+	// Install contains whether to install Timoni in the CI environment.
 	// +optional
-	registry?: null | string @go(Registry,*string)
+	install: (null | bool) & (_ | *true) @go(Install,*bool)
+
+	// Registries contains the registries to use for publishing Timoni modules
+	registries: [...string] @go(Registries,[]string)
+
+	// The version of Timoni to use in CI.
+	// +optional
+	version: (_ | *"latest") & {
+		string
+	} @go(Version)
 }
 
 // Secret contains the secret provider and a list of mappings

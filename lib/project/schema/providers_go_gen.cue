@@ -10,6 +10,10 @@ package schema
 	// +optional
 	aws?: #ProviderAWS @go(AWS)
 
+	// CUE contains the configuration for the CUE provider.
+	// +optional
+	cue?: #ProviderCue @go(CUE)
+
 	// Docker contains the configuration for the DockerHub provider.
 	// +optional
 	docker?: #ProviderDocker @go(Docker)
@@ -25,19 +29,51 @@ package schema
 	// Github contains the configuration for the Github provider.
 	// +optional
 	github?: #ProviderGithub @go(Github)
+
+	// Timoni contains the configuration for the Timoni provider.
+	// +optional
+	timoni?: #TimoniProvider @go(Timoni)
 }
 
 // ProviderAWS contains the configuration for the AWS provider.
 #ProviderAWS: {
+	// ECR contains the configuration for AWS ECR.
+	// +optional
+	ecr?: #ProviderAWSECR @go(ECR)
+
 	// Role contains the role to assume.
-	role?: null | string @go(Role,*string)
+	role: string @go(Role)
 
 	// Region contains the region to use.
-	region?: null | string @go(Region,*string)
+	region: string @go(Region)
+}
 
-	// Registry contains the ECR registry to use.
+#ProviderAWSECR: {
+	// AutoCreate contains whether to automatically create ECR repositories.
+	// +optional
+	autoCreate?: null | bool @go(AutoCreate,*bool)
+
+	// Registry is the ECR registry to login to during CI operations.
 	// +optional
 	registry?: null | string @go(Registry,*string)
+}
+
+// ProviderCue contains the configuration for the CUE provider.
+#ProviderCue: {
+	// Install contains whether to install CUE in the CI environment.
+	// +optional
+	install?: null | bool @go(Install,*bool)
+
+	// Registry contains the CUE registry to use.
+	registry?: null | string @go(Registry,*string)
+
+	// RegistryPrefix contains the prefix to use for CUE registries.
+	// +optional
+	registryPrefix?: null | string @go(RegistryPrefix,*string)
+
+	// The version of CUE to use in CI.
+	// +optional
+	version?: string @go(Version)
 }
 
 // ProviderDocker contains the configuration for the DockerHub provider.
@@ -81,4 +117,18 @@ package schema
 	// Registry contains the Github registry to use.
 	// +optional
 	registry?: null | string @go(Registry,*string)
+}
+
+// TimoniProvider contains the configuration for the Timoni provider.
+#TimoniProvider: {
+	// Install contains whether to install Timoni in the CI environment.
+	// +optional
+	install?: null | bool @go(Install,*bool)
+
+	// Registries contains the registries to use for publishing Timoni modules
+	registries: [...string] @go(Registries,[]string)
+
+	// The version of Timoni to use in CI.
+	// +optional
+	version?: string @go(Version)
 }

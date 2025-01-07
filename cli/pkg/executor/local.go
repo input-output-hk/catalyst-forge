@@ -17,12 +17,17 @@ type LocalExecutor struct {
 	redirect     bool
 	stderrStream io.Writer
 	stdoutStream io.Writer
+	workdir      string
 }
 
-func (e *LocalExecutor) Execute(command string, args []string) ([]byte, error) {
+func (e *LocalExecutor) Execute(command string, args ...string) ([]byte, error) {
 	cmd := exec.Command(command, args...)
-	e.logger.Debug("Executing local command", "command", cmd.String())
 
+	if e.workdir != "" {
+		cmd.Dir = e.workdir
+	}
+
+	e.logger.Debug("Executing local command", "command", cmd.String(), "workdir", cmd.Dir)
 	if e.redirect {
 		var buffer bytes.Buffer
 		errChan := make(chan error, 2)
@@ -77,6 +82,10 @@ func (e *LocalExecutor) Execute(command string, args []string) ([]byte, error) {
 	return cmd.CombinedOutput()
 }
 
+func (e *LocalExecutor) LookPath(file string) (string, error) {
+	return exec.LookPath(file)
+}
+
 // WithRedirect is an option that configures the LocalExecutor to redirect the
 // stdout and stderr of the commands to the stdout and stderr of the local
 // process.
@@ -96,6 +105,23 @@ func WithRedirectTo(stdout, stderr io.Writer) LocalExecutorOption {
 	}
 }
 
+// WithWorkdir is an option that configures the LocalExecutor to run commands in
+// the given working directory.
+func WithWorkdir(workdir string) LocalExecutorOption {
+	return func(e *LocalExecutor) {
+		e.workdir = workdir
+	}
+}
+
+type WrappedLocalExecutor struct {
+	Executor
+	command string
+}
+
+func (e WrappedLocalExecutor) Execute(args ...string) ([]byte, error) {
+	return e.Executor.Execute(e.command, args...)
+}
+
 // NewLocalExecutor creates a new LocalExecutor with the given options.
 func NewLocalExecutor(logger *slog.Logger, options ...LocalExecutorOption) *LocalExecutor {
 	if logger == nil {
@@ -111,4 +137,11 @@ func NewLocalExecutor(logger *slog.Logger, options ...LocalExecutorOption) *Loca
 	}
 
 	return e
+}
+
+func NewLocalWrappedExecutor(e Executor, command string) WrappedLocalExecutor {
+	return WrappedLocalExecutor{
+		Executor: e,
+		command:  command,
+	}
 }

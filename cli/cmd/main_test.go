@@ -44,7 +44,7 @@ func mockEarthly() int {
 
 	stdout, err := os.ReadFile("earthly_stdout.txt")
 	if err == nil {
-		fmt.Println(string(stdout))
+		fmt.Print(string(stdout))
 	}
 
 	return 0

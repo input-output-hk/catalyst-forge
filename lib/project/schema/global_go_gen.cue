@@ -13,6 +13,9 @@ package schema
 	// Deployment contains the global configuration for the deployment of projects.
 	// +optional
 	deployment?: #GlobalDeployment @go(Deployment)
+
+	// Repo contains the configuration for the GitHub repository.
+	repo: #GlobalRepo @go(Repo)
 }
 
 // CI contains the configuration for the CI system.
@@ -31,10 +34,6 @@ package schema
 	// Secrets contains global secrets that will be passed to all targets.
 	// +optional
 	secrets?: [...#Secret] @go(Secrets,[]Secret)
-
-	// Tagging contains the tagging configuration for the CI system.
-	// +optional
-	tagging?: #Tagging @go(Tagging)
 }
 
 // GlobalDeployment contains the configuration for the global deployment of projects.
@@ -58,11 +57,10 @@ package schema
 	url: string @go(Url)
 }
 
-#Tagging: {
-	// Aliases contains the aliases to use for git tags.
-	// +optional
-	aliases?: {[string]: string} @go(Aliases,map[string]string)
+#GlobalRepo: {
+	// Name contains the name of the repository (e.g. "owner/repo-name").
+	name: string @go(Name)
 
-	// Strategy contains the tagging strategy to use for containers.
-	strategy: #TagStrategy @go(Strategy)
+	// DefaultBranch contains the default branch of the repository.
+	defaultBranch: string @go(DefaultBranch)
 }

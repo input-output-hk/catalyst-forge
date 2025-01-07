@@ -1,45 +1,83 @@
 package project
 
 import (
+	"os"
 	"testing"
 
 	"cuelang.org/go/cue"
 	"cuelang.org/go/cue/cuecontext"
+	"github.com/go-git/go-git/v5"
 	"github.com/input-output-hk/catalyst-forge/lib/project/blueprint"
+	"github.com/input-output-hk/catalyst-forge/lib/project/providers"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/testutils"
+	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func TestGitRuntimeLoad(t *testing.T) {
 	ctx := cuecontext.New()
+	prPayload, err := os.ReadFile("testdata/event_pr.json")
+	require.NoError(t, err)
+
+	pushPayload, err := os.ReadFile("testdata/event_push.json")
+	require.NoError(t, err)
 
 	tests := []struct {
 		name     string
-		tagInfo  TagInfo
-		expected map[string]cue.Value
+		tag      *ProjectTag
+		env      map[string]string
+		files    map[string]string
+		validate func(*testing.T, *git.Repository, map[string]cue.Value)
 	}{
 		{
 			name: "with tag",
-			tagInfo: TagInfo{
-				Generated: "generated",
-				Git:       "tag",
+			tag: &ProjectTag{
+				Full:    "project/v1.0.0",
+				Project: "project",
+				Version: "v1.0.0",
 			},
-			expected: map[string]cue.Value{
-				"GIT_TAG_GENERATED": ctx.CompileString(`"generated"`),
-				"GIT_TAG":           ctx.CompileString(`"tag"`),
-				"GIT_IMAGE_TAG":     ctx.CompileString(`"tag"`),
+			validate: func(t *testing.T, repo *git.Repository, data map[string]cue.Value) {
+				head, err := repo.Head()
+				require.NoError(t, err)
+				assert.Contains(t, data, "GIT_COMMIT_HASH")
+				assert.Equal(t, head.Hash().String(), getString(t, data["GIT_COMMIT_HASH"]))
+
+				assert.Contains(t, data, "GIT_TAG")
+				assert.Equal(t, "project/v1.0.0", getString(t, data["GIT_TAG"]))
+
+				assert.Contains(t, data, "GIT_TAG_VERSION")
+				assert.Equal(t, "v1.0.0", getString(t, data["GIT_TAG_VERSION"]))
 			},
 		},
 		{
-			name: "with no tag",
-			tagInfo: TagInfo{
-				Generated: "generated",
-				Git:       "",
+			name: "with pr event",
+			env: map[string]string{
+				"GITHUB_EVENT_NAME": "pull_request",
+				"GITHUB_EVENT_PATH": "/event.json",
 			},
-			expected: map[string]cue.Value{
-				"GIT_TAG_GENERATED": ctx.CompileString(`"generated"`),
-				"GIT_IMAGE_TAG":     ctx.CompileString(`"generated"`),
+			files: map[string]string{
+				"/event.json": string(prPayload),
+			},
+			validate: func(t *testing.T, repo *git.Repository, data map[string]cue.Value) {
+				require.NoError(t, err)
+				assert.Contains(t, data, "GIT_COMMIT_HASH")
+				assert.Equal(t, "0000000000000000000000000000000000000000", getString(t, data["GIT_COMMIT_HASH"]))
+			},
+		},
+		{
+			name: "with push event",
+			env: map[string]string{
+				"GITHUB_EVENT_NAME": "push",
+				"GITHUB_EVENT_PATH": "/event.json",
+			},
+			files: map[string]string{
+				"/event.json": string(pushPayload),
+			},
+			validate: func(t *testing.T, repo *git.Repository, data map[string]cue.Value) {
+				require.NoError(t, err)
+				assert.Contains(t, data, "GIT_COMMIT_HASH")
+				assert.Equal(t, "0000000000000000000000000000000000000000", getString(t, data["GIT_COMMIT_HASH"]))
 			},
 		},
 	}
@@ -47,27 +85,42 @@ func TestGitRuntimeLoad(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			logger := testutils.NewNoopLogger()
+
+			repo := testutils.NewInMemRepo(t)
+			repo.AddFile(t, "example.txt", "example content")
+			_ = repo.Commit(t, "Initial commit")
+
+			provider := providers.NewGithubProvider(nil, logger, nil)
+			if len(tt.env) > 0 {
+				for k, v := range tt.env {
+					require.NoError(t, os.Setenv(k, v))
+					defer os.Unsetenv(k)
+				}
+			}
+
+			if len(tt.files) > 0 {
+				fs := afero.NewMemMapFs()
+				testutils.SetupFS(t, fs, tt.files)
+				provider = providers.NewGithubProvider(fs, logger, nil)
+			}
+
 			project := &Project{
 				ctx:          ctx,
-				TagInfo:      tt.tagInfo,
-				rawBlueprint: blueprint.NewRawBlueprint(ctx.CompileString("{}")),
+				RawBlueprint: blueprint.NewRawBlueprint(ctx.CompileString("{}")),
+				Repo:         repo.Repo,
+				Tag:          tt.tag,
+				logger:       logger,
 			}
 
-			runtime := NewGitRuntime(logger)
+			runtime := NewGitRuntime(&provider, logger)
 			data := runtime.Load(project)
-
-			for key, expected := range tt.expected {
-				actual, ok := data[key]
-				require.True(t, ok, "missing value for key %q", key)
-
-				sv, err := actual.String()
-				require.NoError(t, err)
-
-				ev, err := expected.String()
-				require.NoError(t, err)
-
-				assert.Equal(t, ev, sv)
-			}
+			tt.validate(t, repo.Repo, data)
 		})
 	}
+}
+
+func getString(t *testing.T, v cue.Value) string {
+	s, err := v.String()
+	require.NoError(t, err)
+	return s
 }

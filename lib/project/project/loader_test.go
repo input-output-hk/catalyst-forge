@@ -11,6 +11,7 @@ import (
 	"github.com/go-git/go-git/v5/storage/filesystem"
 	"github.com/input-output-hk/catalyst-forge/lib/project/blueprint"
 	"github.com/input-output-hk/catalyst-forge/lib/project/injector"
+	"github.com/input-output-hk/catalyst-forge/lib/project/providers"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/testutils"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
@@ -20,6 +21,7 @@ import (
 
 func TestDefaultProjectLoaderLoad(t *testing.T) {
 	ctx := cuecontext.New()
+	githubProvider := providers.NewGithubProvider(nil, testutils.NewNoopLogger(), nil)
 
 	earthfile := `
 VERSION 0.8
@@ -32,7 +34,12 @@ bar:
 `
 	bp := `
 version: "1.0"
-global: ci: tagging: strategy: "commit"
+global: {
+  repo: {
+    name: "foo"
+	defaultBranch: "main"
+  }
+}
 project: name: "foo"
 `
 
@@ -41,6 +48,7 @@ project: name: "foo"
 		fs          afero.Fs
 		projectPath string
 		files       map[string]string
+		tag         string
 		injectors   []injector.BlueprintInjector
 		runtimes    []RuntimeData
 		env         map[string]string
@@ -55,6 +63,7 @@ project: name: "foo"
 				"/project/Earthfile":     earthfile,
 				"/project/blueprint.cue": bp,
 			},
+			tag:       "foo/v1.0.0",
 			injectors: []injector.BlueprintInjector{},
 			runtimes:  []RuntimeData{},
 			env:       map[string]string{},
@@ -66,10 +75,10 @@ project: name: "foo"
 				assert.Equal(t, "foo", p.Name)
 				assert.Equal(t, []string{"foo", "bar"}, p.Earthfile.Targets())
 
-				head, err := p.Repo.Head()
 				require.NoError(t, err)
-				assert.Equal(t, head.Hash().String(), p.TagInfo.Generated)
-				assert.Equal(t, "v0.1.0", p.TagInfo.Git)
+				assert.Equal(t, "foo/v1.0.0", p.Tag.Full)
+				assert.Equal(t, "foo", p.Tag.Project)
+				assert.Equal(t, "v1.0.0", string(p.Tag.Version))
 			},
 		},
 		{
@@ -80,7 +89,12 @@ project: name: "foo"
 				"/project/Earthfile": earthfile,
 				"/project/blueprint.cue": `
 version: "1.0"
-global: ci: tagging: strategy: "commit"
+global: {
+  repo: {
+    name: "foo"
+	defaultBranch: "main"
+  }
+}
 project: {
   name: "foo"
   ci: targets: foo: args: foo: _ @env(name="FOO",type="string")
@@ -108,10 +122,15 @@ project: {
 				"/project/Earthfile": earthfile,
 				"/project/blueprint.cue": `
 version: "1.0"
-global: ci: tagging: strategy: "commit"
+global: {
+  repo: {
+    name: "foo"
+	defaultBranch: "main"
+  }
+}
 project: {
   name: "foo"
-  ci: targets: foo: args: foo: _ @forge(name="GIT_TAG_GENERATED")
+  ci: targets: foo: args: foo: _ @forge(name="GIT_COMMIT_HASH")
 }
 `,
 			},
@@ -119,7 +138,10 @@ project: {
 				injector.NewBlueprintEnvInjector(ctx, testutils.NewNoopLogger()),
 			},
 			runtimes: []RuntimeData{
-				NewGitRuntime(testutils.NewNoopLogger()),
+				NewGitRuntime(
+					&githubProvider,
+					testutils.NewNoopLogger(),
+				),
 			},
 			env:     map[string]string{},
 			initGit: true,
@@ -201,7 +223,12 @@ project: {
 				"/project/Earthfile": earthfile,
 				"/project/blueprint.cue": `
 version: "1.0"
-global: ci: tagging: strategy: "commit"
+global: {
+  repo: {
+    name: "foo"
+	defaultBranch: "main"
+  }
+}
 project: {
   name: "foo"
   ci: targets: foo: args: foo: _ @env(name="INVALID",type="string")
@@ -225,7 +252,7 @@ project: {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			logger := testutils.NewStdoutLogger()
+			logger := testutils.NewNoopLogger()
 
 			defer func() {
 				for k := range tt.env {
@@ -261,7 +288,9 @@ project: {
 
 				head, err := repo.Repo.Head()
 				require.NoError(t, err)
-				repo.Tag(t, head.Hash(), "v0.1.0", "Initial tag")
+				if tt.tag != "" {
+					repo.Tag(t, head.Hash(), tt.tag, "Initial tag")
+				}
 			}
 
 			bpLoader := blueprint.NewCustomBlueprintLoader(ctx, tt.fs, logger)
