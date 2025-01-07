@@ -149,7 +149,7 @@ jobs:
       earthly_token: ${{ secrets.earthly_token }}
 
   final:
-    needs: [check, build, package, test, publish, release]
+    needs: [check, build, package, test, release]
     if: success()
     runs-on: ubuntu-latest
     steps:
