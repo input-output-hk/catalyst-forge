@@ -163,7 +163,7 @@ jobs:
 
   final:
     needs: [check, build, package, test, release]
-    if: (!failure())
+    if: (failure())
     runs-on: ubuntu-latest
     steps:
       - name: Final
