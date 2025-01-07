@@ -6,17 +6,25 @@ global: {
 			"^build(-.*)?$",
 			"^package(-.*)?$",
 			"^test(-.*)?$",
-			"^release(-.*)?$",
-			"^publish(-.*)?$",
 		]
 		registries: [
-			ci.providers.aws.registry,
+			"ghcr.io/input-output-hk/catalyst-forge",
 		]
 		providers: {
 			aws: {
-				region:   "eu-central-1"
-				registry: "332405224602.dkr.ecr.eu-central-1.amazonaws.com"
-				role:     "arn:aws:iam::332405224602:role/ci"
+				ecr: {
+					autoCreate: true
+					registry:   "332405224602.dkr.ecr.eu-central-1.amazonaws.com"
+				}
+				region: "eu-central-1"
+				role:   "arn:aws:iam::332405224602:role/ci"
+			}
+
+			cue: {
+				install:        true
+				registry:       aws.ecr.registry
+				registryPrefix: "cue"
+				version:        "0.11.0"
 			}
 
 			docker: credentials: {
@@ -39,7 +47,13 @@ global: {
 				path:     "global/ci/deploy"
 			}
 
-			github: registry: "ghcr.io"
+			github: {
+				credentials: {
+					provider: "aws"
+					path:     "global/ci/github"
+				}
+				registry: "ghcr.io"
+			}
 		}
 		secrets: [
 			{
@@ -49,16 +63,17 @@ global: {
 				path:     "GITHUB_TOKEN"
 			},
 		]
-		tagging: {
-			strategy: "commit"
-		}
 	}
 	deployment: {
-		registry: ci.providers.aws.registry
+		registry: ci.providers.aws.ecr.registry
 		repo: {
 			url: "https://github.com/input-output-hk/catalyst-world"
 			ref: "master"
 		}
 		root: "k8s"
+	}
+	repo: {
+		defaultBranch: "master"
+		name:          "input-output-hk/catalyst-forge"
 	}
 }

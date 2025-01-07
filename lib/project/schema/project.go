@@ -15,12 +15,31 @@ type Project struct {
 	// Deployment contains the configuration for the deployment of the project.
 	// +optional
 	Deployment Deployment `json:"deployment"`
+
+	// Release contains the configuration for the release of the project.
+	// +optional
+	Release map[string]Release `json:"release"`
 }
 
 type ProjectCI struct {
 	// Targets configures the individual targets that are run by the CI system.
 	// +optional
 	Targets map[string]Target `json:"targets"`
+}
+
+// Release contains the configuration for a project release.
+type Release struct {
+	// Config contains the configuration to pass to the release.
+	// +optional
+	Config any `json:"config"`
+
+	// On contains the events that trigger the release.
+	On map[string]any `json:"on"`
+
+	// Target is the Earthly target to run for this release.
+	// Defaults to release name.
+	// +optional
+	Target string `json:"target"`
 }
 
 // Target contains the configuration for a single target.

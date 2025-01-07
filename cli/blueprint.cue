@@ -1,17 +1,8 @@
 version: "1.0"
 project: {
-	name: "forge"
+	name: "forge-cli"
 	ci: targets: {
-		publish: {
-			args: {
-				version: string | *"dev" @forge(name="GIT_TAG")
-			}
-			platforms: [
-				"linux/amd64",
-				"linux/arm64",
-			]
-		}
-		release: {
+		github: {
 			args: {
 				version: string | *"dev" @forge(name="GIT_TAG")
 			}
@@ -23,5 +14,18 @@ project: {
 			]
 		}
 		test: retries: 3
+	}
+	release: {
+		github: {
+			on: tag: {}
+			config: {
+				name:   string | *"dev" @forge(name="GIT_TAG")
+				prefix: project.name
+				token: {
+					provider: "env"
+					path:     "GITHUB_TOKEN"
+				}
+			}
+		}
 	}
 }

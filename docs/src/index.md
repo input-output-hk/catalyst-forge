@@ -16,4 +16,5 @@ It is especially inspired by the principles and philosophies of
 
 ## Getting Started
 
-If you're new to Catalyst Forge, the quickest way to get familiar with what it offers is through the getting started tutorial.
+If you're new to Catalyst Forge, the quickest way to get familiar with it is through the
+[getting started tutorial](./tutorials/getting_started.md).

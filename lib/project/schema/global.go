@@ -9,6 +9,9 @@ type Global struct {
 	// Deployment contains the global configuration for the deployment of projects.
 	// +optional
 	Deployment GlobalDeployment `json:"deployment"`
+
+	// Repo contains the configuration for the GitHub repository.
+	Repo GlobalRepo `json:"repo"`
 }
 
 // CI contains the configuration for the CI system.
@@ -27,10 +30,6 @@ type GlobalCI struct {
 	// Secrets contains global secrets that will be passed to all targets.
 	// +optional
 	Secrets []Secret `json:"secrets"`
-
-	// Tagging contains the tagging configuration for the CI system.
-	// +optional
-	Tagging Tagging `json:"tagging"`
 }
 
 // GlobalDeployment contains the configuration for the global deployment of projects.
@@ -54,11 +53,10 @@ type GlobalDeploymentRepo struct {
 	Url string `json:"url"`
 }
 
-type Tagging struct {
-	// Aliases contains the aliases to use for git tags.
-	// +optional
-	Aliases map[string]string `json:"aliases"`
+type GlobalRepo struct {
+	// Name contains the name of the repository (e.g. "owner/repo-name").
+	Name string `json:"name"`
 
-	// Strategy contains the tagging strategy to use for containers.
-	Strategy TagStrategy `json:"strategy"`
+	// DefaultBranch contains the default branch of the repository.
+	DefaultBranch string `json:"defaultBranch"`
 }

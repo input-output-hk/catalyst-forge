@@ -82,9 +82,26 @@ func (r *InMemRepo) Exists(t *testing.T, path string) bool {
 	return true
 }
 
+func (r *InMemRepo) Head(t *testing.T) *plumbing.Reference {
+	headRef, err := r.Repo.Head()
+	require.NoError(t, err, "failed to get HEAD reference")
+
+	return headRef
+}
+
 // MkdirAll creates a directory in the repository.
 func (r *InMemRepo) MkdirAll(t *testing.T, path string) {
 	require.NoError(t, r.Fs.MkdirAll(path, 0755), "failed to create directory")
+}
+
+// NewBranch creates a new branch in the repository and checks it out.
+func (r *InMemRepo) NewBranch(t *testing.T, name string) {
+	head := r.Head(t)
+	require.NoError(t, r.Worktree.Checkout(&git.CheckoutOptions{
+		Branch: plumbing.NewBranchReferenceName(name),
+		Hash:   head.Hash(),
+		Create: true,
+	}))
 }
 
 func (r *InMemRepo) ReadFile(t *testing.T, path string) []byte {

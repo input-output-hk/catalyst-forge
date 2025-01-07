@@ -10,7 +10,13 @@ import (
 	"github.com/input-output-hk/catalyst-forge/lib/project/secrets"
 )
 
-type ProjectRunner struct {
+//go:generate go run github.com/matryer/moq@latest -pkg mocks -out mocks/runner.go . ProjectRunner
+
+type ProjectRunner interface {
+	RunTarget(target string, opts ...earthly.EarthlyExecutorOption) error
+}
+
+type DefaultProjectRunner struct {
 	ctx      RunContext
 	exectuor executor.Executor
 	logger   *slog.Logger
@@ -19,10 +25,10 @@ type ProjectRunner struct {
 }
 
 // RunTarget runs the given Earthly target.
-func (p *ProjectRunner) RunTarget(
+func (p *DefaultProjectRunner) RunTarget(
 	target string,
 	opts ...earthly.EarthlyExecutorOption,
-) (map[string]earthly.EarthlyExecutionResult, error) {
+) error {
 	return earthly.NewEarthlyExecutor(
 		p.project.Path,
 		target,
@@ -34,7 +40,7 @@ func (p *ProjectRunner) RunTarget(
 }
 
 // generateOpts generates the options for the Earthly executor.
-func (p *ProjectRunner) generateOpts(target string) []earthly.EarthlyExecutorOption {
+func (p *DefaultProjectRunner) generateOpts(target string) []earthly.EarthlyExecutorOption {
 	var opts []earthly.EarthlyExecutorOption
 
 	if _, ok := p.project.Blueprint.Project.CI.Targets[target]; ok {
@@ -78,27 +84,32 @@ func (p *ProjectRunner) generateOpts(target string) []earthly.EarthlyExecutorOpt
 	return opts
 }
 
-func NewProjectRunner(
+func NewDefaultProjectRunner(
 	ctx RunContext,
 	project *project.Project,
-) ProjectRunner {
-	return ProjectRunner{
+) DefaultProjectRunner {
+	e := executor.NewLocalExecutor(
+		ctx.Logger,
+		executor.WithRedirect(),
+	)
+
+	return DefaultProjectRunner{
 		ctx:      ctx,
-		exectuor: ctx.Executor,
+		exectuor: e,
 		logger:   ctx.Logger,
 		project:  project,
 		store:    ctx.SecretStore,
 	}
 }
 
-func NewCustomProjectRunner(
+func NewCustomDefaultProjectRunner(
 	ctx RunContext,
 	exec executor.Executor,
 	logger *slog.Logger,
 	project *project.Project,
 	store secrets.SecretStore,
-) ProjectRunner {
-	return ProjectRunner{
+) DefaultProjectRunner {
+	return DefaultProjectRunner{
 		ctx:      ctx,
 		exectuor: exec,
 		logger:   logger,

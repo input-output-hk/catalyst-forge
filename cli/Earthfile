@@ -50,7 +50,7 @@ test:
 
     RUN go test ./...
 
-release:
+github:
     FROM scratch
 
     ARG version="dev"
@@ -67,25 +67,3 @@ release:
         --version=$version) bin/forge
 
     SAVE ARTIFACT bin/forge forge
-
-publish:
-    FROM debian:bookworm-slim
-    WORKDIR /workspace
-
-    ARG container="forge"
-    ARG tag="latest"
-    ARG version="dev"
-
-    ARG TARGETOS
-    ARG TARGETARCH
-    ARG USERPLATFORM
-
-    COPY \
-        --platform=$USERPLATFORM \
-        (+build/forge \
-        --GOOS=$TARGETOS \
-        --GOARCH=$TARGETARCH \
-        --version=$version) /usr/local/bin/forge
-
-    ENTRYPOINT ["/usr/local/bin/forge"]
-    SAVE IMAGE ${container}:${tag}

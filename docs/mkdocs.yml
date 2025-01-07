@@ -7,12 +7,20 @@ docs_dir: src
 
 nav:
   - Overview: index.md
+  - News: blog/index.md
   - Installation: installation.md
   - Tutorials:
     - Getting Started: tutorials/getting_started.md
   - Concepts:
+    - Projects: concepts/projects.md
     - CI: concepts/ci.md
   - Reference:
+    - Blueprints: reference/blueprint.md
+    - Deployments: reference/deployments.md
+    - Releases:
+      - Overview: reference/releases/index.md
+      - Docker: reference/releases/docker.md
+      - GitHub: reference/releases/github.md
     - Targets: reference/targets.md
 
 theme:
@@ -46,3 +54,9 @@ markdown_extensions:
   - pymdownx.details
   - pymdownx.snippets
   - pymdownx.superfences
+
+plugins:
+  - blog:
+      archive: false
+      categories: false
+  - tags

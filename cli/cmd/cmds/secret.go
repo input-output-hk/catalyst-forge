@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/run"
+	"github.com/input-output-hk/catalyst-forge/cli/pkg/utils"
 	"github.com/input-output-hk/catalyst-forge/lib/project/schema"
 	"github.com/input-output-hk/catalyst-forge/lib/project/secrets"
 )
@@ -19,13 +20,13 @@ type Get struct {
 	Key      string `short:"k" help:"The key inside of the secret to get."`
 	Project  string `help:"Path to a project to use for getting secret configuration."`
 	Provider string `short:"p" help:"The provider of the secret store." default:"aws"`
-	Path     string `arg:"" help:"The path to the secret (or path in a project blueprint if --project is specified)."`
+	Path     string `kong:"arg,predictor=path" help:"The path to the secret (or path in a project blueprint if --project is specified)."`
 }
 
 type Set struct {
 	Field    []string `short:"f" help:"A secret field to set."`
 	Provider string   `short:"p" help:"The provider of the secret store." default:"aws"`
-	Path     string   `arg:"" help:"The path to the secret (or path in a project blueprint if --project is specified)."`
+	Path     string   `kong:"arg,predictor=path" help:"The path to the secret (or path in a project blueprint if --project is specified)."`
 	Project  string   `help:"Path to a project to use for getting secret configuration."`
 	Value    string   `arg:"" help:"The value to set." default:""`
 }
@@ -99,7 +100,7 @@ func (c *Get) Run(ctx run.RunContext) error {
 			fmt.Println(mappedSecret[c.Key])
 			return nil
 		} else {
-			printJson(mappedSecret, false)
+			utils.PrintJson(mappedSecret, false)
 			return nil
 		}
 	}

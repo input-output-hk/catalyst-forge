@@ -2,7 +2,8 @@ const core = require("@actions/core");
 const github = require("@actions/github");
 const tc = require("@actions/tool-cache");
 
-const projectName = "cli";
+const assetPrefix = "forge-cli";
+const releaseName = "forge-cli";
 const repoOwner = "input-output-hk";
 const repoName = "catalyst-forge";
 
@@ -71,7 +72,7 @@ function getAssetName() {
       throw new Error(`Unsupported platform: ${platform}`);
   }
 
-  return `${projectName}-${platformSuffix}.tar.gz`;
+  return `${assetPrefix}-${platformSuffix}.tar.gz`;
 }
 
 /**
@@ -119,7 +120,7 @@ async function getVersionedAsset(octokit, version) {
   const releases = await getReleases(octokit);
 
   const targetRelease = releases.find(
-    (r) => r.tag_name === `${projectName}/v${version}`,
+    (r) => r.tag_name === `${releaseName}/v${version}`,
   );
   if (!targetRelease) {
     throw new Error(`Version ${version} not found`);

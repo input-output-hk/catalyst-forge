@@ -3967,6 +3967,7 @@ async function run() {
 
     await runDeploymentScan(absolute, path);
     await runEarthfileScan(filters, absolute, path);
+    await runReleaseScan(absolute, path);
   } catch (error) {
     core.setFailed(error.message);
   }
@@ -3982,7 +3983,7 @@ module.exports = {
  * @param {string} path The path to scan
  */
 async function runDeploymentScan(absolute, path) {
-  let args = ["-vv", "scan", "--blueprint", "--filter", "project.deployment"];
+  const args = ["-vv", "scan", "--blueprint", "--filter", "project.deployment"];
 
   if (absolute === true) {
     args.push("--absolute");
@@ -4018,6 +4019,31 @@ async function runEarthfileScan(filters, absolute, path) {
 
   core.info(`Found earthfiles: ${result.stdout}`);
   core.setOutput("earthfiles", result.stdout);
+}
+
+/**
+ * Runs the release scan
+ * @param {boolean} absolute Whether to use absolute paths or not
+ * @param {string} path The path to scan
+ */
+async function runReleaseScan(absolute, path) {
+  const args = ["-vv", "scan", "--blueprint", "--filter", "project.release"];
+
+  if (absolute === true) {
+    args.push("--absolute");
+  }
+  args.push(path);
+
+  core.info(`Running forge ${args.join(" ")}`);
+  const result = await exec.getExecOutput("forge", args);
+  const json = JSON.parse(result.stdout);
+
+  const releaseMap = Object.entries(json).flatMap(([project, value]) =>
+    Object.keys(value["project.release"]).map((name) => ({ project, name })),
+  );
+
+  core.info(`Found releases: ${JSON.stringify(releaseMap)}`);
+  core.setOutput("releases", JSON.stringify(releaseMap));
 }
 
 /**

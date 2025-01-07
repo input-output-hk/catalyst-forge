@@ -6,6 +6,10 @@ type Providers struct {
 	// +optional
 	AWS ProviderAWS `json:"aws"`
 
+	// CUE contains the configuration for the CUE provider.
+	// +optional
+	CUE ProviderCue `json:"cue"`
+
 	// Docker contains the configuration for the DockerHub provider.
 	// +optional
 	Docker ProviderDocker `json:"docker"`
@@ -21,19 +25,51 @@ type Providers struct {
 	// Github contains the configuration for the Github provider.
 	// +optional
 	Github ProviderGithub `json:"github"`
+
+	// Timoni contains the configuration for the Timoni provider.
+	// +optional
+	Timoni TimoniProvider `json:"timoni"`
 }
 
 // ProviderAWS contains the configuration for the AWS provider.
 type ProviderAWS struct {
+	// ECR contains the configuration for AWS ECR.
+	// +optional
+	ECR ProviderAWSECR `json:"ecr"`
+
 	// Role contains the role to assume.
-	Role *string `json:"role"`
+	Role string `json:"role"`
 
 	// Region contains the region to use.
-	Region *string `json:"region"`
+	Region string `json:"region"`
+}
 
-	// Registry contains the ECR registry to use.
+type ProviderAWSECR struct {
+	// AutoCreate contains whether to automatically create ECR repositories.
+	// +optional
+	AutoCreate *bool `json:"autoCreate"`
+
+	// Registry is the ECR registry to login to during CI operations.
 	// +optional
 	Registry *string `json:"registry"`
+}
+
+// ProviderCue contains the configuration for the CUE provider.
+type ProviderCue struct {
+	// Install contains whether to install CUE in the CI environment.
+	// +optional
+	Install *bool `json:"install"`
+
+	// Registry contains the CUE registry to use.
+	Registry *string `json:"registry"`
+
+	// RegistryPrefix contains the prefix to use for CUE registries.
+	// +optional
+	RegistryPrefix *string `json:"registryPrefix"`
+
+	// The version of CUE to use in CI.
+	// +optional
+	Version string `json:"version"`
 }
 
 // ProviderDocker contains the configuration for the DockerHub provider.
@@ -77,4 +113,18 @@ type ProviderGithub struct {
 	// Registry contains the Github registry to use.
 	// +optional
 	Registry *string `json:"registry"`
+}
+
+// TimoniProvider contains the configuration for the Timoni provider.
+type TimoniProvider struct {
+	// Install contains whether to install Timoni in the CI environment.
+	// +optional
+	Install *bool `json:"install"`
+
+	// Registries contains the registries to use for publishing Timoni modules
+	Registries []string `json:"registries"`
+
+	// The version of Timoni to use in CI.
+	// +optional
+	Version string `json:"version"`
 }
