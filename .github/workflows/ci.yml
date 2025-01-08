@@ -163,8 +163,15 @@ jobs:
 
   final:
     needs: [check, build, package, test, release]
-    if: (failure())
+    if: ${{ always() && (contains(needs.*.result, 'failure') || !failure() && !cancelled()) }}
     runs-on: ubuntu-latest
     steps:
       - name: Final
-        run: echo "All done"
+        run: |
+          if [[ "${{ contains(needs.*.result, 'failure') }}" == "true" ]]
+          then
+            echo "Run failed"
+            exit 1
+          else
+            echo "All done"
+          fi
