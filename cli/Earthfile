@@ -49,7 +49,6 @@ test:
     FROM +build
 
     RUN go test ./...
-    RUN false
 
 github:
     FROM scratch
