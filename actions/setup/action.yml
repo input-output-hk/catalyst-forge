@@ -23,6 +23,10 @@ inputs:
     description: If true, skip authenticating to GitHub Container Registry
     required: false
     default: "false"
+  skip_kcl:
+    description: If true, skips installing KCL CLI if the provider is configured
+    required: false
+    default: "false"
   skip_timoni:
     description: If true, skips installing Timoni CLI if the provider is configured
     required: false
@@ -226,3 +230,28 @@ runs:
       if: steps.cue.outputs.install && steps.cue.conclusion == 'success'
       with:
         version: v${{ steps.cue.outputs.version }}
+
+    # KCL Provider
+    - name: Get KCL provider configuration
+      id: kcl
+      if: inputs.skip_kcl  == 'false'
+      shell: bash
+      run: |
+        echo "==== KCL Setup ====="
+        BP=$(forge dump .)
+
+        KCL=$(echo "$BP" | jq -r .global.ci.providers.kcl.install)
+        if [[ "$KCL" == "true" ]]; then
+          INSTALL=1
+          VERSION=$(echo "$BP" | jq -r .global.ci.providers.kcl.version)
+          echo "install=$INSTALL" >> $GITHUB_OUTPUT
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+        else
+          echo "Not installing KCL CLI"
+        fi
+    - name: Install KCL
+      if: steps.kcl.outputs.install && steps.kcl.conclusion == 'success'
+      shell: bash
+      run: |
+        go install kcl-lang.io/cli/cmd/kcl@${{ steps.kcl.outputs.version }}
+        kcl version
