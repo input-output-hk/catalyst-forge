@@ -254,7 +254,7 @@ runs:
       if: steps.kcl.outputs.install && steps.kcl.conclusion == 'success'
       uses: actions/cache@v4
       with:
-        path: ${{ env.RUNNER_TOOL_CACHE }}/kcl
+        path: /usr/local/bin/kcl
         key: ${{ runner.os }}-${{ steps.kcl.outputs.version }}
     - name: Install KCL
       if: steps.cache-kcl.outputs.cache-hit == false
@@ -263,7 +263,7 @@ runs:
         WORKDIR="$(mktemp -d)"
         VERSION="${{ steps.kcl.outputs.version }}"
         curl -Lo "${WORKDIR}/kcl.tar.gz" https://github.com/kcl-lang/cli/releases/download/$VERSION/kcl-$VERSION-linux-amd64.tar.gz
-        cd "${WORKDIR}" && tar -xvzf kcl.tar.gz && mv kcl "${RUNNER_TOOL_CACHE}/kcl"
+        cd "${WORKDIR}" && tar -xvzf kcl.tar.gz && mv kcl /usr/local/bin/kcl
     - name: Check KCL
       if: steps.kcl.outputs.install && steps.kcl.conclusion == 'success'
       shell: bash
