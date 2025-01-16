@@ -63,11 +63,15 @@ func isGHCRRegistry(registry string) bool {
 
 // parseConfig parses the configuration for the release.
 func parseConfig(p *project.Project, release string, config any) error {
-	if p.Raw().Get(fmt.Sprintf("project.release.%s.config", release)).IsNull() {
+	err := p.Raw().DecodePath(fmt.Sprintf("project.release.%s.config", release), &config)
+
+	if err != nil && strings.Contains(err.Error(), "not found") {
 		return ErrConfigNotFound
+	} else if err != nil {
+		return err
 	}
 
-	return p.Raw().DecodePath(fmt.Sprintf("project.release.%s.config", release), &config)
+	return nil
 }
 
 // getPlatforms returns the platforms for the target.
