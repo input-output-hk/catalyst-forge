@@ -14,6 +14,7 @@ const (
 	ReleaserTypeCue    ReleaserType = "cue"
 	ReleaserTypeDocker ReleaserType = "docker"
 	ReleaserTypeGithub ReleaserType = "github"
+	ReleaserTypeKCL    ReleaserType = "kcl"
 	ReleaserTypeTimoni ReleaserType = "timoni"
 )
 
@@ -53,6 +54,9 @@ func NewDefaultReleaserStore() *ReleaserStore {
 			},
 			ReleaserTypeGithub: func(ctx run.RunContext, project project.Project, name string, force bool) (Releaser, error) {
 				return providers.NewGithubReleaser(ctx, project, name, force)
+			},
+			ReleaserTypeKCL: func(ctx run.RunContext, project project.Project, name string, force bool) (Releaser, error) {
+				return providers.NewKCLReleaser(ctx, project, name, force)
 			},
 			ReleaserTypeTimoni: func(ctx run.RunContext, project project.Project, name string, force bool) (Releaser, error) {
 				return providers.NewTimoniReleaser(ctx, project, name, force)
