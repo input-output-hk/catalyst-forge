@@ -3,7 +3,7 @@ project: {
 	name: "kcl-test"
 	release: {
 		kcl: {
-			on: any: {}
+			on: always: {}
 		}
 	}
 }
