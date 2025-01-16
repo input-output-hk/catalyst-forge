@@ -57,6 +57,9 @@ global: {
 
 			kcl: {
 				install: true
+				registries: [
+					aws.ecr.registry,
+				]
 				version: "v0.11.0"
 			}
 		}
