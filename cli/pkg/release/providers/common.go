@@ -47,7 +47,14 @@ func generateContainerName(p *project.Project, name string, registry string) str
 	if isGHCRRegistry(registry) {
 		return fmt.Sprintf("%s/%s", strings.TrimSuffix(registry, "/"), n)
 	} else {
-		return fmt.Sprintf("%s/%s/%s", strings.TrimSuffix(registry, "/"), p.Blueprint.Global.Repo.Name, n)
+		var repo string
+		if strings.Contains(p.Blueprint.Global.Repo.Name, "/") {
+			repo = strings.Split(p.Blueprint.Global.Repo.Name, "/")[1]
+		} else {
+			repo = p.Blueprint.Global.Repo.Name
+		}
+
+		return fmt.Sprintf("%s/%s/%s", strings.TrimSuffix(registry, "/"), repo, n)
 	}
 }
 
