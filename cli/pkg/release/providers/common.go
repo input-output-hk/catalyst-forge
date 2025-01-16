@@ -10,6 +10,8 @@ import (
 	"github.com/input-output-hk/catalyst-forge/lib/project/project"
 )
 
+var ErrConfigNotFound = fmt.Errorf("release config field not found")
+
 // createECRRepoIfNotExists creates an ECR repository if it does not exist.
 func createECRRepoIfNotExists(client aws.ECRClient, p *project.Project, registry string, logger *slog.Logger) error {
 	name, err := aws.ExtractECRRepoName(registry)
@@ -61,6 +63,10 @@ func isGHCRRegistry(registry string) bool {
 
 // parseConfig parses the configuration for the release.
 func parseConfig(p *project.Project, release string, config any) error {
+	if p.Raw().Get(fmt.Sprintf("project.release.%s.config", release)).IsNull() {
+		return ErrConfigNotFound
+	}
+
 	return p.Raw().DecodePath(fmt.Sprintf("project.release.%s.config", release), &config)
 }
 

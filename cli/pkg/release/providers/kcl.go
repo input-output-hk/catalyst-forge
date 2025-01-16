@@ -85,7 +85,8 @@ func NewKCLReleaser(ctx run.RunContext,
 	}
 
 	var config KCLReleaserConfig
-	if err := parseConfig(&project, name, &config); err != nil {
+	err := parseConfig(&project, name, &config)
+	if err != nil && err != ErrConfigNotFound {
 		return nil, fmt.Errorf("failed to parse release config: %w", err)
 	}
 
