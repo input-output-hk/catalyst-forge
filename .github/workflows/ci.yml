@@ -136,7 +136,7 @@ jobs:
   nightly:
     uses: input-output-hk/catalyst-forge/.github/workflows/run.yml@master
     needs: [discover, check, build, package]
-    if: (fromJson(needs.discover.outputs.earthfiles)['^nightly(-.*)?$'] != null) && !failure() && !cancelled() && ('${{ inputs.nightly }}' == 'true')
+    if: (fromJson(needs.discover.outputs.earthfiles)['^nightly(-.*)?$'] != null) && !failure() && !cancelled() && ${{ inputs.nightly  == 'true' }}
     with:
       earthfiles: ${{ toJson(fromJson(needs.discover.outputs.earthfiles)['^nightly(-.*)?$']) }}
       forge_version: ${{ inputs.forge_version }}

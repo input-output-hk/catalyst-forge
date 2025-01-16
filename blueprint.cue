@@ -6,6 +6,7 @@ global: {
 			"^build(-.*)?$",
 			"^package(-.*)?$",
 			"^test(-.*)?$",
+			"^nightly(-.*)?$",
 		]
 		registries: [
 			"ghcr.io/input-output-hk/catalyst-forge",
