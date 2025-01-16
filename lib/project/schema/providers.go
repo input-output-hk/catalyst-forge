@@ -26,6 +26,10 @@ type Providers struct {
 	// +optional
 	Github ProviderGithub `json:"github"`
 
+	// KCL contains the configuration for the KCL provider.
+	// +optional
+	KCL ProviderKCL `json:"kcl"`
+
 	// Timoni contains the configuration for the Timoni provider.
 	// +optional
 	Timoni TimoniProvider `json:"timoni"`
@@ -113,6 +117,20 @@ type ProviderGithub struct {
 	// Registry contains the Github registry to use.
 	// +optional
 	Registry *string `json:"registry"`
+}
+
+// ProviderKCL contains the configuration for the KCL provider.
+type ProviderKCL struct {
+	// Install contains whether to install KCL in the CI environment.
+	// +optional
+	Install *bool `json:"install"`
+
+	// Registries contains the registries to use for publishing KCL modules
+	Registries []string `json:"registries"`
+
+	// The version of KCL to install in the CI environment
+	// +optional
+	Version string `json:"version"`
 }
 
 // TimoniProvider contains the configuration for the Timoni provider.

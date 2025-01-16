@@ -79,6 +79,10 @@ package schema
 	// +optional
 	github?: #ProviderGithub @go(Github)
 
+	// KCL contains the configuration for the KCL provider.
+	// +optional
+	kcl?: #ProviderKCL @go(KCL)
+
 	// Timoni contains the configuration for the Timoni provider.
 	// +optional
 	timoni?: #TimoniProvider @go(Timoni)
@@ -165,6 +169,20 @@ package schema
 	// Registry contains the Github registry to use.
 	// +optional
 	registry?: null | string @go(Registry,*string)
+}
+
+// ProviderKCL contains the configuration for the KCL provider.
+#ProviderKCL: {
+	// Install contains whether to install KCL in the CI environment.
+	// +optional
+	install?: null | bool @go(Install,*bool)
+
+	// Registries contains the registries to use for publishing KCL modules
+	registries: [...string] @go(Registries,[]string)
+
+	// The version of KCL to install in the CI environment
+	// +optional
+	version?: string @go(Version)
 }
 #TagStrategy:     string
 #enumTagStrategy: #TagStrategyGitCommit
