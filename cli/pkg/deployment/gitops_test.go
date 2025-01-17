@@ -76,6 +76,7 @@ func TestDeploy(t *testing.T) {
 		project     projectParams
 		yaml        string
 		execFail    bool
+		dryrun      bool
 		setup       func(*testing.T, *GitopsDeployer, *testutils.InMemRepo)
 		validate    func(*testing.T, *GitopsDeployer, mockGitRemote, *testutils.InMemRepo)
 		expectErr   bool
@@ -87,6 +88,7 @@ func TestDeploy(t *testing.T) {
 			project:  defaultParams,
 			yaml:     "yaml",
 			execFail: false,
+			dryrun:   false,
 			setup: func(t *testing.T, deployer *GitopsDeployer, repo *testutils.InMemRepo) {
 				deployer.token = "test"
 				repo.MkdirAll(t, "deploy/dev/apps")
@@ -102,6 +104,27 @@ func TestDeploy(t *testing.T) {
 				assert.Equal(t, commit.Message, "chore: automatic deployment for test")
 
 				assert.Equal(t, mock.pushOpts.Auth.(*http.BasicAuth).Password, "test")
+			},
+			expectErr:   false,
+			expectedErr: "",
+		},
+		{
+			name:     "dry-run",
+			mock:     mockGitRemote{},
+			project:  defaultParams,
+			yaml:     "yaml",
+			execFail: false,
+			dryrun:   true,
+			setup: func(t *testing.T, deployer *GitopsDeployer, repo *testutils.InMemRepo) {
+				deployer.token = "test"
+				repo.MkdirAll(t, "deploy/dev/apps")
+			},
+			validate: func(t *testing.T, deployer *GitopsDeployer, mock mockGitRemote, repo *testutils.InMemRepo) {
+				assert.True(t, repo.Exists(t, "deploy/dev/apps/test/main.yaml"), "main.yaml does not exist")
+				assert.Equal(t, repo.ReadFile(t, "deploy/dev/apps/test/main.yaml"), []byte("yaml"), "main.yaml content is incorrect")
+
+				_, err := repo.Repo.Head()
+				require.Error(t, err) // No commit should be made
 			},
 			expectErr:   false,
 			expectedErr: "",
@@ -138,7 +161,8 @@ func TestDeploy(t *testing.T) {
 			repo := testutils.NewInMemRepo(t)
 			var calls []string
 			deployer := GitopsDeployer{
-				fs: repo.Fs,
+				dryrun: tt.dryrun,
+				fs:     repo.Fs,
 				kcl: KCLRunner{
 					logger: testutils.NewNoopLogger(),
 					kcl:    newWrappedExecuterMock(tt.yaml, &calls, tt.execFail),
