@@ -27,7 +27,7 @@ project: {
 				values: {
 					deployment: containers: main: {
 						image: {
-							name: "332405224602.dkr.ecr.eu-central-1.amazonaws.com/foundry-api"
+							name: "ghcr.io/input-output-hk/catalyst-forge/foundry-api"
 							tag:  _ @forge(name="GIT_HASH_OR_TAG")
 						}
 						port: 8080

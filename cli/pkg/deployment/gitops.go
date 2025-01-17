@@ -103,7 +103,6 @@ func (g *GitopsDeployer) Deploy() error {
 		}
 
 		g.logger.Info("Writing values", "path", vpath)
-		fmt.Println(r.Values)
 		if err := g.write(vpath, []byte(r.Values)); err != nil {
 			return fmt.Errorf("could not write values: %w", err)
 		}
