@@ -21,12 +21,12 @@ project: {
 		environment: "dev"
 		modules: {
 			main: {
-				module:  "app"
+				name:    "app"
 				version: "0.2.0"
 				values: {
 					deployment: containers: main: {
 						image: {
-							name: "ghcr.io/input-output-hk/catalyst-forge/foundry-api"
+							name: _ @forge(name="CONTAINER_IMAGE")
 							tag:  _ @forge(name="GIT_HASH_OR_TAG")
 						}
 						port: 8080

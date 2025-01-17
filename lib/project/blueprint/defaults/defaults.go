@@ -12,7 +12,6 @@ type DefaultSetter interface {
 // GetDefaultSetters returns a list of all default setters.
 func GetDefaultSetters() []DefaultSetter {
 	return []DefaultSetter{
-		DeploymentModuleSetter{},
 		ReleaseTargetSetter{},
 	}
 }

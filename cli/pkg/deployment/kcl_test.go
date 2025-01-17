@@ -25,7 +25,9 @@ func TestKCLRunnerGetMainValues(t *testing.T) {
 				},
 				Global: schema.Global{
 					Deployment: schema.GlobalDeployment{
-						Registry: "test",
+						Registries: schema.GlobalDeploymentRegistries{
+							Modules: "test.com",
+						},
 					},
 				},
 			},
@@ -43,7 +45,7 @@ func TestKCLRunnerGetMainValues(t *testing.T) {
 				"test",
 				&schema.DeploymentModules{
 					Main: schema.Module{
-						Module:    "module",
+						Name:      "module",
 						Namespace: "default",
 						Values: map[string]string{
 							"key": "value",
@@ -91,7 +93,9 @@ func TestKCLRunnerRunDeployment(t *testing.T) {
 				},
 				Global: schema.Global{
 					Deployment: schema.GlobalDeployment{
-						Registry: registry,
+						Registries: schema.GlobalDeploymentRegistries{
+							Modules: registry,
+						},
 					},
 				},
 			},
@@ -113,7 +117,7 @@ func TestKCLRunnerRunDeployment(t *testing.T) {
 				"test.com",
 				&schema.DeploymentModules{
 					Main: schema.Module{
-						Module:    "module",
+						Name:      "module",
 						Namespace: "default",
 						Values: map[string]string{
 							"key": "value",
@@ -122,7 +126,7 @@ func TestKCLRunnerRunDeployment(t *testing.T) {
 					},
 					Support: map[string]schema.Module{
 						"support": {
-							Module:    "module1",
+							Name:      "module1",
 							Namespace: "default",
 							Values: map[string]string{
 								"key1": "value1",
@@ -152,7 +156,7 @@ func TestKCLRunnerRunDeployment(t *testing.T) {
 				"test.com",
 				&schema.DeploymentModules{
 					Main: schema.Module{
-						Module:    "module",
+						Name:      "module",
 						Namespace: "default",
 						Values: map[string]string{
 							"key": "value",

@@ -207,6 +207,7 @@ func NewDefaultProjectLoader(
 		logger:     logger,
 		repoLoader: &rl,
 		runtimes: []RuntimeData{
+			NewDeploymentRuntime(logger),
 			NewGitRuntime(&ghp, logger),
 		},
 	}

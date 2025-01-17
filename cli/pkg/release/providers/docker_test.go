@@ -1,11 +1,15 @@
 package providers
 
 import (
+	"context"
 	"fmt"
 	"strings"
 	"testing"
 
+	"github.com/aws/aws-sdk-go-v2/service/ecr"
 	exmocks "github.com/input-output-hk/catalyst-forge/cli/pkg/executor/mocks"
+	"github.com/input-output-hk/catalyst-forge/cli/pkg/providers/aws"
+	"github.com/input-output-hk/catalyst-forge/cli/pkg/providers/aws/mocks"
 	"github.com/input-output-hk/catalyst-forge/lib/project/project"
 	"github.com/input-output-hk/catalyst-forge/lib/project/schema"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/testutils"
@@ -25,6 +29,9 @@ func TestDockerReleaserRelease(t *testing.T) {
 				Global: schema.Global{
 					CI: schema.GlobalCI{
 						Registries: registries,
+					},
+					Repo: schema.GlobalRepo{
+						Name: "owner/repo",
 					},
 				},
 				Project: schema.Project{
@@ -56,7 +63,7 @@ func TestDockerReleaserRelease(t *testing.T) {
 		force      bool
 		runFail    bool
 		execFailOn string
-		validate   func(t *testing.T, calls []string, err error)
+		validate   func(t *testing.T, calls []string, repoName string, err error)
 	}{
 		{
 			name: "full",
@@ -72,11 +79,33 @@ func TestDockerReleaserRelease(t *testing.T) {
 			firing:  true,
 			force:   false,
 			runFail: false,
-			validate: func(t *testing.T, calls []string, err error) {
+			validate: func(t *testing.T, calls []string, repoName string, err error) {
 				require.NoError(t, err)
 				assert.Contains(t, calls, fmt.Sprintf("inspect %s:%s", CONTAINER_NAME, TAG_NAME))
-				assert.Contains(t, calls, fmt.Sprintf("tag %s:%s test.com/test:test", CONTAINER_NAME, TAG_NAME))
-				assert.Contains(t, calls, "push test.com/test:test")
+				assert.Contains(t, calls, fmt.Sprintf("tag %s:%s test.com/repo/test:test", CONTAINER_NAME, TAG_NAME))
+				assert.Contains(t, calls, "push test.com/repo/test:test")
+			},
+		},
+		{
+			name: "ecr",
+			project: newProject(
+				"test",
+				[]string{"123456789012.dkr.ecr.us-west-2.amazonaws.com"},
+				[]string{},
+			),
+			release: newRelease(),
+			config: DockerReleaserConfig{
+				Tag: "test",
+			},
+			firing:  true,
+			force:   false,
+			runFail: false,
+			validate: func(t *testing.T, calls []string, repoName string, err error) {
+				require.NoError(t, err)
+				assert.Contains(t, calls, fmt.Sprintf("inspect %s:%s", CONTAINER_NAME, TAG_NAME))
+				assert.Contains(t, calls, fmt.Sprintf("tag %s:%s 123456789012.dkr.ecr.us-west-2.amazonaws.com/repo/test:test", CONTAINER_NAME, TAG_NAME))
+				assert.Contains(t, calls, "push 123456789012.dkr.ecr.us-west-2.amazonaws.com/repo/test:test")
+				assert.Equal(t, "repo/test", repoName)
 			},
 		},
 		{
@@ -93,17 +122,17 @@ func TestDockerReleaserRelease(t *testing.T) {
 			firing:  true,
 			force:   false,
 			runFail: false,
-			validate: func(t *testing.T, calls []string, err error) {
+			validate: func(t *testing.T, calls []string, repoName string, err error) {
 				require.NoError(t, err)
 
 				assert.Contains(t, calls, fmt.Sprintf("inspect %s:%s_linux", CONTAINER_NAME, TAG_NAME))
 				assert.Contains(t, calls, fmt.Sprintf("inspect %s:%s_windows", CONTAINER_NAME, TAG_NAME))
 
-				assert.Contains(t, calls, fmt.Sprintf("tag %s:%s_linux test.com/test:test_linux", CONTAINER_NAME, TAG_NAME))
-				assert.Contains(t, calls, "push test.com/test:test_linux")
+				assert.Contains(t, calls, fmt.Sprintf("tag %s:%s_linux test.com/repo/test:test_linux", CONTAINER_NAME, TAG_NAME))
+				assert.Contains(t, calls, "push test.com/repo/test:test_linux")
 
-				assert.Contains(t, calls, fmt.Sprintf("tag %s:%s_windows test.com/test:test_windows", CONTAINER_NAME, TAG_NAME))
-				assert.Contains(t, calls, "push test.com/test:test_windows")
+				assert.Contains(t, calls, fmt.Sprintf("tag %s:%s_windows test.com/repo/test:test_windows", CONTAINER_NAME, TAG_NAME))
+				assert.Contains(t, calls, "push test.com/repo/test:test_windows")
 			},
 		},
 		{
@@ -118,7 +147,7 @@ func TestDockerReleaserRelease(t *testing.T) {
 			firing:  true,
 			force:   false,
 			runFail: false,
-			validate: func(t *testing.T, calls []string, err error) {
+			validate: func(t *testing.T, calls []string, repoName string, err error) {
 				require.Error(t, err)
 				assert.ErrorContains(t, err, "no image tag specified")
 			},
@@ -130,7 +159,7 @@ func TestDockerReleaserRelease(t *testing.T) {
 			firing:  true,
 			force:   false,
 			runFail: true,
-			validate: func(t *testing.T, calls []string, err error) {
+			validate: func(t *testing.T, calls []string, repoName string, err error) {
 				require.Error(t, err)
 				assert.NotContains(t, calls, fmt.Sprintf("inspect %s:%s", CONTAINER_NAME, TAG_NAME))
 			},
@@ -147,10 +176,10 @@ func TestDockerReleaserRelease(t *testing.T) {
 			force:      false,
 			runFail:    false,
 			execFailOn: "inspect",
-			validate: func(t *testing.T, calls []string, err error) {
+			validate: func(t *testing.T, calls []string, repoName string, err error) {
 				require.Error(t, err)
 				assert.Contains(t, calls, fmt.Sprintf("inspect %s:%s", CONTAINER_NAME, TAG_NAME))
-				assert.NotContains(t, calls, "push test.com/test:test")
+				assert.NotContains(t, calls, "push test.com/repo/test:test")
 			},
 		},
 		{
@@ -164,9 +193,9 @@ func TestDockerReleaserRelease(t *testing.T) {
 			firing:  false,
 			force:   false,
 			runFail: false,
-			validate: func(t *testing.T, calls []string, err error) {
+			validate: func(t *testing.T, calls []string, repoName string, err error) {
 				require.NoError(t, err)
-				assert.NotContains(t, calls, "push test.com/test:test")
+				assert.NotContains(t, calls, "push test.com/repo/test:test")
 			},
 		},
 		{
@@ -183,21 +212,35 @@ func TestDockerReleaserRelease(t *testing.T) {
 			firing:  false,
 			force:   true,
 			runFail: false,
-			validate: func(t *testing.T, calls []string, err error) {
+			validate: func(t *testing.T, calls []string, repoName string, err error) {
 				require.NoError(t, err)
 				assert.Contains(t, calls, fmt.Sprintf("inspect %s:%s", CONTAINER_NAME, TAG_NAME))
-				assert.Contains(t, calls, fmt.Sprintf("tag %s:%s test.com/test:test", CONTAINER_NAME, TAG_NAME))
-				assert.Contains(t, calls, "push test.com/test:test")
+				assert.Contains(t, calls, fmt.Sprintf("tag %s:%s test.com/repo/test:test", CONTAINER_NAME, TAG_NAME))
+				assert.Contains(t, calls, "push test.com/repo/test:test")
 			},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			var repoName string
 			var calls []string
+
+			mock := mocks.AWSECRClientMock{
+				CreateRepositoryFunc: func(ctx context.Context, params *ecr.CreateRepositoryInput, optFns ...func(*ecr.Options)) (*ecr.CreateRepositoryOutput, error) {
+					repoName = *params.RepositoryName
+					return &ecr.CreateRepositoryOutput{}, nil
+				},
+				DescribeRepositoriesFunc: func(ctx context.Context, params *ecr.DescribeRepositoriesInput, optFns ...func(*ecr.Options)) (*ecr.DescribeRepositoriesOutput, error) {
+					return nil, fmt.Errorf("RepositoryNotFoundException")
+				},
+			}
+			ecr := aws.NewCustomECRClient(&mock, testutils.NewNoopLogger())
+
 			releaser := DockerReleaser{
 				config:  tt.config,
 				docker:  newWrappedExecuterMock(&calls, tt.execFailOn),
+				ecr:     ecr,
 				force:   tt.force,
 				handler: newReleaseEventHandlerMock(tt.firing),
 				logger:  testutils.NewNoopLogger(),
@@ -207,7 +250,7 @@ func TestDockerReleaserRelease(t *testing.T) {
 			}
 
 			err := releaser.Release()
-			tt.validate(t, calls, err)
+			tt.validate(t, calls, repoName, err)
 		})
 	}
 }

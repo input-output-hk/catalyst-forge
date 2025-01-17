@@ -34,14 +34,23 @@ type GlobalCI struct {
 
 // GlobalDeployment contains the configuration for the global deployment of projects.
 type GlobalDeployment struct {
-	// Registry contains the URL of the container registry holding the deployment code.
-	Registry string `json:"registry"`
+	// Registries contains the configuration for the global deployment registries.
+	Registries GlobalDeploymentRegistries `json:"registries"`
 
 	// Repo contains the configuration for the global deployment repository.
 	Repo GlobalDeploymentRepo `json:"repo"`
 
 	// Root contains the root deployment directory in the deployment repository.
 	Root string `json:"root"`
+}
+
+// GlobalDeploymentRegistries contains the configuration for the global deployment registries.
+type GlobalDeploymentRegistries struct {
+	// Containers contains the default container registry to use for deploying containers.
+	Containers string `json:"containers"`
+
+	// Modules contains the container registry that holds deployment modules.
+	Modules string `json:"modules"`
 }
 
 // GlobalDeploymentRepo contains the configuration for the global deployment repository.

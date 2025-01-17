@@ -44,7 +44,7 @@ func (r *KCLReleaser) Release() error {
 	}
 
 	for _, registry := range registries {
-		container := generateContainerName(&r.project, r.config.Container, registry)
+		container := project.GenerateContainerName(&r.project, r.config.Container, registry)
 		path, err := r.project.GetRelativePath()
 		if err != nil {
 			return fmt.Errorf("failed to get relative path: %w", err)

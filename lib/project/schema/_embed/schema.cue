@@ -34,14 +34,23 @@ package schema
 
 // GlobalDeployment contains the configuration for the global deployment of projects.
 #GlobalDeployment: {
-	// Registry contains the URL of the container registry holding the deployment code.
-	registry: string @go(Registry)
+	// Registries contains the configuration for the global deployment registries.
+	registries: #GlobalDeploymentRegistries @go(Registries)
 
 	// Repo contains the configuration for the global deployment repository.
 	repo: #GlobalDeploymentRepo @go(Repo)
 
 	// Root contains the root deployment directory in the deployment repository.
 	root: string @go(Root)
+}
+
+// GlobalDeploymentRegistries contains the configuration for the global deployment registries.
+#GlobalDeploymentRegistries: {
+	// Containers contains the default container registry to use for deploying containers.
+	containers: string @go(Containers)
+
+	// Modules contains the container registry that holds deployment modules.
+	modules: string @go(Modules)
 }
 
 // GlobalDeploymentRepo contains the configuration for the global deployment repository.
@@ -236,14 +245,9 @@ version: "1.0"
 
 // Module contains the configuration for a deployment module.
 #Module: {
-	// Container contains the name of the container holding the deployment code.
-	// Defaults to <module_name>-deployment). For the main module, <module_name> is the project name.
+	// Name contains the name of the module to deploy.
 	// +optional
-	container?: null | string @go(Container,*string)
-
-	// Module contains the name of the module to deploy.
-	// +optional
-	module?: string @go(Module)
+	name?: string @go(Name)
 
 	// Namespace contains the namespace to deploy the module to.
 	namespace: (_ | *"default") & {

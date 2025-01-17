@@ -14,7 +14,6 @@ import (
 	"github.com/input-output-hk/catalyst-forge/lib/project/schema"
 	"github.com/input-output-hk/catalyst-forge/lib/project/secrets"
 	"github.com/input-output-hk/catalyst-forge/lib/project/secrets/mocks"
-	"github.com/input-output-hk/catalyst-forge/lib/tools/pointers"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/testutils"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -50,7 +49,9 @@ func TestDeploy(t *testing.T) {
 	defaultParams := projectParams{
 		projectName: "test",
 		globalDeploy: schema.GlobalDeployment{
-			Registry: "registry.myserver.com",
+			Registries: schema.GlobalDeploymentRegistries{
+				Modules: "registry.myserver.com",
+			},
 			Repo: schema.GlobalDeploymentRepo{
 				Ref: "main",
 				Url: "https://github.com/foo/bar",
@@ -191,7 +192,9 @@ func TestLoad(t *testing.T) {
 	defaultParams := projectParams{
 		projectName: "test",
 		globalDeploy: schema.GlobalDeployment{
-			Registry: "registry.myserver.com",
+			Registries: schema.GlobalDeploymentRegistries{
+				Modules: "registry.myserver.com",
+			},
 			Repo: schema.GlobalDeploymentRepo{
 				Ref: "main",
 				Url: "https://github.com/foo/bar",
@@ -294,7 +297,7 @@ func newTestProject(p projectParams) *project.Project {
 					Environment: p.enviroment,
 					Modules: &schema.DeploymentModules{
 						Main: schema.Module{
-							Container: pointers.String(p.container),
+							Name:      p.container,
 							Namespace: p.namespace,
 							Values:    ctx.CompileString(p.values),
 							Version:   p.version,
