@@ -241,6 +241,10 @@ version: "1.0"
 	// +optional
 	container?: null | string @go(Container,*string)
 
+	// Module contains the name of the module to deploy.
+	// +optional
+	module?: string @go(Module)
+
 	// Namespace contains the namespace to deploy the module to.
 	namespace: (_ | *"default") & {
 		string

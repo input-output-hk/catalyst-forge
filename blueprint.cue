@@ -71,7 +71,7 @@ global: {
 		]
 	}
 	deployment: {
-		registry: ci.providers.aws.ecr.registry
+		registry: ci.providers.aws.ecr.registry + "/catalyst-deployments"
 		repo: {
 			url: "https://github.com/input-output-hk/catalyst-world"
 			ref: "master"

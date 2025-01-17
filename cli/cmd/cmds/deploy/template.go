@@ -2,6 +2,7 @@ package deploy
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/deployment"
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/run"
@@ -9,6 +10,7 @@ import (
 
 type TemplateCmd struct {
 	Project string `arg:"" help:"The path to the project." kong:"arg,predictor=path"`
+	Values  bool   `help:"Only print the values.yml for the main module"`
 }
 
 func (c *TemplateCmd) Run(ctx run.RunContext) error {
@@ -17,22 +19,29 @@ func (c *TemplateCmd) Run(ctx run.RunContext) error {
 		return fmt.Errorf("could not load project: %w", err)
 	}
 
-	bundle, err := deployment.GenerateBundle(&project)
-	if err != nil {
-		return fmt.Errorf("could not generate bundle: %w", err)
+	runner := deployment.NewKCLRunner(ctx.Logger)
+
+	if c.Values {
+		values, err := runner.GetMainValues(&project)
+		if err != nil {
+			return fmt.Errorf("could not get values: %w", err)
+		}
+
+		fmt.Print(values)
+		return nil
 	}
 
-	templater, err := deployment.NewDefaultBundleTemplater(ctx.Logger)
+	result, err := runner.RunDeployment(&project)
 	if err != nil {
-		return fmt.Errorf("could not create bundle templater: %w", err)
+		return fmt.Errorf("could not run deployment: %w", err)
 	}
 
-	out, err := templater.Render(bundle)
-	if err != nil {
-		return fmt.Errorf("could not render bundle: %w", err)
+	var out string
+	for _, module := range result {
+		out += fmt.Sprintf("%s---\n", module.Manifests)
 	}
 
-	fmt.Println(out)
+	fmt.Print(strings.TrimSuffix(out, "---\n"))
 
 	return nil
 }
