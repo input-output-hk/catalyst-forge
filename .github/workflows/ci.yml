@@ -17,6 +17,11 @@ on:
         required: false
         type: string
         default: "info"
+      nightly:
+        description: Runs nightly targets
+        required: false
+        type: boolean
+        default: false
     secrets:
       earthly_token:
         description: Optional Earthly token used to login to Earthly cloud during local builds of Forge CLI
@@ -30,6 +35,7 @@ env:
   FORGE_REGEX_DOCS: ^docs(-.*)?$
   FORGE_REGEX_RELEASE: ^release(-.*)?$
   FORGE_REGEX_PUBLISH: ^publish(-.*)?$
+  FORGE_REGEX_NIGHTLY: ^nightly(-.*)?$
 
 jobs:
   discover:
@@ -78,7 +84,7 @@ jobs:
             ${{ env.FORGE_REGEX_DOCS }}
             ${{ env.FORGE_REGEX_RELEASE }}
             ${{ env.FORGE_REGEX_PUBLISH }}
-
+            ${{ env.FORGE_REGEX_NIGHTLY }}
   check:
     uses: input-output-hk/catalyst-forge/.github/workflows/run.yml@master
     needs: [discover]
@@ -127,6 +133,18 @@ jobs:
     secrets:
       earthly_token: ${{ secrets.earthly_token }}
 
+  nightly:
+    uses: input-output-hk/catalyst-forge/.github/workflows/run.yml@master
+    needs: [discover, check, build, package]
+    if: (fromJson(needs.discover.outputs.earthfiles)['^nightly(-.*)?$'] != null) && !failure() && !cancelled() && inputs.nightly == true
+    with:
+      earthfiles: ${{ toJson(fromJson(needs.discover.outputs.earthfiles)['^nightly(-.*)?$']) }}
+      forge_version: ${{ inputs.forge_version }}
+      local: ${{ inputs.local }}
+      verbosity: ${{ inputs.verbosity }}
+    secrets:
+      earthly_token: ${{ secrets.earthly_token }}
+
   docs:
     uses: input-output-hk/catalyst-forge/.github/workflows/docs.yml@master
     needs: [discover, check, build, test]
@@ -162,7 +180,7 @@ jobs:
       earthly_token: ${{ secrets.earthly_token }}
 
   final:
-    needs: [check, build, package, test, release, deploy]
+    needs: [check, build, package, test, nightly, release, deploy]
     if: ${{ always() && (contains(needs.*.result, 'failure') || !failure() && !cancelled()) }}
     runs-on: ubuntu-latest
     steps:
