@@ -19,13 +19,18 @@ project: {
 			tag: {}
 		}
 		environment: "dev"
-		modules: main: {
-			container: "foundry-api-deployment"
-			version:   "0.1.1"
-			values: {
-				environment: name: "dev"
-				server: image: {
-					tag: _ @forge(name="GIT_HASH_OR_TAG")
+		modules: {
+			main: {
+				module:  "app"
+				version: "0.2.0"
+				values: {
+					deployment: containers: main: {
+						image: {
+							name: "nginx"
+							tag:  "latest"
+						}
+						port: 80
+					}
 				}
 			}
 		}
