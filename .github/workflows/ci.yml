@@ -162,7 +162,7 @@ jobs:
       earthly_token: ${{ secrets.earthly_token }}
 
   final:
-    needs: [check, build, package, test, release]
+    needs: [check, build, package, test, release, deploy]
     if: ${{ always() && (contains(needs.*.result, 'failure') || !failure() && !cancelled()) }}
     runs-on: ubuntu-latest
     steps:

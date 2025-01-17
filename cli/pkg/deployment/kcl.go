@@ -147,7 +147,7 @@ func encodeValues(ctx *cue.Context, module schema.Module) ([]byte, error) {
 
 // run runs a KCL module with the given module container and arguments.
 func (k *KCLRunner) run(container string, moduleArgs KCLModuleArgs) ([]byte, error) {
-	args := []string{"run", "-q"}
+	args := []string{"run", "-q", "--no_style"}
 	args = append(args, moduleArgs.Serialize()...)
 	args = append(args, fmt.Sprintf("oci://%s", container))
 
