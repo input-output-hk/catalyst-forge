@@ -76,7 +76,7 @@ func TestKCLRunnerRunDeployment(t *testing.T) {
 	type testResults struct {
 		calls  []string
 		err    error
-		output string
+		result map[string]KCLRunResult
 	}
 
 	newProject := func(name, environment, registry string, modules *schema.DeploymentModules) project.Project {
@@ -136,7 +136,10 @@ func TestKCLRunnerRunDeployment(t *testing.T) {
 			execFail: false,
 			validate: func(t *testing.T, r testResults) {
 				assert.NoError(t, r.err)
-				assert.Equal(t, "output\n---\noutput\n", r.output)
+				assert.Equal(t, "output", r.result["main"].Manifests)
+				assert.Equal(t, "key: value\n", r.result["main"].Values)
+				assert.Equal(t, "output", r.result["support"].Manifests)
+				assert.Equal(t, "key1: value1\n", r.result["support"].Values)
 				assert.Contains(t, r.calls, "run -q -D name= -D namespace=default -D values={\"key\":\"value\"} -D 1.0.0 oci://test.com/module")
 				assert.Contains(t, r.calls, "run -q -D name= -D namespace=default -D values={\"key1\":\"value1\"} -D 1.0.0 oci://test.com/module1")
 			},
@@ -203,11 +206,11 @@ func TestKCLRunnerRunDeployment(t *testing.T) {
 				logger: testutils.NewNoopLogger(),
 			}
 
-			output, err := runner.RunDeployment(&tt.project)
+			result, err := runner.RunDeployment(&tt.project)
 			tt.validate(t, testResults{
 				calls:  calls,
 				err:    err,
-				output: string(output),
+				result: result,
 			})
 		})
 	}

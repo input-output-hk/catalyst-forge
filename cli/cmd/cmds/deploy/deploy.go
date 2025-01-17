@@ -9,6 +9,7 @@ import (
 )
 
 type PushCmd struct {
+	Force   bool   `help:"Force deployment even if no deployment event is firing."`
 	Project string `arg:"" help:"The path to the project to deploy." kong:"arg,predictor=path"`
 }
 
@@ -19,7 +20,7 @@ func (c *PushCmd) Run(ctx run.RunContext) error {
 	}
 
 	eh := events.NewDefaultEventHandler(ctx.Logger)
-	if !eh.Firing(&project, project.GetDeploymentEvents()) {
+	if !eh.Firing(&project, project.GetDeploymentEvents()) && !c.Force {
 		ctx.Logger.Info("No deployment event is firing, skipping deployment")
 		return nil
 	}

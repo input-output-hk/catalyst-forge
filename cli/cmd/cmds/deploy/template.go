@@ -2,6 +2,7 @@ package deploy
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/deployment"
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/run"
@@ -30,11 +31,17 @@ func (c *TemplateCmd) Run(ctx run.RunContext) error {
 		return nil
 	}
 
-	out, err := runner.RunDeployment(&project)
+	result, err := runner.RunDeployment(&project)
 	if err != nil {
 		return fmt.Errorf("could not run deployment: %w", err)
 	}
 
-	fmt.Print(out)
+	var out string
+	for _, module := range result {
+		out += fmt.Sprintf("%s---\n", module.Manifests)
+	}
+
+	fmt.Print(strings.TrimSuffix(out, "---\n"))
+
 	return nil
 }

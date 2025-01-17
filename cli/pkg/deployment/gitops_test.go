@@ -74,29 +74,26 @@ func TestDeploy(t *testing.T) {
 		name        string
 		mock        mockGitRemote
 		project     projectParams
+		yaml        string
+		execFail    bool
 		setup       func(*testing.T, *GitopsDeployer, *testutils.InMemRepo)
 		validate    func(*testing.T, *GitopsDeployer, mockGitRemote, *testutils.InMemRepo)
 		expectErr   bool
 		expectedErr string
 	}{
 		{
-			name:    "valid",
-			mock:    mockGitRemote{},
-			project: defaultParams,
+			name:     "valid",
+			mock:     mockGitRemote{},
+			project:  defaultParams,
+			yaml:     "yaml",
+			execFail: false,
 			setup: func(t *testing.T, deployer *GitopsDeployer, repo *testutils.InMemRepo) {
 				deployer.token = "test"
 				repo.MkdirAll(t, "deploy/dev/apps")
 			},
 			validate: func(t *testing.T, deployer *GitopsDeployer, mock mockGitRemote, repo *testutils.InMemRepo) {
-				assert.True(t, repo.Exists(t, "deploy/dev/apps/test/bundle.cue"), "bundle.cue does not exist")
-
-				bundle, err := GenerateBundle(deployer.project)
-				require.NoError(t, err, "failed to generate bundle")
-				contents, err := bundle.Encode()
-				require.NoError(t, err, "failed to encode bundle")
-
-				assert.NoError(t, err, "failed to generate bundle")
-				assert.Equal(t, repo.ReadFile(t, "deploy/dev/apps/test/bundle.cue"), contents, "bundle.cue contents do not match")
+				assert.True(t, repo.Exists(t, "deploy/dev/apps/test/main.yaml"), "main.yaml does not exist")
+				assert.Equal(t, repo.ReadFile(t, "deploy/dev/apps/test/main.yaml"), []byte("yaml"), "main.yaml content is incorrect")
 
 				head, err := repo.Repo.Head()
 				require.NoError(t, err, "failed to get head")
@@ -110,18 +107,15 @@ func TestDeploy(t *testing.T) {
 			expectedErr: "",
 		},
 		{
-			name:    "no changes",
-			mock:    mockGitRemote{},
-			project: defaultParams,
+			name:     "no changes",
+			mock:     mockGitRemote{},
+			project:  defaultParams,
+			yaml:     "yaml",
+			execFail: false,
 			setup: func(t *testing.T, deployer *GitopsDeployer, repo *testutils.InMemRepo) {
 				repo.MkdirAll(t, "deploy/dev/apps/test")
-
-				bundle, err := GenerateBundle(deployer.project)
-				require.NoError(t, err, "failed to generate bundle")
-				contents, err := bundle.Encode()
-				require.NoError(t, err, "failed to encode bundle")
-
-				repo.AddFile(t, "deploy/dev/apps/test/bundle.cue", string(contents))
+				repo.AddFile(t, "deploy/dev/apps/test/main.yaml", string("yaml"))
+				repo.AddFile(t, "deploy/dev/apps/test/main.values", string("foo: bar\n"))
 				repo.Commit(t, "initial commit")
 			},
 			validate:    func(t *testing.T, deployer *GitopsDeployer, mock mockGitRemote, repo *testutils.InMemRepo) {},
@@ -142,8 +136,13 @@ func TestDeploy(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			repo := testutils.NewInMemRepo(t)
+			var calls []string
 			deployer := GitopsDeployer{
-				fs:          repo.Fs,
+				fs: repo.Fs,
+				kcl: KCLRunner{
+					logger: testutils.NewNoopLogger(),
+					kcl:    newWrappedExecuterMock(tt.yaml, &calls, tt.execFail),
+				},
 				logger:      testutils.NewNoopLogger(),
 				project:     newTestProject(tt.project),
 				remote:      &tt.mock,

@@ -44,6 +44,12 @@ func (k *KCLModuleArgs) Serialize() []string {
 	}
 }
 
+// KCLRunResultModule represents a single module in a KCL run result.
+type KCLRunResult struct {
+	Manifests string
+	Values    string
+}
+
 // KCLRunner is used to run KCL commands.
 type KCLRunner struct {
 	kcl    executor.WrappedExecuter
@@ -76,12 +82,12 @@ func (k *KCLRunner) GetMainValues(p *project.Project) (string, error) {
 
 // RunDeployment runs the deployment modules in the project and returns the
 // combined output.
-func (k *KCLRunner) RunDeployment(p *project.Project) (string, error) {
+func (k *KCLRunner) RunDeployment(p *project.Project) (map[string]KCLRunResult, error) {
 	ctx := cuecontext.New()
 	if p.Blueprint.Project.Deployment.Modules == nil {
-		return "", fmt.Errorf("no deployment modules found in project blueprint")
+		return nil, fmt.Errorf("no deployment modules found in project blueprint")
 	} else if p.Blueprint.Global.Deployment.Registry == "" {
-		return "", fmt.Errorf("no deployment registry found in project blueprint")
+		return nil, fmt.Errorf("no deployment registry found in project blueprint")
 	}
 
 	modules := map[string]schema.Module{"main": p.Blueprint.Project.Deployment.Modules.Main}
@@ -89,11 +95,11 @@ func (k *KCLRunner) RunDeployment(p *project.Project) (string, error) {
 		modules[k] = v
 	}
 
-	var final string
-	for _, module := range modules {
+	result := make(map[string]KCLRunResult)
+	for name, module := range modules {
 		json, err := encodeValues(ctx, module)
 		if err != nil {
-			return "", fmt.Errorf("failed to encode module values: %w", err)
+			return nil, fmt.Errorf("failed to encode module values: %w", err)
 		}
 
 		args := KCLModuleArgs{
@@ -107,13 +113,21 @@ func (k *KCLRunner) RunDeployment(p *project.Project) (string, error) {
 		out, err := k.run(container, args)
 		if err != nil {
 			k.logger.Error("Failed to run KCL module", "module", module.Module, "error", err, "output", string(out))
-			return "", fmt.Errorf("failed to run KCL module: %w", err)
+			return nil, fmt.Errorf("failed to run KCL module: %w", err)
 		}
 
-		final += strings.Trim(string(out), "\n") + "\n---\n"
+		yaml, err := jsonToYaml(json)
+		if err != nil {
+			return nil, fmt.Errorf("failed to convert values to YAML: %w", err)
+		}
+
+		result[name] = KCLRunResult{
+			Manifests: string(out),
+			Values:    string(yaml),
+		}
 	}
 
-	return strings.TrimSuffix(final, "---\n"), nil
+	return result, nil
 }
 
 // encodeValues encodes the values of a module to JSON.

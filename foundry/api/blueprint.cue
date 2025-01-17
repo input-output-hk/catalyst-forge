@@ -15,8 +15,9 @@ project: {
 	}
 	deployment: {
 		on: {
-			merge: {}
-			tag: {}
+			//merge: {}
+			//tag: {}
+			always: {}
 		}
 		environment: "dev"
 		modules: {
@@ -26,10 +27,18 @@ project: {
 				values: {
 					deployment: containers: main: {
 						image: {
-							name: "nginx"
-							tag:  "latest"
+							name: "332405224602.dkr.ecr.eu-central-1.amazonaws.com/foundry-api"
+							tag:  _ @forge(name="GIT_HASH_OR_TAG")
 						}
-						port: 80
+						port: 8080
+						probes: {
+							liveness: path:  "/"
+							readiness: path: "/"
+						}
+					}
+					service: {
+						targetPort: 8080
+						port:       8080
 					}
 				}
 			}
@@ -38,8 +47,9 @@ project: {
 	release: {
 		docker: {
 			on: {
-				merge: {}
-				tag: {}
+				//merge: {}
+				//tag: {}
+				always: {}
 			}
 			config: {
 				tag: _ @forge(name="GIT_HASH_OR_TAG")
