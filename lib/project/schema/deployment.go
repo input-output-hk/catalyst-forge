@@ -30,6 +30,10 @@ type Module struct {
 	// +optional
 	Container *string `json:"container"`
 
+	// Module contains the name of the module to deploy.
+	// +optional
+	Module string `json:"module"`
+
 	// Namespace contains the namespace to deploy the module to.
 	Namespace string `json:"namespace"`
 

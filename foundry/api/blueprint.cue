@@ -15,17 +15,31 @@ project: {
 	}
 	deployment: {
 		on: {
-			merge: {}
-			tag: {}
+			//merge: {}
+			//tag: {}
+			always: {}
 		}
 		environment: "dev"
-		modules: main: {
-			container: "foundry-api-deployment"
-			version:   "0.1.1"
-			values: {
-				environment: name: "dev"
-				server: image: {
-					tag: _ @forge(name="GIT_HASH_OR_TAG")
+		modules: {
+			main: {
+				module:  "app"
+				version: "0.2.0"
+				values: {
+					deployment: containers: main: {
+						image: {
+							name: "ghcr.io/input-output-hk/catalyst-forge/foundry-api"
+							tag:  _ @forge(name="GIT_HASH_OR_TAG")
+						}
+						port: 8080
+						probes: {
+							liveness: path:  "/"
+							readiness: path: "/"
+						}
+					}
+					service: {
+						targetPort: 8080
+						port:       8080
+					}
 				}
 			}
 		}
@@ -33,8 +47,9 @@ project: {
 	release: {
 		docker: {
 			on: {
-				merge: {}
-				tag: {}
+				//merge: {}
+				//tag: {}
+				always: {}
 			}
 			config: {
 				tag: _ @forge(name="GIT_HASH_OR_TAG")
