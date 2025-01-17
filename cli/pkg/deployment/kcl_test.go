@@ -140,8 +140,8 @@ func TestKCLRunnerRunDeployment(t *testing.T) {
 				assert.Equal(t, "key: value\n", r.result["main"].Values)
 				assert.Equal(t, "output", r.result["support"].Manifests)
 				assert.Equal(t, "key1: value1\n", r.result["support"].Values)
-				assert.Contains(t, r.calls, "run -q -D name= -D namespace=default -D values={\"key\":\"value\"} -D 1.0.0 oci://test.com/module")
-				assert.Contains(t, r.calls, "run -q -D name= -D namespace=default -D values={\"key1\":\"value1\"} -D 1.0.0 oci://test.com/module1")
+				assert.Contains(t, r.calls, "run -q --no_style -D name= -D namespace=default -D values={\"key\":\"value\"} -D 1.0.0 oci://test.com/module")
+				assert.Contains(t, r.calls, "run -q --no_style -D name= -D namespace=default -D values={\"key1\":\"value1\"} -D 1.0.0 oci://test.com/module1")
 			},
 		},
 		{

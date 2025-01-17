@@ -15,9 +15,8 @@ project: {
 	}
 	deployment: {
 		on: {
-			//merge: {}
-			//tag: {}
-			always: {}
+			merge: {}
+			tag: {}
 		}
 		environment: "dev"
 		modules: {
@@ -47,9 +46,8 @@ project: {
 	release: {
 		docker: {
 			on: {
-				//merge: {}
-				//tag: {}
-				always: {}
+				merge: {}
+				tag: {}
 			}
 			config: {
 				tag: _ @forge(name="GIT_HASH_OR_TAG")

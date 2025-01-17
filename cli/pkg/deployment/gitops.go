@@ -45,6 +45,7 @@ func (g gitRemote) Push(repo *git.Repository, o *git.PushOptions) error {
 
 // GitopsDeployer is a deployer that deploys projects to a GitOps repository.
 type GitopsDeployer struct {
+	dryrun      bool
 	fs          billy.Filesystem
 	repo        *git.Repository
 	kcl         KCLRunner
@@ -108,21 +109,29 @@ func (g *GitopsDeployer) Deploy() error {
 		}
 	}
 
-	changes, err := g.hasChanges()
-	if err != nil {
-		return fmt.Errorf("could not check if worktree has changes: %w", err)
-	} else if !changes {
-		return ErrNoChanges
-	}
+	if !g.dryrun {
+		changes, err := g.hasChanges()
+		if err != nil {
+			return fmt.Errorf("could not check if worktree has changes: %w", err)
+		} else if !changes {
+			return ErrNoChanges
+		}
 
-	g.logger.Info("Committing changes", "path", bundlePath)
-	if err := g.commit(); err != nil {
-		return fmt.Errorf("could not commit changes: %w", err)
-	}
+		g.logger.Info("Committing changes", "path", bundlePath)
+		if err := g.commit(); err != nil {
+			return fmt.Errorf("could not commit changes: %w", err)
+		}
 
-	g.logger.Info("Pushing changes")
-	if err := g.push(); err != nil {
-		return fmt.Errorf("could not push changes: %w", err)
+		g.logger.Info("Pushing changes")
+		if err := g.push(); err != nil {
+			return fmt.Errorf("could not push changes: %w", err)
+		}
+	} else {
+		g.logger.Info("Dry-run: not committing or pushing changes")
+		g.logger.Info("Dumping manifests")
+		for _, r := range result {
+			fmt.Print(r.Manifests)
+		}
 	}
 
 	return nil
@@ -245,12 +254,14 @@ func NewGitopsDeployer(
 	project *project.Project,
 	store *secrets.SecretStore,
 	logger *slog.Logger,
+	dryrun bool,
 ) GitopsDeployer {
 	if logger == nil {
 		logger = slog.New(slog.NewTextHandler(io.Discard, nil))
 	}
 
 	return GitopsDeployer{
+		dryrun:      dryrun,
 		fs:          memfs.New(),
 		kcl:         NewKCLRunner(logger),
 		logger:      logger,
