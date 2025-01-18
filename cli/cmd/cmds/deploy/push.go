@@ -9,6 +9,7 @@ import (
 )
 
 type PushCmd struct {
+	Force   bool   `help:"Force deployment even if no deployment event is firing."`
 	Project string `arg:"" help:"The path to the project to deploy." kong:"arg,predictor=path"`
 }
 
@@ -18,13 +19,14 @@ func (c *PushCmd) Run(ctx run.RunContext) error {
 		return fmt.Errorf("could not load project: %w", err)
 	}
 
+	var dryrun bool
 	eh := events.NewDefaultEventHandler(ctx.Logger)
-	if !eh.Firing(&project, project.GetDeploymentEvents()) {
-		ctx.Logger.Info("No deployment event is firing, skipping deployment")
-		return nil
+	if !eh.Firing(&project, project.GetDeploymentEvents()) && !c.Force {
+		ctx.Logger.Info("No deployment event is firing, performing dry-run")
+		dryrun = true
 	}
 
-	deployer := deployment.NewGitopsDeployer(&project, &ctx.SecretStore, ctx.Logger)
+	deployer := deployment.NewGitopsDeployer(&project, &ctx.SecretStore, ctx.Logger, dryrun)
 	if err := deployer.Load(); err != nil {
 		return fmt.Errorf("could not load deployer: %w", err)
 	}

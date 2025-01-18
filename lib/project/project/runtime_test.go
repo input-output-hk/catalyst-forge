@@ -1,6 +1,7 @@
 package project
 
 import (
+	"fmt"
 	"os"
 	"testing"
 
@@ -9,11 +10,60 @@ import (
 	"github.com/go-git/go-git/v5"
 	"github.com/input-output-hk/catalyst-forge/lib/project/blueprint"
 	"github.com/input-output-hk/catalyst-forge/lib/project/providers"
+	lc "github.com/input-output-hk/catalyst-forge/lib/tools/cue"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/testutils"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+func TestDeploymentRuntimeLoad(t *testing.T) {
+	ctx := cuecontext.New()
+
+	tests := []struct {
+		name        string
+		projectName string
+		registry    string
+		repo        string
+		validate    func(*testing.T, map[string]cue.Value)
+	}{
+		{
+			name:        "full",
+			projectName: "test",
+			registry:    "test-registry",
+			repo:        "test-repo",
+			validate: func(t *testing.T, data map[string]cue.Value) {
+				assert.Contains(t, data, "CONTAINER_IMAGE")
+				assert.Equal(t, "test-registry/test-repo/test", getString(t, data["CONTAINER_IMAGE"]))
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			rv := fmt.Sprintf(`
+				project: name: "%s"
+				global: {
+					deployment: registries: containers: "%s"
+					repo: name: "%s"
+				}
+			`, tt.name, tt.registry, tt.repo)
+
+			v, err := lc.Compile(ctx, []byte(rv))
+			require.NoError(t, err)
+
+			p := &Project{
+				ctx:          ctx,
+				Name:         tt.projectName,
+				RawBlueprint: blueprint.NewRawBlueprint(v),
+			}
+
+			runtime := &DeploymentRuntime{logger: testutils.NewNoopLogger()}
+			data := runtime.Load(p)
+			tt.validate(t, data)
+		})
+	}
+}
 
 func TestGitRuntimeLoad(t *testing.T) {
 	ctx := cuecontext.New()

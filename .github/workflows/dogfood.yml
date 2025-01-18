@@ -17,5 +17,6 @@ jobs:
     with:
       forge_version: local
       verbosity: debug
+      nightly: true
     secrets:
       earthly_token: ${{ secrets.EARTHLY_TOKEN }}

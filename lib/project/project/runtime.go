@@ -8,11 +8,58 @@ import (
 	"github.com/go-git/go-git/v5"
 	"github.com/google/go-github/v66/github"
 	"github.com/input-output-hk/catalyst-forge/lib/project/providers"
+	"github.com/input-output-hk/catalyst-forge/lib/project/schema"
 )
 
 // RuntimeData is an interface for runtime data loaders.
 type RuntimeData interface {
 	Load(project *Project) map[string]cue.Value
+}
+
+// DeploymentRuntime is a runtime data loader for deployment related data.
+type DeploymentRuntime struct {
+	logger *slog.Logger
+}
+
+func (g *DeploymentRuntime) Load(project *Project) map[string]cue.Value {
+	g.logger.Debug("Loading deployment runtime data")
+	data := make(map[string]cue.Value)
+
+	var registry string
+	dc, err := project.RawBlueprint.Get("global.deployment.registries.containers").String()
+	if err != nil {
+		g.logger.Warn("Failed to get containers registry", "error", err)
+	} else {
+		registry = dc
+	}
+
+	var repo string
+	rc, err := project.RawBlueprint.Get("global.repo.name").String()
+	if err != nil {
+		g.logger.Warn("Failed to get repository name", "error", err)
+	} else {
+		repo = rc
+	}
+
+	project.Blueprint = schema.Blueprint{
+		Global: schema.Global{
+			Repo: schema.GlobalRepo{
+				Name: repo,
+			},
+		},
+	}
+
+	container := GenerateContainerName(project, project.Name, registry)
+	data["CONTAINER_IMAGE"] = project.ctx.CompileString(fmt.Sprintf(`"%s"`, container))
+
+	return data
+}
+
+// NewDeploymentRuntime creates a new DeploymentRuntime.
+func NewDeploymentRuntime(logger *slog.Logger) *DeploymentRuntime {
+	return &DeploymentRuntime{
+		logger: logger,
+	}
 }
 
 // GitRuntime is a runtime data loader for git related data.

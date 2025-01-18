@@ -6,6 +6,7 @@ global: {
 			"^build(-.*)?$",
 			"^package(-.*)?$",
 			"^test(-.*)?$",
+			"^nightly(-.*)?$",
 		]
 		registries: [
 			"ghcr.io/input-output-hk/catalyst-forge",
@@ -70,7 +71,10 @@ global: {
 		]
 	}
 	deployment: {
-		registry: ci.providers.aws.ecr.registry
+		registries: {
+			containers: "ghcr.io/input-output-hk/catalyst-forge"
+			modules:    ci.providers.aws.ecr.registry + "/catalyst-deployments"
+		}
 		repo: {
 			url: "https://github.com/input-output-hk/catalyst-world"
 			ref: "master"

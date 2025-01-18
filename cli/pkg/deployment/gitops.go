@@ -45,8 +45,10 @@ func (g gitRemote) Push(repo *git.Repository, o *git.PushOptions) error {
 
 // GitopsDeployer is a deployer that deploys projects to a GitOps repository.
 type GitopsDeployer struct {
+	dryrun      bool
 	fs          billy.Filesystem
 	repo        *git.Repository
+	kcl         KCLRunner
 	logger      *slog.Logger
 	project     *project.Project
 	remote      gitRemoteInterface
@@ -86,42 +88,50 @@ func (g *GitopsDeployer) Deploy() error {
 		}
 	}
 
-	g.logger.Info("Generating bundle")
-	bundle, err := g.makeBundle()
+	g.logger.Info("Generating manifests")
+	result, err := g.kcl.RunDeployment(g.project)
 	if err != nil {
-		return fmt.Errorf("could not make bundle: %w", err)
+		return fmt.Errorf("could not generate deployment manifests: %w", err)
 	}
 
-	g.logger.Info("Writing bundle to filesystem", "path", bundlePath)
-	bundleFile, err := g.fs.Create(bundlePath)
-	if err != nil {
-		return fmt.Errorf("could not create bundle file: %w", err)
+	for n, r := range result {
+		mpath := filepath.Join(prjPath, fmt.Sprintf("%s.yaml", n))
+		vpath := filepath.Join(prjPath, fmt.Sprintf("%s.values", n))
+
+		g.logger.Info("Writing manifest", "path", mpath)
+		if err := g.write(mpath, []byte(r.Manifests)); err != nil {
+			return fmt.Errorf("could not write manifest: %w", err)
+		}
+
+		g.logger.Info("Writing values", "path", vpath)
+		if err := g.write(vpath, []byte(r.Values)); err != nil {
+			return fmt.Errorf("could not write values: %w", err)
+		}
 	}
 
-	_, err = bundleFile.Write(bundle)
-	if err != nil {
-		return fmt.Errorf("could not write bundle to file: %w", err)
-	}
+	if !g.dryrun {
+		changes, err := g.hasChanges()
+		if err != nil {
+			return fmt.Errorf("could not check if worktree has changes: %w", err)
+		} else if !changes {
+			return ErrNoChanges
+		}
 
-	if err := g.addFile(bundlePath); err != nil {
-		return fmt.Errorf("could not add file to worktree: %w", err)
-	}
+		g.logger.Info("Committing changes", "path", bundlePath)
+		if err := g.commit(); err != nil {
+			return fmt.Errorf("could not commit changes: %w", err)
+		}
 
-	changes, err := g.hasChanges()
-	if err != nil {
-		return fmt.Errorf("could not check if worktree has changes: %w", err)
-	} else if !changes {
-		return ErrNoChanges
-	}
-
-	g.logger.Info("Committing changes", "path", bundlePath)
-	if err := g.commit(); err != nil {
-		return fmt.Errorf("could not commit changes: %w", err)
-	}
-
-	g.logger.Info("Pushing changes")
-	if err := g.push(); err != nil {
-		return fmt.Errorf("could not push changes: %w", err)
+		g.logger.Info("Pushing changes")
+		if err := g.push(); err != nil {
+			return fmt.Errorf("could not push changes: %w", err)
+		}
+	} else {
+		g.logger.Info("Dry-run: not committing or pushing changes")
+		g.logger.Info("Dumping manifests")
+		for _, r := range result {
+			fmt.Print(r.Manifests)
+		}
 	}
 
 	return nil
@@ -209,21 +219,6 @@ func (g *GitopsDeployer) hasChanges() (bool, error) {
 	return !status.IsClean(), nil
 }
 
-// makeBundle generates a bundle file for the project.
-func (g *GitopsDeployer) makeBundle() ([]byte, error) {
-	bundle, err := GenerateBundle(g.project)
-	if err != nil {
-		return nil, fmt.Errorf("could not generate bundle: %w", err)
-	}
-
-	bytes, err := bundle.Encode()
-	if err != nil {
-		return nil, fmt.Errorf("could not encode bundle: %w", err)
-	}
-
-	return bytes, nil
-}
-
 // push pushes the current worktree to the remote repository.
 func (g *GitopsDeployer) push() error {
 	return g.remote.Push(g.repo, &git.PushOptions{
@@ -234,18 +229,41 @@ func (g *GitopsDeployer) push() error {
 	})
 }
 
+// write writes the given contents to the given path in the filesystem.
+// It also adds the file to the current worktree.
+func (g *GitopsDeployer) write(path string, contents []byte) error {
+	vfile, err := g.fs.Create(path)
+	if err != nil {
+		return fmt.Errorf("could not create file: %w", err)
+	}
+
+	_, err = vfile.Write([]byte(contents))
+	if err != nil {
+		return fmt.Errorf("could not write to file: %w", err)
+	}
+
+	if err := g.addFile(path); err != nil {
+		return fmt.Errorf("could not add file to worktree: %w", err)
+	}
+
+	return nil
+}
+
 // NewGitopsDeployer creates a new GitopsDeployer.
 func NewGitopsDeployer(
 	project *project.Project,
 	store *secrets.SecretStore,
 	logger *slog.Logger,
+	dryrun bool,
 ) GitopsDeployer {
 	if logger == nil {
 		logger = slog.New(slog.NewTextHandler(io.Discard, nil))
 	}
 
 	return GitopsDeployer{
+		dryrun:      dryrun,
 		fs:          memfs.New(),
+		kcl:         NewKCLRunner(logger),
 		logger:      logger,
 		project:     project,
 		remote:      gitRemote{},

@@ -5,3 +5,8 @@ test:
     FROM ubuntu:latest
 
     RUN echo "Testing"
+
+nightly-test:
+    FROM ubuntu:latest
+
+    RUN echo "Nightly testing"
