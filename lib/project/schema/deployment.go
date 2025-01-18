@@ -25,14 +25,10 @@ type DeploymentModules struct {
 
 // Module contains the configuration for a deployment module.
 type Module struct {
-	// Container contains the name of the container holding the deployment code.
-	// Defaults to <module_name>-deployment). For the main module, <module_name> is the project name.
-	// +optional
-	Container *string `json:"container"`
 
-	// Module contains the name of the module to deploy.
+	// Name contains the name of the module to deploy.
 	// +optional
-	Module string `json:"module"`
+	Name string `json:"name"`
 
 	// Namespace contains the namespace to deploy the module to.
 	Namespace string `json:"namespace"`

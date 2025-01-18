@@ -60,8 +60,8 @@ type KCLRunner struct {
 func (k *KCLRunner) GetMainValues(p *project.Project) (string, error) {
 	if p.Blueprint.Project.Deployment.Modules == nil {
 		return "", fmt.Errorf("no deployment modules found in project blueprint")
-	} else if p.Blueprint.Global.Deployment.Registry == "" {
-		return "", fmt.Errorf("no deployment registry found in project blueprint")
+	} else if p.Blueprint.Global.Deployment.Registries.Modules == "" {
+		return "", fmt.Errorf("no module deployment registry found in project blueprint")
 	}
 
 	ctx := cuecontext.New()
@@ -86,8 +86,8 @@ func (k *KCLRunner) RunDeployment(p *project.Project) (map[string]KCLRunResult, 
 	ctx := cuecontext.New()
 	if p.Blueprint.Project.Deployment.Modules == nil {
 		return nil, fmt.Errorf("no deployment modules found in project blueprint")
-	} else if p.Blueprint.Global.Deployment.Registry == "" {
-		return nil, fmt.Errorf("no deployment registry found in project blueprint")
+	} else if p.Blueprint.Global.Deployment.Registries.Modules == "" {
+		return nil, fmt.Errorf("no module deployment registry found in project blueprint")
 	}
 
 	modules := map[string]schema.Module{"main": p.Blueprint.Project.Deployment.Modules.Main}
@@ -109,10 +109,10 @@ func (k *KCLRunner) RunDeployment(p *project.Project) (map[string]KCLRunResult, 
 			Version:      module.Version,
 		}
 
-		container := fmt.Sprintf("%s/%s", strings.TrimSuffix(p.Blueprint.Global.Deployment.Registry, "/"), module.Module)
+		container := fmt.Sprintf("%s/%s", strings.TrimSuffix(p.Blueprint.Global.Deployment.Registries.Modules, "/"), module.Name)
 		out, err := k.run(container, args)
 		if err != nil {
-			k.logger.Error("Failed to run KCL module", "module", module.Module, "error", err, "output", string(out))
+			k.logger.Error("Failed to run KCL module", "module", module.Name, "error", err, "output", string(out))
 			return nil, fmt.Errorf("failed to run KCL module: %w", err)
 		}
 

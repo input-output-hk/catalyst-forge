@@ -8,6 +8,7 @@ import (
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/earthly"
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/events"
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/executor"
+	"github.com/input-output-hk/catalyst-forge/cli/pkg/providers/aws"
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/run"
 	"github.com/input-output-hk/catalyst-forge/lib/project/project"
 	"github.com/input-output-hk/catalyst-forge/lib/project/schema"
@@ -26,6 +27,7 @@ type DockerReleaserConfig struct {
 type DockerReleaser struct {
 	config      DockerReleaserConfig
 	docker      executor.WrappedExecuter
+	ecr         aws.ECRClient
 	force       bool
 	handler     events.EventHandler
 	logger      *slog.Logger
@@ -56,9 +58,7 @@ func (r *DockerReleaser) Release() error {
 		return fmt.Errorf("no registries found")
 	}
 
-	container := r.project.Blueprint.Project.Container
 	registries := r.project.Blueprint.Global.CI.Registries
-
 	imageTag := r.config.Tag
 	if imageTag == "" {
 		return fmt.Errorf("no image tag specified")
@@ -69,10 +69,18 @@ func (r *DockerReleaser) Release() error {
 		for _, registry := range registries {
 			var pushed []string
 
+			container := project.GenerateContainerName(&r.project, r.project.Blueprint.Project.Container, registry)
+			if isECRRegistry(registry) {
+				r.logger.Info("Detected ECR registry, checking if repository exists", "repository", container)
+				if err := createECRRepoIfNotExists(r.ecr, &r.project, container, r.logger); err != nil {
+					return fmt.Errorf("failed to create ECR repository: %w", err)
+				}
+			}
+
 			for _, platform := range platforms {
 				platformSuffix := strings.Replace(platform, "/", "_", -1)
 				curImage := fmt.Sprintf("%s:%s_%s", CONTAINER_NAME, TAG_NAME, platformSuffix)
-				newImage := fmt.Sprintf("%s/%s:%s_%s", registry, container, imageTag, platformSuffix)
+				newImage := fmt.Sprintf("%s:%s_%s", container, imageTag, platformSuffix)
 
 				r.logger.Debug("Tagging image", "tag", newImage)
 				if err := r.tagImage(curImage, newImage); err != nil {
@@ -95,8 +103,16 @@ func (r *DockerReleaser) Release() error {
 		}
 	} else {
 		for _, registry := range registries {
+			container := project.GenerateContainerName(&r.project, r.project.Blueprint.Project.Container, registry)
+			if isECRRegistry(registry) {
+				r.logger.Info("Detected ECR registry, checking if repository exists", "repository", container)
+				if err := createECRRepoIfNotExists(r.ecr, &r.project, container, r.logger); err != nil {
+					return fmt.Errorf("failed to create ECR repository: %w", err)
+				}
+			}
+
 			curImage := fmt.Sprintf("%s:%s", CONTAINER_NAME, TAG_NAME)
-			newImage := fmt.Sprintf("%s/%s:%s", registry, container, imageTag)
+			newImage := fmt.Sprintf("%s:%s", container, imageTag)
 
 			r.logger.Info("Tagging image", "old", curImage, "new", newImage)
 			if err := r.tagImage(curImage, newImage); err != nil {
@@ -215,12 +231,18 @@ func NewDockerReleaser(
 		return nil, fmt.Errorf("failed to parse release config: %w", err)
 	}
 
+	ecr, err := aws.NewECRClient(ctx.Logger)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create ECR client: %w", err)
+	}
+
 	docker := executor.NewLocalWrappedExecutor(exec, "docker")
 	handler := events.NewDefaultEventHandler(ctx.Logger)
 	runner := run.NewDefaultProjectRunner(ctx, &project)
 	return &DockerReleaser{
 		config:      config,
 		docker:      docker,
+		ecr:         ecr,
 		force:       force,
 		handler:     &handler,
 		logger:      ctx.Logger,
