@@ -82,6 +82,7 @@ func (k *KCLRunner) RunDeployment(p *project.Project) (map[string]KCLRunResult, 
 			Version:      module.Version,
 		}
 
+		k.logger.Debug("Running KCL module", "module", args.Module, "version", args.Version)
 		out, err := k.client.Run(args)
 		if err != nil {
 			k.logger.Error("Failed to run KCL module", "module", module.Name, "error", err, "log", k.client.Log())
