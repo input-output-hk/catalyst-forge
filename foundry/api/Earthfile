@@ -5,7 +5,7 @@ deps:
 
     WORKDIR /work
 
-    RUN apk add file
+    RUN apt-get update && apt-get install -y file
 
     RUN mkdir -p /go/cache && mkdir -p /go/modcache
     ENV GOCACHE=/go/cache

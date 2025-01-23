@@ -6,6 +6,7 @@ deps:
     WORKDIR /work
 
     RUN apt-get update && apt-get install -y file
+
     RUN mkdir -p /go/cache && mkdir -p /go/modcache
     ENV GOCACHE=/go/cache
     ENV GOMODCACHE=/go/modcache
