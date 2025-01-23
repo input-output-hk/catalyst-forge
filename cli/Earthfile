@@ -5,6 +5,7 @@ deps:
 
     WORKDIR /work
 
+    RUN apt-get update && apt-get install -y file
     RUN mkdir -p /go/cache && mkdir -p /go/modcache
     ENV GOCACHE=/go/cache
     ENV GOMODCACHE=/go/modcache
@@ -39,8 +40,7 @@ build:
 
     ENV CGO_ENABLED=0
     RUN go build -ldflags="-extldflags=-static -X main.version=$version" -o bin/forge cmd/main.go
-    #RUN file bin/forge
-    RUN ./bin/forge version
+    RUN file bin/forge
 
     SAVE ARTIFACT bin/forge forge
 
