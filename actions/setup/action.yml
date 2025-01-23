@@ -257,7 +257,7 @@ runs:
         path: /usr/local/bin/kcl
         key: ${{ runner.os }}-kcl-${{ steps.kcl.outputs.version }}
     - name: Install KCL
-      if: steps.cache-kcl.outputs.cache-hit == false
+      if: steps.kcl.outputs.install && steps.cache-kcl.outputs.cache-hit == false
       shell: bash
       run: |
         WORKDIR="$(mktemp -d)"

@@ -9,40 +9,11 @@ import (
 
 	"cuelang.org/go/cue"
 	"cuelang.org/go/cue/cuecontext"
-	"github.com/input-output-hk/catalyst-forge/cli/pkg/executor"
+	"github.com/input-output-hk/catalyst-forge/cli/pkg/providers/kcl"
 	"github.com/input-output-hk/catalyst-forge/lib/project/project"
 	"github.com/input-output-hk/catalyst-forge/lib/project/schema"
 	"gopkg.in/yaml.v3"
 )
-
-// KCLModuleArgs contains the arguments to pass to the KCL module.
-type KCLModuleArgs struct {
-	// InstanceName is the name to use for the deployment instance.
-	InstanceName string
-
-	// Namespace is the namespace to deploy the module to.
-	Namespace string
-
-	// Values contains the values to pass to the module.
-	Values string
-
-	// Version is the version of the module to deploy.
-	Version string
-}
-
-// Serialize serializes the KCLModuleArgs to a list of arguments.
-func (k *KCLModuleArgs) Serialize() []string {
-	return []string{
-		"-D",
-		fmt.Sprintf("name=%s", k.InstanceName),
-		"-D",
-		fmt.Sprintf("namespace=%s", k.Namespace),
-		"-D",
-		fmt.Sprintf("values=%s", k.Values),
-		"-D",
-		k.Version,
-	}
-}
 
 // KCLRunResultModule represents a single module in a KCL run result.
 type KCLRunResult struct {
@@ -52,7 +23,7 @@ type KCLRunResult struct {
 
 // KCLRunner is used to run KCL commands.
 type KCLRunner struct {
-	kcl    executor.WrappedExecuter
+	client kcl.KCLClient
 	logger *slog.Logger
 }
 
@@ -102,17 +73,19 @@ func (k *KCLRunner) RunDeployment(p *project.Project) (map[string]KCLRunResult, 
 			return nil, fmt.Errorf("failed to encode module values: %w", err)
 		}
 
-		args := KCLModuleArgs{
-			InstanceName: p.Blueprint.Project.Name,
+		container := fmt.Sprintf("%s/%s", strings.TrimSuffix(p.Blueprint.Global.Deployment.Registries.Modules, "/"), module.Name)
+		args := kcl.KCLModuleArgs{
+			InstanceName: p.Name,
+			Module:       container,
 			Namespace:    module.Namespace,
 			Values:       string(json),
 			Version:      module.Version,
 		}
 
-		container := fmt.Sprintf("%s/%s", strings.TrimSuffix(p.Blueprint.Global.Deployment.Registries.Modules, "/"), module.Name)
-		out, err := k.run(container, args)
+		k.logger.Debug("Running KCL module", "module", args.Module, "version", args.Version)
+		out, err := k.client.Run(args)
 		if err != nil {
-			k.logger.Error("Failed to run KCL module", "module", module.Name, "error", err, "output", string(out))
+			k.logger.Error("Failed to run KCL module", "module", module.Name, "error", err, "log", k.client.Log())
 			return nil, fmt.Errorf("failed to run KCL module: %w", err)
 		}
 
@@ -122,7 +95,7 @@ func (k *KCLRunner) RunDeployment(p *project.Project) (map[string]KCLRunResult, 
 		}
 
 		result[name] = KCLRunResult{
-			Manifests: string(out),
+			Manifests: out,
 			Values:    string(yaml),
 		}
 	}
@@ -143,16 +116,6 @@ func encodeValues(ctx *cue.Context, module schema.Module) ([]byte, error) {
 	}
 
 	return j, nil
-}
-
-// run runs a KCL module with the given module container and arguments.
-func (k *KCLRunner) run(container string, moduleArgs KCLModuleArgs) ([]byte, error) {
-	args := []string{"run", "-q", "--no_style"}
-	args = append(args, moduleArgs.Serialize()...)
-	args = append(args, fmt.Sprintf("oci://%s", container))
-
-	k.logger.Debug("Running KCL module", "container", container, "args", args)
-	return k.kcl.Execute(args...)
 }
 
 // jsonToYaml converts a JSON string to a YAML string.
@@ -177,9 +140,8 @@ func NewKCLRunner(logger *slog.Logger) KCLRunner {
 		logger = slog.New(slog.NewTextHandler(io.Discard, nil))
 	}
 
-	kcl := executor.NewLocalWrappedExecutor(executor.NewLocalExecutor(logger), "kcl")
 	return KCLRunner{
-		kcl:    kcl,
+		client: kcl.DefaultKCLClient{},
 		logger: logger,
 	}
 }

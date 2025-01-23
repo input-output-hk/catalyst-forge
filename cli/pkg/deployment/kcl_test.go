@@ -2,10 +2,10 @@ package deployment
 
 import (
 	"fmt"
-	"strings"
 	"testing"
 
-	"github.com/input-output-hk/catalyst-forge/cli/pkg/executor/mocks"
+	"github.com/input-output-hk/catalyst-forge/cli/pkg/providers/kcl"
+	"github.com/input-output-hk/catalyst-forge/cli/pkg/providers/kcl/mocks"
 	"github.com/input-output-hk/catalyst-forge/lib/project/project"
 	"github.com/input-output-hk/catalyst-forge/lib/project/schema"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/testutils"
@@ -64,7 +64,6 @@ func TestKCLRunnerGetMainValues(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			runner := KCLRunner{
-				kcl:    newWrappedExecuterMock("", nil, false),
 				logger: testutils.NewNoopLogger(),
 			}
 
@@ -76,7 +75,7 @@ func TestKCLRunnerGetMainValues(t *testing.T) {
 
 func TestKCLRunnerRunDeployment(t *testing.T) {
 	type testResults struct {
-		calls  []string
+		args   []kcl.KCLModuleArgs
 		err    error
 		result map[string]KCLRunResult
 	}
@@ -106,7 +105,7 @@ func TestKCLRunnerRunDeployment(t *testing.T) {
 		name     string
 		project  project.Project
 		output   string
-		execFail bool
+		fail     bool
 		validate func(t *testing.T, r testResults)
 	}{
 		{
@@ -136,16 +135,30 @@ func TestKCLRunnerRunDeployment(t *testing.T) {
 					},
 				},
 			),
-			output:   "output",
-			execFail: false,
+			output: "output",
+			fail:   false,
 			validate: func(t *testing.T, r testResults) {
 				assert.NoError(t, r.err)
 				assert.Equal(t, "output", r.result["main"].Manifests)
 				assert.Equal(t, "key: value\n", r.result["main"].Values)
 				assert.Equal(t, "output", r.result["support"].Manifests)
 				assert.Equal(t, "key1: value1\n", r.result["support"].Values)
-				assert.Contains(t, r.calls, "run -q --no_style -D name= -D namespace=default -D values={\"key\":\"value\"} -D 1.0.0 oci://test.com/module")
-				assert.Contains(t, r.calls, "run -q --no_style -D name= -D namespace=default -D values={\"key1\":\"value1\"} -D 1.0.0 oci://test.com/module1")
+
+				assert.Contains(t, r.args, kcl.KCLModuleArgs{
+					InstanceName: "test",
+					Module:       "test.com/module",
+					Namespace:    "default",
+					Values:       "{\"key\":\"value\"}",
+					Version:      "1.0.0",
+				})
+
+				assert.Contains(t, r.args, kcl.KCLModuleArgs{
+					InstanceName: "test",
+					Module:       "test.com/module1",
+					Namespace:    "default",
+					Values:       "{\"key1\":\"value1\"}",
+					Version:      "1.0.0",
+				})
 			},
 		},
 		{
@@ -165,11 +178,11 @@ func TestKCLRunnerRunDeployment(t *testing.T) {
 					},
 				},
 			),
-			output:   "output",
-			execFail: true,
+			output: "output",
+			fail:   true,
 			validate: func(t *testing.T, r testResults) {
 				assert.Error(t, r.err)
-				assert.ErrorContains(t, r.err, "failed to execute command")
+				assert.ErrorContains(t, r.err, "error")
 			},
 		},
 		{
@@ -180,8 +193,8 @@ func TestKCLRunnerRunDeployment(t *testing.T) {
 				"test.com",
 				nil,
 			),
-			output:   "",
-			execFail: false,
+			output: "",
+			fail:   false,
 			validate: func(t *testing.T, r testResults) {
 				assert.Error(t, r.err)
 			},
@@ -194,8 +207,8 @@ func TestKCLRunnerRunDeployment(t *testing.T) {
 				"",
 				nil,
 			),
-			output:   "",
-			execFail: false,
+			output: "",
+			fail:   false,
 			validate: func(t *testing.T, r testResults) {
 				assert.Error(t, r.err)
 			},
@@ -204,32 +217,33 @@ func TestKCLRunnerRunDeployment(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			var calls []string
+			var kclArgs []kcl.KCLModuleArgs
+			client := mocks.KCLClientMock{
+				RunFunc: func(args kcl.KCLModuleArgs) (string, error) {
+					kclArgs = append(kclArgs, args)
+
+					if tt.fail {
+						return "", fmt.Errorf("error")
+					}
+
+					return tt.output, nil
+				},
+				LogFunc: func() string {
+					return "log"
+				},
+			}
+
 			runner := KCLRunner{
-				kcl:    newWrappedExecuterMock(tt.output, &calls, tt.execFail),
+				client: &client,
 				logger: testutils.NewNoopLogger(),
 			}
 
 			result, err := runner.RunDeployment(&tt.project)
 			tt.validate(t, testResults{
-				calls:  calls,
+				args:   kclArgs,
 				err:    err,
 				result: result,
 			})
 		})
-	}
-}
-
-func newWrappedExecuterMock(output string, calls *[]string, fail bool) *mocks.WrappedExecuterMock {
-	return &mocks.WrappedExecuterMock{
-		ExecuteFunc: func(args ...string) ([]byte, error) {
-			call := strings.Join(args, " ")
-			*calls = append(*calls, call)
-
-			if fail {
-				return nil, fmt.Errorf("failed to execute command")
-			}
-			return []byte(output), nil
-		},
 	}
 }

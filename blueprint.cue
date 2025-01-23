@@ -55,11 +55,6 @@ global: {
 				}
 				registry: "ghcr.io"
 			}
-
-			kcl: {
-				install: true
-				version: "v0.11.0"
-			}
 		}
 		secrets: [
 			{
