@@ -51,6 +51,7 @@ func TestDeploy(t *testing.T) {
 	defaultParams := projectParams{
 		projectName: "test",
 		globalDeploy: schema.GlobalDeployment{
+			Environment: "dev",
 			Registries: schema.GlobalDeploymentRegistries{
 				Modules: "registry.myserver.com",
 			},
@@ -66,11 +67,10 @@ func TestDeploy(t *testing.T) {
 				Path:     "test",
 			},
 		},
-		enviroment: "dev",
-		container:  "mycontainer",
-		namespace:  "default",
-		values:     `foo: "bar"`,
-		version:    "1.0.0",
+		container: "mycontainer",
+		namespace: "default",
+		values:    `foo: "bar"`,
+		version:   "1.0.0",
 	}
 
 	tests := []struct {
@@ -201,6 +201,7 @@ func TestLoad(t *testing.T) {
 	defaultParams := projectParams{
 		projectName: "test",
 		globalDeploy: schema.GlobalDeployment{
+			Environment: "dev",
 			Registries: schema.GlobalDeploymentRegistries{
 				Modules: "registry.myserver.com",
 			},
@@ -216,11 +217,10 @@ func TestLoad(t *testing.T) {
 				Path:     "test",
 			},
 		},
-		enviroment: "dev",
-		container:  "mycontainer",
-		namespace:  "default",
-		values:     `foo: "bar"`,
-		version:    "1.0.0",
+		container: "mycontainer",
+		namespace: "default",
+		values:    `foo: "bar"`,
+		version:   "1.0.0",
 	}
 
 	tests := []struct {
@@ -281,7 +281,6 @@ type projectParams struct {
 	projectName    string
 	globalDeploy   schema.GlobalDeployment
 	globalProvider schema.ProviderGit
-	enviroment     string
 	container      string
 	namespace      string
 	values         string
@@ -303,7 +302,6 @@ func newTestProject(p projectParams) *project.Project {
 			},
 			Project: schema.Project{
 				Deployment: schema.Deployment{
-					Environment: p.enviroment,
 					Modules: &schema.DeploymentModules{
 						Main: schema.Module{
 							Name:      p.container,

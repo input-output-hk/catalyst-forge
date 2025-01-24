@@ -63,8 +63,7 @@ func (g *GitopsDeployer) Deploy() error {
 	}
 
 	globalDeploy := g.project.Blueprint.Global.Deployment
-	prjDeploy := g.project.Blueprint.Project.Deployment
-	envPath := filepath.Join(globalDeploy.Root, prjDeploy.Environment, "apps")
+	envPath := filepath.Join(globalDeploy.Root, globalDeploy.Environment, "apps")
 	prjPath := filepath.Join(envPath, g.project.Name)
 	bundlePath := filepath.Join(prjPath, "bundle.cue")
 

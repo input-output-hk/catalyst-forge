@@ -2,9 +2,6 @@ package schema
 
 // Deployment contains the configuration for the deployment of the project.
 type Deployment struct {
-	// Environment contains the environment to deploy the module to.
-	Environment string `json:"environment"`
-
 	// On contains the events that trigger the deployment.
 	On map[string]any `json:"on"`
 

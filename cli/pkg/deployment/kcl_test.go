@@ -19,12 +19,12 @@ func TestKCLRunnerGetMainValues(t *testing.T) {
 			Blueprint: schema.Blueprint{
 				Project: schema.Project{
 					Deployment: schema.Deployment{
-						Environment: "test",
-						Modules:     modules,
+						Modules: modules,
 					},
 				},
 				Global: schema.Global{
 					Deployment: schema.GlobalDeployment{
+						Environment: "test",
 						Registries: schema.GlobalDeploymentRegistries{
 							Modules: "test.com",
 						},
@@ -86,12 +86,12 @@ func TestKCLRunnerRunDeployment(t *testing.T) {
 			Blueprint: schema.Blueprint{
 				Project: schema.Project{
 					Deployment: schema.Deployment{
-						Environment: environment,
-						Modules:     modules,
+						Modules: modules,
 					},
 				},
 				Global: schema.Global{
 					Deployment: schema.GlobalDeployment{
+						Environment: environment,
 						Registries: schema.GlobalDeploymentRegistries{
 							Modules: registry,
 						},
