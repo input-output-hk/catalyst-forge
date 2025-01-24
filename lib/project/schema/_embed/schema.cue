@@ -1,5 +1,9 @@
 package schema
 
+#DeploymentModuleBundle: {
+	[string]: #DeploymentModule
+}
+
 // Global contains the global configuration for the blueprint.
 #Global: {
 	// CI contains the configuration for the CI system.
@@ -192,9 +196,7 @@ package schema
 	environment: _ | *"dev"
 
 	// Modules contains the deployment modules for the project.
-	modules: {
-		[string]: #DeploymentModule
-	} @go(Modules,map[string]DeploymentModule)
+	modules: #DeploymentModuleBundle @go(Modules)
 }
 
 // GlobalDeployment contains the configuration for the global deployment of projects.

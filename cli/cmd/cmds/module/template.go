@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/input-output-hk/catalyst-forge/cli/pkg/deployment"
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/run"
 )
 
@@ -18,10 +17,13 @@ func (c *TemplateCmd) Run(ctx run.RunContext) error {
 		return fmt.Errorf("could not load project: %w", err)
 	}
 
-	runner := deployment.NewKCLRunner(ctx.Logger)
-	result, err := runner.RunDeployment(&project)
+	registry := project.Blueprint.Global.Deployment.Registries.Modules
+	instance := project.Name
+	modules := project.Blueprint.Project.Deployment.Modules
+
+	result, err := ctx.DeploymentGenerator.GenerateBundle(modules, instance, registry)
 	if err != nil {
-		return fmt.Errorf("could not run deployment: %w", err)
+		return fmt.Errorf("failed to generate manifests: %w", err)
 	}
 
 	var out string

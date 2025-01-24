@@ -4,13 +4,15 @@
 
 package schema
 
+#DeploymentModuleBundle: [string]: #DeploymentModule
+
 // Deployment contains the configuration for the deployment of the project.
 #Deployment: {
 	// On contains the events that trigger the deployment.
 	on: {...} @go(On,map[string]any)
 
 	// Modules contains the deployment modules for the project.
-	modules: {[string]: #DeploymentModule} @go(Modules,map[string]DeploymentModule)
+	modules: #DeploymentModuleBundle @go(Modules)
 }
 
 // Module contains the configuration for a deployment module.

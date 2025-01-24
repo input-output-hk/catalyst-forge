@@ -26,7 +26,7 @@ func (c *DeployCmd) Run(ctx run.RunContext) error {
 		dryrun = true
 	}
 
-	deployer := deployment.NewGitopsDeployer(&project, &ctx.SecretStore, ctx.Logger, dryrun)
+	deployer := deployment.NewGitopsDeployer(&project, &ctx.SecretStore, ctx.DeploymentGenerator, ctx.Logger, dryrun)
 	if err := deployer.Load(); err != nil {
 		return fmt.Errorf("could not load deployer: %w", err)
 	}

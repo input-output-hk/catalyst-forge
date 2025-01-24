@@ -10,8 +10,8 @@ import (
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/go-git/go-git/v5/storage"
-	"github.com/input-output-hk/catalyst-forge/cli/pkg/providers/kcl"
-	kmock "github.com/input-output-hk/catalyst-forge/cli/pkg/providers/kcl/mocks"
+	"github.com/input-output-hk/catalyst-forge/lib/project/deployment/generator"
+	dmock "github.com/input-output-hk/catalyst-forge/lib/project/deployment/mocks"
 	"github.com/input-output-hk/catalyst-forge/lib/project/project"
 	"github.com/input-output-hk/catalyst-forge/lib/project/schema"
 	"github.com/input-output-hk/catalyst-forge/lib/project/secrets"
@@ -139,9 +139,17 @@ func TestDeploy(t *testing.T) {
 			yaml:     "yaml",
 			execFail: false,
 			setup: func(t *testing.T, deployer *GitopsDeployer, repo *testutils.InMemRepo) {
+				mod := `{
+	name:      "mycontainer"
+	namespace: "default"
+	values: {
+		foo: "bar"
+	}
+	version: "1.0.0"
+}`
 				repo.MkdirAll(t, "deploy/dev/apps/test")
 				repo.AddFile(t, "deploy/dev/apps/test/main.yaml", string("yaml"))
-				repo.AddFile(t, "deploy/dev/apps/test/main.values", string("foo: bar\n"))
+				repo.AddFile(t, "deploy/dev/apps/test/main.mod.cue", mod)
 				repo.Commit(t, "initial commit")
 			},
 			validate:    func(t *testing.T, deployer *GitopsDeployer, mock mockGitRemote, repo *testutils.InMemRepo) {},
@@ -162,21 +170,15 @@ func TestDeploy(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			repo := testutils.NewInMemRepo(t)
-			deployer := GitopsDeployer{
-				dryrun: tt.dryrun,
-				fs:     repo.Fs,
-				kcl: KCLRunner{
-					client: &kmock.KCLClientMock{
-						RunFunc: func(args kcl.KCLModuleArgs) (string, error) {
-							if tt.execFail {
-								return "", fmt.Errorf("error")
-							}
-
-							return tt.yaml, nil
-						},
-					},
-					logger: testutils.NewNoopLogger(),
+			gen := generator.NewGenerator(&dmock.ManifestGeneratorMock{
+				GenerateFunc: func(mod schema.DeploymentModule, instance, registry string) ([]byte, error) {
+					return []byte(tt.yaml), nil
 				},
+			}, testutils.NewNoopLogger())
+			deployer := GitopsDeployer{
+				dryrun:      tt.dryrun,
+				fs:          repo.Fs,
+				gen:         gen,
 				logger:      testutils.NewNoopLogger(),
 				project:     newTestProject(tt.project),
 				remote:      &tt.mock,
