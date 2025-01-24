@@ -28,7 +28,7 @@ type KCLRunner struct {
 }
 
 // GetMainValues returns the values (in YAML) for the main module in the project.
-func (k *KCLRunner) GetMainValues(p *project.Project) (string, error) {
+func (k *KCLRunner) GetMainValues(p *project.Project, moduleName string) (string, error) {
 	if p.Blueprint.Project.Deployment.Modules == nil {
 		return "", fmt.Errorf("no deployment modules found in project blueprint")
 	} else if p.Blueprint.Global.Deployment.Registries.Modules == "" {
@@ -36,7 +36,7 @@ func (k *KCLRunner) GetMainValues(p *project.Project) (string, error) {
 	}
 
 	ctx := cuecontext.New()
-	module := p.Blueprint.Project.Deployment.Modules.Main
+	module := p.Blueprint.Project.Deployment.Modules[moduleName]
 
 	json, err := encodeValues(ctx, module)
 	if err != nil {
@@ -61,13 +61,8 @@ func (k *KCLRunner) RunDeployment(p *project.Project) (map[string]KCLRunResult, 
 		return nil, fmt.Errorf("no module deployment registry found in project blueprint")
 	}
 
-	modules := map[string]schema.Module{"main": p.Blueprint.Project.Deployment.Modules.Main}
-	for k, v := range p.Blueprint.Project.Deployment.Modules.Support {
-		modules[k] = v
-	}
-
 	result := make(map[string]KCLRunResult)
-	for name, module := range modules {
+	for name, module := range p.Blueprint.Project.Deployment.Modules {
 		json, err := encodeValues(ctx, module)
 		if err != nil {
 			return nil, fmt.Errorf("failed to encode module values: %w", err)
@@ -104,7 +99,7 @@ func (k *KCLRunner) RunDeployment(p *project.Project) (map[string]KCLRunResult, 
 }
 
 // encodeValues encodes the values of a module to JSON.
-func encodeValues(ctx *cue.Context, module schema.Module) ([]byte, error) {
+func encodeValues(ctx *cue.Context, module schema.DeploymentModule) ([]byte, error) {
 	v := ctx.Encode(module.Values)
 	if err := v.Validate(); err != nil {
 		return nil, fmt.Errorf("failed to validate module values: %w", err)

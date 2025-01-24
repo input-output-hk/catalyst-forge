@@ -12,7 +12,7 @@ package schema
 	environment: _ | *"dev"
 }
 
-#Module: {
+#DeploymentModule: {
 	namespace: _ | *"default"
 }
 

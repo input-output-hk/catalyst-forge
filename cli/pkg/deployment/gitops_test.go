@@ -302,8 +302,8 @@ func newTestProject(p projectParams) *project.Project {
 			},
 			Project: schema.Project{
 				Deployment: schema.Deployment{
-					Modules: &schema.DeploymentModules{
-						Main: schema.Module{
+					Modules: map[string]schema.DeploymentModule{
+						"main": {
 							Name:      p.container,
 							Namespace: p.namespace,
 							Values:    ctx.CompileString(p.values),

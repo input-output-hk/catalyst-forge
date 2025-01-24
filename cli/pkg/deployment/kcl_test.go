@@ -13,7 +13,7 @@ import (
 )
 
 func TestKCLRunnerGetMainValues(t *testing.T) {
-	newProject := func(name string, modules *schema.DeploymentModules) project.Project {
+	newProject := func(name string, modules map[string]schema.DeploymentModule) project.Project {
 		return project.Project{
 			Name: name,
 			Blueprint: schema.Blueprint{
@@ -43,8 +43,8 @@ func TestKCLRunnerGetMainValues(t *testing.T) {
 			name: "full",
 			project: newProject(
 				"test",
-				&schema.DeploymentModules{
-					Main: schema.Module{
+				map[string]schema.DeploymentModule{
+					"main": schema.DeploymentModule{
 						Name:      "module",
 						Namespace: "default",
 						Values: map[string]string{
@@ -67,7 +67,7 @@ func TestKCLRunnerGetMainValues(t *testing.T) {
 				logger: testutils.NewNoopLogger(),
 			}
 
-			values, err := runner.GetMainValues(&tt.project)
+			values, err := runner.GetMainValues(&tt.project, "main")
 			tt.validate(t, values, err)
 		})
 	}
@@ -80,7 +80,7 @@ func TestKCLRunnerRunDeployment(t *testing.T) {
 		result map[string]KCLRunResult
 	}
 
-	newProject := func(name, environment, registry string, modules *schema.DeploymentModules) project.Project {
+	newProject := func(name, environment, registry string, modules map[string]schema.DeploymentModule) project.Project {
 		return project.Project{
 			Name: name,
 			Blueprint: schema.Blueprint{
@@ -114,8 +114,8 @@ func TestKCLRunnerRunDeployment(t *testing.T) {
 				"test",
 				"dev",
 				"test.com",
-				&schema.DeploymentModules{
-					Main: schema.Module{
+				map[string]schema.DeploymentModule{
+					"main": {
 						Name:      "module",
 						Namespace: "default",
 						Values: map[string]string{
@@ -123,15 +123,13 @@ func TestKCLRunnerRunDeployment(t *testing.T) {
 						},
 						Version: "1.0.0",
 					},
-					Support: map[string]schema.Module{
-						"support": {
-							Name:      "module1",
-							Namespace: "default",
-							Values: map[string]string{
-								"key1": "value1",
-							},
-							Version: "1.0.0",
+					"support": {
+						Name:      "module1",
+						Namespace: "default",
+						Values: map[string]string{
+							"key1": "value1",
 						},
+						Version: "1.0.0",
 					},
 				},
 			),
@@ -167,8 +165,8 @@ func TestKCLRunnerRunDeployment(t *testing.T) {
 				"test",
 				"dev",
 				"test.com",
-				&schema.DeploymentModules{
-					Main: schema.Module{
+				map[string]schema.DeploymentModule{
+					"main": {
 						Name:      "module",
 						Namespace: "default",
 						Values: map[string]string{

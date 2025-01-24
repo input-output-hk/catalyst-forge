@@ -32,36 +32,6 @@ package schema
 	secrets?: [...#Secret] @go(Secrets,[]Secret)
 }
 
-// GlobalDeployment contains the configuration for the global deployment of projects.
-#GlobalDeployment: {
-	// Registries contains the configuration for the global deployment registries.
-	registries: #GlobalDeploymentRegistries @go(Registries)
-
-	// Repo contains the configuration for the global deployment repository.
-	repo: #GlobalDeploymentRepo @go(Repo)
-
-	// Root contains the root deployment directory in the deployment repository.
-	root: string @go(Root)
-}
-
-// GlobalDeploymentRegistries contains the configuration for the global deployment registries.
-#GlobalDeploymentRegistries: {
-	// Containers contains the default container registry to use for deploying containers.
-	containers: string @go(Containers)
-
-	// Modules contains the container registry that holds deployment modules.
-	modules: string @go(Modules)
-}
-
-// GlobalDeploymentRepo contains the configuration for the global deployment repository.
-#GlobalDeploymentRepo: {
-	// Ref contains the ref to use for the deployment repository.
-	ref: string @go(Ref)
-
-	// URL contains the URL of the deployment repository.
-	url: string @go(Url)
-}
-
 // Providers contains the configuration for the providers being used by the CI system.
 #Providers: {
 	// AWS contains the configuration for the AWS provider.
@@ -215,36 +185,56 @@ package schema
 
 // Deployment contains the configuration for the deployment of the project.
 #Deployment: {
-	// Environment contains the environment to deploy the module to.
-	environment: (_ | *"dev") & {
-		string
-	} @go(Environment)
-
 	// On contains the events that trigger the deployment.
 	on: {
 		...
 	} @go(On,map[string]any)
+	environment: _ | *"dev"
 
-	// Modules contains the configuration for the deployment modules for the project.
-	// +optional
-	modules?: null | #DeploymentModules @go(Modules,*DeploymentModules)
+	// Modules contains the deployment modules for the project.
+	modules: {
+		[string]: #DeploymentModule
+	} @go(Modules,map[string]DeploymentModule)
 }
 
-// Deployment contains the configuration for the deployment of the project.
-#DeploymentModules: {
-	// Main contains the configuration for the main deployment module.
-	main: #Module @go(Main)
+// GlobalDeployment contains the configuration for the global deployment of projects.
+#GlobalDeployment: {
+	// Environment contains the default environment to deploy projects to.
+	environment: (_ | *"dev") & {
+		string
+	} @go(Environment)
 
-	// Support contains the configuration for the support deployment modules.
-	// +optional
-	support?: {
-		[string]: #Module
-	} @go(Support,map[string]Module)
+	// Registries contains the configuration for the global deployment registries.
+	registries: #GlobalDeploymentRegistries @go(Registries)
+
+	// Repo contains the configuration for the global deployment repository.
+	repo: #GlobalDeploymentRepo @go(Repo)
+
+	// Root contains the root deployment directory in the deployment repository.
+	root: string @go(Root)
+}
+
+// GlobalDeploymentRegistries contains the configuration for the global deployment registries.
+#GlobalDeploymentRegistries: {
+	// Containers contains the default container registry to use for deploying containers.
+	containers: string @go(Containers)
+
+	// Modules contains the container registry that holds deployment modules.
+	modules: string @go(Modules)
+}
+
+// GlobalDeploymentRepo contains the configuration for the global deployment repository.
+#GlobalDeploymentRepo: {
+	// Ref contains the ref to use for the deployment repository.
+	ref: string @go(Ref)
+
+	// URL contains the URL of the deployment repository.
+	url: string @go(Url)
 }
 version: "1.0"
 
 // Module contains the configuration for a deployment module.
-#Module: {
+#DeploymentModule: {
 	// Name contains the name of the module to deploy.
 	// +optional
 	name?: string @go(Name)

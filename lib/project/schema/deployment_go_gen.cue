@@ -6,29 +6,15 @@ package schema
 
 // Deployment contains the configuration for the deployment of the project.
 #Deployment: {
-	// Environment contains the environment to deploy the module to.
-	environment: string @go(Environment)
-
 	// On contains the events that trigger the deployment.
 	on: {...} @go(On,map[string]any)
 
-	// Modules contains the configuration for the deployment modules for the project.
-	// +optional
-	modules?: null | #DeploymentModules @go(Modules,*DeploymentModules)
-}
-
-// Deployment contains the configuration for the deployment of the project.
-#DeploymentModules: {
-	// Main contains the configuration for the main deployment module.
-	main: #Module @go(Main)
-
-	// Support contains the configuration for the support deployment modules.
-	// +optional
-	support?: {[string]: #Module} @go(Support,map[string]Module)
+	// Modules contains the deployment modules for the project.
+	modules: {[string]: #DeploymentModule} @go(Modules,map[string]DeploymentModule)
 }
 
 // Module contains the configuration for a deployment module.
-#Module: {
+#DeploymentModule: {
 	// Name contains the name of the module to deploy.
 	// +optional
 	name?: string @go(Name)
