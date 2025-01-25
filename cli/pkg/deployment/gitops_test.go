@@ -157,6 +157,33 @@ func TestDeploy(t *testing.T) {
 			expectedErr: ErrNoChanges.Error(),
 		},
 		{
+			name:     "extra files",
+			mock:     mockGitRemote{},
+			project:  defaultParams,
+			yaml:     "yaml",
+			execFail: false,
+			setup: func(t *testing.T, deployer *GitopsDeployer, repo *testutils.InMemRepo) {
+				mod := `{
+	name:      "mycontainer"
+	namespace: "default"
+	values: {
+		foo: "bar"
+	}
+	version: "1.0.0"
+}`
+				repo.MkdirAll(t, "deploy/dev/apps/test")
+				repo.AddFile(t, "deploy/dev/apps/test/main.yaml", string("yaml"))
+				repo.AddFile(t, "deploy/dev/apps/test/main.mod.cue", mod)
+				repo.AddFile(t, "deploy/dev/apps/test/bad.yaml", string("bad"))
+				repo.Commit(t, "initial commit")
+			},
+			validate: func(t *testing.T, deployer *GitopsDeployer, mock mockGitRemote, repo *testutils.InMemRepo) {
+				assert.False(t, repo.Exists(t, "deploy/dev/apps/test/bad.yaml"), "bad.yaml does not exist")
+			},
+			expectErr:   false,
+			expectedErr: "",
+		},
+		{
 			name:        "no environment folder",
 			mock:        mockGitRemote{},
 			project:     defaultParams,

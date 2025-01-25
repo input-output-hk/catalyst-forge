@@ -91,6 +91,20 @@ func (g *GitopsDeployer) Deploy() error {
 	registry := g.project.Blueprint.Global.Deployment.Registries.Modules
 	instance := g.project.Name
 
+	g.logger.Info("Clearing project path", "path", prjPath)
+	files, err := g.fs.ReadDir(prjPath)
+	if err != nil {
+		return fmt.Errorf("could not read project path: %w", err)
+	}
+
+	for _, f := range files {
+		path := filepath.Join(prjPath, f.Name())
+		g.logger.Debug("Removing file", "path", path)
+		if err := g.fs.Remove(path); err != nil {
+			return fmt.Errorf("could not remove file: %w", err)
+		}
+	}
+
 	g.logger.Info("Generating manifests")
 	result, err := g.gen.GenerateBundle(g.project.Blueprint.Project.Deployment.Modules, instance, registry)
 	if err != nil {
