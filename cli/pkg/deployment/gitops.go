@@ -16,6 +16,7 @@ import (
 	"github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/go-git/go-git/v5/storage"
 	"github.com/go-git/go-git/v5/storage/memory"
+	"github.com/input-output-hk/catalyst-forge/lib/project/deployment/generator"
 	"github.com/input-output-hk/catalyst-forge/lib/project/project"
 	"github.com/input-output-hk/catalyst-forge/lib/project/secrets"
 )
@@ -47,11 +48,11 @@ func (g gitRemote) Push(repo *git.Repository, o *git.PushOptions) error {
 type GitopsDeployer struct {
 	dryrun      bool
 	fs          billy.Filesystem
-	repo        *git.Repository
-	kcl         KCLRunner
+	gen         generator.Generator
 	logger      *slog.Logger
 	project     *project.Project
 	remote      gitRemoteInterface
+	repo        *git.Repository
 	secretStore *secrets.SecretStore
 	token       string
 	worktree    *git.Worktree
@@ -63,8 +64,7 @@ func (g *GitopsDeployer) Deploy() error {
 	}
 
 	globalDeploy := g.project.Blueprint.Global.Deployment
-	prjDeploy := g.project.Blueprint.Project.Deployment
-	envPath := filepath.Join(globalDeploy.Root, prjDeploy.Environment, "apps")
+	envPath := filepath.Join(globalDeploy.Root, globalDeploy.Environment, "apps")
 	prjPath := filepath.Join(envPath, g.project.Name)
 	bundlePath := filepath.Join(prjPath, "bundle.cue")
 
@@ -88,15 +88,32 @@ func (g *GitopsDeployer) Deploy() error {
 		}
 	}
 
+	registry := g.project.Blueprint.Global.Deployment.Registries.Modules
+	instance := g.project.Name
+
+	g.logger.Info("Clearing project path", "path", prjPath)
+	files, err := g.fs.ReadDir(prjPath)
+	if err != nil {
+		return fmt.Errorf("could not read project path: %w", err)
+	}
+
+	for _, f := range files {
+		path := filepath.Join(prjPath, f.Name())
+		g.logger.Debug("Removing file", "path", path)
+		if err := g.fs.Remove(path); err != nil {
+			return fmt.Errorf("could not remove file: %w", err)
+		}
+	}
+
 	g.logger.Info("Generating manifests")
-	result, err := g.kcl.RunDeployment(g.project)
+	result, err := g.gen.GenerateBundle(g.project.Blueprint.Project.Deployment.Modules, instance, registry)
 	if err != nil {
 		return fmt.Errorf("could not generate deployment manifests: %w", err)
 	}
 
 	for n, r := range result {
 		mpath := filepath.Join(prjPath, fmt.Sprintf("%s.yaml", n))
-		vpath := filepath.Join(prjPath, fmt.Sprintf("%s.values", n))
+		vpath := filepath.Join(prjPath, fmt.Sprintf("%s.mod.cue", n))
 
 		g.logger.Info("Writing manifest", "path", mpath)
 		if err := g.write(mpath, []byte(r.Manifests)); err != nil {
@@ -104,7 +121,7 @@ func (g *GitopsDeployer) Deploy() error {
 		}
 
 		g.logger.Info("Writing values", "path", vpath)
-		if err := g.write(vpath, []byte(r.Values)); err != nil {
+		if err := g.write(vpath, []byte(r.Module)); err != nil {
 			return fmt.Errorf("could not write values: %w", err)
 		}
 	}
@@ -130,7 +147,7 @@ func (g *GitopsDeployer) Deploy() error {
 		g.logger.Info("Dry-run: not committing or pushing changes")
 		g.logger.Info("Dumping manifests")
 		for _, r := range result {
-			fmt.Print(r.Manifests)
+			fmt.Println(string(r.Manifests))
 		}
 	}
 
@@ -253,6 +270,7 @@ func (g *GitopsDeployer) write(path string, contents []byte) error {
 func NewGitopsDeployer(
 	project *project.Project,
 	store *secrets.SecretStore,
+	generator generator.Generator,
 	logger *slog.Logger,
 	dryrun bool,
 ) GitopsDeployer {
@@ -263,7 +281,7 @@ func NewGitopsDeployer(
 	return GitopsDeployer{
 		dryrun:      dryrun,
 		fs:          memfs.New(),
-		kcl:         NewKCLRunner(logger),
+		gen:         generator,
 		logger:      logger,
 		project:     project,
 		remote:      gitRemote{},

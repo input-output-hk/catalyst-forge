@@ -25,7 +25,6 @@ require (
 	github.com/stretchr/testify v1.10.0
 	github.com/willabides/kongplete v0.4.0
 	golang.org/x/exp v0.0.0-20241009180824-f66d83c29e7c
-	gopkg.in/yaml.v3 v3.0.1
 	kcl-lang.io/kpm v0.11.0
 )
 
@@ -178,6 +177,7 @@ require (
 	google.golang.org/protobuf v1.35.2 // indirect
 	gopkg.in/jfontan/go-billy-desfacer.v0 v0.0.0-20210209210102-b43512b1cad0 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect
+	gopkg.in/yaml.v3 v3.0.1 // indirect
 	k8s.io/utils v0.0.0-20240711033017-18e509b52bc8 // indirect
 	kcl-lang.io/kcl-go v0.11.0 // indirect
 	kcl-lang.io/lib v0.11.0 // indirect

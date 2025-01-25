@@ -1,4 +1,4 @@
-package deploy
+package module
 
 import (
 	"fmt"
@@ -8,12 +8,12 @@ import (
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/run"
 )
 
-type PushCmd struct {
+type DeployCmd struct {
 	Force   bool   `help:"Force deployment even if no deployment event is firing."`
 	Project string `arg:"" help:"The path to the project to deploy." kong:"arg,predictor=path"`
 }
 
-func (c *PushCmd) Run(ctx run.RunContext) error {
+func (c *DeployCmd) Run(ctx run.RunContext) error {
 	project, err := ctx.ProjectLoader.Load(c.Project)
 	if err != nil {
 		return fmt.Errorf("could not load project: %w", err)
@@ -26,7 +26,7 @@ func (c *PushCmd) Run(ctx run.RunContext) error {
 		dryrun = true
 	}
 
-	deployer := deployment.NewGitopsDeployer(&project, &ctx.SecretStore, ctx.Logger, dryrun)
+	deployer := deployment.NewGitopsDeployer(&project, &ctx.SecretStore, ctx.DeploymentGenerator, ctx.Logger, dryrun)
 	if err := deployer.Load(); err != nil {
 		return fmt.Errorf("could not load deployer: %w", err)
 	}
