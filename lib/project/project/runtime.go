@@ -5,10 +5,10 @@ import (
 	"log/slog"
 
 	"cuelang.org/go/cue"
-	"github.com/go-git/go-git/v5"
 	"github.com/google/go-github/v66/github"
 	"github.com/input-output-hk/catalyst-forge/lib/project/providers"
 	"github.com/input-output-hk/catalyst-forge/lib/project/schema"
+	"github.com/input-output-hk/catalyst-forge/lib/tools/git/repo"
 )
 
 // RuntimeData is an interface for runtime data loaders.
@@ -92,7 +92,7 @@ func (g *GitRuntime) Load(project *Project) map[string]cue.Value {
 }
 
 // getCommitHash returns the commit hash of the HEAD commit.
-func (g *GitRuntime) getCommitHash(repo *git.Repository) (string, error) {
+func (g *GitRuntime) getCommitHash(repo *repo.GitRepo) (string, error) {
 	if g.provider.HasEvent() {
 		if g.provider.GetEventType() == "pull_request" {
 			g.logger.Debug("Found GitHub pull request event")
@@ -137,7 +137,7 @@ func (g *GitRuntime) getCommitHash(repo *git.Repository) (string, error) {
 		return "", fmt.Errorf("failed to get HEAD: %w", err)
 	}
 
-	obj, err := repo.CommitObject(ref.Hash())
+	obj, err := repo.GetCommit(ref.Hash())
 	if err != nil {
 		return "", fmt.Errorf("failed to get commit object: %w", err)
 	}

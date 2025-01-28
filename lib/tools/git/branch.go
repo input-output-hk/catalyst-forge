@@ -5,14 +5,14 @@ import (
 	"os"
 	"strings"
 
-	gg "github.com/go-git/go-git/v5"
+	"github.com/input-output-hk/catalyst-forge/lib/tools/git/repo"
 )
 
 var (
 	ErrBranchNotFound = fmt.Errorf("branch not found")
 )
 
-func GetBranch(repo *gg.Repository) (string, error) {
+func GetBranch(repo *repo.GitRepo) (string, error) {
 	if InCI() {
 		ref, ok := os.LookupEnv("GITHUB_HEAD_REF")
 		if !ok || ref == "" {
@@ -26,10 +26,10 @@ func GetBranch(repo *gg.Repository) (string, error) {
 		}
 	}
 
-	ref, err := repo.Head()
+	branch, err := repo.GetCurrentBranch()
 	if err != nil {
 		return "", err
 	}
 
-	return ref.Name().Short(), nil
+	return branch, nil
 }

@@ -2,13 +2,9 @@ package project
 
 import (
 	"os"
-	"path/filepath"
 	"testing"
 
 	"cuelang.org/go/cue/cuecontext"
-	gg "github.com/go-git/go-git/v5"
-	"github.com/go-git/go-git/v5/plumbing/cache"
-	"github.com/go-git/go-git/v5/storage/filesystem"
 	"github.com/input-output-hk/catalyst-forge/lib/project/blueprint"
 	"github.com/input-output-hk/catalyst-forge/lib/project/injector"
 	"github.com/input-output-hk/catalyst-forge/lib/project/providers"
@@ -16,7 +12,6 @@ import (
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	df "gopkg.in/jfontan/go-billy-desfacer.v0"
 )
 
 func TestDefaultProjectLoaderLoad(t *testing.T) {
@@ -267,29 +262,21 @@ project: {
 			testutils.SetupFS(t, tt.fs, tt.files)
 
 			if tt.initGit {
-				tt.fs.Mkdir(filepath.Join(tt.projectPath, ".git"), 0755)
-				workdir := df.New(afero.NewBasePathFs(tt.fs, tt.projectPath))
-				gitdir := df.New(afero.NewBasePathFs(tt.fs, filepath.Join(tt.projectPath, ".git")))
-				storage := filesystem.NewStorage(gitdir, cache.NewObjectLRUDefault())
-				r, err := gg.Init(storage, workdir)
+				repo := testutils.NewTestRepoWithFS(t, tt.fs, tt.projectPath)
+				err := repo.AddFile("Earthfile")
 				require.NoError(t, err)
 
-				wt, err := r.Worktree()
+				err = repo.AddFile("blueprint.cue")
 				require.NoError(t, err)
-				repo := testutils.InMemRepo{
-					Fs:       workdir,
-					Repo:     r,
-					Worktree: wt,
-				}
 
-				repo.AddExistingFile(t, "Earthfile")
-				repo.AddExistingFile(t, "blueprint.cue")
-				repo.Commit(t, "Initial commit")
+				_, err = repo.Commit("Initial commit")
+				require.NoError(t, err)
 
-				head, err := repo.Repo.Head()
+				head, err := repo.Head()
 				require.NoError(t, err)
 				if tt.tag != "" {
-					repo.Tag(t, head.Hash(), tt.tag, "Initial tag")
+					_, err := repo.NewTag(head.Hash(), tt.tag, "Initial tag")
+					require.NoError(t, err)
 				}
 			}
 

@@ -24,6 +24,10 @@ const (
 	DEFAULT_EMAIL  = "forge@projectcatalyst.io"
 )
 
+var (
+	ErrTagNotFound = fmt.Errorf("tag not found")
+)
+
 type GitRepoOption func(*GitRepo)
 
 // GitRepo is a high-level representation of a git repository.
@@ -45,6 +49,37 @@ func (g *GitRepo) AddFile(path string) error {
 	if err != nil {
 		return fmt.Errorf("failed to add file: %w", err)
 	}
+
+	return nil
+}
+
+// Clone loads a repository from a git remote.
+func (g *GitRepo) Clone(path, url, branch string) error {
+	workdir := afero.NewBasePathFs(g.fs, path)
+	gitdir := afero.NewBasePathFs(g.fs, filepath.Join(path, ".git"))
+	ref := fmt.Sprintf("refs/heads/%s", branch)
+
+	g.logger.Debug("Cloning repository", "url", url, "ref", ref)
+	storage := filesystem.NewStorage(df.New(gitdir), cache.NewObjectLRUDefault())
+	repo, err := g.remote.Clone(storage, df.New(workdir), &gg.CloneOptions{
+		URL:           url,
+		Depth:         1,
+		ReferenceName: plumbing.ReferenceName(ref),
+		Auth:          g.auth,
+	})
+
+	if err != nil {
+		return err
+	}
+
+	wt, err := repo.Worktree()
+	if err != nil {
+		return fmt.Errorf("failed to get worktree: %w", err)
+	}
+
+	g.basePath = path
+	g.raw = repo
+	g.worktree = wt
 
 	return nil
 }
@@ -84,6 +119,55 @@ func (g *GitRepo) GetCommit(hash plumbing.Hash) (*object.Commit, error) {
 	return g.raw.CommitObject(hash)
 }
 
+// GetCurrentBranch returns the name of the current branch.
+func (g *GitRepo) GetCurrentBranch() (string, error) {
+	head, err := g.raw.Head()
+	if err != nil {
+		return "", err
+	}
+
+	return head.Name().Short(), nil
+}
+
+// GetCurrentTag returns the tag of the current HEAD commit, if it exists.
+func (g *GitRepo) GetCurrentTag() (string, error) {
+	tags, err := g.raw.Tags()
+	if err != nil {
+		return "", fmt.Errorf("failed to get tags: %w", err)
+	}
+
+	ref, err := g.raw.Head()
+	if err != nil {
+		return "", err
+	}
+
+	var tag string
+	err = tags.ForEach(func(t *plumbing.Reference) error {
+		// Only process annotated tags
+		tobj, err := g.raw.TagObject(t.Hash())
+		if err != nil {
+			return nil
+		}
+
+		if tobj.Target == ref.Hash() {
+			tag = tobj.Name
+			return nil
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		return "", fmt.Errorf("failed to iterate over tags: %w", err)
+	}
+
+	if tag == "" {
+		return "", ErrTagNotFound
+	}
+
+	return tag, nil
+}
+
 // HasChanges returns true if the repository has changes.
 func (g *GitRepo) HasChanges() (bool, error) {
 	status, err := g.worktree.Status()
@@ -99,46 +183,21 @@ func (g *GitRepo) Head() (*plumbing.Reference, error) {
 	return g.raw.Head()
 }
 
-// LoadFromPath loads a repository from a local path.
-func (g *GitRepo) LoadFromPath(path string) error {
-	workdir := afero.NewBasePathFs(g.fs, path)
+// Init initializes a new repository at the given path.
+func (g *GitRepo) Init(path string) error {
+	var workdir afero.Fs
+	if path == "" {
+		workdir = g.fs
+	} else {
+		workdir = afero.NewBasePathFs(g.fs, path)
+	}
+
 	gitdir := afero.NewBasePathFs(g.fs, filepath.Join(path, ".git"))
 
 	storage := filesystem.NewStorage(df.New(gitdir), cache.NewObjectLRUDefault())
-	repo, err := gg.Open(storage, df.New(workdir))
+	repo, err := gg.Init(storage, df.New(workdir))
 	if err != nil {
-		return fmt.Errorf("failed to open repository: %w", err)
-	}
-
-	wt, err := repo.Worktree()
-	if err != nil {
-		return fmt.Errorf("failed to get worktree: %w", err)
-	}
-
-	g.basePath = path
-	g.raw = repo
-	g.worktree = wt
-
-	return nil
-}
-
-// LoadFromRemote loads a repository from a git remote.
-func (g *GitRepo) LoadFromRemote(path, url, branch string) error {
-	workdir := afero.NewBasePathFs(g.fs, path)
-	gitdir := afero.NewBasePathFs(g.fs, filepath.Join(path, ".git"))
-	ref := fmt.Sprintf("refs/heads/%s", branch)
-
-	g.logger.Debug("Cloning repository", "url", url, "ref", ref)
-	storage := filesystem.NewStorage(df.New(gitdir), cache.NewObjectLRUDefault())
-	repo, err := g.remote.Clone(storage, df.New(workdir), &gg.CloneOptions{
-		URL:           url,
-		Depth:         1,
-		ReferenceName: plumbing.ReferenceName(ref),
-		Auth:          g.auth,
-	})
-
-	if err != nil {
-		return err
+		return fmt.Errorf("failed to init repository: %w", err)
 	}
 
 	wt, err := repo.Worktree()
@@ -189,6 +248,29 @@ func (g *GitRepo) NewTag(commit plumbing.Hash, name, message string) (*plumbing.
 	}
 
 	return tag, nil
+}
+
+// Open loads a repository from a local path.
+func (g *GitRepo) Open(path string) error {
+	workdir := afero.NewBasePathFs(g.fs, path)
+	gitdir := afero.NewBasePathFs(g.fs, filepath.Join(path, ".git"))
+
+	storage := filesystem.NewStorage(df.New(gitdir), cache.NewObjectLRUDefault())
+	repo, err := gg.Open(storage, df.New(workdir))
+	if err != nil {
+		return fmt.Errorf("failed to open repository: %w", err)
+	}
+
+	wt, err := repo.Worktree()
+	if err != nil {
+		return fmt.Errorf("failed to get worktree: %w", err)
+	}
+
+	g.basePath = path
+	g.raw = repo
+	g.worktree = wt
+
+	return nil
 }
 
 // ReadFile reads the contents of a file in the repository.
@@ -257,11 +339,42 @@ func WithAuthor(name, email string) GitRepoOption {
 	}
 }
 
-// NewGitRepo creates a new GitRepo instance.
-func NewGitRepo(fs afero.Fs, logger *slog.Logger) GitRepo {
-	return GitRepo{
-		fs:     fs,
-		logger: logger,
-		remote: remote.GoGitRemoteInteractor{},
+// WithGitRemoteInteractor sets the remote interactor for the repository.
+func WithGitRemoteInteractor(remote remote.GitRemoteInteractor) GitRepoOption {
+	return func(g *GitRepo) {
+		g.remote = remote
 	}
+}
+
+// WithFS sets the filesystem for the repository.
+func WithFS(fs afero.Fs) GitRepoOption {
+	return func(g *GitRepo) {
+		g.fs = fs
+	}
+}
+
+// WithMemFS sets the repository to use an in-memory filesystem.
+func WithMemFS() GitRepoOption {
+	return func(g *GitRepo) {
+		g.fs = afero.NewMemMapFs()
+	}
+}
+
+// NewGitRepo creates a new GitRepo instance.
+func NewGitRepo(logger *slog.Logger, opts ...GitRepoOption) GitRepo {
+	r := GitRepo{
+		logger: logger,
+	}
+
+	for _, opt := range opts {
+		opt(&r)
+	}
+
+	if r.fs == nil {
+		r.fs = afero.NewOsFs()
+	} else if r.remote == nil {
+		r.remote = remote.GoGitRemoteInteractor{}
+	}
+
+	return r
 }

@@ -2,6 +2,8 @@ package repo
 
 import (
 	"fmt"
+	"io"
+	"log/slog"
 	"path/filepath"
 	"testing"
 	"time"
@@ -15,7 +17,6 @@ import (
 	"github.com/go-git/go-git/v5/storage"
 	"github.com/go-git/go-git/v5/storage/filesystem"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/git/repo/remote/mocks"
-	"github.com/input-output-hk/catalyst-forge/lib/tools/testutils"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -47,6 +48,35 @@ func TestGitRepoAddFile(t *testing.T) {
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "failed to add file")
 	})
+}
+
+func TestGitRepoClone(t *testing.T) {
+	repo := newRepo(t)
+
+	var opts *gg.CloneOptions
+	r := GitRepo{
+		fs:     repo.fs,
+		logger: slog.New(slog.NewTextHandler(io.Discard, nil)),
+		remote: &mocks.GitRemoteInteractorMock{
+			CloneFunc: func(s storage.Storer, worktree billy.Filesystem, o *gg.CloneOptions) (*gg.Repository, error) {
+				opts = o
+				return repo.repo, nil
+			},
+		},
+	}
+
+	err := r.Clone(repoPath, "test.com", "master")
+	require.NoError(t, err)
+
+	assert.Equal(t, opts.URL, "test.com")
+	assert.Equal(t, opts.ReferenceName, plumbing.ReferenceName("refs/heads/master"))
+
+	head, err := r.raw.Head()
+	require.NoError(t, err)
+
+	commit, err := r.GetCommit(head.Hash())
+	require.NoError(t, err)
+	assert.Equal(t, commit.Message, "test")
 }
 
 func TestGitRepoCommit(t *testing.T) {
@@ -87,6 +117,37 @@ func TestGitRepoExists(t *testing.T) {
 	})
 }
 
+func TestGitRepoGetCurrentBranch(t *testing.T) {
+	repo := newGitRepo(t)
+
+	branch, err := repo.GetCurrentBranch()
+	require.NoError(t, err)
+	assert.Equal(t, branch, "master")
+}
+
+func TestGitRepoGetCurrentTag(t *testing.T) {
+	t.Run("tag exists", func(t *testing.T) {
+		repo := newGitRepo(t)
+
+		head, err := repo.Head()
+		require.NoError(t, err)
+		repo.NewTag(head.Hash(), "test", "test")
+
+		tag, err := repo.GetCurrentTag()
+		require.NoError(t, err)
+		assert.Equal(t, tag, "test")
+	})
+
+	t.Run("tag does not exist", func(t *testing.T) {
+		repo := newGitRepo(t)
+
+		tag, err := repo.GetCurrentTag()
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "tag not found")
+		assert.Equal(t, tag, "")
+	})
+}
+
 func TestGitRepoHasChanges(t *testing.T) {
 	t.Run("has changes", func(t *testing.T) {
 		repo := newGitRepo(t)
@@ -106,54 +167,6 @@ func TestGitRepoHasChanges(t *testing.T) {
 		require.NoError(t, err)
 		assert.False(t, changes)
 	})
-}
-
-func TestGitRepoLoadFromPath(t *testing.T) {
-	repo := newRepo(t)
-
-	r := GitRepo{
-		fs:     repo.fs,
-		logger: testutils.NewNoopLogger(),
-	}
-
-	err := r.LoadFromPath(repoPath)
-	require.NoError(t, err)
-
-	head, err := r.raw.Head()
-	require.NoError(t, err)
-
-	commit, err := r.GetCommit(head.Hash())
-	require.NoError(t, err)
-	assert.Equal(t, commit.Message, "test")
-}
-
-func TestGitRepoLoadFromRemote(t *testing.T) {
-	repo := newRepo(t)
-
-	var opts *gg.CloneOptions
-	r := GitRepo{
-		fs:     repo.fs,
-		logger: testutils.NewNoopLogger(),
-		remote: &mocks.GitRemoteInteractorMock{
-			CloneFunc: func(s storage.Storer, worktree billy.Filesystem, o *gg.CloneOptions) (*gg.Repository, error) {
-				opts = o
-				return repo.repo, nil
-			},
-		},
-	}
-
-	err := r.LoadFromRemote(repoPath, "test.com", "master")
-	require.NoError(t, err)
-
-	assert.Equal(t, opts.URL, "test.com")
-	assert.Equal(t, opts.ReferenceName, plumbing.ReferenceName("refs/heads/master"))
-
-	head, err := r.raw.Head()
-	require.NoError(t, err)
-
-	commit, err := r.GetCommit(head.Hash())
-	require.NoError(t, err)
-	assert.Equal(t, commit.Message, "test")
 }
 
 func TestGitRepoNewBranch(t *testing.T) {
@@ -183,6 +196,25 @@ func TestGitRepoNewTag(t *testing.T) {
 	require.NoError(t, err)
 
 	assert.Equal(t, tag.Name().String(), "refs/tags/test")
+}
+
+func TestGitRepoOpen(t *testing.T) {
+	repo := newRepo(t)
+
+	r := GitRepo{
+		fs:     repo.fs,
+		logger: slog.New(slog.NewTextHandler(io.Discard, nil)),
+	}
+
+	err := r.Open(repoPath)
+	require.NoError(t, err)
+
+	head, err := r.raw.Head()
+	require.NoError(t, err)
+
+	commit, err := r.GetCommit(head.Hash())
+	require.NoError(t, err)
+	assert.Equal(t, commit.Message, "test")
 }
 
 func TestGitRepoWriteFile(t *testing.T) {
@@ -289,7 +321,7 @@ func newGitRepo(t *testing.T) GitRepo {
 	return GitRepo{
 		basePath: "/repo",
 		fs:       repo.fs,
-		logger:   testutils.NewNoopLogger(),
+		logger:   slog.New(slog.NewTextHandler(io.Discard, nil)),
 		raw:      repo.repo,
 		worktree: repo.worktree,
 	}
