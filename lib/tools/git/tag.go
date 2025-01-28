@@ -2,9 +2,8 @@ package git
 
 import (
 	"fmt"
-	"os"
-	"strings"
 
+	"github.com/input-output-hk/catalyst-forge/lib/tools/git/github"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/git/repo"
 )
 
@@ -16,10 +15,12 @@ var (
 func GetTag(r *repo.GitRepo) (string, error) {
 	var tag string
 	var err error
-	if InCI() {
-		tag, err = getCITag()
-		if err != nil {
-			return "", err
+	env := github.NewGithubEnv(nil)
+
+	if github.InCI() {
+		tag = env.GetTag()
+		if tag == "" {
+			return "", ErrTagNotFound
 		}
 	} else {
 		tag, err = r.GetCurrentTag()
@@ -29,14 +30,4 @@ func GetTag(r *repo.GitRepo) (string, error) {
 	}
 
 	return tag, nil
-}
-
-// getCITag returns the tag from the CI environment if it exists.
-func getCITag() (string, error) {
-	tag, exists := os.LookupEnv("GITHUB_REF")
-	if exists && strings.HasPrefix(tag, "refs/tags/") {
-		return strings.TrimPrefix(tag, "refs/tags/"), nil
-	} else {
-		return "", ErrTagNotFound
-	}
 }

@@ -7,7 +7,6 @@ import (
 	"cuelang.org/go/cue/cuecontext"
 	"github.com/input-output-hk/catalyst-forge/lib/project/blueprint"
 	"github.com/input-output-hk/catalyst-forge/lib/project/injector"
-	"github.com/input-output-hk/catalyst-forge/lib/project/providers"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/testutils"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
@@ -16,7 +15,6 @@ import (
 
 func TestDefaultProjectLoaderLoad(t *testing.T) {
 	ctx := cuecontext.New()
-	githubProvider := providers.NewGithubProvider(nil, testutils.NewNoopLogger(), nil)
 
 	earthfile := `
 VERSION 0.8
@@ -45,7 +43,7 @@ project: name: "foo"
 		files       map[string]string
 		tag         string
 		injectors   []injector.BlueprintInjector
-		runtimes    []RuntimeData
+		runtimes    func(afero.Fs) []RuntimeData
 		env         map[string]string
 		initGit     bool
 		validate    func(*testing.T, Project, error)
@@ -60,7 +58,7 @@ project: name: "foo"
 			},
 			tag:       "foo/v1.0.0",
 			injectors: []injector.BlueprintInjector{},
-			runtimes:  []RuntimeData{},
+			runtimes:  func(fs afero.Fs) []RuntimeData { return nil },
 			env:       map[string]string{},
 			initGit:   true,
 			validate: func(t *testing.T, p Project, err error) {
@@ -99,7 +97,7 @@ project: {
 			injectors: []injector.BlueprintInjector{
 				injector.NewBlueprintEnvInjector(ctx, testutils.NewNoopLogger()),
 			},
-			runtimes: []RuntimeData{},
+			runtimes: func(fs afero.Fs) []RuntimeData { return nil },
 			env: map[string]string{
 				"FOO": "bar",
 			},
@@ -132,11 +130,8 @@ project: {
 			injectors: []injector.BlueprintInjector{
 				injector.NewBlueprintEnvInjector(ctx, testutils.NewNoopLogger()),
 			},
-			runtimes: []RuntimeData{
-				NewGitRuntime(
-					&githubProvider,
-					testutils.NewNoopLogger(),
-				),
+			runtimes: func(fs afero.Fs) []RuntimeData {
+				return []RuntimeData{NewCustomGitRuntime(fs, testutils.NewNoopLogger())}
 			},
 			env:     map[string]string{},
 			initGit: true,
@@ -156,7 +151,7 @@ project: {
 				"/project/blueprint.cue": bp,
 			},
 			injectors: []injector.BlueprintInjector{},
-			runtimes:  []RuntimeData{},
+			runtimes:  func(f afero.Fs) []RuntimeData { return nil },
 			env:       map[string]string{},
 			initGit:   false,
 			validate: func(t *testing.T, p Project, err error) {
@@ -177,7 +172,7 @@ project: {
 				"/project/blueprint.cue": bp,
 			},
 			injectors: []injector.BlueprintInjector{},
-			runtimes:  []RuntimeData{},
+			runtimes:  func(f afero.Fs) []RuntimeData { return nil },
 			env:       map[string]string{},
 			initGit:   true,
 			validate: func(t *testing.T, p Project, err error) {
@@ -198,7 +193,7 @@ project: {
 				"/project/blueprint.cue": "invalid",
 			},
 			injectors: []injector.BlueprintInjector{},
-			runtimes:  []RuntimeData{},
+			runtimes:  func(f afero.Fs) []RuntimeData { return nil },
 			env:       map[string]string{},
 			initGit:   true,
 			validate: func(t *testing.T, p Project, err error) {
@@ -231,7 +226,7 @@ project: {
 `,
 			},
 			injectors: []injector.BlueprintInjector{},
-			runtimes:  []RuntimeData{},
+			runtimes:  func(f afero.Fs) []RuntimeData { return nil },
 			env:       map[string]string{},
 			initGit:   true,
 			validate: func(t *testing.T, p Project, err error) {
@@ -287,7 +282,7 @@ project: {
 				fs:              tt.fs,
 				injectors:       tt.injectors,
 				logger:          logger,
-				runtimes:        tt.runtimes,
+				runtimes:        tt.runtimes(tt.fs),
 			}
 
 			p, err := loader.Load(tt.projectPath)

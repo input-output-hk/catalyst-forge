@@ -11,9 +11,7 @@ import (
 	"cuelang.org/go/cue/cuecontext"
 	"github.com/input-output-hk/catalyst-forge/lib/project/blueprint"
 	"github.com/input-output-hk/catalyst-forge/lib/project/injector"
-	"github.com/input-output-hk/catalyst-forge/lib/project/providers"
 	"github.com/input-output-hk/catalyst-forge/lib/project/schema"
-	"github.com/input-output-hk/catalyst-forge/lib/project/secrets"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/earthfile"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/git"
 	r "github.com/input-output-hk/catalyst-forge/lib/tools/git/repo"
@@ -193,8 +191,6 @@ func NewDefaultProjectLoader(
 	ctx := cuecontext.New()
 	fs := afero.NewOsFs()
 	bl := blueprint.NewDefaultBlueprintLoader(ctx, logger)
-	store := secrets.NewDefaultSecretStore()
-	ghp := providers.NewGithubProvider(fs, logger, &store)
 	return DefaultProjectLoader{
 		blueprintLoader: &bl,
 		ctx:             ctx,
@@ -205,7 +201,7 @@ func NewDefaultProjectLoader(
 		logger: logger,
 		runtimes: []RuntimeData{
 			NewDeploymentRuntime(logger),
-			NewGitRuntime(&ghp, logger),
+			NewGitRuntime(logger),
 		},
 	}
 }

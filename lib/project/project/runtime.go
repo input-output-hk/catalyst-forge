@@ -6,9 +6,10 @@ import (
 
 	"cuelang.org/go/cue"
 	"github.com/google/go-github/v66/github"
-	"github.com/input-output-hk/catalyst-forge/lib/project/providers"
 	"github.com/input-output-hk/catalyst-forge/lib/project/schema"
+	gh "github.com/input-output-hk/catalyst-forge/lib/tools/git/github"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/git/repo"
+	"github.com/spf13/afero"
 )
 
 // RuntimeData is an interface for runtime data loaders.
@@ -64,8 +65,8 @@ func NewDeploymentRuntime(logger *slog.Logger) *DeploymentRuntime {
 
 // GitRuntime is a runtime data loader for git related data.
 type GitRuntime struct {
-	provider *providers.GithubProvider
-	logger   *slog.Logger
+	fs     afero.Fs
+	logger *slog.Logger
 }
 
 func (g *GitRuntime) Load(project *Project) map[string]cue.Value {
@@ -93,10 +94,11 @@ func (g *GitRuntime) Load(project *Project) map[string]cue.Value {
 
 // getCommitHash returns the commit hash of the HEAD commit.
 func (g *GitRuntime) getCommitHash(repo *repo.GitRepo) (string, error) {
-	if g.provider.HasEvent() {
-		if g.provider.GetEventType() == "pull_request" {
+	env := gh.NewCustomGithubEnv(g.fs, g.logger)
+	if env.HasEvent() {
+		if env.GetEventType() == "pull_request" {
 			g.logger.Debug("Found GitHub pull request event")
-			event, err := g.provider.GetEventPayload()
+			event, err := env.GetEventPayload()
 			if err != nil {
 				return "", fmt.Errorf("failed to get event payload: %w", err)
 			}
@@ -111,9 +113,9 @@ func (g *GitRuntime) getCommitHash(repo *repo.GitRepo) (string, error) {
 			}
 
 			return *pr.PullRequest.Head.SHA, nil
-		} else if g.provider.GetEventType() == "push" {
+		} else if env.GetEventType() == "push" {
 			g.logger.Debug("Found GitHub push event")
-			event, err := g.provider.GetEventPayload()
+			event, err := env.GetEventPayload()
 			if err != nil {
 				return "", fmt.Errorf("failed to get event payload: %w", err)
 			}
@@ -146,9 +148,17 @@ func (g *GitRuntime) getCommitHash(repo *repo.GitRepo) (string, error) {
 }
 
 // NewGitRuntime creates a new GitRuntime.
-func NewGitRuntime(githubProvider *providers.GithubProvider, logger *slog.Logger) *GitRuntime {
+func NewGitRuntime(logger *slog.Logger) *GitRuntime {
 	return &GitRuntime{
-		logger:   logger,
-		provider: githubProvider,
+		fs:     afero.NewOsFs(),
+		logger: logger,
+	}
+}
+
+// NewCustomGitRuntime creates a new GitRuntime with a custom filesystem.
+func NewCustomGitRuntime(fs afero.Fs, logger *slog.Logger) *GitRuntime {
+	return &GitRuntime{
+		fs:     fs,
+		logger: logger,
 	}
 }

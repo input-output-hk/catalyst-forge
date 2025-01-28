@@ -8,7 +8,6 @@ import (
 	"cuelang.org/go/cue"
 	"cuelang.org/go/cue/cuecontext"
 	"github.com/input-output-hk/catalyst-forge/lib/project/blueprint"
-	"github.com/input-output-hk/catalyst-forge/lib/project/providers"
 	lc "github.com/input-output-hk/catalyst-forge/lib/tools/cue"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/git/repo"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/testutils"
@@ -143,7 +142,6 @@ func TestGitRuntimeLoad(t *testing.T) {
 			_, err = repo.Commit("Initial commit")
 			require.NoError(t, err)
 
-			provider := providers.NewGithubProvider(nil, logger, nil)
 			if len(tt.env) > 0 {
 				for k, v := range tt.env {
 					require.NoError(t, os.Setenv(k, v))
@@ -151,10 +149,9 @@ func TestGitRuntimeLoad(t *testing.T) {
 				}
 			}
 
+			fs := afero.NewMemMapFs()
 			if len(tt.files) > 0 {
-				fs := afero.NewMemMapFs()
 				testutils.SetupFS(t, fs, tt.files)
-				provider = providers.NewGithubProvider(fs, logger, nil)
 			}
 
 			project := &Project{
@@ -165,7 +162,7 @@ func TestGitRuntimeLoad(t *testing.T) {
 				logger:       logger,
 			}
 
-			runtime := NewGitRuntime(&provider, logger)
+			runtime := NewCustomGitRuntime(fs, logger)
 			data := runtime.Load(project)
 			tt.validate(t, repo, data)
 		})

@@ -2,9 +2,8 @@ package git
 
 import (
 	"fmt"
-	"os"
-	"strings"
 
+	"github.com/input-output-hk/catalyst-forge/lib/tools/git/github"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/git/repo"
 )
 
@@ -13,15 +12,11 @@ var (
 )
 
 func GetBranch(repo *repo.GitRepo) (string, error) {
-	if InCI() {
-		ref, ok := os.LookupEnv("GITHUB_HEAD_REF")
-		if !ok || ref == "" {
-			if strings.HasPrefix(os.Getenv("GITHUB_REF"), "refs/heads/") {
-				return strings.TrimPrefix(os.Getenv("GITHUB_REF"), "refs/heads/"), nil
-			}
+	env := github.NewGithubEnv(nil)
 
-			// Revert to trying to get the branch from the local repository
-		} else {
+	if github.InCI() {
+		ref := env.GetBranch()
+		if ref != "" {
 			return ref, nil
 		}
 	}
