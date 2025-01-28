@@ -40,7 +40,6 @@ func TestTagEventFiring(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			project := project.NewProject(
-				testutils.NewNoopLogger(),
 				nil,
 				nil,
 				nil,
@@ -49,6 +48,8 @@ func TestTagEventFiring(t *testing.T) {
 				"",
 				schema.Blueprint{},
 				tt.tag,
+				testutils.NewNoopLogger(),
+				nil,
 			)
 
 			event := TagEvent{
