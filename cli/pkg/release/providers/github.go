@@ -12,16 +12,15 @@ import (
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/events"
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/run"
 	"github.com/input-output-hk/catalyst-forge/lib/project/project"
+	"github.com/input-output-hk/catalyst-forge/lib/project/providers"
 	"github.com/input-output-hk/catalyst-forge/lib/project/schema"
-	"github.com/input-output-hk/catalyst-forge/lib/project/secrets"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/archive"
 	"github.com/spf13/afero"
 )
 
 type GithubReleaserConfig struct {
-	Prefix string        `json:"prefix"`
-	Name   string        `json:"name"`
-	Token  schema.Secret `json:"token"`
+	Prefix string `json:"prefix"`
+	Name   string `json:"name"`
 }
 
 type GithubReleaser struct {
@@ -199,18 +198,17 @@ func NewGithubReleaser(
 		return nil, fmt.Errorf("failed to parse release config: %w", err)
 	}
 
-	token, err := secrets.GetSecret(&config.Token, &ctx.SecretStore, ctx.Logger)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get GitHub token: %w", err)
-	}
-
 	fs := afero.NewOsFs()
 	workdir, err := afero.TempDir(fs, "", "catalyst-forge-")
 	if err != nil {
 		return nil, fmt.Errorf("failed to create temporary directory: %w", err)
 	}
 
-	client := github.NewClient(nil).WithAuthToken(token)
+	client, err := providers.NewGithubClient(&project, ctx.Logger)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create github client: %w", err)
+	}
+
 	handler := events.NewDefaultEventHandler(ctx.Logger)
 	runner := run.NewDefaultProjectRunner(ctx, &project)
 	return &GithubReleaser{

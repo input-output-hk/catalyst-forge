@@ -1,118 +1,59 @@
 package providers
 
-// import (
-// 	"fmt"
-// 	"io"
-// 	"log/slog"
-// 	"os"
+import (
+	"fmt"
+	"log/slog"
+	"os"
 
-// 	"github.com/google/go-github/v66/github"
-// 	"github.com/input-output-hk/catalyst-forge/lib/project/schema"
-// 	"github.com/input-output-hk/catalyst-forge/lib/project/secrets"
-// 	"github.com/spf13/afero"
-// )
+	"github.com/google/go-github/v66/github"
+	"github.com/input-output-hk/catalyst-forge/lib/project/project"
+	"github.com/input-output-hk/catalyst-forge/lib/project/secrets"
+)
 
-// var (
-// 	ErrNoEventFound = fmt.Errorf("no GitHub event data found")
-// )
+// GithubProviderCreds is the struct that holds the credentials for the Github provider
+type GithubProviderCreds struct {
+	Token string
+}
 
-// type GithubProvider struct {
-// 	fs     afero.Fs
-// 	logger *slog.Logger
-// 	store  *secrets.SecretStore
-// }
+// GetGithubProviderCreds loads the Github provider credentials from the project.
+func GetGithubProviderCreds(p *project.Project, logger *slog.Logger) (GithubProviderCreds, error) {
+	secret := p.Blueprint.Global.CI.Providers.Github.Credentials
+	if secret == nil {
+		return GithubProviderCreds{}, fmt.Errorf("project does not have a Github provider configured")
+	}
 
-// // GetEventType returns the GitHub event type.
-// func (g *GithubProvider) GetEventType() string {
-// 	return os.Getenv("GITHUB_EVENT_NAME")
-// }
+	m, err := secrets.GetSecretMap(secret, p.SecretStore, logger)
+	if err != nil {
+		return GithubProviderCreds{}, fmt.Errorf("could not get secret: %w", err)
+	}
 
-// // GetEventPayload returns the GitHub event payload.
-// func (g *GithubProvider) GetEventPayload() (any, error) {
-// 	path, pathExists := os.LookupEnv("GITHUB_EVENT_PATH")
-// 	name, nameExists := os.LookupEnv("GITHUB_EVENT_NAME")
+	creds, ok := m["token"]
+	if !ok {
+		return GithubProviderCreds{}, fmt.Errorf("github provider token is missing in secret")
+	}
 
-// 	if !pathExists || !nameExists {
-// 		return nil, ErrNoEventFound
-// 	}
+	return GithubProviderCreds{Token: creds}, nil
+}
 
-// 	g.logger.Debug("Reading GitHub event data", "path", path, "name", name)
-// 	payload, err := afero.ReadFile(g.fs, path)
-// 	if err != nil {
-// 		return nil, fmt.Errorf("failed to read GitHub event data: %w", err)
-// 	}
+// NewGithubClient returns a new Github client.
+// If a GITHUB_TOKEN environment variable is set, it will use that token.
+// Otherwise, it will use the provider secret.
+// If neither are set, it will create an anonymous client.
+func NewGithubClient(p *project.Project, logger *slog.Logger) (*github.Client, error) {
+	token, exists := os.LookupEnv("GITHUB_TOKEN")
+	if exists {
+		logger.Info("Creating Github client with environment token")
+		return github.NewClient(nil).WithAuthToken(token), nil
+	} else if p.Blueprint.Global.CI.Providers.Github.Credentials != nil {
+		logger.Info("Creating Github client with provider secret")
+		creds, err := GetGithubProviderCreds(p, logger)
+		if err != nil {
+			logger.Error("Failed to get Github provider credentials", "error", err)
+		}
 
-// 	event, err := github.ParseWebHook(name, payload)
-// 	if err != nil {
-// 		return nil, fmt.Errorf("failed to parse GitHub event data: %w", err)
-// 	}
+		return github.NewClient(nil).WithAuthToken(creds.Token), nil
+	}
 
-// 	return event, nil
-// }
-
-// // HasEvent returns whether a GitHub event payload exists.
-// func (g *GithubProvider) HasEvent() bool {
-// 	_, pathExists := os.LookupEnv("GITHUB_EVENT_PATH")
-// 	_, nameExists := os.LookupEnv("GITHUB_EVENT_NAME")
-// 	return pathExists && nameExists
-// }
-
-// // NewClient returns a new GitHub client.
-// func (g *GithubProvider) NewClient(secret *schema.Secret) *github.Client {
-// 	token, exists := os.LookupEnv("GITHUB_TOKEN")
-// 	if exists {
-// 		return github.NewClient(nil).WithAuthToken(token)
-// 	} else if secret != nil {
-// 		if secret.Maps != nil {
-// 			secretMap, err := secrets.GetSecretMap(secret, g.store, g.logger)
-// 			if err != nil {
-// 				g.logger.Error("Failed to get Github secret", "error", err)
-// 			} else {
-// 				token, exists := secretMap["token"]
-// 				if exists {
-// 					return github.NewClient(nil).WithAuthToken(token)
-// 				} else {
-// 					g.logger.Error("Github secret map does not contain token")
-// 				}
-// 			}
-// 		} else {
-// 			secret, err := secrets.GetSecret(secret, g.store, g.logger)
-// 			if err != nil {
-// 				g.logger.Error("Failed to get Github secret", "error", err)
-// 			} else {
-// 				return github.NewClient(nil).WithAuthToken(secret)
-// 			}
-// 		}
-// 	}
-
-// 	g.logger.Warn("No Github token found, using unauthenticated client")
-// 	return github.NewClient(nil)
-// }
-
-// // NewDefaultGithubProvider returns a new default GitHub provider.
-// func NewDefaultGithubProvider(logger *slog.Logger) GithubProvider {
-// 	if logger == nil {
-// 		logger = slog.New(slog.NewTextHandler(io.Discard, nil))
-// 	}
-
-// 	fs := afero.NewOsFs()
-// 	store := secrets.NewDefaultSecretStore()
-// 	return GithubProvider{
-// 		fs:     fs,
-// 		logger: logger,
-// 		store:  &store,
-// 	}
-// }
-
-// // NewGithubProvider returns a new GitHub provider.
-// func NewGithubProvider(fs afero.Fs, logger *slog.Logger, store *secrets.SecretStore) GithubProvider {
-// 	if logger == nil {
-// 		logger = slog.New(slog.NewTextHandler(io.Discard, nil))
-// 	}
-
-// 	return GithubProvider{
-// 		fs:     fs,
-// 		logger: logger,
-// 		store:  store,
-// 	}
-// }
+	logger.Info("Creating new anonymous Github client")
+	return github.NewClient(nil), nil
+}
