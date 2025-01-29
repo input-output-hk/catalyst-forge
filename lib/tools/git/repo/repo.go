@@ -290,6 +290,21 @@ func (g *GitRepo) Raw() *gg.Repository {
 	return g.raw
 }
 
+// ReadDir reads the contents of a directory in the repository.
+func (g *GitRepo) ReadDir(path string) ([]os.FileInfo, error) {
+	return afero.ReadDir(g.fs, filepath.Join(g.basePath, path))
+}
+
+// RemoveFile removes a file from the repository.
+func (g *GitRepo) RemoveFile(path string) error {
+	return g.fs.Remove(filepath.Join(g.basePath, path))
+}
+
+// SetAuth sets the authentication for the interacting with a remote repository.
+func (g *GitRepo) SetAuth(auth *http.BasicAuth) {
+	g.auth = auth
+}
+
 // WriteFile writes the given contents to the given path in the repository.
 // It also automatically adds the file to the staging area.
 func (g *GitRepo) WriteFile(path string, contents []byte) error {

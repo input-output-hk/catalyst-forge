@@ -23,8 +23,6 @@ func TestKCLManifestGeneratorGenerate(t *testing.T) {
 	tests := []struct {
 		name     string
 		module   schema.DeploymentModule
-		instance string
-		registry string
 		out      string
 		err      bool
 		validate func(t *testing.T, result testResult)
@@ -32,15 +30,15 @@ func TestKCLManifestGeneratorGenerate(t *testing.T) {
 		{
 			name: "full",
 			module: schema.DeploymentModule{
+				Instance:  "instance",
 				Name:      "module",
 				Namespace: "default",
+				Registry:  "registry",
 				Values:    "test",
 				Version:   "1.0.0",
 			},
-			instance: "instance",
-			registry: "registry",
-			out:      "output",
-			err:      false,
+			out: "output",
+			err: false,
 			validate: func(t *testing.T, result testResult) {
 				require.NoError(t, result.err)
 				assert.Equal(t, client.KCLModuleConfig{
@@ -55,15 +53,15 @@ func TestKCLManifestGeneratorGenerate(t *testing.T) {
 		{
 			name: "error",
 			module: schema.DeploymentModule{
+				Instance:  "instance",
 				Name:      "module",
 				Namespace: "default",
+				Registry:  "registry",
 				Values:    "test",
 				Version:   "1.0.0",
 			},
-			instance: "instance",
-			registry: "registry",
-			out:      "output",
-			err:      true,
+			out: "output",
+			err: true,
 			validate: func(t *testing.T, result testResult) {
 				assert.Error(t, result.err)
 			},
@@ -92,7 +90,7 @@ func TestKCLManifestGeneratorGenerate(t *testing.T) {
 				logger: testutils.NewNoopLogger(),
 			}
 
-			out, err := g.Generate(tt.module, tt.instance, tt.registry)
+			out, err := g.Generate(tt.module)
 			tt.validate(t, testResult{
 				conf:      c,
 				container: cont,

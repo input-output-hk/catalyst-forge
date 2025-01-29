@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log/slog"
 
+	"github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/input-output-hk/catalyst-forge/lib/project/project"
 	"github.com/input-output-hk/catalyst-forge/lib/project/secrets"
 )
@@ -20,7 +21,7 @@ func GetGitProviderCreds(p *project.Project, logger *slog.Logger) (GitProviderCr
 		return GitProviderCreds{}, fmt.Errorf("project does not have a Git provider configured")
 	}
 
-	m, err := secrets.GetSecretMap(secret, p.SecretStore, logger)
+	m, err := secrets.GetSecretMap(secret, &p.SecretStore, logger)
 	if err != nil {
 		return GitProviderCreds{}, fmt.Errorf("could not get secret: %w", err)
 	}
@@ -31,4 +32,20 @@ func GetGitProviderCreds(p *project.Project, logger *slog.Logger) (GitProviderCr
 	}
 
 	return GitProviderCreds{Token: creds}, nil
+}
+
+// LoadGitProviderCreds loads the Git provider credentials into the project's
+// repository.
+func LoadGitProviderCreds(p *project.Project, logger *slog.Logger) error {
+	creds, err := GetGitProviderCreds(p, logger)
+	if err != nil {
+		return fmt.Errorf("could not get git provider credentials: %w", err)
+	}
+
+	p.Repo.SetAuth(&http.BasicAuth{
+		Username: "forge",
+		Password: creds.Token,
+	})
+
+	return nil
 }

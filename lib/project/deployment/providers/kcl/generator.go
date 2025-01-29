@@ -16,10 +16,10 @@ type KCLManifestGenerator struct {
 	logger *slog.Logger
 }
 
-func (g *KCLManifestGenerator) Generate(mod schema.DeploymentModule, instance, registry string) ([]byte, error) {
-	container := fmt.Sprintf("oci://%s/%s?tag=%s", strings.TrimSuffix(registry, "/"), mod.Name, mod.Version)
+func (g *KCLManifestGenerator) Generate(mod schema.DeploymentModule) ([]byte, error) {
+	container := fmt.Sprintf("oci://%s/%s?tag=%s", strings.TrimSuffix(mod.Registry, "/"), mod.Name, mod.Version)
 	conf := client.KCLModuleConfig{
-		InstanceName: instance,
+		InstanceName: mod.Instance,
 		Namespace:    mod.Namespace,
 		Values:       mod.Values,
 	}

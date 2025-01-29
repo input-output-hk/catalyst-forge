@@ -12,6 +12,7 @@ import (
 	"github.com/input-output-hk/catalyst-forge/lib/project/blueprint"
 	"github.com/input-output-hk/catalyst-forge/lib/project/injector"
 	"github.com/input-output-hk/catalyst-forge/lib/project/schema"
+	"github.com/input-output-hk/catalyst-forge/lib/project/secrets"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/earthfile"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/git"
 	r "github.com/input-output-hk/catalyst-forge/lib/tools/git/repo"
@@ -35,6 +36,7 @@ type DefaultProjectLoader struct {
 	injectors       []injector.BlueprintInjector
 	logger          *slog.Logger
 	runtimes        []RuntimeData
+	store           secrets.SecretStore
 }
 
 func (p *DefaultProjectLoader) Load(projectPath string) (Project, error) {
@@ -99,6 +101,7 @@ func (p *DefaultProjectLoader) Load(projectPath string) (Project, error) {
 			RawBlueprint: rbp,
 			Repo:         &repo,
 			RepoRoot:     gitRoot,
+			SecretStore:  p.store,
 			logger:       p.logger,
 			ctx:          p.ctx,
 		}, nil
@@ -134,6 +137,7 @@ func (p *DefaultProjectLoader) Load(projectPath string) (Project, error) {
 		RawBlueprint: rbp,
 		Repo:         &repo,
 		RepoRoot:     gitRoot,
+		SecretStore:  p.store,
 		Tag:          tag,
 		ctx:          p.ctx,
 		logger:       p.logger,
@@ -176,12 +180,14 @@ func (p *DefaultProjectLoader) Load(projectPath string) (Project, error) {
 		Repo:         &repo,
 		RepoRoot:     gitRoot,
 		logger:       p.logger,
+		SecretStore:  p.store,
 		Tag:          tag,
 	}, nil
 }
 
 // NewDefaultProjectLoader creates a new DefaultProjectLoader.
 func NewDefaultProjectLoader(
+	store secrets.SecretStore,
 	logger *slog.Logger,
 ) DefaultProjectLoader {
 	if logger == nil {
@@ -203,6 +209,7 @@ func NewDefaultProjectLoader(
 			NewDeploymentRuntime(logger),
 			NewGitRuntime(logger),
 		},
+		store: store,
 	}
 }
 
@@ -213,6 +220,7 @@ func NewCustomProjectLoader(
 	bl blueprint.BlueprintLoader,
 	injectors []injector.BlueprintInjector,
 	runtimes []RuntimeData,
+	store secrets.SecretStore,
 	logger *slog.Logger,
 ) DefaultProjectLoader {
 	if logger == nil {
@@ -226,6 +234,7 @@ func NewCustomProjectLoader(
 		injectors:       injectors,
 		logger:          logger,
 		runtimes:        runtimes,
+		store:           store,
 	}
 }
 

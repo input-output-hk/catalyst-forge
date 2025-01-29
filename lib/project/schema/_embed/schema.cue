@@ -147,7 +147,7 @@ package schema
 #ProviderGithub: {
 	// Credentials contains the credentials to use for Github
 	//  +optional
-	credentials?: #Secret @go(Credentials)
+	credentials?: null | #Secret @go(Credentials,*Secret)
 
 	// Registry contains the Github registry to use.
 	// +optional
@@ -237,6 +237,10 @@ version: "1.0"
 
 // Module contains the configuration for a deployment module.
 #DeploymentModule: {
+	// Instance contains the instance name to use for all generated resources.
+	// +optional
+	instance?: string @go(Instance)
+
 	// Name contains the name of the module to deploy.
 	// +optional
 	name?: string @go(Name)
@@ -245,6 +249,10 @@ version: "1.0"
 	namespace: (_ | *"default") & {
 		string
 	} @go(Namespace)
+
+	// Registry contains the registry to pull the module from.
+	// +optional
+	registry?: string @go(Registry)
 
 	// Values contains the values to pass to the deployment module.
 	values: _ @go(Values,any)

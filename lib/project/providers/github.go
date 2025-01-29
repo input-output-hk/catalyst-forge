@@ -22,7 +22,7 @@ func GetGithubProviderCreds(p *project.Project, logger *slog.Logger) (GithubProv
 		return GithubProviderCreds{}, fmt.Errorf("project does not have a Github provider configured")
 	}
 
-	m, err := secrets.GetSecretMap(secret, p.SecretStore, logger)
+	m, err := secrets.GetSecretMap(secret, &p.SecretStore, logger)
 	if err != nil {
 		return GithubProviderCreds{}, fmt.Errorf("could not get secret: %w", err)
 	}

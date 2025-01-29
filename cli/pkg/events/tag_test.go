@@ -6,6 +6,7 @@ import (
 	"cuelang.org/go/cue"
 	"github.com/input-output-hk/catalyst-forge/lib/project/project"
 	"github.com/input-output-hk/catalyst-forge/lib/project/schema"
+	"github.com/input-output-hk/catalyst-forge/lib/project/secrets"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/testutils"
 	"github.com/stretchr/testify/assert"
 )
@@ -49,7 +50,7 @@ func TestTagEventFiring(t *testing.T) {
 				schema.Blueprint{},
 				tt.tag,
 				testutils.NewNoopLogger(),
-				nil,
+				secrets.SecretStore{},
 			)
 
 			event := TagEvent{

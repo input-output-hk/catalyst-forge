@@ -88,9 +88,6 @@ func (g *GitopsDeployer) Deploy() error {
 		}
 	}
 
-	registry := g.project.Blueprint.Global.Deployment.Registries.Modules
-	instance := g.project.Name
-
 	g.logger.Info("Clearing project path", "path", prjPath)
 	files, err := g.fs.ReadDir(prjPath)
 	if err != nil {
@@ -106,7 +103,7 @@ func (g *GitopsDeployer) Deploy() error {
 	}
 
 	g.logger.Info("Generating manifests")
-	result, err := g.gen.GenerateBundle(g.project.Blueprint.Project.Deployment.Modules, instance, registry)
+	result, err := g.gen.GenerateBundle(g.project.Blueprint.Project.Deployment.Modules)
 	if err != nil {
 		return fmt.Errorf("could not generate deployment manifests: %w", err)
 	}

@@ -91,7 +91,8 @@ func Run() int {
 	}
 
 	logger := slog.New(handler)
-	loader := project.NewDefaultProjectLoader(logger)
+	store := secrets.NewDefaultSecretStore()
+	loader := project.NewDefaultProjectLoader(store, logger)
 	gen := generator.NewGenerator(kcl.NewKCLManifestGenerator(logger), logger)
 	runctx := run.RunContext{
 		CI:                  cli.GlobalArgs.CI,
@@ -99,8 +100,9 @@ func Run() int {
 		FSWalker:            walker.NewDefaultFSWalker(logger),
 		Local:               cli.GlobalArgs.Local,
 		Logger:              logger,
+		ManifestGenerator:   kcl.NewKCLManifestGenerator(logger),
 		ProjectLoader:       &loader,
-		SecretStore:         secrets.NewDefaultSecretStore(),
+		SecretStore:         store,
 		Verbose:             cli.GlobalArgs.Verbose,
 	}
 	ctx.Bind(runctx)

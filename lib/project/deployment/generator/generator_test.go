@@ -24,8 +24,10 @@ func TestGeneratorGenerate(t *testing.T) {
 		{
 			name: "full",
 			module: schema.DeploymentModule{
+				Instance:  "instance",
 				Name:      "test",
 				Namespace: "default",
+				Registry:  "registry",
 				Values:    ctx.CompileString(`foo: "bar"`),
 				Version:   "1.0.0",
 			},
@@ -36,8 +38,10 @@ func TestGeneratorGenerate(t *testing.T) {
 				assert.Equal(t, "test", string(result.Manifests))
 
 				m := `{
+	instance:  "instance"
 	name:      "test"
 	namespace: "default"
+	registry:  "registry"
 	values: {
 		foo: "bar"
 	}
@@ -79,7 +83,7 @@ func TestGeneratorGenerate(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			mg := &mocks.ManifestGeneratorMock{
-				GenerateFunc: func(mod schema.DeploymentModule, instance, registry string) ([]byte, error) {
+				GenerateFunc: func(mod schema.DeploymentModule) ([]byte, error) {
 					if tt.err {
 						return nil, fmt.Errorf("error")
 					}
@@ -92,7 +96,7 @@ func TestGeneratorGenerate(t *testing.T) {
 				logger: testutils.NewNoopLogger(),
 			}
 
-			result, err := gen.Generate(tt.module, "", "")
+			result, err := gen.Generate(tt.module)
 			tt.validate(t, result, err)
 		})
 	}

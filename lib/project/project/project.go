@@ -38,7 +38,7 @@ type Project struct {
 	RepoRoot string
 
 	// SecretStore is the project secret store.
-	SecretStore *secrets.SecretStore
+	SecretStore secrets.SecretStore
 
 	// Tag is the project tag, if it exists in the current context.
 	Tag *ProjectTag
@@ -126,7 +126,7 @@ func NewProject(
 	blueprint schema.Blueprint,
 	tag *ProjectTag,
 	logger *slog.Logger,
-	secretStore *secrets.SecretStore,
+	secretStore secrets.SecretStore,
 ) Project {
 	return Project{
 		Blueprint:   blueprint,
