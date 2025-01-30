@@ -41,3 +41,19 @@ func DumpBundle(mod schema.DeploymentModuleBundle) ([]byte, error) {
 
 	return src, nil
 }
+
+// ParseModule parses a deployment module from CUE source.
+func ParseBundle(src []byte) (schema.DeploymentModuleBundle, error) {
+	ctx := cuecontext.New()
+	v := ctx.CompileBytes(src)
+	if v.Err() != nil {
+		return schema.DeploymentModuleBundle{}, fmt.Errorf("failed to compile bundle: %w", v.Err())
+	}
+
+	var bundle schema.DeploymentModuleBundle
+	if err := v.Decode(&bundle); err != nil {
+		return schema.DeploymentModuleBundle{}, fmt.Errorf("failed to decode bundle: %w", err)
+	}
+
+	return bundle, nil
+}
