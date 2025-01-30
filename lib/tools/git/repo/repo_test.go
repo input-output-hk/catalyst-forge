@@ -27,29 +27,6 @@ const (
 	repoPath = "/repo"
 )
 
-func TestGitRepoAddFile(t *testing.T) {
-	t.Run("success", func(t *testing.T) {
-		repo := newGitRepo(t)
-		afero.WriteFile(repo.fs, joinPath("file.txt"), []byte("test"), 0644)
-
-		_, err := repo.worktree.Add("file.txt")
-		require.NoError(t, err, "failed to add file")
-
-		status, err := repo.worktree.Status()
-		require.NoError(t, err)
-
-		assert.Contains(t, status, "file.txt")
-	})
-
-	t.Run("file missing", func(t *testing.T) {
-		repo := newGitRepo(t)
-
-		err := repo.AddFile("file.txt")
-		require.Error(t, err)
-		assert.Contains(t, err.Error(), "failed to add file")
-	})
-}
-
 func TestGitRepoClone(t *testing.T) {
 	repo := newRepo(t)
 
@@ -85,7 +62,7 @@ func TestGitRepoCommit(t *testing.T) {
 		err := afero.WriteFile(repo.fs, joinPath("file.txt"), []byte("test"), 0644)
 		require.NoError(t, err)
 
-		err = repo.AddFile("file.txt")
+		err = repo.StageFile("file.txt")
 		require.NoError(t, err)
 
 		hash, err := repo.Commit("test")
@@ -186,7 +163,7 @@ func TestGitRepoNewTag(t *testing.T) {
 	err := afero.WriteFile(repo.fs, joinPath("file.txt"), []byte("test"), 0644)
 	require.NoError(t, err)
 
-	err = repo.AddFile("file.txt")
+	err = repo.StageFile("file.txt")
 	require.NoError(t, err)
 
 	hash, err := repo.Commit("test")
@@ -263,6 +240,29 @@ func TestGitRepoPush(t *testing.T) {
 		err := repo.Push()
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "failed to push")
+	})
+}
+
+func TestGitRepoStageFile(t *testing.T) {
+	t.Run("success", func(t *testing.T) {
+		repo := newGitRepo(t)
+		afero.WriteFile(repo.fs, joinPath("file.txt"), []byte("test"), 0644)
+
+		_, err := repo.worktree.Add("file.txt")
+		require.NoError(t, err, "failed to add file")
+
+		status, err := repo.worktree.Status()
+		require.NoError(t, err)
+
+		assert.Contains(t, status, "file.txt")
+	})
+
+	t.Run("file missing", func(t *testing.T) {
+		repo := newGitRepo(t)
+
+		err := repo.StageFile("file.txt")
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "failed to add file")
 	})
 }
 

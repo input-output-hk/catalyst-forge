@@ -258,10 +258,10 @@ project: {
 
 			if tt.initGit {
 				repo := testutils.NewTestRepoWithFS(t, tt.fs, tt.projectPath)
-				err := repo.AddFile("Earthfile")
+				err := repo.StageFile("Earthfile")
 				require.NoError(t, err)
 
-				err = repo.AddFile("blueprint.cue")
+				err = repo.StageFile("blueprint.cue")
 				require.NoError(t, err)
 
 				_, err = repo.Commit("Initial commit")

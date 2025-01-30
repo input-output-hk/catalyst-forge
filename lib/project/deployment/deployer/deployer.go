@@ -11,6 +11,7 @@ import (
 	"github.com/input-output-hk/catalyst-forge/lib/project/providers"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/git/repo"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/git/repo/remote"
+	"github.com/spf13/afero"
 )
 
 const (
@@ -26,6 +27,7 @@ var (
 // Deployer performs GitOps deployments for projects.
 type Deployer struct {
 	dryrun  bool
+	fs      afero.Fs
 	gen     generator.Generator
 	logger  *slog.Logger
 	project *project.Project
@@ -65,7 +67,7 @@ func (d *Deployer) Deploy() error {
 		if err := r.WriteFile(manPath, []byte(result.Manifests)); err != nil {
 			return fmt.Errorf("could not write manifest: %w", err)
 		}
-		if err := r.AddFile(manPath); err != nil {
+		if err := r.StageFile(manPath); err != nil {
 			return fmt.Errorf("could not add manifest to working tree: %w", err)
 		}
 
@@ -73,7 +75,7 @@ func (d *Deployer) Deploy() error {
 		if err := r.WriteFile(modPath, []byte(result.Module)); err != nil {
 			return fmt.Errorf("could not write values: %w", err)
 		}
-		if err := r.AddFile(modPath); err != nil {
+		if err := r.StageFile(modPath); err != nil {
 			return fmt.Errorf("could not add values to working tree: %w", err)
 		}
 	}
@@ -146,7 +148,7 @@ func (d *Deployer) clearProjectPath(path string, r *repo.GitRepo) error {
 			return fmt.Errorf("could not remove file: %w", err)
 		}
 
-		if err := r.AddFile(path); err != nil {
+		if err := r.StageFile(path); err != nil {
 			return fmt.Errorf("could not add file deletion to working tree: %w", err)
 		}
 	}
@@ -161,7 +163,7 @@ func (d *Deployer) clone() (repo.GitRepo, error) {
 	opts := []repo.GitRepoOption{
 		repo.WithAuthor(GIT_NAME, GIT_EMAIL),
 		repo.WithGitRemoteInteractor(d.remote),
-		repo.WithMemFS(),
+		repo.WithFS(d.fs),
 	}
 
 	creds, err := providers.GetGitProviderCreds(d.project, d.logger)
@@ -188,6 +190,7 @@ func NewDeployer(project *project.Project, mg deployment.ManifestGenerator, logg
 	return Deployer{
 		dryrun:  dryrun,
 		gen:     gen,
+		fs:      afero.NewOsFs(),
 		logger:  logger,
 		project: project,
 		remote:  remote,

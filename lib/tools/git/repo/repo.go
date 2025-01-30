@@ -43,16 +43,6 @@ type GitRepo struct {
 	worktree     *gg.Worktree
 }
 
-// AddFile adds a file to the staging area.
-func (g *GitRepo) AddFile(path string) error {
-	_, err := g.worktree.Add(path)
-	if err != nil {
-		return fmt.Errorf("failed to add file: %w", err)
-	}
-
-	return nil
-}
-
 // Clone loads a repository from a git remote.
 func (g *GitRepo) Clone(path, url, branch string) error {
 	workdir := afero.NewBasePathFs(g.fs, path)
@@ -214,7 +204,7 @@ func (g *GitRepo) Init(path string) error {
 
 // MkdirAll creates a directory and all necessary parents.
 func (g *GitRepo) MkdirAll(path string) error {
-	return g.fs.MkdirAll(path, 0755)
+	return g.fs.MkdirAll(filepath.Join(g.basePath, path), 0755)
 }
 
 // NewBranch creates a new branch with the given name.
@@ -303,6 +293,26 @@ func (g *GitRepo) RemoveFile(path string) error {
 // SetAuth sets the authentication for the interacting with a remote repository.
 func (g *GitRepo) SetAuth(auth *http.BasicAuth) {
 	g.auth = auth
+}
+
+// StageFile adds a file to the staging area.
+func (g *GitRepo) StageFile(path string) error {
+	_, err := g.worktree.Add(path)
+	if err != nil {
+		return fmt.Errorf("failed to stage file: %w", err)
+	}
+
+	return nil
+}
+
+// UnstageFile removes a file from the staging area.
+func (g *GitRepo) UnstageFile(path string) error {
+	_, err := g.worktree.Remove(path)
+	if err != nil {
+		return fmt.Errorf("failed to unstage file: %w", err)
+	}
+
+	return nil
 }
 
 // WriteFile writes the given contents to the given path in the repository.
