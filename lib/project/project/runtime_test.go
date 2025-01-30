@@ -7,10 +7,9 @@ import (
 
 	"cuelang.org/go/cue"
 	"cuelang.org/go/cue/cuecontext"
-	"github.com/go-git/go-git/v5"
 	"github.com/input-output-hk/catalyst-forge/lib/project/blueprint"
-	"github.com/input-output-hk/catalyst-forge/lib/project/providers"
 	lc "github.com/input-output-hk/catalyst-forge/lib/tools/cue"
+	"github.com/input-output-hk/catalyst-forge/lib/tools/git/repo"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/testutils"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
@@ -78,7 +77,7 @@ func TestGitRuntimeLoad(t *testing.T) {
 		tag      *ProjectTag
 		env      map[string]string
 		files    map[string]string
-		validate func(*testing.T, *git.Repository, map[string]cue.Value)
+		validate func(*testing.T, repo.GitRepo, map[string]cue.Value)
 	}{
 		{
 			name: "with tag",
@@ -87,7 +86,7 @@ func TestGitRuntimeLoad(t *testing.T) {
 				Project: "project",
 				Version: "v1.0.0",
 			},
-			validate: func(t *testing.T, repo *git.Repository, data map[string]cue.Value) {
+			validate: func(t *testing.T, repo repo.GitRepo, data map[string]cue.Value) {
 				head, err := repo.Head()
 				require.NoError(t, err)
 				assert.Contains(t, data, "GIT_COMMIT_HASH")
@@ -109,7 +108,7 @@ func TestGitRuntimeLoad(t *testing.T) {
 			files: map[string]string{
 				"/event.json": string(prPayload),
 			},
-			validate: func(t *testing.T, repo *git.Repository, data map[string]cue.Value) {
+			validate: func(t *testing.T, repo repo.GitRepo, data map[string]cue.Value) {
 				require.NoError(t, err)
 				assert.Contains(t, data, "GIT_COMMIT_HASH")
 				assert.Equal(t, "0000000000000000000000000000000000000000", getString(t, data["GIT_COMMIT_HASH"]))
@@ -124,7 +123,7 @@ func TestGitRuntimeLoad(t *testing.T) {
 			files: map[string]string{
 				"/event.json": string(pushPayload),
 			},
-			validate: func(t *testing.T, repo *git.Repository, data map[string]cue.Value) {
+			validate: func(t *testing.T, repo repo.GitRepo, data map[string]cue.Value) {
 				require.NoError(t, err)
 				assert.Contains(t, data, "GIT_COMMIT_HASH")
 				assert.Equal(t, "0000000000000000000000000000000000000000", getString(t, data["GIT_COMMIT_HASH"]))
@@ -136,11 +135,13 @@ func TestGitRuntimeLoad(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			logger := testutils.NewNoopLogger()
 
-			repo := testutils.NewInMemRepo(t)
-			repo.AddFile(t, "example.txt", "example content")
-			_ = repo.Commit(t, "Initial commit")
+			repo := testutils.NewTestRepo(t)
+			err := repo.WriteFile("example.txt", []byte("example content"))
+			require.NoError(t, err)
 
-			provider := providers.NewGithubProvider(nil, logger, nil)
+			_, err = repo.Commit("Initial commit")
+			require.NoError(t, err)
+
 			if len(tt.env) > 0 {
 				for k, v := range tt.env {
 					require.NoError(t, os.Setenv(k, v))
@@ -148,23 +149,22 @@ func TestGitRuntimeLoad(t *testing.T) {
 				}
 			}
 
+			fs := afero.NewMemMapFs()
 			if len(tt.files) > 0 {
-				fs := afero.NewMemMapFs()
 				testutils.SetupFS(t, fs, tt.files)
-				provider = providers.NewGithubProvider(fs, logger, nil)
 			}
 
 			project := &Project{
 				ctx:          ctx,
 				RawBlueprint: blueprint.NewRawBlueprint(ctx.CompileString("{}")),
-				Repo:         repo.Repo,
+				Repo:         &repo,
 				Tag:          tt.tag,
 				logger:       logger,
 			}
 
-			runtime := NewGitRuntime(&provider, logger)
+			runtime := NewCustomGitRuntime(fs, logger)
 			data := runtime.Load(project)
-			tt.validate(t, repo.Repo, data)
+			tt.validate(t, repo, data)
 		})
 	}
 }

@@ -18,7 +18,6 @@ project: {
 			merge: {}
 			tag: {}
 		}
-		environment: "dev"
 		modules: {
 			main: {
 				name:    "app"

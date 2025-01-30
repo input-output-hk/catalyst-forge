@@ -34,6 +34,9 @@ type GlobalCI struct {
 
 // GlobalDeployment contains the configuration for the global deployment of projects.
 type GlobalDeployment struct {
+	// Environment contains the default environment to deploy projects to.
+	Environment string `json:"environment"`
+
 	// Registries contains the configuration for the global deployment registries.
 	Registries GlobalDeploymentRegistries `json:"registries"`
 

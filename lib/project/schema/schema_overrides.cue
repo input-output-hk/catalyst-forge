@@ -8,7 +8,11 @@ package schema
 	environment: _ | *"dev"
 }
 
-#Module: {
+#GlobalDeployment: {
+	environment: _ | *"dev"
+}
+
+#DeploymentModule: {
 	namespace: _ | *"default"
 }
 

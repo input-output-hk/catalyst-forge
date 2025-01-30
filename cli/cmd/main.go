@@ -10,8 +10,10 @@ import (
 	"github.com/alecthomas/kong"
 	"github.com/charmbracelet/log"
 	"github.com/input-output-hk/catalyst-forge/cli/cmd/cmds"
-	"github.com/input-output-hk/catalyst-forge/cli/cmd/cmds/deploy"
+	"github.com/input-output-hk/catalyst-forge/cli/cmd/cmds/module"
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/run"
+	"github.com/input-output-hk/catalyst-forge/lib/project/deployment/generator"
+	"github.com/input-output-hk/catalyst-forge/lib/project/deployment/providers/kcl"
 	"github.com/input-output-hk/catalyst-forge/lib/project/project"
 	"github.com/input-output-hk/catalyst-forge/lib/project/schema"
 	"github.com/input-output-hk/catalyst-forge/lib/project/secrets"
@@ -31,9 +33,9 @@ type GlobalArgs struct {
 var cli struct {
 	GlobalArgs
 
-	Deploy   deploy.DeployCmd `kong:"cmd" help:"Deploy a project."`
 	Dump     cmds.DumpCmd     `cmd:"" help:"Dumps a project's blueprint to JSON."`
 	CI       cmds.CICmd       `cmd:"" help:"Simulate a CI run."`
+	Mod      module.ModuleCmd `kong:"cmd" help:"Commands for working with deployment modules."`
 	Release  cmds.ReleaseCmd  `cmd:"" help:"Release a project."`
 	Run      cmds.RunCmd      `cmd:"" help:"Run an Earthly target."`
 	Scan     cmds.ScanCmd     `cmd:"" help:"Scan for Earthfiles."`
@@ -89,15 +91,19 @@ func Run() int {
 	}
 
 	logger := slog.New(handler)
-	loader := project.NewDefaultProjectLoader(logger)
+	store := secrets.NewDefaultSecretStore()
+	loader := project.NewDefaultProjectLoader(store, logger)
+	gen := generator.NewGenerator(kcl.NewKCLManifestGenerator(logger), logger)
 	runctx := run.RunContext{
-		CI:            cli.GlobalArgs.CI,
-		FSWalker:      walker.NewDefaultFSWalker(logger),
-		Local:         cli.GlobalArgs.Local,
-		Logger:        logger,
-		ProjectLoader: &loader,
-		SecretStore:   secrets.NewDefaultSecretStore(),
-		Verbose:       cli.GlobalArgs.Verbose,
+		CI:                  cli.GlobalArgs.CI,
+		DeploymentGenerator: gen,
+		FSWalker:            walker.NewDefaultFSWalker(logger),
+		Local:               cli.GlobalArgs.Local,
+		Logger:              logger,
+		ManifestGenerator:   kcl.NewKCLManifestGenerator(logger),
+		ProjectLoader:       &loader,
+		SecretStore:         store,
+		Verbose:             cli.GlobalArgs.Verbose,
 	}
 	ctx.Bind(runctx)
 

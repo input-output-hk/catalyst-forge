@@ -4,37 +4,33 @@
 
 package schema
 
+#DeploymentModuleBundle: [string]: #DeploymentModule
+
 // Deployment contains the configuration for the deployment of the project.
 #Deployment: {
-	// Environment contains the environment to deploy the module to.
-	environment: string @go(Environment)
-
 	// On contains the events that trigger the deployment.
 	on: {...} @go(On,map[string]any)
 
-	// Modules contains the configuration for the deployment modules for the project.
-	// +optional
-	modules?: null | #DeploymentModules @go(Modules,*DeploymentModules)
-}
-
-// Deployment contains the configuration for the deployment of the project.
-#DeploymentModules: {
-	// Main contains the configuration for the main deployment module.
-	main: #Module @go(Main)
-
-	// Support contains the configuration for the support deployment modules.
-	// +optional
-	support?: {[string]: #Module} @go(Support,map[string]Module)
+	// Modules contains the deployment modules for the project.
+	modules: #DeploymentModuleBundle @go(Modules)
 }
 
 // Module contains the configuration for a deployment module.
-#Module: {
+#DeploymentModule: {
+	// Instance contains the instance name to use for all generated resources.
+	// +optional
+	instance?: string @go(Instance)
+
 	// Name contains the name of the module to deploy.
 	// +optional
 	name?: string @go(Name)
 
 	// Namespace contains the namespace to deploy the module to.
 	namespace: string @go(Namespace)
+
+	// Registry contains the registry to pull the module from.
+	// +optional
+	registry?: string @go(Registry)
 
 	// Values contains the values to pass to the deployment module.
 	values: _ @go(Values,any)

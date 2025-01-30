@@ -3,6 +3,8 @@ package run
 import (
 	"log/slog"
 
+	"github.com/input-output-hk/catalyst-forge/lib/project/deployment"
+	"github.com/input-output-hk/catalyst-forge/lib/project/deployment/generator"
 	"github.com/input-output-hk/catalyst-forge/lib/project/project"
 	"github.com/input-output-hk/catalyst-forge/lib/project/secrets"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/walker"
@@ -13,6 +15,9 @@ type RunContext struct {
 	// CI is true if the run is happening in a CI environment.
 	CI bool
 
+	// DeploymentGenerator is the deployment generator to use for generating deployments.
+	DeploymentGenerator generator.Generator
+
 	// FSWalker is the walker to use for walking the filesystem.
 	FSWalker walker.FSWalker
 
@@ -21,6 +26,9 @@ type RunContext struct {
 
 	// Logger is the logger to use for logging.
 	Logger *slog.Logger
+
+	// ManifestGenerator is the manifest generator to use for generating manifests.
+	ManifestGenerator deployment.ManifestGenerator
 
 	// ProjectLoader is the project loader to use for loading projects.
 	ProjectLoader project.ProjectLoader

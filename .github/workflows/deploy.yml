@@ -36,6 +36,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
+      max-parallel: 1
       matrix:
         deployment: ${{ fromJson(inputs.deployments) }}
     steps:
@@ -67,7 +68,7 @@ jobs:
       - name: Deploy
         uses: input-output-hk/catalyst-forge/actions/run@ci/v1.7.0
         with:
-          command: deploy push
+          command: mod deploy
           args: ${{ matrix.deployment }}
           local: ${{ inputs.local }}
           verbosity: ${{ inputs.verbosity }}

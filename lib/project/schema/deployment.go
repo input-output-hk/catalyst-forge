@@ -1,30 +1,21 @@
 package schema
 
+type DeploymentModuleBundle map[string]DeploymentModule
+
 // Deployment contains the configuration for the deployment of the project.
 type Deployment struct {
-	// Environment contains the environment to deploy the module to.
-	Environment string `json:"environment"`
-
 	// On contains the events that trigger the deployment.
 	On map[string]any `json:"on"`
 
-	// Modules contains the configuration for the deployment modules for the project.
-	// +optional
-	Modules *DeploymentModules `json:"modules"`
-}
-
-// Deployment contains the configuration for the deployment of the project.
-type DeploymentModules struct {
-	// Main contains the configuration for the main deployment module.
-	Main Module `json:"main"`
-
-	// Support contains the configuration for the support deployment modules.
-	// +optional
-	Support map[string]Module `json:"support"`
+	// Modules contains the deployment modules for the project.
+	Modules DeploymentModuleBundle `json:"modules"`
 }
 
 // Module contains the configuration for a deployment module.
-type Module struct {
+type DeploymentModule struct {
+	// Instance contains the instance name to use for all generated resources.
+	// +optional
+	Instance string `json:"instance"`
 
 	// Name contains the name of the module to deploy.
 	// +optional
@@ -32,6 +23,10 @@ type Module struct {
 
 	// Namespace contains the namespace to deploy the module to.
 	Namespace string `json:"namespace"`
+
+	// Registry contains the registry to pull the module from.
+	// +optional
+	Registry string `json:"registry"`
 
 	// Values contains the values to pass to the deployment module.
 	Values any `json:"values"`
