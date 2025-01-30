@@ -35,13 +35,18 @@ func GetSecretMap(s *schema.Secret, store *SecretStore, logger *slog.Logger) (ma
 		return nil, fmt.Errorf("failed to unmarshal secret: %w", err)
 	}
 
-	finalMap := make(map[string]string)
-	for k, v := range s.Maps {
-		if _, ok := secretMap[k]; !ok {
-			return nil, fmt.Errorf("secret key not found in secret values: %s", k)
-		}
+	var finalMap map[string]string
+	if s.Maps != nil {
+		finalMap := make(map[string]string)
+		for k, v := range s.Maps {
+			if _, ok := secretMap[k]; !ok {
+				return nil, fmt.Errorf("secret key not found in secret values: %s", k)
+			}
 
-		finalMap[k] = secretMap[v]
+			finalMap[k] = secretMap[v]
+		}
+	} else {
+		finalMap = secretMap
 	}
 
 	return finalMap, nil

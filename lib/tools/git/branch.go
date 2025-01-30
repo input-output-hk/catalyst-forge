@@ -2,34 +2,29 @@ package git
 
 import (
 	"fmt"
-	"os"
-	"strings"
 
-	gg "github.com/go-git/go-git/v5"
+	"github.com/input-output-hk/catalyst-forge/lib/tools/git/github"
+	"github.com/input-output-hk/catalyst-forge/lib/tools/git/repo"
 )
 
 var (
 	ErrBranchNotFound = fmt.Errorf("branch not found")
 )
 
-func GetBranch(repo *gg.Repository) (string, error) {
-	if InCI() {
-		ref, ok := os.LookupEnv("GITHUB_HEAD_REF")
-		if !ok || ref == "" {
-			if strings.HasPrefix(os.Getenv("GITHUB_REF"), "refs/heads/") {
-				return strings.TrimPrefix(os.Getenv("GITHUB_REF"), "refs/heads/"), nil
-			}
+func GetBranch(repo *repo.GitRepo) (string, error) {
+	env := github.NewGithubEnv(nil)
 
-			// Revert to trying to get the branch from the local repository
-		} else {
+	if github.InCI() {
+		ref := env.GetBranch()
+		if ref != "" {
 			return ref, nil
 		}
 	}
 
-	ref, err := repo.Head()
+	branch, err := repo.GetCurrentBranch()
 	if err != nil {
 		return "", err
 	}
 
-	return ref.Name().Short(), nil
+	return branch, nil
 }

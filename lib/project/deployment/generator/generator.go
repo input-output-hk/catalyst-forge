@@ -22,11 +22,11 @@ type Generator struct {
 }
 
 // GenerateBundle generates manifests for a deployment bundle.
-func (d *Generator) GenerateBundle(b schema.DeploymentModuleBundle, instance, registry string) (map[string]GeneratorResult, error) {
+func (d *Generator) GenerateBundle(b schema.DeploymentModuleBundle) (map[string]GeneratorResult, error) {
 	results := make(map[string]GeneratorResult)
 	for name, module := range b {
 		d.logger.Debug("Generating module", "name", name)
-		result, err := d.Generate(module, instance, registry)
+		result, err := d.Generate(module)
 		if err != nil {
 			return nil, fmt.Errorf("failed to generate module %s: %w", name, err)
 		}
@@ -38,8 +38,8 @@ func (d *Generator) GenerateBundle(b schema.DeploymentModuleBundle, instance, re
 }
 
 // Generate generates manifests for a deployment module.
-func (d *Generator) Generate(m schema.DeploymentModule, instance, registry string) (GeneratorResult, error) {
-	manifests, err := d.mg.Generate(m, instance, registry)
+func (d *Generator) Generate(m schema.DeploymentModule) (GeneratorResult, error) {
+	manifests, err := d.mg.Generate(m)
 	if err != nil {
 		return GeneratorResult{}, fmt.Errorf("failed to generate manifest for module: %w", err)
 	}

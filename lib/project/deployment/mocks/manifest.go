@@ -14,7 +14,7 @@ import (
 //
 //		// make and configure a mocked deployment.ManifestGenerator
 //		mockedManifestGenerator := &ManifestGeneratorMock{
-//			GenerateFunc: func(mod schema.DeploymentModule, instance string, registry string) ([]byte, error) {
+//			GenerateFunc: func(mod schema.DeploymentModule) ([]byte, error) {
 //				panic("mock out the Generate method")
 //			},
 //		}
@@ -25,7 +25,7 @@ import (
 //	}
 type ManifestGeneratorMock struct {
 	// GenerateFunc mocks the Generate method.
-	GenerateFunc func(mod schema.DeploymentModule, instance string, registry string) ([]byte, error)
+	GenerateFunc func(mod schema.DeploymentModule) ([]byte, error)
 
 	// calls tracks calls to the methods.
 	calls struct {
@@ -33,33 +33,25 @@ type ManifestGeneratorMock struct {
 		Generate []struct {
 			// Mod is the mod argument value.
 			Mod schema.DeploymentModule
-			// Instance is the instance argument value.
-			Instance string
-			// Registry is the registry argument value.
-			Registry string
 		}
 	}
 	lockGenerate sync.RWMutex
 }
 
 // Generate calls GenerateFunc.
-func (mock *ManifestGeneratorMock) Generate(mod schema.DeploymentModule, instance string, registry string) ([]byte, error) {
+func (mock *ManifestGeneratorMock) Generate(mod schema.DeploymentModule) ([]byte, error) {
 	if mock.GenerateFunc == nil {
 		panic("ManifestGeneratorMock.GenerateFunc: method is nil but ManifestGenerator.Generate was just called")
 	}
 	callInfo := struct {
-		Mod      schema.DeploymentModule
-		Instance string
-		Registry string
+		Mod schema.DeploymentModule
 	}{
-		Mod:      mod,
-		Instance: instance,
-		Registry: registry,
+		Mod: mod,
 	}
 	mock.lockGenerate.Lock()
 	mock.calls.Generate = append(mock.calls.Generate, callInfo)
 	mock.lockGenerate.Unlock()
-	return mock.GenerateFunc(mod, instance, registry)
+	return mock.GenerateFunc(mod)
 }
 
 // GenerateCalls gets all the calls that were made to Generate.
@@ -67,14 +59,10 @@ func (mock *ManifestGeneratorMock) Generate(mod schema.DeploymentModule, instanc
 //
 //	len(mockedManifestGenerator.GenerateCalls())
 func (mock *ManifestGeneratorMock) GenerateCalls() []struct {
-	Mod      schema.DeploymentModule
-	Instance string
-	Registry string
+	Mod schema.DeploymentModule
 } {
 	var calls []struct {
-		Mod      schema.DeploymentModule
-		Instance string
-		Registry string
+		Mod schema.DeploymentModule
 	}
 	mock.lockGenerate.RLock()
 	calls = mock.calls.Generate

@@ -3,7 +3,6 @@ package git
 import (
 	"errors"
 	"io"
-	"os"
 	"path/filepath"
 
 	"github.com/input-output-hk/catalyst-forge/lib/tools/walker"
@@ -42,13 +41,4 @@ func FindGitRoot(startPath string, rw walker.ReverseWalker) (string, error) {
 	}
 
 	return gitRoot, nil
-}
-
-// InCI returns true if the code is running in a CI environment.
-func InCI() bool {
-	if _, ok := os.LookupEnv("GITHUB_ACTIONS"); ok {
-		return true
-	}
-
-	return false
 }

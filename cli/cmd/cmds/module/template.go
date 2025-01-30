@@ -17,11 +17,9 @@ func (c *TemplateCmd) Run(ctx run.RunContext) error {
 		return fmt.Errorf("could not load project: %w", err)
 	}
 
-	registry := project.Blueprint.Global.Deployment.Registries.Modules
-	instance := project.Name
 	modules := project.Blueprint.Project.Deployment.Modules
 
-	result, err := ctx.DeploymentGenerator.GenerateBundle(modules, instance, registry)
+	result, err := ctx.DeploymentGenerator.GenerateBundle(modules)
 	if err != nil {
 		return fmt.Errorf("failed to generate manifests: %w", err)
 	}

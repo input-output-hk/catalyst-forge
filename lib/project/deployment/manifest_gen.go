@@ -9,5 +9,5 @@ import (
 // ManifestGenerator generates deployment manifests.
 type ManifestGenerator interface {
 	// Generate generates a deployment manifest for the given module.
-	Generate(mod schema.DeploymentModule, instance, registry string) ([]byte, error)
+	Generate(mod schema.DeploymentModule) ([]byte, error)
 }

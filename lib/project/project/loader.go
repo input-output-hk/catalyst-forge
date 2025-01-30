@@ -11,11 +11,11 @@ import (
 	"cuelang.org/go/cue/cuecontext"
 	"github.com/input-output-hk/catalyst-forge/lib/project/blueprint"
 	"github.com/input-output-hk/catalyst-forge/lib/project/injector"
-	"github.com/input-output-hk/catalyst-forge/lib/project/providers"
 	"github.com/input-output-hk/catalyst-forge/lib/project/schema"
 	"github.com/input-output-hk/catalyst-forge/lib/project/secrets"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/earthfile"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/git"
+	r "github.com/input-output-hk/catalyst-forge/lib/tools/git/repo"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/walker"
 	"github.com/spf13/afero"
 )
@@ -35,8 +35,8 @@ type DefaultProjectLoader struct {
 	fs              afero.Fs
 	injectors       []injector.BlueprintInjector
 	logger          *slog.Logger
-	repoLoader      git.RepoLoader
 	runtimes        []RuntimeData
+	store           secrets.SecretStore
 }
 
 func (p *DefaultProjectLoader) Load(projectPath string) (Project, error) {
@@ -56,9 +56,8 @@ func (p *DefaultProjectLoader) Load(projectPath string) (Project, error) {
 	}
 
 	p.logger.Info("Loading repository", "path", gitRoot)
-	rl := git.NewCustomDefaultRepoLoader(p.fs)
-	repo, err := rl.Load(gitRoot)
-	if err != nil {
+	repo := r.NewGitRepo(p.logger, r.WithFS(p.fs))
+	if err := repo.Open(gitRoot); err != nil {
 		p.logger.Error("Failed to load repository", "error", err)
 		return Project{}, fmt.Errorf("failed to load repository: %w", err)
 	}
@@ -100,8 +99,9 @@ func (p *DefaultProjectLoader) Load(projectPath string) (Project, error) {
 			Earthfile:    ef,
 			Path:         projectPath,
 			RawBlueprint: rbp,
-			Repo:         repo,
+			Repo:         &repo,
 			RepoRoot:     gitRoot,
+			SecretStore:  p.store,
 			logger:       p.logger,
 			ctx:          p.ctx,
 		}, nil
@@ -114,7 +114,7 @@ func (p *DefaultProjectLoader) Load(projectPath string) (Project, error) {
 
 	p.logger.Info("Loading tag data")
 	var tag *ProjectTag
-	gitTag, err := git.GetTag(repo)
+	gitTag, err := git.GetTag(&repo)
 	if err != nil {
 		p.logger.Warn("Failed to get git tag", "error", err)
 	} else if gitTag != "" {
@@ -135,8 +135,9 @@ func (p *DefaultProjectLoader) Load(projectPath string) (Project, error) {
 		Name:         name,
 		Path:         projectPath,
 		RawBlueprint: rbp,
-		Repo:         repo,
+		Repo:         &repo,
 		RepoRoot:     gitRoot,
+		SecretStore:  p.store,
 		Tag:          tag,
 		ctx:          p.ctx,
 		logger:       p.logger,
@@ -176,15 +177,17 @@ func (p *DefaultProjectLoader) Load(projectPath string) (Project, error) {
 		Name:         name,
 		Path:         projectPath,
 		RawBlueprint: rbp,
-		Repo:         repo,
+		Repo:         &repo,
 		RepoRoot:     gitRoot,
 		logger:       p.logger,
+		SecretStore:  p.store,
 		Tag:          tag,
 	}, nil
 }
 
 // NewDefaultProjectLoader creates a new DefaultProjectLoader.
 func NewDefaultProjectLoader(
+	store secrets.SecretStore,
 	logger *slog.Logger,
 ) DefaultProjectLoader {
 	if logger == nil {
@@ -194,9 +197,6 @@ func NewDefaultProjectLoader(
 	ctx := cuecontext.New()
 	fs := afero.NewOsFs()
 	bl := blueprint.NewDefaultBlueprintLoader(ctx, logger)
-	rl := git.NewDefaultRepoLoader()
-	store := secrets.NewDefaultSecretStore()
-	ghp := providers.NewGithubProvider(fs, logger, &store)
 	return DefaultProjectLoader{
 		blueprintLoader: &bl,
 		ctx:             ctx,
@@ -204,12 +204,12 @@ func NewDefaultProjectLoader(
 		injectors: []injector.BlueprintInjector{
 			injector.NewBlueprintEnvInjector(ctx, logger),
 		},
-		logger:     logger,
-		repoLoader: &rl,
+		logger: logger,
 		runtimes: []RuntimeData{
 			NewDeploymentRuntime(logger),
-			NewGitRuntime(&ghp, logger),
+			NewGitRuntime(logger),
 		},
+		store: store,
 	}
 }
 
@@ -219,8 +219,8 @@ func NewCustomProjectLoader(
 	fs afero.Fs,
 	bl blueprint.BlueprintLoader,
 	injectors []injector.BlueprintInjector,
-	rl git.RepoLoader,
 	runtimes []RuntimeData,
+	store secrets.SecretStore,
 	logger *slog.Logger,
 ) DefaultProjectLoader {
 	if logger == nil {
@@ -233,8 +233,8 @@ func NewCustomProjectLoader(
 		fs:              fs,
 		injectors:       injectors,
 		logger:          logger,
-		repoLoader:      rl,
 		runtimes:        runtimes,
+		store:           store,
 	}
 }
 

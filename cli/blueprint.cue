@@ -21,10 +21,6 @@ project: {
 			config: {
 				name:   string | *"dev" @forge(name="GIT_TAG")
 				prefix: project.name
-				token: {
-					provider: "env"
-					path:     "GITHUB_TOKEN"
-				}
 			}
 		}
 	}

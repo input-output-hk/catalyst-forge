@@ -7,10 +7,11 @@ import (
 	"strings"
 
 	"cuelang.org/go/cue"
-	gg "github.com/go-git/go-git/v5"
 	"github.com/input-output-hk/catalyst-forge/lib/project/blueprint"
 	"github.com/input-output-hk/catalyst-forge/lib/project/schema"
+	"github.com/input-output-hk/catalyst-forge/lib/project/secrets"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/earthfile"
+	"github.com/input-output-hk/catalyst-forge/lib/tools/git/repo"
 )
 
 // Project represents a project
@@ -31,10 +32,13 @@ type Project struct {
 	RawBlueprint blueprint.RawBlueprint
 
 	// Repo is the project git repository.
-	Repo *gg.Repository
+	Repo *repo.GitRepo
 
 	// RepoRoot is the path to the repository root.
 	RepoRoot string
+
+	// SecretStore is the project secret store.
+	SecretStore secrets.SecretStore
 
 	// Tag is the project tag, if it exists in the current context.
 	Tag *ProjectTag
@@ -113,24 +117,27 @@ func (p *Project) Raw() blueprint.RawBlueprint {
 	return p.RawBlueprint
 }
 
+// NewProject creates a new project.
 func NewProject(
-	logger *slog.Logger,
 	ctx *cue.Context,
-	repo *gg.Repository,
+	repo *repo.GitRepo,
 	earthfile *earthfile.Earthfile,
 	name, path, repoRoot string,
 	blueprint schema.Blueprint,
 	tag *ProjectTag,
+	logger *slog.Logger,
+	secretStore secrets.SecretStore,
 ) Project {
 	return Project{
-		Blueprint: blueprint,
-		Earthfile: earthfile,
-		Name:      name,
-		Path:      path,
-		Repo:      repo,
-		RepoRoot:  repoRoot,
-		Tag:       tag,
-		ctx:       ctx,
-		logger:    logger,
+		Blueprint:   blueprint,
+		Earthfile:   earthfile,
+		Name:        name,
+		Path:        path,
+		Repo:        repo,
+		RepoRoot:    repoRoot,
+		SecretStore: secretStore,
+		Tag:         tag,
+		ctx:         ctx,
+		logger:      logger,
 	}
 }

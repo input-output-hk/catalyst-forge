@@ -44,11 +44,16 @@ func TestMergeEventFiring(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			repo := testutils.NewInMemRepo(t)
-			repo.AddFile(t, "file.txt", "content")
-			repo.Commit(t, "Initial commit")
+			repo := testutils.NewTestRepo(t)
 
-			repo.NewBranch(t, tt.branch)
+			err := repo.WriteFile("file.txt", []byte("content"))
+			require.NoError(t, err)
+
+			_, err = repo.Commit("Initial commit")
+			require.NoError(t, err)
+
+			err = repo.NewBranch(tt.branch)
+			require.NoError(t, err)
 
 			project := project.Project{
 				Blueprint: schema.Blueprint{
@@ -58,7 +63,7 @@ func TestMergeEventFiring(t *testing.T) {
 						},
 					},
 				},
-				Repo: repo.Repo,
+				Repo: &repo,
 			}
 
 			event := MergeEvent{

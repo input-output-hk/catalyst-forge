@@ -112,7 +112,7 @@ type ProviderGit struct {
 type ProviderGithub struct {
 	// Credentials contains the credentials to use for Github
 	//  +optional
-	Credentials Secret `json:"credentials"`
+	Credentials *Secret `json:"credentials"`
 
 	// Registry contains the Github registry to use.
 	// +optional

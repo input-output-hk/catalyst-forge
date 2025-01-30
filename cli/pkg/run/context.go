@@ -3,6 +3,7 @@ package run
 import (
 	"log/slog"
 
+	"github.com/input-output-hk/catalyst-forge/lib/project/deployment"
 	"github.com/input-output-hk/catalyst-forge/lib/project/deployment/generator"
 	"github.com/input-output-hk/catalyst-forge/lib/project/project"
 	"github.com/input-output-hk/catalyst-forge/lib/project/secrets"
@@ -25,6 +26,9 @@ type RunContext struct {
 
 	// Logger is the logger to use for logging.
 	Logger *slog.Logger
+
+	// ManifestGenerator is the manifest generator to use for generating manifests.
+	ManifestGenerator deployment.ManifestGenerator
 
 	// ProjectLoader is the project loader to use for loading projects.
 	ProjectLoader project.ProjectLoader

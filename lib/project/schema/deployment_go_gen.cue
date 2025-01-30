@@ -17,12 +17,20 @@ package schema
 
 // Module contains the configuration for a deployment module.
 #DeploymentModule: {
+	// Instance contains the instance name to use for all generated resources.
+	// +optional
+	instance?: string @go(Instance)
+
 	// Name contains the name of the module to deploy.
 	// +optional
 	name?: string @go(Name)
 
 	// Namespace contains the namespace to deploy the module to.
 	namespace: string @go(Namespace)
+
+	// Registry contains the registry to pull the module from.
+	// +optional
+	registry?: string @go(Registry)
 
 	// Values contains the values to pass to the deployment module.
 	values: _ @go(Values,any)
