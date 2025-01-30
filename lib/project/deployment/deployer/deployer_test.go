@@ -26,14 +26,12 @@ import (
 )
 
 func TestDeployerDeploy(t *testing.T) {
-	newProject := func(name string, module schema.DeploymentModule) project.Project {
+	newProject := func(name string, bundle schema.DeploymentModuleBundle) project.Project {
 		return project.Project{
 			Blueprint: schema.Blueprint{
 				Project: schema.Project{
 					Deployment: schema.Deployment{
-						Modules: map[string]schema.DeploymentModule{
-							"main": module,
-						},
+						Modules: bundle,
 					},
 				},
 				Global: schema.Global{
@@ -80,13 +78,15 @@ func TestDeployerDeploy(t *testing.T) {
 			name: "success",
 			project: newProject(
 				"project",
-				schema.DeploymentModule{
-					Instance:  "instance",
-					Name:      "module",
-					Namespace: "default",
-					Registry:  "registry",
-					Values:    map[string]string{"key": "value"},
-					Version:   "v1.0.0",
+				schema.DeploymentModuleBundle{
+					"main": {
+						Instance:  "instance",
+						Name:      "module",
+						Namespace: "default",
+						Registry:  "registry",
+						Values:    map[string]string{"key": "value"},
+						Version:   "v1.0.0",
+					},
 				},
 			),
 			files:  nil,
@@ -98,7 +98,7 @@ func TestDeployerDeploy(t *testing.T) {
 				require.NoError(t, err)
 				assert.True(t, e)
 
-				e, err = afero.Exists(r.fs, "/repo/root/test/apps/project/main.mod.cue")
+				e, err = afero.Exists(r.fs, "/repo/root/test/apps/project/mod.cue")
 				require.NoError(t, err)
 				assert.True(t, e)
 
@@ -107,16 +107,18 @@ func TestDeployerDeploy(t *testing.T) {
 				assert.Equal(t, "manifest", string(c))
 
 				mod := `{
-	instance:  "instance"
-	name:      "module"
-	namespace: "default"
-	registry:  "registry"
-	values: {
-		key: "value"
+	main: {
+		instance:  "instance"
+		name:      "module"
+		namespace: "default"
+		registry:  "registry"
+		values: {
+			key: "value"
+		}
+		version: "v1.0.0"
 	}
-	version: "v1.0.0"
 }`
-				c, err = afero.ReadFile(r.fs, "/repo/root/test/apps/project/main.mod.cue")
+				c, err = afero.ReadFile(r.fs, "/repo/root/test/apps/project/mod.cue")
 				require.NoError(t, err)
 				assert.Equal(t, mod, string(c))
 
@@ -139,13 +141,15 @@ func TestDeployerDeploy(t *testing.T) {
 			name: "dry run with extra files",
 			project: newProject(
 				"project",
-				schema.DeploymentModule{
-					Instance:  "instance",
-					Name:      "module",
-					Namespace: "default",
-					Registry:  "registry",
-					Values:    map[string]string{"key": "value"},
-					Version:   "v1.0.0",
+				schema.DeploymentModuleBundle{
+					"main": {
+						Instance:  "instance",
+						Name:      "module",
+						Namespace: "default",
+						Registry:  "registry",
+						Values:    map[string]string{"key": "value"},
+						Version:   "v1.0.0",
+					},
 				},
 			),
 			files: map[string]string{
@@ -159,7 +163,7 @@ func TestDeployerDeploy(t *testing.T) {
 				require.NoError(t, err)
 				assert.True(t, e)
 
-				e, err = afero.Exists(r.fs, "/repo/root/test/apps/project/main.mod.cue")
+				e, err = afero.Exists(r.fs, "/repo/root/test/apps/project/mod.cue")
 				require.NoError(t, err)
 				assert.True(t, e)
 
@@ -177,7 +181,7 @@ func TestDeployerDeploy(t *testing.T) {
 				fst = st.File("root/test/apps/project/main.yaml")
 				assert.Equal(t, fst.Staging, gg.Added)
 
-				fst = st.File("root/test/apps/project/main.mod.cue")
+				fst = st.File("root/test/apps/project/mod.cue")
 				assert.Equal(t, fst.Staging, gg.Added)
 
 				head, err := r.repo.Head()

@@ -25,8 +25,8 @@ func (c *TemplateCmd) Run(ctx run.RunContext) error {
 	}
 
 	var out string
-	for _, module := range result {
-		out += fmt.Sprintf("%s---\n", module.Manifests)
+	for _, manifest := range result.Manifests {
+		out += fmt.Sprintf("%s---\n", manifest)
 	}
 
 	fmt.Print(strings.TrimSuffix(out, "---\n"))
