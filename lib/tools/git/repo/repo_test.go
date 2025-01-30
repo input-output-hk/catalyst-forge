@@ -262,7 +262,7 @@ func TestGitRepoStageFile(t *testing.T) {
 
 		err := repo.StageFile("file.txt")
 		require.Error(t, err)
-		assert.Contains(t, err.Error(), "failed to add file")
+		assert.Contains(t, err.Error(), "entry not found")
 	})
 }
 
