@@ -9,6 +9,7 @@ import (
 
 	"github.com/go-git/go-billy/v5"
 	gg "github.com/go-git/go-git/v5"
+	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/go-git/go-git/v5/storage"
 	"github.com/input-output-hk/catalyst-forge/lib/project/deployment/generator"
@@ -211,7 +212,12 @@ func TestDeployerDeploy(t *testing.T) {
 							require.NoError(t, err, "failed to add file")
 						}
 
-						_, err = wt.Commit("initial commit", &gg.CommitOptions{})
+						_, err = wt.Commit("initial commit", &gg.CommitOptions{
+							Author: &object.Signature{
+								Name:  GIT_NAME,
+								Email: GIT_EMAIL,
+							},
+						})
 						require.NoError(t, err, "failed to commit")
 					}
 
