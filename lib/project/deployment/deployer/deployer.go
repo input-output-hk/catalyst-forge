@@ -190,7 +190,7 @@ func NewDeployer(project *project.Project, mg deployment.ManifestGenerator, logg
 	return Deployer{
 		dryrun:  dryrun,
 		gen:     gen,
-		fs:      afero.NewOsFs(),
+		fs:      afero.NewMemMapFs(),
 		logger:  logger,
 		project: project,
 		remote:  remote,
