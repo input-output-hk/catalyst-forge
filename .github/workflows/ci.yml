@@ -47,12 +47,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Install Forge
-        uses: input-output-hk/catalyst-forge/actions/install@ci/v1.7.0
+        uses: input-output-hk/catalyst-forge/actions/install@ci/v1.7.1
         if: ${{ inputs.forge_version != 'local' }}
         with:
           version: ${{ inputs.forge_version }}
       - name: Install Local Forge
-        uses: input-output-hk/catalyst-forge/actions/install-local@ci/v1.7.0
+        uses: input-output-hk/catalyst-forge/actions/install-local@ci/v1.7.1
         if: ${{ inputs.forge_version == 'local' }}
         with:
           earthly_token: ${{ secrets.earthly_token }}
@@ -67,14 +67,14 @@ jobs:
             echo "skip=false" >> $GITHUB_OUTPUT
           fi
       - name: Setup CI
-        uses: input-output-hk/catalyst-forge/actions/setup@ci/v1.7.0
+        uses: input-output-hk/catalyst-forge/actions/setup@ci/v1.7.1
         with:
           skip_docker: 'true'
           skip_github: 'true'
           skip_earthly: ${{ steps.local.outputs.skip }}
       - name: Discovery
         id: discovery
-        uses: input-output-hk/catalyst-forge/actions/discovery@ci/v1.7.0
+        uses: input-output-hk/catalyst-forge/actions/discovery@ci/v1.7.1
         with:
           filters: |
             ${{ env.FORGE_REGEX_CHECK }}
@@ -86,7 +86,7 @@ jobs:
             ${{ env.FORGE_REGEX_PUBLISH }}
             ${{ env.FORGE_REGEX_NIGHTLY }}
   check:
-    uses: input-output-hk/catalyst-forge/.github/workflows/run.yml@ci/v1.7.0
+    uses: input-output-hk/catalyst-forge/.github/workflows/run.yml@ci/v1.7.1
     needs: [discover]
     if: (fromJson(needs.discover.outputs.earthfiles)['^check(-.*)?$'] != null) && !failure() && !cancelled()
     with:
@@ -98,7 +98,7 @@ jobs:
       earthly_token: ${{ secrets.earthly_token }}
 
   build:
-    uses: input-output-hk/catalyst-forge/.github/workflows/run.yml@ci/v1.7.0
+    uses: input-output-hk/catalyst-forge/.github/workflows/run.yml@ci/v1.7.1
     needs: [discover, check]
     if: (fromJson(needs.discover.outputs.earthfiles)['^build(-.*)?$'] != null) && !failure() && !cancelled()
     with:
@@ -110,7 +110,7 @@ jobs:
       earthly_token: ${{ secrets.earthly_token }}
 
   package:
-    uses: input-output-hk/catalyst-forge/.github/workflows/run.yml@ci/v1.7.0
+    uses: input-output-hk/catalyst-forge/.github/workflows/run.yml@ci/v1.7.1
     needs: [discover, check, build]
     if: (fromJson(needs.discover.outputs.earthfiles)['^package(-.*)?$'] != null) && !failure() && !cancelled()
     with:
@@ -122,7 +122,7 @@ jobs:
       earthly_token: ${{ secrets.earthly_token }}
 
   test:
-    uses: input-output-hk/catalyst-forge/.github/workflows/run.yml@ci/v1.7.0
+    uses: input-output-hk/catalyst-forge/.github/workflows/run.yml@ci/v1.7.1
     needs: [discover, check, build, package]
     if: (fromJson(needs.discover.outputs.earthfiles)['^test(-.*)?$'] != null) && !failure() && !cancelled()
     with:
@@ -146,7 +146,7 @@ jobs:
       earthly_token: ${{ secrets.earthly_token }}
 
   docs:
-    uses: input-output-hk/catalyst-forge/.github/workflows/docs.yml@ci/v1.7.0
+    uses: input-output-hk/catalyst-forge/.github/workflows/docs.yml@ci/v1.7.1
     needs: [discover, check, build, test]
     if: (fromJson(needs.discover.outputs.earthfiles)['^docs(-.*)?$'] != null) && !failure() && !cancelled()
     with:
@@ -156,7 +156,7 @@ jobs:
       earthly_token: ${{ secrets.earthly_token }}
 
   release:
-    uses: input-output-hk/catalyst-forge/.github/workflows/release.yml@ci/v1.7.0
+    uses: input-output-hk/catalyst-forge/.github/workflows/release.yml@ci/v1.7.1
     needs: [discover, check, build, test]
     if: (fromJson(needs.discover.outputs.releases)[0] != null) && !failure() && !cancelled()
     with:
@@ -168,7 +168,7 @@ jobs:
       earthly_token: ${{ secrets.earthly_token }}
 
   deploy:
-    uses: input-output-hk/catalyst-forge/.github/workflows/deploy.yml@ci/v1.7.0
+    uses: input-output-hk/catalyst-forge/.github/workflows/deploy.yml@ci/v1.7.1
     needs: [discover, check, build, test, release]
     if: (fromJson(needs.discover.outputs.deployments)[0] != null) && !failure() && !cancelled()
     with:
