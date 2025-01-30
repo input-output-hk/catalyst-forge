@@ -24,3 +24,20 @@ func DumpModule(mod schema.DeploymentModule) ([]byte, error) {
 
 	return src, nil
 }
+
+// DumpBundle dumps the deployment module bundle to CUE source.
+func DumpBundle(mod schema.DeploymentModuleBundle) ([]byte, error) {
+	ctx := cuecontext.New()
+	v := ctx.Encode(mod)
+
+	if v.Err() != nil {
+		return nil, fmt.Errorf("failed to encode bundle: %w", v.Err())
+	}
+
+	src, err := format.Node(v.Syntax())
+	if err != nil {
+		return nil, fmt.Errorf("failed to format bundle: %w", err)
+	}
+
+	return src, nil
+}

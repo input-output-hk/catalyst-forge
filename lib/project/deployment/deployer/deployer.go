@@ -59,24 +59,25 @@ func (d *Deployer) Deploy() error {
 		return fmt.Errorf("could not generate deployment manifests: %w", err)
 	}
 
-	for name, result := range result {
+	modPath := filepath.Join(prjPath, "mod.cue")
+	d.logger.Info("Writing module", "path", modPath)
+	if err := r.WriteFile(modPath, []byte(result.Module)); err != nil {
+		return fmt.Errorf("could not write module: %w", err)
+	}
+
+	if err := r.StageFile(modPath); err != nil {
+		return fmt.Errorf("could not add module to working tree: %w", err)
+	}
+
+	for name, result := range result.Manifests {
 		manPath := filepath.Join(prjPath, fmt.Sprintf("%s.yaml", name))
-		modPath := filepath.Join(prjPath, fmt.Sprintf("%s.mod.cue", name))
 
 		d.logger.Info("Writing manifest", "path", manPath)
-		if err := r.WriteFile(manPath, []byte(result.Manifests)); err != nil {
+		if err := r.WriteFile(manPath, []byte(result)); err != nil {
 			return fmt.Errorf("could not write manifest: %w", err)
 		}
 		if err := r.StageFile(manPath); err != nil {
 			return fmt.Errorf("could not add manifest to working tree: %w", err)
-		}
-
-		d.logger.Info("Writing module", "path", modPath)
-		if err := r.WriteFile(modPath, []byte(result.Module)); err != nil {
-			return fmt.Errorf("could not write values: %w", err)
-		}
-		if err := r.StageFile(modPath); err != nil {
-			return fmt.Errorf("could not add values to working tree: %w", err)
 		}
 	}
 
@@ -101,8 +102,8 @@ func (d *Deployer) Deploy() error {
 	} else {
 		d.logger.Info("Dry-run: not committing or pushing changes")
 		d.logger.Info("Dumping manifests")
-		for _, r := range result {
-			fmt.Println(string(r.Manifests))
+		for _, r := range result.Manifests {
+			fmt.Println(string(r))
 		}
 	}
 
