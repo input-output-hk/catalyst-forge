@@ -1,0 +1,8 @@
+instance: "test"
+name: "base"
+namespace: "default"
+values:
+  image: "nginx"
+  port: 80
+  replicas: 2
+version: "0.1.0"

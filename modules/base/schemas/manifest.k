@@ -1,0 +1,2 @@
+schema Manifest:
+    [str]: any
