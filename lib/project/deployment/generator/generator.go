@@ -47,6 +47,10 @@ func (d *Generator) GenerateBundle(b schema.DeploymentModuleBundle) (GeneratorRe
 
 // Generate generates manifests for a deployment module.
 func (d *Generator) Generate(m schema.DeploymentModule) ([]byte, error) {
+	if err := deployment.Validate(m); err != nil {
+		return nil, fmt.Errorf("failed to validate module: %w", err)
+	}
+
 	manifests, err := d.mg.Generate(m)
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate manifest for module: %w", err)

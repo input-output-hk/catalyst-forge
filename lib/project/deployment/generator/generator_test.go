@@ -7,6 +7,7 @@ import (
 	"cuelang.org/go/cue/cuecontext"
 	"github.com/input-output-hk/catalyst-forge/lib/project/deployment/mocks"
 	"github.com/input-output-hk/catalyst-forge/lib/project/schema"
+	"github.com/input-output-hk/catalyst-forge/lib/project/utils"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/testutils"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -26,11 +27,11 @@ func TestGeneratorGenerateBundle(t *testing.T) {
 			bundle: schema.DeploymentModuleBundle{
 				"test": schema.DeploymentModule{
 					Instance:  "instance",
-					Name:      "test",
+					Name:      utils.StringPtr("test"),
 					Namespace: "default",
-					Registry:  "registry",
+					Registry:  utils.StringPtr("registry"),
 					Values:    ctx.CompileString(`foo: "bar"`),
-					Version:   "1.0.0",
+					Version:   utils.StringPtr("1.0.0"),
 				},
 			},
 			yaml: "test",
@@ -59,11 +60,11 @@ func TestGeneratorGenerateBundle(t *testing.T) {
 			bundle: schema.DeploymentModuleBundle{
 				"test": schema.DeploymentModule{
 					Instance:  "instance",
-					Name:      "test",
+					Name:      utils.StringPtr("test"),
 					Namespace: "default",
-					Registry:  "registry",
+					Registry:  utils.StringPtr("registry"),
 					Values:    ctx.CompileString(`foo: "bar"`),
-					Version:   "1.0.0",
+					Version:   utils.StringPtr("1.0.0"),
 				},
 			},
 			yaml: "test",
@@ -77,11 +78,11 @@ func TestGeneratorGenerateBundle(t *testing.T) {
 			bundle: schema.DeploymentModuleBundle{
 				"test": schema.DeploymentModule{
 					Instance:  "instance",
-					Name:      "test",
+					Name:      utils.StringPtr("test"),
 					Namespace: "default",
-					Registry:  "registry",
+					Registry:  utils.StringPtr("registry"),
 					Values:    fmt.Errorf("error"),
-					Version:   "1.0.0",
+					Version:   utils.StringPtr("1.0.0"),
 				},
 			},
 			yaml: "test",
@@ -127,11 +128,11 @@ func TestGeneratorGenerate(t *testing.T) {
 			name: "full",
 			module: schema.DeploymentModule{
 				Instance:  "instance",
-				Name:      "test",
+				Name:      utils.StringPtr("test"),
 				Namespace: "default",
-				Registry:  "registry",
+				Registry:  utils.StringPtr("registry"),
 				Values:    ctx.CompileString(`foo: "bar"`),
-				Version:   "1.0.0",
+				Version:   utils.StringPtr("1.0.0"),
 			},
 			yaml: "test",
 			err:  false,
@@ -143,10 +144,10 @@ func TestGeneratorGenerate(t *testing.T) {
 		{
 			name: "manifest error",
 			module: schema.DeploymentModule{
-				Name:      "test",
+				Name:      utils.StringPtr("test"),
 				Namespace: "default",
 				Values:    ctx.CompileString(`foo: "bar"`),
-				Version:   "1.0.0",
+				Version:   utils.StringPtr("1.0.0"),
 			},
 			yaml: "test",
 			err:  true,

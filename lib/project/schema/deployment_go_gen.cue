@@ -28,6 +28,10 @@ package schema
 	// Namespace contains the namespace to deploy the module to.
 	namespace: string @go(Namespace)
 
+	// Path contains the path to the module.
+	// +optional
+	path?: null | string @go(Path,*string)
+
 	// Registry contains the registry to pull the module from.
 	// +optional
 	registry?: string @go(Registry)
@@ -36,5 +40,6 @@ package schema
 	values: _ @go(Values,any)
 
 	// Version contains the version of the deployment module.
-	version: string @go(Version)
+	// +optional
+	version?: string @go(Version)
 }

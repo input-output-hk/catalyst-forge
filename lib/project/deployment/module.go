@@ -57,3 +57,14 @@ func ParseBundle(src []byte) (schema.DeploymentModuleBundle, error) {
 
 	return bundle, nil
 }
+
+// Validate validates a deployment module.
+func Validate(mod schema.DeploymentModule) error {
+	if mod.Path == nil {
+		if mod.Name == nil || mod.Registry == nil || mod.Version == nil {
+			return fmt.Errorf("module must have at least one of (name, registry, version) or path")
+		}
+	}
+
+	return nil
+}
