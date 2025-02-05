@@ -3,6 +3,10 @@
     name = "base"
     full_name = "base_0.1.0"
     version = "0.1.0"
+    sum = "mUE1g7AQ3hNRaaRDRBxp9IGzi+9uXrl6m/XJX4gNLJ8="
+    reg = "ghcr.io"
+    repo = "input-output-hk/catalyst-forge/base"
+    oci_tag = "0.1.0"
   [dependencies.k8s]
     name = "k8s"
     full_name = "k8s_1.31.2"
