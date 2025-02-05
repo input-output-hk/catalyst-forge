@@ -19,18 +19,23 @@ type DeploymentModule struct {
 
 	// Name contains the name of the module to deploy.
 	// +optional
-	Name string `json:"name"`
+	Name *string `json:"name"`
 
 	// Namespace contains the namespace to deploy the module to.
 	Namespace string `json:"namespace"`
 
+	// Path contains the path to the module.
+	// +optional
+	Path *string `json:"path"`
+
 	// Registry contains the registry to pull the module from.
 	// +optional
-	Registry string `json:"registry"`
+	Registry *string `json:"registry"`
 
 	// Values contains the values to pass to the deployment module.
 	Values any `json:"values"`
 
 	// Version contains the version of the deployment module.
-	Version string `json:"version"`
+	// +optional
+	Version *string `json:"version"`
 }

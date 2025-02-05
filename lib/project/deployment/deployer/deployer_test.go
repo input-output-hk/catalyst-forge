@@ -18,6 +18,7 @@ import (
 	"github.com/input-output-hk/catalyst-forge/lib/project/schema"
 	"github.com/input-output-hk/catalyst-forge/lib/project/secrets"
 	sm "github.com/input-output-hk/catalyst-forge/lib/project/secrets/mocks"
+	"github.com/input-output-hk/catalyst-forge/lib/project/utils"
 	rm "github.com/input-output-hk/catalyst-forge/lib/tools/git/repo/remote/mocks"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/testutils"
 	"github.com/spf13/afero"
@@ -81,11 +82,11 @@ func TestDeployerDeploy(t *testing.T) {
 				schema.DeploymentModuleBundle{
 					"main": {
 						Instance:  "instance",
-						Name:      "module",
+						Name:      utils.StringPtr("module"),
 						Namespace: "default",
-						Registry:  "registry",
+						Registry:  utils.StringPtr("registry"),
 						Values:    map[string]string{"key": "value"},
-						Version:   "v1.0.0",
+						Version:   utils.StringPtr("v1.0.0"),
 					},
 				},
 			),
@@ -144,11 +145,11 @@ func TestDeployerDeploy(t *testing.T) {
 				schema.DeploymentModuleBundle{
 					"main": {
 						Instance:  "instance",
-						Name:      "module",
+						Name:      utils.StringPtr("module"),
 						Namespace: "default",
-						Registry:  "registry",
+						Registry:  utils.StringPtr("registry"),
 						Values:    map[string]string{"key": "value"},
-						Version:   "v1.0.0",
+						Version:   utils.StringPtr("v1.0.0"),
 					},
 				},
 			),

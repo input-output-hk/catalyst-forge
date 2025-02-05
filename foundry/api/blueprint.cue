@@ -21,7 +21,7 @@ project: {
 		modules: {
 			main: {
 				name:    "app"
-				version: "0.2.0"
+				version: "0.4.0"
 				values: {
 					deployment: containers: main: {
 						image: {
