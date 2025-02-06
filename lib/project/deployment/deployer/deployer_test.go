@@ -12,6 +12,7 @@ import (
 	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/go-git/go-git/v5/storage"
+	"github.com/input-output-hk/catalyst-forge/lib/project/deployment"
 	"github.com/input-output-hk/catalyst-forge/lib/project/deployment/generator"
 	dm "github.com/input-output-hk/catalyst-forge/lib/project/deployment/mocks"
 	"github.com/input-output-hk/catalyst-forge/lib/project/project"
@@ -85,6 +86,7 @@ func TestDeployerDeploy(t *testing.T) {
 						Name:      utils.StringPtr("module"),
 						Namespace: "default",
 						Registry:  utils.StringPtr("registry"),
+						Type:      "kcl",
 						Values:    map[string]string{"key": "value"},
 						Version:   utils.StringPtr("v1.0.0"),
 					},
@@ -113,6 +115,7 @@ func TestDeployerDeploy(t *testing.T) {
 		name:      "module"
 		namespace: "default"
 		registry:  "registry"
+		type:      "kcl"
 		values: {
 			key: "value"
 		}
@@ -148,6 +151,7 @@ func TestDeployerDeploy(t *testing.T) {
 						Name:      utils.StringPtr("module"),
 						Namespace: "default",
 						Registry:  utils.StringPtr("registry"),
+						Type:      "kcl",
 						Values:    map[string]string{"key": "value"},
 						Version:   utils.StringPtr("v1.0.0"),
 					},
@@ -233,14 +237,19 @@ func TestDeployerDeploy(t *testing.T) {
 				},
 			}
 			gen := generator.NewGenerator(
-				&dm.ManifestGeneratorMock{
-					GenerateFunc: func(mod schema.DeploymentModule) ([]byte, error) {
-						return []byte("manifest"), nil
+				deployment.NewManifestGeneratorStore(
+					map[deployment.Provider]func(*slog.Logger) deployment.ManifestGenerator{
+						deployment.ProviderKCL: func(logger *slog.Logger) deployment.ManifestGenerator {
+							return &dm.ManifestGeneratorMock{
+								GenerateFunc: func(mod schema.DeploymentModule) ([]byte, error) {
+									return []byte("manifest"), nil
+								},
+							}
+						},
 					},
-				},
+				),
 				testutils.NewNoopLogger(),
 			)
-
 			provider := func(logger *slog.Logger) (secrets.SecretProvider, error) {
 				return &sm.SecretProviderMock{
 					GetFunc: func(key string) (string, error) {

@@ -7,6 +7,7 @@ import (
 
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/run"
 	"github.com/input-output-hk/catalyst-forge/lib/project/deployment"
+	"github.com/input-output-hk/catalyst-forge/lib/project/deployment/generator"
 	"github.com/input-output-hk/catalyst-forge/lib/project/schema"
 )
 
@@ -40,7 +41,8 @@ func (c *TemplateCmd) Run(ctx run.RunContext) error {
 		}
 	}
 
-	result, err := ctx.DeploymentGenerator.GenerateBundle(bundle)
+	gen := generator.NewGenerator(ctx.ManifestGeneratorStore, ctx.Logger)
+	result, err := gen.GenerateBundle(bundle)
 	if err != nil {
 		return fmt.Errorf("failed to generate manifests: %w", err)
 	}

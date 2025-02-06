@@ -18,7 +18,7 @@ type GeneratorResult struct {
 // Generator is a deployment generator.
 type Generator struct {
 	logger *slog.Logger
-	mg     deployment.ManifestGenerator
+	store  deployment.ManifestGeneratorStore
 }
 
 // GenerateBundle generates manifests for a deployment bundle.
@@ -51,7 +51,12 @@ func (d *Generator) Generate(m schema.DeploymentModule) ([]byte, error) {
 		return nil, fmt.Errorf("failed to validate module: %w", err)
 	}
 
-	manifests, err := d.mg.Generate(m)
+	mg, err := d.store.NewGenerator(d.logger, deployment.Provider(m.Type))
+	if err != nil {
+		return nil, fmt.Errorf("failed to get generator for module: %w", err)
+	}
+
+	manifests, err := mg.Generate(m)
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate manifest for module: %w", err)
 	}
@@ -60,13 +65,13 @@ func (d *Generator) Generate(m schema.DeploymentModule) ([]byte, error) {
 }
 
 // NewGenerator creates a new deployment generator.
-func NewGenerator(mg deployment.ManifestGenerator, logger *slog.Logger) Generator {
+func NewGenerator(store deployment.ManifestGeneratorStore, logger *slog.Logger) Generator {
 	if logger == nil {
 		logger = slog.New(slog.NewTextHandler(io.Discard, nil))
 	}
 
 	return Generator{
 		logger: logger,
-		mg:     mg,
+		store:  store,
 	}
 }
