@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log/slog"
 
+	"github.com/input-output-hk/catalyst-forge/lib/project/deployment/providers/helm"
 	"github.com/input-output-hk/catalyst-forge/lib/project/deployment/providers/kcl"
 )
 
@@ -11,6 +12,9 @@ import (
 type Provider string
 
 const (
+	// ProviderHelm represents the Helm manifest generator provider.
+	ProviderHelm Provider = "helm"
+
 	// ProviderKCL represents the KCL manifest generator provider.
 	ProviderKCL Provider = "kcl"
 )
@@ -24,6 +28,9 @@ type ManifestGeneratorStore struct {
 func NewDefaultManifestGeneratorStore() ManifestGeneratorStore {
 	return ManifestGeneratorStore{
 		store: map[Provider]func(*slog.Logger) ManifestGenerator{
+			ProviderHelm: func(logger *slog.Logger) ManifestGenerator {
+				return helm.NewHelmManifestGenerator(logger)
+			},
 			ProviderKCL: func(logger *slog.Logger) ManifestGenerator {
 				return kcl.NewKCLManifestGenerator(logger)
 			},
