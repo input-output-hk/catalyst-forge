@@ -14,6 +14,7 @@ package schema
 
 #DeploymentModule: {
 	namespace: _ | *"default"
+	type:      _ | *"kcl"
 }
 
 #Project: {

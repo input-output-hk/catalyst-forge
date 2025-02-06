@@ -2,9 +2,11 @@ package generator
 
 import (
 	"fmt"
+	"log/slog"
 	"testing"
 
 	"cuelang.org/go/cue/cuecontext"
+	"github.com/input-output-hk/catalyst-forge/lib/project/deployment"
 	"github.com/input-output-hk/catalyst-forge/lib/project/deployment/mocks"
 	"github.com/input-output-hk/catalyst-forge/lib/project/schema"
 	"github.com/input-output-hk/catalyst-forge/lib/project/utils"
@@ -30,6 +32,7 @@ func TestGeneratorGenerateBundle(t *testing.T) {
 					Name:      utils.StringPtr("test"),
 					Namespace: "default",
 					Registry:  utils.StringPtr("registry"),
+					Type:      "kcl",
 					Values:    ctx.CompileString(`foo: "bar"`),
 					Version:   utils.StringPtr("1.0.0"),
 				},
@@ -45,6 +48,7 @@ func TestGeneratorGenerateBundle(t *testing.T) {
 		name:      "test"
 		namespace: "default"
 		registry:  "registry"
+		type:      "kcl"
 		values: {
 			foo: "bar"
 		}
@@ -63,6 +67,7 @@ func TestGeneratorGenerateBundle(t *testing.T) {
 					Name:      utils.StringPtr("test"),
 					Namespace: "default",
 					Registry:  utils.StringPtr("registry"),
+					Type:      "kcl",
 					Values:    ctx.CompileString(`foo: "bar"`),
 					Version:   utils.StringPtr("1.0.0"),
 				},
@@ -81,6 +86,7 @@ func TestGeneratorGenerateBundle(t *testing.T) {
 					Name:      utils.StringPtr("test"),
 					Namespace: "default",
 					Registry:  utils.StringPtr("registry"),
+					Type:      "kcl",
 					Values:    fmt.Errorf("error"),
 					Version:   utils.StringPtr("1.0.0"),
 				},
@@ -104,9 +110,18 @@ func TestGeneratorGenerateBundle(t *testing.T) {
 					return []byte(tt.yaml), nil
 				},
 			}
+
+			store := deployment.NewManifestGeneratorStore(
+				map[deployment.Provider]func(*slog.Logger) deployment.ManifestGenerator{
+					deployment.ProviderKCL: func(logger *slog.Logger) deployment.ManifestGenerator {
+						return mg
+					},
+				},
+			)
+
 			gen := Generator{
-				mg:     mg,
 				logger: testutils.NewNoopLogger(),
+				store:  store,
 			}
 
 			result, err := gen.GenerateBundle(tt.bundle)
@@ -131,6 +146,7 @@ func TestGeneratorGenerate(t *testing.T) {
 				Name:      utils.StringPtr("test"),
 				Namespace: "default",
 				Registry:  utils.StringPtr("registry"),
+				Type:      "kcl",
 				Values:    ctx.CompileString(`foo: "bar"`),
 				Version:   utils.StringPtr("1.0.0"),
 			},
@@ -146,6 +162,7 @@ func TestGeneratorGenerate(t *testing.T) {
 			module: schema.DeploymentModule{
 				Name:      utils.StringPtr("test"),
 				Namespace: "default",
+				Type:      "kcl",
 				Values:    ctx.CompileString(`foo: "bar"`),
 				Version:   utils.StringPtr("1.0.0"),
 			},
@@ -168,9 +185,18 @@ func TestGeneratorGenerate(t *testing.T) {
 					return []byte(tt.yaml), nil
 				},
 			}
+
+			store := deployment.NewManifestGeneratorStore(
+				map[deployment.Provider]func(*slog.Logger) deployment.ManifestGenerator{
+					deployment.ProviderKCL: func(logger *slog.Logger) deployment.ManifestGenerator {
+						return mg
+					},
+				},
+			)
+
 			gen := Generator{
-				mg:     mg,
 				logger: testutils.NewNoopLogger(),
+				store:  store,
 			}
 
 			result, err := gen.Generate(tt.module)

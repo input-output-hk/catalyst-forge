@@ -184,8 +184,8 @@ func (d *Deployer) clone() (repo.GitRepo, error) {
 }
 
 // NewDeployer creates a new Deployer.
-func NewDeployer(project *project.Project, mg deployment.ManifestGenerator, logger *slog.Logger, dryrun bool) Deployer {
-	gen := generator.NewGenerator(mg, logger)
+func NewDeployer(project *project.Project, store deployment.ManifestGeneratorStore, logger *slog.Logger, dryrun bool) Deployer {
+	gen := generator.NewGenerator(store, logger)
 	remote := remote.GoGitRemoteInteractor{}
 
 	return Deployer{

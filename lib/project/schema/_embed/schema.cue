@@ -243,7 +243,7 @@ version: "1.0"
 
 	// Name contains the name of the module to deploy.
 	// +optional
-	name?: string @go(Name)
+	name?: null | string @go(Name,*string)
 
 	// Namespace contains the namespace to deploy the module to.
 	namespace: (_ | *"default") & {
@@ -256,14 +256,19 @@ version: "1.0"
 
 	// Registry contains the registry to pull the module from.
 	// +optional
-	registry?: string @go(Registry)
+	registry?: null | string @go(Registry,*string)
+
+	// Type contains the type of the module.
+	type: (_ | *"kcl") & {
+		string
+	} @go(Type)
 
 	// Values contains the values to pass to the deployment module.
 	values: _ @go(Values,any)
 
 	// Version contains the version of the deployment module.
 	// +optional
-	version?: string @go(Version)
+	version?: null | string @go(Version,*string)
 }
 
 // Project contains the configuration for the project.

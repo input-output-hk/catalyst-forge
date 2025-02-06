@@ -32,6 +32,9 @@ type DeploymentModule struct {
 	// +optional
 	Registry *string `json:"registry"`
 
+	// Type contains the type of the module.
+	Type string `json:"type"`
+
 	// Values contains the values to pass to the deployment module.
 	Values any `json:"values"`
 
