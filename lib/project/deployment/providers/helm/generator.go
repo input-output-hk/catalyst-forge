@@ -36,7 +36,12 @@ func (h *HelmManifestGenerator) Generate(mod schema.DeploymentModule) ([]byte, e
 		return nil, fmt.Errorf("failed to load chart archive: %w", err)
 	}
 
-	rel, err := client.Run(chart, map[string]interface{}{"foo": "bar"})
+	values, ok := mod.Values.(map[string]interface{})
+	if !ok {
+		return nil, fmt.Errorf("failed to assert mod.Values to map[string]interface{}")
+	}
+
+	rel, err := client.Run(chart, values)
 	if err != nil {
 		return nil, fmt.Errorf("failed to run client: %w", err)
 	}

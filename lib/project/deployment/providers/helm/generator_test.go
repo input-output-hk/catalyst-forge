@@ -33,7 +33,12 @@ func TestHelmManifestGenerator(t *testing.T) {
 		Name:      utils.StringPtr("test"),
 		Namespace: "default",
 		Registry:  utils.StringPtr("https://charts.test.com/repo"),
-		Version:   utils.StringPtr("1.0.0"),
+		Values: map[string]interface{}{
+			"image": map[string]interface{}{
+				"tag": "1.27.0",
+			},
+		},
+		Version: utils.StringPtr("1.0.0"),
 	}
 
 	result, err := gen.Generate(mod)

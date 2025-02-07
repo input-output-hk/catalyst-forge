@@ -30,7 +30,7 @@ func (d *DefaultChartDownloader) Download(repoUrl, chartName, version string) (*
 		return nil, fmt.Errorf("failed to find chart in repo: %w", err)
 	}
 
-	u, err := dl.ResolveChartVersion(url, "")
+	u, err := dl.ResolveChartVersion(url, version)
 	if err != nil {
 		return nil, fmt.Errorf("failed to resolve chart version: %w", err)
 	}
