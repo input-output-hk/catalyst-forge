@@ -1,13 +1,12 @@
 site_name: Catalyst Forge
 site_url: https://input-output-hk.github.io/catalyst-forge
 site_author: The Project Catalyst Team
-copyright: © 2024 Input Output Global Ltd.
+copyright: © 2025 Input Output Global Ltd.
 
 docs_dir: src
 
 nav:
   - Overview: index.md
-  - News: blog/index.md
   - Installation: installation.md
   - Tutorials:
     - Getting Started: tutorials/getting_started.md
@@ -54,9 +53,3 @@ markdown_extensions:
   - pymdownx.details
   - pymdownx.snippets
   - pymdownx.superfences
-
-plugins:
-  - blog:
-      archive: false
-      categories: false
-  - tags
