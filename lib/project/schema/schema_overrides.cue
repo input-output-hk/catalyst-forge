@@ -4,17 +4,14 @@ package schema
 	version: string & =~"^\\d+\\.\\d+"
 }
 
-#Deployment: {
-	environment: _ | *"dev"
-}
-
 #GlobalDeployment: {
-	environment: _ | *"dev"
+	root: _ | *"k8s"
 }
 
 #DeploymentModule: {
-	namespace: _ | *"default"
-	type:      _ | *"kcl"
+	environment: _ | *"dev"
+	namespace:   _ | *"default"
+	type:        _ | *"kcl"
 }
 
 #Project: {

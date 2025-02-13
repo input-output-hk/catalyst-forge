@@ -13,6 +13,11 @@ type Deployment struct {
 
 // Module contains the configuration for a deployment module.
 type DeploymentModule struct {
+	// Environment contains the environment the module is being deployed to.
+	// This value should never be set by the user. It is set by the system.
+	// +optional
+	Environment *string `json:"environment"`
+
 	// Instance contains the instance name to use for all generated resources.
 	// +optional
 	Instance string `json:"instance"`

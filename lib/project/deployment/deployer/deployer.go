@@ -15,9 +15,19 @@ import (
 )
 
 const (
+	// This is the hardcoded default environment for the deployment.
+	// We always deploy to the dev environment by default and do not allow
+	// the user to change this.
+	DEFAULT_ENV = "dev"
+
+	// These are the hardcoded values to use when committing changes to the GitOps repository.
 	GIT_NAME    = "Catalyst Forge"
 	GIT_EMAIL   = "forge@projectcatalyst.io"
 	GIT_MESSAGE = "chore: automatic deployment for %s"
+
+	// This is the path to the project in the GitOps repository.
+	// {root_path}/{environment}/{project_name}
+	PATH = "%s/%s/%s"
 )
 
 var (
@@ -113,10 +123,7 @@ func (d *Deployer) Deploy() error {
 // buildProjectPath builds the path to the project in the GitOps repository.
 func (d *Deployer) buildProjectPath() string {
 	globalDeploy := d.project.Blueprint.Global.Deployment
-	envPath := filepath.Join(globalDeploy.Root, globalDeploy.Environment, "apps")
-	prjPath := filepath.Join(envPath, d.project.Name)
-
-	return prjPath
+	return fmt.Sprintf(PATH, globalDeploy.Root, DEFAULT_ENV, d.project.Name)
 }
 
 // checkProjectPath checks if the project path exists and creates it if it does not.

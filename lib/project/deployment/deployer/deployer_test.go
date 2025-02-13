@@ -38,7 +38,6 @@ func TestDeployerDeploy(t *testing.T) {
 				},
 				Global: schema.Global{
 					Deployment: schema.GlobalDeployment{
-						Environment: "test",
 						Repo: schema.GlobalDeploymentRepo{
 							Ref: "main",
 							Url: "url",
@@ -97,15 +96,15 @@ func TestDeployerDeploy(t *testing.T) {
 			validate: func(t *testing.T, r testResult) {
 				require.NoError(t, r.err)
 
-				e, err := afero.Exists(r.fs, "/repo/root/test/apps/project/main.yaml")
+				e, err := afero.Exists(r.fs, mkPath("dev", "project", "main.yaml"))
 				require.NoError(t, err)
 				assert.True(t, e)
 
-				e, err = afero.Exists(r.fs, "/repo/root/test/apps/project/mod.cue")
+				e, err = afero.Exists(r.fs, mkPath("dev", "project", "mod.cue"))
 				require.NoError(t, err)
 				assert.True(t, e)
 
-				c, err := afero.ReadFile(r.fs, "/repo/root/test/apps/project/main.yaml")
+				c, err := afero.ReadFile(r.fs, mkPath("dev", "project", "main.yaml"))
 				require.NoError(t, err)
 				assert.Equal(t, "manifest", string(c))
 
@@ -122,7 +121,7 @@ func TestDeployerDeploy(t *testing.T) {
 		version: "v1.0.0"
 	}
 }`
-				c, err = afero.ReadFile(r.fs, "/repo/root/test/apps/project/mod.cue")
+				c, err = afero.ReadFile(r.fs, mkPath("dev", "project", "mod.cue"))
 				require.NoError(t, err)
 				assert.Equal(t, mod, string(c))
 
@@ -158,21 +157,21 @@ func TestDeployerDeploy(t *testing.T) {
 				},
 			),
 			files: map[string]string{
-				"/repo/root/test/apps/project/extra.yaml": "extra",
+				mkPath("dev", "project", "extra.yaml"): "extra",
 			},
 			dryrun: true,
 			validate: func(t *testing.T, r testResult) {
 				require.NoError(t, r.err)
 
-				e, err := afero.Exists(r.fs, "/repo/root/test/apps/project/main.yaml")
+				e, err := afero.Exists(r.fs, mkPath("dev", "project", "main.yaml"))
 				require.NoError(t, err)
 				assert.True(t, e)
 
-				e, err = afero.Exists(r.fs, "/repo/root/test/apps/project/mod.cue")
+				e, err = afero.Exists(r.fs, mkPath("dev", "project", "mod.cue"))
 				require.NoError(t, err)
 				assert.True(t, e)
 
-				e, err = afero.Exists(r.fs, "/repo/root/test/apps/project/extra.yaml")
+				e, err = afero.Exists(r.fs, mkPath("dev", "project", "extra.yaml"))
 				require.NoError(t, err)
 				assert.False(t, e)
 
@@ -180,13 +179,13 @@ func TestDeployerDeploy(t *testing.T) {
 				require.NoError(t, err)
 				st, err := wt.Status()
 				require.NoError(t, err)
-				fst := st.File("root/test/apps/project/extra.yaml")
+				fst := st.File("root/dev/project/extra.yaml")
 				assert.Equal(t, fst.Staging, gg.Deleted)
 
-				fst = st.File("root/test/apps/project/main.yaml")
+				fst = st.File("root/dev/project/main.yaml")
 				assert.Equal(t, fst.Staging, gg.Added)
 
-				fst = st.File("root/test/apps/project/mod.cue")
+				fst = st.File("root/dev/project/mod.cue")
 				assert.Equal(t, fst.Staging, gg.Added)
 
 				head, err := r.repo.Head()
@@ -284,4 +283,8 @@ func TestDeployerDeploy(t *testing.T) {
 			})
 		})
 	}
+}
+
+func mkPath(env, project, file string) string {
+	return fmt.Sprintf("/repo/%s/%s/%s/%s", "root", env, project, file)
 }

@@ -38,9 +38,6 @@ package schema
 
 // GlobalDeployment contains the configuration for the global deployment of projects.
 #GlobalDeployment: {
-	// Environment contains the default environment to deploy projects to.
-	environment: string @go(Environment)
-
 	// Registries contains the configuration for the global deployment registries.
 	registries: #GlobalDeploymentRegistries @go(Registries)
 

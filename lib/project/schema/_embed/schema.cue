@@ -4,6 +4,17 @@ package schema
 	[string]: #DeploymentModule
 }
 
+// Deployment contains the configuration for the deployment of the project.
+#Deployment: {
+	// On contains the events that trigger the deployment.
+	on: {
+		...
+	} @go(On,map[string]any)
+
+	// Modules contains the deployment modules for the project.
+	modules: #DeploymentModuleBundle @go(Modules)
+}
+
 // Global contains the global configuration for the blueprint.
 #Global: {
 	// CI contains the configuration for the CI system.
@@ -187,25 +198,8 @@ package schema
 	project?: #Project @go(Project)
 }
 
-// Deployment contains the configuration for the deployment of the project.
-#Deployment: {
-	// On contains the events that trigger the deployment.
-	on: {
-		...
-	} @go(On,map[string]any)
-	environment: _ | *"dev"
-
-	// Modules contains the deployment modules for the project.
-	modules: #DeploymentModuleBundle @go(Modules)
-}
-
 // GlobalDeployment contains the configuration for the global deployment of projects.
 #GlobalDeployment: {
-	// Environment contains the default environment to deploy projects to.
-	environment: (_ | *"dev") & {
-		string
-	} @go(Environment)
-
 	// Registries contains the configuration for the global deployment registries.
 	registries: #GlobalDeploymentRegistries @go(Registries)
 
@@ -213,7 +207,9 @@ package schema
 	repo: #GlobalDeploymentRepo @go(Repo)
 
 	// Root contains the root deployment directory in the deployment repository.
-	root: string @go(Root)
+	root: (_ | *"k8s") & {
+		string
+	} @go(Root)
 }
 
 // GlobalDeploymentRegistries contains the configuration for the global deployment registries.
@@ -237,6 +233,11 @@ version: "1.0"
 
 // Module contains the configuration for a deployment module.
 #DeploymentModule: {
+	// Environment contains the environment the module is being deployed to.
+	// This value should never be set by the user. It is set by the system.
+	// +optional
+	environment: (null | string) & (_ | *"dev") @go(Environment,*string)
+
 	// Instance contains the instance name to use for all generated resources.
 	// +optional
 	instance?: string @go(Instance)

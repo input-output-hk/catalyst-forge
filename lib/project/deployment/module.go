@@ -3,10 +3,37 @@ package deployment
 import (
 	"fmt"
 
+	"cuelang.org/go/cue"
 	"cuelang.org/go/cue/cuecontext"
 	"cuelang.org/go/cue/format"
+	"github.com/input-output-hk/catalyst-forge/lib/project/project"
 	"github.com/input-output-hk/catalyst-forge/lib/project/schema"
 )
+
+// DeploymentBundle represents a deployment module bundle.
+type DeploymentBundle struct {
+	Bundle schema.DeploymentModuleBundle
+	Raw    cue.Value
+}
+
+func (d *DeploymentBundle) Dump() ([]byte, error) {
+	src, err := format.Node(d.Raw.Syntax())
+	if err != nil {
+		return nil, fmt.Errorf("failed to format bundle: %w", err)
+	}
+
+	return src, nil
+}
+
+func NewDeploymentBundle(p project.Project) DeploymentBundle {
+	bundle := p.Blueprint.Project.Deployment.Modules
+	raw := p.RawBlueprint.Get("project.deployment.modules")
+
+	return DeploymentBundle{
+		Bundle: bundle,
+		Raw:    raw,
+	}
+}
 
 // DumpModule dumps the deployment module to CUE source.
 func DumpModule(mod schema.DeploymentModule) ([]byte, error) {

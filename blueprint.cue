@@ -82,7 +82,6 @@ global: {
 			url: "https://github.com/input-output-hk/catalyst-world"
 			ref: "master"
 		}
-		root: "k8s"
 	}
 	repo: {
 		defaultBranch: "master"

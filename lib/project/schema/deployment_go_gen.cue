@@ -17,6 +17,11 @@ package schema
 
 // Module contains the configuration for a deployment module.
 #DeploymentModule: {
+	// Environment contains the environment the module is being deployed to.
+	// This value should never be set by the user. It is set by the system.
+	// +optional
+	environment?: null | string @go(Environment,*string)
+
 	// Instance contains the instance name to use for all generated resources.
 	// +optional
 	instance?: string @go(Instance)
