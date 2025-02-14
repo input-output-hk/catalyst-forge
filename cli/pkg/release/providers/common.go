@@ -8,6 +8,7 @@ import (
 
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/providers/aws"
 	"github.com/input-output-hk/catalyst-forge/lib/project/project"
+	s "github.com/input-output-hk/catalyst-forge/lib/schema"
 )
 
 var ErrConfigNotFound = fmt.Errorf("release config field not found")
@@ -54,9 +55,11 @@ func parseConfig(p *project.Project, release string, config any) error {
 
 // getPlatforms returns the platforms for the target.
 func getPlatforms(p *project.Project, target string) []string {
-	if _, ok := p.Blueprint.Project.Ci.Targets[target]; ok {
-		if len(p.Blueprint.Project.Ci.Targets[target].Platforms) > 0 {
-			return p.Blueprint.Project.Ci.Targets[target].Platforms
+	if s.HasProjectCiDefined(p.Blueprint) {
+		if _, ok := p.Blueprint.Project.Ci.Targets[target]; ok {
+			if len(p.Blueprint.Project.Ci.Targets[target].Platforms) > 0 {
+				return p.Blueprint.Project.Ci.Targets[target].Platforms
+			}
 		}
 	}
 
