@@ -11,9 +11,9 @@ import (
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/providers/aws"
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/providers/aws/mocks"
 	"github.com/input-output-hk/catalyst-forge/lib/project/project"
-	s "github.com/input-output-hk/catalyst-forge/lib/schema"
-	sg "github.com/input-output-hk/catalyst-forge/lib/schema/global"
-	sp "github.com/input-output-hk/catalyst-forge/lib/schema/project"
+	sb "github.com/input-output-hk/catalyst-forge/lib/schema/blueprint"
+	sg "github.com/input-output-hk/catalyst-forge/lib/schema/blueprint/global"
+	sp "github.com/input-output-hk/catalyst-forge/lib/schema/blueprint/project"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/testutils"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -27,7 +27,7 @@ func TestDockerReleaserRelease(t *testing.T) {
 		platforms []string,
 	) project.Project {
 		return project.Project{
-			Blueprint: s.Blueprint{
+			Blueprint: sb.Blueprint{
 				Global: &sg.Global{
 					Ci: &sg.CI{
 						Registries: registries,

@@ -4,7 +4,7 @@
 package mocks
 
 import (
-	"github.com/input-output-hk/catalyst-forge/lib/schema/project"
+	"github.com/input-output-hk/catalyst-forge/lib/schema/blueprint/project"
 	"sync"
 )
 

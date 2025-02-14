@@ -11,15 +11,15 @@ import (
 	"github.com/input-output-hk/catalyst-forge/cli/internal/testutils"
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/providers/aws/mocks"
 	"github.com/input-output-hk/catalyst-forge/lib/project/project"
-	s "github.com/input-output-hk/catalyst-forge/lib/schema"
-	sg "github.com/input-output-hk/catalyst-forge/lib/schema/global"
+	sb "github.com/input-output-hk/catalyst-forge/lib/schema/blueprint"
+	sg "github.com/input-output-hk/catalyst-forge/lib/schema/blueprint/global"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestECRClient_CreateECRRepository(t *testing.T) {
 	newProject := func(repo, path string) *project.Project {
 		return &project.Project{
-			Blueprint: s.Blueprint{
+			Blueprint: sb.Blueprint{
 				Global: &sg.Global{
 					Repo: &sg.Repo{
 						Name: repo,

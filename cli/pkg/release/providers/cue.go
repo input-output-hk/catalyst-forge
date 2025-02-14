@@ -14,8 +14,8 @@ import (
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/providers/aws"
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/run"
 	"github.com/input-output-hk/catalyst-forge/lib/project/project"
-	s "github.com/input-output-hk/catalyst-forge/lib/schema"
-	sp "github.com/input-output-hk/catalyst-forge/lib/schema/project"
+	"github.com/input-output-hk/catalyst-forge/lib/schema"
+	sp "github.com/input-output-hk/catalyst-forge/lib/schema/blueprint/project"
 	lc "github.com/input-output-hk/catalyst-forge/lib/tools/cue"
 	"github.com/spf13/afero"
 )
@@ -68,7 +68,7 @@ func (r *CueReleaser) Release() error {
 	}
 
 	fullRepoName := fmt.Sprintf("%s/%s", registry, module)
-	if aws.IsECRRegistry(fullRepoName) && s.HasAWSProviderDefined(r.project.Blueprint) {
+	if aws.IsECRRegistry(fullRepoName) && schema.HasAWSProviderDefined(r.project.Blueprint) {
 		r.logger.Info("Detected ECR registry, checking if repository exists", "registry", fullRepoName)
 		if err := createECRRepoIfNotExists(r.ecr, &r.project, fullRepoName, r.logger); err != nil {
 			return fmt.Errorf("failed to create ECR repository: %w", err)

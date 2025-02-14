@@ -1,8 +1,8 @@
-package schema
+package blueprint
 
 import (
-	g "github.com/input-output-hk/catalyst-forge/lib/schema/global"
-	p "github.com/input-output-hk/catalyst-forge/lib/schema/project"
+	g "github.com/input-output-hk/catalyst-forge/lib/schema/blueprint/global"
+	p "github.com/input-output-hk/catalyst-forge/lib/schema/blueprint/project"
 )
 
 version: "1.0"

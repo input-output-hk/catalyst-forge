@@ -1,6 +1,6 @@
 package project
 
-import "github.com/input-output-hk/catalyst-forge/lib/schema/common"
+import "github.com/input-output-hk/catalyst-forge/lib/schema/blueprint/common"
 
 #CI: {
     // Targets configures the individual targets that are run by the CI system.

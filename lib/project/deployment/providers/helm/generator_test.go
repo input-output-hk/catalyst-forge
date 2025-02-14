@@ -10,7 +10,7 @@ import (
 	"testing"
 
 	"github.com/input-output-hk/catalyst-forge/lib/project/deployment/providers/helm/downloader/mocks"
-	sp "github.com/input-output-hk/catalyst-forge/lib/schema/project"
+	sp "github.com/input-output-hk/catalyst-forge/lib/schema/blueprint/project"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/testutils"
 	"github.com/stretchr/testify/require"
 )

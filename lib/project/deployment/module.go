@@ -5,7 +5,7 @@ import (
 
 	"cuelang.org/go/cue/cuecontext"
 	"cuelang.org/go/cue/format"
-	sp "github.com/input-output-hk/catalyst-forge/lib/schema/project"
+	sp "github.com/input-output-hk/catalyst-forge/lib/schema/blueprint/project"
 )
 
 // DumpModule dumps the deployment module to CUE source.

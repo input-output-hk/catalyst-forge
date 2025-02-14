@@ -1,8 +1,8 @@
 package global
 
 import (
-	"github.com/input-output-hk/catalyst-forge/lib/schema/common"
-	p "github.com/input-output-hk/catalyst-forge/lib/schema/global/providers"
+	"github.com/input-output-hk/catalyst-forge/lib/schema/blueprint/common"
+	p "github.com/input-output-hk/catalyst-forge/lib/schema/blueprint/global/providers"
 )
 
 // CI contains the configuration for the CI system.

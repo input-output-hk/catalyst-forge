@@ -5,7 +5,7 @@ import (
 	"log/slog"
 
 	"github.com/input-output-hk/catalyst-forge/lib/project/deployment/providers/helm/downloader"
-	sp "github.com/input-output-hk/catalyst-forge/lib/schema/project"
+	sp "github.com/input-output-hk/catalyst-forge/lib/schema/blueprint/project"
 	"helm.sh/helm/v3/pkg/action"
 	"helm.sh/helm/v3/pkg/chart/loader"
 )

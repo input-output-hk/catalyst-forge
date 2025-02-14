@@ -7,8 +7,8 @@ import (
 	"cuelang.org/go/cue"
 	"cuelang.org/go/cue/cuecontext"
 	"github.com/input-output-hk/catalyst-forge/lib/project/project"
-	s "github.com/input-output-hk/catalyst-forge/lib/schema"
-	sg "github.com/input-output-hk/catalyst-forge/lib/schema/global"
+	sb "github.com/input-output-hk/catalyst-forge/lib/schema/blueprint"
+	sg "github.com/input-output-hk/catalyst-forge/lib/schema/blueprint/global"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/testutils"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -57,7 +57,7 @@ func TestMergeEventFiring(t *testing.T) {
 			require.NoError(t, err)
 
 			project := project.Project{
-				Blueprint: s.Blueprint{
+				Blueprint: sb.Blueprint{
 					Global: &sg.Global{
 						Repo: &sg.Repo{
 							DefaultBranch: tt.defaultBranch,

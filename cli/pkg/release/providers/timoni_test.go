@@ -4,10 +4,10 @@ import (
 	"testing"
 
 	"github.com/input-output-hk/catalyst-forge/lib/project/project"
-	s "github.com/input-output-hk/catalyst-forge/lib/schema"
-	sg "github.com/input-output-hk/catalyst-forge/lib/schema/global"
-	spr "github.com/input-output-hk/catalyst-forge/lib/schema/global/providers"
-	sp "github.com/input-output-hk/catalyst-forge/lib/schema/project"
+	sb "github.com/input-output-hk/catalyst-forge/lib/schema/blueprint"
+	sg "github.com/input-output-hk/catalyst-forge/lib/schema/blueprint/global"
+	spr "github.com/input-output-hk/catalyst-forge/lib/schema/blueprint/global/providers"
+	sp "github.com/input-output-hk/catalyst-forge/lib/schema/blueprint/project"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/testutils"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -20,7 +20,7 @@ func TestTimoniReleaserRelease(t *testing.T) {
 	) project.Project {
 		return project.Project{
 			Name: name,
-			Blueprint: s.Blueprint{
+			Blueprint: sb.Blueprint{
 				Global: &sg.Global{
 					Ci: &sg.CI{
 						Providers: &spr.Providers{

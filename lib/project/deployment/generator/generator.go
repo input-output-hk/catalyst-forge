@@ -6,7 +6,7 @@ import (
 	"log/slog"
 
 	"github.com/input-output-hk/catalyst-forge/lib/project/deployment"
-	sp "github.com/input-output-hk/catalyst-forge/lib/schema/project"
+	sp "github.com/input-output-hk/catalyst-forge/lib/schema/blueprint/project"
 )
 
 // GeneratorResult is the result of a deployment generation.

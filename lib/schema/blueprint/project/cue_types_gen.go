@@ -3,7 +3,7 @@
 package project
 
 import (
-	"github.com/input-output-hk/catalyst-forge/lib/schema/common"
+	"github.com/input-output-hk/catalyst-forge/lib/schema/blueprint/common"
 )
 
 type CI struct {
@@ -29,7 +29,7 @@ type Module struct {
 	Name string `json:"name,omitempty"`
 
 	// Namespace contains the namespace to deploy the module to.
-	Namespace string `json:"namespace,omitempty"`
+	Namespace string `json:"namespace"`
 
 	// Path contains the path to the module.
 	Path string `json:"path,omitempty"`

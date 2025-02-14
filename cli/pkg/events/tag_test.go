@@ -6,7 +6,7 @@ import (
 	"cuelang.org/go/cue"
 	"github.com/input-output-hk/catalyst-forge/lib/project/project"
 	"github.com/input-output-hk/catalyst-forge/lib/project/secrets"
-	"github.com/input-output-hk/catalyst-forge/lib/schema"
+	schema "github.com/input-output-hk/catalyst-forge/lib/schema/blueprint"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/testutils"
 	"github.com/stretchr/testify/assert"
 )

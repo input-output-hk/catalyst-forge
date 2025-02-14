@@ -12,9 +12,9 @@ import (
 
 	"github.com/google/go-github/v66/github"
 	"github.com/input-output-hk/catalyst-forge/lib/project/project"
-	s "github.com/input-output-hk/catalyst-forge/lib/schema"
-	sg "github.com/input-output-hk/catalyst-forge/lib/schema/global"
-	sp "github.com/input-output-hk/catalyst-forge/lib/schema/project"
+	sb "github.com/input-output-hk/catalyst-forge/lib/schema/blueprint"
+	sg "github.com/input-output-hk/catalyst-forge/lib/schema/blueprint/global"
+	sp "github.com/input-output-hk/catalyst-forge/lib/schema/blueprint/project"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/testutils"
 	"github.com/migueleliasweb/go-github-mock/src/mock"
 	"github.com/spf13/afero"
@@ -26,7 +26,7 @@ func TestGithubReleaserRelease(t *testing.T) {
 	newProject := func(name, repoOwner, repoName, tag string, platforms []string) project.Project {
 		return project.Project{
 			Name: name,
-			Blueprint: s.Blueprint{
+			Blueprint: sb.Blueprint{
 				Global: &sg.Global{
 					Repo: &sg.Repo{
 						Name: fmt.Sprintf("%s/%s", repoOwner, repoName),

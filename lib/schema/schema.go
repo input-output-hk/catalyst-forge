@@ -1,26 +1,15 @@
 package schema
 
 import (
-	"embed"
 	"fmt"
 	"io/fs"
 
 	"cuelang.org/go/cue"
 	"cuelang.org/go/cue/load"
 	"github.com/Masterminds/semver/v3"
+	"github.com/input-output-hk/catalyst-forge/lib/schema/blueprint"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/version"
 )
-
-//go:embed cue.mod/module.cue
-//go:embed common/*.cue
-//go:embed global/*.cue
-//go:embed global/providers/*.cue
-//go:embed project/*.cue
-//go:embed main.cue
-var Module embed.FS
-
-// SCHEMA_PACKAGE is the name of the package that contains the schema.
-const SCHEMA_PACKAGE = "schema"
 
 // RawSchema represents the raw blueprint schema loaded from the embedded module.
 type RawSchema struct {
@@ -67,7 +56,7 @@ func buildPackage(src map[string]load.Source, ctx *cue.Context) (cue.Value, erro
 		Dir:        "/",
 		ModuleRoot: "/",
 		Overlay:    src,
-		Package:    SCHEMA_PACKAGE,
+		Package:    blueprint.SCHEMA_PACKAGE,
 	})
 
 	v := ctx.BuildInstance(insts[0])
@@ -81,7 +70,7 @@ func buildPackage(src map[string]load.Source, ctx *cue.Context) (cue.Value, erro
 // loadSrcFiles loads the source files from the embedded module.
 func loadSrcFiles() (map[string]load.Source, error) {
 	files := map[string]load.Source{}
-	err := fs.WalkDir(Module, ".", func(path string, d fs.DirEntry, err error) error {
+	err := fs.WalkDir(blueprint.Module, ".", func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
@@ -90,7 +79,7 @@ func loadSrcFiles() (map[string]load.Source, error) {
 			return nil
 		}
 
-		f, err := Module.ReadFile(path)
+		f, err := blueprint.Module.ReadFile(path)
 		if err != nil {
 			return err
 		}

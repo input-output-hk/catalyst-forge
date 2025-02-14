@@ -6,7 +6,7 @@ import (
 
 	"github.com/input-output-hk/catalyst-forge/lib/project/deployment/providers/kcl/client"
 	"github.com/input-output-hk/catalyst-forge/lib/project/deployment/providers/kcl/client/mocks"
-	sp "github.com/input-output-hk/catalyst-forge/lib/schema/project"
+	sp "github.com/input-output-hk/catalyst-forge/lib/schema/blueprint/project"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/testutils"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"

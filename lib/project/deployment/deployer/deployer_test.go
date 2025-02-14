@@ -18,11 +18,11 @@ import (
 	"github.com/input-output-hk/catalyst-forge/lib/project/project"
 	"github.com/input-output-hk/catalyst-forge/lib/project/secrets"
 	sm "github.com/input-output-hk/catalyst-forge/lib/project/secrets/mocks"
-	s "github.com/input-output-hk/catalyst-forge/lib/schema"
-	sc "github.com/input-output-hk/catalyst-forge/lib/schema/common"
-	sg "github.com/input-output-hk/catalyst-forge/lib/schema/global"
-	sgp "github.com/input-output-hk/catalyst-forge/lib/schema/global/providers"
-	sp "github.com/input-output-hk/catalyst-forge/lib/schema/project"
+	sb "github.com/input-output-hk/catalyst-forge/lib/schema/blueprint"
+	sc "github.com/input-output-hk/catalyst-forge/lib/schema/blueprint/common"
+	sg "github.com/input-output-hk/catalyst-forge/lib/schema/blueprint/global"
+	sgp "github.com/input-output-hk/catalyst-forge/lib/schema/blueprint/global/providers"
+	sp "github.com/input-output-hk/catalyst-forge/lib/schema/blueprint/project"
 	rm "github.com/input-output-hk/catalyst-forge/lib/tools/git/repo/remote/mocks"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/testutils"
 	"github.com/spf13/afero"
@@ -33,7 +33,7 @@ import (
 func TestDeployerDeploy(t *testing.T) {
 	newProject := func(name string, bundle sp.ModuleBundle) project.Project {
 		return project.Project{
-			Blueprint: s.Blueprint{
+			Blueprint: sb.Blueprint{
 				Project: &sp.Project{
 					Deployment: &sp.Deployment{
 						Modules: bundle,

@@ -3,7 +3,7 @@
 package providers
 
 import (
-	"github.com/input-output-hk/catalyst-forge/lib/schema/common"
+	"github.com/input-output-hk/catalyst-forge/lib/schema/blueprint/common"
 )
 
 type AWS struct {

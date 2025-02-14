@@ -3,7 +3,7 @@ package earthly
 import (
 	"strings"
 
-	sc "github.com/input-output-hk/catalyst-forge/lib/schema/common"
+	sc "github.com/input-output-hk/catalyst-forge/lib/schema/blueprint/common"
 )
 
 // WithArtifact is an option for configuring an EarthlyExecutor to output all
