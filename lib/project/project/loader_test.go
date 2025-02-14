@@ -104,7 +104,7 @@ project: {
 			initGit: true,
 			validate: func(t *testing.T, p Project, err error) {
 				assert.NoError(t, err)
-				assert.Equal(t, "bar", p.Blueprint.Project.CI.Targets["foo"].Args["foo"])
+				assert.Equal(t, "bar", p.Blueprint.Project.Ci.Targets["foo"].Args["foo"])
 			},
 		},
 		{
@@ -139,7 +139,7 @@ project: {
 				assert.NoError(t, err)
 				head, err := p.Repo.Head()
 				require.NoError(t, err)
-				assert.Equal(t, head.Hash().String(), p.Blueprint.Project.CI.Targets["foo"].Args["foo"])
+				assert.Equal(t, head.Hash().String(), p.Blueprint.Project.Ci.Targets["foo"].Args["foo"])
 			},
 		},
 		{

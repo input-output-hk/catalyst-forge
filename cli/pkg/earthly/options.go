@@ -3,7 +3,7 @@ package earthly
 import (
 	"strings"
 
-	"github.com/input-output-hk/catalyst-forge/lib/project/schema"
+	sc "github.com/input-output-hk/catalyst-forge/lib/schema/common"
 )
 
 // WithArtifact is an option for configuring an EarthlyExecutor to output all
@@ -58,7 +58,7 @@ func WithSatellite(s string) EarthlyExecutorOption {
 
 // WithSecrets is an option for configuring an EarthlyExecutor with secrets to
 // be passed to the Earthly target.
-func WithSecrets(secrets []schema.Secret) EarthlyExecutorOption {
+func WithSecrets(secrets []sc.Secret) EarthlyExecutorOption {
 	return func(e *EarthlyExecutor) {
 		e.secrets = append(e.secrets, secrets...)
 	}

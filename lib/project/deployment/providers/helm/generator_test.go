@@ -10,8 +10,7 @@ import (
 	"testing"
 
 	"github.com/input-output-hk/catalyst-forge/lib/project/deployment/providers/helm/downloader/mocks"
-	"github.com/input-output-hk/catalyst-forge/lib/project/schema"
-	"github.com/input-output-hk/catalyst-forge/lib/project/utils"
+	sp "github.com/input-output-hk/catalyst-forge/lib/schema/project"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/testutils"
 	"github.com/stretchr/testify/require"
 )
@@ -28,17 +27,17 @@ func TestHelmManifestGenerator(t *testing.T) {
 		logger:     testutils.NewNoopLogger(),
 	}
 
-	mod := schema.DeploymentModule{
+	mod := sp.Module{
 		Instance:  "test",
-		Name:      utils.StringPtr("test"),
+		Name:      "test",
 		Namespace: "default",
-		Registry:  utils.StringPtr("https://charts.test.com/repo"),
+		Registry:  "https://charts.test.com/repo",
 		Values: map[string]interface{}{
 			"image": map[string]interface{}{
 				"tag": "1.27.0",
 			},
 		},
-		Version: utils.StringPtr("1.0.0"),
+		Version: "1.0.0",
 	}
 
 	result, err := gen.Generate(mod)

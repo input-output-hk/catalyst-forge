@@ -6,8 +6,8 @@ import (
 
 	"cuelang.org/go/cue"
 	"github.com/Masterminds/semver/v3"
-	"github.com/input-output-hk/catalyst-forge/lib/project/version"
 	cuetools "github.com/input-output-hk/catalyst-forge/lib/tools/cue"
+	"github.com/input-output-hk/catalyst-forge/lib/tools/version"
 )
 
 // BlueprintFile represents a single blueprint file.

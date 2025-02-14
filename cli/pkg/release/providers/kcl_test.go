@@ -9,7 +9,10 @@ import (
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/providers/aws"
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/providers/aws/mocks"
 	"github.com/input-output-hk/catalyst-forge/lib/project/project"
-	"github.com/input-output-hk/catalyst-forge/lib/project/schema"
+	s "github.com/input-output-hk/catalyst-forge/lib/schema"
+	sg "github.com/input-output-hk/catalyst-forge/lib/schema/global"
+	spr "github.com/input-output-hk/catalyst-forge/lib/schema/global/providers"
+	sp "github.com/input-output-hk/catalyst-forge/lib/schema/project"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/testutils"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -28,19 +31,20 @@ func TestKCLReleaserRelease(t *testing.T) {
 	) project.Project {
 		return project.Project{
 			Name: name,
-			Blueprint: schema.Blueprint{
-				Global: schema.Global{
-					CI: schema.GlobalCI{
-						Providers: schema.Providers{
-							KCL: schema.ProviderKCL{
+			Blueprint: s.Blueprint{
+				Global: &sg.Global{
+					Ci: &sg.CI{
+						Providers: &spr.Providers{
+							Kcl: &spr.KCL{
 								Registries: registries,
 							},
 						},
 					},
-					Repo: schema.GlobalRepo{
+					Repo: &sg.Repo{
 						Name: "repo",
 					},
 				},
+				Project: &sp.Project{},
 			},
 		}
 	}
@@ -48,7 +52,7 @@ func TestKCLReleaserRelease(t *testing.T) {
 	tests := []struct {
 		name     string
 		project  project.Project
-		release  schema.Release
+		release  sp.Release
 		config   KCLReleaserConfig
 		firing   bool
 		force    bool
@@ -58,7 +62,7 @@ func TestKCLReleaserRelease(t *testing.T) {
 		{
 			name:    "full",
 			project: newProject("test", []string{"test.com"}),
-			release: schema.Release{},
+			release: sp.Release{},
 			config: KCLReleaserConfig{
 				Container: "name",
 			},
@@ -73,7 +77,7 @@ func TestKCLReleaserRelease(t *testing.T) {
 		{
 			name:    "ECR",
 			project: newProject("test", []string{"123456789012.dkr.ecr.us-west-2.amazonaws.com"}),
-			release: schema.Release{},
+			release: sp.Release{},
 			config: KCLReleaserConfig{
 				Container: "name",
 			},
@@ -89,7 +93,7 @@ func TestKCLReleaserRelease(t *testing.T) {
 		{
 			name:    "no container",
 			project: newProject("test", []string{"test.com"}),
-			release: schema.Release{},
+			release: sp.Release{},
 			config:  KCLReleaserConfig{},
 			firing:  true,
 			force:   false,
@@ -113,7 +117,7 @@ func TestKCLReleaserRelease(t *testing.T) {
 		{
 			name:    "forced",
 			project: newProject("test", []string{"test.com"}),
-			release: schema.Release{},
+			release: sp.Release{},
 			config: KCLReleaserConfig{
 				Container: "test",
 			},
@@ -128,7 +132,7 @@ func TestKCLReleaserRelease(t *testing.T) {
 		{
 			name:    "push fails",
 			project: newProject("test", []string{"test.com"}),
-			release: schema.Release{},
+			release: sp.Release{},
 			config: KCLReleaserConfig{
 				Container: "test",
 			},

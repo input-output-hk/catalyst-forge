@@ -9,7 +9,8 @@ import (
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/providers/aws"
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/providers/aws/mocks"
 	"github.com/input-output-hk/catalyst-forge/lib/project/project"
-	"github.com/input-output-hk/catalyst-forge/lib/project/schema"
+	s "github.com/input-output-hk/catalyst-forge/lib/schema"
+	sg "github.com/input-output-hk/catalyst-forge/lib/schema/global"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/testutils"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -71,9 +72,9 @@ func Test_createECRRepoIfNotExists(t *testing.T) {
 			client := aws.NewCustomECRClient(&mock, testutils.NewNoopLogger())
 
 			project := project.Project{
-				Blueprint: schema.Blueprint{
-					Global: schema.Global{
-						Repo: schema.GlobalRepo{
+				Blueprint: s.Blueprint{
+					Global: &sg.Global{
+						Repo: &sg.Repo{
 							Name: "test",
 						},
 					},

@@ -6,7 +6,7 @@ import (
 	"log/slog"
 
 	"github.com/input-output-hk/catalyst-forge/lib/project/deployment"
-	"github.com/input-output-hk/catalyst-forge/lib/project/schema"
+	sp "github.com/input-output-hk/catalyst-forge/lib/schema/project"
 )
 
 // GeneratorResult is the result of a deployment generation.
@@ -22,7 +22,7 @@ type Generator struct {
 }
 
 // GenerateBundle generates manifests for a deployment bundle.
-func (d *Generator) GenerateBundle(b schema.DeploymentModuleBundle) (GeneratorResult, error) {
+func (d *Generator) GenerateBundle(b sp.ModuleBundle) (GeneratorResult, error) {
 	bundle, err := deployment.DumpBundle(b)
 	if err != nil {
 		return GeneratorResult{}, fmt.Errorf("failed to dump bundle: %w", err)
@@ -46,7 +46,7 @@ func (d *Generator) GenerateBundle(b schema.DeploymentModuleBundle) (GeneratorRe
 }
 
 // Generate generates manifests for a deployment module.
-func (d *Generator) Generate(m schema.DeploymentModule) ([]byte, error) {
+func (d *Generator) Generate(m sp.Module) ([]byte, error) {
 	if err := deployment.Validate(m); err != nil {
 		return nil, fmt.Errorf("failed to validate module: %w", err)
 	}

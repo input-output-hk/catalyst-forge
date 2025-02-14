@@ -12,7 +12,10 @@ import (
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/providers/aws"
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/providers/aws/mocks"
 	"github.com/input-output-hk/catalyst-forge/lib/project/project"
-	"github.com/input-output-hk/catalyst-forge/lib/project/schema"
+	s "github.com/input-output-hk/catalyst-forge/lib/schema"
+	sg "github.com/input-output-hk/catalyst-forge/lib/schema/global"
+	spr "github.com/input-output-hk/catalyst-forge/lib/schema/global/providers"
+	sp "github.com/input-output-hk/catalyst-forge/lib/schema/project"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/testutils"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
@@ -33,17 +36,26 @@ func TestCueReleaserRelease(t *testing.T) {
 		path string,
 	) project.Project {
 		return project.Project{
-			Blueprint: schema.Blueprint{
-				Global: schema.Global{
-					CI: schema.GlobalCI{
-						Providers: schema.Providers{
-							CUE: schema.ProviderCue{
-								Registry:       &registry,
-								RegistryPrefix: &prefix,
+			Blueprint: s.Blueprint{
+				Global: &sg.Global{
+					Ci: &sg.CI{
+						Providers: &spr.Providers{
+							Aws: &spr.AWS{
+								Ecr: spr.AWSECR{
+									AutoCreate: true,
+								},
+							},
+							Cue: &spr.CUE{
+								Registry:       registry,
+								RegistryPrefix: prefix,
 							},
 						},
 					},
+					Repo: &sg.Repo{
+						Name: "test",
+					},
 				},
+				Project: &sp.Project{},
 			},
 			Path:     path,
 			RepoRoot: "/",
@@ -53,7 +65,7 @@ func TestCueReleaserRelease(t *testing.T) {
 	tests := []struct {
 		name     string
 		project  project.Project
-		release  schema.Release
+		release  sp.Release
 		config   CueReleaserConfig
 		files    map[string]string
 		firing   bool
@@ -68,7 +80,7 @@ func TestCueReleaserRelease(t *testing.T) {
 				"prefix",
 				"/project",
 			),
-			release: schema.Release{},
+			release: sp.Release{},
 			config: CueReleaserConfig{
 				Version: "v1.0.0",
 			},
@@ -86,9 +98,13 @@ func TestCueReleaserRelease(t *testing.T) {
 			},
 		},
 		{
-			name:    "not firing",
-			project: project.Project{},
-			release: schema.Release{},
+			name: "not firing",
+			project: newProject(
+				"https://123456789012.dkr.ecr.us-west-2.amazonaws.com",
+				"prefix",
+				"/project",
+			),
+			release: sp.Release{},
 			config:  CueReleaserConfig{},
 			files:   map[string]string{},
 			firing:  false,
@@ -102,7 +118,7 @@ func TestCueReleaserRelease(t *testing.T) {
 		{
 			name:    "no registry",
 			project: newProject("", "", "/project"),
-			release: schema.Release{},
+			release: sp.Release{},
 			config:  CueReleaserConfig{},
 			files:   map[string]string{},
 			firing:  true,
@@ -120,7 +136,7 @@ func TestCueReleaserRelease(t *testing.T) {
 				"prefix",
 				"/project",
 			),
-			release: schema.Release{},
+			release: sp.Release{},
 			config: CueReleaserConfig{
 				Version: "v1.0.0",
 			},
@@ -140,7 +156,7 @@ func TestCueReleaserRelease(t *testing.T) {
 				"prefix",
 				"/project",
 			),
-			release: schema.Release{},
+			release: sp.Release{},
 			config: CueReleaserConfig{
 				Version: "v1.0.0",
 			},

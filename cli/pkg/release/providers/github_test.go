@@ -12,7 +12,9 @@ import (
 
 	"github.com/google/go-github/v66/github"
 	"github.com/input-output-hk/catalyst-forge/lib/project/project"
-	"github.com/input-output-hk/catalyst-forge/lib/project/schema"
+	s "github.com/input-output-hk/catalyst-forge/lib/schema"
+	sg "github.com/input-output-hk/catalyst-forge/lib/schema/global"
+	sp "github.com/input-output-hk/catalyst-forge/lib/schema/project"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/testutils"
 	"github.com/migueleliasweb/go-github-mock/src/mock"
 	"github.com/spf13/afero"
@@ -24,15 +26,15 @@ func TestGithubReleaserRelease(t *testing.T) {
 	newProject := func(name, repoOwner, repoName, tag string, platforms []string) project.Project {
 		return project.Project{
 			Name: name,
-			Blueprint: schema.Blueprint{
-				Global: schema.Global{
-					Repo: schema.GlobalRepo{
+			Blueprint: s.Blueprint{
+				Global: &sg.Global{
+					Repo: &sg.Repo{
 						Name: fmt.Sprintf("%s/%s", repoOwner, repoName),
 					},
 				},
-				Project: schema.Project{
-					CI: schema.ProjectCI{
-						Targets: map[string]schema.Target{
+				Project: &sp.Project{
+					Ci: &sp.CI{
+						Targets: map[string]sp.Target{
 							"test": {
 								Platforms: platforms,
 							},
@@ -46,8 +48,8 @@ func TestGithubReleaserRelease(t *testing.T) {
 		}
 	}
 
-	newRelease := func() schema.Release {
-		return schema.Release{
+	newRelease := func() sp.Release {
+		return sp.Release{
 			Target: "test",
 		}
 	}
@@ -62,7 +64,7 @@ func TestGithubReleaserRelease(t *testing.T) {
 	tests := []struct {
 		name       string
 		project    project.Project
-		release    schema.Release
+		release    sp.Release
 		ghRelease  github.RepositoryRelease
 		config     GithubReleaserConfig
 		files      map[string]string

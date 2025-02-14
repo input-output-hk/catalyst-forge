@@ -16,10 +16,13 @@ import (
 	"github.com/input-output-hk/catalyst-forge/lib/project/deployment/generator"
 	dm "github.com/input-output-hk/catalyst-forge/lib/project/deployment/mocks"
 	"github.com/input-output-hk/catalyst-forge/lib/project/project"
-	"github.com/input-output-hk/catalyst-forge/lib/project/schema"
 	"github.com/input-output-hk/catalyst-forge/lib/project/secrets"
 	sm "github.com/input-output-hk/catalyst-forge/lib/project/secrets/mocks"
-	"github.com/input-output-hk/catalyst-forge/lib/project/utils"
+	s "github.com/input-output-hk/catalyst-forge/lib/schema"
+	sc "github.com/input-output-hk/catalyst-forge/lib/schema/common"
+	sg "github.com/input-output-hk/catalyst-forge/lib/schema/global"
+	sgp "github.com/input-output-hk/catalyst-forge/lib/schema/global/providers"
+	sp "github.com/input-output-hk/catalyst-forge/lib/schema/project"
 	rm "github.com/input-output-hk/catalyst-forge/lib/tools/git/repo/remote/mocks"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/testutils"
 	"github.com/spf13/afero"
@@ -28,27 +31,27 @@ import (
 )
 
 func TestDeployerDeploy(t *testing.T) {
-	newProject := func(name string, bundle schema.DeploymentModuleBundle) project.Project {
+	newProject := func(name string, bundle sp.ModuleBundle) project.Project {
 		return project.Project{
-			Blueprint: schema.Blueprint{
-				Project: schema.Project{
-					Deployment: schema.Deployment{
+			Blueprint: s.Blueprint{
+				Project: &sp.Project{
+					Deployment: &sp.Deployment{
 						Modules: bundle,
 					},
 				},
-				Global: schema.Global{
-					Deployment: schema.GlobalDeployment{
+				Global: &sg.Global{
+					Deployment: &sg.Deployment{
 						Environment: "test",
-						Repo: schema.GlobalDeploymentRepo{
+						Repo: sg.DeploymentRepo{
 							Ref: "main",
 							Url: "url",
 						},
 						Root: "root",
 					},
-					CI: schema.GlobalCI{
-						Providers: schema.Providers{
-							Git: schema.ProviderGit{
-								Credentials: &schema.Secret{
+					Ci: &sg.CI{
+						Providers: &sgp.Providers{
+							Git: &sgp.Git{
+								Credentials: sc.Secret{
 									Provider: "local",
 									Path:     "key",
 								},
@@ -80,15 +83,15 @@ func TestDeployerDeploy(t *testing.T) {
 			name: "success",
 			project: newProject(
 				"project",
-				schema.DeploymentModuleBundle{
+				sp.ModuleBundle{
 					"main": {
 						Instance:  "instance",
-						Name:      utils.StringPtr("module"),
+						Name:      "module",
 						Namespace: "default",
-						Registry:  utils.StringPtr("registry"),
+						Registry:  "registry",
 						Type:      "kcl",
 						Values:    map[string]string{"key": "value"},
-						Version:   utils.StringPtr("v1.0.0"),
+						Version:   "v1.0.0",
 					},
 				},
 			),
@@ -145,15 +148,15 @@ func TestDeployerDeploy(t *testing.T) {
 			name: "dry run with extra files",
 			project: newProject(
 				"project",
-				schema.DeploymentModuleBundle{
+				sp.ModuleBundle{
 					"main": {
 						Instance:  "instance",
-						Name:      utils.StringPtr("module"),
+						Name:      "module",
 						Namespace: "default",
-						Registry:  utils.StringPtr("registry"),
+						Registry:  "registry",
 						Type:      "kcl",
 						Values:    map[string]string{"key": "value"},
-						Version:   utils.StringPtr("v1.0.0"),
+						Version:   "v1.0.0",
 					},
 				},
 			),
@@ -241,7 +244,7 @@ func TestDeployerDeploy(t *testing.T) {
 					map[deployment.Provider]func(*slog.Logger) deployment.ManifestGenerator{
 						deployment.ProviderKCL: func(logger *slog.Logger) deployment.ManifestGenerator {
 							return &dm.ManifestGeneratorMock{
-								GenerateFunc: func(mod schema.DeploymentModule) ([]byte, error) {
+								GenerateFunc: func(mod sp.Module) ([]byte, error) {
 									return []byte("manifest"), nil
 								},
 							}

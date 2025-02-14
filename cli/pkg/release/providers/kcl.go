@@ -9,7 +9,7 @@ import (
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/providers/aws"
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/run"
 	"github.com/input-output-hk/catalyst-forge/lib/project/project"
-	"github.com/input-output-hk/catalyst-forge/lib/project/schema"
+	sp "github.com/input-output-hk/catalyst-forge/lib/schema/project"
 )
 
 const (
@@ -28,7 +28,7 @@ type KCLReleaser struct {
 	kcl         executor.WrappedExecuter
 	logger      *slog.Logger
 	project     project.Project
-	release     schema.Release
+	release     sp.Release
 	releaseName string
 }
 
@@ -38,7 +38,7 @@ func (r *KCLReleaser) Release() error {
 		return nil
 	}
 
-	registries := r.project.Blueprint.Global.CI.Providers.KCL.Registries
+	registries := r.project.Blueprint.Global.Ci.Providers.Kcl.Registries
 	if len(registries) == 0 {
 		return fmt.Errorf("must specify at least one KCL registry")
 	}

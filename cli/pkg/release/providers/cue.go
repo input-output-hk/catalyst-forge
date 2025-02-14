@@ -14,7 +14,8 @@ import (
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/providers/aws"
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/run"
 	"github.com/input-output-hk/catalyst-forge/lib/project/project"
-	"github.com/input-output-hk/catalyst-forge/lib/project/schema"
+	s "github.com/input-output-hk/catalyst-forge/lib/schema"
+	sp "github.com/input-output-hk/catalyst-forge/lib/schema/project"
 	lc "github.com/input-output-hk/catalyst-forge/lib/tools/cue"
 	"github.com/spf13/afero"
 )
@@ -34,7 +35,7 @@ type CueReleaser struct {
 	handler     events.EventHandler
 	logger      *slog.Logger
 	project     project.Project
-	release     schema.Release
+	release     sp.Release
 	releaseName string
 }
 
@@ -44,8 +45,8 @@ func (r *CueReleaser) Release() error {
 		return nil
 	}
 
-	registry := r.project.Blueprint.Global.CI.Providers.CUE.Registry
-	if registry == nil || *registry == "" {
+	registry := r.project.Blueprint.Global.Ci.Providers.Cue.Registry
+	if registry == "" {
 		return fmt.Errorf("must specify at least one CUE registry")
 	}
 
@@ -54,11 +55,11 @@ func (r *CueReleaser) Release() error {
 	}
 
 	var fullRegistry string
-	prefix := r.project.Blueprint.Global.CI.Providers.CUE.RegistryPrefix
-	if prefix != nil && *prefix != "" {
-		fullRegistry = fmt.Sprintf("%s/%s", *registry, *prefix)
+	prefix := r.project.Blueprint.Global.Ci.Providers.Cue.RegistryPrefix
+	if prefix != "" {
+		fullRegistry = fmt.Sprintf("%s/%s", registry, prefix)
 	} else {
-		fullRegistry = *registry
+		fullRegistry = registry
 	}
 
 	module, err := r.loadModule()
@@ -66,8 +67,8 @@ func (r *CueReleaser) Release() error {
 		return fmt.Errorf("failed to load module: %w", err)
 	}
 
-	fullRepoName := fmt.Sprintf("%s/%s", *registry, module)
-	if aws.IsECRRegistry(fullRepoName) {
+	fullRepoName := fmt.Sprintf("%s/%s", registry, module)
+	if aws.IsECRRegistry(fullRepoName) && s.HasAWSProviderDefined(r.project.Blueprint) {
 		r.logger.Info("Detected ECR registry, checking if repository exists", "registry", fullRepoName)
 		if err := createECRRepoIfNotExists(r.ecr, &r.project, fullRepoName, r.logger); err != nil {
 			return fmt.Errorf("failed to create ECR repository: %w", err)

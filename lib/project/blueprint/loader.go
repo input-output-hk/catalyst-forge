@@ -11,8 +11,8 @@ import (
 	"cuelang.org/go/cue/errors"
 	"github.com/Masterminds/semver/v3"
 	"github.com/input-output-hk/catalyst-forge/lib/project/blueprint/defaults"
-	"github.com/input-output-hk/catalyst-forge/lib/project/schema"
-	"github.com/input-output-hk/catalyst-forge/lib/project/version"
+	"github.com/input-output-hk/catalyst-forge/lib/schema"
+	"github.com/input-output-hk/catalyst-forge/lib/tools/version"
 	"github.com/spf13/afero"
 )
 

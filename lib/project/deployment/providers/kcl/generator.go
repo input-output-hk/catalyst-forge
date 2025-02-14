@@ -9,7 +9,7 @@ import (
 
 	"github.com/BurntSushi/toml"
 	"github.com/input-output-hk/catalyst-forge/lib/project/deployment/providers/kcl/client"
-	"github.com/input-output-hk/catalyst-forge/lib/project/schema"
+	sp "github.com/input-output-hk/catalyst-forge/lib/schema/project"
 	"github.com/spf13/afero"
 )
 
@@ -32,17 +32,17 @@ type KCLManifestGenerator struct {
 	logger *slog.Logger
 }
 
-func (g *KCLManifestGenerator) Generate(mod schema.DeploymentModule) ([]byte, error) {
+func (g *KCLManifestGenerator) Generate(mod sp.Module) ([]byte, error) {
 	var conf client.KCLModuleConfig
 	var path string
-	if mod.Path != nil {
-		g.logger.Info("Parsing local KCL module", "path", *mod.Path)
-		kmod, err := g.parseModule(*mod.Path)
+	if mod.Path != "" {
+		g.logger.Info("Parsing local KCL module", "path", mod.Path)
+		kmod, err := g.parseModule(mod.Path)
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse KCL module: %w", err)
 		}
 
-		path = *mod.Path
+		path = mod.Path
 		conf = client.KCLModuleConfig{
 			Instance:  mod.Instance,
 			Name:      kmod.Package.Name,
@@ -51,13 +51,13 @@ func (g *KCLManifestGenerator) Generate(mod schema.DeploymentModule) ([]byte, er
 			Version:   kmod.Package.Version,
 		}
 	} else {
-		path = fmt.Sprintf("oci://%s/%s?tag=%s", strings.TrimSuffix(*mod.Registry, "/"), *mod.Name, *mod.Version)
+		path = fmt.Sprintf("oci://%s/%s?tag=%s", strings.TrimSuffix(mod.Registry, "/"), mod.Name, mod.Version)
 		conf = client.KCLModuleConfig{
 			Instance:  mod.Instance,
-			Name:      *mod.Name,
+			Name:      mod.Name,
 			Namespace: mod.Namespace,
 			Values:    mod.Values,
-			Version:   *mod.Version,
+			Version:   mod.Version,
 		}
 	}
 
