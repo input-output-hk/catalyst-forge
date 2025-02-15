@@ -17,15 +17,21 @@ func (c *DumpCmd) Run(ctx run.RunContext) error {
 		return fmt.Errorf("could not load project: %w", err)
 	}
 
-	modules := project.Blueprint.Project.Deployment.Modules
-	if modules == nil {
-		return fmt.Errorf("no deployment modules found for project")
-	}
-
-	result, err := deployment.DumpBundle(modules)
+	bundle := deployment.NewDeploymentBundle(project)
+	result, err := bundle.Dump()
 	if err != nil {
 		return fmt.Errorf("failed to dump deployment modules: %w", err)
 	}
+
+	// modules := project.Blueprint.Project.Deployment.Modules
+	// if modules == nil {
+	// 	return fmt.Errorf("no deployment modules found for project")
+	// }
+
+	// result, err := deployment.DumpBundle(modules)
+	// if err != nil {
+	// 	return fmt.Errorf("failed to dump deployment modules: %w", err)
+	// }
 
 	fmt.Print(string(result))
 	return nil

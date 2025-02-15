@@ -11,6 +11,9 @@ package project
 #ModuleBundle: [string]: #Module
 
 #Module: {
+    // Env contains the environment this module is being deployed to.
+    env: string | *"dev"
+
     // Instance contains the instance name to use for all generated resources.
     instance?: string
 
