@@ -44,37 +44,35 @@ func (p *DefaultProjectRunner) RunTarget(
 func (p *DefaultProjectRunner) generateOpts(target string) []earthly.EarthlyExecutorOption {
 	var opts []earthly.EarthlyExecutorOption
 
-	if !schema.HasProjectCiDefined(p.project.Blueprint) || p.project.Blueprint.Project.Ci.Targets == nil {
-		return opts
-	}
+	if schema.HasProjectCiDefined(p.project.Blueprint) {
+		if _, ok := p.project.Blueprint.Project.Ci.Targets[target]; ok {
+			targetConfig := p.project.Blueprint.Project.Ci.Targets[target]
 
-	if _, ok := p.project.Blueprint.Project.Ci.Targets[target]; ok {
-		targetConfig := p.project.Blueprint.Project.Ci.Targets[target]
+			if len(targetConfig.Args) > 0 {
+				var args []string
+				for k, v := range targetConfig.Args {
+					args = append(args, fmt.Sprintf("--%s", k), v)
+				}
 
-		if len(targetConfig.Args) > 0 {
-			var args []string
-			for k, v := range targetConfig.Args {
-				args = append(args, fmt.Sprintf("--%s", k), v)
+				opts = append(opts, earthly.WithTargetArgs(args...))
 			}
 
-			opts = append(opts, earthly.WithTargetArgs(args...))
-		}
+			// We only run multiple platforms in CI mode to avoid issues with local builds.
+			if targetConfig.Platforms != nil && p.ctx.CI {
+				opts = append(opts, earthly.WithPlatforms(targetConfig.Platforms...))
+			}
 
-		// We only run multiple platforms in CI mode to avoid issues with local builds.
-		if targetConfig.Platforms != nil && p.ctx.CI {
-			opts = append(opts, earthly.WithPlatforms(targetConfig.Platforms...))
-		}
+			if targetConfig.Privileged {
+				opts = append(opts, earthly.WithPrivileged())
+			}
 
-		if targetConfig.Privileged {
-			opts = append(opts, earthly.WithPrivileged())
-		}
+			if targetConfig.Retries > 0 {
+				opts = append(opts, earthly.WithRetries(int(targetConfig.Retries)))
+			}
 
-		if targetConfig.Retries > 0 {
-			opts = append(opts, earthly.WithRetries(int(targetConfig.Retries)))
-		}
-
-		if len(targetConfig.Secrets) > 0 {
-			opts = append(opts, earthly.WithSecrets(targetConfig.Secrets))
+			if len(targetConfig.Secrets) > 0 {
+				opts = append(opts, earthly.WithSecrets(targetConfig.Secrets))
+			}
 		}
 	}
 
