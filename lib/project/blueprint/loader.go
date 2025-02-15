@@ -11,8 +11,8 @@ import (
 	"cuelang.org/go/cue/errors"
 	"github.com/Masterminds/semver/v3"
 	"github.com/input-output-hk/catalyst-forge/lib/project/blueprint/defaults"
-	"github.com/input-output-hk/catalyst-forge/lib/project/schema"
-	"github.com/input-output-hk/catalyst-forge/lib/project/version"
+	s "github.com/input-output-hk/catalyst-forge/lib/schema"
+	"github.com/input-output-hk/catalyst-forge/lib/tools/version"
 	"github.com/spf13/afero"
 )
 
@@ -68,7 +68,7 @@ func (b *DefaultBlueprintLoader) Load(projectPath, gitRootPath string) (RawBluep
 		}
 	}
 
-	schema, err := schema.LoadSchema(b.ctx)
+	schema, err := s.LoadSchema(b.ctx)
 	if err != nil {
 		b.logger.Error("Failed to load schema", "error", err)
 		return RawBlueprint{}, fmt.Errorf("failed to load schema: %w", err)

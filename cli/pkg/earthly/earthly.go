@@ -10,8 +10,8 @@ import (
 	"strings"
 
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/executor"
-	"github.com/input-output-hk/catalyst-forge/lib/project/schema"
 	secretstore "github.com/input-output-hk/catalyst-forge/lib/project/secrets"
+	sc "github.com/input-output-hk/catalyst-forge/lib/schema/blueprint/common"
 )
 
 // EarthlyExecutorOption is an option for configuring an EarthlyExecutor.
@@ -39,7 +39,7 @@ type EarthlyExecutor struct {
 	executor     executor.Executor
 	earthfile    string
 	earthlyArgs  []string
-	secrets      []schema.Secret
+	secrets      []sc.Secret
 	secretsStore secretstore.SecretStore
 	target       string
 	targetArgs   []string
@@ -130,9 +130,9 @@ func (e *EarthlyExecutor) buildSecrets() ([]EarthlySecret, error) {
 	var secrets []EarthlySecret
 
 	for _, secret := range e.secrets {
-		if secret.Name != nil && len(secret.Maps) > 0 {
-			e.logger.Error("Secret contains both name and maps", "name", *secret.Name, "maps", secret.Maps)
-			return nil, fmt.Errorf("secret contains both name and maps: %s", *secret.Name)
+		if secret.Name != "" && len(secret.Maps) > 0 {
+			e.logger.Error("Secret contains both name and maps", "name", secret.Name, "maps", secret.Maps)
+			return nil, fmt.Errorf("secret contains both name and maps: %s", secret.Name)
 		}
 
 		secretClient, err := e.secretsStore.NewClient(e.logger, secretstore.Provider(secret.Provider))
@@ -143,7 +143,7 @@ func (e *EarthlyExecutor) buildSecrets() ([]EarthlySecret, error) {
 
 		s, err := secretClient.Get(secret.Path)
 		if err != nil {
-			if secret.Optional != nil && *secret.Optional {
+			if secret.Optional {
 				e.logger.Warn("Secret is optional and not found", "provider", secret.Provider, "path", secret.Path)
 				continue
 			}
@@ -153,13 +153,13 @@ func (e *EarthlyExecutor) buildSecrets() ([]EarthlySecret, error) {
 		}
 
 		if len(secret.Maps) == 0 {
-			if secret.Name == nil {
+			if secret.Name == "" {
 				e.logger.Error("Secret does not contain name or maps", "provider", secret.Provider, "path", secret.Path)
 				return nil, fmt.Errorf("secret does not contain name or maps: %s", secret.Path)
 			}
 
 			secrets = append(secrets, EarthlySecret{
-				Id:    *secret.Name,
+				Id:    secret.Name,
 				Value: s,
 			})
 		} else {

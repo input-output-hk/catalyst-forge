@@ -17,7 +17,7 @@ type GithubProviderCreds struct {
 
 // GetGithubProviderCreds loads the Github provider credentials from the project.
 func GetGithubProviderCreds(p *project.Project, logger *slog.Logger) (GithubProviderCreds, error) {
-	secret := p.Blueprint.Global.CI.Providers.Github.Credentials
+	secret := p.Blueprint.Global.Ci.Providers.Github.Credentials
 	if secret == nil {
 		return GithubProviderCreds{}, fmt.Errorf("project does not have a Github provider configured")
 	}
@@ -44,7 +44,7 @@ func NewGithubClient(p *project.Project, logger *slog.Logger) (*github.Client, e
 	if exists {
 		logger.Info("Creating Github client with environment token")
 		return github.NewClient(nil).WithAuthToken(token), nil
-	} else if p.Blueprint.Global.CI.Providers.Github.Credentials != nil {
+	} else if p.Blueprint.Global.Ci.Providers.Github.Credentials != nil {
 		logger.Info("Creating Github client with provider secret")
 		creds, err := GetGithubProviderCreds(p, logger)
 		if err != nil {

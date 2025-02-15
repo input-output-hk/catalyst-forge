@@ -2,7 +2,7 @@ package blueprint
 
 import (
 	"cuelang.org/go/cue"
-	"github.com/input-output-hk/catalyst-forge/lib/project/schema"
+	schema "github.com/input-output-hk/catalyst-forge/lib/schema/blueprint"
 	tools "github.com/input-output-hk/catalyst-forge/lib/tools/cue"
 )
 

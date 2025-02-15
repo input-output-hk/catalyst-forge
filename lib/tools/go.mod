@@ -4,6 +4,7 @@ go 1.22.3
 
 require (
 	cuelang.org/go v0.10.0
+	github.com/Masterminds/semver/v3 v3.3.1
 	github.com/earthly/earthly/ast v0.0.2-0.20240228223838-42e8ca204e8a
 	github.com/go-git/go-billy/v5 v5.5.0
 	github.com/go-git/go-git/v5 v5.12.0

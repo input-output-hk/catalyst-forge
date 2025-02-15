@@ -4,7 +4,7 @@
 package mocks
 
 import (
-	"github.com/input-output-hk/catalyst-forge/lib/project/schema"
+	"github.com/input-output-hk/catalyst-forge/lib/schema/blueprint/project"
 	"sync"
 )
 
@@ -25,26 +25,26 @@ import (
 //	}
 type ManifestGeneratorMock struct {
 	// GenerateFunc mocks the Generate method.
-	GenerateFunc func(mod schema.DeploymentModule) ([]byte, error)
+	GenerateFunc func(mod project.Module) ([]byte, error)
 
 	// calls tracks calls to the methods.
 	calls struct {
 		// Generate holds details about calls to the Generate method.
 		Generate []struct {
 			// Mod is the mod argument value.
-			Mod schema.DeploymentModule
+			Mod project.Module
 		}
 	}
 	lockGenerate sync.RWMutex
 }
 
 // Generate calls GenerateFunc.
-func (mock *ManifestGeneratorMock) Generate(mod schema.DeploymentModule) ([]byte, error) {
+func (mock *ManifestGeneratorMock) Generate(mod project.Module) ([]byte, error) {
 	if mock.GenerateFunc == nil {
 		panic("ManifestGeneratorMock.GenerateFunc: method is nil but ManifestGenerator.Generate was just called")
 	}
 	callInfo := struct {
-		Mod schema.DeploymentModule
+		Mod project.Module
 	}{
 		Mod: mod,
 	}
@@ -59,10 +59,10 @@ func (mock *ManifestGeneratorMock) Generate(mod schema.DeploymentModule) ([]byte
 //
 //	len(mockedManifestGenerator.GenerateCalls())
 func (mock *ManifestGeneratorMock) GenerateCalls() []struct {
-	Mod schema.DeploymentModule
+	Mod project.Module
 } {
 	var calls []struct {
-		Mod schema.DeploymentModule
+		Mod project.Module
 	}
 	mock.lockGenerate.RLock()
 	calls = mock.calls.Generate

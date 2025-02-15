@@ -6,8 +6,7 @@ import (
 
 	"github.com/input-output-hk/catalyst-forge/lib/project/deployment/providers/kcl/client"
 	"github.com/input-output-hk/catalyst-forge/lib/project/deployment/providers/kcl/client/mocks"
-	"github.com/input-output-hk/catalyst-forge/lib/project/schema"
-	"github.com/input-output-hk/catalyst-forge/lib/project/utils"
+	sp "github.com/input-output-hk/catalyst-forge/lib/schema/blueprint/project"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/testutils"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
@@ -24,7 +23,7 @@ func TestKCLManifestGeneratorGenerate(t *testing.T) {
 
 	tests := []struct {
 		name     string
-		module   schema.DeploymentModule
+		module   sp.Module
 		out      string
 		files    map[string]string
 		err      bool
@@ -32,13 +31,13 @@ func TestKCLManifestGeneratorGenerate(t *testing.T) {
 	}{
 		{
 			name: "full",
-			module: schema.DeploymentModule{
+			module: sp.Module{
 				Instance:  "instance",
-				Name:      utils.StringPtr("module"),
+				Name:      "module",
 				Namespace: "default",
-				Registry:  utils.StringPtr("registry"),
+				Registry:  "registry",
 				Values:    "test",
-				Version:   utils.StringPtr("1.0.0"),
+				Version:   "1.0.0",
 			},
 			out: "output",
 			err: false,
@@ -57,10 +56,10 @@ func TestKCLManifestGeneratorGenerate(t *testing.T) {
 		},
 		{
 			name: "with local path",
-			module: schema.DeploymentModule{
+			module: sp.Module{
 				Instance:  "instance",
 				Namespace: "default",
-				Path:      utils.StringPtr("/mod"),
+				Path:      "/mod",
 				Values:    "test",
 			},
 			out: "output",
@@ -88,13 +87,13 @@ version = "1.0.0"
 		},
 		{
 			name: "error",
-			module: schema.DeploymentModule{
+			module: sp.Module{
 				Instance:  "instance",
-				Name:      utils.StringPtr("module"),
+				Name:      "module",
 				Namespace: "default",
-				Registry:  utils.StringPtr("registry"),
+				Registry:  "registry",
 				Values:    "test",
-				Version:   utils.StringPtr("1.0.0"),
+				Version:   "1.0.0",
 			},
 			out: "output",
 			err: true,

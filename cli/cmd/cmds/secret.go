@@ -7,8 +7,8 @@ import (
 
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/run"
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/utils"
-	"github.com/input-output-hk/catalyst-forge/lib/project/schema"
 	"github.com/input-output-hk/catalyst-forge/lib/project/secrets"
+	sc "github.com/input-output-hk/catalyst-forge/lib/schema/blueprint/common"
 )
 
 const (
@@ -46,7 +46,7 @@ func (c *Get) Run(ctx run.RunContext) error {
 			return fmt.Errorf("could not load project: %w", err)
 		}
 
-		var secret schema.Secret
+		var secret sc.Secret
 		if err := project.Raw().DecodePath(c.Path, &secret); err != nil {
 			return fmt.Errorf("could not decode secret: %w", err)
 		}
@@ -132,7 +132,7 @@ func (c *Set) Run(ctx run.RunContext) error {
 			return fmt.Errorf("could not load project: %w", err)
 		}
 
-		var secret schema.Secret
+		var secret sc.Secret
 		if err := project.Raw().DecodePath(c.Path, &secret); err != nil {
 			return fmt.Errorf("could not decode secret: %w", err)
 		}

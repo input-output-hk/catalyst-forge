@@ -5,11 +5,11 @@ import (
 
 	"cuelang.org/go/cue/cuecontext"
 	"cuelang.org/go/cue/format"
-	"github.com/input-output-hk/catalyst-forge/lib/project/schema"
+	sp "github.com/input-output-hk/catalyst-forge/lib/schema/blueprint/project"
 )
 
 // DumpModule dumps the deployment module to CUE source.
-func DumpModule(mod schema.DeploymentModule) ([]byte, error) {
+func DumpModule(mod sp.Module) ([]byte, error) {
 	ctx := cuecontext.New()
 	v := ctx.Encode(mod)
 
@@ -26,7 +26,7 @@ func DumpModule(mod schema.DeploymentModule) ([]byte, error) {
 }
 
 // DumpBundle dumps the deployment module bundle to CUE source.
-func DumpBundle(mod schema.DeploymentModuleBundle) ([]byte, error) {
+func DumpBundle(mod sp.ModuleBundle) ([]byte, error) {
 	ctx := cuecontext.New()
 	v := ctx.Encode(mod)
 
@@ -43,25 +43,25 @@ func DumpBundle(mod schema.DeploymentModuleBundle) ([]byte, error) {
 }
 
 // ParseModule parses a deployment module from CUE source.
-func ParseBundle(src []byte) (schema.DeploymentModuleBundle, error) {
+func ParseBundle(src []byte) (sp.ModuleBundle, error) {
 	ctx := cuecontext.New()
 	v := ctx.CompileBytes(src)
 	if v.Err() != nil {
-		return schema.DeploymentModuleBundle{}, fmt.Errorf("failed to compile bundle: %w", v.Err())
+		return sp.ModuleBundle{}, fmt.Errorf("failed to compile bundle: %w", v.Err())
 	}
 
-	var bundle schema.DeploymentModuleBundle
+	var bundle sp.ModuleBundle
 	if err := v.Decode(&bundle); err != nil {
-		return schema.DeploymentModuleBundle{}, fmt.Errorf("failed to decode bundle: %w", err)
+		return sp.ModuleBundle{}, fmt.Errorf("failed to decode bundle: %w", err)
 	}
 
 	return bundle, nil
 }
 
 // Validate validates a deployment module.
-func Validate(mod schema.DeploymentModule) error {
-	if mod.Path == nil {
-		if mod.Name == nil || mod.Registry == nil || mod.Version == nil {
+func Validate(mod sp.Module) error {
+	if mod.Path == "" {
+		if mod.Name == "" || mod.Registry == "" || mod.Version == "" {
 			return fmt.Errorf("module must have at least one of (name, registry, version) or path")
 		}
 	}

@@ -6,7 +6,8 @@ import (
 
 	"cuelang.org/go/cue"
 	"github.com/google/go-github/v66/github"
-	"github.com/input-output-hk/catalyst-forge/lib/project/schema"
+	sb "github.com/input-output-hk/catalyst-forge/lib/schema/blueprint"
+	sg "github.com/input-output-hk/catalyst-forge/lib/schema/blueprint/global"
 	gh "github.com/input-output-hk/catalyst-forge/lib/tools/git/github"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/git/repo"
 	"github.com/spf13/afero"
@@ -42,9 +43,9 @@ func (g *DeploymentRuntime) Load(project *Project) map[string]cue.Value {
 		repo = rc
 	}
 
-	project.Blueprint = schema.Blueprint{
-		Global: schema.Global{
-			Repo: schema.GlobalRepo{
+	project.Blueprint = sb.Blueprint{
+		Global: &sg.Global{
+			Repo: &sg.Repo{
 				Name: repo,
 			},
 		},

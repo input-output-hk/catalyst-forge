@@ -11,7 +11,9 @@ import (
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/providers/aws"
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/providers/aws/mocks"
 	"github.com/input-output-hk/catalyst-forge/lib/project/project"
-	"github.com/input-output-hk/catalyst-forge/lib/project/schema"
+	sb "github.com/input-output-hk/catalyst-forge/lib/schema/blueprint"
+	sg "github.com/input-output-hk/catalyst-forge/lib/schema/blueprint/global"
+	sp "github.com/input-output-hk/catalyst-forge/lib/schema/blueprint/project"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/testutils"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -25,19 +27,19 @@ func TestDockerReleaserRelease(t *testing.T) {
 		platforms []string,
 	) project.Project {
 		return project.Project{
-			Blueprint: schema.Blueprint{
-				Global: schema.Global{
-					CI: schema.GlobalCI{
+			Blueprint: sb.Blueprint{
+				Global: &sg.Global{
+					Ci: &sg.CI{
 						Registries: registries,
 					},
-					Repo: schema.GlobalRepo{
+					Repo: &sg.Repo{
 						Name: "owner/repo",
 					},
 				},
-				Project: schema.Project{
+				Project: &sp.Project{
 					Container: container,
-					CI: schema.ProjectCI{
-						Targets: map[string]schema.Target{
+					Ci: &sp.CI{
+						Targets: map[string]sp.Target{
 							"test": {
 								Platforms: platforms,
 							},
@@ -48,8 +50,8 @@ func TestDockerReleaserRelease(t *testing.T) {
 		}
 	}
 
-	newRelease := func() schema.Release {
-		return schema.Release{
+	newRelease := func() sp.Release {
+		return sp.Release{
 			Target: "test",
 		}
 	}
@@ -57,7 +59,7 @@ func TestDockerReleaserRelease(t *testing.T) {
 	tests := []struct {
 		name       string
 		project    project.Project
-		release    schema.Release
+		release    sp.Release
 		config     DockerReleaserConfig
 		firing     bool
 		force      bool
@@ -142,7 +144,7 @@ func TestDockerReleaserRelease(t *testing.T) {
 				[]string{"test.com"},
 				[]string{"linux", "windows"},
 			),
-			release: schema.Release{},
+			release: sp.Release{},
 			config:  DockerReleaserConfig{},
 			firing:  true,
 			force:   false,
@@ -155,7 +157,7 @@ func TestDockerReleaserRelease(t *testing.T) {
 		{
 			name:    "run fails",
 			project: project.Project{},
-			release: schema.Release{},
+			release: sp.Release{},
 			firing:  true,
 			force:   false,
 			runFail: true,

@@ -5,7 +5,7 @@ import (
 	"log/slog"
 
 	"github.com/input-output-hk/catalyst-forge/lib/project/deployment/providers/helm/downloader"
-	"github.com/input-output-hk/catalyst-forge/lib/project/schema"
+	sp "github.com/input-output-hk/catalyst-forge/lib/schema/blueprint/project"
 	"helm.sh/helm/v3/pkg/action"
 	"helm.sh/helm/v3/pkg/chart/loader"
 )
@@ -15,7 +15,7 @@ type HelmManifestGenerator struct {
 	logger     *slog.Logger
 }
 
-func (h *HelmManifestGenerator) Generate(mod schema.DeploymentModule) ([]byte, error) {
+func (h *HelmManifestGenerator) Generate(mod sp.Module) ([]byte, error) {
 	client := action.NewInstall(&action.Configuration{})
 
 	client.ReleaseName = mod.Instance
@@ -26,7 +26,7 @@ func (h *HelmManifestGenerator) Generate(mod schema.DeploymentModule) ([]byte, e
 	client.DryRun = true
 	client.IncludeCRDs = true
 
-	data, err := h.downloader.Download(*mod.Registry, *mod.Name, *mod.Version)
+	data, err := h.downloader.Download(mod.Registry, mod.Name, mod.Version)
 	if err != nil {
 		return nil, fmt.Errorf("failed to download chart: %w", err)
 	}

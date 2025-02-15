@@ -6,11 +6,10 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/input-output-hk/catalyst-forge/cli/internal/utils"
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/run"
 	"github.com/input-output-hk/catalyst-forge/lib/project/deployment"
 	"github.com/input-output-hk/catalyst-forge/lib/project/deployment/generator"
-	"github.com/input-output-hk/catalyst-forge/lib/project/schema"
+	sp "github.com/input-output-hk/catalyst-forge/lib/schema/blueprint/project"
 )
 
 type TemplateCmd struct {
@@ -26,7 +25,7 @@ func (c *TemplateCmd) Run(ctx run.RunContext) error {
 		return fmt.Errorf("could not stat path: %w", err)
 	}
 
-	var bundle schema.DeploymentModuleBundle
+	var bundle sp.ModuleBundle
 	if stat.IsDir() {
 		project, err := ctx.ProjectLoader.Load(c.Path)
 		if err != nil {
@@ -56,7 +55,7 @@ func (c *TemplateCmd) Run(ctx run.RunContext) error {
 
 		if path, ok := c.SetPath[c.Module]; ok {
 			ctx.Logger.Info("overriding path for module", "module", c.Module, "path", path)
-			mod.Path = utils.StringPtr(path)
+			mod.Path = path
 		}
 
 		out, err := gen.Generate(mod)
@@ -74,7 +73,7 @@ func (c *TemplateCmd) Run(ctx run.RunContext) error {
 					return fmt.Errorf("module %q not found", name)
 				}
 
-				mod.Path = utils.StringPtr(path)
+				mod.Path = path
 				bundle[name] = mod
 			}
 		}

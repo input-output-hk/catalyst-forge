@@ -11,7 +11,7 @@ import (
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/providers/aws"
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/run"
 	"github.com/input-output-hk/catalyst-forge/lib/project/project"
-	"github.com/input-output-hk/catalyst-forge/lib/project/schema"
+	sp "github.com/input-output-hk/catalyst-forge/lib/schema/blueprint/project"
 )
 
 const (
@@ -32,7 +32,7 @@ type DockerReleaser struct {
 	handler     events.EventHandler
 	logger      *slog.Logger
 	project     project.Project
-	release     schema.Release
+	release     sp.Release
 	releaseName string
 	runner      run.ProjectRunner
 }
@@ -54,11 +54,11 @@ func (r *DockerReleaser) Release() error {
 
 	if r.project.Blueprint.Project.Container == "" {
 		return fmt.Errorf("no container name found")
-	} else if len(r.project.Blueprint.Global.CI.Registries) == 0 {
+	} else if len(r.project.Blueprint.Global.Ci.Registries) == 0 {
 		return fmt.Errorf("no registries found")
 	}
 
-	registries := r.project.Blueprint.Global.CI.Registries
+	registries := r.project.Blueprint.Global.Ci.Registries
 	imageTag := r.config.Tag
 	if imageTag == "" {
 		return fmt.Errorf("no image tag specified")

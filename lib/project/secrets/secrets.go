@@ -5,11 +5,11 @@ import (
 	"fmt"
 	"log/slog"
 
-	"github.com/input-output-hk/catalyst-forge/lib/project/schema"
+	sc "github.com/input-output-hk/catalyst-forge/lib/schema/blueprint/common"
 )
 
 // GetSecret returns the secret value for the given secret.
-func GetSecret(s *schema.Secret, store *SecretStore, logger *slog.Logger) (string, error) {
+func GetSecret(s *sc.Secret, store *SecretStore, logger *slog.Logger) (string, error) {
 	provider, err := store.NewClient(logger, Provider(s.Provider))
 	if err != nil {
 		return "", fmt.Errorf("failed to get secret provider: %w", err)
@@ -19,7 +19,7 @@ func GetSecret(s *schema.Secret, store *SecretStore, logger *slog.Logger) (strin
 }
 
 // GetSecretMap returns the secret value for the given secret as a map.
-func GetSecretMap(s *schema.Secret, store *SecretStore, logger *slog.Logger) (map[string]string, error) {
+func GetSecretMap(s *sc.Secret, store *SecretStore, logger *slog.Logger) (map[string]string, error) {
 	provider, err := store.NewClient(logger, Provider(s.Provider))
 	if err != nil {
 		return nil, fmt.Errorf("failed to get secret provider: %w", err)

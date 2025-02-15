@@ -11,8 +11,8 @@ import (
 	"cuelang.org/go/cue/cuecontext"
 	"github.com/input-output-hk/catalyst-forge/lib/project/blueprint"
 	"github.com/input-output-hk/catalyst-forge/lib/project/injector"
-	"github.com/input-output-hk/catalyst-forge/lib/project/schema"
 	"github.com/input-output-hk/catalyst-forge/lib/project/secrets"
+	sb "github.com/input-output-hk/catalyst-forge/lib/schema/blueprint"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/earthfile"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/git"
 	r "github.com/input-output-hk/catalyst-forge/lib/tools/git/repo"
@@ -239,14 +239,14 @@ func NewCustomProjectLoader(
 }
 
 // validateAndDecode validates and decodes a raw blueprint.
-func validateAndDecode(rbp blueprint.RawBlueprint) (schema.Blueprint, error) {
+func validateAndDecode(rbp blueprint.RawBlueprint) (sb.Blueprint, error) {
 	if err := rbp.Validate(); err != nil {
-		return schema.Blueprint{}, fmt.Errorf("failed to validate blueprint: %w", err)
+		return sb.Blueprint{}, fmt.Errorf("failed to validate blueprint: %w", err)
 	}
 
 	bp, err := rbp.Decode()
 	if err != nil {
-		return schema.Blueprint{}, fmt.Errorf("failed to decode blueprint: %w", err)
+		return sb.Blueprint{}, fmt.Errorf("failed to decode blueprint: %w", err)
 	}
 
 	return bp, nil

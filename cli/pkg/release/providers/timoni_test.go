@@ -4,7 +4,10 @@ import (
 	"testing"
 
 	"github.com/input-output-hk/catalyst-forge/lib/project/project"
-	"github.com/input-output-hk/catalyst-forge/lib/project/schema"
+	sb "github.com/input-output-hk/catalyst-forge/lib/schema/blueprint"
+	sg "github.com/input-output-hk/catalyst-forge/lib/schema/blueprint/global"
+	spr "github.com/input-output-hk/catalyst-forge/lib/schema/blueprint/global/providers"
+	sp "github.com/input-output-hk/catalyst-forge/lib/schema/blueprint/project"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/testutils"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -17,16 +20,20 @@ func TestTimoniReleaserRelease(t *testing.T) {
 	) project.Project {
 		return project.Project{
 			Name: name,
-			Blueprint: schema.Blueprint{
-				Global: schema.Global{
-					CI: schema.GlobalCI{
-						Providers: schema.Providers{
-							Timoni: schema.TimoniProvider{
+			Blueprint: sb.Blueprint{
+				Global: &sg.Global{
+					Ci: &sg.CI{
+						Providers: &spr.Providers{
+							Timoni: &spr.Timoni{
 								Registries: registries,
 							},
 						},
 					},
+					Repo: &sg.Repo{
+						Name: "repo",
+					},
 				},
+				Project: &sp.Project{},
 			},
 		}
 	}
@@ -34,7 +41,7 @@ func TestTimoniReleaserRelease(t *testing.T) {
 	tests := []struct {
 		name     string
 		project  project.Project
-		release  schema.Release
+		release  sp.Release
 		config   TimoniReleaserConfig
 		firing   bool
 		force    bool
@@ -44,7 +51,7 @@ func TestTimoniReleaserRelease(t *testing.T) {
 		{
 			name:    "full",
 			project: newProject("test", []string{"test.com"}),
-			release: schema.Release{},
+			release: sp.Release{},
 			config: TimoniReleaserConfig{
 				Container: "test",
 				Tag:       "test",
@@ -60,7 +67,7 @@ func TestTimoniReleaserRelease(t *testing.T) {
 		{
 			name:    "with v prefix",
 			project: newProject("test", []string{"test.com"}),
-			release: schema.Release{},
+			release: sp.Release{},
 			config: TimoniReleaserConfig{
 				Container: "test",
 				Tag:       "v1.0.0",
@@ -76,7 +83,7 @@ func TestTimoniReleaserRelease(t *testing.T) {
 		{
 			name:    "no container",
 			project: newProject("test", []string{"test.com"}),
-			release: schema.Release{},
+			release: sp.Release{},
 			config: TimoniReleaserConfig{
 				Tag: "test",
 			},
@@ -102,7 +109,7 @@ func TestTimoniReleaserRelease(t *testing.T) {
 		{
 			name:    "forced",
 			project: newProject("test", []string{"test.com"}),
-			release: schema.Release{},
+			release: sp.Release{},
 			config: TimoniReleaserConfig{
 				Container: "test",
 				Tag:       "test",
@@ -118,7 +125,7 @@ func TestTimoniReleaserRelease(t *testing.T) {
 		{
 			name:    "push fails",
 			project: newProject("test", []string{"test.com"}),
-			release: schema.Release{},
+			release: sp.Release{},
 			config: TimoniReleaserConfig{
 				Container: "test",
 				Tag:       "test",
