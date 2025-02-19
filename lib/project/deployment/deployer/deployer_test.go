@@ -124,8 +124,7 @@ func TestDeployerDeploy(t *testing.T) {
 		registry:  "registry"
 		type:      "kcl"
 		values: {
-			key:  "value"
-			key1: "value1"
+			key: "value"
 		}
 		version: "v1.0.0"
 	}
