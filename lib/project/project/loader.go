@@ -187,6 +187,7 @@ func (p *DefaultProjectLoader) Load(projectPath string) (Project, error) {
 
 // NewDefaultProjectLoader creates a new DefaultProjectLoader.
 func NewDefaultProjectLoader(
+	ctx *cue.Context,
 	store secrets.SecretStore,
 	logger *slog.Logger,
 ) DefaultProjectLoader {
@@ -194,7 +195,10 @@ func NewDefaultProjectLoader(
 		logger = slog.New(slog.NewTextHandler(io.Discard, nil))
 	}
 
-	ctx := cuecontext.New()
+	if ctx == nil {
+		ctx = cuecontext.New()
+	}
+
 	fs := afero.NewOsFs()
 	bl := blueprint.NewDefaultBlueprintLoader(ctx, logger)
 	return DefaultProjectLoader{

@@ -5,6 +5,7 @@ import (
 	"log/slog"
 	"path/filepath"
 
+	"cuelang.org/go/cue"
 	"github.com/input-output-hk/catalyst-forge/lib/project/deployment"
 	"github.com/input-output-hk/catalyst-forge/lib/project/deployment/generator"
 	"github.com/input-output-hk/catalyst-forge/lib/project/project"
@@ -15,9 +16,23 @@ import (
 )
 
 const (
+	// This is the hardcoded default environment for the deployment.
+	// We always deploy to the dev environment by default and do not allow
+	// the user to change this.
+	// This is also the default for the `env` field in the deployment module.
+	DEFAULT_ENV = "dev"
+
+	// This is the name of the environment file which is merged with the deployment module.
+	ENV_FILE = "env.mod.cue"
+
+	// These are the hardcoded values to use when committing changes to the GitOps repository.
 	GIT_NAME    = "Catalyst Forge"
 	GIT_EMAIL   = "forge@projectcatalyst.io"
 	GIT_MESSAGE = "chore: automatic deployment for %s"
+
+	// This is the path to the project in the GitOps repository.
+	// {root_path}/{environment}/{project_name}
+	PATH = "%s/%s/%s"
 )
 
 var (
@@ -26,6 +41,7 @@ var (
 
 // Deployer performs GitOps deployments for projects.
 type Deployer struct {
+	ctx     *cue.Context
 	dryrun  bool
 	fs      afero.Fs
 	gen     generator.Generator
@@ -53,8 +69,13 @@ func (d *Deployer) Deploy() error {
 		return fmt.Errorf("could not clear project path: %w", err)
 	}
 
+	env, err := d.LoadEnv(prjPath, d.ctx, &r)
+	if err != nil {
+		return fmt.Errorf("could not load environment: %w", err)
+	}
+
 	d.logger.Info("Generating manifests")
-	result, err := d.gen.GenerateBundle(d.project.Blueprint.Project.Deployment.Modules)
+	result, err := d.gen.GenerateBundle(deployment.NewModuleBundle(d.project), env)
 	if err != nil {
 		return fmt.Errorf("could not generate deployment manifests: %w", err)
 	}
@@ -113,10 +134,7 @@ func (d *Deployer) Deploy() error {
 // buildProjectPath builds the path to the project in the GitOps repository.
 func (d *Deployer) buildProjectPath() string {
 	globalDeploy := d.project.Blueprint.Global.Deployment
-	envPath := filepath.Join(globalDeploy.Root, globalDeploy.Environment, "apps")
-	prjPath := filepath.Join(envPath, d.project.Name)
-
-	return prjPath
+	return fmt.Sprintf(PATH, globalDeploy.Root, DEFAULT_ENV, d.project.Name)
 }
 
 // checkProjectPath checks if the project path exists and creates it if it does not.
@@ -143,6 +161,10 @@ func (d *Deployer) clearProjectPath(path string, r *repo.GitRepo) error {
 	}
 
 	for _, f := range files {
+		if f.Name() == ENV_FILE {
+			continue
+		}
+
 		path := filepath.Join(path, f.Name())
 		d.logger.Debug("Removing file", "path", path)
 		if err := r.RemoveFile(path); err != nil {
@@ -183,12 +205,45 @@ func (d *Deployer) clone() (repo.GitRepo, error) {
 	return r, nil
 }
 
+// LoadEnv loads the environment file for the deployment, if it exists.
+func (d *Deployer) LoadEnv(path string, ctx *cue.Context, r *repo.GitRepo) (cue.Value, error) {
+	var env cue.Value
+
+	envPath := filepath.Join(path, ENV_FILE)
+	exists, err := r.Exists(envPath)
+	if err != nil {
+		return cue.Value{}, fmt.Errorf("could not check if environment file exists: %w", err)
+	}
+
+	if exists {
+		d.logger.Info("Loading environment file", "path", envPath)
+		contents, err := r.ReadFile(envPath)
+		if err != nil {
+			return cue.Value{}, fmt.Errorf("could not read environment file: %w", err)
+		}
+
+		env = ctx.CompileBytes(contents)
+		if env.Err() != nil {
+			return cue.Value{}, fmt.Errorf("could not compile environment file: %w", env.Err())
+		}
+	}
+
+	return env, nil
+}
+
 // NewDeployer creates a new Deployer.
-func NewDeployer(project *project.Project, store deployment.ManifestGeneratorStore, logger *slog.Logger, dryrun bool) Deployer {
+func NewDeployer(
+	project *project.Project,
+	store deployment.ManifestGeneratorStore,
+	logger *slog.Logger,
+	ctx *cue.Context,
+	dryrun bool,
+) Deployer {
 	gen := generator.NewGenerator(store, logger)
 	remote := remote.GoGitRemoteInteractor{}
 
 	return Deployer{
+		ctx:     ctx,
 		dryrun:  dryrun,
 		gen:     gen,
 		fs:      afero.NewMemMapFs(),

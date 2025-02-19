@@ -5,6 +5,7 @@ import (
 	"log/slog"
 	"testing"
 
+	"cuelang.org/go/cue"
 	"cuelang.org/go/cue/cuecontext"
 	"github.com/input-output-hk/catalyst-forge/lib/project/deployment"
 	"github.com/input-output-hk/catalyst-forge/lib/project/deployment/mocks"
@@ -18,24 +19,28 @@ func TestGeneratorGenerateBundle(t *testing.T) {
 	ctx := cuecontext.New()
 	tests := []struct {
 		name     string
-		bundle   sp.ModuleBundle
+		bundle   deployment.ModuleBundle
+		env      cue.Value
 		yaml     string
 		err      bool
 		validate func(t *testing.T, result GeneratorResult, err error)
 	}{
 		{
 			name: "full",
-			bundle: sp.ModuleBundle{
-				"test": sp.Module{
-					Instance:  "instance",
-					Name:      "test",
-					Namespace: "default",
-					Registry:  "registry",
-					Type:      "kcl",
-					Values:    ctx.CompileString(`foo: "bar"`),
-					Version:   "1.0.0",
+			bundle: deployment.ModuleBundle{
+				Bundle: sp.ModuleBundle{
+					"test": sp.Module{
+						Instance:  "instance",
+						Name:      "test",
+						Namespace: "default",
+						Registry:  "registry",
+						Type:      "kcl",
+						Values:    ctx.CompileString(`foo: "bar"`),
+						Version:   "1.0.0",
+					},
 				},
 			},
+			env:  ctx.CompileString(`test: values: { bar: "baz" }`),
 			yaml: "test",
 			err:  false,
 			validate: func(t *testing.T, result GeneratorResult, err error) {
@@ -43,6 +48,7 @@ func TestGeneratorGenerateBundle(t *testing.T) {
 
 				m := `{
 	test: {
+		env:       ""
 		instance:  "instance"
 		name:      "test"
 		namespace: "default"
@@ -60,38 +66,21 @@ func TestGeneratorGenerateBundle(t *testing.T) {
 		},
 		{
 			name: "manifest error",
-			bundle: sp.ModuleBundle{
-				"test": sp.Module{
-					Instance:  "instance",
-					Name:      "test",
-					Namespace: "default",
-					Registry:  "registry",
-					Type:      "kcl",
-					Values:    ctx.CompileString(`foo: "bar"`),
-					Version:   "1.0.0",
+			bundle: deployment.ModuleBundle{
+				Bundle: sp.ModuleBundle{
+					"test": sp.Module{
+						Instance:  "instance",
+						Name:      "test",
+						Namespace: "default",
+						Registry:  "registry",
+						Type:      "kcl",
+						Values:    ctx.CompileString(`foo: "bar"`),
+						Version:   "1.0.0",
+					},
 				},
 			},
 			yaml: "test",
 			err:  true,
-			validate: func(t *testing.T, result GeneratorResult, err error) {
-				assert.Error(t, err)
-			},
-		},
-		{
-			name: "module error",
-			bundle: sp.ModuleBundle{
-				"test": sp.Module{
-					Instance:  "instance",
-					Name:      "test",
-					Namespace: "default",
-					Registry:  "registry",
-					Type:      "kcl",
-					Values:    fmt.Errorf("error"),
-					Version:   "1.0.0",
-				},
-			},
-			yaml: "test",
-			err:  false,
 			validate: func(t *testing.T, result GeneratorResult, err error) {
 				assert.Error(t, err)
 			},
@@ -123,7 +112,8 @@ func TestGeneratorGenerateBundle(t *testing.T) {
 				store:  store,
 			}
 
-			result, err := gen.GenerateBundle(tt.bundle)
+			tt.bundle.Raw = getRaw(tt.bundle.Bundle)
+			result, err := gen.GenerateBundle(tt.bundle, tt.env)
 			tt.validate(t, result, err)
 		})
 	}
@@ -202,4 +192,11 @@ func TestGeneratorGenerate(t *testing.T) {
 			tt.validate(t, result, err)
 		})
 	}
+}
+
+func getRaw(mod sp.ModuleBundle) cue.Value {
+	ctx := cuecontext.New()
+	v := ctx.Encode(mod)
+
+	return v
 }

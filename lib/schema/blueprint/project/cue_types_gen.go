@@ -22,6 +22,9 @@ type Deployment struct {
 type ModuleBundle map[string]Module
 
 type Module struct {
+	// Env contains the environment this module is being deployed to.
+	Env string `json:"env"`
+
 	// Instance contains the instance name to use for all generated resources.
 	Instance string `json:"instance,omitempty"`
 

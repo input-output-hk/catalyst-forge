@@ -2,14 +2,16 @@ package module
 
 import (
 	"fmt"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"strings"
 
+	"cuelang.org/go/cue"
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/run"
 	"github.com/input-output-hk/catalyst-forge/lib/project/deployment"
+	"github.com/input-output-hk/catalyst-forge/lib/project/deployment/deployer"
 	"github.com/input-output-hk/catalyst-forge/lib/project/deployment/generator"
-	sp "github.com/input-output-hk/catalyst-forge/lib/schema/blueprint/project"
 )
 
 type TemplateCmd struct {
@@ -25,30 +27,35 @@ func (c *TemplateCmd) Run(ctx run.RunContext) error {
 		return fmt.Errorf("could not stat path: %w", err)
 	}
 
-	var bundle sp.ModuleBundle
+	var bundle deployment.ModuleBundle
 	if stat.IsDir() {
 		project, err := ctx.ProjectLoader.Load(c.Path)
 		if err != nil {
 			return fmt.Errorf("could not load project: %w", err)
 		}
 
-		bundle = project.Blueprint.Project.Deployment.Modules
+		bundle = deployment.NewModuleBundle(&project)
 	} else {
 		src, err := os.ReadFile(c.Path)
 		if err != nil {
 			return fmt.Errorf("could not read file: %w", err)
 		}
 
-		bundle, err = deployment.ParseBundle(src)
+		bundle, err = deployment.ParseBundle(ctx.CueCtx, src)
 		if err != nil {
 			return fmt.Errorf("could not parse module file: %w", err)
 		}
 	}
 
+	env, err := loadEnv(c.Path, ctx.CueCtx, ctx.Logger)
+	if err != nil {
+		return fmt.Errorf("could not load environment file: %w", err)
+	}
+
 	manifests := make(map[string][]byte)
 	gen := generator.NewGenerator(ctx.ManifestGeneratorStore, ctx.Logger)
 	if c.Module != "" {
-		mod, ok := bundle[c.Module]
+		mod, ok := bundle.Bundle[c.Module]
 		if !ok {
 			return fmt.Errorf("module %q not found", c.Module)
 		}
@@ -68,17 +75,17 @@ func (c *TemplateCmd) Run(ctx run.RunContext) error {
 	} else {
 		if c.SetPath != nil {
 			for name, path := range c.SetPath {
-				mod, ok := bundle[name]
+				mod, ok := bundle.Bundle[name]
 				if !ok {
 					return fmt.Errorf("module %q not found", name)
 				}
 
 				mod.Path = path
-				bundle[name] = mod
+				bundle.Bundle[name] = mod
 			}
 		}
 
-		out, err := gen.GenerateBundle(bundle)
+		out, err := gen.GenerateBundle(bundle, env)
 		if err != nil {
 			return fmt.Errorf("failed to generate manifests: %w", err)
 		}
@@ -103,6 +110,38 @@ func (c *TemplateCmd) Run(ctx run.RunContext) error {
 	}
 
 	return nil
+}
+
+func loadEnv(path string, ctx *cue.Context, logger *slog.Logger) (cue.Value, error) {
+	var env cue.Value
+	var envPath string
+
+	filename := deployer.ENV_FILE
+	stat, err := os.Stat(path)
+	if err != nil {
+		return cue.Value{}, fmt.Errorf("could not stat path: %w", err)
+	}
+
+	if stat.IsDir() {
+		envPath = filepath.Join(path, filename)
+	} else {
+		envPath = filepath.Join(filepath.Dir(path), filename)
+	}
+
+	if _, err := os.Stat(envPath); err == nil {
+		logger.Info("loading environment file", "path", envPath)
+		contents, err := os.ReadFile(envPath)
+		if err != nil {
+			return cue.Value{}, fmt.Errorf("could not read environment file: %w", err)
+		}
+
+		env = ctx.CompileBytes(contents)
+		if env.Err() != nil {
+			return cue.Value{}, fmt.Errorf("could not compile environment file: %w", env.Err())
+		}
+	}
+
+	return env, nil
 }
 
 func writeManifests(path string, manifests map[string][]byte) error {
