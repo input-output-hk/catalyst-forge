@@ -26,7 +26,7 @@ func (c *DeployCmd) Run(ctx run.RunContext) error {
 		dryrun = true
 	}
 
-	d := deployer.NewDeployer(&project, ctx.ManifestGeneratorStore, ctx.Logger, dryrun)
+	d := deployer.NewDeployer(&project, ctx.ManifestGeneratorStore, ctx.Logger, ctx.CueCtx, dryrun)
 	if err := d.Deploy(); err != nil {
 		if err == deployer.ErrNoChanges {
 			ctx.Logger.Warn("no changes to deploy")

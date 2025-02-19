@@ -123,7 +123,7 @@ func Run(scanPath string,
 		logger = slog.New(slog.NewTextHandler(io.Discard, nil))
 	}
 
-	loader := project.NewDefaultProjectLoader(runctx.SecretStore, logger)
+	loader := project.NewDefaultProjectLoader(runctx.CueCtx, runctx.SecretStore, logger)
 
 	if scanPath == "" {
 		scanPath, err := findRoot(".", logger)

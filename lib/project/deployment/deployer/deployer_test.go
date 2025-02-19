@@ -7,11 +7,13 @@ import (
 	"strings"
 	"testing"
 
+	"cuelang.org/go/cue/cuecontext"
 	"github.com/go-git/go-billy/v5"
 	gg "github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/go-git/go-git/v5/storage"
+	"github.com/input-output-hk/catalyst-forge/lib/project/blueprint"
 	"github.com/input-output-hk/catalyst-forge/lib/project/deployment"
 	"github.com/input-output-hk/catalyst-forge/lib/project/deployment/generator"
 	dm "github.com/input-output-hk/catalyst-forge/lib/project/deployment/mocks"
@@ -94,7 +96,9 @@ func TestDeployerDeploy(t *testing.T) {
 					},
 				},
 			),
-			files:  nil,
+			files: map[string]string{
+				mkPath("dev", "project", "env.mod.cue"): `main: values: { key1: "value1" }`,
+			},
 			dryrun: false,
 			validate: func(t *testing.T, r testResult) {
 				require.NoError(t, r.err)
@@ -120,7 +124,8 @@ func TestDeployerDeploy(t *testing.T) {
 		registry:  "registry"
 		type:      "kcl"
 		values: {
-			key: "value"
+			key:  "value"
+			key1: "value1"
 		}
 		version: "v1.0.0"
 	}
@@ -268,11 +273,13 @@ func TestDeployerDeploy(t *testing.T) {
 				},
 			)
 
+			tt.project.RawBlueprint = getRaw(tt.project.Blueprint)
 			d := Deployer{
+				ctx:     cuecontext.New(),
 				dryrun:  tt.dryrun,
 				fs:      fs,
 				gen:     gen,
-				logger:  testutils.NewStdoutLogger(),
+				logger:  testutils.NewNoopLogger(),
 				project: &tt.project,
 				remote:  remote,
 			}
@@ -289,6 +296,13 @@ func TestDeployerDeploy(t *testing.T) {
 	}
 }
 
+func getRaw(bp sb.Blueprint) blueprint.RawBlueprint {
+	ctx := cuecontext.New()
+	v := ctx.Encode(bp)
+
+	return blueprint.NewRawBlueprint(v)
+}
+
 func mkPath(env, project, file string) string {
-	return fmt.Sprintf("/repo/%s/%s/%s/%s", "root", env, project, file)
+	return fmt.Sprintf("/repo/root/%s/%s/%s", env, project, file)
 }

@@ -5,6 +5,7 @@ import (
 	"io"
 	"log/slog"
 
+	"cuelang.org/go/cue"
 	"github.com/input-output-hk/catalyst-forge/lib/project/deployment"
 	sp "github.com/input-output-hk/catalyst-forge/lib/schema/blueprint/project"
 )
@@ -22,14 +23,24 @@ type Generator struct {
 }
 
 // GenerateBundle generates manifests for a deployment bundle.
-func (d *Generator) GenerateBundle(b sp.ModuleBundle) (GeneratorResult, error) {
-	bundle, err := deployment.DumpBundle(b)
+func (d *Generator) GenerateBundle(b deployment.ModuleBundle, env cue.Value) (GeneratorResult, error) {
+	v := b.Raw.Unify(env)
+	if v.Err() != nil {
+		return GeneratorResult{}, fmt.Errorf("failed to unify bundle with environment: %w", v.Err())
+	}
+
+	nb, err := deployment.ParseBundleValue(v)
+	if err != nil {
+		return GeneratorResult{}, fmt.Errorf("failed to decode unified bundle value: %w", err)
+	}
+
+	bundle, err := b.Dump()
 	if err != nil {
 		return GeneratorResult{}, fmt.Errorf("failed to dump bundle: %w", err)
 	}
 
 	results := make(map[string][]byte)
-	for name, module := range b {
+	for name, module := range nb.Bundle {
 		d.logger.Debug("Generating module", "name", name)
 		result, err := d.Generate(module)
 		if err != nil {

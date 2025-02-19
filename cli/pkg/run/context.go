@@ -3,6 +3,7 @@ package run
 import (
 	"log/slog"
 
+	"cuelang.org/go/cue"
 	"github.com/input-output-hk/catalyst-forge/lib/project/deployment"
 	"github.com/input-output-hk/catalyst-forge/lib/project/project"
 	"github.com/input-output-hk/catalyst-forge/lib/project/secrets"
@@ -13,6 +14,9 @@ import (
 type RunContext struct {
 	// CI is true if the run is happening in a CI environment.
 	CI bool
+
+	// CueCtx is the CUE context to use for CUE operations.
+	CueCtx *cue.Context
 
 	// FSWalker is the walker to use for walking the filesystem.
 	FSWalker walker.FSWalker

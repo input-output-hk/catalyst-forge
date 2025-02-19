@@ -91,9 +91,11 @@ func Run() int {
 
 	logger := slog.New(handler)
 	store := secrets.NewDefaultSecretStore()
-	loader := project.NewDefaultProjectLoader(store, logger)
+	cc := cuecontext.New()
+	loader := project.NewDefaultProjectLoader(cc, store, logger)
 	runctx := run.RunContext{
 		CI:                     cli.GlobalArgs.CI,
+		CueCtx:                 cc,
 		FSWalker:               walker.NewDefaultFSWalker(logger),
 		Local:                  cli.GlobalArgs.Local,
 		Logger:                 logger,

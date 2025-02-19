@@ -265,7 +265,7 @@ func (g *GitRepo) Open(path string) error {
 
 // ReadFile reads the contents of a file in the repository.
 func (g *GitRepo) ReadFile(path string) ([]byte, error) {
-	return afero.ReadFile(g.fs, path)
+	return afero.ReadFile(g.fs, filepath.Join(g.basePath, path))
 }
 
 // Push pushes changes to the remote repository.
