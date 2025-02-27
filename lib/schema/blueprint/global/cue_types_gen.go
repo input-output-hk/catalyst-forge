@@ -64,6 +64,11 @@ type Global struct {
 
 	// Deployment contains the global configuration for the deployment of projects.
 	Repo *Repo `json:"repo,omitempty"`
+
+	// State is an optional field that can be used to store global state for later use.
+	// This can be used by external tools or can be consumed using the @global() attribute.
+	// This field is not used by the blueprint itself.
+	State any/* CUE top */ `json:"state,omitempty"`
 }
 
 type Repo struct {
