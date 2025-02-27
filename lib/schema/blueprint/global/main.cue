@@ -10,6 +10,11 @@ package global
 
 	// Deployment contains the global configuration for the deployment of projects.
 	repo?: #Repo
+
+	// State is an optional field that can be used to store global state for later use.
+	// This can be used by external tools or can be consumed using the @global() attribute.
+	// This field is not used by the blueprint itself.
+	state?: _
 }
 
 #Repo: {
