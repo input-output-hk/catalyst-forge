@@ -207,6 +207,7 @@ func NewDefaultProjectLoader(
 		fs:              fs,
 		injectors: []injector.BlueprintInjector{
 			injector.NewBlueprintEnvInjector(ctx, logger),
+			injector.NewBlueprintGlobalInjector(ctx, logger),
 		},
 		logger: logger,
 		runtimes: []RuntimeData{
