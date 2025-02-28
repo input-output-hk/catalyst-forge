@@ -33,7 +33,7 @@ type GithubReleaser struct {
 	project     project.Project
 	release     sp.Release
 	releaseName string
-	runner      run.ProjectRunner
+	runner      earthly.ProjectRunner
 	workdir     string
 }
 
@@ -210,7 +210,7 @@ func NewGithubReleaser(
 	}
 
 	handler := events.NewDefaultEventHandler(ctx.Logger)
-	runner := run.NewDefaultProjectRunner(ctx, &project)
+	runner := earthly.NewDefaultProjectRunner(ctx, &project)
 	return &GithubReleaser{
 		config:      config,
 		client:      client,
