@@ -21,6 +21,12 @@ type ProjectTag struct {
 	Version string
 }
 
+// IsProjectTag checks if a git tag is a project tag.
+func IsProjectTag(tag string) bool {
+	_, err := ParseProjectTag(tag)
+	return err == nil
+}
+
 // ParseProjectTag parses a project tag from a git tag.
 func ParseProjectTag(tag string) (ProjectTag, error) {
 	parts := strings.Split(tag, "/")
