@@ -43,6 +43,11 @@ func Test_generateOpts(t *testing.T) {
 					]
 				}
 				project: ci: targets: {
+					nontarget: {
+						args: {
+							bar: "baz"
+						}
+					}
 					target: {
 						args: {
 							foo: "bar"
@@ -66,6 +71,8 @@ func Test_generateOpts(t *testing.T) {
 			validate: func(t *testing.T, ee EarthlyExecutor) {
 				assert.Contains(t, ee.targetArgs, "--foo")
 				assert.Contains(t, ee.targetArgs, "bar")
+				assert.NotContains(t, ee.targetArgs, "--bar")
+				assert.NotContains(t, ee.targetArgs, "baz")
 				assert.Contains(t, ee.opts.platforms, "linux/amd64")
 				assert.Contains(t, ee.earthlyArgs, "--allow-privileged")
 				assert.Equal(t, 3, ee.opts.retries)

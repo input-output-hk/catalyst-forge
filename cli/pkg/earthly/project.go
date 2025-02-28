@@ -114,7 +114,7 @@ func (p *DefaultProjectRunner) unifyTargets(
 ) (sp.Target, error) {
 	var targets []string
 	for target := range Targets {
-		filter, err := regexp.Compile(name)
+		filter, err := regexp.Compile(target)
 		if err != nil {
 			return sp.Target{}, fmt.Errorf("failed to compile target name '%s' to regex: %w", name, err)
 		}
@@ -123,6 +123,8 @@ func (p *DefaultProjectRunner) unifyTargets(
 			targets = append(targets, target)
 		}
 	}
+
+	fmt.Printf("targets: %v\n", targets)
 
 	if len(targets) == 0 {
 		return sp.Target{}, ErrNoMatchingTargets
