@@ -19,6 +19,7 @@ Read = lambda -> any {
         }
 
     _d.values | {
+        env = _d.env
         metadata = v1.ObjectMeta {
             name: _d.instance
             namespace: _d.namespace
