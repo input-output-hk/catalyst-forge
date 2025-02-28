@@ -27,8 +27,8 @@ func (d *ModuleBundle) Dump() ([]byte, error) {
 
 // NewModuleBundle creates a new deployment module bundle from a project.
 func NewModuleBundle(p *project.Project) ModuleBundle {
-	bundle := p.Blueprint.Project.Deployment.Modules
-	raw := p.RawBlueprint.Get("project.deployment.modules")
+	bundle := p.Blueprint.Project.Deployment.Bundle
+	raw := p.RawBlueprint.Get("project.deployment.bundle")
 	return ModuleBundle{
 		Bundle: bundle,
 		Raw:    raw,

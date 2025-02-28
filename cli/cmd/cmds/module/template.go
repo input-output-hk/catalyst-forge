@@ -55,7 +55,7 @@ func (c *TemplateCmd) Run(ctx run.RunContext) error {
 	manifests := make(map[string][]byte)
 	gen := generator.NewGenerator(ctx.ManifestGeneratorStore, ctx.Logger)
 	if c.Module != "" {
-		mod, ok := bundle.Bundle[c.Module]
+		mod, ok := bundle.Bundle.Modules[c.Module]
 		if !ok {
 			return fmt.Errorf("module %q not found", c.Module)
 		}
@@ -65,7 +65,7 @@ func (c *TemplateCmd) Run(ctx run.RunContext) error {
 			mod.Path = path
 		}
 
-		out, err := gen.Generate(mod)
+		out, err := gen.Generate(mod, bundle.Bundle.Env)
 		if err != nil {
 			return fmt.Errorf("failed to generate manifest: %w", err)
 		}
@@ -75,13 +75,13 @@ func (c *TemplateCmd) Run(ctx run.RunContext) error {
 	} else {
 		if c.SetPath != nil {
 			for name, path := range c.SetPath {
-				mod, ok := bundle.Bundle[name]
+				mod, ok := bundle.Bundle.Modules[name]
 				if !ok {
 					return fmt.Errorf("module %q not found", name)
 				}
 
 				mod.Path = path
-				bundle.Bundle[name] = mod
+				bundle.Bundle.Modules[name] = mod
 			}
 		}
 

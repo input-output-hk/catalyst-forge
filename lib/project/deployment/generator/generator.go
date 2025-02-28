@@ -40,9 +40,9 @@ func (d *Generator) GenerateBundle(b deployment.ModuleBundle, env cue.Value) (Ge
 	}
 
 	results := make(map[string][]byte)
-	for name, module := range nb.Bundle {
+	for name, module := range nb.Bundle.Modules {
 		d.logger.Debug("Generating module", "name", name)
-		result, err := d.Generate(module)
+		result, err := d.Generate(module, b.Bundle.Env)
 		if err != nil {
 			return GeneratorResult{}, fmt.Errorf("failed to generate module %s: %w", name, err)
 		}
@@ -57,7 +57,7 @@ func (d *Generator) GenerateBundle(b deployment.ModuleBundle, env cue.Value) (Ge
 }
 
 // Generate generates manifests for a deployment module.
-func (d *Generator) Generate(m sp.Module) ([]byte, error) {
+func (d *Generator) Generate(m sp.Module, env string) ([]byte, error) {
 	if err := deployment.Validate(m); err != nil {
 		return nil, fmt.Errorf("failed to validate module: %w", err)
 	}
@@ -67,7 +67,7 @@ func (d *Generator) Generate(m sp.Module) ([]byte, error) {
 		return nil, fmt.Errorf("failed to get generator for module: %w", err)
 	}
 
-	manifests, err := mg.Generate(m)
+	manifests, err := mg.Generate(m, env)
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate manifest for module: %w", err)
 	}

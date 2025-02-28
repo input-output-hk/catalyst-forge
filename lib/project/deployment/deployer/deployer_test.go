@@ -38,7 +38,7 @@ func TestDeployerDeploy(t *testing.T) {
 			Blueprint: sb.Blueprint{
 				Project: &sp.Project{
 					Deployment: &sp.Deployment{
-						Modules: bundle,
+						Bundle: bundle,
 					},
 				},
 				Global: &sg.Global{
@@ -85,14 +85,17 @@ func TestDeployerDeploy(t *testing.T) {
 			project: newProject(
 				"project",
 				sp.ModuleBundle{
-					"main": {
-						Instance:  "instance",
-						Name:      "module",
-						Namespace: "default",
-						Registry:  "registry",
-						Type:      "kcl",
-						Values:    map[string]string{"key": "value"},
-						Version:   "v1.0.0",
+					Env: "test",
+					Modules: map[string]sp.Module{
+						"main": {
+							Instance:  "instance",
+							Name:      "module",
+							Namespace: "default",
+							Registry:  "registry",
+							Type:      "kcl",
+							Values:    map[string]string{"key": "value"},
+							Version:   "v1.0.0",
+						},
 					},
 				},
 			),
@@ -116,17 +119,19 @@ func TestDeployerDeploy(t *testing.T) {
 				assert.Equal(t, "manifest", string(c))
 
 				mod := `{
-	main: {
-		env:       ""
-		instance:  "instance"
-		name:      "module"
-		namespace: "default"
-		registry:  "registry"
-		type:      "kcl"
-		values: {
-			key: "value"
+	env: "test"
+	modules: {
+		main: {
+			instance:  "instance"
+			name:      "module"
+			namespace: "default"
+			registry:  "registry"
+			type:      "kcl"
+			values: {
+				key: "value"
+			}
+			version: "v1.0.0"
 		}
-		version: "v1.0.0"
 	}
 }`
 				c, err = afero.ReadFile(r.fs, mkPath("dev", "project", "mod.cue"))
@@ -153,7 +158,8 @@ func TestDeployerDeploy(t *testing.T) {
 			project: newProject(
 				"project",
 				sp.ModuleBundle{
-					"main": {
+					Env: "test",
+					Modules: map[string]sp.Module{"main": {
 						Instance:  "instance",
 						Name:      "module",
 						Namespace: "default",
@@ -161,6 +167,7 @@ func TestDeployerDeploy(t *testing.T) {
 						Type:      "kcl",
 						Values:    map[string]string{"key": "value"},
 						Version:   "v1.0.0",
+					},
 					},
 				},
 			),
@@ -248,7 +255,7 @@ func TestDeployerDeploy(t *testing.T) {
 					map[deployment.Provider]func(*slog.Logger) deployment.ManifestGenerator{
 						deployment.ProviderKCL: func(logger *slog.Logger) deployment.ManifestGenerator {
 							return &dm.ManifestGeneratorMock{
-								GenerateFunc: func(mod sp.Module) ([]byte, error) {
+								GenerateFunc: func(mod sp.Module, env string) ([]byte, error) {
 									return []byte("manifest"), nil
 								},
 							}

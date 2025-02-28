@@ -8,6 +8,7 @@ import (
 
 // KCLModuleConfig contains the configuration given to a KCL module.
 type KCLModuleConfig struct {
+	Env       string `json:"env"`
 	Instance  string `json:"instance"`
 	Name      string `json:"name"`
 	Namespace string `json:"namespace"`

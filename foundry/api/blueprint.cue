@@ -18,8 +18,9 @@ project: {
 			merge: {}
 			tag: {}
 		}
-		modules: {
-			main: {
+		bundle: {
+			env: "dev"
+			modules: main: {
 				name:    "app"
 				version: "0.4.0"
 				values: {
