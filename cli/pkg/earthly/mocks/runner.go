@@ -5,26 +5,25 @@ package mocks
 
 import (
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/earthly"
-	"github.com/input-output-hk/catalyst-forge/cli/pkg/run"
 	"sync"
 )
 
-// Ensure, that ProjectRunnerMock does implement run.ProjectRunner.
+// Ensure, that ProjectRunnerMock does implement earthly.ProjectRunner.
 // If this is not the case, regenerate this file with moq.
-var _ run.ProjectRunner = &ProjectRunnerMock{}
+var _ earthly.ProjectRunner = &ProjectRunnerMock{}
 
-// ProjectRunnerMock is a mock implementation of run.ProjectRunner.
+// ProjectRunnerMock is a mock implementation of earthly.ProjectRunner.
 //
 //	func TestSomethingThatUsesProjectRunner(t *testing.T) {
 //
-//		// make and configure a mocked run.ProjectRunner
+//		// make and configure a mocked earthly.ProjectRunner
 //		mockedProjectRunner := &ProjectRunnerMock{
 //			RunTargetFunc: func(target string, opts ...earthly.EarthlyExecutorOption) error {
 //				panic("mock out the RunTarget method")
 //			},
 //		}
 //
-//		// use mockedProjectRunner in code that requires run.ProjectRunner
+//		// use mockedProjectRunner in code that requires earthly.ProjectRunner
 //		// and then make assertions.
 //
 //	}

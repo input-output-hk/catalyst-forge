@@ -34,7 +34,7 @@ type DockerReleaser struct {
 	project     project.Project
 	release     sp.Release
 	releaseName string
-	runner      run.ProjectRunner
+	runner      earthly.ProjectRunner
 }
 
 func (r *DockerReleaser) Release() error {
@@ -238,7 +238,7 @@ func NewDockerReleaser(
 
 	docker := executor.NewLocalWrappedExecutor(exec, "docker")
 	handler := events.NewDefaultEventHandler(ctx.Logger)
-	runner := run.NewDefaultProjectRunner(ctx, &project)
+	runner := earthly.NewDefaultProjectRunner(ctx, &project)
 	return &DockerReleaser{
 		config:      config,
 		docker:      docker,
