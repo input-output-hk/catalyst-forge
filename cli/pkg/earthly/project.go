@@ -124,8 +124,6 @@ func (p *DefaultProjectRunner) unifyTargets(
 		}
 	}
 
-	fmt.Printf("targets: %v\n", targets)
-
 	if len(targets) == 0 {
 		return sp.Target{}, ErrNoMatchingTargets
 	}
