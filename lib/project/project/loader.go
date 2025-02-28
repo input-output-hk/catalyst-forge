@@ -118,13 +118,22 @@ func (p *DefaultProjectLoader) Load(projectPath string) (Project, error) {
 	if err != nil {
 		p.logger.Warn("Failed to get git tag", "error", err)
 	} else if gitTag != "" {
-		t, err := ParseProjectTag(string(gitTag))
-		if err != nil {
-			p.logger.Warn("Failed to parse project tag", "error", err)
-		} else if t.Project == name {
-			tag = &t
+		if !IsProjectTag(gitTag) {
+			p.logger.Debug("Git tag is not a project tag", "tag", gitTag)
+			tag = &ProjectTag{
+				Full:    gitTag,
+				Project: name,
+				Version: gitTag,
+			}
 		} else {
-			p.logger.Debug("Git tag does not match project name", "tag", gitTag, "project", name)
+			t, err := ParseProjectTag(gitTag)
+			if err != nil {
+				p.logger.Warn("Failed to parse project tag", "error", err)
+			} else if t.Project == name {
+				tag = &t
+			} else {
+				p.logger.Debug("Git tag does not match project name", "tag", gitTag, "project", name)
+			}
 		}
 	} else {
 		p.logger.Debug("No git tag found")
