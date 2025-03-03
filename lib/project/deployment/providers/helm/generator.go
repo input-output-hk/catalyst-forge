@@ -15,7 +15,7 @@ type HelmManifestGenerator struct {
 	logger     *slog.Logger
 }
 
-func (h *HelmManifestGenerator) Generate(mod sp.Module) ([]byte, error) {
+func (h *HelmManifestGenerator) Generate(mod sp.Module, env string) ([]byte, error) {
 	client := action.NewInstall(&action.Configuration{})
 
 	client.ReleaseName = mod.Instance

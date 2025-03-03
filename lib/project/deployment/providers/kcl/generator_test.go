@@ -24,6 +24,7 @@ func TestKCLManifestGeneratorGenerate(t *testing.T) {
 	tests := []struct {
 		name     string
 		module   sp.Module
+		env      string
 		out      string
 		files    map[string]string
 		err      bool
@@ -39,11 +40,13 @@ func TestKCLManifestGeneratorGenerate(t *testing.T) {
 				Values:    "test",
 				Version:   "1.0.0",
 			},
+			env: "test",
 			out: "output",
 			err: false,
 			validate: func(t *testing.T, result testResult) {
 				require.NoError(t, result.err)
 				assert.Equal(t, client.KCLModuleConfig{
+					Env:       "test",
 					Instance:  "instance",
 					Namespace: "default",
 					Name:      "module",
@@ -62,6 +65,7 @@ func TestKCLManifestGeneratorGenerate(t *testing.T) {
 				Path:      "/mod",
 				Values:    "test",
 			},
+			env: "test",
 			out: "output",
 			files: map[string]string{
 				"/mod/kcl.mod": `
@@ -75,6 +79,7 @@ version = "1.0.0"
 			validate: func(t *testing.T, result testResult) {
 				require.NoError(t, result.err)
 				assert.Equal(t, client.KCLModuleConfig{
+					Env:       "test",
 					Instance:  "instance",
 					Name:      "module",
 					Namespace: "default",
@@ -95,6 +100,7 @@ version = "1.0.0"
 				Values:    "test",
 				Version:   "1.0.0",
 			},
+			env: "test",
 			out: "output",
 			err: true,
 			validate: func(t *testing.T, result testResult) {
@@ -131,7 +137,7 @@ version = "1.0.0"
 				logger: testutils.NewNoopLogger(),
 			}
 
-			out, err := g.Generate(tt.module)
+			out, err := g.Generate(tt.module, tt.env)
 			tt.validate(t, testResult{
 				conf: c,
 				err:  err,

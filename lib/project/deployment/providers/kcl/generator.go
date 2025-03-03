@@ -32,7 +32,7 @@ type KCLManifestGenerator struct {
 	logger *slog.Logger
 }
 
-func (g *KCLManifestGenerator) Generate(mod sp.Module) ([]byte, error) {
+func (g *KCLManifestGenerator) Generate(mod sp.Module, env string) ([]byte, error) {
 	var conf client.KCLModuleConfig
 	var path string
 	if mod.Path != "" {
@@ -44,6 +44,7 @@ func (g *KCLManifestGenerator) Generate(mod sp.Module) ([]byte, error) {
 
 		path = mod.Path
 		conf = client.KCLModuleConfig{
+			Env:       env,
 			Instance:  mod.Instance,
 			Name:      kmod.Package.Name,
 			Namespace: mod.Namespace,
@@ -53,6 +54,7 @@ func (g *KCLManifestGenerator) Generate(mod sp.Module) ([]byte, error) {
 	} else {
 		path = fmt.Sprintf("oci://%s/%s?tag=%s", strings.TrimSuffix(mod.Registry, "/"), mod.Name, mod.Version)
 		conf = client.KCLModuleConfig{
+			Env:       env,
 			Instance:  mod.Instance,
 			Name:      mod.Name,
 			Namespace: mod.Namespace,

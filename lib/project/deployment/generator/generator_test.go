@@ -29,14 +29,17 @@ func TestGeneratorGenerateBundle(t *testing.T) {
 			name: "full",
 			bundle: deployment.ModuleBundle{
 				Bundle: sp.ModuleBundle{
-					"test": sp.Module{
-						Instance:  "instance",
-						Name:      "test",
-						Namespace: "default",
-						Registry:  "registry",
-						Type:      "kcl",
-						Values:    ctx.CompileString(`foo: "bar"`),
-						Version:   "1.0.0",
+					Env: "test",
+					Modules: map[string]sp.Module{
+						"test": sp.Module{
+							Instance:  "instance",
+							Name:      "test",
+							Namespace: "default",
+							Registry:  "registry",
+							Type:      "kcl",
+							Values:    ctx.CompileString(`foo: "bar"`),
+							Version:   "1.0.0",
+						},
 					},
 				},
 			},
@@ -47,17 +50,19 @@ func TestGeneratorGenerateBundle(t *testing.T) {
 				require.NoError(t, err)
 
 				m := `{
-	test: {
-		env:       ""
-		instance:  "instance"
-		name:      "test"
-		namespace: "default"
-		registry:  "registry"
-		type:      "kcl"
-		values: {
-			foo: "bar"
+	env: "test"
+	modules: {
+		test: {
+			instance:  "instance"
+			name:      "test"
+			namespace: "default"
+			registry:  "registry"
+			type:      "kcl"
+			values: {
+				foo: "bar"
+			}
+			version: "1.0.0"
 		}
-		version: "1.0.0"
 	}
 }`
 				assert.Equal(t, m, string(result.Module))
@@ -68,14 +73,17 @@ func TestGeneratorGenerateBundle(t *testing.T) {
 			name: "manifest error",
 			bundle: deployment.ModuleBundle{
 				Bundle: sp.ModuleBundle{
-					"test": sp.Module{
-						Instance:  "instance",
-						Name:      "test",
-						Namespace: "default",
-						Registry:  "registry",
-						Type:      "kcl",
-						Values:    ctx.CompileString(`foo: "bar"`),
-						Version:   "1.0.0",
+					Env: "test",
+					Modules: map[string]sp.Module{
+						"test": sp.Module{
+							Instance:  "instance",
+							Name:      "test",
+							Namespace: "default",
+							Registry:  "registry",
+							Type:      "kcl",
+							Values:    ctx.CompileString(`foo: "bar"`),
+							Version:   "1.0.0",
+						},
 					},
 				},
 			},
@@ -90,7 +98,7 @@ func TestGeneratorGenerateBundle(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			mg := &mocks.ManifestGeneratorMock{
-				GenerateFunc: func(mod sp.Module) ([]byte, error) {
+				GenerateFunc: func(mod sp.Module, env string) ([]byte, error) {
 					if tt.err {
 						return nil, fmt.Errorf("error")
 					}
@@ -125,6 +133,7 @@ func TestGeneratorGenerate(t *testing.T) {
 		name     string
 		module   sp.Module
 		yaml     string
+		env      string
 		err      bool
 		validate func(t *testing.T, result []byte, err error)
 	}{
@@ -140,6 +149,7 @@ func TestGeneratorGenerate(t *testing.T) {
 				Version:   "1.0.0",
 			},
 			yaml: "test",
+			env:  "test",
 			err:  false,
 			validate: func(t *testing.T, result []byte, err error) {
 				require.NoError(t, err)
@@ -156,6 +166,7 @@ func TestGeneratorGenerate(t *testing.T) {
 				Version:   "1.0.0",
 			},
 			yaml: "test",
+			env:  "test",
 			err:  true,
 			validate: func(t *testing.T, result []byte, err error) {
 				assert.Error(t, err)
@@ -166,7 +177,7 @@ func TestGeneratorGenerate(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			mg := &mocks.ManifestGeneratorMock{
-				GenerateFunc: func(mod sp.Module) ([]byte, error) {
+				GenerateFunc: func(mod sp.Module, env string) ([]byte, error) {
 					if tt.err {
 						return nil, fmt.Errorf("error")
 					}
@@ -188,7 +199,7 @@ func TestGeneratorGenerate(t *testing.T) {
 				store:  store,
 			}
 
-			result, err := gen.Generate(tt.module)
+			result, err := gen.Generate(tt.module, tt.env)
 			tt.validate(t, result, err)
 		})
 	}

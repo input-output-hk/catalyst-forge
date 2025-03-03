@@ -4,16 +4,16 @@ package project
     // On contains the events that trigger the deployment.
     on: [string]: _
 
-    // Modules contains the deployment modules for the project.
-    modules: #ModuleBundle
+    // Bundle contains the deployment modules for the project.
+    bundle: #ModuleBundle
 }
 
-#ModuleBundle: [string]: #Module
+#ModuleBundle: {
+    env: string | *"dev"
+    modules: [string]: #Module
+}
 
 #Module: {
-    // Env contains the environment this module is being deployed to.
-    env: string | *"dev"
-
     // Instance contains the instance name to use for all generated resources.
     instance?: string
 

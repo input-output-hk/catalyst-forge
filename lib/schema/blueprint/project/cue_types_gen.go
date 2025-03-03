@@ -15,16 +15,17 @@ type Deployment struct {
 	// On contains the events that trigger the deployment.
 	On map[string]any/* CUE top */ `json:"on"`
 
-	// Modules contains the deployment modules for the project.
-	Modules ModuleBundle `json:"modules"`
+	// Bundle contains the deployment modules for the project.
+	Bundle ModuleBundle `json:"bundle"`
 }
 
-type ModuleBundle map[string]Module
-
-type Module struct {
-	// Env contains the environment this module is being deployed to.
+type ModuleBundle struct {
 	Env string `json:"env"`
 
+	Modules map[string]Module `json:"modules"`
+}
+
+type Module struct {
 	// Instance contains the instance name to use for all generated resources.
 	Instance string `json:"instance,omitempty"`
 

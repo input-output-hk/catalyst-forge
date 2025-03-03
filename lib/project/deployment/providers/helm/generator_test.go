@@ -40,7 +40,7 @@ func TestHelmManifestGenerator(t *testing.T) {
 		Version: "1.0.0",
 	}
 
-	result, err := gen.Generate(mod)
+	result, err := gen.Generate(mod, "test")
 	require.NoError(t, err)
 
 	golden, err := os.ReadFile("./testdata/golden.yaml")
