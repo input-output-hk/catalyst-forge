@@ -22,7 +22,7 @@ project: {
 			env: "dev"
 			modules: main: {
 				name:    "app"
-				version: "0.4.0"
+				version: "0.4.3"
 				values: {
 					deployment: containers: main: {
 						image: {
