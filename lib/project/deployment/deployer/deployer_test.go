@@ -100,21 +100,21 @@ func TestDeployerDeploy(t *testing.T) {
 				},
 			),
 			files: map[string]string{
-				mkPath("dev", "project", "env.mod.cue"): `main: values: { key1: "value1" }`,
+				mkPath("test", "project", "env.mod.cue"): `main: values: { key1: "value1" }`,
 			},
 			dryrun: false,
 			validate: func(t *testing.T, r testResult) {
 				require.NoError(t, r.err)
 
-				e, err := afero.Exists(r.fs, mkPath("dev", "project", "main.yaml"))
+				e, err := afero.Exists(r.fs, mkPath("test", "project", "main.yaml"))
 				require.NoError(t, err)
 				assert.True(t, e)
 
-				e, err = afero.Exists(r.fs, mkPath("dev", "project", "mod.cue"))
+				e, err = afero.Exists(r.fs, mkPath("test", "project", "mod.cue"))
 				require.NoError(t, err)
 				assert.True(t, e)
 
-				c, err := afero.ReadFile(r.fs, mkPath("dev", "project", "main.yaml"))
+				c, err := afero.ReadFile(r.fs, mkPath("test", "project", "main.yaml"))
 				require.NoError(t, err)
 				assert.Equal(t, "manifest", string(c))
 
@@ -134,7 +134,7 @@ func TestDeployerDeploy(t *testing.T) {
 		}
 	}
 }`
-				c, err = afero.ReadFile(r.fs, mkPath("dev", "project", "mod.cue"))
+				c, err = afero.ReadFile(r.fs, mkPath("test", "project", "mod.cue"))
 				require.NoError(t, err)
 				assert.Equal(t, mod, string(c))
 
@@ -172,21 +172,21 @@ func TestDeployerDeploy(t *testing.T) {
 				},
 			),
 			files: map[string]string{
-				mkPath("dev", "project", "extra.yaml"): "extra",
+				mkPath("test", "project", "extra.yaml"): "extra",
 			},
 			dryrun: true,
 			validate: func(t *testing.T, r testResult) {
 				require.NoError(t, r.err)
 
-				e, err := afero.Exists(r.fs, mkPath("dev", "project", "main.yaml"))
+				e, err := afero.Exists(r.fs, mkPath("test", "project", "main.yaml"))
 				require.NoError(t, err)
 				assert.True(t, e)
 
-				e, err = afero.Exists(r.fs, mkPath("dev", "project", "mod.cue"))
+				e, err = afero.Exists(r.fs, mkPath("test", "project", "mod.cue"))
 				require.NoError(t, err)
 				assert.True(t, e)
 
-				e, err = afero.Exists(r.fs, mkPath("dev", "project", "extra.yaml"))
+				e, err = afero.Exists(r.fs, mkPath("test", "project", "extra.yaml"))
 				require.NoError(t, err)
 				assert.False(t, e)
 
@@ -194,13 +194,13 @@ func TestDeployerDeploy(t *testing.T) {
 				require.NoError(t, err)
 				st, err := wt.Status()
 				require.NoError(t, err)
-				fst := st.File("root/dev/project/extra.yaml")
+				fst := st.File("root/test/project/extra.yaml")
 				assert.Equal(t, fst.Staging, gg.Deleted)
 
-				fst = st.File("root/dev/project/main.yaml")
+				fst = st.File("root/test/project/main.yaml")
 				assert.Equal(t, fst.Staging, gg.Added)
 
-				fst = st.File("root/dev/project/mod.cue")
+				fst = st.File("root/test/project/mod.cue")
 				assert.Equal(t, fst.Staging, gg.Added)
 
 				head, err := r.repo.Head()
@@ -208,6 +208,30 @@ func TestDeployerDeploy(t *testing.T) {
 				cm, err := r.repo.CommitObject(head.Hash())
 				require.NoError(t, err)
 				assert.Equal(t, "initial commit", cm.Message)
+			},
+		},
+		{
+			name: "deploy to production",
+			project: newProject(
+				"project",
+				sp.ModuleBundle{
+					Env: "prod",
+					Modules: map[string]sp.Module{"main": {
+						Instance:  "instance",
+						Name:      "module",
+						Namespace: "default",
+						Registry:  "registry",
+						Type:      "kcl",
+						Values:    map[string]string{"key": "value"},
+						Version:   "v1.0.0",
+					},
+					},
+				},
+			),
+			files:  map[string]string{},
+			dryrun: true,
+			validate: func(t *testing.T, r testResult) {
+				assert.Error(t, r.err)
 			},
 		},
 	}

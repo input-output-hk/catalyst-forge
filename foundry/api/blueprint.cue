@@ -19,7 +19,7 @@ project: {
 			tag: {}
 		}
 		bundle: {
-			env: "dev"
+			env: "shared-services"
 			modules: main: {
 				name:    "app"
 				version: "0.4.3"

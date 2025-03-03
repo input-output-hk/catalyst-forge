@@ -52,6 +52,10 @@ type Deployer struct {
 
 // DeployProject deploys the manifests for a project to the GitOps repository.
 func (d *Deployer) Deploy() error {
+	if d.project.Blueprint.Project.Deployment.Bundle.Env == "prod" {
+		return fmt.Errorf("cannot deploy to production environment")
+	}
+
 	r, err := d.clone()
 	if err != nil {
 		return err
@@ -134,7 +138,8 @@ func (d *Deployer) Deploy() error {
 // buildProjectPath builds the path to the project in the GitOps repository.
 func (d *Deployer) buildProjectPath() string {
 	globalDeploy := d.project.Blueprint.Global.Deployment
-	return fmt.Sprintf(PATH, globalDeploy.Root, DEFAULT_ENV, d.project.Name)
+	env := d.project.Blueprint.Project.Deployment.Bundle.Env
+	return fmt.Sprintf(PATH, globalDeploy.Root, env, d.project.Name)
 }
 
 // checkProjectPath checks if the project path exists and creates it if it does not.
