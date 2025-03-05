@@ -44,7 +44,7 @@ runs:
       #continue-on-error: true
       shell: bash
       run: |
-        echo "==== AWS Setup!! ====="
+        echo "==== AWS Setup ====="
         BP=$(forge dump .)
 
         AWS=$(echo "$BP" | jq -r .global.ci.providers.aws)
@@ -74,7 +74,11 @@ runs:
     - name: Testing
       shell: bash
       run: |
-        echo "testing"
+        echo "==== Testing ====="
+        BP=$(forge dump .)
+
+        DOCKER=$(echo "$BP" | jq -r .global.ci.providers.docker.credentials)
+        echo "$DOCKER"
     # Docker Provider
     - name: Get Docker provider configuration
       id: docker
