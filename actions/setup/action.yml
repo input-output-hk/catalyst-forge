@@ -67,23 +67,14 @@ runs:
         role-to-assume: ${{ steps.aws.outputs.role }}
     - name: Login to ECR
       uses: docker/login-action@v3
-      if: steps.aws.outputs.registry != '' && steps.aws.conclusion == 'success'
+      if: steps.aws.outputs.registry != 'null' && steps.aws.conclusion == 'success'
       with:
         registry: ${{ steps.aws.outputs.registry }}
-
-    - name: Testing
-      shell: bash
-      run: |
-        echo "==== Testing ====="
-        BP=$(forge dump .)
-
-        DOCKER=$(echo "$BP" | jq -r .global.ci.providers.docker.credentials)
-        echo "$DOCKER"
 
     # Docker Provider
     - name: Get Docker provider configuration
       id: docker
-      #if: inputs.skip_docker  == 'false'
+      if: inputs.skip_docker  == 'false'
       #continue-on-error: true
       shell: bash
       run: |
@@ -109,12 +100,12 @@ runs:
         else
           echo "No configuration found for DockerHub provider"
         fi
-    # - name: Login to Docker Hub
-    #   uses: docker/login-action@v3
-    #   if: steps.docker.outputs.username != '' && steps.docker.outputs.password != '' && steps.docker.conclusion == 'success'
-    #   with:
-    #     username: ${{ steps.docker.outputs.username }}
-    #     password: ${{ steps.docker.outputs.password }}
+    - name: Login to Docker Hub
+      uses: docker/login-action@v3
+      if: steps.docker.outputs.username != '' && steps.docker.outputs.password != '' && steps.docker.conclusion == 'success'
+      with:
+        username: ${{ steps.docker.outputs.username }}
+        password: ${{ steps.docker.outputs.password }}
 
     # GitHub Provider
     - name: Get GitHub provider configuration
