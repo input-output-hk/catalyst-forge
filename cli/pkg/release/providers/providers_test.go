@@ -5,8 +5,8 @@ import (
 
 	"cuelang.org/go/cue"
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/earthly"
+	emocks "github.com/input-output-hk/catalyst-forge/cli/pkg/earthly/mocks"
 	evmocks "github.com/input-output-hk/catalyst-forge/cli/pkg/events/mocks"
-	rmocks "github.com/input-output-hk/catalyst-forge/cli/pkg/run/mocks"
 	"github.com/input-output-hk/catalyst-forge/lib/project/project"
 )
 
@@ -18,8 +18,8 @@ func newReleaseEventHandlerMock(firing bool) *evmocks.EventHandlerMock {
 	}
 }
 
-func newProjectRunnerMock(fail bool) *rmocks.ProjectRunnerMock {
-	return &rmocks.ProjectRunnerMock{
+func newProjectRunnerMock(fail bool) *emocks.ProjectRunnerMock {
+	return &emocks.ProjectRunnerMock{
 		RunTargetFunc: func(target string, opts ...earthly.EarthlyExecutorOption) error {
 			if fail {
 				return fmt.Errorf("failed to run release target")

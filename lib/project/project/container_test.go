@@ -3,7 +3,8 @@ package project
 import (
 	"testing"
 
-	"github.com/input-output-hk/catalyst-forge/lib/project/schema"
+	sb "github.com/input-output-hk/catalyst-forge/lib/schema/blueprint"
+	sg "github.com/input-output-hk/catalyst-forge/lib/schema/blueprint/global"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -71,9 +72,9 @@ func TestGenerateContainerName(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			p := &Project{
 				Name: tt.projectName,
-				Blueprint: schema.Blueprint{
-					Global: schema.Global{
-						Repo: schema.GlobalRepo{
+				Blueprint: sb.Blueprint{
+					Global: &sg.Global{
+						Repo: &sg.Repo{
 							Name: tt.repoName,
 						},
 					},

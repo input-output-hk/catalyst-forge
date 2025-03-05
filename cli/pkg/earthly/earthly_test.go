@@ -6,10 +6,9 @@ import (
 	"testing"
 
 	emocks "github.com/input-output-hk/catalyst-forge/cli/pkg/executor/mocks"
-	"github.com/input-output-hk/catalyst-forge/lib/project/schema"
 	"github.com/input-output-hk/catalyst-forge/lib/project/secrets"
 	smocks "github.com/input-output-hk/catalyst-forge/lib/project/secrets/mocks"
-	"github.com/input-output-hk/catalyst-forge/lib/project/utils"
+	sc "github.com/input-output-hk/catalyst-forge/lib/schema/blueprint/common"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/testutils"
 	"github.com/stretchr/testify/assert"
 )
@@ -188,7 +187,7 @@ func TestEarthlyExecutor_buildSecrets(t *testing.T) {
 	tests := []struct {
 		name        string
 		provider    secrets.SecretProvider
-		secrets     []schema.Secret
+		secrets     []sc.Secret
 		expect      []EarthlySecret
 		expectErr   bool
 		expectedErr string
@@ -200,7 +199,7 @@ func TestEarthlyExecutor_buildSecrets(t *testing.T) {
 					return `{"key": "value"}`, nil
 				},
 			},
-			secrets: []schema.Secret{
+			secrets: []sc.Secret{
 				{
 					Path:     "path",
 					Provider: "mock",
@@ -225,9 +224,9 @@ func TestEarthlyExecutor_buildSecrets(t *testing.T) {
 					return "secret", nil
 				},
 			},
-			secrets: []schema.Secret{
+			secrets: []sc.Secret{
 				{
-					Name:     utils.StringPtr("name"),
+					Name:     "name",
 					Path:     "path",
 					Provider: "mock",
 					Maps:     map[string]string{},
@@ -249,10 +248,10 @@ func TestEarthlyExecutor_buildSecrets(t *testing.T) {
 					return "", fmt.Errorf("not found")
 				},
 			},
-			secrets: []schema.Secret{
+			secrets: []sc.Secret{
 				{
-					Name:     utils.StringPtr("name"),
-					Optional: utils.BoolPtr(true),
+					Name:     "name",
+					Optional: true,
 					Path:     "path",
 					Provider: "mock",
 					Maps:     map[string]string{},
@@ -268,9 +267,9 @@ func TestEarthlyExecutor_buildSecrets(t *testing.T) {
 					return "", nil
 				},
 			},
-			secrets: []schema.Secret{
+			secrets: []sc.Secret{
 				{
-					Name:     utils.StringPtr("name"),
+					Name:     "name",
 					Path:     "path",
 					Provider: "mock",
 					Maps: map[string]string{
@@ -289,7 +288,7 @@ func TestEarthlyExecutor_buildSecrets(t *testing.T) {
 					return `{"key": "value"}`, nil
 				},
 			},
-			secrets: []schema.Secret{
+			secrets: []sc.Secret{
 				{
 					Path:     "path",
 					Provider: "mock",
@@ -309,7 +308,7 @@ func TestEarthlyExecutor_buildSecrets(t *testing.T) {
 					return `invalid`, nil
 				},
 			},
-			secrets: []schema.Secret{
+			secrets: []sc.Secret{
 				{
 					Path:     "path",
 					Provider: "mock",
@@ -329,7 +328,7 @@ func TestEarthlyExecutor_buildSecrets(t *testing.T) {
 					return "", nil
 				},
 			},
-			secrets: []schema.Secret{
+			secrets: []sc.Secret{
 				{
 					Path:     "path",
 					Provider: "bad",
@@ -347,7 +346,7 @@ func TestEarthlyExecutor_buildSecrets(t *testing.T) {
 					return "", fmt.Errorf("error")
 				},
 			},
-			secrets: []schema.Secret{
+			secrets: []sc.Secret{
 				{
 					Path:     "path",
 					Provider: "mock",

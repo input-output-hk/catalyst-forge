@@ -16,12 +16,8 @@ type GitProviderCreds struct {
 
 // GetGitProviderCreds loads the Git provider credentials from the project.
 func GetGitProviderCreds(p *project.Project, logger *slog.Logger) (GitProviderCreds, error) {
-	secret := p.Blueprint.Global.CI.Providers.Git.Credentials
-	if secret == nil {
-		return GitProviderCreds{}, fmt.Errorf("project does not have a Git provider configured")
-	}
-
-	m, err := secrets.GetSecretMap(secret, &p.SecretStore, logger)
+	secret := p.Blueprint.Global.Ci.Providers.Git.Credentials
+	m, err := secrets.GetSecretMap(&secret, &p.SecretStore, logger)
 	if err != nil {
 		return GitProviderCreds{}, fmt.Errorf("could not get secret: %w", err)
 	}

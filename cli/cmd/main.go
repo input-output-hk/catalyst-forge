@@ -12,11 +12,10 @@ import (
 	"github.com/input-output-hk/catalyst-forge/cli/cmd/cmds"
 	"github.com/input-output-hk/catalyst-forge/cli/cmd/cmds/module"
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/run"
-	"github.com/input-output-hk/catalyst-forge/lib/project/deployment/generator"
-	"github.com/input-output-hk/catalyst-forge/lib/project/deployment/providers/kcl"
+	"github.com/input-output-hk/catalyst-forge/lib/project/deployment"
 	"github.com/input-output-hk/catalyst-forge/lib/project/project"
-	"github.com/input-output-hk/catalyst-forge/lib/project/schema"
 	"github.com/input-output-hk/catalyst-forge/lib/project/secrets"
+	schema "github.com/input-output-hk/catalyst-forge/lib/schema"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/walker"
 	"github.com/posener/complete"
 	"github.com/willabides/kongplete"
@@ -92,18 +91,18 @@ func Run() int {
 
 	logger := slog.New(handler)
 	store := secrets.NewDefaultSecretStore()
-	loader := project.NewDefaultProjectLoader(store, logger)
-	gen := generator.NewGenerator(kcl.NewKCLManifestGenerator(logger), logger)
+	cc := cuecontext.New()
+	loader := project.NewDefaultProjectLoader(cc, store, logger)
 	runctx := run.RunContext{
-		CI:                  cli.GlobalArgs.CI,
-		DeploymentGenerator: gen,
-		FSWalker:            walker.NewDefaultFSWalker(logger),
-		Local:               cli.GlobalArgs.Local,
-		Logger:              logger,
-		ManifestGenerator:   kcl.NewKCLManifestGenerator(logger),
-		ProjectLoader:       &loader,
-		SecretStore:         store,
-		Verbose:             cli.GlobalArgs.Verbose,
+		CI:                     cli.GlobalArgs.CI,
+		CueCtx:                 cc,
+		FSWalker:               walker.NewDefaultFSWalker(logger),
+		Local:                  cli.GlobalArgs.Local,
+		Logger:                 logger,
+		ManifestGeneratorStore: deployment.NewDefaultManifestGeneratorStore(),
+		ProjectLoader:          &loader,
+		SecretStore:            store,
+		Verbose:                cli.GlobalArgs.Verbose,
 	}
 	ctx.Bind(runctx)
 

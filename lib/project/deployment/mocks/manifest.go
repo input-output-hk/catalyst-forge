@@ -4,7 +4,7 @@
 package mocks
 
 import (
-	"github.com/input-output-hk/catalyst-forge/lib/project/schema"
+	sp "github.com/input-output-hk/catalyst-forge/lib/schema/blueprint/project"
 	"sync"
 )
 
@@ -14,7 +14,7 @@ import (
 //
 //		// make and configure a mocked deployment.ManifestGenerator
 //		mockedManifestGenerator := &ManifestGeneratorMock{
-//			GenerateFunc: func(mod schema.DeploymentModule) ([]byte, error) {
+//			GenerateFunc: func(mod sp.Module, env string) ([]byte, error) {
 //				panic("mock out the Generate method")
 //			},
 //		}
@@ -25,33 +25,37 @@ import (
 //	}
 type ManifestGeneratorMock struct {
 	// GenerateFunc mocks the Generate method.
-	GenerateFunc func(mod schema.DeploymentModule) ([]byte, error)
+	GenerateFunc func(mod sp.Module, env string) ([]byte, error)
 
 	// calls tracks calls to the methods.
 	calls struct {
 		// Generate holds details about calls to the Generate method.
 		Generate []struct {
 			// Mod is the mod argument value.
-			Mod schema.DeploymentModule
+			Mod sp.Module
+			// Env is the env argument value.
+			Env string
 		}
 	}
 	lockGenerate sync.RWMutex
 }
 
 // Generate calls GenerateFunc.
-func (mock *ManifestGeneratorMock) Generate(mod schema.DeploymentModule) ([]byte, error) {
+func (mock *ManifestGeneratorMock) Generate(mod sp.Module, env string) ([]byte, error) {
 	if mock.GenerateFunc == nil {
 		panic("ManifestGeneratorMock.GenerateFunc: method is nil but ManifestGenerator.Generate was just called")
 	}
 	callInfo := struct {
-		Mod schema.DeploymentModule
+		Mod sp.Module
+		Env string
 	}{
 		Mod: mod,
+		Env: env,
 	}
 	mock.lockGenerate.Lock()
 	mock.calls.Generate = append(mock.calls.Generate, callInfo)
 	mock.lockGenerate.Unlock()
-	return mock.GenerateFunc(mod)
+	return mock.GenerateFunc(mod, env)
 }
 
 // GenerateCalls gets all the calls that were made to Generate.
@@ -59,10 +63,12 @@ func (mock *ManifestGeneratorMock) Generate(mod schema.DeploymentModule) ([]byte
 //
 //	len(mockedManifestGenerator.GenerateCalls())
 func (mock *ManifestGeneratorMock) GenerateCalls() []struct {
-	Mod schema.DeploymentModule
+	Mod sp.Module
+	Env string
 } {
 	var calls []struct {
-		Mod schema.DeploymentModule
+		Mod sp.Module
+		Env string
 	}
 	mock.lockGenerate.RLock()
 	calls = mock.calls.Generate

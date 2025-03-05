@@ -55,6 +55,14 @@ global: {
 				}
 				registry: "ghcr.io"
 			}
+
+			kcl: {
+				install: true
+				registries: [
+					"ghcr.io/input-output-hk/catalyst-forge",
+				]
+				version: "v0.11.0"
+			}
 		}
 		secrets: [
 			{

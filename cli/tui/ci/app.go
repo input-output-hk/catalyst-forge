@@ -123,7 +123,7 @@ func Run(scanPath string,
 		logger = slog.New(slog.NewTextHandler(io.Discard, nil))
 	}
 
-	loader := project.NewDefaultProjectLoader(runctx.SecretStore, logger)
+	loader := project.NewDefaultProjectLoader(runctx.CueCtx, runctx.SecretStore, logger)
 
 	if scanPath == "" {
 		scanPath, err := findRoot(".", logger)
@@ -150,12 +150,12 @@ func Run(scanPath string,
 	if err != nil {
 		return fmt.Errorf("failed to load project: %w", err)
 	}
-	if len(project.Blueprint.Global.CI.Local) <= 0 {
+	if len(project.Blueprint.Global.Ci.Local) <= 0 {
 		return fmt.Errorf("no local CI filters found in project")
 	}
 
 	ci := CI{
-		filters:  project.Blueprint.Global.CI.Local,
+		filters:  project.Blueprint.Global.Ci.Local,
 		loader:   &loader,
 		logger:   logger,
 		options:  opts,

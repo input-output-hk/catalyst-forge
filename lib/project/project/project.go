@@ -8,8 +8,8 @@ import (
 
 	"cuelang.org/go/cue"
 	"github.com/input-output-hk/catalyst-forge/lib/project/blueprint"
-	"github.com/input-output-hk/catalyst-forge/lib/project/schema"
 	"github.com/input-output-hk/catalyst-forge/lib/project/secrets"
+	sb "github.com/input-output-hk/catalyst-forge/lib/schema/blueprint"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/earthfile"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/git/repo"
 )
@@ -17,7 +17,7 @@ import (
 // Project represents a project
 type Project struct {
 	// Blueprint is the project blueprint.
-	Blueprint schema.Blueprint
+	Blueprint sb.Blueprint
 
 	// Earthfile is the project Earthfile.
 	Earthfile *earthfile.Earthfile
@@ -123,7 +123,7 @@ func NewProject(
 	repo *repo.GitRepo,
 	earthfile *earthfile.Earthfile,
 	name, path, repoRoot string,
-	blueprint schema.Blueprint,
+	blueprint sb.Blueprint,
 	tag *ProjectTag,
 	logger *slog.Logger,
 	secretStore secrets.SecretStore,

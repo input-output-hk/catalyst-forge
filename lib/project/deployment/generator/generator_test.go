@@ -2,11 +2,14 @@ package generator
 
 import (
 	"fmt"
+	"log/slog"
 	"testing"
 
+	"cuelang.org/go/cue"
 	"cuelang.org/go/cue/cuecontext"
+	"github.com/input-output-hk/catalyst-forge/lib/project/deployment"
 	"github.com/input-output-hk/catalyst-forge/lib/project/deployment/mocks"
-	"github.com/input-output-hk/catalyst-forge/lib/project/schema"
+	sp "github.com/input-output-hk/catalyst-forge/lib/schema/blueprint/project"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/testutils"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -16,38 +19,50 @@ func TestGeneratorGenerateBundle(t *testing.T) {
 	ctx := cuecontext.New()
 	tests := []struct {
 		name     string
-		bundle   schema.DeploymentModuleBundle
+		bundle   deployment.ModuleBundle
+		env      cue.Value
 		yaml     string
 		err      bool
 		validate func(t *testing.T, result GeneratorResult, err error)
 	}{
 		{
 			name: "full",
-			bundle: schema.DeploymentModuleBundle{
-				"test": schema.DeploymentModule{
-					Instance:  "instance",
-					Name:      "test",
-					Namespace: "default",
-					Registry:  "registry",
-					Values:    ctx.CompileString(`foo: "bar"`),
-					Version:   "1.0.0",
+			bundle: deployment.ModuleBundle{
+				Bundle: sp.ModuleBundle{
+					Env: "test",
+					Modules: map[string]sp.Module{
+						"test": sp.Module{
+							Instance:  "instance",
+							Name:      "test",
+							Namespace: "default",
+							Registry:  "registry",
+							Type:      "kcl",
+							Values:    ctx.CompileString(`foo: "bar"`),
+							Version:   "1.0.0",
+						},
+					},
 				},
 			},
+			env:  ctx.CompileString(`test: values: { bar: "baz" }`),
 			yaml: "test",
 			err:  false,
 			validate: func(t *testing.T, result GeneratorResult, err error) {
 				require.NoError(t, err)
 
 				m := `{
-	test: {
-		instance:  "instance"
-		name:      "test"
-		namespace: "default"
-		registry:  "registry"
-		values: {
-			foo: "bar"
+	env: "test"
+	modules: {
+		test: {
+			instance:  "instance"
+			name:      "test"
+			namespace: "default"
+			registry:  "registry"
+			type:      "kcl"
+			values: {
+				foo: "bar"
+			}
+			version: "1.0.0"
 		}
-		version: "1.0.0"
 	}
 }`
 				assert.Equal(t, m, string(result.Module))
@@ -56,36 +71,24 @@ func TestGeneratorGenerateBundle(t *testing.T) {
 		},
 		{
 			name: "manifest error",
-			bundle: schema.DeploymentModuleBundle{
-				"test": schema.DeploymentModule{
-					Instance:  "instance",
-					Name:      "test",
-					Namespace: "default",
-					Registry:  "registry",
-					Values:    ctx.CompileString(`foo: "bar"`),
-					Version:   "1.0.0",
+			bundle: deployment.ModuleBundle{
+				Bundle: sp.ModuleBundle{
+					Env: "test",
+					Modules: map[string]sp.Module{
+						"test": sp.Module{
+							Instance:  "instance",
+							Name:      "test",
+							Namespace: "default",
+							Registry:  "registry",
+							Type:      "kcl",
+							Values:    ctx.CompileString(`foo: "bar"`),
+							Version:   "1.0.0",
+						},
+					},
 				},
 			},
 			yaml: "test",
 			err:  true,
-			validate: func(t *testing.T, result GeneratorResult, err error) {
-				assert.Error(t, err)
-			},
-		},
-		{
-			name: "module error",
-			bundle: schema.DeploymentModuleBundle{
-				"test": schema.DeploymentModule{
-					Instance:  "instance",
-					Name:      "test",
-					Namespace: "default",
-					Registry:  "registry",
-					Values:    fmt.Errorf("error"),
-					Version:   "1.0.0",
-				},
-			},
-			yaml: "test",
-			err:  false,
 			validate: func(t *testing.T, result GeneratorResult, err error) {
 				assert.Error(t, err)
 			},
@@ -95,7 +98,7 @@ func TestGeneratorGenerateBundle(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			mg := &mocks.ManifestGeneratorMock{
-				GenerateFunc: func(mod schema.DeploymentModule) ([]byte, error) {
+				GenerateFunc: func(mod sp.Module, env string) ([]byte, error) {
 					if tt.err {
 						return nil, fmt.Errorf("error")
 					}
@@ -103,12 +106,22 @@ func TestGeneratorGenerateBundle(t *testing.T) {
 					return []byte(tt.yaml), nil
 				},
 			}
+
+			store := deployment.NewManifestGeneratorStore(
+				map[deployment.Provider]func(*slog.Logger) deployment.ManifestGenerator{
+					deployment.ProviderKCL: func(logger *slog.Logger) deployment.ManifestGenerator {
+						return mg
+					},
+				},
+			)
+
 			gen := Generator{
-				mg:     mg,
 				logger: testutils.NewNoopLogger(),
+				store:  store,
 			}
 
-			result, err := gen.GenerateBundle(tt.bundle)
+			tt.bundle.Raw = getRaw(tt.bundle.Bundle)
+			result, err := gen.GenerateBundle(tt.bundle, tt.env)
 			tt.validate(t, result, err)
 		})
 	}
@@ -118,22 +131,25 @@ func TestGeneratorGenerate(t *testing.T) {
 	ctx := cuecontext.New()
 	tests := []struct {
 		name     string
-		module   schema.DeploymentModule
+		module   sp.Module
 		yaml     string
+		env      string
 		err      bool
 		validate func(t *testing.T, result []byte, err error)
 	}{
 		{
 			name: "full",
-			module: schema.DeploymentModule{
+			module: sp.Module{
 				Instance:  "instance",
 				Name:      "test",
 				Namespace: "default",
 				Registry:  "registry",
+				Type:      "kcl",
 				Values:    ctx.CompileString(`foo: "bar"`),
 				Version:   "1.0.0",
 			},
 			yaml: "test",
+			env:  "test",
 			err:  false,
 			validate: func(t *testing.T, result []byte, err error) {
 				require.NoError(t, err)
@@ -142,13 +158,15 @@ func TestGeneratorGenerate(t *testing.T) {
 		},
 		{
 			name: "manifest error",
-			module: schema.DeploymentModule{
+			module: sp.Module{
 				Name:      "test",
 				Namespace: "default",
+				Type:      "kcl",
 				Values:    ctx.CompileString(`foo: "bar"`),
 				Version:   "1.0.0",
 			},
 			yaml: "test",
+			env:  "test",
 			err:  true,
 			validate: func(t *testing.T, result []byte, err error) {
 				assert.Error(t, err)
@@ -159,7 +177,7 @@ func TestGeneratorGenerate(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			mg := &mocks.ManifestGeneratorMock{
-				GenerateFunc: func(mod schema.DeploymentModule) ([]byte, error) {
+				GenerateFunc: func(mod sp.Module, env string) ([]byte, error) {
 					if tt.err {
 						return nil, fmt.Errorf("error")
 					}
@@ -167,13 +185,29 @@ func TestGeneratorGenerate(t *testing.T) {
 					return []byte(tt.yaml), nil
 				},
 			}
+
+			store := deployment.NewManifestGeneratorStore(
+				map[deployment.Provider]func(*slog.Logger) deployment.ManifestGenerator{
+					deployment.ProviderKCL: func(logger *slog.Logger) deployment.ManifestGenerator {
+						return mg
+					},
+				},
+			)
+
 			gen := Generator{
-				mg:     mg,
 				logger: testutils.NewNoopLogger(),
+				store:  store,
 			}
 
-			result, err := gen.Generate(tt.module)
+			result, err := gen.Generate(tt.module, tt.env)
 			tt.validate(t, result, err)
 		})
 	}
+}
+
+func getRaw(mod sp.ModuleBundle) cue.Value {
+	ctx := cuecontext.New()
+	v := ctx.Encode(mod)
+
+	return v
 }

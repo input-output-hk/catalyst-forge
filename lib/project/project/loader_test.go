@@ -75,6 +75,25 @@ project: name: "foo"
 			},
 		},
 		{
+			name:        "non-project tag",
+			fs:          afero.NewMemMapFs(),
+			projectPath: "/project",
+			files: map[string]string{
+				"/project/Earthfile":     earthfile,
+				"/project/blueprint.cue": bp,
+			},
+			tag:       "v1.0.0",
+			injectors: []injector.BlueprintInjector{},
+			runtimes:  func(fs afero.Fs) []RuntimeData { return nil },
+			env:       map[string]string{},
+			initGit:   true,
+			validate: func(t *testing.T, p Project, err error) {
+				assert.Equal(t, "v1.0.0", p.Tag.Full)
+				assert.Equal(t, "foo", p.Tag.Project)
+				assert.Equal(t, "v1.0.0", string(p.Tag.Version))
+			},
+		},
+		{
 			name:        "with injectors",
 			fs:          afero.NewMemMapFs(),
 			projectPath: "/project",
@@ -104,7 +123,7 @@ project: {
 			initGit: true,
 			validate: func(t *testing.T, p Project, err error) {
 				assert.NoError(t, err)
-				assert.Equal(t, "bar", p.Blueprint.Project.CI.Targets["foo"].Args["foo"])
+				assert.Equal(t, "bar", p.Blueprint.Project.Ci.Targets["foo"].Args["foo"])
 			},
 		},
 		{
@@ -139,7 +158,7 @@ project: {
 				assert.NoError(t, err)
 				head, err := p.Repo.Head()
 				require.NoError(t, err)
-				assert.Equal(t, head.Hash().String(), p.Blueprint.Project.CI.Targets["foo"].Args["foo"])
+				assert.Equal(t, head.Hash().String(), p.Blueprint.Project.Ci.Targets["foo"].Args["foo"])
 			},
 		},
 		{

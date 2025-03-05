@@ -1,0 +1,2 @@
+schema Instance:
+    manifests: Manifest = {}

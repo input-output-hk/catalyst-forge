@@ -46,7 +46,7 @@ import (
 	"log"
 
 	"cuelang.org/go/cue/cuecontext"
-	"github.com/input-output-hk/catalyst-forge/lib/project/schema"
+	"github.com/input-output-hk/catalyst-forge/lib/schema/blueprint"
 )
 
 func main() {
