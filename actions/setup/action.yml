@@ -15,6 +15,7 @@ inputs:
     default: "false"
   skip_docker:
     description: If true, skip authenticating to DockerHub
+    required: false
     default: "false"
   skip_earthly:
     description: If true, skip installing Earthly and authenticating to Earthly Cloud
@@ -73,7 +74,7 @@ runs:
     # Docker Provider
     - name: Get Docker provider configuration
       id: docker
-      if: inputs.skip_docker  == 'false'
+      #if: inputs.skip_docker  == 'false'
       #continue-on-error: true
       shell: bash
       run: |
