@@ -15,6 +15,7 @@ inputs:
     default: "false"
   skip_docker:
     description: If true, skip authenticating to DockerHub
+    default: "false"
   skip_earthly:
     description: If true, skip installing Earthly and authenticating to Earthly Cloud
     required: false
