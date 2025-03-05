@@ -44,12 +44,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Install Forge
-        uses: input-output-hk/catalyst-forge/actions/install@fix-docker-setup
+        uses: input-output-hk/catalyst-forge/actions/install@master
         if: ${{ inputs.forge_version != 'local' }}
         with:
           version: ${{ inputs.forge_version }}
       - name: Install Local Forge
-        uses: input-output-hk/catalyst-forge/actions/install-local@fix-docker-setup
+        uses: input-output-hk/catalyst-forge/actions/install-local@master
         if: ${{ inputs.forge_version == 'local' }}
         with:
           earthly_token: ${{ secrets.earthly_token }}
@@ -64,11 +64,11 @@ jobs:
             echo "skip=false" >> $GITHUB_OUTPUT
           fi
       - name: Setup CI
-        uses: input-output-hk/catalyst-forge/actions/setup@fix-docker-setup
+        uses: input-output-hk/catalyst-forge/actions/setup@master
         with:
           skip_earthly: ${{ steps.local.outputs.skip }}
       - name: Run
-        uses: input-output-hk/catalyst-forge/actions/run@fix-docker-setup
+        uses: input-output-hk/catalyst-forge/actions/run@master
         with:
           command: run
           args: --artifact ${{ env.OUTPUT }} ${{ matrix.earthfile }}
