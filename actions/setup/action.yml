@@ -71,6 +71,10 @@ runs:
       with:
         registry: ${{ steps.aws.outputs.registry }}
 
+    - name: Testing
+      shell: bash
+      run: |
+        echo "testing"
     # Docker Provider
     - name: Get Docker provider configuration
       id: docker
