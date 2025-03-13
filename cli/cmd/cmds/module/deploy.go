@@ -28,15 +28,13 @@ func (c *DeployCmd) Run(ctx run.RunContext) error {
 	}
 
 	d := deployer.NewDeployer(
-		deployment.NewModuleBundle(&project),
 		deployer.NewDeployerConfigFromProject(&project),
 		ctx.ManifestGeneratorStore,
 		ctx.SecretStore,
 		ctx.Logger,
 		ctx.CueCtx,
-		dryrun,
 	)
-	if err := d.Deploy(); err != nil {
+	if err := d.Deploy(project.Name, deployment.NewModuleBundle(&project), dryrun); err != nil {
 		if err == deployer.ErrNoChanges {
 			ctx.Logger.Warn("no changes to deploy")
 			return nil
