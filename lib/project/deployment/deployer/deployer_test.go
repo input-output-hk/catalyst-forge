@@ -46,17 +46,17 @@ func TestDeployerDeploy(t *testing.T) {
 			Ref: "main",
 			Url: "url",
 		},
-		RootDir:     "root",
-		ProjectName: "project",
+		RootDir: "root",
 	}
 
 	tests := []struct {
-		name     string
-		bundle   sp.ModuleBundle
-		cfg      DeployerConfig
-		files    map[string]string
-		dryrun   bool
-		validate func(t *testing.T, r testResult)
+		name        string
+		bundle      sp.ModuleBundle
+		projectName string
+		cfg         DeployerConfig
+		files       map[string]string
+		dryrun      bool
+		validate    func(t *testing.T, r testResult)
 	}{
 		{
 			name: "success",
@@ -74,7 +74,8 @@ func TestDeployerDeploy(t *testing.T) {
 					},
 				},
 			},
-			cfg: cfg,
+			projectName: "project",
+			cfg:         cfg,
 			files: map[string]string{
 				mkPath("test", "project", "env.mod.cue"): `main: values: { key1: "value1" }`,
 			},
@@ -144,7 +145,8 @@ func TestDeployerDeploy(t *testing.T) {
 				},
 				},
 			},
-			cfg: cfg,
+			projectName: "project",
+			cfg:         cfg,
 			files: map[string]string{
 				mkPath("test", "project", "extra.yaml"): "extra",
 			},
@@ -199,9 +201,10 @@ func TestDeployerDeploy(t *testing.T) {
 				},
 				},
 			},
-			cfg:    cfg,
-			files:  map[string]string{},
-			dryrun: true,
+			projectName: "project",
+			cfg:         cfg,
+			files:       map[string]string{},
+			dryrun:      true,
 			validate: func(t *testing.T, r testResult) {
 				assert.Error(t, r.err)
 			},
@@ -276,13 +279,8 @@ func TestDeployerDeploy(t *testing.T) {
 			)
 
 			d := Deployer{
-				bundle: deployment.ModuleBundle{
-					Bundle: tt.bundle,
-					Raw:    getRaw(tt.bundle),
-				},
 				cfg:    tt.cfg,
 				ctx:    cuecontext.New(),
-				dryrun: tt.dryrun,
 				fs:     fs,
 				gen:    gen,
 				logger: testutils.NewNoopLogger(),
@@ -290,7 +288,11 @@ func TestDeployerDeploy(t *testing.T) {
 				ss:     ss,
 			}
 
-			err = d.Deploy()
+			bundle := deployment.ModuleBundle{
+				Bundle: tt.bundle,
+				Raw:    getRaw(tt.bundle),
+			}
+			err = d.Deploy(tt.projectName, bundle, tt.dryrun)
 			tt.validate(t, testResult{
 				cloneOpts: opts,
 				deployer:  d,
