@@ -42,9 +42,8 @@ var (
 )
 
 type DeployerConfig struct {
-	Git         DeployerConfigGit
-	RootDir     string
-	ProjectName string
+	Git     DeployerConfigGit
+	RootDir string
 }
 
 type DeployerConfigGit struct {
@@ -55,10 +54,8 @@ type DeployerConfigGit struct {
 
 // Deployer performs GitOps deployments for projects.
 type Deployer struct {
-	bundle deployment.ModuleBundle
 	cfg    DeployerConfig
 	ctx    *cue.Context
-	dryrun bool
 	fs     afero.Fs
 	gen    generator.Generator
 	logger *slog.Logger
@@ -67,8 +64,8 @@ type Deployer struct {
 }
 
 // DeployProject deploys the manifests for a project to the GitOps repository.
-func (d *Deployer) Deploy() error {
-	if d.bundle.Bundle.Env == "prod" {
+func (d *Deployer) Deploy(projectName string, bundle deployment.ModuleBundle, dryrun bool) error {
+	if bundle.Bundle.Env == "prod" {
 		return fmt.Errorf("cannot deploy to production environment")
 	}
 
@@ -77,7 +74,7 @@ func (d *Deployer) Deploy() error {
 		return err
 	}
 
-	prjPath := d.buildProjectPath()
+	prjPath := d.buildProjectPath(bundle, projectName)
 
 	d.logger.Info("Checking if project path exists", "path", prjPath)
 	if err := d.checkProjectPath(prjPath, &r); err != nil {
@@ -95,7 +92,7 @@ func (d *Deployer) Deploy() error {
 	}
 
 	d.logger.Info("Generating manifests")
-	result, err := d.gen.GenerateBundle(d.bundle, env)
+	result, err := d.gen.GenerateBundle(bundle, env)
 	if err != nil {
 		return fmt.Errorf("could not generate deployment manifests: %w", err)
 	}
@@ -122,7 +119,7 @@ func (d *Deployer) Deploy() error {
 		}
 	}
 
-	if !d.dryrun {
+	if !dryrun {
 		changes, err := r.HasChanges()
 		if err != nil {
 			return fmt.Errorf("could not check if worktree has changes: %w", err)
@@ -131,7 +128,7 @@ func (d *Deployer) Deploy() error {
 		}
 
 		d.logger.Info("Committing changes")
-		_, err = r.Commit(fmt.Sprintf(GIT_MESSAGE, d.cfg.ProjectName))
+		_, err = r.Commit(fmt.Sprintf(GIT_MESSAGE, projectName))
 		if err != nil {
 			return fmt.Errorf("could not commit changes: %w", err)
 		}
@@ -152,8 +149,8 @@ func (d *Deployer) Deploy() error {
 }
 
 // buildProjectPath builds the path to the project in the GitOps repository.
-func (d *Deployer) buildProjectPath() string {
-	return fmt.Sprintf(PATH, d.cfg.RootDir, d.bundle.Bundle.Env, d.cfg.ProjectName)
+func (d *Deployer) buildProjectPath(b deployment.ModuleBundle, projectName string) string {
+	return fmt.Sprintf(PATH, d.cfg.RootDir, b.Bundle.Env, projectName)
 }
 
 // checkProjectPath checks if the project path exists and creates it if it does not.
@@ -250,22 +247,18 @@ func (d *Deployer) LoadEnv(path string, ctx *cue.Context, r *repo.GitRepo) (cue.
 
 // NewDeployer creates a new Deployer.
 func NewDeployer(
-	bundle deployment.ModuleBundle,
 	cfg DeployerConfig,
 	ms deployment.ManifestGeneratorStore,
 	ss secrets.SecretStore,
 	logger *slog.Logger,
 	ctx *cue.Context,
-	dryrun bool,
 ) Deployer {
 	gen := generator.NewGenerator(ms, logger)
 	remote := remote.GoGitRemoteInteractor{}
 
 	return Deployer{
-		bundle: bundle,
 		cfg:    cfg,
 		ctx:    ctx,
-		dryrun: dryrun,
 		gen:    gen,
 		fs:     afero.NewMemMapFs(),
 		logger: logger,
@@ -282,7 +275,6 @@ func NewDeployerConfigFromProject(p *project.Project) DeployerConfig {
 			Ref:   p.Blueprint.Global.Deployment.Repo.Ref,
 			Url:   p.Blueprint.Global.Deployment.Repo.Url,
 		},
-		RootDir:     p.Blueprint.Global.Deployment.Root,
-		ProjectName: p.Name,
+		RootDir: p.Blueprint.Global.Deployment.Root,
 	}
 }
