@@ -17,19 +17,23 @@ limitations under the License.
 package v1alpha1
 
 import (
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
-// NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
-
 // ReleaseSpec defines the desired state of Release.
 type ReleaseSpec struct {
-	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
+	// Bundle is the module bundle used to generate the deployment manifests.
+	// This field must be a valid module bundle as defined in the Catalyst Forge schema.
+	// See: https://github.com/input-output-hk/catalyst-forge/blob/master/lib/schema/blueprint/project/deployment.cue
+	Bundle *apiextensionsv1.JSON `json:"bundle"`
 
-	// Foo is an example field of Release. Edit release_types.go to remove/update
-	Foo string `json:"foo,omitempty"`
+	// ID is the unique identifier of the release.
+	ID string `json:"id"`
+
+	// Project is the unique identifier of the project this release is associated with.
+	// It should be in the format of: <repository>/<project>.
+	Project string `json:"project"`
 }
 
 // ReleaseStatus defines the observed state of Release.
