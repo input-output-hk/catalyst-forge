@@ -19,6 +19,7 @@ package controller
 import (
 	"context"
 
+	"cuelang.org/go/cue/cuecontext"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -26,13 +27,14 @@ import (
 
 	"github.com/input-output-hk/catalyst-forge/foundry/operator/api/v1alpha1"
 	foundryv1alpha1 "github.com/input-output-hk/catalyst-forge/foundry/operator/api/v1alpha1"
+	"github.com/input-output-hk/catalyst-forge/lib/project/deployment"
 	"github.com/input-output-hk/catalyst-forge/lib/project/deployment/deployer"
 )
 
 // ReleaseReconciler reconciles a Release object
 type ReleaseReconciler struct {
 	client.Client
-	deployer deployer.Deployer
+	Deployer deployer.Deployer
 	Scheme   *runtime.Scheme
 }
 
@@ -47,6 +49,23 @@ func (r *ReleaseReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	if err := r.Get(ctx, req.NamespacedName, &release); err != nil {
 		log.Error(err, "unable to fetch Release")
 		return ctrl.Result{}, client.IgnoreNotFound(err)
+	}
+
+	cc := cuecontext.New()
+	bundle, err := deployment.ParseBundle(cc, release.Spec.Bundle.Raw)
+	if err != nil {
+		log.Error(err, "unable to parse bundle")
+		return ctrl.Result{}, err
+	}
+
+	if err := bundle.Validate(); err != nil {
+		log.Error(err, "unable to validate bundle")
+		return ctrl.Result{}, err
+	}
+
+	if err := r.Deployer.Deploy(release.Spec.Project, bundle, false); err != nil {
+		log.Error(err, "unable to deploy bundle")
+		return ctrl.Result{}, err
 	}
 
 	return ctrl.Result{}, nil

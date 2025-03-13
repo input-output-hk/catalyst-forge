@@ -19,11 +19,13 @@ package main
 import (
 	"crypto/tls"
 	"flag"
+	"log/slog"
 	"os"
 	"path/filepath"
 
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
 	// to ensure that exec-entrypoint and run can make use of them.
+	"cuelang.org/go/cue/cuecontext"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 
 	"k8s.io/apimachinery/pkg/runtime"
@@ -39,6 +41,10 @@ import (
 
 	foundryv1alpha1 "github.com/input-output-hk/catalyst-forge/foundry/operator/api/v1alpha1"
 	"github.com/input-output-hk/catalyst-forge/foundry/operator/internal/controller"
+	"github.com/input-output-hk/catalyst-forge/foundry/operator/pkg/config"
+	"github.com/input-output-hk/catalyst-forge/lib/project/deployment"
+	"github.com/input-output-hk/catalyst-forge/lib/project/deployment/deployer"
+	"github.com/input-output-hk/catalyst-forge/lib/project/secrets"
 	// +kubebuilder:scaffold:imports
 )
 
@@ -56,6 +62,7 @@ func init() {
 
 // nolint:gocyclo
 func main() {
+	var configPath string
 	var metricsAddr string
 	var metricsCertPath, metricsCertName, metricsCertKey string
 	var webhookCertPath, webhookCertName, webhookCertKey string
@@ -64,6 +71,7 @@ func main() {
 	var secureMetrics bool
 	var enableHTTP2 bool
 	var tlsOpts []func(*tls.Config)
+	flag.StringVar(&configPath, "config", "", "The path to the operator configuration file.")
 	flag.StringVar(&metricsAddr, "metrics-bind-address", "0", "The address the metrics endpoint binds to. "+
 		"Use :8443 for HTTPS or :8080 for HTTP, or leave as 0 to disable the metrics service.")
 	flag.StringVar(&probeAddr, "health-probe-bind-address", ":8081", "The address the probe endpoint binds to.")
@@ -178,6 +186,23 @@ func main() {
 		})
 	}
 
+	// Load the operator configuration
+	cfg, err := config.Load(configPath)
+	if err != nil {
+		setupLog.Error(err, "failed to load operator configuration", "config", configPath, "error", err)
+		os.Exit(1)
+	}
+
+	// Setup the deployer
+	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
+	deployer := deployer.NewDeployer(
+		cfg.Deployer,
+		deployment.NewDefaultManifestGeneratorStore(),
+		secrets.NewDefaultSecretStore(),
+		logger,
+		cuecontext.New(),
+	)
+
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
 		Scheme:                 scheme,
 		Metrics:                metricsServerOptions,
@@ -203,8 +228,9 @@ func main() {
 	}
 
 	if err = (&controller.ReleaseReconciler{
-		Client: mgr.GetClient(),
-		Scheme: mgr.GetScheme(),
+		Client:   mgr.GetClient(),
+		Deployer: deployer,
+		Scheme:   mgr.GetScheme(),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Release")
 		os.Exit(1)
