@@ -7,23 +7,19 @@ import (
 	"strings"
 	"testing"
 
+	"cuelang.org/go/cue"
 	"cuelang.org/go/cue/cuecontext"
 	"github.com/go-git/go-billy/v5"
 	gg "github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/go-git/go-git/v5/storage"
-	"github.com/input-output-hk/catalyst-forge/lib/project/blueprint"
 	"github.com/input-output-hk/catalyst-forge/lib/project/deployment"
 	"github.com/input-output-hk/catalyst-forge/lib/project/deployment/generator"
 	dm "github.com/input-output-hk/catalyst-forge/lib/project/deployment/mocks"
-	"github.com/input-output-hk/catalyst-forge/lib/project/project"
 	"github.com/input-output-hk/catalyst-forge/lib/project/secrets"
 	sm "github.com/input-output-hk/catalyst-forge/lib/project/secrets/mocks"
-	sb "github.com/input-output-hk/catalyst-forge/lib/schema/blueprint"
 	sc "github.com/input-output-hk/catalyst-forge/lib/schema/blueprint/common"
-	sg "github.com/input-output-hk/catalyst-forge/lib/schema/blueprint/global"
-	spr "github.com/input-output-hk/catalyst-forge/lib/schema/blueprint/global/providers"
 	sp "github.com/input-output-hk/catalyst-forge/lib/schema/blueprint/project"
 	rm "github.com/input-output-hk/catalyst-forge/lib/tools/git/repo/remote/mocks"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/testutils"
@@ -33,38 +29,6 @@ import (
 )
 
 func TestDeployerDeploy(t *testing.T) {
-	newProject := func(name string, bundle sp.ModuleBundle) project.Project {
-		return project.Project{
-			Blueprint: sb.Blueprint{
-				Project: &sp.Project{
-					Deployment: &sp.Deployment{
-						Bundle: bundle,
-					},
-				},
-				Global: &sg.Global{
-					Deployment: &sg.Deployment{
-						Repo: sg.DeploymentRepo{
-							Ref: "main",
-							Url: "url",
-						},
-						Root: "root",
-					},
-					Ci: &sg.CI{
-						Providers: &spr.Providers{
-							Git: &spr.Git{
-								Credentials: sc.Secret{
-									Provider: "local",
-									Path:     "key",
-								},
-							},
-						},
-					},
-				},
-			},
-			Name: name,
-		}
-	}
-
 	type testResult struct {
 		cloneOpts *gg.CloneOptions
 		deployer  Deployer
@@ -73,32 +37,44 @@ func TestDeployerDeploy(t *testing.T) {
 		repo      *gg.Repository
 	}
 
+	cfg := DeployerConfig{
+		Git: DeployerConfigGit{
+			Creds: sc.Secret{
+				Provider: "local",
+				Path:     "key",
+			},
+			Ref: "main",
+			Url: "url",
+		},
+		RootDir:     "root",
+		ProjectName: "project",
+	}
+
 	tests := []struct {
 		name     string
-		project  project.Project
+		bundle   sp.ModuleBundle
+		cfg      DeployerConfig
 		files    map[string]string
 		dryrun   bool
 		validate func(t *testing.T, r testResult)
 	}{
 		{
 			name: "success",
-			project: newProject(
-				"project",
-				sp.ModuleBundle{
-					Env: "test",
-					Modules: map[string]sp.Module{
-						"main": {
-							Instance:  "instance",
-							Name:      "module",
-							Namespace: "default",
-							Registry:  "registry",
-							Type:      "kcl",
-							Values:    map[string]string{"key": "value"},
-							Version:   "v1.0.0",
-						},
+			bundle: sp.ModuleBundle{
+				Env: "test",
+				Modules: map[string]sp.Module{
+					"main": {
+						Instance:  "instance",
+						Name:      "module",
+						Namespace: "default",
+						Registry:  "registry",
+						Type:      "kcl",
+						Values:    map[string]string{"key": "value"},
+						Version:   "v1.0.0",
 					},
 				},
-			),
+			},
+			cfg: cfg,
 			files: map[string]string{
 				mkPath("test", "project", "env.mod.cue"): `main: values: { key1: "value1" }`,
 			},
@@ -155,22 +131,20 @@ func TestDeployerDeploy(t *testing.T) {
 		},
 		{
 			name: "dry run with extra files",
-			project: newProject(
-				"project",
-				sp.ModuleBundle{
-					Env: "test",
-					Modules: map[string]sp.Module{"main": {
-						Instance:  "instance",
-						Name:      "module",
-						Namespace: "default",
-						Registry:  "registry",
-						Type:      "kcl",
-						Values:    map[string]string{"key": "value"},
-						Version:   "v1.0.0",
-					},
-					},
+			bundle: sp.ModuleBundle{
+				Env: "test",
+				Modules: map[string]sp.Module{"main": {
+					Instance:  "instance",
+					Name:      "module",
+					Namespace: "default",
+					Registry:  "registry",
+					Type:      "kcl",
+					Values:    map[string]string{"key": "value"},
+					Version:   "v1.0.0",
 				},
-			),
+				},
+			},
+			cfg: cfg,
 			files: map[string]string{
 				mkPath("test", "project", "extra.yaml"): "extra",
 			},
@@ -212,22 +186,20 @@ func TestDeployerDeploy(t *testing.T) {
 		},
 		{
 			name: "deploy to production",
-			project: newProject(
-				"project",
-				sp.ModuleBundle{
-					Env: "prod",
-					Modules: map[string]sp.Module{"main": {
-						Instance:  "instance",
-						Name:      "module",
-						Namespace: "default",
-						Registry:  "registry",
-						Type:      "kcl",
-						Values:    map[string]string{"key": "value"},
-						Version:   "v1.0.0",
-					},
-					},
+			bundle: sp.ModuleBundle{
+				Env: "prod",
+				Modules: map[string]sp.Module{"main": {
+					Instance:  "instance",
+					Name:      "module",
+					Namespace: "default",
+					Registry:  "registry",
+					Type:      "kcl",
+					Values:    map[string]string{"key": "value"},
+					Version:   "v1.0.0",
 				},
-			),
+				},
+			},
+			cfg:    cfg,
 			files:  map[string]string{},
 			dryrun: true,
 			validate: func(t *testing.T, r testResult) {
@@ -297,21 +269,25 @@ func TestDeployerDeploy(t *testing.T) {
 					},
 				}, nil
 			}
-			tt.project.SecretStore = secrets.NewSecretStore(
+			ss := secrets.NewSecretStore(
 				map[secrets.Provider]func(*slog.Logger) (secrets.SecretProvider, error){
 					secrets.ProviderLocal: provider,
 				},
 			)
 
-			tt.project.RawBlueprint = getRaw(tt.project.Blueprint)
 			d := Deployer{
-				ctx:     cuecontext.New(),
-				dryrun:  tt.dryrun,
-				fs:      fs,
-				gen:     gen,
-				logger:  testutils.NewNoopLogger(),
-				project: &tt.project,
-				remote:  remote,
+				bundle: deployment.ModuleBundle{
+					Bundle: tt.bundle,
+					Raw:    getRaw(tt.bundle),
+				},
+				cfg:    tt.cfg,
+				ctx:    cuecontext.New(),
+				dryrun: tt.dryrun,
+				fs:     fs,
+				gen:    gen,
+				logger: testutils.NewNoopLogger(),
+				remote: remote,
+				ss:     ss,
 			}
 
 			err = d.Deploy()
@@ -326,11 +302,9 @@ func TestDeployerDeploy(t *testing.T) {
 	}
 }
 
-func getRaw(bp sb.Blueprint) blueprint.RawBlueprint {
+func getRaw(bundle sp.ModuleBundle) cue.Value {
 	ctx := cuecontext.New()
-	v := ctx.Encode(bp)
-
-	return blueprint.NewRawBlueprint(v)
+	return ctx.Encode(bundle)
 }
 
 func mkPath(env, project, file string) string {

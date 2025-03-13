@@ -10,6 +10,8 @@ import (
 	"github.com/input-output-hk/catalyst-forge/lib/project/deployment/generator"
 	"github.com/input-output-hk/catalyst-forge/lib/project/project"
 	"github.com/input-output-hk/catalyst-forge/lib/project/providers"
+	"github.com/input-output-hk/catalyst-forge/lib/project/secrets"
+	"github.com/input-output-hk/catalyst-forge/lib/schema/blueprint/common"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/git/repo"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/git/repo/remote"
 	"github.com/spf13/afero"
@@ -39,20 +41,34 @@ var (
 	ErrNoChanges = fmt.Errorf("no changes to commit")
 )
 
+type DeployerConfig struct {
+	Git         DeployerConfigGit
+	RootDir     string
+	ProjectName string
+}
+
+type DeployerConfigGit struct {
+	Creds common.Secret
+	Ref   string
+	Url   string
+}
+
 // Deployer performs GitOps deployments for projects.
 type Deployer struct {
-	ctx     *cue.Context
-	dryrun  bool
-	fs      afero.Fs
-	gen     generator.Generator
-	logger  *slog.Logger
-	project *project.Project
-	remote  remote.GitRemoteInteractor
+	bundle deployment.ModuleBundle
+	cfg    DeployerConfig
+	ctx    *cue.Context
+	dryrun bool
+	fs     afero.Fs
+	gen    generator.Generator
+	logger *slog.Logger
+	remote remote.GitRemoteInteractor
+	ss     secrets.SecretStore
 }
 
 // DeployProject deploys the manifests for a project to the GitOps repository.
 func (d *Deployer) Deploy() error {
-	if d.project.Blueprint.Project.Deployment.Bundle.Env == "prod" {
+	if d.bundle.Bundle.Env == "prod" {
 		return fmt.Errorf("cannot deploy to production environment")
 	}
 
@@ -79,7 +95,7 @@ func (d *Deployer) Deploy() error {
 	}
 
 	d.logger.Info("Generating manifests")
-	result, err := d.gen.GenerateBundle(deployment.NewModuleBundle(d.project), env)
+	result, err := d.gen.GenerateBundle(d.bundle, env)
 	if err != nil {
 		return fmt.Errorf("could not generate deployment manifests: %w", err)
 	}
@@ -115,7 +131,7 @@ func (d *Deployer) Deploy() error {
 		}
 
 		d.logger.Info("Committing changes")
-		_, err = r.Commit(fmt.Sprintf(GIT_MESSAGE, d.project.Name))
+		_, err = r.Commit(fmt.Sprintf(GIT_MESSAGE, d.cfg.ProjectName))
 		if err != nil {
 			return fmt.Errorf("could not commit changes: %w", err)
 		}
@@ -137,9 +153,7 @@ func (d *Deployer) Deploy() error {
 
 // buildProjectPath builds the path to the project in the GitOps repository.
 func (d *Deployer) buildProjectPath() string {
-	globalDeploy := d.project.Blueprint.Global.Deployment
-	env := d.project.Blueprint.Project.Deployment.Bundle.Env
-	return fmt.Sprintf(PATH, globalDeploy.Root, env, d.project.Name)
+	return fmt.Sprintf(PATH, d.cfg.RootDir, d.bundle.Bundle.Env, d.cfg.ProjectName)
 }
 
 // checkProjectPath checks if the project path exists and creates it if it does not.
@@ -186,24 +200,22 @@ func (d *Deployer) clearProjectPath(path string, r *repo.GitRepo) error {
 
 // clone clones the GitOps repository.
 func (d *Deployer) clone() (repo.GitRepo, error) {
-	url := d.project.Blueprint.Global.Deployment.Repo.Url
-	ref := d.project.Blueprint.Global.Deployment.Repo.Ref
 	opts := []repo.GitRepoOption{
 		repo.WithAuthor(GIT_NAME, GIT_EMAIL),
 		repo.WithGitRemoteInteractor(d.remote),
 		repo.WithFS(d.fs),
 	}
 
-	creds, err := providers.GetGitProviderCreds(d.project, d.logger)
+	creds, err := providers.GetGitProviderCreds(&d.cfg.Git.Creds, &d.ss, d.logger)
 	if err != nil {
 		d.logger.Warn("could not get git provider credentials, not using any authentication", "error", err)
 	} else {
 		opts = append(opts, repo.WithAuth("forge", creds.Token))
 	}
 
-	d.logger.Info("Cloning repository", "url", url, "ref", ref)
+	d.logger.Info("Cloning repository", "url", d.cfg.Git.Url, "ref", d.cfg.Git.Ref)
 	r := repo.NewGitRepo(d.logger, opts...)
-	if err := r.Clone("/repo", url, ref); err != nil {
+	if err := r.Clone("/repo", d.cfg.Git.Url, d.cfg.Git.Ref); err != nil {
 		return repo.GitRepo{}, fmt.Errorf("could not clone repository: %w", err)
 	}
 
@@ -238,22 +250,39 @@ func (d *Deployer) LoadEnv(path string, ctx *cue.Context, r *repo.GitRepo) (cue.
 
 // NewDeployer creates a new Deployer.
 func NewDeployer(
-	project *project.Project,
-	store deployment.ManifestGeneratorStore,
+	bundle deployment.ModuleBundle,
+	cfg DeployerConfig,
+	ms deployment.ManifestGeneratorStore,
+	ss secrets.SecretStore,
 	logger *slog.Logger,
 	ctx *cue.Context,
 	dryrun bool,
 ) Deployer {
-	gen := generator.NewGenerator(store, logger)
+	gen := generator.NewGenerator(ms, logger)
 	remote := remote.GoGitRemoteInteractor{}
 
 	return Deployer{
-		ctx:     ctx,
-		dryrun:  dryrun,
-		gen:     gen,
-		fs:      afero.NewMemMapFs(),
-		logger:  logger,
-		project: project,
-		remote:  remote,
+		bundle: bundle,
+		cfg:    cfg,
+		ctx:    ctx,
+		dryrun: dryrun,
+		gen:    gen,
+		fs:     afero.NewMemMapFs(),
+		logger: logger,
+		remote: remote,
+		ss:     ss,
+	}
+}
+
+// NewDeployerConfigFromProject creates a DeployerConfig from a project.
+func NewDeployerConfigFromProject(p *project.Project) DeployerConfig {
+	return DeployerConfig{
+		Git: DeployerConfigGit{
+			Creds: p.Blueprint.Global.Ci.Providers.Git.Credentials,
+			Ref:   p.Blueprint.Global.Deployment.Repo.Ref,
+			Url:   p.Blueprint.Global.Deployment.Repo.Url,
+		},
+		RootDir:     p.Blueprint.Global.Deployment.Root,
+		ProjectName: p.Name,
 	}
 }

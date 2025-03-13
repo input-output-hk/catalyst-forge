@@ -4,9 +4,8 @@ import (
 	"fmt"
 	"log/slog"
 
-	"github.com/go-git/go-git/v5/plumbing/transport/http"
-	"github.com/input-output-hk/catalyst-forge/lib/project/project"
 	"github.com/input-output-hk/catalyst-forge/lib/project/secrets"
+	"github.com/input-output-hk/catalyst-forge/lib/schema/blueprint/common"
 )
 
 // GitProviderCreds is the struct that holds the credentials for the Git provider
@@ -14,10 +13,9 @@ type GitProviderCreds struct {
 	Token string
 }
 
-// GetGitProviderCreds loads the Git provider credentials from the project.
-func GetGitProviderCreds(p *project.Project, logger *slog.Logger) (GitProviderCreds, error) {
-	secret := p.Blueprint.Global.Ci.Providers.Git.Credentials
-	m, err := secrets.GetSecretMap(&secret, &p.SecretStore, logger)
+// GetGitProviderCreds loads the Git provider credentials from the given secret.
+func GetGitProviderCreds(s *common.Secret, store *secrets.SecretStore, logger *slog.Logger) (GitProviderCreds, error) {
+	m, err := secrets.GetSecretMap(s, store, logger)
 	if err != nil {
 		return GitProviderCreds{}, fmt.Errorf("could not get secret: %w", err)
 	}
@@ -28,20 +26,4 @@ func GetGitProviderCreds(p *project.Project, logger *slog.Logger) (GitProviderCr
 	}
 
 	return GitProviderCreds{Token: creds}, nil
-}
-
-// LoadGitProviderCreds loads the Git provider credentials into the project's
-// repository.
-func LoadGitProviderCreds(p *project.Project, logger *slog.Logger) error {
-	creds, err := GetGitProviderCreds(p, logger)
-	if err != nil {
-		return fmt.Errorf("could not get git provider credentials: %w", err)
-	}
-
-	p.Repo.SetAuth(&http.BasicAuth{
-		Username: "forge",
-		Password: creds.Token,
-	})
-
-	return nil
 }
