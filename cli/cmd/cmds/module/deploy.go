@@ -5,6 +5,7 @@ import (
 
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/events"
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/run"
+	"github.com/input-output-hk/catalyst-forge/lib/project/deployment"
 	"github.com/input-output-hk/catalyst-forge/lib/project/deployment/deployer"
 )
 
@@ -26,7 +27,15 @@ func (c *DeployCmd) Run(ctx run.RunContext) error {
 		dryrun = true
 	}
 
-	d := deployer.NewDeployer(&project, ctx.ManifestGeneratorStore, ctx.Logger, ctx.CueCtx, dryrun)
+	d := deployer.NewDeployer(
+		deployment.NewModuleBundle(&project),
+		deployer.NewDeployerConfigFromProject(&project),
+		ctx.ManifestGeneratorStore,
+		ctx.SecretStore,
+		ctx.Logger,
+		ctx.CueCtx,
+		dryrun,
+	)
 	if err := d.Deploy(); err != nil {
 		if err == deployer.ErrNoChanges {
 			ctx.Logger.Warn("no changes to deploy")
