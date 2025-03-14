@@ -109,6 +109,7 @@ func WithFS(fs afero.Fs) PrepareOption {
 	}
 }
 
+// CreateDeployment creates a deployment for the given project and bundle.
 func (d *Deployer) CreateDeployment(
 	project string,
 	bundle deployment.ModuleBundle,
@@ -121,7 +122,7 @@ func (d *Deployer) CreateDeployment(
 		o(&options)
 	}
 
-	r, err := d.clone2(d.cfg.Git.Url, d.cfg.Git.Ref, options.fs)
+	r, err := d.clone(d.cfg.Git.Url, d.cfg.Git.Ref, options.fs)
 	if err != nil {
 		return nil, err
 	}
@@ -252,31 +253,8 @@ func (d *Deployer) clearProjectPath(path string, r *repo.GitRepo) error {
 	return nil
 }
 
-// clone clones the GitOps repository.
-func (d *Deployer) clone() (repo.GitRepo, error) {
-	opts := []repo.GitRepoOption{
-		repo.WithAuthor(GIT_NAME, GIT_EMAIL),
-		repo.WithGitRemoteInteractor(d.remote),
-		repo.WithFS(d.fs),
-	}
-
-	creds, err := providers.GetGitProviderCreds(&d.cfg.Git.Creds, &d.ss, d.logger)
-	if err != nil {
-		d.logger.Warn("could not get git provider credentials, not using any authentication", "error", err)
-	} else {
-		opts = append(opts, repo.WithAuth("forge", creds.Token))
-	}
-
-	d.logger.Info("Cloning repository", "url", d.cfg.Git.Url, "ref", d.cfg.Git.Ref)
-	r := repo.NewGitRepo(d.logger, opts...)
-	if err := r.Clone("/repo", d.cfg.Git.Url, d.cfg.Git.Ref); err != nil {
-		return repo.GitRepo{}, fmt.Errorf("could not clone repository: %w", err)
-	}
-
-	return r, nil
-}
-
-func (d *Deployer) clone2(url, ref string, fs afero.Fs) (repo.GitRepo, error) {
+// clone clones the given repository and returns the GitRepo.
+func (d *Deployer) clone(url, ref string, fs afero.Fs) (repo.GitRepo, error) {
 	opts := []repo.GitRepoOption{
 		repo.WithAuthor(GIT_NAME, GIT_EMAIL),
 		repo.WithGitRemoteInteractor(d.remote),
