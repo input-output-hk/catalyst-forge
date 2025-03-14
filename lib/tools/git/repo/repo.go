@@ -263,6 +263,11 @@ func (g *GitRepo) Open(path string) error {
 	return nil
 }
 
+// Raw returns the underlying go-git repository.
+func (g *GitRepo) Raw() *gg.Repository {
+	return g.raw
+}
+
 // ReadFile reads the contents of a file in the repository.
 func (g *GitRepo) ReadFile(path string) ([]byte, error) {
 	return afero.ReadFile(g.fs, filepath.Join(g.basePath, path))
@@ -273,11 +278,6 @@ func (g *GitRepo) Push() error {
 	return g.remote.Push(g.raw, &gg.PushOptions{
 		Auth: g.auth,
 	})
-}
-
-// Raw returns the underlying go-git repository.
-func (g *GitRepo) Raw() *gg.Repository {
-	return g.raw
 }
 
 // ReadDir reads the contents of a directory in the repository.

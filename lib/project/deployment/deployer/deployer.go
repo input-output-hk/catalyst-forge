@@ -41,15 +41,46 @@ var (
 	ErrNoChanges = fmt.Errorf("no changes to commit")
 )
 
+// Deployment is a prepared deployment to a GitOps repository.
+type Deployment struct {
+	// Bundle is the deployment bundle being deployed.
+	Bundle deployment.ModuleBundle
+
+	// Manifests is the generated manifests for the deployment.
+	// The key is the name of the manifest and the value is the manifest content.
+	Manifests map[string][]byte
+
+	// RawBundle is the raw representation of the deployment bundle (in CUE).
+	RawBundle []byte
+
+	// Repo is an in-memory clone of the GitOps repository being deployed to.
+	Repo repo.GitRepo
+
+	// Project is the name of the project being deployed.
+	Project string
+
+	logger *slog.Logger
+}
+
+// DeployerConfig is the configuration for a Deployer.
 type DeployerConfig struct {
-	Git     DeployerConfigGit
+	// Git is the configuration for the GitOps repository.
+	Git DeployerConfigGit
+
+	// RootDir is the root directory in the GitOps repository to deploy to.
 	RootDir string
 }
 
+// DeployerConfigGit is the configuration for the GitOps repository.
 type DeployerConfigGit struct {
+	// Creds is the credentials to use for the GitOps repository.
 	Creds common.Secret
-	Ref   string
-	Url   string
+
+	// Ref is the Git reference to deploy to.
+	Ref string
+
+	// Url is the URL of the GitOps repository.
+	Url string
 }
 
 // Deployer performs GitOps deployments for projects.
@@ -63,48 +94,68 @@ type Deployer struct {
 	ss     secrets.SecretStore
 }
 
-// DeployProject deploys the manifests for a project to the GitOps repository.
-func (d *Deployer) Deploy(projectName string, bundle deployment.ModuleBundle, dryrun bool) error {
-	if bundle.Bundle.Env == "prod" {
-		return fmt.Errorf("cannot deploy to production environment")
+// PrepareOptions are options for preparing a deployment.
+type PrepareOptions struct {
+	fs afero.Fs
+}
+
+// PrepareOption is an option for preparing a deployment.
+type PrepareOption func(*PrepareOptions)
+
+// WithFS sets the filesystem to use for preparing a deployment.
+func WithFS(fs afero.Fs) PrepareOption {
+	return func(o *PrepareOptions) {
+		o.fs = fs
+	}
+}
+
+func (d *Deployer) CreateDeployment(
+	project string,
+	bundle deployment.ModuleBundle,
+	opts ...PrepareOption,
+) (*Deployment, error) {
+	options := PrepareOptions{
+		fs: afero.NewMemMapFs(),
+	}
+	for _, o := range opts {
+		o(&options)
 	}
 
-	r, err := d.clone()
+	r, err := d.clone2(d.cfg.Git.Url, d.cfg.Git.Ref, options.fs)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	prjPath := d.buildProjectPath(bundle, projectName)
-
+	prjPath := buildProjectPath(d.cfg.RootDir, project, bundle)
 	d.logger.Info("Checking if project path exists", "path", prjPath)
 	if err := d.checkProjectPath(prjPath, &r); err != nil {
-		return fmt.Errorf("failed checking project path: %w", err)
-	}
-
-	d.logger.Info("Clearing project path", "path", prjPath)
-	if err := d.clearProjectPath(prjPath, &r); err != nil {
-		return fmt.Errorf("could not clear project path: %w", err)
+		return nil, fmt.Errorf("failed checking project path: %w", err)
 	}
 
 	env, err := d.LoadEnv(prjPath, d.ctx, &r)
 	if err != nil {
-		return fmt.Errorf("could not load environment: %w", err)
+		return nil, fmt.Errorf("could not load environment: %w", err)
 	}
 
 	d.logger.Info("Generating manifests")
 	result, err := d.gen.GenerateBundle(bundle, env)
 	if err != nil {
-		return fmt.Errorf("could not generate deployment manifests: %w", err)
+		return nil, fmt.Errorf("could not generate deployment manifests: %w", err)
 	}
 
-	modPath := filepath.Join(prjPath, "mod.cue")
-	d.logger.Info("Writing module", "path", modPath)
-	if err := r.WriteFile(modPath, []byte(result.Module)); err != nil {
-		return fmt.Errorf("could not write module: %w", err)
+	d.logger.Info("Clearing project path", "path", prjPath)
+	if err := d.clearProjectPath(prjPath, &r); err != nil {
+		return nil, fmt.Errorf("could not clear project path: %w", err)
 	}
 
-	if err := r.StageFile(modPath); err != nil {
-		return fmt.Errorf("could not add module to working tree: %w", err)
+	bundlePath := filepath.Join(prjPath, "bundle.cue")
+	d.logger.Info("Writing bundle", "path", bundlePath)
+	if err := r.WriteFile(bundlePath, []byte(result.Module)); err != nil {
+		return nil, fmt.Errorf("could not write bundle: %w", err)
+	}
+
+	if err := r.StageFile(bundlePath); err != nil {
+		return nil, fmt.Errorf("could not add bundle to working tree: %w", err)
 	}
 
 	for name, result := range result.Manifests {
@@ -112,40 +163,46 @@ func (d *Deployer) Deploy(projectName string, bundle deployment.ModuleBundle, dr
 
 		d.logger.Info("Writing manifest", "path", manPath)
 		if err := r.WriteFile(manPath, []byte(result)); err != nil {
-			return fmt.Errorf("could not write manifest: %w", err)
+			return nil, fmt.Errorf("could not write manifest: %w", err)
 		}
 		if err := r.StageFile(manPath); err != nil {
-			return fmt.Errorf("could not add manifest to working tree: %w", err)
+			return nil, fmt.Errorf("could not add manifest to working tree: %w", err)
 		}
 	}
 
-	if !dryrun {
-		changes, err := r.HasChanges()
-		if err != nil {
-			return fmt.Errorf("could not check if worktree has changes: %w", err)
-		} else if !changes {
-			return ErrNoChanges
-		}
+	return &Deployment{
+		Bundle:    bundle,
+		Manifests: result.Manifests,
+		RawBundle: result.Module,
+		Repo:      r,
+		logger:    d.logger,
+	}, nil
+}
 
-		d.logger.Info("Committing changes")
-		_, err = r.Commit(fmt.Sprintf(GIT_MESSAGE, projectName))
-		if err != nil {
-			return fmt.Errorf("could not commit changes: %w", err)
-		}
+// Commit commits the deployment to the GitOps repository.
+func (d *Deployment) Commit() error {
+	d.logger.Info("Committing changes")
+	_, err := d.Repo.Commit(fmt.Sprintf(GIT_MESSAGE, d.Project))
+	if err != nil {
+		return fmt.Errorf("could not commit changes: %w", err)
+	}
 
-		d.logger.Info("Pushing changes")
-		if err := r.Push(); err != nil {
-			return fmt.Errorf("could not push changes: %w", err)
-		}
-	} else {
-		d.logger.Info("Dry-run: not committing or pushing changes")
-		d.logger.Info("Dumping manifests")
-		for _, r := range result.Manifests {
-			fmt.Println(string(r))
-		}
+	d.logger.Info("Pushing changes")
+	if err := d.Repo.Push(); err != nil {
+		return fmt.Errorf("could not push changes: %w", err)
 	}
 
 	return nil
+}
+
+// HasChanges checks if the deployment results in changes to the GitOps repository.
+func (d *Deployment) HasChanges() (bool, error) {
+	changes, err := d.Repo.HasChanges()
+	if err != nil {
+		return false, fmt.Errorf("could not check if worktree has changes: %w", err)
+	}
+
+	return changes, nil
 }
 
 // buildProjectPath builds the path to the project in the GitOps repository.
@@ -219,6 +276,29 @@ func (d *Deployer) clone() (repo.GitRepo, error) {
 	return r, nil
 }
 
+func (d *Deployer) clone2(url, ref string, fs afero.Fs) (repo.GitRepo, error) {
+	opts := []repo.GitRepoOption{
+		repo.WithAuthor(GIT_NAME, GIT_EMAIL),
+		repo.WithGitRemoteInteractor(d.remote),
+		repo.WithFS(fs),
+	}
+
+	creds, err := providers.GetGitProviderCreds(&d.cfg.Git.Creds, &d.ss, d.logger)
+	if err != nil {
+		d.logger.Warn("could not get git provider credentials, not using any authentication", "error", err)
+	} else {
+		opts = append(opts, repo.WithAuth("forge", creds.Token))
+	}
+
+	d.logger.Info("Cloning repository", "url", url, "ref", ref)
+	r := repo.NewGitRepo(d.logger, opts...)
+	if err := r.Clone("/repo", url, ref); err != nil {
+		return repo.GitRepo{}, fmt.Errorf("could not clone repository: %w", err)
+	}
+
+	return r, nil
+}
+
 // LoadEnv loads the environment file for the deployment, if it exists.
 func (d *Deployer) LoadEnv(path string, ctx *cue.Context, r *repo.GitRepo) (cue.Value, error) {
 	var env cue.Value
@@ -277,4 +357,9 @@ func NewDeployerConfigFromProject(p *project.Project) DeployerConfig {
 		},
 		RootDir: p.Blueprint.Global.Deployment.Root,
 	}
+}
+
+// buildProjectPath builds the path to the project in the GitOps repository.
+func buildProjectPath(root string, project string, b deployment.ModuleBundle) string {
+	return fmt.Sprintf(PATH, root, b.Bundle.Env, project)
 }
