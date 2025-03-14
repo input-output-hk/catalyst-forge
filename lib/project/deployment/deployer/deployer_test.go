@@ -1,65 +1,47 @@
 package deployer
 
 import (
-	"encoding/json"
 	"fmt"
-	"log/slog"
-	"strings"
 	"testing"
 
 	"cuelang.org/go/cue"
 	"cuelang.org/go/cue/cuecontext"
-	"github.com/go-git/go-billy/v5"
 	gg "github.com/go-git/go-git/v5"
-	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/go-git/go-git/v5/plumbing/transport/http"
-	"github.com/go-git/go-git/v5/storage"
 	"github.com/input-output-hk/catalyst-forge/lib/project/deployment"
-	"github.com/input-output-hk/catalyst-forge/lib/project/deployment/generator"
-	dm "github.com/input-output-hk/catalyst-forge/lib/project/deployment/mocks"
-	"github.com/input-output-hk/catalyst-forge/lib/project/secrets"
-	sm "github.com/input-output-hk/catalyst-forge/lib/project/secrets/mocks"
+	tu "github.com/input-output-hk/catalyst-forge/lib/project/utils/test"
 	sc "github.com/input-output-hk/catalyst-forge/lib/schema/blueprint/common"
 	sp "github.com/input-output-hk/catalyst-forge/lib/schema/blueprint/project"
-	rm "github.com/input-output-hk/catalyst-forge/lib/tools/git/repo/remote/mocks"
+	gr "github.com/input-output-hk/catalyst-forge/lib/tools/git/repo"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/testutils"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-func TestDeployerDeploy(t *testing.T) {
+func TestDeployerCreateDeployment(t *testing.T) {
 	type testResult struct {
 		cloneOpts *gg.CloneOptions
 		deployer  Deployer
 		err       error
 		fs        afero.Fs
-		repo      *gg.Repository
+		result    *Deployment
 	}
 
-	cfg := DeployerConfig{
-		Git: DeployerConfigGit{
-			Creds: sc.Secret{
-				Provider: "local",
-				Path:     "key",
-			},
-			Ref: "main",
-			Url: "url",
-		},
-		RootDir: "root",
-	}
+	gitPassword := "password"
+	manifestContent := "manifest"
 
 	tests := []struct {
-		name        string
-		bundle      sp.ModuleBundle
-		projectName string
-		cfg         DeployerConfig
-		files       map[string]string
-		dryrun      bool
-		validate    func(t *testing.T, r testResult)
+		name     string
+		project  string
+		bundle   sp.ModuleBundle
+		cfg      DeployerConfig
+		files    map[string]string
+		validate func(t *testing.T, r testResult)
 	}{
 		{
-			name: "success",
+			name:    "success",
+			project: "project",
 			bundle: sp.ModuleBundle{
 				Env: "test",
 				Modules: map[string]sp.Module{
@@ -74,12 +56,10 @@ func TestDeployerDeploy(t *testing.T) {
 					},
 				},
 			},
-			projectName: "project",
-			cfg:         cfg,
+			cfg: makeConfig(),
 			files: map[string]string{
 				mkPath("test", "project", "env.mod.cue"): `main: values: { key1: "value1" }`,
 			},
-			dryrun: false,
 			validate: func(t *testing.T, r testResult) {
 				require.NoError(t, r.err)
 
@@ -87,51 +67,28 @@ func TestDeployerDeploy(t *testing.T) {
 				require.NoError(t, err)
 				assert.True(t, e)
 
-				e, err = afero.Exists(r.fs, mkPath("test", "project", "mod.cue"))
+				e, err = afero.Exists(r.fs, mkPath("test", "project", "bundle.cue"))
 				require.NoError(t, err)
 				assert.True(t, e)
 
 				c, err := afero.ReadFile(r.fs, mkPath("test", "project", "main.yaml"))
 				require.NoError(t, err)
-				assert.Equal(t, "manifest", string(c))
+				assert.Equal(t, manifestContent, string(c))
 
-				mod := `{
-	env: "test"
-	modules: {
-		main: {
-			instance:  "instance"
-			name:      "module"
-			namespace: "default"
-			registry:  "registry"
-			type:      "kcl"
-			values: {
-				key: "value"
-			}
-			version: "v1.0.0"
-		}
-	}
-}`
-				c, err = afero.ReadFile(r.fs, mkPath("test", "project", "mod.cue"))
+				c, err = afero.ReadFile(r.fs, mkPath("test", "project", "bundle.cue"))
 				require.NoError(t, err)
-				assert.Equal(t, mod, string(c))
+				assert.Equal(t, r.result.RawBundle, c)
 
+				cfg := makeConfig()
 				auth := r.cloneOpts.Auth.(*http.BasicAuth)
-				assert.Equal(t, "value", auth.Password)
-				assert.Equal(t, "url", r.cloneOpts.URL)
-				assert.Equal(t, "refs/heads/main", r.cloneOpts.ReferenceName.String())
-
-				head, err := r.repo.Head()
-				require.NoError(t, err)
-
-				cm, err := r.repo.CommitObject(head.Hash())
-				require.NoError(t, err)
-				assert.Equal(t, fmt.Sprintf(GIT_MESSAGE, "project"), cm.Message)
-				assert.Equal(t, GIT_NAME, cm.Author.Name)
-				assert.Equal(t, GIT_EMAIL, cm.Author.Email)
+				assert.Equal(t, gitPassword, auth.Password)
+				assert.Equal(t, cfg.Git.Url, r.cloneOpts.URL)
+				assert.Equal(t, fmt.Sprintf("refs/heads/%s", cfg.Git.Ref), r.cloneOpts.ReferenceName.String())
 			},
 		},
 		{
-			name: "dry run with extra files",
+			name:    "dry run with extra files",
+			project: "project",
 			bundle: sp.ModuleBundle{
 				Env: "test",
 				Modules: map[string]sp.Module{"main": {
@@ -145,12 +102,10 @@ func TestDeployerDeploy(t *testing.T) {
 				},
 				},
 			},
-			projectName: "project",
-			cfg:         cfg,
+			cfg: makeConfig(),
 			files: map[string]string{
 				mkPath("test", "project", "extra.yaml"): "extra",
 			},
-			dryrun: true,
 			validate: func(t *testing.T, r testResult) {
 				require.NoError(t, r.err)
 
@@ -158,7 +113,7 @@ func TestDeployerDeploy(t *testing.T) {
 				require.NoError(t, err)
 				assert.True(t, e)
 
-				e, err = afero.Exists(r.fs, mkPath("test", "project", "mod.cue"))
+				e, err = afero.Exists(r.fs, mkPath("test", "project", "bundle.cue"))
 				require.NoError(t, err)
 				assert.True(t, e)
 
@@ -166,7 +121,8 @@ func TestDeployerDeploy(t *testing.T) {
 				require.NoError(t, err)
 				assert.False(t, e)
 
-				wt, err := r.repo.Worktree()
+				rr := r.result.Repo.Raw()
+				wt, err := rr.Worktree()
 				require.NoError(t, err)
 				st, err := wt.Status()
 				require.NoError(t, err)
@@ -176,107 +132,21 @@ func TestDeployerDeploy(t *testing.T) {
 				fst = st.File("root/test/project/main.yaml")
 				assert.Equal(t, fst.Staging, gg.Added)
 
-				fst = st.File("root/test/project/mod.cue")
+				fst = st.File("root/test/project/bundle.cue")
 				assert.Equal(t, fst.Staging, gg.Added)
-
-				head, err := r.repo.Head()
-				assert.NoError(t, err)
-				cm, err := r.repo.CommitObject(head.Hash())
-				require.NoError(t, err)
-				assert.Equal(t, "initial commit", cm.Message)
-			},
-		},
-		{
-			name: "deploy to production",
-			bundle: sp.ModuleBundle{
-				Env: "prod",
-				Modules: map[string]sp.Module{"main": {
-					Instance:  "instance",
-					Name:      "module",
-					Namespace: "default",
-					Registry:  "registry",
-					Type:      "kcl",
-					Values:    map[string]string{"key": "value"},
-					Version:   "v1.0.0",
-				},
-				},
-			},
-			projectName: "project",
-			cfg:         cfg,
-			files:       map[string]string{},
-			dryrun:      true,
-			validate: func(t *testing.T, r testResult) {
-				assert.Error(t, r.err)
 			},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			var err error
-			var opts *gg.CloneOptions
-			var repo *gg.Repository
 			fs := afero.NewMemMapFs()
 
-			remote := &rm.GitRemoteInteractorMock{
-				CloneFunc: func(s storage.Storer, worktree billy.Filesystem, o *gg.CloneOptions) (*gg.Repository, error) {
-					opts = o
-					repo, err = gg.Init(s, worktree)
-					require.NoError(t, err, "failed to init repo")
+			remote, opts, err := tu.NewMockGitRemoteInterface(fs, tt.files)
+			require.NoError(t, err)
 
-					wt, err := repo.Worktree()
-					require.NoError(t, err, "failed to get worktree")
-
-					if tt.files != nil {
-						testutils.SetupFS(t, fs, tt.files)
-						for path := range tt.files {
-							_, err := wt.Add(strings.TrimPrefix(path, "/repo/"))
-							require.NoError(t, err, "failed to add file")
-						}
-
-						_, err = wt.Commit("initial commit", &gg.CommitOptions{
-							Author: &object.Signature{
-								Name:  GIT_NAME,
-								Email: GIT_EMAIL,
-							},
-						})
-						require.NoError(t, err, "failed to commit")
-					}
-
-					return repo, nil
-				},
-				PushFunc: func(repo *gg.Repository, o *gg.PushOptions) error {
-					return nil
-				},
-			}
-			gen := generator.NewGenerator(
-				deployment.NewManifestGeneratorStore(
-					map[deployment.Provider]func(*slog.Logger) deployment.ManifestGenerator{
-						deployment.ProviderKCL: func(logger *slog.Logger) deployment.ManifestGenerator {
-							return &dm.ManifestGeneratorMock{
-								GenerateFunc: func(mod sp.Module, env string) ([]byte, error) {
-									return []byte("manifest"), nil
-								},
-							}
-						},
-					},
-				),
-				testutils.NewNoopLogger(),
-			)
-			provider := func(logger *slog.Logger) (secrets.SecretProvider, error) {
-				return &sm.SecretProviderMock{
-					GetFunc: func(key string) (string, error) {
-						j, err := json.Marshal(map[string]string{"token": "value"})
-						require.NoError(t, err)
-						return string(j), nil
-					},
-				}, nil
-			}
-			ss := secrets.NewSecretStore(
-				map[secrets.Provider]func(*slog.Logger) (secrets.SecretProvider, error){
-					secrets.ProviderLocal: provider,
-				},
-			)
+			gen := tu.NewMockGenerator(manifestContent)
+			ss := tu.NewMockSecretStore(map[string]string{"token": gitPassword})
 
 			d := Deployer{
 				cfg:    tt.cfg,
@@ -292,16 +162,58 @@ func TestDeployerDeploy(t *testing.T) {
 				Bundle: tt.bundle,
 				Raw:    getRaw(tt.bundle),
 			}
-			err = d.Deploy(tt.projectName, bundle, tt.dryrun)
+
+			result, err := d.CreateDeployment(tt.project, bundle, WithFS(fs))
 			tt.validate(t, testResult{
-				cloneOpts: opts,
+				cloneOpts: opts.Clone,
 				deployer:  d,
 				err:       err,
 				fs:        fs,
-				repo:      repo,
+				result:    result,
 			})
 		})
 	}
+}
+
+func TestDeploymentCommit(t *testing.T) {
+	fs := afero.NewMemMapFs()
+
+	remote, opts, err := tu.NewMockGitRemoteInterface(fs, nil)
+	require.NoError(t, err)
+
+	repo := gr.NewGitRepo(
+		testutils.NewNoopLogger(),
+		gr.WithFS(fs),
+		gr.WithGitRemoteInteractor(remote),
+		gr.WithAuth("username", "password"),
+	)
+
+	require.NoError(t, repo.Init("/repo"))
+	require.NoError(t, repo.WriteFile("test.txt", []byte("test")))
+	require.NoError(t, repo.StageFile("test.txt"))
+
+	deployment := &Deployment{
+		Repo:    repo,
+		Project: "project",
+		logger:  testutils.NewNoopLogger(),
+	}
+
+	err = deployment.Commit()
+	require.NoError(t, err)
+
+	rr := repo.Raw()
+	head, err := rr.Head()
+	require.NoError(t, err)
+
+	cm, err := rr.CommitObject(head.Hash())
+	require.NoError(t, err)
+	assert.Equal(t, fmt.Sprintf(GIT_MESSAGE, "project"), cm.Message)
+	assert.Equal(t, GIT_NAME, cm.Author.Name)
+	assert.Equal(t, GIT_EMAIL, cm.Author.Email)
+
+	auth := opts.Push.Auth.(*http.BasicAuth)
+	assert.Equal(t, "username", auth.Username)
+	assert.Equal(t, "password", auth.Password)
 }
 
 func getRaw(bundle sp.ModuleBundle) cue.Value {
@@ -311,4 +223,18 @@ func getRaw(bundle sp.ModuleBundle) cue.Value {
 
 func mkPath(env, project, file string) string {
 	return fmt.Sprintf("/repo/root/%s/%s/%s", env, project, file)
+}
+
+func makeConfig() DeployerConfig {
+	return DeployerConfig{
+		Git: DeployerConfigGit{
+			Creds: sc.Secret{
+				Provider: "local",
+				Path:     "key",
+			},
+			Ref: "main",
+			Url: "url",
+		},
+		RootDir: "root",
+	}
 }

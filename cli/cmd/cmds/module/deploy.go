@@ -34,13 +34,32 @@ func (c *DeployCmd) Run(ctx run.RunContext) error {
 		ctx.Logger,
 		ctx.CueCtx,
 	)
-	if err := d.Deploy(project.Name, deployment.NewModuleBundle(&project), dryrun); err != nil {
-		if err == deployer.ErrNoChanges {
+
+	dr, err := d.CreateDeployment(project.Name, deployment.NewModuleBundle(&project))
+	if err != nil {
+		return fmt.Errorf("failed creating deployment: %w", err)
+	}
+
+	if !dryrun {
+		changes, err := dr.HasChanges()
+		if err != nil {
+			return fmt.Errorf("failed checking for changes: %w", err)
+		}
+
+		if !changes {
 			ctx.Logger.Warn("no changes to deploy")
 			return nil
 		}
 
-		return fmt.Errorf("failed deploying project: %w", err)
+		if err := dr.Commit(); err != nil {
+			return fmt.Errorf("failed committing deployment: %w", err)
+		}
+	} else {
+		ctx.Logger.Info("Dry-run: not committing or pushing changes")
+		ctx.Logger.Info("Dumping manifests")
+		for _, r := range dr.Manifests {
+			fmt.Println(string(r))
+		}
 	}
 
 	return nil
