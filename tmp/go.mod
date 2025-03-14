@@ -4,8 +4,8 @@ go 1.23.0
 
 require (
 	github.com/go-git/go-git/v5 v5.14.0
+	github.com/jmgilman/go-billy-desfacer v0.0.0-20250314225653-15f143143595
 	github.com/spf13/afero v1.12.0
-	gopkg.in/jfontan/go-billy-desfacer.v0 v0.0.0-20210209210102-b43512b1cad0
 )
 
 require (
@@ -30,3 +30,5 @@ require (
 	golang.org/x/text v0.22.0 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect
 )
+
+replace github.com/jmgilman/go-billy-desfacer => ../../../code/go-billy-desfacer
