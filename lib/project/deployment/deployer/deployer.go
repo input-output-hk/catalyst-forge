@@ -206,11 +206,6 @@ func (d *Deployment) HasChanges() (bool, error) {
 	return changes, nil
 }
 
-// buildProjectPath builds the path to the project in the GitOps repository.
-func (d *Deployer) buildProjectPath(b deployment.ModuleBundle, projectName string) string {
-	return fmt.Sprintf(PATH, d.cfg.RootDir, b.Bundle.Env, projectName)
-}
-
 // checkProjectPath checks if the project path exists and creates it if it does not.
 func (d *Deployer) checkProjectPath(path string, r *repo.GitRepo) error {
 	exists, err := r.Exists(path)
