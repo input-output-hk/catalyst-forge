@@ -42,14 +42,14 @@ var (
 )
 
 type DeployerConfig struct {
-	Git     DeployerConfigGit
-	RootDir string
+	Git     DeployerConfigGit `json:"git"`
+	RootDir string            `json:"root_dir"`
 }
 
 type DeployerConfigGit struct {
-	Creds common.Secret
-	Ref   string
-	Url   string
+	Creds common.Secret `json:"creds"`
+	Ref   string        `json:"ref"`
+	Url   string        `json:"url"`
 }
 
 // Deployer performs GitOps deployments for projects.
@@ -261,6 +261,27 @@ func NewDeployer(
 		ctx:    ctx,
 		gen:    gen,
 		fs:     afero.NewMemMapFs(),
+		logger: logger,
+		remote: remote,
+		ss:     ss,
+	}
+}
+
+// NewCustomDeployer creates a new Deployer with custom dependencies.
+func NewCustomDeployer(
+	cfg DeployerConfig,
+	ctx *cue.Context,
+	fs afero.Fs,
+	gen generator.Generator,
+	logger *slog.Logger,
+	remote remote.GitRemoteInteractor,
+	ss secrets.SecretStore,
+) Deployer {
+	return Deployer{
+		cfg:    cfg,
+		ctx:    ctx,
+		fs:     fs,
+		gen:    gen,
 		logger: logger,
 		remote: remote,
 		ss:     ss,

@@ -17,23 +17,28 @@ limitations under the License.
 package v1alpha1
 
 import (
-	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // ReleaseSpec defines the desired state of Release.
 type ReleaseSpec struct {
-	// Bundle is the module bundle used to generate the deployment manifests.
-	// This field must be a valid module bundle as defined in the Catalyst Forge schema.
-	// See: https://github.com/input-output-hk/catalyst-forge/blob/master/lib/schema/blueprint/project/deployment.cue
-	Bundle *apiextensionsv1.JSON `json:"bundle"`
+	// Git defines the source Git repository for the release.
+	Git GitSpec `json:"git"`
 
 	// ID is the unique identifier of the release.
 	ID string `json:"id"`
 
-	// Project is the unique identifier of the project this release is associated with.
-	// It should be in the format of: <repository>/<project>.
-	Project string `json:"project"`
+	// ProjectPath is the path to the project within the source Git repository.
+	ProjectPath string `json:"project_path"`
+}
+
+// GitSpec defines the source Git repository for the release.
+type GitSpec struct {
+	// Ref is the Git reference to use for the release.
+	Ref string `json:"ref"`
+
+	// URL is the URL of the source Git repository for the release.
+	URL string `json:"url"`
 }
 
 // ReleaseStatus defines the observed state of Release.
