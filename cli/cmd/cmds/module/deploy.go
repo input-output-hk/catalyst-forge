@@ -5,7 +5,6 @@ import (
 
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/events"
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/run"
-	"github.com/input-output-hk/catalyst-forge/lib/project/deployment"
 	"github.com/input-output-hk/catalyst-forge/lib/project/deployment/deployer"
 )
 
@@ -20,11 +19,11 @@ func (c *DeployCmd) Run(ctx run.RunContext) error {
 		return fmt.Errorf("could not load project: %w", err)
 	}
 
-	var dryrun bool
+	//var dryrun bool
 	eh := events.NewDefaultEventHandler(ctx.Logger)
 	if !eh.Firing(&project, project.GetDeploymentEvents()) && !c.Force {
 		ctx.Logger.Info("No deployment event is firing, performing dry-run")
-		dryrun = true
+		//dryrun = true
 	}
 
 	d := deployer.NewDeployer(
@@ -35,32 +34,36 @@ func (c *DeployCmd) Run(ctx run.RunContext) error {
 		ctx.CueCtx,
 	)
 
-	dr, err := d.CreateDeployment(project.Name, deployment.NewModuleBundle(&project))
+	_, err = d.FetchBundle("https://github.com/input-output-hk/catalyst-voices", "main", "catalyst-gateway")
 	if err != nil {
-		return fmt.Errorf("failed creating deployment: %w", err)
+		return fmt.Errorf("failed fetching bundle: %w", err)
 	}
+	// dr, err := d.CreateDeployment(project.Name, deployment.NewModuleBundle(&project))
+	// if err != nil {
+	// 	return fmt.Errorf("failed creating deployment: %w", err)
+	// }
 
-	if !dryrun {
-		changes, err := dr.HasChanges()
-		if err != nil {
-			return fmt.Errorf("failed checking for changes: %w", err)
-		}
+	// if !dryrun {
+	// 	changes, err := dr.HasChanges()
+	// 	if err != nil {
+	// 		return fmt.Errorf("failed checking for changes: %w", err)
+	// 	}
 
-		if !changes {
-			ctx.Logger.Warn("no changes to deploy")
-			return nil
-		}
+	// 	if !changes {
+	// 		ctx.Logger.Warn("no changes to deploy")
+	// 		return nil
+	// 	}
 
-		if err := dr.Commit(); err != nil {
-			return fmt.Errorf("failed committing deployment: %w", err)
-		}
-	} else {
-		ctx.Logger.Info("Dry-run: not committing or pushing changes")
-		ctx.Logger.Info("Dumping manifests")
-		for _, r := range dr.Manifests {
-			fmt.Println(string(r))
-		}
-	}
+	// 	if err := dr.Commit(); err != nil {
+	// 		return fmt.Errorf("failed committing deployment: %w", err)
+	// 	}
+	// } else {
+	// 	ctx.Logger.Info("Dry-run: not committing or pushing changes")
+	// 	ctx.Logger.Info("Dumping manifests")
+	// 	for _, r := range dr.Manifests {
+	// 		fmt.Println(string(r))
+	// 	}
+	// }
 
 	return nil
 }

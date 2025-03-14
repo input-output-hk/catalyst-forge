@@ -94,17 +94,17 @@ type Deployer struct {
 	ss     secrets.SecretStore
 }
 
-// PrepareOptions are options for preparing a deployment.
-type PrepareOptions struct {
+// CloneOptions are options for cloning a repository.
+type CloneOptions struct {
 	fs afero.Fs
 }
 
-// PrepareOption is an option for preparing a deployment.
-type PrepareOption func(*PrepareOptions)
+// CloneOption is an option for cloning a repository.
+type CloneOption func(*CloneOptions)
 
-// WithFS sets the filesystem to use for preparing a deployment.
-func WithFS(fs afero.Fs) PrepareOption {
-	return func(o *PrepareOptions) {
+// WithFS sets the filesystem to use for cloning a repository.
+func WithFS(fs afero.Fs) CloneOption {
+	return func(o *CloneOptions) {
 		o.fs = fs
 	}
 }
@@ -113,9 +113,9 @@ func WithFS(fs afero.Fs) PrepareOption {
 func (d *Deployer) CreateDeployment(
 	project string,
 	bundle deployment.ModuleBundle,
-	opts ...PrepareOption,
+	opts ...CloneOption,
 ) (*Deployment, error) {
-	options := PrepareOptions{
+	options := CloneOptions{
 		fs: afero.NewMemMapFs(),
 	}
 	for _, o := range opts {
@@ -178,6 +178,22 @@ func (d *Deployer) CreateDeployment(
 		Repo:      r,
 		logger:    d.logger,
 	}, nil
+}
+
+func (d *Deployer) FetchBundle(url, ref, projectPath string, opts ...CloneOption) (deployment.ModuleBundle, error) {
+	options := CloneOptions{
+		fs: afero.NewMemMapFs(),
+	}
+	for _, o := range opts {
+		o(&options)
+	}
+
+	_, err := d.clone(url, ref, options.fs)
+	if err != nil {
+		return deployment.ModuleBundle{}, err
+	}
+
+	return deployment.ModuleBundle{}, nil
 }
 
 // Commit commits the deployment to the GitOps repository.
