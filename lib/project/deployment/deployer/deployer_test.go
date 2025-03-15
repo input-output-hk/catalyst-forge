@@ -12,9 +12,10 @@ import (
 	tu "github.com/input-output-hk/catalyst-forge/lib/project/utils/test"
 	sc "github.com/input-output-hk/catalyst-forge/lib/schema/blueprint/common"
 	sp "github.com/input-output-hk/catalyst-forge/lib/schema/blueprint/project"
+	"github.com/input-output-hk/catalyst-forge/lib/tools/fs"
+	"github.com/input-output-hk/catalyst-forge/lib/tools/fs/billy"
 	gr "github.com/input-output-hk/catalyst-forge/lib/tools/git/repo"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/testutils"
-	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -24,7 +25,7 @@ func TestDeployerCreateDeployment(t *testing.T) {
 		cloneOpts *gg.CloneOptions
 		deployer  Deployer
 		err       error
-		fs        afero.Fs
+		fs        fs.Filesystem
 		result    *Deployment
 	}
 
@@ -58,24 +59,24 @@ func TestDeployerCreateDeployment(t *testing.T) {
 			},
 			cfg: makeConfig(),
 			files: map[string]string{
-				mkPath("test", "project", "env.mod.cue"): `main: values: { key1: "value1" }`,
+				"root/test/project/env.mod.cue": `main: values: { key: "value" }`,
 			},
 			validate: func(t *testing.T, r testResult) {
 				require.NoError(t, r.err)
 
-				e, err := afero.Exists(r.fs, mkPath("test", "project", "main.yaml"))
+				e, err := r.fs.Exists(mkPath("test", "project", "main.yaml"))
 				require.NoError(t, err)
 				assert.True(t, e)
 
-				e, err = afero.Exists(r.fs, mkPath("test", "project", "bundle.cue"))
+				e, err = r.fs.Exists(mkPath("test", "project", "bundle.cue"))
 				require.NoError(t, err)
 				assert.True(t, e)
 
-				c, err := afero.ReadFile(r.fs, mkPath("test", "project", "main.yaml"))
+				c, err := r.fs.ReadFile(mkPath("test", "project", "main.yaml"))
 				require.NoError(t, err)
 				assert.Equal(t, manifestContent, string(c))
 
-				c, err = afero.ReadFile(r.fs, mkPath("test", "project", "bundle.cue"))
+				c, err = r.fs.ReadFile(mkPath("test", "project", "bundle.cue"))
 				require.NoError(t, err)
 				assert.Equal(t, r.result.RawBundle, c)
 
@@ -104,20 +105,20 @@ func TestDeployerCreateDeployment(t *testing.T) {
 			},
 			cfg: makeConfig(),
 			files: map[string]string{
-				mkPath("test", "project", "extra.yaml"): "extra",
+				"root/test/project/extra.yaml": "extra",
 			},
 			validate: func(t *testing.T, r testResult) {
 				require.NoError(t, r.err)
 
-				e, err := afero.Exists(r.fs, mkPath("test", "project", "main.yaml"))
+				e, err := r.fs.Exists(mkPath("test", "project", "main.yaml"))
 				require.NoError(t, err)
 				assert.True(t, e)
 
-				e, err = afero.Exists(r.fs, mkPath("test", "project", "bundle.cue"))
+				e, err = r.fs.Exists(mkPath("test", "project", "bundle.cue"))
 				require.NoError(t, err)
 				assert.True(t, e)
 
-				e, err = afero.Exists(r.fs, mkPath("test", "project", "extra.yaml"))
+				e, err = r.fs.Exists(mkPath("test", "project", "extra.yaml"))
 				require.NoError(t, err)
 				assert.False(t, e)
 
@@ -140,9 +141,9 @@ func TestDeployerCreateDeployment(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			fs := afero.NewMemMapFs()
+			fs := billy.NewInMemoryFs()
 
-			remote, opts, err := tu.NewMockGitRemoteInterface(fs, tt.files)
+			remote, opts, err := tu.NewMockGitRemoteInterface(tt.files)
 			require.NoError(t, err)
 
 			gen := tu.NewMockGenerator(manifestContent)
@@ -176,19 +177,21 @@ func TestDeployerCreateDeployment(t *testing.T) {
 }
 
 func TestDeploymentCommit(t *testing.T) {
-	fs := afero.NewMemMapFs()
+	fs := billy.NewInMemoryFs()
 
-	remote, opts, err := tu.NewMockGitRemoteInterface(fs, nil)
+	remote, opts, err := tu.NewMockGitRemoteInterface(nil)
 	require.NoError(t, err)
 
-	repo := gr.NewGitRepo(
+	repo, err := gr.NewGitRepo(
+		"",
 		testutils.NewNoopLogger(),
 		gr.WithFS(fs),
 		gr.WithGitRemoteInteractor(remote),
 		gr.WithAuth("username", "password"),
 	)
+	require.NoError(t, err)
 
-	require.NoError(t, repo.Init("/repo"))
+	require.NoError(t, repo.Init())
 	require.NoError(t, repo.WriteFile("test.txt", []byte("test")))
 	require.NoError(t, repo.StageFile("test.txt"))
 

@@ -15,9 +15,10 @@ import (
 	sb "github.com/input-output-hk/catalyst-forge/lib/schema/blueprint"
 	sg "github.com/input-output-hk/catalyst-forge/lib/schema/blueprint/global"
 	sp "github.com/input-output-hk/catalyst-forge/lib/schema/blueprint/project"
+	"github.com/input-output-hk/catalyst-forge/lib/tools/fs"
+	"github.com/input-output-hk/catalyst-forge/lib/tools/fs/billy"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/testutils"
 	"github.com/migueleliasweb/go-github-mock/src/mock"
-	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -73,7 +74,7 @@ func TestGithubReleaserRelease(t *testing.T) {
 		runFail    bool
 		createFail bool
 		uploadFail bool
-		validate   func(*testing.T, afero.Fs, map[string][]byte, bool, error)
+		validate   func(*testing.T, fs.Filesystem, map[string][]byte, bool, error)
 	}{
 		{
 			name: "full",
@@ -94,11 +95,11 @@ func TestGithubReleaserRelease(t *testing.T) {
 				"linux/amd64/test": "test",
 			},
 			firing: true,
-			validate: func(t *testing.T, fs afero.Fs, uploads map[string][]byte, created bool, err error) {
+			validate: func(t *testing.T, fs fs.Filesystem, uploads map[string][]byte, created bool, err error) {
 				assert.NoError(t, err)
 
 				filename := "project-linux-amd64.tar.gz"
-				exists, err := afero.Exists(fs, filepath.Join(workdir, filename))
+				exists, err := fs.Exists(filepath.Join(workdir, filename))
 				require.NoError(t, err)
 				assert.True(t, exists)
 
@@ -151,12 +152,12 @@ func TestGithubReleaserRelease(t *testing.T) {
 				"darwin/amd64/test": "test",
 			},
 			firing: true,
-			validate: func(t *testing.T, fs afero.Fs, uploads map[string][]byte, created bool, err error) {
+			validate: func(t *testing.T, fs fs.Filesystem, uploads map[string][]byte, created bool, err error) {
 				assert.NoError(t, err)
 
 				for _, platform := range []string{"linux-amd64", "darwin-amd64"} {
 					filename := fmt.Sprintf("project-%s.tar.gz", platform)
-					exists, err := afero.Exists(fs, filepath.Join(workdir, filename))
+					exists, err := fs.Exists(filepath.Join(workdir, filename))
 					require.NoError(t, err)
 					assert.True(t, exists)
 
@@ -204,7 +205,7 @@ func TestGithubReleaserRelease(t *testing.T) {
 				"linux/amd64/test": "test",
 			},
 			firing: false,
-			validate: func(t *testing.T, fs afero.Fs, uploads map[string][]byte, created bool, err error) {
+			validate: func(t *testing.T, fs fs.Filesystem, uploads map[string][]byte, created bool, err error) {
 				assert.NoError(t, err)
 				assert.False(t, created)
 			},
@@ -223,7 +224,7 @@ func TestGithubReleaserRelease(t *testing.T) {
 			config:    GithubReleaserConfig{},
 			files:     map[string]string{},
 			firing:    true,
-			validate: func(t *testing.T, fs afero.Fs, uploads map[string][]byte, created bool, err error) {
+			validate: func(t *testing.T, fs fs.Filesystem, uploads map[string][]byte, created bool, err error) {
 				assert.Error(t, err)
 				assert.Contains(t, err.Error(), "failed to validate artifacts")
 			},
@@ -249,7 +250,7 @@ func TestGithubReleaserRelease(t *testing.T) {
 				"linux/amd64/test": "test",
 			},
 			firing: true,
-			validate: func(t *testing.T, fs afero.Fs, uploads map[string][]byte, created bool, err error) {
+			validate: func(t *testing.T, fs fs.Filesystem, uploads map[string][]byte, created bool, err error) {
 				assert.NoError(t, err)
 				assert.False(t, created)
 			},
@@ -274,7 +275,7 @@ func TestGithubReleaserRelease(t *testing.T) {
 			},
 			firing:     true,
 			createFail: true,
-			validate: func(t *testing.T, fs afero.Fs, uploads map[string][]byte, created bool, err error) {
+			validate: func(t *testing.T, fs fs.Filesystem, uploads map[string][]byte, created bool, err error) {
 				assert.Error(t, err)
 				assert.Contains(t, err.Error(), "failed to create release")
 			},
@@ -299,7 +300,7 @@ func TestGithubReleaserRelease(t *testing.T) {
 			},
 			firing:     true,
 			uploadFail: true,
-			validate: func(t *testing.T, fs afero.Fs, uploads map[string][]byte, created bool, err error) {
+			validate: func(t *testing.T, fs fs.Filesystem, uploads map[string][]byte, created bool, err error) {
 				assert.Error(t, err)
 				assert.Contains(t, err.Error(), "failed to upload asset")
 			},
@@ -328,7 +329,7 @@ func TestGithubReleaserRelease(t *testing.T) {
 				"linux/amd64/test": "test",
 			},
 			firing: true,
-			validate: func(t *testing.T, fs afero.Fs, uploads map[string][]byte, created bool, err error) {
+			validate: func(t *testing.T, fs fs.Filesystem, uploads map[string][]byte, created bool, err error) {
 				assert.NoError(t, err)
 				assert.NotContains(t, uploads, "/repos/owner/repo/releases/123456/assets?name=project-linux-amd64.tar.gz")
 			},
@@ -337,7 +338,7 @@ func TestGithubReleaserRelease(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			fs := afero.NewMemMapFs()
+			fs := billy.NewInMemoryFs()
 			files := make(map[string]string)
 			for k := range tt.files {
 				nk := filepath.Join(workdir, k)

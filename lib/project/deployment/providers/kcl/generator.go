@@ -10,7 +10,8 @@ import (
 	"github.com/BurntSushi/toml"
 	"github.com/input-output-hk/catalyst-forge/lib/project/deployment/providers/kcl/client"
 	sp "github.com/input-output-hk/catalyst-forge/lib/schema/blueprint/project"
-	"github.com/spf13/afero"
+	"github.com/input-output-hk/catalyst-forge/lib/tools/fs"
+	"github.com/input-output-hk/catalyst-forge/lib/tools/fs/billy"
 )
 
 // KCLModule represents a KCL module.
@@ -28,7 +29,7 @@ type KCLModulePackage struct {
 // KCLManifestGenerator is a ManifestGenerator that uses KCL.
 type KCLManifestGenerator struct {
 	client client.KCLClient
-	fs     afero.Fs
+	fs     fs.Filesystem
 	logger *slog.Logger
 }
 
@@ -74,14 +75,14 @@ func (g *KCLManifestGenerator) Generate(mod sp.Module, env string) ([]byte, erro
 // parseModule parses a KCL module from the given path.
 func (g *KCLManifestGenerator) parseModule(path string) (KCLModule, error) {
 	modPath := filepath.Join(path, "kcl.mod")
-	exists, err := afero.Exists(g.fs, modPath)
+	exists, err := g.fs.Exists(modPath)
 	if err != nil {
 		return KCLModule{}, fmt.Errorf("failed to check if KCL module exists: %w", err)
 	} else if !exists {
 		return KCLModule{}, fmt.Errorf("KCL module not found")
 	}
 
-	src, err := afero.ReadFile(g.fs, modPath)
+	src, err := g.fs.ReadFile(modPath)
 	if err != nil {
 		return KCLModule{}, fmt.Errorf("failed to read KCL module: %w", err)
 	}
@@ -103,7 +104,7 @@ func NewKCLManifestGenerator(logger *slog.Logger) *KCLManifestGenerator {
 
 	return &KCLManifestGenerator{
 		client: client.KPMClient{},
-		fs:     afero.NewOsFs(),
+		fs:     billy.NewBaseOsFS(),
 		logger: logger,
 	}
 }

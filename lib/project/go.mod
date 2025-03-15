@@ -12,7 +12,6 @@ require (
 	github.com/google/go-github/v66 v66.0.0
 	github.com/input-output-hk/catalyst-forge/lib/schema v0.0.0
 	github.com/input-output-hk/catalyst-forge/lib/tools v0.0.0
-	github.com/spf13/afero v1.11.0
 	github.com/stretchr/testify v1.10.0
 	helm.sh/helm/v3 v3.17.0
 	kcl-lang.io/kpm v0.11.0
@@ -217,7 +216,6 @@ require (
 	google.golang.org/protobuf v1.35.2 // indirect
 	gopkg.in/evanphx/json-patch.v4 v4.12.0 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
-	gopkg.in/jfontan/go-billy-desfacer.v0 v0.0.0-20210209210102-b43512b1cad0 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	k8s.io/api v0.32.0 // indirect
