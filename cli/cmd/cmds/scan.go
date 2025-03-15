@@ -10,6 +10,7 @@ import (
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/run"
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/scan"
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/utils"
+	"github.com/input-output-hk/catalyst-forge/lib/tools/fs"
 	"golang.org/x/exp/maps"
 )
 
@@ -32,6 +33,13 @@ func (c *ScanCmd) Run(ctx run.RunContext) error {
 		}
 	} else {
 		rootPath = c.RootPath
+	}
+
+	exists, err := fs.Exists(rootPath)
+	if err != nil {
+		return fmt.Errorf("could not check if root path exists: %w", err)
+	} else if !exists {
+		return fmt.Errorf("root path does not exist: %s", rootPath)
 	}
 
 	projects, err := scan.ScanProjects(rootPath, ctx.ProjectLoader, &ctx.FSWalker, ctx.Logger)

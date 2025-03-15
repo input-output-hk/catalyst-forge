@@ -6,6 +6,7 @@ import (
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/events"
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/run"
 	"github.com/input-output-hk/catalyst-forge/lib/project/deployment/deployer"
+	"github.com/input-output-hk/catalyst-forge/lib/tools/fs"
 )
 
 type DeployCmd struct {
@@ -14,6 +15,13 @@ type DeployCmd struct {
 }
 
 func (c *DeployCmd) Run(ctx run.RunContext) error {
+	exists, err := fs.Exists(c.Project)
+	if err != nil {
+		return fmt.Errorf("could not check if project exists: %w", err)
+	} else if !exists {
+		return fmt.Errorf("project does not exist: %s", c.Project)
+	}
+
 	project, err := ctx.ProjectLoader.Load(c.Project)
 	if err != nil {
 		return fmt.Errorf("could not load project: %w", err)

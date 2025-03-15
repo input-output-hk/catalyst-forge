@@ -12,9 +12,10 @@ import (
 	"github.com/input-output-hk/catalyst-forge/lib/project/providers"
 	"github.com/input-output-hk/catalyst-forge/lib/project/secrets"
 	"github.com/input-output-hk/catalyst-forge/lib/schema/blueprint/common"
+	"github.com/input-output-hk/catalyst-forge/lib/tools/fs"
+	"github.com/input-output-hk/catalyst-forge/lib/tools/fs/billy"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/git/repo"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/git/repo/remote"
-	"github.com/spf13/afero"
 )
 
 const (
@@ -87,7 +88,7 @@ type DeployerConfigGit struct {
 type Deployer struct {
 	cfg    DeployerConfig
 	ctx    *cue.Context
-	fs     afero.Fs
+	fs     fs.Filesystem
 	gen    generator.Generator
 	logger *slog.Logger
 	remote remote.GitRemoteInteractor
@@ -96,14 +97,14 @@ type Deployer struct {
 
 // CloneOptions are options for cloning a repository.
 type CloneOptions struct {
-	fs afero.Fs
+	fs fs.Filesystem
 }
 
 // CloneOption is an option for cloning a repository.
 type CloneOption func(*CloneOptions)
 
 // WithFS sets the filesystem to use for cloning a repository.
-func WithFS(fs afero.Fs) CloneOption {
+func WithFS(fs fs.Filesystem) CloneOption {
 	return func(o *CloneOptions) {
 		o.fs = fs
 	}
@@ -116,7 +117,7 @@ func (d *Deployer) CreateDeployment(
 	opts ...CloneOption,
 ) (*Deployment, error) {
 	options := CloneOptions{
-		fs: afero.NewMemMapFs(),
+		fs: billy.NewInMemoryFs(),
 	}
 	for _, o := range opts {
 		o(&options)
@@ -182,7 +183,7 @@ func (d *Deployer) CreateDeployment(
 
 func (d *Deployer) FetchBundle(url, ref, projectPath string, opts ...CloneOption) (deployment.ModuleBundle, error) {
 	options := CloneOptions{
-		fs: afero.NewMemMapFs(),
+		fs: billy.NewInMemoryFs(),
 	}
 	for _, o := range opts {
 		o(&options)
@@ -265,7 +266,7 @@ func (d *Deployer) clearProjectPath(path string, r *repo.GitRepo) error {
 }
 
 // clone clones the given repository and returns the GitRepo.
-func (d *Deployer) clone(url, ref string, fs afero.Fs) (repo.GitRepo, error) {
+func (d *Deployer) clone(url, ref string, fs fs.Filesystem) (repo.GitRepo, error) {
 	opts := []repo.GitRepoOption{
 		repo.WithAuthor(GIT_NAME, GIT_EMAIL),
 		repo.WithGitRemoteInteractor(d.remote),
@@ -280,8 +281,12 @@ func (d *Deployer) clone(url, ref string, fs afero.Fs) (repo.GitRepo, error) {
 	}
 
 	d.logger.Info("Cloning repository", "url", url, "ref", ref)
-	r := repo.NewGitRepo(d.logger, opts...)
-	if err := r.Clone("/repo", url, ref); err != nil {
+	r, err := repo.NewGitRepo("/repo", d.logger, opts...)
+	if err != nil {
+		return repo.GitRepo{}, fmt.Errorf("could not create git repository: %w", err)
+	}
+
+	if err := r.Clone(url, ref); err != nil {
 		return repo.GitRepo{}, fmt.Errorf("could not clone repository: %w", err)
 	}
 
@@ -329,7 +334,7 @@ func NewDeployer(
 		cfg:    cfg,
 		ctx:    ctx,
 		gen:    gen,
-		fs:     afero.NewMemMapFs(),
+		fs:     billy.NewBaseOsFS(),
 		logger: logger,
 		remote: remote,
 		ss:     ss,

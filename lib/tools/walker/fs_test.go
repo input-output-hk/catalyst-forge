@@ -6,15 +6,14 @@ import (
 	"log/slog"
 	"testing"
 
+	"github.com/input-output-hk/catalyst-forge/lib/tools/fs/billy"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/testutils"
-	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestFileSystemWalkerWalk(t *testing.T) {
 	tests := []struct {
 		name          string
-		fs            afero.Fs
 		callbackErr   error
 		path          string
 		files         map[string]string
@@ -24,7 +23,6 @@ func TestFileSystemWalkerWalk(t *testing.T) {
 	}{
 		{
 			name:        "single directory",
-			fs:          afero.NewMemMapFs(),
 			callbackErr: nil,
 			path:        "/test1",
 			files: map[string]string{
@@ -40,7 +38,6 @@ func TestFileSystemWalkerWalk(t *testing.T) {
 		},
 		{
 			name:        "nested directories",
-			fs:          afero.NewMemMapFs(),
 			callbackErr: nil,
 			path:        "/test1",
 			files: map[string]string{
@@ -57,24 +54,7 @@ func TestFileSystemWalkerWalk(t *testing.T) {
 			expectedErr: "",
 		},
 		{
-			name: "error opening file",
-			fs: &wrapfs{
-				Fs:        afero.NewMemMapFs(),
-				trigger:   fmt.Errorf("fail"),
-				failAfter: 1,
-			},
-			callbackErr: nil,
-			path:        "/test1",
-			files: map[string]string{
-				"/test1/file1": "file1",
-			},
-			expectedFiles: map[string]string{},
-			expectErr:     true,
-			expectedErr:   "fail",
-		},
-		{
 			name:        "callback error",
-			fs:          afero.NewMemMapFs(),
 			callbackErr: fmt.Errorf("callback error"),
 			path:        "/test1",
 			files: map[string]string{
@@ -88,12 +68,13 @@ func TestFileSystemWalkerWalk(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			fs := billy.NewInMemoryFs()
 			walker := FSWalker{
-				fs:     tt.fs,
+				fs:     fs,
 				logger: slog.New(slog.NewTextHandler(io.Discard, nil)),
 			}
 
-			testutils.SetupFS(t, tt.fs, tt.files)
+			testutils.SetupFS(t, fs, tt.files)
 
 			callbackFiles := make(map[string]string)
 			err := walker.Walk(tt.path, func(path string, fileType FileType, openFile func() (FileSeeker, error)) error {

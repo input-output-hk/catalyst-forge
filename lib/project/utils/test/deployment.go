@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"log/slog"
 	"path/filepath"
-	"strings"
 
 	"github.com/go-git/go-billy/v5"
 	gg "github.com/go-git/go-git/v5"
@@ -17,7 +16,6 @@ import (
 	"github.com/input-output-hk/catalyst-forge/lib/tools/git/repo/remote"
 	rm "github.com/input-output-hk/catalyst-forge/lib/tools/git/repo/remote/mocks"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/testutils"
-	"github.com/spf13/afero"
 )
 
 type RemoteOptions struct {
@@ -43,7 +41,6 @@ func NewMockGenerator(manifest string) generator.Generator {
 }
 
 func NewMockGitRemoteInterface(
-	fs afero.Fs,
 	files map[string]string,
 ) (remote.GitRemoteInteractor, RemoteOptions, error) {
 	var cloneOpts gg.CloneOptions
@@ -64,15 +61,20 @@ func NewMockGitRemoteInterface(
 				if files != nil {
 					for path, content := range files {
 						dir := filepath.Dir(path)
-						if err := fs.MkdirAll(dir, 0755); err != nil {
+						if err := worktree.MkdirAll(dir, 0755); err != nil {
 							return nil, fmt.Errorf("failed to create directory %s: %w", dir, err)
 						}
 
-						if err := afero.WriteFile(fs, path, []byte(content), 0644); err != nil {
-							return nil, fmt.Errorf("failed to write file %s: %w", path, err)
+						f, err := worktree.Create(path)
+						if err != nil {
+							return nil, fmt.Errorf("failed to create file %s: %w", path, err)
+						}
+						_, err = f.Write([]byte(content))
+						if err != nil {
+							return nil, fmt.Errorf("failed to write to file %s: %w", path, err)
 						}
 
-						_, err := wt.Add(strings.TrimPrefix(path, "/repo/"))
+						_, err = wt.Add(path)
 						if err != nil {
 							return nil, fmt.Errorf("failed to add file: %w", err)
 						}

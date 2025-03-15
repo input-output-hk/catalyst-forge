@@ -7,11 +7,11 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/spf13/afero"
+	"github.com/input-output-hk/catalyst-forge/lib/tools/fs"
 )
 
 // ArchiveAndCompress creates a tar.gz archive of the specified directory
-func ArchiveAndCompress(fs afero.Fs, srcDir, destFile string) error {
+func ArchiveAndCompress(fs fs.Filesystem, srcDir, destFile string) error {
 	file, err := fs.Create(destFile)
 	if err != nil {
 		return err
@@ -24,7 +24,7 @@ func ArchiveAndCompress(fs afero.Fs, srcDir, destFile string) error {
 	tarWriter := tar.NewWriter(gzipWriter)
 	defer tarWriter.Close()
 
-	err = afero.Walk(fs, srcDir, func(path string, info os.FileInfo, err error) error {
+	err = fs.Walk(srcDir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
