@@ -9,8 +9,8 @@ import (
 
 	"cuelang.org/go/cue"
 	"cuelang.org/go/cue/cuecontext"
+	"github.com/input-output-hk/catalyst-forge/lib/tools/fs/billy"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/testutils"
-	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -45,7 +45,6 @@ func NewMockFileSeeker(s string) MockFileSeeker {
 func TestBlueprintLoaderLoad(t *testing.T) {
 	tests := []struct {
 		name      string
-		fs        afero.Fs
 		project   string
 		gitRoot   string
 		files     map[string]string
@@ -54,7 +53,6 @@ func TestBlueprintLoaderLoad(t *testing.T) {
 	}{
 		{
 			name:    "no files",
-			fs:      afero.NewMemMapFs(),
 			project: "/tmp/dir1/dir2",
 			gitRoot: "/tmp/dir1/dir2",
 			files:   map[string]string{},
@@ -66,7 +64,6 @@ func TestBlueprintLoaderLoad(t *testing.T) {
 		},
 		{
 			name:    "single file",
-			fs:      afero.NewMemMapFs(),
 			project: "/tmp/dir1/dir2",
 			gitRoot: "/tmp/dir1/dir2",
 			files: map[string]string{
@@ -96,7 +93,6 @@ func TestBlueprintLoaderLoad(t *testing.T) {
 		},
 		{
 			name:    "multiple files",
-			fs:      afero.NewMemMapFs(),
 			project: "/tmp/dir1/dir2",
 			gitRoot: "/tmp/dir1",
 			files: map[string]string{
@@ -141,11 +137,12 @@ func TestBlueprintLoaderLoad(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			testutils.SetupFS(t, tt.fs, tt.files)
+			fs := billy.NewInMemoryFs()
+			testutils.SetupFS(t, fs, tt.files)
 
 			loader := DefaultBlueprintLoader{
 				ctx:    cuecontext.New(),
-				fs:     tt.fs,
+				fs:     fs,
 				logger: slog.New(slog.NewTextHandler(io.Discard, nil)),
 			}
 

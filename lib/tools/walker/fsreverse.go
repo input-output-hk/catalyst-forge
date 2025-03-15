@@ -10,12 +10,13 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/spf13/afero"
+	"github.com/input-output-hk/catalyst-forge/lib/tools/fs"
+	"github.com/input-output-hk/catalyst-forge/lib/tools/fs/billy"
 )
 
 // FSReverseWalker is a ReverseWalker that walks over the local filesystem.
 type FSReverseWalker struct {
-	fs     afero.Fs
+	fs     fs.Filesystem
 	logger *slog.Logger
 }
 
@@ -38,7 +39,7 @@ func (w *FSReverseWalker) Walk(startPath, endPath string, callback WalkerCallbac
 
 	for {
 		w.logger.Debug("reverse walking path", "path", currentDir)
-		files, err := afero.ReadDir(w.fs, currentDir)
+		files, err := w.fs.ReadDir(currentDir)
 
 		if err != nil {
 			w.logger.Error("error reading directory", "path", currentDir, "error", err)
@@ -94,14 +95,14 @@ func NewDefaultFSReverseWalker(logger *slog.Logger) FSReverseWalker {
 	}
 
 	return FSReverseWalker{
-		fs:     afero.NewOsFs(),
+		fs:     billy.NewBaseOsFS(),
 		logger: logger,
 	}
 }
 
 // NewFSReverseWalker creates a new FSReverseWalker with an
 // optional logger.
-func NewFSReverseWalker(logger *slog.Logger, fs afero.Fs) FSReverseWalker {
+func NewFSReverseWalker(logger *slog.Logger, fs fs.Filesystem) FSReverseWalker {
 	if logger == nil {
 		logger = slog.New(slog.NewTextHandler(io.Discard, nil))
 	}
@@ -114,7 +115,7 @@ func NewFSReverseWalker(logger *slog.Logger, fs afero.Fs) FSReverseWalker {
 
 // NewCustomReverseFSWalker creates a new FSReverseWalker with the given
 // filesystem and an optional logger.
-func NewCustomReverseFSWalker(fs afero.Fs, logger *slog.Logger) FSReverseWalker {
+func NewCustomReverseFSWalker(fs fs.Filesystem, logger *slog.Logger) FSReverseWalker {
 	if logger == nil {
 		logger = slog.New(slog.NewTextHandler(io.Discard, nil))
 	}

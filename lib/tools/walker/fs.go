@@ -4,12 +4,13 @@ import (
 	"log/slog"
 	"os"
 
-	"github.com/spf13/afero"
+	"github.com/input-output-hk/catalyst-forge/lib/tools/fs"
+	"github.com/input-output-hk/catalyst-forge/lib/tools/fs/billy"
 )
 
 // FilesystemWalker is a walker that walks over the local filesystem.
 type FSWalker struct {
-	fs     afero.Fs
+	fs     fs.Filesystem
 	logger *slog.Logger
 }
 
@@ -17,7 +18,7 @@ type FSWalker struct {
 // the given function for each entry.
 // The reader passed to the function is closed after the function returns.
 func (w *FSWalker) Walk(rootPath string, callback WalkerCallback) error {
-	return afero.Walk(w.fs, rootPath, func(path string, info os.FileInfo, err error) error {
+	return w.fs.Walk(rootPath, func(path string, info os.FileInfo, err error) error {
 		w.logger.Debug("walking path", "path", path)
 		if err != nil {
 			w.logger.Error("error walking path", "path", path, "error", err)
@@ -46,7 +47,7 @@ func (w *FSWalker) Walk(rootPath string, callback WalkerCallback) error {
 }
 
 // NewFilesystemWalker creates a new FSWalker with the given filesystem.
-func NewFSWalker(fs afero.Fs, logger *slog.Logger) FSWalker {
+func NewFSWalker(fs fs.Filesystem, logger *slog.Logger) FSWalker {
 	return FSWalker{
 		fs:     fs,
 		logger: logger,
@@ -61,14 +62,14 @@ func NewDefaultFSWalker(logger *slog.Logger) FSWalker {
 	}
 
 	return FSWalker{
-		fs:     afero.NewOsFs(),
+		fs:     billy.NewBaseOsFS(),
 		logger: logger,
 	}
 }
 
 // NewCustomDefaultFilesystemWalker creates a new FSWalker with the given
 // filesystem and an optional logger.
-func NewCustomDefaultFSWalker(fs afero.Fs, logger *slog.Logger) FSWalker {
+func NewCustomDefaultFSWalker(fs fs.Filesystem, logger *slog.Logger) FSWalker {
 	if logger == nil {
 		logger = slog.New(slog.NewTextHandler(os.Stderr, nil))
 	}

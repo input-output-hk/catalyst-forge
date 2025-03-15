@@ -6,26 +6,26 @@ import (
 	"io"
 	"testing"
 
-	"github.com/spf13/afero"
+	"github.com/input-output-hk/catalyst-forge/lib/tools/fs/billy"
 )
 
 func TestArchiveAndCompress(t *testing.T) {
-	fs := afero.NewMemMapFs()
+	fs := billy.NewInMemoryFs()
 
 	err := fs.MkdirAll("testdir/subdir", 0755)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	afero.WriteFile(fs, "testdir/file1.txt", []byte("content of file1"), 0644)
-	afero.WriteFile(fs, "testdir/subdir/file2.txt", []byte("content of file2"), 0644)
+	fs.WriteFile("testdir/file1.txt", []byte("content of file1"), 0644)
+	fs.WriteFile("testdir/subdir/file2.txt", []byte("content of file2"), 0644)
 
 	err = ArchiveAndCompress(fs, "testdir", "output.tar.gz")
 	if err != nil {
 		t.Fatalf("createTarGz failed: %v", err)
 	}
 
-	exists, err := afero.Exists(fs, "output.tar.gz")
+	exists, err := fs.Exists("output.tar.gz")
 	if err != nil {
 		t.Fatal(err)
 	}

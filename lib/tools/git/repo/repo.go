@@ -15,9 +15,8 @@ import (
 	"github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/go-git/go-git/v5/storage/filesystem"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/fs"
+	bfs "github.com/input-output-hk/catalyst-forge/lib/tools/fs/billy"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/git/repo/remote"
-	"github.com/spf13/afero"
-	df "gopkg.in/jfontan/go-billy-desfacer.v0"
 )
 
 const (
@@ -37,9 +36,9 @@ type GitRepo struct {
 	basePath     string
 	commitAuthor string
 	commitEmail  string
-	fs           afero.Fs
-	gfs          fs.Filesystem
-	wfs          fs.Filesystem
+	fs           *bfs.BillyFs
+	gfs          *bfs.BillyFs
+	wfs          *bfs.BillyFs
 	logger       *slog.Logger
 	raw          *gg.Repository
 	remote       remote.GitRemoteInteractor
@@ -47,14 +46,12 @@ type GitRepo struct {
 }
 
 // Clone loads a repository from a git remote.
-func (g *GitRepo) Clone(path, url, branch string) error {
-	workdir := afero.NewBasePathFs(g.fs, path)
-	gitdir := afero.NewBasePathFs(g.fs, filepath.Join(path, ".git"))
+func (g *GitRepo) Clone(url, branch string) error {
 	ref := fmt.Sprintf("refs/heads/%s", branch)
 
 	g.logger.Debug("Cloning repository", "url", url, "ref", ref)
-	storage := filesystem.NewStorage(df.New(gitdir), cache.NewObjectLRUDefault())
-	repo, err := g.remote.Clone(storage, df.New(workdir), &gg.CloneOptions{
+	storage := filesystem.NewStorage(g.gfs.Raw(), cache.NewObjectLRUDefault())
+	repo, err := g.remote.Clone(storage, g.wfs.Raw(), &gg.CloneOptions{
 		URL:           url,
 		Depth:         1,
 		ReferenceName: plumbing.ReferenceName(ref),
@@ -70,7 +67,6 @@ func (g *GitRepo) Clone(path, url, branch string) error {
 		return fmt.Errorf("failed to get worktree: %w", err)
 	}
 
-	g.basePath = path
 	g.raw = repo
 	g.worktree = wt
 
@@ -97,7 +93,7 @@ func (g *GitRepo) Commit(msg string) (plumbing.Hash, error) {
 
 // Exists checks if a file exists in the repository.
 func (g *GitRepo) Exists(path string) (bool, error) {
-	_, err := g.fs.Stat(filepath.Join(g.basePath, path))
+	_, err := g.wfs.Stat(path)
 	if errors.Is(err, os.ErrNotExist) {
 		return false, nil
 	} else if err != nil {
@@ -177,18 +173,9 @@ func (g *GitRepo) Head() (*plumbing.Reference, error) {
 }
 
 // Init initializes a new repository at the given path.
-func (g *GitRepo) Init(path string) error {
-	var workdir afero.Fs
-	if path == "" {
-		workdir = g.fs
-	} else {
-		workdir = afero.NewBasePathFs(g.fs, path)
-	}
-
-	gitdir := afero.NewBasePathFs(g.fs, filepath.Join(path, ".git"))
-
-	storage := filesystem.NewStorage(df.New(gitdir), cache.NewObjectLRUDefault())
-	repo, err := gg.Init(storage, df.New(workdir))
+func (g *GitRepo) Init() error {
+	storage := filesystem.NewStorage(g.gfs.Raw(), cache.NewObjectLRUDefault())
+	repo, err := gg.Init(storage, g.wfs.Raw())
 	if err != nil {
 		return fmt.Errorf("failed to init repository: %w", err)
 	}
@@ -198,7 +185,6 @@ func (g *GitRepo) Init(path string) error {
 		return fmt.Errorf("failed to get worktree: %w", err)
 	}
 
-	g.basePath = path
 	g.raw = repo
 	g.worktree = wt
 
@@ -244,12 +230,9 @@ func (g *GitRepo) NewTag(commit plumbing.Hash, name, message string) (*plumbing.
 }
 
 // Open loads a repository from a local path.
-func (g *GitRepo) Open(path string) error {
-	workdir := afero.NewBasePathFs(g.fs, path)
-	gitdir := afero.NewBasePathFs(g.fs, filepath.Join(path, ".git"))
-
-	storage := filesystem.NewStorage(df.New(gitdir), cache.NewObjectLRUDefault())
-	repo, err := gg.Open(storage, df.New(workdir))
+func (g *GitRepo) Open() error {
+	storage := filesystem.NewStorage(g.gfs.Raw(), cache.NewObjectLRUDefault())
+	repo, err := gg.Open(storage, g.wfs.Raw())
 	if err != nil {
 		return fmt.Errorf("failed to open repository: %w", err)
 	}
@@ -259,21 +242,10 @@ func (g *GitRepo) Open(path string) error {
 		return fmt.Errorf("failed to get worktree: %w", err)
 	}
 
-	g.basePath = path
 	g.raw = repo
 	g.worktree = wt
 
 	return nil
-}
-
-// Raw returns the underlying go-git repository.
-func (g *GitRepo) Raw() *gg.Repository {
-	return g.raw
-}
-
-// ReadFile reads the contents of a file in the repository.
-func (g *GitRepo) ReadFile(path string) ([]byte, error) {
-	return afero.ReadFile(g.fs, filepath.Join(g.basePath, path))
 }
 
 // Push pushes changes to the remote repository.
@@ -283,14 +255,24 @@ func (g *GitRepo) Push() error {
 	})
 }
 
+// Raw returns the underlying go-git repository.
+func (g *GitRepo) Raw() *gg.Repository {
+	return g.raw
+}
+
+// ReadFile reads the contents of a file in the repository.
+func (g *GitRepo) ReadFile(path string) ([]byte, error) {
+	return g.wfs.ReadFile(path)
+}
+
 // ReadDir reads the contents of a directory in the repository.
 func (g *GitRepo) ReadDir(path string) ([]os.FileInfo, error) {
-	return afero.ReadDir(g.fs, filepath.Join(g.basePath, path))
+	return g.wfs.ReadDir(path)
 }
 
 // RemoveFile removes a file from the repository.
 func (g *GitRepo) RemoveFile(path string) error {
-	return g.fs.Remove(filepath.Join(g.basePath, path))
+	return g.wfs.Remove(path)
 }
 
 // SetAuth sets the authentication for the interacting with a remote repository.
@@ -321,8 +303,7 @@ func (g *GitRepo) UnstageFile(path string) error {
 // WriteFile writes the given contents to the given path in the repository.
 // It also automatically adds the file to the staging area.
 func (g *GitRepo) WriteFile(path string, contents []byte) error {
-	newPath := filepath.Join(g.basePath, path)
-	if err := afero.WriteFile(g.fs, newPath, contents, 0644); err != nil {
+	if err := g.wfs.WriteFile(path, contents, 0644); err != nil {
 		return fmt.Errorf("failed to write file: %w", err)
 	}
 
@@ -375,34 +356,48 @@ func WithGitRemoteInteractor(remote remote.GitRemoteInteractor) GitRepoOption {
 }
 
 // WithFS sets the filesystem for the repository.
-func WithFS(fs afero.Fs) GitRepoOption {
+func WithFS(fs fs.Filesystem) GitRepoOption {
 	return func(g *GitRepo) {
-		g.fs = fs
-	}
-}
-
-// WithMemFS sets the repository to use an in-memory filesystem.
-func WithMemFS() GitRepoOption {
-	return func(g *GitRepo) {
-		g.fs = afero.NewMemMapFs()
+		if bg, ok := fs.(*bfs.BillyFs); ok {
+			g.fs = bg
+		} else {
+			panic("must use billy filesystem for git filesystem")
+		}
 	}
 }
 
 // NewGitRepo creates a new GitRepo instance.
-func NewGitRepo(logger *slog.Logger, opts ...GitRepoOption) GitRepo {
+func NewGitRepo(
+	path string,
+	logger *slog.Logger,
+	opts ...GitRepoOption,
+) (GitRepo, error) {
 	r := GitRepo{
 		logger: logger,
+		remote: remote.GoGitRemoteInteractor{},
 	}
 
 	for _, opt := range opts {
 		opt(&r)
 	}
 
-	if r.fs == nil {
-		r.fs = afero.NewOsFs()
-	} else if r.remote == nil {
-		r.remote = remote.GoGitRemoteInteractor{}
+	if r.fs != nil {
+		ng, err := r.fs.Raw().Chroot(filepath.Join(path, ".git"))
+		if err != nil {
+			return GitRepo{}, fmt.Errorf("failed to chroot git filesystem: %w", err)
+		}
+
+		nw, err := r.fs.Raw().Chroot(path)
+		if err != nil {
+			return GitRepo{}, fmt.Errorf("failed to chroot worktree filesystem: %w", err)
+		}
+
+		r.gfs = bfs.NewFs(ng)
+		r.wfs = bfs.NewFs(nw)
+	} else {
+		r.gfs = bfs.NewOsFs(filepath.Join(path, ".git"))
+		r.wfs = bfs.NewOsFs(path)
 	}
 
-	return r
+	return r, nil
 }

@@ -12,8 +12,9 @@ import (
 	"github.com/Masterminds/semver/v3"
 	"github.com/input-output-hk/catalyst-forge/lib/project/blueprint/defaults"
 	s "github.com/input-output-hk/catalyst-forge/lib/schema"
+	"github.com/input-output-hk/catalyst-forge/lib/tools/fs"
+	"github.com/input-output-hk/catalyst-forge/lib/tools/fs/billy"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/version"
-	"github.com/spf13/afero"
 )
 
 //go:generate go run github.com/matryer/moq@latest --pkg mocks --out ./mocks/loader.go . BlueprintLoader
@@ -33,7 +34,7 @@ type BlueprintLoader interface {
 // DefaultBlueprintLoader is the default implementation of the BlueprintLoader
 type DefaultBlueprintLoader struct {
 	ctx    *cue.Context
-	fs     afero.Fs
+	fs     fs.Filesystem
 	logger *slog.Logger
 }
 
@@ -41,7 +42,7 @@ func (b *DefaultBlueprintLoader) Load(projectPath, gitRootPath string) (RawBluep
 	files := make(map[string][]byte)
 
 	pbPath := filepath.Join(projectPath, BlueprintFileName)
-	pb, err := afero.ReadFile(b.fs, pbPath)
+	pb, err := b.fs.ReadFile(pbPath)
 	if err != nil {
 		if os.IsNotExist(err) {
 			b.logger.Warn("No project blueprint file found", "path", pbPath)
@@ -55,7 +56,7 @@ func (b *DefaultBlueprintLoader) Load(projectPath, gitRootPath string) (RawBluep
 
 	if projectPath != gitRootPath {
 		rootPath := filepath.Join(gitRootPath, BlueprintFileName)
-		rb, err := afero.ReadFile(b.fs, rootPath)
+		rb, err := b.fs.ReadFile(rootPath)
 		if err != nil {
 			if os.IsNotExist(err) {
 				b.logger.Warn("No root blueprint file found", "path", rootPath)
@@ -139,7 +140,7 @@ func NewDefaultBlueprintLoader(ctx *cue.Context, logger *slog.Logger) DefaultBlu
 
 	return DefaultBlueprintLoader{
 		ctx:    ctx,
-		fs:     afero.NewOsFs(),
+		fs:     billy.NewBaseOsFS(),
 		logger: logger,
 	}
 }
@@ -148,7 +149,7 @@ func NewDefaultBlueprintLoader(ctx *cue.Context, logger *slog.Logger) DefaultBlu
 // dependencies.
 func NewCustomBlueprintLoader(
 	ctx *cue.Context,
-	fs afero.Fs,
+	fs fs.Filesystem,
 	logger *slog.Logger,
 ) DefaultBlueprintLoader {
 	if logger == nil {

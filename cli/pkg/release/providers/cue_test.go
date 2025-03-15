@@ -16,8 +16,8 @@ import (
 	sg "github.com/input-output-hk/catalyst-forge/lib/schema/blueprint/global"
 	spr "github.com/input-output-hk/catalyst-forge/lib/schema/blueprint/global/providers"
 	sp "github.com/input-output-hk/catalyst-forge/lib/schema/blueprint/project"
+	"github.com/input-output-hk/catalyst-forge/lib/tools/fs/billy"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/testutils"
-	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -175,7 +175,7 @@ func TestCueReleaserRelease(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			fs := afero.NewMemMapFs()
+			fs := billy.NewInMemoryFs()
 			testutils.SetupFS(t, fs, tt.files)
 
 			var repoName string

@@ -14,10 +14,11 @@ import (
 	"github.com/input-output-hk/catalyst-forge/lib/project/secrets"
 	sb "github.com/input-output-hk/catalyst-forge/lib/schema/blueprint"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/earthfile"
+	"github.com/input-output-hk/catalyst-forge/lib/tools/fs"
+	"github.com/input-output-hk/catalyst-forge/lib/tools/fs/billy"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/git"
 	r "github.com/input-output-hk/catalyst-forge/lib/tools/git/repo"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/walker"
-	"github.com/spf13/afero"
 )
 
 //go:generate go run github.com/matryer/moq@latest -skip-ensure --pkg mocks -out mocks/project.go . ProjectLoader
@@ -32,7 +33,7 @@ type ProjectLoader interface {
 type DefaultProjectLoader struct {
 	blueprintLoader blueprint.BlueprintLoader
 	ctx             *cue.Context
-	fs              afero.Fs
+	fs              fs.Filesystem
 	injectors       []injector.BlueprintInjector
 	logger          *slog.Logger
 	runtimes        []RuntimeData
@@ -56,14 +57,18 @@ func (p *DefaultProjectLoader) Load(projectPath string) (Project, error) {
 	}
 
 	p.logger.Info("Loading repository", "path", gitRoot)
-	repo := r.NewGitRepo(p.logger, r.WithFS(p.fs))
-	if err := repo.Open(gitRoot); err != nil {
+	repo, err := r.NewGitRepo(gitRoot, p.logger, r.WithFS(p.fs))
+	if err != nil {
+		p.logger.Error("Failed to create repository", "error", err)
+	}
+
+	if err := repo.Open(); err != nil {
 		p.logger.Error("Failed to load repository", "error", err)
 		return Project{}, fmt.Errorf("failed to load repository: %w", err)
 	}
 
 	efPath := filepath.Join(projectPath, "Earthfile")
-	exists, err := afero.Exists(p.fs, efPath)
+	exists, err := p.fs.Exists(efPath)
 	if err != nil {
 		p.logger.Error("Failed to check for Earthfile", "error", err, "path", efPath)
 		return Project{}, fmt.Errorf("failed to check for Earthfile: %w", err)
@@ -208,7 +213,7 @@ func NewDefaultProjectLoader(
 		ctx = cuecontext.New()
 	}
 
-	fs := afero.NewOsFs()
+	fs := billy.NewBaseOsFS()
 	bl := blueprint.NewDefaultBlueprintLoader(ctx, logger)
 	return DefaultProjectLoader{
 		blueprintLoader: &bl,
@@ -230,7 +235,7 @@ func NewDefaultProjectLoader(
 // NewCustomProjectLoader creates a new DefaultProjectLoader with custom dependencies.
 func NewCustomProjectLoader(
 	ctx *cue.Context,
-	fs afero.Fs,
+	fs fs.Filesystem,
 	bl blueprint.BlueprintLoader,
 	injectors []injector.BlueprintInjector,
 	runtimes []RuntimeData,
