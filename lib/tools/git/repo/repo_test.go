@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/go-git/go-billy/v5"
+	"github.com/go-git/go-billy/v5/memfs"
 	gg "github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/cache"
@@ -16,6 +17,8 @@ import (
 	"github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/go-git/go-git/v5/storage"
 	"github.com/go-git/go-git/v5/storage/filesystem"
+	"github.com/input-output-hk/catalyst-forge/lib/tools/fs"
+	bfs "github.com/input-output-hk/catalyst-forge/lib/tools/fs/billy"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/git/repo/remote/mocks"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
@@ -26,6 +29,55 @@ import (
 const (
 	repoPath = "/repo"
 )
+
+func TestPlayground(t *testing.T) {
+	// r := newRepo1(t)
+
+	// head, err := r.repo.Head()
+	// require.NoError(t, err)
+
+	// commit, err := r.repo.CommitObject(head.Hash())
+	// require.NoError(t, err)
+	// assert.Equal(t, commit.Message, "test")
+
+	// wt, err := r.repo.Worktree()
+	// require.NoError(t, err)
+	// require.NoError(t, r.wfs.WriteFile("file1.txt", []byte("test"), 0644))
+	// _, err = wt.Add("file1.txt")
+	// require.NoError(t, err)
+	// st, err := wt.Status()
+	// require.NoError(t, err)
+	// assert.Equal(t, st.File("file1.txt").Staging, gg.Added)
+
+	// require.NoError(t, r.wfs.Remove("file1.txt"))
+	// _, err = wt.Add("file1.txt")
+	// require.NoError(t, err)
+	// st, err = wt.Status()
+	// require.NoError(t, err)
+	// assert.Equal(t, st.File("file1.txt").Staging, gg.Untracked)
+	// fmt.Println(gg.Added)
+
+	gfs := bfs.NewOsFs("/home/josh/work/catalyst-forge/.git")
+	wfs := bfs.NewOsFs("/home/josh/work/catalyst-forge")
+	storage := filesystem.NewStorage(gfs.Raw(), cache.NewObjectLRUDefault())
+	r, err := gg.Open(storage, wfs.Raw())
+	require.NoError(t, err)
+	head, err := r.Head()
+	require.NoError(t, err)
+
+	commit, err := r.CommitObject(head.Hash())
+	require.NoError(t, err)
+	assert.Equal(t, commit.Message, "test")
+
+	wt, err := r.Worktree()
+	require.NoError(t, err)
+	require.NoError(t, wfs.WriteFile("file1.txt", []byte("test"), 0644))
+	_, err = wt.Add("file1.txt")
+	require.NoError(t, err)
+	st, err := wt.Status()
+	require.NoError(t, err)
+	assert.Equal(t, st.File("file1.txt").Staging, gg.Added)
+}
 
 func TestGitRepoClone(t *testing.T) {
 	repo := newRepo(t)
@@ -276,6 +328,13 @@ type testRepo struct {
 	worktree *gg.Worktree
 }
 
+type testRepo1 struct {
+	repo     *gg.Repository
+	gfs      fs.Filesystem
+	wfs      fs.Filesystem
+	worktree *gg.Worktree
+}
+
 func newRepo(t *testing.T) testRepo {
 	fs := afero.NewMemMapFs()
 	rfs := afero.NewBasePathFs(fs, repoPath)
@@ -311,6 +370,48 @@ func newRepo(t *testing.T) testRepo {
 	return testRepo{
 		fs:       fs,
 		repo:     repo,
+		worktree: worktree,
+	}
+}
+
+func newRepo1(t *testing.T) testRepo1 {
+	gfs := memfs.New()
+	wfs := memfs.New()
+	storage := filesystem.NewStorage(gfs, cache.NewObjectLRUDefault())
+
+	repo, err := gg.Init(storage, wfs)
+	require.NoError(t, err, "failed to init repo")
+
+	worktree, err := repo.Worktree()
+	require.NoError(t, err, "failed to get worktree")
+
+	f, err := wfs.Create("test.txt")
+	require.NoError(t, err, "failed to create file")
+	defer f.Close()
+	_, err = f.Write([]byte("test"))
+	require.NoError(t, err, "failed to write to file")
+
+	_, err = worktree.Add("test.txt")
+	require.NoError(t, err, "failed to add file")
+
+	status, err := worktree.Status()
+	require.NoError(t, err)
+	assert.False(t, status.IsClean())
+	assert.Contains(t, status, "test.txt")
+
+	_, err = worktree.Commit("test", &gg.CommitOptions{
+		Author: &object.Signature{
+			Name:  "test",
+			Email: "test@test.com",
+			When:  time.Now(),
+		},
+	})
+	require.NoError(t, err, "failed to commit")
+
+	return testRepo1{
+		gfs:      bfs.NewFs(gfs),
+		repo:     repo,
+		wfs:      bfs.NewFs(wfs),
 		worktree: worktree,
 	}
 }

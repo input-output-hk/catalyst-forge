@@ -14,6 +14,7 @@ import (
 	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/go-git/go-git/v5/storage/filesystem"
+	"github.com/input-output-hk/catalyst-forge/lib/tools/fs"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/git/repo/remote"
 	"github.com/spf13/afero"
 	df "gopkg.in/jfontan/go-billy-desfacer.v0"
@@ -37,6 +38,8 @@ type GitRepo struct {
 	commitAuthor string
 	commitEmail  string
 	fs           afero.Fs
+	gfs          fs.Filesystem
+	wfs          fs.Filesystem
 	logger       *slog.Logger
 	raw          *gg.Repository
 	remote       remote.GitRemoteInteractor
