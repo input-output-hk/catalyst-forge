@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 
 	"cuelang.org/go/cue"
+	"cuelang.org/go/cue/cuecontext"
 	"github.com/input-output-hk/catalyst-forge/lib/project/deployment"
 	"github.com/input-output-hk/catalyst-forge/lib/project/deployment/generator"
 	"github.com/input-output-hk/catalyst-forge/lib/project/project"
@@ -95,17 +96,17 @@ type Deployer struct {
 	ss     secrets.SecretStore
 }
 
-// PrepareOptions are options for preparing a deployment.
-type PrepareOptions struct {
+// CloneOptions are options for cloning a repository.
+type CloneOptions struct {
 	fs fs.Filesystem
 }
 
-// PrepareOption is an option for preparing a deployment.
-type PrepareOption func(*PrepareOptions)
+// CloneOption is an option for cloning a repository.
+type CloneOption func(*CloneOptions)
 
-// WithFS sets the filesystem to use for preparing a deployment.
-func WithFS(fs fs.Filesystem) PrepareOption {
-	return func(o *PrepareOptions) {
+// WithFS sets the filesystem to use for cloning a repository.
+func WithFS(fs fs.Filesystem) CloneOption {
+	return func(o *CloneOptions) {
 		o.fs = fs
 	}
 }
@@ -114,9 +115,9 @@ func WithFS(fs fs.Filesystem) PrepareOption {
 func (d *Deployer) CreateDeployment(
 	project string,
 	bundle deployment.ModuleBundle,
-	opts ...PrepareOption,
+	opts ...CloneOption,
 ) (*Deployment, error) {
-	options := PrepareOptions{
+	options := CloneOptions{
 		fs: billy.NewInMemoryFs(),
 	}
 	for _, o := range opts {
@@ -179,6 +180,40 @@ func (d *Deployer) CreateDeployment(
 		Repo:      r,
 		logger:    d.logger,
 	}, nil
+}
+
+// FetchBundle fetches a deployment bundle from the given project and repository.
+func (d *Deployer) FetchBundle(url, ref, projectPath string, opts ...CloneOption) (deployment.ModuleBundle, error) {
+	options := CloneOptions{
+		fs: billy.NewInMemoryFs(),
+	}
+	for _, o := range opts {
+		o(&options)
+	}
+
+	r, err := d.clone(url, ref, options.fs)
+	if err != nil {
+		return deployment.ModuleBundle{}, err
+	}
+
+	exists, err := r.Exists(projectPath)
+	if err != nil {
+		return deployment.ModuleBundle{}, fmt.Errorf("could not check if project path exists: %w", err)
+	} else if !exists {
+		return deployment.ModuleBundle{}, fmt.Errorf("project path does not exist: %s", projectPath)
+	}
+
+	loader := project.NewDefaultProjectLoader(cuecontext.New(), d.ss, d.logger, project.WithFs(r.WorkFs()))
+	p, err := loader.Load("/" + projectPath)
+	if err != nil {
+		return deployment.ModuleBundle{}, fmt.Errorf("could not load project: %w", err)
+	}
+
+	if p.Blueprint.Project == nil || p.Blueprint.Project.Deployment == nil {
+		return deployment.ModuleBundle{}, fmt.Errorf("project does not have a deployment bundle")
+	}
+
+	return deployment.NewModuleBundle(&p), nil
 }
 
 // Commit commits the deployment to the GitOps repository.

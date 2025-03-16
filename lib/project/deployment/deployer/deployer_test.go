@@ -20,6 +20,76 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func TestDeployerFetchBundle(t *testing.T) {
+	tests := []struct {
+		name     string
+		cfg      DeployerConfig
+		files    map[string]string
+		validate func(*testing.T, deployment.ModuleBundle, error)
+	}{
+		{
+			name: "success",
+			cfg:  makeConfig(),
+			files: map[string]string{
+				"project/blueprint.cue": makeBlueprint(),
+			},
+			validate: func(t *testing.T, bundle deployment.ModuleBundle, err error) {
+				require.NoError(t, err)
+
+				b := bundle.Bundle
+				assert.Equal(t, "test", b.Env)
+				assert.Len(t, b.Modules, 1)
+				assert.Equal(t, "module", b.Modules["main"].Name)
+				assert.Equal(t, "v1.0.0", b.Modules["main"].Version)
+			},
+		},
+		{
+			name: "no bundle",
+			cfg:  makeConfig(),
+			files: map[string]string{
+				"project/blueprint.cue": `version: "1.0"`,
+			},
+			validate: func(t *testing.T, bundle deployment.ModuleBundle, err error) {
+				require.Error(t, err)
+				require.Equal(t, "project does not have a deployment bundle", err.Error())
+			},
+		},
+		{
+			name: "no project",
+			cfg:  makeConfig(),
+			files: map[string]string{
+				"project1/blueprint.cue": `version: "1.0"`,
+			},
+			validate: func(t *testing.T, bundle deployment.ModuleBundle, err error) {
+				require.Error(t, err)
+				require.Equal(t, "project path does not exist: project", err.Error())
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			fs := billy.NewInMemoryFs()
+
+			remote, _, err := tu.NewMockGitRemoteInterface(tt.files)
+			require.NoError(t, err)
+
+			ss := tu.NewMockSecretStore(map[string]string{"token": "password"})
+			d := Deployer{
+				cfg:    tt.cfg,
+				ctx:    cuecontext.New(),
+				fs:     fs,
+				logger: testutils.NewNoopLogger(),
+				remote: remote,
+				ss:     ss,
+			}
+
+			bundle, err := d.FetchBundle("github.com/org/repo", "main", "project")
+			tt.validate(t, bundle, err)
+		})
+	}
+}
+
 func TestDeployerCreateDeployment(t *testing.T) {
 	type testResult struct {
 		cloneOpts *gg.CloneOptions
@@ -240,4 +310,43 @@ func makeConfig() DeployerConfig {
 		},
 		RootDir: "root",
 	}
+}
+
+func makeBlueprint() string {
+	return `
+		{
+			version: "1.0"
+			project: {
+				name: "project"
+				deployment: {
+					on: {}
+					bundle: {
+						env: "test"
+						modules: {
+							main: {
+								name: "module"
+								version: "v1.0.0"
+								values: {
+									foo: "bar"
+								}
+							}
+						}
+					}
+				}
+			}
+			global: {
+				deployment: {
+					registries: {
+						containers: "registry.com"
+						modules: "registry.com"
+					}
+					repo: {
+						ref: "main"
+						url: "github.com/org/repo"
+					}
+					root: "root"
+				}
+			}
+		}
+	`
 }

@@ -29,6 +29,29 @@ type ProjectLoader interface {
 	Load(projectPath string) (Project, error)
 }
 
+type ProjectLoaderOption func(*DefaultProjectLoader)
+
+// WithFs sets the filesystem for the project loader.
+func WithFs(fs fs.Filesystem) ProjectLoaderOption {
+	return func(p *DefaultProjectLoader) {
+		p.fs = fs
+	}
+}
+
+// WithInjectors sets the blueprint injectors for the project loader.
+func WithInjectors(injectors []injector.BlueprintInjector) ProjectLoaderOption {
+	return func(p *DefaultProjectLoader) {
+		p.injectors = injectors
+	}
+}
+
+// WithRuntimes sets the runtime data for the project loader.
+func WithRuntimes(runtimes []RuntimeData) ProjectLoaderOption {
+	return func(p *DefaultProjectLoader) {
+		p.runtimes = runtimes
+	}
+}
+
 // DefaultProjectLoader is the default implementation of the ProjectLoader.
 type DefaultProjectLoader struct {
 	blueprintLoader blueprint.BlueprintLoader
@@ -204,6 +227,7 @@ func NewDefaultProjectLoader(
 	ctx *cue.Context,
 	store secrets.SecretStore,
 	logger *slog.Logger,
+	opts ...ProjectLoaderOption,
 ) DefaultProjectLoader {
 	if logger == nil {
 		logger = slog.New(slog.NewTextHandler(io.Discard, nil))
@@ -214,11 +238,9 @@ func NewDefaultProjectLoader(
 	}
 
 	fs := billy.NewBaseOsFS()
-	bl := blueprint.NewDefaultBlueprintLoader(ctx, logger)
-	return DefaultProjectLoader{
-		blueprintLoader: &bl,
-		ctx:             ctx,
-		fs:              fs,
+	l := DefaultProjectLoader{
+		ctx: ctx,
+		fs:  fs,
 		injectors: []injector.BlueprintInjector{
 			injector.NewBlueprintEnvInjector(ctx, logger),
 			injector.NewBlueprintGlobalInjector(ctx, logger),
@@ -230,31 +252,15 @@ func NewDefaultProjectLoader(
 		},
 		store: store,
 	}
-}
 
-// NewCustomProjectLoader creates a new DefaultProjectLoader with custom dependencies.
-func NewCustomProjectLoader(
-	ctx *cue.Context,
-	fs fs.Filesystem,
-	bl blueprint.BlueprintLoader,
-	injectors []injector.BlueprintInjector,
-	runtimes []RuntimeData,
-	store secrets.SecretStore,
-	logger *slog.Logger,
-) DefaultProjectLoader {
-	if logger == nil {
-		logger = slog.New(slog.NewTextHandler(io.Discard, nil))
+	for _, o := range opts {
+		o(&l)
 	}
 
-	return DefaultProjectLoader{
-		blueprintLoader: bl,
-		ctx:             ctx,
-		fs:              fs,
-		injectors:       injectors,
-		logger:          logger,
-		runtimes:        runtimes,
-		store:           store,
-	}
+	bl := blueprint.NewCustomBlueprintLoader(ctx, l.fs, logger)
+	l.blueprintLoader = &bl
+
+	return l
 }
 
 // validateAndDecode validates and decodes a raw blueprint.
