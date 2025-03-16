@@ -182,6 +182,7 @@ func (d *Deployer) CreateDeployment(
 	}, nil
 }
 
+// FetchBundle fetches a deployment bundle from the given project and repository.
 func (d *Deployer) FetchBundle(url, ref, projectPath string, opts ...CloneOption) (deployment.ModuleBundle, error) {
 	options := CloneOptions{
 		fs: billy.NewInMemoryFs(),
