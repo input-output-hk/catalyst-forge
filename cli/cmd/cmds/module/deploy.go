@@ -42,10 +42,12 @@ func (c *DeployCmd) Run(ctx run.RunContext) error {
 		ctx.CueCtx,
 	)
 
-	_, err = d.FetchBundle("https://github.com/input-output-hk/catalyst-voices", "main", "catalyst-gateway")
+	b, err := d.FetchBundle("https://github.com/input-output-hk/catalyst-voices", "main", "catalyst_voices")
 	if err != nil {
 		return fmt.Errorf("failed fetching bundle: %w", err)
 	}
+
+	fmt.Printf("%+v\n", b)
 	// dr, err := d.CreateDeployment(project.Name, deployment.NewModuleBundle(&project))
 	// if err != nil {
 	// 	return fmt.Errorf("failed creating deployment: %w", err)

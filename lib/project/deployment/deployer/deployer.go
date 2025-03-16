@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 
 	"cuelang.org/go/cue"
+	"cuelang.org/go/cue/cuecontext"
 	"github.com/input-output-hk/catalyst-forge/lib/project/deployment"
 	"github.com/input-output-hk/catalyst-forge/lib/project/deployment/generator"
 	"github.com/input-output-hk/catalyst-forge/lib/project/project"
@@ -189,12 +190,29 @@ func (d *Deployer) FetchBundle(url, ref, projectPath string, opts ...CloneOption
 		o(&options)
 	}
 
-	_, err := d.clone(url, ref, options.fs)
+	r, err := d.clone(url, ref, options.fs)
 	if err != nil {
 		return deployment.ModuleBundle{}, err
 	}
 
-	return deployment.ModuleBundle{}, nil
+	exists, err := r.Exists(projectPath)
+	if err != nil {
+		return deployment.ModuleBundle{}, fmt.Errorf("could not check if project path exists: %w", err)
+	} else if !exists {
+		return deployment.ModuleBundle{}, fmt.Errorf("project path does not exist: %s", projectPath)
+	}
+
+	loader := project.NewDefaultProjectLoader(cuecontext.New(), d.ss, d.logger, project.WithFs(r.WorkFs()))
+	p, err := loader.Load("/" + projectPath)
+	if err != nil {
+		return deployment.ModuleBundle{}, fmt.Errorf("could not load project: %w", err)
+	}
+
+	if p.Blueprint.Project == nil || p.Blueprint.Project.Deployment == nil {
+		return deployment.ModuleBundle{}, fmt.Errorf("project does not have a deployment bundle")
+	}
+
+	return deployment.NewModuleBundle(&p), nil
 }
 
 // Commit commits the deployment to the GitOps repository.

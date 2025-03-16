@@ -157,6 +157,11 @@ func (g *GitRepo) GetCurrentTag() (string, error) {
 	return tag, nil
 }
 
+// GitFs returns the filesystem for the .git directory.
+func (g *GitRepo) GitFs() fs.Filesystem {
+	return g.gfs
+}
+
 // HasChanges returns true if the repository has changes.
 func (g *GitRepo) HasChanges() (bool, error) {
 	status, err := g.worktree.Status()
@@ -298,6 +303,11 @@ func (g *GitRepo) UnstageFile(path string) error {
 	}
 
 	return nil
+}
+
+// WorkFs returns the filesystem for the working directory.
+func (g *GitRepo) WorkFs() fs.Filesystem {
+	return g.wfs
 }
 
 // WriteFile writes the given contents to the given path in the repository.
