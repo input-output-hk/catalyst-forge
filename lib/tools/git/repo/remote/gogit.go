@@ -13,6 +13,10 @@ func (g GoGitRemoteInteractor) Clone(s storage.Storer, worktree billy.Filesystem
 	return git.Clone(s, worktree, o)
 }
 
+func (g GoGitRemoteInteractor) Fetch(repo *git.Repository, o *git.FetchOptions) error {
+	return repo.Fetch(o)
+}
+
 func (g GoGitRemoteInteractor) Push(repo *git.Repository, o *git.PushOptions) error {
 	return repo.Push(o)
 }

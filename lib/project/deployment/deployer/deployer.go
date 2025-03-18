@@ -305,7 +305,7 @@ func (d *Deployer) clone(url, ref string, fs fs.Filesystem) (repo.GitRepo, error
 		return repo.GitRepo{}, fmt.Errorf("could not create git repository: %w", err)
 	}
 
-	if err := r.Clone(url, ref); err != nil {
+	if err := r.Clone(url, repo.WithRef(ref), repo.WithCloneDepth(1)); err != nil {
 		return repo.GitRepo{}, fmt.Errorf("could not clone repository: %w", err)
 	}
 
@@ -365,7 +365,7 @@ func NewDeployerConfigFromProject(p *project.Project) DeployerConfig {
 	return DeployerConfig{
 		Git: DeployerConfigGit{
 			Creds: p.Blueprint.Global.Ci.Providers.Git.Credentials,
-			Ref:   p.Blueprint.Global.Deployment.Repo.Ref,
+			Ref:   fmt.Sprintf("refs/heads/%s", p.Blueprint.Global.Deployment.Repo.Ref),
 			Url:   p.Blueprint.Global.Deployment.Repo.Url,
 		},
 		RootDir: p.Blueprint.Global.Deployment.Root,

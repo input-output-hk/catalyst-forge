@@ -154,7 +154,7 @@ func TestDeployerCreateDeployment(t *testing.T) {
 				auth := r.cloneOpts.Auth.(*http.BasicAuth)
 				assert.Equal(t, gitPassword, auth.Password)
 				assert.Equal(t, cfg.Git.Url, r.cloneOpts.URL)
-				assert.Equal(t, fmt.Sprintf("refs/heads/%s", cfg.Git.Ref), r.cloneOpts.ReferenceName.String())
+				assert.Equal(t, cfg.Git.Ref, r.cloneOpts.ReferenceName.String())
 			},
 		},
 		{
