@@ -9,8 +9,8 @@ import (
 
 	"github.com/go-git/go-billy/v5"
 	"github.com/go-git/go-billy/v5/memfs"
+	"github.com/go-git/go-git/v5"
 	gg "github.com/go-git/go-git/v5"
-	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/cache"
 	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/go-git/go-git/v5/plumbing/transport/http"
@@ -42,11 +42,10 @@ func TestGitRepoClone(t *testing.T) {
 		},
 	}
 
-	err := r.Clone("test.com", "master")
+	err := r.Clone("test.com")
 	require.NoError(t, err)
 
 	assert.Equal(t, opts.URL, "test.com")
-	assert.Equal(t, opts.ReferenceName, plumbing.ReferenceName("refs/heads/master"))
 
 	head, err := r.raw.Head()
 	require.NoError(t, err)
@@ -72,6 +71,22 @@ func TestGitRepoCommit(t *testing.T) {
 		require.NoError(t, err)
 		assert.Equal(t, commit.Message, "test")
 	})
+}
+
+func TestGitRepoFetch(t *testing.T) {
+	var opts *gg.FetchOptions
+	repo := newGitRepo(t)
+	repo.remote = &mocks.GitRemoteInteractorMock{
+		FetchFunc: func(repo *git.Repository, o *git.FetchOptions) error {
+			opts = o
+			return nil
+		},
+	}
+
+	err := repo.Fetch(WithFetchDepth(1), WithRemoteName("origin"))
+	require.NoError(t, err)
+	require.Equal(t, opts.Depth, 1)
+	require.Equal(t, opts.RemoteName, "origin")
 }
 
 func TestGitRepoExists(t *testing.T) {

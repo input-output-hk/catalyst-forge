@@ -28,8 +28,6 @@ var (
 	ErrTagNotFound = fmt.Errorf("tag not found")
 )
 
-type GitRepoOption func(*GitRepo)
-
 // GitRepo is a high-level representation of a git repository.
 type GitRepo struct {
 	auth         *http.BasicAuth
@@ -45,18 +43,33 @@ type GitRepo struct {
 	worktree     *gg.Worktree
 }
 
-// Clone loads a repository from a git remote.
-func (g *GitRepo) Clone(url, branch string) error {
-	ref := fmt.Sprintf("refs/heads/%s", branch)
-
-	g.logger.Debug("Cloning repository", "url", url, "ref", ref)
-	storage := filesystem.NewStorage(g.gfs.Raw(), cache.NewObjectLRUDefault())
-	repo, err := g.remote.Clone(storage, g.wfs.Raw(), &gg.CloneOptions{
-		URL:           url,
-		Depth:         1,
-		ReferenceName: plumbing.ReferenceName(ref),
-		Auth:          g.auth,
+// CheckoutCommit checks out a commit with the given hash.
+func (g *GitRepo) CheckoutCommit(hash string) error {
+	return g.worktree.Checkout(&gg.CheckoutOptions{
+		Hash: plumbing.NewHash(hash),
 	})
+}
+
+// CheckoutBranch checks out a branch with the given name.
+func (g *GitRepo) CheckoutBranch(branch string) error {
+	return g.worktree.Checkout(&gg.CheckoutOptions{
+		Branch: plumbing.NewBranchReferenceName(branch),
+	})
+}
+
+// Clone loads a repository from a git remote.
+func (g *GitRepo) Clone(url string, opts ...CloneOption) error {
+	g.logger.Debug("Cloning repository", "url", url)
+	storage := filesystem.NewStorage(g.gfs.Raw(), cache.NewObjectLRUDefault())
+
+	finalOpts := &gg.CloneOptions{
+		URL:  url,
+		Auth: g.auth,
+	}
+	for _, opt := range opts {
+		opt(finalOpts)
+	}
+	repo, err := g.remote.Clone(storage, g.wfs.Raw(), finalOpts)
 
 	if err != nil {
 		return err
@@ -101,6 +114,26 @@ func (g *GitRepo) Exists(path string) (bool, error) {
 	}
 
 	return true, nil
+}
+
+// Fetch fetches changes from the remote repository.
+func (g *GitRepo) Fetch(opts ...FetchOption) error {
+	g.logger.Debug("Fetching repository")
+	fo := &gg.FetchOptions{
+		Auth: g.auth,
+	}
+
+	for _, opt := range opts {
+		opt(fo)
+	}
+
+	err := g.remote.Fetch(g.raw, fo)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // GetCommit returns the commit with the given hash.
@@ -160,6 +193,16 @@ func (g *GitRepo) GetCurrentTag() (string, error) {
 // GitFs returns the filesystem for the .git directory.
 func (g *GitRepo) GitFs() fs.Filesystem {
 	return g.gfs
+}
+
+// HasBranch returns true if the repository has a branch with the given name.
+func (g *GitRepo) HasBranch(name string) (bool, error) {
+	_, err := g.raw.Reference(plumbing.NewBranchReferenceName(name), false)
+	if err != nil {
+		return false, nil
+	}
+
+	return true, nil
 }
 
 // HasChanges returns true if the repository has changes.
@@ -338,42 +381,6 @@ func (g *GitRepo) getAuthor() (string, string) {
 	}
 
 	return author, email
-}
-
-// WithAuth sets the authentication for the interacting with a remote repository.
-func WithAuth(username, password string) GitRepoOption {
-	return func(g *GitRepo) {
-		g.auth = &http.BasicAuth{
-			Username: username,
-			Password: password,
-		}
-	}
-}
-
-// WithAuthor sets the author for all commits.
-func WithAuthor(name, email string) GitRepoOption {
-	return func(g *GitRepo) {
-		g.commitAuthor = name
-		g.commitEmail = email
-	}
-}
-
-// WithGitRemoteInteractor sets the remote interactor for the repository.
-func WithGitRemoteInteractor(remote remote.GitRemoteInteractor) GitRepoOption {
-	return func(g *GitRepo) {
-		g.remote = remote
-	}
-}
-
-// WithFS sets the filesystem for the repository.
-func WithFS(fs fs.Filesystem) GitRepoOption {
-	return func(g *GitRepo) {
-		if bg, ok := fs.(*bfs.BillyFs); ok {
-			g.fs = bg
-		} else {
-			panic("must use billy filesystem for git filesystem")
-		}
-	}
 }
 
 // NewGitRepo creates a new GitRepo instance.

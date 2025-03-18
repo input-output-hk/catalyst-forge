@@ -19,6 +19,9 @@ import (
 //			CloneFunc: func(s storage.Storer, worktree billy.Filesystem, o *git.CloneOptions) (*git.Repository, error) {
 //				panic("mock out the Clone method")
 //			},
+//			FetchFunc: func(repo *git.Repository, o *git.FetchOptions) error {
+//				panic("mock out the Fetch method")
+//			},
 //			PushFunc: func(repo *git.Repository, o *git.PushOptions) error {
 //				panic("mock out the Push method")
 //			},
@@ -31,6 +34,9 @@ import (
 type GitRemoteInteractorMock struct {
 	// CloneFunc mocks the Clone method.
 	CloneFunc func(s storage.Storer, worktree billy.Filesystem, o *git.CloneOptions) (*git.Repository, error)
+
+	// FetchFunc mocks the Fetch method.
+	FetchFunc func(repo *git.Repository, o *git.FetchOptions) error
 
 	// PushFunc mocks the Push method.
 	PushFunc func(repo *git.Repository, o *git.PushOptions) error
@@ -46,6 +52,13 @@ type GitRemoteInteractorMock struct {
 			// O is the o argument value.
 			O *git.CloneOptions
 		}
+		// Fetch holds details about calls to the Fetch method.
+		Fetch []struct {
+			// Repo is the repo argument value.
+			Repo *git.Repository
+			// O is the o argument value.
+			O *git.FetchOptions
+		}
 		// Push holds details about calls to the Push method.
 		Push []struct {
 			// Repo is the repo argument value.
@@ -55,6 +68,7 @@ type GitRemoteInteractorMock struct {
 		}
 	}
 	lockClone sync.RWMutex
+	lockFetch sync.RWMutex
 	lockPush  sync.RWMutex
 }
 
@@ -95,6 +109,42 @@ func (mock *GitRemoteInteractorMock) CloneCalls() []struct {
 	mock.lockClone.RLock()
 	calls = mock.calls.Clone
 	mock.lockClone.RUnlock()
+	return calls
+}
+
+// Fetch calls FetchFunc.
+func (mock *GitRemoteInteractorMock) Fetch(repo *git.Repository, o *git.FetchOptions) error {
+	if mock.FetchFunc == nil {
+		panic("GitRemoteInteractorMock.FetchFunc: method is nil but GitRemoteInteractor.Fetch was just called")
+	}
+	callInfo := struct {
+		Repo *git.Repository
+		O    *git.FetchOptions
+	}{
+		Repo: repo,
+		O:    o,
+	}
+	mock.lockFetch.Lock()
+	mock.calls.Fetch = append(mock.calls.Fetch, callInfo)
+	mock.lockFetch.Unlock()
+	return mock.FetchFunc(repo, o)
+}
+
+// FetchCalls gets all the calls that were made to Fetch.
+// Check the length with:
+//
+//	len(mockedGitRemoteInteractor.FetchCalls())
+func (mock *GitRemoteInteractorMock) FetchCalls() []struct {
+	Repo *git.Repository
+	O    *git.FetchOptions
+} {
+	var calls []struct {
+		Repo *git.Repository
+		O    *git.FetchOptions
+	}
+	mock.lockFetch.RLock()
+	calls = mock.calls.Fetch
+	mock.lockFetch.RUnlock()
 	return calls
 }
 

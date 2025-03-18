@@ -4,6 +4,7 @@ go 1.23.0
 
 require (
 	cuelang.org/go v0.12.0
+	github.com/adrg/xdg v0.5.3
 	github.com/alecthomas/kong v0.9.0
 	github.com/aws/aws-sdk-go v1.55.5
 	github.com/aws/aws-sdk-go-v2 v1.32.6
