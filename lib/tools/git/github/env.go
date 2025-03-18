@@ -8,7 +8,8 @@ import (
 	"strings"
 
 	"github.com/google/go-github/v66/github"
-	"github.com/spf13/afero"
+	"github.com/input-output-hk/catalyst-forge/lib/tools/fs"
+	"github.com/input-output-hk/catalyst-forge/lib/tools/fs/billy"
 )
 
 var (
@@ -18,7 +19,7 @@ var (
 
 // GithubEnv provides GitHub environment information.
 type GithubEnv struct {
-	fs     afero.Fs
+	fs     fs.Filesystem
 	logger *slog.Logger
 }
 
@@ -43,7 +44,7 @@ func (g *GithubEnv) GetEventPayload() (any, error) {
 	}
 
 	g.logger.Debug("Reading GitHub event data", "path", path, "name", name)
-	payload, err := afero.ReadFile(g.fs, path)
+	payload, err := g.fs.ReadFile(path)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read GitHub event data: %w", err)
 	}
@@ -86,13 +87,13 @@ func NewGithubEnv(logger *slog.Logger) GithubEnv {
 	}
 
 	return GithubEnv{
-		fs:     afero.NewOsFs(),
+		fs:     billy.NewBaseOsFS(),
 		logger: logger,
 	}
 }
 
 // NewCustomGithubEnv creates a new GithubEnv with a custom filesystem.
-func NewCustomGithubEnv(fs afero.Fs, logger *slog.Logger) GithubEnv {
+func NewCustomGithubEnv(fs fs.Filesystem, logger *slog.Logger) GithubEnv {
 	if logger == nil {
 		logger = slog.New(slog.NewTextHandler(io.Discard, nil))
 	}

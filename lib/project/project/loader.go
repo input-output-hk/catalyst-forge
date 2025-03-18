@@ -14,10 +14,11 @@ import (
 	"github.com/input-output-hk/catalyst-forge/lib/project/secrets"
 	sb "github.com/input-output-hk/catalyst-forge/lib/schema/blueprint"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/earthfile"
+	"github.com/input-output-hk/catalyst-forge/lib/tools/fs"
+	"github.com/input-output-hk/catalyst-forge/lib/tools/fs/billy"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/git"
 	r "github.com/input-output-hk/catalyst-forge/lib/tools/git/repo"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/walker"
-	"github.com/spf13/afero"
 )
 
 //go:generate go run github.com/matryer/moq@latest -skip-ensure --pkg mocks -out mocks/project.go . ProjectLoader
@@ -28,11 +29,34 @@ type ProjectLoader interface {
 	Load(projectPath string) (Project, error)
 }
 
+type ProjectLoaderOption func(*DefaultProjectLoader)
+
+// WithFs sets the filesystem for the project loader.
+func WithFs(fs fs.Filesystem) ProjectLoaderOption {
+	return func(p *DefaultProjectLoader) {
+		p.fs = fs
+	}
+}
+
+// WithInjectors sets the blueprint injectors for the project loader.
+func WithInjectors(injectors []injector.BlueprintInjector) ProjectLoaderOption {
+	return func(p *DefaultProjectLoader) {
+		p.injectors = injectors
+	}
+}
+
+// WithRuntimes sets the runtime data for the project loader.
+func WithRuntimes(runtimes []RuntimeData) ProjectLoaderOption {
+	return func(p *DefaultProjectLoader) {
+		p.runtimes = runtimes
+	}
+}
+
 // DefaultProjectLoader is the default implementation of the ProjectLoader.
 type DefaultProjectLoader struct {
 	blueprintLoader blueprint.BlueprintLoader
 	ctx             *cue.Context
-	fs              afero.Fs
+	fs              fs.Filesystem
 	injectors       []injector.BlueprintInjector
 	logger          *slog.Logger
 	runtimes        []RuntimeData
@@ -56,14 +80,18 @@ func (p *DefaultProjectLoader) Load(projectPath string) (Project, error) {
 	}
 
 	p.logger.Info("Loading repository", "path", gitRoot)
-	repo := r.NewGitRepo(p.logger, r.WithFS(p.fs))
-	if err := repo.Open(gitRoot); err != nil {
+	repo, err := r.NewGitRepo(gitRoot, p.logger, r.WithFS(p.fs))
+	if err != nil {
+		p.logger.Error("Failed to create repository", "error", err)
+	}
+
+	if err := repo.Open(); err != nil {
 		p.logger.Error("Failed to load repository", "error", err)
 		return Project{}, fmt.Errorf("failed to load repository: %w", err)
 	}
 
 	efPath := filepath.Join(projectPath, "Earthfile")
-	exists, err := afero.Exists(p.fs, efPath)
+	exists, err := p.fs.Exists(efPath)
 	if err != nil {
 		p.logger.Error("Failed to check for Earthfile", "error", err, "path", efPath)
 		return Project{}, fmt.Errorf("failed to check for Earthfile: %w", err)
@@ -199,6 +227,7 @@ func NewDefaultProjectLoader(
 	ctx *cue.Context,
 	store secrets.SecretStore,
 	logger *slog.Logger,
+	opts ...ProjectLoaderOption,
 ) DefaultProjectLoader {
 	if logger == nil {
 		logger = slog.New(slog.NewTextHandler(io.Discard, nil))
@@ -208,12 +237,10 @@ func NewDefaultProjectLoader(
 		ctx = cuecontext.New()
 	}
 
-	fs := afero.NewOsFs()
-	bl := blueprint.NewDefaultBlueprintLoader(ctx, logger)
-	return DefaultProjectLoader{
-		blueprintLoader: &bl,
-		ctx:             ctx,
-		fs:              fs,
+	fs := billy.NewBaseOsFS()
+	l := DefaultProjectLoader{
+		ctx: ctx,
+		fs:  fs,
 		injectors: []injector.BlueprintInjector{
 			injector.NewBlueprintEnvInjector(ctx, logger),
 			injector.NewBlueprintGlobalInjector(ctx, logger),
@@ -225,31 +252,15 @@ func NewDefaultProjectLoader(
 		},
 		store: store,
 	}
-}
 
-// NewCustomProjectLoader creates a new DefaultProjectLoader with custom dependencies.
-func NewCustomProjectLoader(
-	ctx *cue.Context,
-	fs afero.Fs,
-	bl blueprint.BlueprintLoader,
-	injectors []injector.BlueprintInjector,
-	runtimes []RuntimeData,
-	store secrets.SecretStore,
-	logger *slog.Logger,
-) DefaultProjectLoader {
-	if logger == nil {
-		logger = slog.New(slog.NewTextHandler(io.Discard, nil))
+	for _, o := range opts {
+		o(&l)
 	}
 
-	return DefaultProjectLoader{
-		blueprintLoader: bl,
-		ctx:             ctx,
-		fs:              fs,
-		injectors:       injectors,
-		logger:          logger,
-		runtimes:        runtimes,
-		store:           store,
-	}
+	bl := blueprint.NewCustomBlueprintLoader(ctx, l.fs, logger)
+	l.blueprintLoader = &bl
+
+	return l
 }
 
 // validateAndDecode validates and decodes a raw blueprint.

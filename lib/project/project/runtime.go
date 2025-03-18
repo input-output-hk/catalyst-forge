@@ -8,9 +8,10 @@ import (
 	"github.com/google/go-github/v66/github"
 	sb "github.com/input-output-hk/catalyst-forge/lib/schema/blueprint"
 	sg "github.com/input-output-hk/catalyst-forge/lib/schema/blueprint/global"
+	"github.com/input-output-hk/catalyst-forge/lib/tools/fs"
+	"github.com/input-output-hk/catalyst-forge/lib/tools/fs/billy"
 	gh "github.com/input-output-hk/catalyst-forge/lib/tools/git/github"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/git/repo"
-	"github.com/spf13/afero"
 )
 
 // RuntimeData is an interface for runtime data loaders.
@@ -66,7 +67,7 @@ func NewDeploymentRuntime(logger *slog.Logger) *DeploymentRuntime {
 
 // GitRuntime is a runtime data loader for git related data.
 type GitRuntime struct {
-	fs     afero.Fs
+	fs     fs.Filesystem
 	logger *slog.Logger
 }
 
@@ -151,13 +152,13 @@ func (g *GitRuntime) getCommitHash(repo *repo.GitRepo) (string, error) {
 // NewGitRuntime creates a new GitRuntime.
 func NewGitRuntime(logger *slog.Logger) *GitRuntime {
 	return &GitRuntime{
-		fs:     afero.NewOsFs(),
+		fs:     billy.NewBaseOsFS(),
 		logger: logger,
 	}
 }
 
 // NewCustomGitRuntime creates a new GitRuntime with a custom filesystem.
-func NewCustomGitRuntime(fs afero.Fs, logger *slog.Logger) *GitRuntime {
+func NewCustomGitRuntime(fs fs.Filesystem, logger *slog.Logger) *GitRuntime {
 	return &GitRuntime{
 		fs:     fs,
 		logger: logger,

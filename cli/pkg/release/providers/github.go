@@ -15,7 +15,8 @@ import (
 	"github.com/input-output-hk/catalyst-forge/lib/project/providers"
 	sp "github.com/input-output-hk/catalyst-forge/lib/schema/blueprint/project"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/archive"
-	"github.com/spf13/afero"
+	"github.com/input-output-hk/catalyst-forge/lib/tools/fs"
+	"github.com/input-output-hk/catalyst-forge/lib/tools/fs/billy"
 )
 
 type GithubReleaserConfig struct {
@@ -27,7 +28,7 @@ type GithubReleaser struct {
 	client      *github.Client
 	config      GithubReleaserConfig
 	force       bool
-	fs          afero.Fs
+	fs          fs.Filesystem
 	handler     events.EventHandler
 	logger      *slog.Logger
 	project     project.Project
@@ -151,14 +152,14 @@ func (r *GithubReleaser) validateArtifacts(path string) error {
 	for _, platform := range r.getPlatforms() {
 		r.logger.Info("Validating artifacts", "platform", platform)
 		path := filepath.Join(path, platform)
-		exists, err := afero.DirExists(r.fs, path)
+		exists, err := r.fs.Exists(path)
 		if err != nil {
 			return fmt.Errorf("failed to check if output folder exists: %w", err)
 		} else if !exists {
 			return fmt.Errorf("unable to find output folder for platform: %s", path)
 		}
 
-		children, err := afero.ReadDir(r.fs, path)
+		children, err := r.fs.ReadDir(path)
 		if err != nil {
 			return fmt.Errorf("failed to read output folder: %w", err)
 		}
@@ -198,8 +199,8 @@ func NewGithubReleaser(
 		return nil, fmt.Errorf("failed to parse release config: %w", err)
 	}
 
-	fs := afero.NewOsFs()
-	workdir, err := afero.TempDir(fs, "", "catalyst-forge-")
+	fs := billy.NewBaseOsFS()
+	workdir, err := fs.TempDir("", "catalyst-forge-")
 	if err != nil {
 		return nil, fmt.Errorf("failed to create temporary directory: %w", err)
 	}

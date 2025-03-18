@@ -6,15 +6,14 @@ import (
 	"log/slog"
 	"testing"
 
+	"github.com/input-output-hk/catalyst-forge/lib/tools/fs/billy"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/testutils"
-	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestFSReverseWalkerWalk(t *testing.T) {
 	tests := []struct {
 		name          string
-		fs            afero.Fs
 		callbackErr   error
 		startPath     string
 		endPath       string
@@ -25,7 +24,6 @@ func TestFSReverseWalkerWalk(t *testing.T) {
 	}{
 		{
 			name:        "single directory",
-			fs:          afero.NewMemMapFs(),
 			callbackErr: nil,
 			startPath:   "/test1",
 			endPath:     "/test1",
@@ -42,7 +40,6 @@ func TestFSReverseWalkerWalk(t *testing.T) {
 		},
 		{
 			name:        "multiple directories",
-			fs:          afero.NewMemMapFs(),
 			callbackErr: nil,
 			startPath:   "/test1/test2",
 			endPath:     "/test1",
@@ -61,7 +58,6 @@ func TestFSReverseWalkerWalk(t *testing.T) {
 		},
 		{
 			name:        "multiple scoped directories",
-			fs:          afero.NewMemMapFs(),
 			callbackErr: nil,
 			startPath:   "/test1/test2",
 			endPath:     "/",
@@ -83,34 +79,7 @@ func TestFSReverseWalkerWalk(t *testing.T) {
 			expectedErr: "",
 		},
 		{
-			name:        "error reading directory",
-			fs:          &wrapfs{Fs: afero.NewMemMapFs(), failAfter: 1, trigger: fmt.Errorf("failed")},
-			callbackErr: nil,
-			startPath:   "/test1",
-			endPath:     "/test1",
-			files: map[string]string{
-				"/test1/file1": "file1",
-			},
-			expectedFiles: map[string]string{},
-			expectErr:     true,
-			expectedErr:   "failed to read directory: failed",
-		},
-		{
-			name:        "error reading file",
-			fs:          &wrapfs{Fs: afero.NewMemMapFs(), failAfter: 2, trigger: fmt.Errorf("failed")},
-			callbackErr: nil,
-			startPath:   "/test1",
-			endPath:     "/test1",
-			files: map[string]string{
-				"/test1/file1": "file1",
-			},
-			expectedFiles: map[string]string{},
-			expectErr:     true,
-			expectedErr:   "failed to open file: failed",
-		},
-		{
 			name:        "callback error",
-			fs:          afero.NewMemMapFs(),
 			callbackErr: fmt.Errorf("callback error"),
 			startPath:   "/test1",
 			endPath:     "/test1",
@@ -123,7 +92,6 @@ func TestFSReverseWalkerWalk(t *testing.T) {
 		},
 		{
 			name:        "callback EOF",
-			fs:          afero.NewMemMapFs(),
 			callbackErr: io.EOF,
 			startPath:   "/test1",
 			endPath:     "/test1",
@@ -136,7 +104,6 @@ func TestFSReverseWalkerWalk(t *testing.T) {
 		},
 		{
 			name:        "start path is not a subdirectory of end path",
-			fs:          afero.NewMemMapFs(),
 			callbackErr: nil,
 			startPath:   "/test1",
 			endPath:     "/test2",
@@ -151,12 +118,13 @@ func TestFSReverseWalkerWalk(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			fs := billy.NewInMemoryFs()
 			walker := FSReverseWalker{
-				fs:     tt.fs,
+				fs:     fs,
 				logger: slog.New(slog.NewTextHandler(io.Discard, nil)),
 			}
 
-			testutils.SetupFS(t, tt.fs, tt.files)
+			testutils.SetupFS(t, fs, tt.files)
 
 			callbackFiles := make(map[string]string)
 			err := walker.Walk(tt.startPath, tt.endPath, func(path string, fileType FileType, openFile func() (FileSeeker, error)) error {

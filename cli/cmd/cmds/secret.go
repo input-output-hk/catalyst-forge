@@ -9,6 +9,7 @@ import (
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/utils"
 	"github.com/input-output-hk/catalyst-forge/lib/project/secrets"
 	sc "github.com/input-output-hk/catalyst-forge/lib/schema/blueprint/common"
+	"github.com/input-output-hk/catalyst-forge/lib/tools/fs"
 )
 
 const (
@@ -41,6 +42,13 @@ func (c *Get) Run(ctx run.RunContext) error {
 	var maps map[string]string
 
 	if c.Project != "" {
+		exists, err := fs.Exists(c.Project)
+		if err != nil {
+			return fmt.Errorf("could not check if project exists: %w", err)
+		} else if !exists {
+			return fmt.Errorf("project does not exist: %s", c.Project)
+		}
+
 		project, err := ctx.ProjectLoader.Load(c.Project)
 		if err != nil {
 			return fmt.Errorf("could not load project: %w", err)
@@ -127,6 +135,13 @@ func (c *Set) Run(ctx run.RunContext) error {
 	var path, provider string
 
 	if c.Project != "" {
+		exists, err := fs.Exists(c.Project)
+		if err != nil {
+			return fmt.Errorf("could not check if project exists: %w", err)
+		} else if !exists {
+			return fmt.Errorf("project does not exist: %s", c.Project)
+		}
+
 		project, err := ctx.ProjectLoader.Load(c.Project)
 		if err != nil {
 			return fmt.Errorf("could not load project: %w", err)
