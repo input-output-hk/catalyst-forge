@@ -25,18 +25,22 @@ type RemoteOptions struct {
 
 func NewMockGenerator(manifest string) generator.Generator {
 	return generator.NewGenerator(
-		deployment.NewManifestGeneratorStore(
-			map[deployment.Provider]func(*slog.Logger) deployment.ManifestGenerator{
-				deployment.ProviderKCL: func(logger *slog.Logger) deployment.ManifestGenerator {
-					return &dm.ManifestGeneratorMock{
-						GenerateFunc: func(mod sp.Module, env string) ([]byte, error) {
-							return []byte(manifest), nil
-						},
-					}
-				},
-			},
-		),
+		NewMockManifestStore(manifest),
 		testutils.NewNoopLogger(),
+	)
+}
+
+func NewMockManifestStore(manifest string) deployment.ManifestGeneratorStore {
+	return deployment.NewManifestGeneratorStore(
+		map[deployment.Provider]func(*slog.Logger) deployment.ManifestGenerator{
+			deployment.ProviderKCL: func(logger *slog.Logger) deployment.ManifestGenerator {
+				return &dm.ManifestGeneratorMock{
+					GenerateFunc: func(mod sp.Module, env string) ([]byte, error) {
+						return []byte(manifest), nil
+					},
+				}
+			},
+		},
 	)
 }
 

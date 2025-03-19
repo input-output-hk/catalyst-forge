@@ -56,6 +56,10 @@ spec:
               id:
                 description: ID is the unique identifier of the release.
                 type: string
+              project:
+                description: Project is the name of the project within the source
+                  Git repository.
+                type: string
               project_path:
                 description: ProjectPath is the path to the project within the source
                   Git repository.
@@ -63,6 +67,7 @@ spec:
             required:
             - git
             - id
+            - project
             - project_path
             type: object
           status:
@@ -127,6 +132,11 @@ spec:
                 x-kubernetes-list-map-keys:
                 - type
                 x-kubernetes-list-type: map
+              state:
+                description: State is the current state of the release.
+                type: string
+            required:
+            - state
             type: object
         type: object
     served: true

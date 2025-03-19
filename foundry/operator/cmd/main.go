@@ -25,7 +25,7 @@ import (
 
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
 	// to ensure that exec-entrypoint and run can make use of them.
-	"cuelang.org/go/cue/cuecontext"
+
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 
 	"k8s.io/apimachinery/pkg/runtime"
@@ -43,8 +43,9 @@ import (
 	"github.com/input-output-hk/catalyst-forge/foundry/operator/internal/controller"
 	"github.com/input-output-hk/catalyst-forge/foundry/operator/pkg/config"
 	"github.com/input-output-hk/catalyst-forge/lib/project/deployment"
-	"github.com/input-output-hk/catalyst-forge/lib/project/deployment/deployer"
 	"github.com/input-output-hk/catalyst-forge/lib/project/secrets"
+	"github.com/input-output-hk/catalyst-forge/lib/tools/fs/billy"
+	"github.com/input-output-hk/catalyst-forge/lib/tools/git/repo/remote"
 	// +kubebuilder:scaffold:imports
 )
 
@@ -193,16 +194,6 @@ func main() {
 		os.Exit(1)
 	}
 
-	// Setup the deployer
-	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
-	deployer := deployer.NewDeployer(
-		cfg.Deployer,
-		deployment.NewDefaultManifestGeneratorStore(),
-		secrets.NewDefaultSecretStore(),
-		logger,
-		cuecontext.New(),
-	)
-
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
 		Scheme:                 scheme,
 		Metrics:                metricsServerOptions,
@@ -227,10 +218,16 @@ func main() {
 		os.Exit(1)
 	}
 
+	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
 	if err = (&controller.ReleaseReconciler{
-		Client:   mgr.GetClient(),
-		Deployer: deployer,
-		Scheme:   mgr.GetScheme(),
+		Client:        mgr.GetClient(),
+		Config:        cfg,
+		Fs:            billy.NewBaseOsFS(),
+		Logger:        logger,
+		ManifestStore: deployment.NewDefaultManifestGeneratorStore(),
+		Remote:        remote.GoGitRemoteInteractor{},
+		Scheme:        mgr.GetScheme(),
+		SecretStore:   secrets.NewDefaultSecretStore(),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Release")
 		os.Exit(1)

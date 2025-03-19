@@ -18,23 +18,21 @@ package controller
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
-	"log/slog"
 	"os"
 	"path/filepath"
-	"strings"
 	"testing"
 
-	"cuelang.org/go/cue"
 	"cuelang.org/go/cue/cuecontext"
 	"github.com/go-git/go-billy/v5"
 	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/go-git/go-git/v5/storage"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/spf13/afero"
 
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -44,14 +42,13 @@ import (
 
 	gg "github.com/go-git/go-git/v5"
 	foundryv1alpha1 "github.com/input-output-hk/catalyst-forge/foundry/operator/api/v1alpha1"
-	"github.com/input-output-hk/catalyst-forge/lib/project/deployment"
+	"github.com/input-output-hk/catalyst-forge/foundry/operator/pkg/config"
 	"github.com/input-output-hk/catalyst-forge/lib/project/deployment/deployer"
-	"github.com/input-output-hk/catalyst-forge/lib/project/deployment/generator"
-	dm "github.com/input-output-hk/catalyst-forge/lib/project/deployment/mocks"
-	"github.com/input-output-hk/catalyst-forge/lib/project/secrets"
-	sm "github.com/input-output-hk/catalyst-forge/lib/project/secrets/mocks"
+	tu "github.com/input-output-hk/catalyst-forge/lib/project/utils/test"
+	sb "github.com/input-output-hk/catalyst-forge/lib/schema/blueprint"
 	sc "github.com/input-output-hk/catalyst-forge/lib/schema/blueprint/common"
-	sp "github.com/input-output-hk/catalyst-forge/lib/schema/blueprint/project"
+	bfs "github.com/input-output-hk/catalyst-forge/lib/tools/fs/billy"
+	"github.com/input-output-hk/catalyst-forge/lib/tools/git/repo/remote"
 	rm "github.com/input-output-hk/catalyst-forge/lib/tools/git/repo/remote/mocks"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/testutils"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -62,13 +59,76 @@ import (
 // http://onsi.github.io/ginkgo/ to learn more about Ginkgo.
 
 var (
-	ctx       context.Context
-	cancel    context.CancelFunc
-	testEnv   *envtest.Environment
-	cfg       *rest.Config
-	k8sClient client.Client
-	md        mockDeployer
+	ctx        context.Context
+	cancel     context.CancelFunc
+	testEnv    *envtest.Environment
+	cfg        *rest.Config
+	k8sClient  client.Client
+	controller *ReleaseReconciler
+	blueprint  sb.Blueprint
 )
+
+type testConstants struct {
+	config                config.OperatorConfig
+	gitDeploy             testGitConstants
+	gitCreds              map[string]string
+	gitSrc                testGitConstants
+	manifest              string
+	projectName           string
+	release               foundryv1alpha1.Release
+	releaseNamespacedName types.NamespacedName
+}
+
+type testGitConstants struct {
+	ref string
+	url string
+}
+
+var constants = testConstants{
+	config: config.OperatorConfig{
+		Deployer: deployer.DeployerConfig{
+			Git: deployer.DeployerConfigGit{
+				Creds: sc.Secret{
+					Provider: "local",
+					Path:     "key",
+				},
+				Ref: "main",
+				Url: "url",
+			},
+			RootDir: "root",
+		},
+	},
+	gitDeploy: testGitConstants{
+		ref: "main",
+		url: "github.com/test/deploy",
+	},
+	gitCreds: map[string]string{"token": "value"},
+	gitSrc: testGitConstants{
+		ref: "abc123",
+		url: "github.com/test/src",
+	},
+	manifest:    "manifest",
+	projectName: "project",
+	release: foundryv1alpha1.Release{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "test-release",
+			Namespace: "default",
+		},
+		Spec: foundryv1alpha1.ReleaseSpec{
+			Git: foundryv1alpha1.GitSpec{
+				Ref: "abc123",
+				URL: "https://github.com/owner/repo",
+			},
+			ID:          "project-001",
+			Project:     "project",
+			ProjectPath: "project",
+		},
+	},
+	releaseNamespacedName: types.NamespacedName{
+		Name:      "test-release",
+		Namespace: "default",
+	},
+}
 
 func TestControllers(t *testing.T) {
 	RegisterFailHandler(Fail)
@@ -107,18 +167,19 @@ var _ = BeforeSuite(func() {
 	Expect(err).NotTo(HaveOccurred())
 	Expect(k8sClient).NotTo(BeNil())
 
+	// setup test data
+	cc := cuecontext.New()
+	v := cc.CompileString(NewBlueprint())
+	Expect(v.Decode(&blueprint)).NotTo(HaveOccurred())
+
 	// setup controller
-	md = newMockDeployer()
 	k8sManager, err := ctrl.NewManager(cfg, ctrl.Options{
 		Scheme: scheme.Scheme,
 	})
 	Expect(err).ToNot(HaveOccurred())
 
-	err = (&ReleaseReconciler{
-		Client:   k8sManager.GetClient(),
-		Deployer: md.deployer,
-		Scheme:   k8sManager.GetScheme(),
-	}).SetupWithManager(k8sManager)
+	controller = NewMockController(k8sManager.GetClient(), k8sManager.GetScheme())
+	err = controller.SetupWithManager(k8sManager)
 	Expect(err).ToNot(HaveOccurred())
 
 	go func() {
@@ -158,119 +219,126 @@ func getFirstFoundEnvTestBinaryDir() string {
 	return ""
 }
 
-type mockDeployer struct {
-	ctx      *cue.Context
-	deployer deployer.Deployer
-	fs       afero.Fs
+// NewMockController creates a new ReleaseReconciler with mocked components.
+func NewMockController(client client.Client, scheme *runtime.Scheme) *ReleaseReconciler {
+	remote, err := NewMockGitRemoteInterface(map[string]map[string]string{
+		// Mocks the source repository where the deployment blueprint is stored
+		constants.release.Spec.Git.URL: {
+			"project/blueprint.cue": NewBlueprint(),
+		},
+
+		// Mocks the deployment repository where the deployment is stored
+		// Uses an env.cue file which should be combined with the bundle
+		blueprint.Global.Deployment.Repo.Url: {
+			"root/test/project/env.cue": `main: values: { key1: "value1" }`,
+		},
+	})
+	Expect(err).ToNot(HaveOccurred())
+
+	return &ReleaseReconciler{
+		Client:        client,
+		Config:        constants.config,
+		Fs:            bfs.NewInMemoryFs(),
+		Logger:        testutils.NewNoopLogger(),
+		ManifestStore: tu.NewMockManifestStore(constants.manifest),
+		Remote:        remote,
+		Scheme:        scheme,
+		SecretStore:   tu.NewMockSecretStore(constants.gitCreds),
+	}
 }
 
-func newMockDeployer() mockDeployer {
-	var err error
-	var repo *gg.Repository
-
-	ctx := cuecontext.New()
-	fs := afero.NewMemMapFs()
-
-	files := map[string]string{
-		mkPath("test", "project", "env.mod.cue"): `main: values: { key1: "value1" }`,
-	}
-
-	remote := &rm.GitRemoteInteractorMock{
+func NewMockGitRemoteInterface(
+	repos map[string]map[string]string,
+) (remote.GitRemoteInteractor, error) {
+	return &rm.GitRemoteInteractorMock{
 		CloneFunc: func(s storage.Storer, worktree billy.Filesystem, o *gg.CloneOptions) (*gg.Repository, error) {
-			repo, err = gg.Init(s, worktree)
-			Expect(err).ToNot(HaveOccurred())
-
-			wt, err := repo.Worktree()
-			Expect(err).ToNot(HaveOccurred())
-
-			for path, content := range files {
-				dir := filepath.Dir(path)
-
-				err := fs.MkdirAll(dir, 0755)
-				Expect(err).ToNot(HaveOccurred())
-
-				err = afero.WriteFile(fs, path, []byte(content), 0644)
-				Expect(err).ToNot(HaveOccurred())
-
-				_, err = wt.Add(strings.TrimPrefix(path, "/repo/"))
-				Expect(err).ToNot(HaveOccurred())
+			repo, err := gg.Init(s, worktree)
+			if err != nil {
+				return nil, fmt.Errorf("failed to init repo: %w", err)
 			}
 
-			_, err = wt.Commit("initial commit", &gg.CommitOptions{
-				Author: &object.Signature{
-					Name:  "test",
-					Email: "test@test.com",
-				},
-			})
-			Expect(err).ToNot(HaveOccurred())
+			wt, err := repo.Worktree()
+			if err != nil {
+				return nil, fmt.Errorf("failed to get worktree: %w", err)
+			}
+
+			files, ok := repos[o.URL]
+			if ok {
+				for path, content := range files {
+					dir := filepath.Dir(path)
+					if err := worktree.MkdirAll(dir, 0755); err != nil {
+						return nil, fmt.Errorf("failed to create directory %s: %w", dir, err)
+					}
+
+					f, err := worktree.Create(path)
+					if err != nil {
+						return nil, fmt.Errorf("failed to create file %s: %w", path, err)
+					}
+					_, err = f.Write([]byte(content))
+					if err != nil {
+						return nil, fmt.Errorf("failed to write to file %s: %w", path, err)
+					}
+
+					_, err = wt.Add(path)
+					if err != nil {
+						return nil, fmt.Errorf("failed to add file: %w", err)
+					}
+				}
+
+				_, err = wt.Commit("initial commit", &gg.CommitOptions{
+					Author: &object.Signature{
+						Name:  "test",
+						Email: "test@test.com",
+					},
+				})
+				if err != nil {
+					return nil, fmt.Errorf("failed to commit: %w", err)
+				}
+			}
 
 			return repo, nil
 		},
 		PushFunc: func(repo *gg.Repository, o *gg.PushOptions) error {
 			return nil
 		},
-	}
-
-	gen := generator.NewGenerator(
-		deployment.NewManifestGeneratorStore(
-			map[deployment.Provider]func(*slog.Logger) deployment.ManifestGenerator{
-				deployment.ProviderKCL: func(logger *slog.Logger) deployment.ManifestGenerator {
-					return &dm.ManifestGeneratorMock{
-						GenerateFunc: func(mod sp.Module, env string) ([]byte, error) {
-							return []byte("manifest"), nil
-						},
-					}
-				},
-			},
-		),
-		testutils.NewNoopLogger(),
-	)
-
-	provider := func(logger *slog.Logger) (secrets.SecretProvider, error) {
-		return &sm.SecretProviderMock{
-			GetFunc: func(key string) (string, error) {
-				j, err := json.Marshal(map[string]string{"token": "value"})
-				Expect(err).ToNot(HaveOccurred())
-				return string(j), nil
-			},
-		}, nil
-	}
-
-	ss := secrets.NewSecretStore(
-		map[secrets.Provider]func(*slog.Logger) (secrets.SecretProvider, error){
-			secrets.ProviderLocal: provider,
-		},
-	)
-
-	cfg := deployer.DeployerConfig{
-		Git: deployer.DeployerConfigGit{
-			Creds: sc.Secret{
-				Provider: "local",
-				Path:     "key",
-			},
-			Ref: "main",
-			Url: "url",
-		},
-		RootDir: "root",
-	}
-
-	d := deployer.NewCustomDeployer(
-		cfg,
-		ctx,
-		fs,
-		gen,
-		testutils.NewNoopLogger(),
-		remote,
-		ss,
-	)
-
-	return mockDeployer{
-		ctx:      ctx,
-		deployer: d,
-		fs:       fs,
-	}
+	}, nil
 }
 
-func mkPath(env, project, file string) string {
-	return fmt.Sprintf("/repo/root/%s/%s/%s", env, project, file)
+func NewBlueprint() string {
+	return `
+		{
+			version: "1.0"
+			project: {
+				name: "project"
+				deployment: {
+					on: {}
+					bundle: {
+						env: "test"
+						modules: {
+							main: {
+								name: "module"
+								version: "v1.0.0"
+								values: {
+									foo: "bar"
+								}
+							}
+						}
+					}
+				}
+			}
+			global: {
+				deployment: {
+					registries: {
+						containers: "registry.com"
+						modules: "registry.com"
+					}
+					repo: {
+						ref: "main"
+						url: "github.com/org/repo"
+					}
+					root: "root"
+				}
+			}
+		}
+	`
 }

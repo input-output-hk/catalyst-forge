@@ -18,72 +18,51 @@ package controller
 
 import (
 	"context"
+	"time"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/types"
-	"sigs.k8s.io/controller-runtime/pkg/reconcile"
-
-	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	foundryv1alpha1 "github.com/input-output-hk/catalyst-forge/foundry/operator/api/v1alpha1"
 )
 
 var _ = Describe("Release Controller", func() {
-	Context("When reconciling a resource", func() {
-		const resourceName = "test-resource"
+	Context("When reconciling a release", func() {
+		const (
+			timeout  = time.Second * 10
+			interval = time.Millisecond * 250
+		)
 
-		ctx := context.Background()
-
-		typeNamespacedName := types.NamespacedName{
-			Name:      resourceName,
-			Namespace: "default",
-		}
-		release := &foundryv1alpha1.Release{}
+		var (
+			ctx = context.Background()
+		)
 
 		BeforeEach(func() {
 			By("creating the custom resource for the Kind Release")
-			err := k8sClient.Get(ctx, typeNamespacedName, release)
+			release := &foundryv1alpha1.Release{}
+			err := k8sClient.Get(ctx, constants.releaseNamespacedName, release)
 			if err != nil && errors.IsNotFound(err) {
-				resource := &foundryv1alpha1.Release{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      resourceName,
-						Namespace: "default",
-					},
-					Spec: foundryv1alpha1.ReleaseSpec{
-						Bundle: &apiextensionsv1.JSON{
-							Raw: []byte(`{ "foo": "bar" }`),
-						},
-						ID:      "id",
-						Project: "project",
-					},
-				}
-				Expect(k8sClient.Create(ctx, resource)).To(Succeed())
+				Expect(k8sClient.Create(ctx, &constants.release)).To(Succeed())
 			}
 		})
 
-		AfterEach(func() {
-			// TODO(user): Cleanup logic after each test, like removing the resource instance.
-			resource := &foundryv1alpha1.Release{}
-			err := k8sClient.Get(ctx, typeNamespacedName, resource)
-			Expect(err).NotTo(HaveOccurred())
+		// AfterEach(func() {
+		// 	// TODO(user): Cleanup logic after each test, like removing the resource instance.
+		// 	resource := &foundryv1alpha1.Release{}
+		// 	err := k8sClient.Get(ctx, typeNamespacedName, resource)
+		// 	Expect(err).NotTo(HaveOccurred())
 
-			By("Cleanup the specific resource instance Release")
-			Expect(k8sClient.Delete(ctx, resource)).To(Succeed())
-		})
+		// 	By("Cleanup the specific resource instance Release")
+		// 	Expect(k8sClient.Delete(ctx, resource)).To(Succeed())
+		// })
+
 		It("should successfully reconcile the resource", func() {
-			By("Reconciling the created resource")
-			controllerReconciler := &ReleaseReconciler{
-				Client: k8sClient,
-				Scheme: k8sClient.Scheme(),
-			}
-
-			_, err := controllerReconciler.Reconcile(ctx, reconcile.Request{
-				NamespacedName: typeNamespacedName,
-			})
-			Expect(err).NotTo(HaveOccurred())
+			release := &foundryv1alpha1.Release{}
+			Eventually(func(g Gomega) {
+				g.Expect(k8sClient.Get(ctx, constants.releaseNamespacedName, release)).To(Succeed())
+				g.Expect(release.Status.State).To(Equal("Deployed"))
+			}, timeout, interval).Should(Succeed())
 		})
 	})
 })

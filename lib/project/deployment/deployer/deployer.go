@@ -110,6 +110,23 @@ func WithFS(fs fs.Filesystem) CloneOption {
 	}
 }
 
+// DeployerOption is an option for a Deployer.
+type DeployerOption func(*Deployer)
+
+// WithFs sets the filesystem for the Deployer.
+func WithFs(fs fs.Filesystem) DeployerOption {
+	return func(d *Deployer) {
+		d.fs = fs
+	}
+}
+
+// WithGitRemoteInteractor sets the Git remote interactor for the Deployer.
+func WithGitRemoteInteractor(remote remote.GitRemoteInteractor) DeployerOption {
+	return func(d *Deployer) {
+		d.remote = remote
+	}
+}
+
 // CreateDeployment creates a deployment for the given project and bundle.
 func (d *Deployer) CreateDeployment(
 	project string,
@@ -310,19 +327,23 @@ func NewDeployer(
 	ss secrets.SecretStore,
 	logger *slog.Logger,
 	ctx *cue.Context,
+	opts ...DeployerOption,
 ) Deployer {
-	gen := generator.NewGenerator(ms, logger)
-	remote := remote.GoGitRemoteInteractor{}
-
-	return Deployer{
+	deployer := Deployer{
 		cfg:    cfg,
 		ctx:    ctx,
-		gen:    gen,
+		gen:    generator.NewGenerator(ms, logger),
 		fs:     billy.NewBaseOsFS(),
 		logger: logger,
-		remote: remote,
+		remote: remote.GoGitRemoteInteractor{},
 		ss:     ss,
 	}
+
+	for _, o := range opts {
+		o(&deployer)
+	}
+
+	return deployer
 }
 
 // NewDeployerConfigFromProject creates a DeployerConfig from a project.

@@ -28,6 +28,9 @@ type ReleaseSpec struct {
 	// ID is the unique identifier of the release.
 	ID string `json:"id"`
 
+	// Project is the name of the project within the source Git repository.
+	Project string `json:"project"`
+
 	// ProjectPath is the path to the project within the source Git repository.
 	ProjectPath string `json:"project_path"`
 }
@@ -49,6 +52,9 @@ type ReleaseStatus struct {
 	// +patchMergeKey=type
 	// +optional
 	Conditions []metav1.Condition `json:"conditions,omitempty" patchStrategy:"merge" patchMergeKey:"type" protobuf:"bytes,1,rep,name=conditions"`
+
+	// State is the current state of the release.
+	State string `json:"state"`
 }
 
 // +kubebuilder:object:root=true

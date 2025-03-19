@@ -18,6 +18,7 @@ package controller
 
 import (
 	"context"
+	"log/slog"
 
 	"cuelang.org/go/cue/cuecontext"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -27,15 +28,25 @@ import (
 
 	"github.com/input-output-hk/catalyst-forge/foundry/operator/api/v1alpha1"
 	foundryv1alpha1 "github.com/input-output-hk/catalyst-forge/foundry/operator/api/v1alpha1"
+	"github.com/input-output-hk/catalyst-forge/foundry/operator/pkg/config"
 	"github.com/input-output-hk/catalyst-forge/lib/project/deployment"
 	"github.com/input-output-hk/catalyst-forge/lib/project/deployment/deployer"
+	"github.com/input-output-hk/catalyst-forge/lib/project/secrets"
+	"github.com/input-output-hk/catalyst-forge/lib/tools/fs/billy"
+	"github.com/input-output-hk/catalyst-forge/lib/tools/git/repo"
+	"github.com/input-output-hk/catalyst-forge/lib/tools/git/repo/remote"
 )
 
 // ReleaseReconciler reconciles a Release object
 type ReleaseReconciler struct {
 	client.Client
-	Deployer deployer.Deployer
-	Scheme   *runtime.Scheme
+	Config        config.OperatorConfig
+	Fs            *billy.BillyFs
+	Logger        *slog.Logger
+	ManifestStore deployment.ManifestGeneratorStore
+	Remote        remote.GitRemoteInteractor
+	Scheme        *runtime.Scheme
+	SecretStore   secrets.SecretStore
 }
 
 // +kubebuilder:rbac:groups=foundry.projectcatalyst.io,resources=releases,verbs=get;list;watch;create;update;patch;delete
@@ -51,20 +62,52 @@ func (r *ReleaseReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
 
-	cc := cuecontext.New()
-	bundle, err := deployment.ParseBundle(cc, release.Spec.Bundle.Raw)
+	release.Status.State = "Deploying"
+	if err := r.Status().Update(ctx, &release); err != nil {
+		log.Error(err, "unable to update Release status")
+		return ctrl.Result{}, err
+	}
+
+	rp, err := repo.NewCachedRepo(
+		release.Spec.Git.URL,
+		r.Logger,
+		repo.WithFS(r.Fs),
+		repo.WithGitRemoteInteractor(r.Remote),
+	)
 	if err != nil {
-		log.Error(err, "unable to parse bundle")
+		log.Error(err, "unable to create repo")
 		return ctrl.Result{}, err
 	}
 
-	if err := bundle.Validate(); err != nil {
-		log.Error(err, "unable to validate bundle")
+	bundle, err := deployment.FetchBundle(rp, release.Spec.ProjectPath, r.SecretStore, r.Logger)
+	if err != nil {
+		log.Error(err, "unable to fetch bundle")
 		return ctrl.Result{}, err
 	}
 
-	if err := r.Deployer.Deploy(release.Spec.Project, bundle, false); err != nil {
-		log.Error(err, "unable to deploy bundle")
+	deployer := deployer.NewDeployer(
+		r.Config.Deployer,
+		r.ManifestStore,
+		r.SecretStore,
+		r.Logger,
+		cuecontext.New(),
+		deployer.WithGitRemoteInteractor(r.Remote),
+		deployer.WithFs(r.Fs),
+	)
+	deployment, err := deployer.CreateDeployment(release.Spec.Project, bundle)
+	if err != nil {
+		log.Error(err, "unable to create deployment")
+		return ctrl.Result{}, err
+	}
+
+	if err := deployment.Commit(); err != nil {
+		log.Error(err, "unable to commit deployment")
+		return ctrl.Result{}, err
+	}
+
+	release.Status.State = "Deployed"
+	if err := r.Status().Update(ctx, &release); err != nil {
+		log.Error(err, "unable to update Release status")
 		return ctrl.Result{}, err
 	}
 

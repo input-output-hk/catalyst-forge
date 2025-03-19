@@ -32,9 +32,24 @@ func NewCachedRepo(url string, logger *slog.Logger, opts ...GitRepoOption) (GitR
 		opt(&r)
 	}
 
-	r.fs = bfs.NewBaseOsFS()
-	r.gfs = bfs.NewOsFs(gp)
-	r.wfs = bfs.NewOsFs(wp)
+	if r.fs != nil {
+		ng, err := r.fs.Raw().Chroot(gp)
+		if err != nil {
+			return GitRepo{}, fmt.Errorf("failed to chroot git filesystem: %w", err)
+		}
+
+		nw, err := r.fs.Raw().Chroot(wp)
+		if err != nil {
+			return GitRepo{}, fmt.Errorf("failed to chroot worktree filesystem: %w", err)
+		}
+
+		r.gfs = bfs.NewFs(ng)
+		r.wfs = bfs.NewFs(nw)
+	} else {
+		r.fs = bfs.NewBaseOsFS()
+		r.gfs = bfs.NewOsFs(gp)
+		r.wfs = bfs.NewOsFs(wp)
+	}
 
 	exists, err := r.fs.Exists(filepath.Join(gp))
 	if err != nil {
