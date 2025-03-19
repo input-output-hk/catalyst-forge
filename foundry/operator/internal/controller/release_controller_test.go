@@ -18,8 +18,12 @@ package controller
 
 import (
 	"context"
+	"fmt"
+	"path/filepath"
+	"strings"
 	"time"
 
+	"github.com/adrg/xdg"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -63,6 +67,27 @@ var _ = Describe("Release Controller", func() {
 				g.Expect(k8sClient.Get(ctx, constants.releaseNamespacedName, release)).To(Succeed())
 				g.Expect(release.Status.State).To(Equal("Deployed"))
 			}, timeout, interval).Should(Succeed())
+		})
+
+		It("should have cloned the source repository", func() {
+			pathParts := []string{xdg.CacheHome, "forge"}
+			pathParts = append(pathParts, strings.Split(constants.gitSrc.url, "/")...)
+			path := filepath.Join(pathParts...)
+			Expect(controller.FsSource.Exists(path)).To(BeTrue())
+		})
+
+		It("should have cloned the deploy repository", func() {
+			path := fmt.Sprintf(
+				"/repo/%s/%s/%s",
+				constants.config.Deployer.RootDir,
+				blueprint.Project.Deployment.Bundle.Env,
+				constants.projectName,
+			)
+			// controller.FsDeploy.Walk("/", func(p string, info fs.FileInfo, err error) error {
+			// 	fmt.Println(p)
+			// 	return nil
+			// })
+			Expect(controller.FsDeploy.Exists(path)).To(BeTrue())
 		})
 	})
 })

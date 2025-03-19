@@ -88,7 +88,6 @@ type DeployerConfigGit struct {
 type Deployer struct {
 	cfg    DeployerConfig
 	ctx    *cue.Context
-	fs     fs.Filesystem
 	gen    generator.Generator
 	logger *slog.Logger
 	remote remote.GitRemoteInteractor
@@ -112,13 +111,6 @@ func WithFS(fs fs.Filesystem) CloneOption {
 
 // DeployerOption is an option for a Deployer.
 type DeployerOption func(*Deployer)
-
-// WithFs sets the filesystem for the Deployer.
-func WithFs(fs fs.Filesystem) DeployerOption {
-	return func(d *Deployer) {
-		d.fs = fs
-	}
-}
 
 // WithGitRemoteInteractor sets the Git remote interactor for the Deployer.
 func WithGitRemoteInteractor(remote remote.GitRemoteInteractor) DeployerOption {
@@ -333,7 +325,6 @@ func NewDeployer(
 		cfg:    cfg,
 		ctx:    ctx,
 		gen:    generator.NewGenerator(ms, logger),
-		fs:     billy.NewBaseOsFS(),
 		logger: logger,
 		remote: remote.GoGitRemoteInteractor{},
 		ss:     ss,

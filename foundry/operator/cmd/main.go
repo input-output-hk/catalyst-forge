@@ -222,7 +222,7 @@ func main() {
 	if err = (&controller.ReleaseReconciler{
 		Client:        mgr.GetClient(),
 		Config:        cfg,
-		Fs:            billy.NewBaseOsFS(),
+		FsSource:      billy.NewBaseOsFS(),
 		Logger:        logger,
 		ManifestStore: deployment.NewDefaultManifestGeneratorStore(),
 		Remote:        remote.GoGitRemoteInteractor{},

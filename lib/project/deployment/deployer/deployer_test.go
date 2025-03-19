@@ -152,7 +152,6 @@ func TestDeployerCreateDeployment(t *testing.T) {
 			d := Deployer{
 				cfg:    tt.cfg,
 				ctx:    cuecontext.New(),
-				fs:     fs,
 				gen:    gen,
 				logger: testutils.NewNoopLogger(),
 				remote: remote,

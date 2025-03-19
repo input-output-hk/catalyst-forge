@@ -117,7 +117,7 @@ var constants = testConstants{
 		Spec: foundryv1alpha1.ReleaseSpec{
 			Git: foundryv1alpha1.GitSpec{
 				Ref: "abc123",
-				URL: "https://github.com/owner/repo",
+				URL: "github.com/test/src",
 			},
 			ID:          "project-001",
 			Project:     "project",
@@ -238,7 +238,8 @@ func NewMockController(client client.Client, scheme *runtime.Scheme) *ReleaseRec
 	return &ReleaseReconciler{
 		Client:        client,
 		Config:        constants.config,
-		Fs:            bfs.NewInMemoryFs(),
+		FsDeploy:      bfs.NewInMemoryFs(),
+		FsSource:      bfs.NewInMemoryFs(),
 		Logger:        testutils.NewNoopLogger(),
 		ManifestStore: tu.NewMockManifestStore(constants.manifest),
 		Remote:        remote,

@@ -41,7 +41,8 @@ import (
 type ReleaseReconciler struct {
 	client.Client
 	Config        config.OperatorConfig
-	Fs            *billy.BillyFs
+	FsDeploy      *billy.BillyFs
+	FsSource      *billy.BillyFs
 	Logger        *slog.Logger
 	ManifestStore deployment.ManifestGeneratorStore
 	Remote        remote.GitRemoteInteractor
@@ -56,10 +57,18 @@ type ReleaseReconciler struct {
 func (r *ReleaseReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	log := log.FromContext(ctx)
 
+	// Load the filesystems to use for the deploy and source repositories.
+	dfs, sfs := r.getFs()
+
 	var release v1alpha1.Release
 	if err := r.Get(ctx, req.NamespacedName, &release); err != nil {
 		log.Error(err, "unable to fetch Release")
 		return ctrl.Result{}, client.IgnoreNotFound(err)
+	}
+
+	if release.Status.State == "Deployed" {
+		log.Info("Release already deployed")
+		return ctrl.Result{}, nil
 	}
 
 	release.Status.State = "Deploying"
@@ -71,7 +80,7 @@ func (r *ReleaseReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	rp, err := repo.NewCachedRepo(
 		release.Spec.Git.URL,
 		r.Logger,
-		repo.WithFS(r.Fs),
+		repo.WithFS(sfs),
 		repo.WithGitRemoteInteractor(r.Remote),
 	)
 	if err != nil {
@@ -85,16 +94,15 @@ func (r *ReleaseReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		return ctrl.Result{}, err
 	}
 
-	deployer := deployer.NewDeployer(
+	d := deployer.NewDeployer(
 		r.Config.Deployer,
 		r.ManifestStore,
 		r.SecretStore,
 		r.Logger,
 		cuecontext.New(),
 		deployer.WithGitRemoteInteractor(r.Remote),
-		deployer.WithFs(r.Fs),
 	)
-	deployment, err := deployer.CreateDeployment(release.Spec.Project, bundle)
+	deployment, err := d.CreateDeployment(release.Spec.Project, bundle, deployer.WithFS(dfs))
 	if err != nil {
 		log.Error(err, "unable to create deployment")
 		return ctrl.Result{}, err
@@ -112,6 +120,25 @@ func (r *ReleaseReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	}
 
 	return ctrl.Result{}, nil
+}
+
+// getFs returns the filesystems to use for the deploy and source repositories.
+func (r *ReleaseReconciler) getFs() (*billy.BillyFs, *billy.BillyFs) {
+	var dfs *billy.BillyFs
+	if r.FsDeploy == nil {
+		dfs = billy.NewInMemoryFs()
+	} else {
+		dfs = r.FsDeploy
+	}
+
+	var sfs *billy.BillyFs
+	if r.FsSource == nil {
+		sfs = billy.NewBaseOsFS()
+	} else {
+		sfs = r.FsSource
+	}
+
+	return dfs, sfs
 }
 
 // SetupWithManager sets up the controller with the Manager.
