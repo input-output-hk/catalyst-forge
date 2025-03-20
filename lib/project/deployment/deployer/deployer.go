@@ -1,6 +1,7 @@
 package deployer
 
 import (
+	"encoding/json"
 	"fmt"
 	"log/slog"
 	"path/filepath"
@@ -31,7 +32,7 @@ const (
 	// These are the hardcoded values to use when committing changes to the GitOps repository.
 	GIT_NAME    = "Catalyst Forge"
 	GIT_EMAIL   = "forge@projectcatalyst.io"
-	GIT_MESSAGE = "chore: automatic deployment for %s"
+	GIT_MESSAGE = "chore(forge): automatic deployment for %s"
 
 	// This is the path to the project in the GitOps repository.
 	// {root_path}/{environment}/{project_name}
@@ -47,9 +48,15 @@ type Deployment struct {
 	// Bundle is the deployment bundle being deployed.
 	Bundle deployment.ModuleBundle
 
+	// ID is the ID of the deployment.
+	ID string
+
 	// Manifests is the generated manifests for the deployment.
 	// The key is the name of the manifest and the value is the manifest content.
 	Manifests map[string][]byte
+
+	// Metadata is the metadata for the deployment.
+	Metadata map[string]string
 
 	// RawBundle is the raw representation of the deployment bundle (in CUE).
 	RawBundle []byte
@@ -61,6 +68,18 @@ type Deployment struct {
 	Project string
 
 	logger *slog.Logger
+}
+
+// DeploymentPayload is the payload that describes a deployment.
+type DeploymentPayload struct {
+	// ID is the ID of the deployment.
+	ID string `json:"id"`
+
+	// Metadata is the metadata for the deployment.
+	Metadata map[string]string `json:"metadata"`
+
+	// Project is the name of the project being deployed.
+	Project string `json:"project"`
 }
 
 // DeployerConfig is the configuration for a Deployer.
@@ -94,18 +113,34 @@ type Deployer struct {
 	ss     secrets.SecretStore
 }
 
-// CloneOptions are options for cloning a repository.
-type CloneOptions struct {
-	fs fs.Filesystem
+// CreateOptions are options for creating a deployment.
+type CreateOptions struct {
+	fs       fs.Filesystem
+	metadata map[string]string
+	repo     *repo.GitRepo
 }
 
 // CloneOption is an option for cloning a repository.
-type CloneOption func(*CloneOptions)
+type CreateOption func(*CreateOptions)
 
 // WithFS sets the filesystem to use for cloning a repository.
-func WithFS(fs fs.Filesystem) CloneOption {
-	return func(o *CloneOptions) {
+func WithFS(fs fs.Filesystem) CreateOption {
+	return func(o *CreateOptions) {
 		o.fs = fs
+	}
+}
+
+// WithMetadata sets the metadata to use for the deployment.
+func WithMetadata(metadata map[string]string) CreateOption {
+	return func(o *CreateOptions) {
+		o.metadata = metadata
+	}
+}
+
+// WithRepo sets the Git repository to use for the deployment.
+func WithRepo(r *repo.GitRepo) CreateOption {
+	return func(o *CreateOptions) {
+		o.repo = r
 	}
 }
 
@@ -121,20 +156,27 @@ func WithGitRemoteInteractor(remote remote.GitRemoteInteractor) DeployerOption {
 
 // CreateDeployment creates a deployment for the given project and bundle.
 func (d *Deployer) CreateDeployment(
+	id string,
 	project string,
 	bundle deployment.ModuleBundle,
-	opts ...CloneOption,
+	opts ...CreateOption,
 ) (*Deployment, error) {
-	options := CloneOptions{
+	options := CreateOptions{
 		fs: billy.NewInMemoryFs(),
 	}
 	for _, o := range opts {
 		o(&options)
 	}
 
-	r, err := d.clone(d.cfg.Git.Url, d.cfg.Git.Ref, options.fs)
-	if err != nil {
-		return nil, err
+	var r repo.GitRepo
+	var err error
+	if options.repo == nil {
+		r, err = d.clone(d.cfg.Git.Url, d.cfg.Git.Ref, options.fs)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		r = *options.repo
 	}
 
 	prjPath := buildProjectPath(d.cfg.RootDir, project, bundle)
@@ -169,6 +211,25 @@ func (d *Deployer) CreateDeployment(
 		return nil, fmt.Errorf("could not add bundle to working tree: %w", err)
 	}
 
+	payloadPath := filepath.Join(prjPath, "deployment.json")
+	d.logger.Info("Writing deployment payload", "path", payloadPath)
+	payload := DeploymentPayload{
+		ID:       id,
+		Metadata: options.metadata,
+		Project:  project,
+	}
+	payloadSrc, err := json.MarshalIndent(payload, "", "  ")
+	if err != nil {
+		return nil, fmt.Errorf("could not marshal deployment payload: %w", err)
+	}
+	if err := r.WriteFile(payloadPath, payloadSrc); err != nil {
+		return nil, fmt.Errorf("could not write deployment payload: %w", err)
+	}
+
+	if err := r.StageFile(payloadPath); err != nil {
+		return nil, fmt.Errorf("could not add deployment payload to working tree: %w", err)
+	}
+
 	for name, result := range result.Manifests {
 		manPath := filepath.Join(prjPath, fmt.Sprintf("%s.yaml", name))
 
@@ -183,7 +244,10 @@ func (d *Deployer) CreateDeployment(
 
 	return &Deployment{
 		Bundle:    bundle,
+		ID:        id,
 		Manifests: result.Manifests,
+		Metadata:  options.metadata,
+		Project:   project,
 		RawBundle: result.Module,
 		Repo:      r,
 		logger:    d.logger,

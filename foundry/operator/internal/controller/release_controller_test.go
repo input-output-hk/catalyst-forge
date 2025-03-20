@@ -18,7 +18,6 @@ package controller
 
 import (
 	"context"
-	"fmt"
 	"path/filepath"
 	"strings"
 	"time"
@@ -70,24 +69,39 @@ var _ = Describe("Release Controller", func() {
 		})
 
 		It("should have cloned the source repository", func() {
-			pathParts := []string{xdg.CacheHome, "forge"}
-			pathParts = append(pathParts, strings.Split(constants.gitSrc.url, "/")...)
-			path := filepath.Join(pathParts...)
+			path := makeCachePath(constants.gitSrc.url)
 			Expect(controller.FsSource.Exists(path)).To(BeTrue())
 		})
 
 		It("should have cloned the deploy repository", func() {
-			path := fmt.Sprintf(
-				"/repo/%s/%s/%s",
+			path := makeCachePath(constants.gitDeploy.url)
+			Expect(controller.FsDeploy.Exists(path)).To(BeTrue())
+		})
+
+		It("should have created the deployment files", func() {
+			path := makeCachePath(constants.gitDeploy.url)
+			path = filepath.Join(
+				path,
 				constants.config.Deployer.RootDir,
 				blueprint.Project.Deployment.Bundle.Env,
 				constants.projectName,
 			)
-			// controller.FsDeploy.Walk("/", func(p string, info fs.FileInfo, err error) error {
-			// 	fmt.Println(p)
-			// 	return nil
-			// })
-			Expect(controller.FsDeploy.Exists(path)).To(BeTrue())
+			Expect(controller.FsDeploy.Exists(filepath.Join(path, "main.yaml"))).To(BeTrue())
+			Expect(controller.FsDeploy.Exists(filepath.Join(path, "bundle.cue"))).To(BeTrue())
+
+			got, err := controller.FsDeploy.ReadFile(filepath.Join(path, "bundle.cue"))
+			Expect(err).NotTo(HaveOccurred())
+			Expect(string(got)).To(Equal(string(bundleRaw)))
+
+			got, err = controller.FsDeploy.ReadFile(filepath.Join(path, "main.yaml"))
+			Expect(err).NotTo(HaveOccurred())
+			Expect(string(got)).To(Equal(string(constants.manifest)))
 		})
 	})
 })
+
+func makeCachePath(url string) string {
+	pathParts := []string{xdg.CacheHome, "forge"}
+	pathParts = append(pathParts, strings.Split(url, "/")...)
+	return filepath.Join(pathParts...)
+}

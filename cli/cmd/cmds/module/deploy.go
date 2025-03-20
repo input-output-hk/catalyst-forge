@@ -43,7 +43,7 @@ func (c *DeployCmd) Run(ctx run.RunContext) error {
 		ctx.CueCtx,
 	)
 
-	dr, err := d.CreateDeployment(project.Name, deployment.NewModuleBundle(&project))
+	dr, err := d.CreateDeployment(project.Name, project.Name, deployment.NewModuleBundle(&project))
 	if err != nil {
 		return fmt.Errorf("failed creating deployment: %w", err)
 	}

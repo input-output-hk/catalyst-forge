@@ -59,13 +59,15 @@ import (
 // http://onsi.github.io/ginkgo/ to learn more about Ginkgo.
 
 var (
-	ctx        context.Context
-	cancel     context.CancelFunc
-	testEnv    *envtest.Environment
-	cfg        *rest.Config
-	k8sClient  client.Client
-	controller *ReleaseReconciler
-	blueprint  sb.Blueprint
+	ctx          context.Context
+	cancel       context.CancelFunc
+	testEnv      *envtest.Environment
+	cfg          *rest.Config
+	k8sClient    client.Client
+	controller   *ReleaseReconciler
+	blueprint    sb.Blueprint
+	blueprintRaw string
+	bundleRaw    string
 )
 
 type testConstants struct {
@@ -93,7 +95,7 @@ var constants = testConstants{
 					Path:     "key",
 				},
 				Ref: "main",
-				Url: "url",
+				Url: "github.com/test/deploy",
 			},
 			RootDir: "root",
 		},
@@ -169,8 +171,41 @@ var _ = BeforeSuite(func() {
 
 	// setup test data
 	cc := cuecontext.New()
-	v := cc.CompileString(NewBlueprint())
+	blueprintRaw = NewBlueprint()
+	v := cc.CompileString(blueprintRaw)
 	Expect(v.Decode(&blueprint)).NotTo(HaveOccurred())
+
+	bundleRaw = `{
+	_#def
+	_#def: {
+		env: string | *"dev"
+		modules: {
+			[string]: {
+				instance?: string
+				name?:     string
+				namespace: string | *"default"
+				path?:     string
+				registry?: string
+				type:      string | *"kcl"
+				values?:   _
+				version?:  string
+			}
+		}
+	} & {
+		env: "test"
+		modules: {
+			main: {
+				name:     "module"
+				version:  "v1.0.0"
+				instance: "project"
+				registry: "registry.com"
+				values: {
+					foo: "bar"
+				}
+			}
+		}
+	}
+}`
 
 	// setup controller
 	k8sManager, err := ctrl.NewManager(cfg, ctrl.Options{

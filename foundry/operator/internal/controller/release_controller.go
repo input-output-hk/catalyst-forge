@@ -77,7 +77,18 @@ func (r *ReleaseReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		return ctrl.Result{}, err
 	}
 
-	rp, err := repo.NewCachedRepo(
+	deployRepo, err := repo.NewCachedRepo(
+		r.Config.Deployer.Git.Url,
+		r.Logger,
+		repo.WithFS(dfs),
+		repo.WithGitRemoteInteractor(r.Remote),
+	)
+	if err != nil {
+		log.Error(err, "unable to get deployment repo")
+		return ctrl.Result{}, err
+	}
+
+	sourceRepo, err := repo.NewCachedRepo(
 		release.Spec.Git.URL,
 		r.Logger,
 		repo.WithFS(sfs),
@@ -88,7 +99,7 @@ func (r *ReleaseReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		return ctrl.Result{}, err
 	}
 
-	bundle, err := deployment.FetchBundle(rp, release.Spec.ProjectPath, r.SecretStore, r.Logger)
+	bundle, err := deployment.FetchBundle(sourceRepo, release.Spec.ProjectPath, r.SecretStore, r.Logger)
 	if err != nil {
 		log.Error(err, "unable to fetch bundle")
 		return ctrl.Result{}, err
@@ -102,7 +113,12 @@ func (r *ReleaseReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		cuecontext.New(),
 		deployer.WithGitRemoteInteractor(r.Remote),
 	)
-	deployment, err := d.CreateDeployment(release.Spec.Project, bundle, deployer.WithFS(dfs))
+	deployment, err := d.CreateDeployment(
+		release.Spec.ID,
+		release.Spec.Project,
+		bundle,
+		deployer.WithRepo(&deployRepo),
+	)
 	if err != nil {
 		log.Error(err, "unable to create deployment")
 		return ctrl.Result{}, err
