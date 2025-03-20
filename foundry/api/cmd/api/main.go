@@ -1,33 +1,97 @@
 package main
 
 import (
-	"fmt"
-	"net/http"
-	"runtime"
+	"context"
+	"log"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
 
-	"github.com/alecthomas/kong"
-	"github.com/gin-gonic/gin"
+	"github.com/input-output-hk/catalyst-forge/foundry/api/internal/api"
+	"github.com/input-output-hk/catalyst-forge/foundry/api/internal/config"
+	"github.com/input-output-hk/catalyst-forge/foundry/api/internal/models"
+	"github.com/input-output-hk/catalyst-forge/foundry/api/internal/repository"
+	"github.com/input-output-hk/catalyst-forge/foundry/api/internal/service"
+	"gorm.io/driver/postgres"
+	"gorm.io/gorm"
 )
 
-var version = "dev"
-
-type cli struct {
-	Host string `short:"h" help:"Host to listen on" default:"0.0.0.0"`
-	Port int    `short:"p" help:"Port to listen on" default:"8080"`
-}
-
 func main() {
-	var c cli
-	kong.Parse(&c)
+	// Load configuration
+	cfg, err := config.Load()
+	if err != nil {
+		log.Fatalf("Failed to load configuration: %v", err)
+	}
 
-	fmt.Printf("foundry version %s %s/%s\n", version, runtime.GOOS, runtime.GOARCH)
-	r := gin.Default()
-	r.GET("/", func(c *gin.Context) {
-		c.JSON(http.StatusOK, gin.H{
-			"message": "Hello from Foundry!",
-		})
-	})
+	// Initialize logger
+	logger, err := cfg.GetLogger()
+	if err != nil {
+		log.Fatalf("Failed to initialize logger: %v", err)
+	}
 
-	listenAddr := fmt.Sprintf("%s:%d", c.Host, c.Port)
-	r.Run(listenAddr)
+	// Connect to the database
+	db, err := gorm.Open(postgres.Open(cfg.GetDSN()), &gorm.Config{})
+	if err != nil {
+		logger.Error("Failed to connect to database", "error", err)
+		os.Exit(1)
+	}
+
+	// Run migrations
+	logger.Info("Running database migrations")
+	err = db.AutoMigrate(
+		&models.Release{},
+		&models.ReleaseDeployment{},
+		&models.IDCounter{},
+		&models.ReleaseAlias{},
+	)
+	if err != nil {
+		logger.Error("Failed to run migrations", "error", err)
+		os.Exit(1)
+	}
+
+	// Initialize repositories
+	releaseRepo := repository.NewReleaseRepository(db)
+	deploymentRepo := repository.NewDeploymentRepository(db)
+	counterRepo := repository.NewIDCounterRepository(db)
+	aliasRepo := repository.NewAliasRepository(db)
+
+	// Initialize services
+	releaseService := service.NewReleaseService(releaseRepo, aliasRepo, counterRepo, deploymentRepo)
+	deploymentService := service.NewDeploymentService(deploymentRepo, releaseRepo)
+
+	// Setup router
+	router := api.SetupRouter(releaseService, deploymentService, logger)
+
+	// Initialize server
+	server := api.NewServer(cfg.GetServerAddr(), router, logger)
+
+	// Handle graceful shutdown
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+
+	// Start server in a goroutine
+	go func() {
+		if err := server.Start(); err != nil {
+			logger.Error("Failed to start server", "error", err)
+			quit <- syscall.SIGTERM
+		}
+	}()
+
+	logger.Info("API server started", "addr", cfg.GetServerAddr())
+
+	// Wait for shutdown signal
+	<-quit
+	logger.Info("Shutting down server...")
+
+	// Create a deadline for graceful shutdown
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	defer cancel()
+
+	// Shutdown the server
+	if err := server.Shutdown(ctx); err != nil {
+		logger.Error("Server forced to shutdown", "error", err)
+	}
+
+	logger.Info("Server exiting")
 }
