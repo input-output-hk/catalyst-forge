@@ -51,10 +51,13 @@ project: {
 								value: "true"
 							}
 							"DB_SSLMODE": {
-								value: "enable"
+								value: "require"
 							}
 							"DB_NAME": {
 								value: "foundry"
+							}
+							"DB_ROOT_NAME": {
+								value: "postgres"
 							}
 							"DB_HOST": {
 								secret: {
