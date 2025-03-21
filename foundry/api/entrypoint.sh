@@ -2,13 +2,13 @@
 
 set -euo pipefail
 
-if [[ -n "${DEBUG_SLEEP}" ]]; then
+if [[ -n "${DEBUG_SLEEP:-}" ]]; then
     echo "Sleeping for ${DEBUG_SLEEP} seconds..."
     sleep "${DEBUG_SLEEP}"
 fi
 
 # Only run database initialization if DB_INIT is set
-if [[ -n "${DB_INIT}" ]]; then
+if [[ -n "${DB_INIT:-}" ]]; then
     echo "Initializing database..."
 
     if [[ -z "${DB_SUPER_USER}" ]]; then
@@ -28,7 +28,8 @@ if [[ -n "${DB_INIT}" ]]; then
 
     export PGUSER="${DB_SUPER_USER}"
     export PGPASSWORD="${DB_SUPER_PASSWORD}"
-    psql -h "${DB_HOST}" -p "${DB_PORT}" \
+    psql -h "${DB_HOST}" \
+        -p "${DB_PORT}" \
         -d "${DB_ROOT_NAME}" \
         -v dbName="${DB_NAME}" \
         -v dbDescription="Foundry API Database" \
