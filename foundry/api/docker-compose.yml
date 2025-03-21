@@ -19,6 +19,12 @@ services:
       LOG_FORMAT: text
     ports:
       - "5000:5000"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/healthz"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
     depends_on:
       postgres:
         condition: service_healthy
@@ -30,7 +36,8 @@ services:
     environment:
       API_URL: http://api:5000
     depends_on:
-      - api
+      api:
+        condition: service_healthy
 
   postgres:
     image: postgres:15-alpine
@@ -48,6 +55,7 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+    restart: on-failure
 
 volumes:
   postgres-data:
