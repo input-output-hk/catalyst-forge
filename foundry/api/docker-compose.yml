@@ -31,7 +31,7 @@ services:
 
   postgres:
     image: postgres:15-alpine
-    container_name: releases-db
+    container_name: db
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres

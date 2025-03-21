@@ -33,12 +33,7 @@ func (c *IDCounter) GetNextID() string {
 	c.Counter++
 
 	if c.Branch == "" {
-		return c.Project + "-" + formatCounter(c.Counter)
+		return fmt.Sprintf("%s-%d", c.Project, c.Counter)
 	}
-	return c.Project + "-" + c.Branch + "-" + formatCounter(c.Counter)
-}
-
-// formatCounter formats the counter as a 3-digit string (e.g., 1 -> "001")
-func formatCounter(counter int) string {
-	return fmt.Sprintf("%03d", counter)
+	return fmt.Sprintf("%s-%s-%d", c.Project, c.Branch, c.Counter)
 }

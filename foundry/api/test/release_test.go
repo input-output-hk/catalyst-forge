@@ -149,7 +149,7 @@ func TestReleaseWithDefaultBranch(t *testing.T) {
 	release2, err := c.CreateRelease(ctx, defaultBranchRelease, false)
 	require.NoError(t, err)
 
-	defaultBranchPattern := regexp.MustCompile(fmt.Sprintf(`^%s-(\d{3})$`, regexp.QuoteMeta(projectName)))
+	defaultBranchPattern := regexp.MustCompile(fmt.Sprintf(`^%s-(\d+)$`, regexp.QuoteMeta(projectName)))
 
 	assert.True(t, defaultBranchPattern.MatchString(release1.ID),
 		"Release ID '%s' doesn't match default branch pattern: {project-name}-{counter}", release1.ID)
@@ -179,7 +179,15 @@ func TestReleaseWithDefaultBranch(t *testing.T) {
 	assert.Contains(t, branchRelease1.ID, "-feature-", "Branch release ID should contain branch name")
 	assert.Contains(t, branchRelease2.ID, "-feature-", "Branch release ID should contain branch name")
 
-	branchIdNumber1 := branchRelease1.ID[len(projectName+"-feature")+1:]
-	branchIdNumber2 := branchRelease2.ID[len(projectName+"-feature")+1:]
+	branchPattern := regexp.MustCompile(fmt.Sprintf(`^%s-feature-(\d+)$`, regexp.QuoteMeta(projectName)))
+	branchIdParts1 := branchPattern.FindStringSubmatch(branchRelease1.ID)
+	branchIdParts2 := branchPattern.FindStringSubmatch(branchRelease2.ID)
+
+	require.Len(t, branchIdParts1, 2, "Could not parse branch release ID correctly")
+	require.Len(t, branchIdParts2, 2, "Could not parse branch release ID correctly")
+
+	branchIdNumber1 := branchIdParts1[1]
+	branchIdNumber2 := branchIdParts2[1]
+
 	assert.Greater(t, branchIdNumber2, branchIdNumber1, "Second branch release ID should be greater than first")
 }
