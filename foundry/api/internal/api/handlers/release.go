@@ -31,7 +31,6 @@ type CreateReleaseRequest struct {
 	Project      string `json:"project" binding:"required"`
 	ProjectPath  string `json:"project_path" binding:"required"`
 	Bundle       string `json:"bundle" binding:"required"`
-	Deploy       bool   `json:"deploy"`
 }
 
 // CreateRelease handles the POST /release endpoint
@@ -58,25 +57,20 @@ func (h *ReleaseHandler) CreateRelease(c *gin.Context) {
 		return
 	}
 
-	var deployment *models.ReleaseDeployment
-	if req.Deploy {
+	deployParam := c.Query("deploy")
+	shouldDeploy := deployParam == "true" || deployParam == "1"
+
+	if shouldDeploy {
 		deploymentService := c.MustGet("deploymentService").(service.DeploymentService)
-		var err error
-		deployment, err = deploymentService.CreateDeployment(c.Request.Context(), release.ID)
+		deployment, err := deploymentService.CreateDeployment(c.Request.Context(), release.ID)
 		if err != nil {
 			h.logger.Error("Failed to create deployment", "error", err)
+		} else {
+			release.Deployments = []models.ReleaseDeployment{*deployment}
 		}
 	}
 
-	response := gin.H{
-		"release": release,
-	}
-
-	if deployment != nil {
-		response["deployment"] = deployment
-	}
-
-	c.JSON(http.StatusCreated, response)
+	c.JSON(http.StatusCreated, release)
 }
 
 // GetRelease handles the GET /release/{id} endpoint

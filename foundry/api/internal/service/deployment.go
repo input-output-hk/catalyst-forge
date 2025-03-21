@@ -45,7 +45,7 @@ func (s *DeploymentServiceImpl) CreateDeployment(ctx context.Context, releaseID 
 
 	// Create the deployment
 	now := time.Now()
-	deploymentID := fmt.Sprintf("%s-%d", releaseID, now.Unix())
+	deploymentID := fmt.Sprintf("%s-%d", releaseID, now.UnixNano())
 
 	deployment := &models.ReleaseDeployment{
 		ID:        deploymentID,

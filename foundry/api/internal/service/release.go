@@ -2,7 +2,6 @@ package service
 
 import (
 	"context"
-	"errors"
 	"time"
 
 	"github.com/input-output-hk/catalyst-forge/foundry/api/internal/models"
@@ -119,7 +118,7 @@ func (s *ReleaseServiceImpl) CreateReleaseAlias(ctx context.Context, aliasName s
 	if err == nil && existingAlias != nil {
 		existingAlias.ReleaseID = releaseID
 		return s.aliasRepo.Update(ctx, existingAlias)
-	} else if !errors.Is(err, errors.New("alias not found")) {
+	} else if err != nil && err.Error() != "alias not found" {
 		return err
 	}
 

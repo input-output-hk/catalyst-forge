@@ -1,6 +1,34 @@
 version: '3.8'
 
 services:
+  api:
+    image: foundry-api:latest
+    container_name: api
+    environment:
+      HTTP_PORT: 5000
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      DB_NAME: releases
+      DB_SSLMODE: disable
+      LOG_LEVEL: debug
+      LOG_FORMAT: text
+    ports:
+      - "5000:5000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: on-failure
+
+  api-test:
+    image: foundry-api-test:latest
+    container_name: api-test
+    environment:
+      API_URL: http://api:5000
+    depends_on:
+      - api
+
   postgres:
     image: postgres:15-alpine
     container_name: releases-db
@@ -17,17 +45,6 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
-
-  pgadmin:
-    image: dpage/pgadmin4
-    container_name: releases-pgadmin
-    environment:
-      PGADMIN_DEFAULT_EMAIL: admin@example.com
-      PGADMIN_DEFAULT_PASSWORD: admin
-    ports:
-      - "5050:80"
-    depends_on:
-      - postgres
 
 volumes:
   postgres-data:
