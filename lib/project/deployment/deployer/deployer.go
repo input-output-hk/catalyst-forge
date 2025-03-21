@@ -36,6 +36,9 @@ const (
 	// This is the path to the project in the GitOps repository.
 	// {root_path}/{environment}/{project_name}
 	PATH = "%s/%s/%s"
+
+	// This is the name of the module file as saved in the GitOps repository.
+	MODULE_FILENAME = "module.cue"
 )
 
 var (
@@ -150,7 +153,7 @@ func (d *Deployer) CreateDeployment(
 		return nil, fmt.Errorf("could not clear project path: %w", err)
 	}
 
-	bundlePath := filepath.Join(prjPath, "bundle.cue")
+	bundlePath := filepath.Join(prjPath, MODULE_FILENAME)
 	d.logger.Info("Writing bundle", "path", bundlePath)
 	if err := r.WriteFile(bundlePath, []byte(result.Module)); err != nil {
 		return nil, fmt.Errorf("could not write bundle: %w", err)
