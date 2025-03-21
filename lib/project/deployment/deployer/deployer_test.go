@@ -74,7 +74,7 @@ func TestDeployerCreateDeployment(t *testing.T) {
 				require.NoError(t, err)
 				assert.True(t, e)
 
-				e, err = r.fs.Exists(mkPath("test", "project", "bundle.cue"))
+				e, err = r.fs.Exists(mkPath("test", "project", MODULE_FILENAME))
 				require.NoError(t, err)
 				assert.True(t, e)
 
@@ -86,7 +86,7 @@ func TestDeployerCreateDeployment(t *testing.T) {
 				require.NoError(t, err)
 				assert.Equal(t, manifestContent, string(c))
 
-				c, err = r.fs.ReadFile(mkPath("test", "project", "bundle.cue"))
+				c, err = r.fs.ReadFile(mkPath("test", "project", MODULE_FILENAME))
 				require.NoError(t, err)
 				assert.Equal(t, r.result.RawBundle, c)
 
@@ -139,7 +139,7 @@ func TestDeployerCreateDeployment(t *testing.T) {
 				require.NoError(t, err)
 				assert.True(t, e)
 
-				e, err = r.fs.Exists(mkPath("test", "project", "bundle.cue"))
+				e, err = r.fs.Exists(mkPath("test", "project", MODULE_FILENAME))
 				require.NoError(t, err)
 				assert.True(t, e)
 
@@ -158,7 +158,7 @@ func TestDeployerCreateDeployment(t *testing.T) {
 				fst = st.File("root/test/project/main.yaml")
 				assert.Equal(t, fst.Staging, gg.Added)
 
-				fst = st.File("root/test/project/bundle.cue")
+				fst = st.File(fmt.Sprintf("root/test/project/%s", MODULE_FILENAME))
 				assert.Equal(t, fst.Staging, gg.Added)
 			},
 		},
