@@ -76,12 +76,16 @@ docker:
     ARG TARGETARCH
     ARG USERPLATFORM
 
+    RUN apt-get update && apt-get install -y postgresql-client
+
     COPY \
         --platform=$USERPLATFORM \
         (+build/foundry-api \
         --GOOS=$TARGETOS \
         --GOARCH=$TARGETARCH \
         --version=$version) foundry-api
+    COPY --dir sql .
+    COPY entrypoint.sh .
 
-    ENTRYPOINT ["/app/foundry-api"]
+    ENTRYPOINT [ "/bin/bash", "/app/entrypoint.sh" ]
     SAVE IMAGE ${container}:${tag}

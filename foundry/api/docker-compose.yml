@@ -6,11 +6,14 @@ services:
     container_name: api
     environment:
       HTTP_PORT: 5000
+      DB_SUPER_USER: postgres
+      DB_SUPER_PASSWORD: postgres
+      DB_INIT: "true"
       DB_HOST: postgres
       DB_PORT: 5432
-      DB_USER: postgres
-      DB_PASSWORD: postgres
-      DB_NAME: releases
+      DB_USER: foundry
+      DB_PASSWORD: changeme
+      DB_NAME: foundry
       DB_SSLMODE: disable
       LOG_LEVEL: debug
       LOG_FORMAT: text
