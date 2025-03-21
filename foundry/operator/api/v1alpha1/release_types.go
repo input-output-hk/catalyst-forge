@@ -20,8 +20,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// ReleaseSpec defines the desired state of Release.
-type ReleaseSpec struct {
+// ReleaseDeploymentSpec defines the desired state of Release.
+type ReleaseDeploymentSpec struct {
 	// Git defines the source Git repository for the release.
 	Git GitSpec `json:"git"`
 
@@ -44,8 +44,8 @@ type GitSpec struct {
 	URL string `json:"url"`
 }
 
-// ReleaseStatus defines the observed state of Release.
-type ReleaseStatus struct {
+// ReleaseDeploymentStatus defines the observed state of Release.
+type ReleaseDeploymentStatus struct {
 	// +listType=map
 	// +listMapKey=type
 	// +patchStrategy=merge
@@ -60,24 +60,24 @@ type ReleaseStatus struct {
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
 
-// Release is the Schema for the releases API.
-type Release struct {
+// ReleaseDeployment is the Schema for the release deployments API.
+type ReleaseDeployment struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   ReleaseSpec   `json:"spec,omitempty"`
-	Status ReleaseStatus `json:"status,omitempty"`
+	Spec   ReleaseDeploymentSpec   `json:"spec,omitempty"`
+	Status ReleaseDeploymentStatus `json:"status,omitempty"`
 }
 
 // +kubebuilder:object:root=true
 
-// ReleaseList contains a list of Release.
-type ReleaseList struct {
+// ReleaseDeploymentList contains a list of ReleaseDeployment.
+type ReleaseDeploymentList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
-	Items           []Release `json:"items"`
+	Items           []ReleaseDeployment `json:"items"`
 }
 
 func init() {
-	SchemeBuilder.Register(&Release{}, &ReleaseList{})
+	SchemeBuilder.Register(&ReleaseDeployment{}, &ReleaseDeploymentList{})
 }

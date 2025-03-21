@@ -37,8 +37,8 @@ import (
 	"github.com/input-output-hk/catalyst-forge/lib/tools/git/repo/remote"
 )
 
-// ReleaseReconciler reconciles a Release object
-type ReleaseReconciler struct {
+// ReleaseDeploymentReconciler reconciles a Release object
+type ReleaseDeploymentReconciler struct {
 	client.Client
 	Config        config.OperatorConfig
 	FsDeploy      *billy.BillyFs
@@ -54,13 +54,13 @@ type ReleaseReconciler struct {
 // +kubebuilder:rbac:groups=foundry.projectcatalyst.io,resources=releases/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=foundry.projectcatalyst.io,resources=releases/finalizers,verbs=update
 
-func (r *ReleaseReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+func (r *ReleaseDeploymentReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	log := log.FromContext(ctx)
 
 	// Load the filesystems to use for the deploy and source repositories.
 	dfs, sfs := r.getFs()
 
-	var release v1alpha1.Release
+	var release v1alpha1.ReleaseDeployment
 	if err := r.Get(ctx, req.NamespacedName, &release); err != nil {
 		log.Error(err, "unable to fetch Release")
 		return ctrl.Result{}, client.IgnoreNotFound(err)
@@ -139,7 +139,7 @@ func (r *ReleaseReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 }
 
 // getFs returns the filesystems to use for the deploy and source repositories.
-func (r *ReleaseReconciler) getFs() (*billy.BillyFs, *billy.BillyFs) {
+func (r *ReleaseDeploymentReconciler) getFs() (*billy.BillyFs, *billy.BillyFs) {
 	var dfs *billy.BillyFs
 	if r.FsDeploy == nil {
 		dfs = billy.NewInMemoryFs()
@@ -158,9 +158,9 @@ func (r *ReleaseReconciler) getFs() (*billy.BillyFs, *billy.BillyFs) {
 }
 
 // SetupWithManager sets up the controller with the Manager.
-func (r *ReleaseReconciler) SetupWithManager(mgr ctrl.Manager) error {
+func (r *ReleaseDeploymentReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&foundryv1alpha1.Release{}).
-		Named("release").
+		For(&foundryv1alpha1.ReleaseDeployment{}).
+		Named("release_deployment").
 		Complete(r)
 }

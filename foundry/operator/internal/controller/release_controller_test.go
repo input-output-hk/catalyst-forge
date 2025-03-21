@@ -43,7 +43,7 @@ var _ = Describe("Release Controller", func() {
 
 		BeforeEach(func() {
 			By("creating the custom resource for the Kind Release")
-			release := &foundryv1alpha1.Release{}
+			release := &foundryv1alpha1.ReleaseDeployment{}
 			err := k8sClient.Get(ctx, constants.releaseNamespacedName, release)
 			if err != nil && errors.IsNotFound(err) {
 				Expect(k8sClient.Create(ctx, &constants.release)).To(Succeed())
@@ -61,7 +61,7 @@ var _ = Describe("Release Controller", func() {
 		// })
 
 		It("should successfully reconcile the resource", func() {
-			release := &foundryv1alpha1.Release{}
+			release := &foundryv1alpha1.ReleaseDeployment{}
 			Eventually(func(g Gomega) {
 				g.Expect(k8sClient.Get(ctx, constants.releaseNamespacedName, release)).To(Succeed())
 				g.Expect(release.Status.State).To(Equal("Deployed"))
@@ -87,9 +87,9 @@ var _ = Describe("Release Controller", func() {
 				constants.projectName,
 			)
 			Expect(controller.FsDeploy.Exists(filepath.Join(path, "main.yaml"))).To(BeTrue())
-			Expect(controller.FsDeploy.Exists(filepath.Join(path, "bundle.cue"))).To(BeTrue())
+			Expect(controller.FsDeploy.Exists(filepath.Join(path, "module.cue"))).To(BeTrue())
 
-			got, err := controller.FsDeploy.ReadFile(filepath.Join(path, "bundle.cue"))
+			got, err := controller.FsDeploy.ReadFile(filepath.Join(path, "module.cue"))
 			Expect(err).NotTo(HaveOccurred())
 			Expect(string(got)).To(Equal(string(bundleRaw)))
 

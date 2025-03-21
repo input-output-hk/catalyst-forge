@@ -14,7 +14,7 @@ resources:
   controller: true
   domain: projectcatalyst.io
   group: foundry
-  kind: Release
+  kind: ReleaseDeployment
   path: github.com/input-output-hk/catalyst-forge/foundry/operator/api/v1alpha1
   version: v1alpha1
 version: "3"

@@ -219,7 +219,7 @@ func main() {
 	}
 
 	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
-	if err = (&controller.ReleaseReconciler{
+	if err = (&controller.ReleaseDeploymentReconciler{
 		Client:        mgr.GetClient(),
 		Config:        cfg,
 		FsSource:      billy.NewBaseOsFS(),

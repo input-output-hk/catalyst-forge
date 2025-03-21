@@ -64,7 +64,7 @@ var (
 	testEnv      *envtest.Environment
 	cfg          *rest.Config
 	k8sClient    client.Client
-	controller   *ReleaseReconciler
+	controller   *ReleaseDeploymentReconciler
 	blueprint    sb.Blueprint
 	blueprintRaw string
 	bundleRaw    string
@@ -77,7 +77,7 @@ type testConstants struct {
 	gitSrc                testGitConstants
 	manifest              string
 	projectName           string
-	release               foundryv1alpha1.Release
+	release               foundryv1alpha1.ReleaseDeployment
 	releaseNamespacedName types.NamespacedName
 }
 
@@ -111,12 +111,12 @@ var constants = testConstants{
 	},
 	manifest:    "manifest",
 	projectName: "project",
-	release: foundryv1alpha1.Release{
+	release: foundryv1alpha1.ReleaseDeployment{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "test-release",
 			Namespace: "default",
 		},
-		Spec: foundryv1alpha1.ReleaseSpec{
+		Spec: foundryv1alpha1.ReleaseDeploymentSpec{
 			Git: foundryv1alpha1.GitSpec{
 				Ref: "abc123",
 				URL: "github.com/test/src",
@@ -255,7 +255,7 @@ func getFirstFoundEnvTestBinaryDir() string {
 }
 
 // NewMockController creates a new ReleaseReconciler with mocked components.
-func NewMockController(client client.Client, scheme *runtime.Scheme) *ReleaseReconciler {
+func NewMockController(client client.Client, scheme *runtime.Scheme) *ReleaseDeploymentReconciler {
 	remote, err := NewMockGitRemoteInterface(map[string]map[string]string{
 		// Mocks the source repository where the deployment blueprint is stored
 		constants.release.Spec.Git.URL: {
@@ -270,7 +270,7 @@ func NewMockController(client client.Client, scheme *runtime.Scheme) *ReleaseRec
 	})
 	Expect(err).ToNot(HaveOccurred())
 
-	return &ReleaseReconciler{
+	return &ReleaseDeploymentReconciler{
 		Client:        client,
 		Config:        constants.config,
 		FsDeploy:      bfs.NewInMemoryFs(),
