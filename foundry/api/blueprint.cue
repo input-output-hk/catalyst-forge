@@ -12,6 +12,7 @@ project: {
 				version: string | *"dev" @forge(name="GIT_TAG")
 			}
 		}
+		test: privileged: true
 	}
 	deployment: {
 		on: {

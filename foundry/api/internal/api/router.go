@@ -7,12 +7,14 @@ import (
 	"github.com/input-output-hk/catalyst-forge/foundry/api/internal/api/handlers"
 	"github.com/input-output-hk/catalyst-forge/foundry/api/internal/api/middleware"
 	"github.com/input-output-hk/catalyst-forge/foundry/api/internal/service"
+	"gorm.io/gorm"
 )
 
 // SetupRouter configures the Gin router
 func SetupRouter(
 	releaseService service.ReleaseService,
 	deploymentService service.DeploymentService,
+	db *gorm.DB,
 	logger *slog.Logger,
 ) *gin.Engine {
 	r := gin.New()
@@ -29,6 +31,10 @@ func SetupRouter(
 
 	releaseHandler := handlers.NewReleaseHandler(releaseService, logger)
 	deploymentHandler := handlers.NewDeploymentHandler(deploymentService, logger)
+	healthHandler := handlers.NewHealthHandler(db, logger)
+
+	// Health check endpoint
+	r.GET("/healthz", healthHandler.CheckHealth)
 
 	// Route Setup //
 

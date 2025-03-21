@@ -61,7 +61,7 @@ func main() {
 	deploymentService := service.NewDeploymentService(deploymentRepo, releaseRepo)
 
 	// Setup router
-	router := api.SetupRouter(releaseService, deploymentService, logger)
+	router := api.SetupRouter(releaseService, deploymentService, db, logger)
 
 	// Initialize server
 	server := api.NewServer(cfg.GetServerAddr(), router, logger)
