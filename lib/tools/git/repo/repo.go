@@ -120,7 +120,8 @@ func (g *GitRepo) Exists(path string) (bool, error) {
 func (g *GitRepo) Fetch(opts ...FetchOption) error {
 	g.logger.Debug("Fetching repository")
 	fo := &gg.FetchOptions{
-		Auth: g.auth,
+		Auth:       g.auth,
+		RemoteName: "origin",
 	}
 
 	for _, opt := range opts {
@@ -304,7 +305,8 @@ func (g *GitRepo) Open() error {
 // Pull fetches changes from the remote repository and merges them into the current branch.
 func (g *GitRepo) Pull() error {
 	return g.remote.Pull(g.raw, &gg.PullOptions{
-		Auth: g.auth,
+		Auth:       g.auth,
+		RemoteName: "origin",
 	})
 }
 

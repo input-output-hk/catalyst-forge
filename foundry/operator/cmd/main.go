@@ -220,11 +220,14 @@ func main() {
 		os.Exit(1)
 	}
 
-	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
+	logger := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
+		Level: slog.LevelDebug,
+	}))
 	if err = (&controller.ReleaseDeploymentReconciler{
 		ApiClient:     api.NewClient(cfg.ApiUrl, api.WithTimeout(10*time.Second)),
 		Client:        mgr.GetClient(),
 		Config:        cfg,
+		FsDeploy:      billy.NewBaseOsFS(),
 		FsSource:      billy.NewBaseOsFS(),
 		Logger:        logger,
 		ManifestStore: deployment.NewDefaultManifestGeneratorStore(),

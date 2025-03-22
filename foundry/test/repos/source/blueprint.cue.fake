@@ -3,8 +3,8 @@
 	global: {
 		deployment: {
 			registries: {
-				containers: "registry.com"
-				modules:    "registry.com"
+				containers: "foo"
+				modules:    "bar"
 			}
 			repo: {
 				ref: "master"

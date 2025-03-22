@@ -12,6 +12,7 @@ spec:
       labels:
         app: operator
     spec:
+      serviceAccountName: controller-manager
       containers:
       - name: operator
         image: localhost:5001/foundry-operator:latest
@@ -22,12 +23,24 @@ spec:
             value: "default"
         volumeMounts:
           - name: config-volume
-            mountPath: /config
-      serviceAccountName: controller-manager
+            mountPath: /config/operator.json
+            subPath: operator.json
+          - name: config-volume
+            mountPath: /app/config/samples/kcl/main.k
+            subPath: main.k
+          - name: config-volume
+            mountPath: /app/config/samples/kcl/kcl.mod
+            subPath: kcl.mod
+          - name: git-secret
+            mountPath: /secrets/git.json
+            subPath: git.json
       volumes:
         - name: config-volume
           configMap:
             name: operator
+        - name: git-secret
+          secret:
+            secretName: git
 ---
 apiVersion: v1
 kind: ConfigMap
@@ -41,11 +54,40 @@ data:
         "git": {
           "creds": {
             "provider": "local",
-            "path": "key"
+            "path": "/secrets/git.json"
           },
           "ref": "master",
-          "url": "gitea:3000/root/deployment"
+          "url": "http://gitea:3000/root/deployment"
         },
         "root_dir": "k8s"
       }
+    }
+  main.k: |-
+    schema Deployment:
+        env: str
+        instance: str
+        name: str
+        namespace: str
+        values: any
+        version: str
+
+    _deployment: any = option("deployment", default=None)
+    _d = Deployment { **_deployment }
+    _d
+
+  kcl.mod: |-
+    [package]
+    name = "module"
+    edition = "v0.11.1"
+    version = "1.0.0"
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: git
+type: Opaque
+stringData:
+  git.json: |-
+    {
+      "token": "GIT_TOKEN"
     }

@@ -1,0 +1,7 @@
+{
+  "bundle": "fake",
+  "project": "project",
+  "project_path": "project",
+  "source_repo": "http://gitea:3000/root/source",
+  "source_commit": "0e28b79ca8e72079c29b575d2b994cfef92b4c32"
+}

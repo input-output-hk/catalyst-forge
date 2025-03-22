@@ -1,13 +1,13 @@
 {
-    "api_url": "http://api:8080",
+    "api_url": "http://localhost:3001",
     "deployer": {
         "git": {
             "creds": {
                 "provider": "local",
-                "path": "key"
+                "path": "./config/samples/auth.json"
             },
-            "ref": "test",
-            "url": "test.com/repo"
+            "ref": "master",
+            "url": "http://localhost:3000/root/deployment"
         },
         "root_dir": "k8s"
     }

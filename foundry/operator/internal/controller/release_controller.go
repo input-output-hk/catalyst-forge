@@ -33,6 +33,7 @@ import (
 	"github.com/input-output-hk/catalyst-forge/foundry/operator/pkg/config"
 	"github.com/input-output-hk/catalyst-forge/lib/project/deployment"
 	depl "github.com/input-output-hk/catalyst-forge/lib/project/deployment/deployer"
+	"github.com/input-output-hk/catalyst-forge/lib/project/providers"
 	"github.com/input-output-hk/catalyst-forge/lib/project/secrets"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/fs/billy"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/git/repo"
@@ -70,11 +71,14 @@ func (r *ReleaseDeploymentReconciler) Reconcile(ctx context.Context, req ctrl.Re
 	// 2. Fetch the associated ReleaseDeployment from the API
 	log.Info("Fetching release deployment from API", "releaseID", resource.Spec.ReleaseID, "deploymentID", resource.Spec.ID)
 	releaseDeployment, err := r.ApiClient.GetDeployment(ctx, resource.Spec.ReleaseID, resource.Spec.ID)
-	release := releaseDeployment.Release
 	if err != nil {
-		log.Error(err, "unable to find deployment")
+		log.Error(err, "unable to fetch deployment")
 		return ctrl.Result{}, err
+	} else if releaseDeployment == nil {
+		log.Error(err, "unable to find deployment")
+		return ctrl.Result{}, fmt.Errorf("unable to find deployment")
 	}
+	release := releaseDeployment.Release
 
 	// 3. Check if the deployment has already been completed
 	if isDeploymentComplete(releaseDeployment.Status) {
@@ -103,17 +107,25 @@ func (r *ReleaseDeploymentReconciler) Reconcile(ctx context.Context, req ctrl.Re
 	// 	return ctrl.Result{}, err
 	// }
 
-	// 5. Open the deployment repo
+	// 5. Get the git auth token for repos
+	log.Info("Fetching git auth token")
+	token, err := r.getAuth()
+	if err != nil {
+		log.Error(err, "unable to get auth token")
+		return ctrl.Result{}, err
+	}
+	fmt.Println("token", token)
+
+	// 6. Open repos
 	log.Info("Opening deployment repo", "url", r.Config.Deployer.Git.Url)
-	deployRepo, err := r.getDeployRepo()
+	deployRepo, err := r.getDeployRepo(token)
 	if err != nil {
 		log.Error(err, "unable to get deployment repo")
 		return ctrl.Result{}, err
 	}
 
-	// 6. Open the source repo
 	log.Info("Opening source repo", "url", release.SourceRepo)
-	sourceRepo, err := r.getSourceRepo(release)
+	sourceRepo, err := r.getSourceRepo(token, release)
 	if err != nil {
 		log.Error(err, "unable to create repo")
 		return ctrl.Result{}, err
@@ -171,7 +183,16 @@ func (r *ReleaseDeploymentReconciler) Reconcile(ctx context.Context, req ctrl.Re
 	return ctrl.Result{}, nil
 }
 
-func (r *ReleaseDeploymentReconciler) getDeployRepo() (repo.GitRepo, error) {
+func (r *ReleaseDeploymentReconciler) getAuth() (string, error) {
+	creds, err := providers.GetGitProviderCreds(&r.Config.Deployer.Git.Creds, &r.SecretStore, r.Logger)
+	if err != nil {
+		return "", err
+	}
+
+	return creds.Token, nil
+}
+
+func (r *ReleaseDeploymentReconciler) getDeployRepo(token string) (repo.GitRepo, error) {
 	var dfs *billy.BillyFs
 	if r.FsDeploy == nil {
 		dfs = billy.NewInMemoryFs()
@@ -184,23 +205,24 @@ func (r *ReleaseDeploymentReconciler) getDeployRepo() (repo.GitRepo, error) {
 		r.Logger,
 		repo.WithFS(dfs),
 		repo.WithGitRemoteInteractor(r.Remote),
+		repo.WithAuth("forge", token),
 	)
 	if err != nil {
 		return repo.GitRepo{}, err
 	}
 
 	if err := rp.CheckoutBranch(r.Config.Deployer.Git.Ref); err != nil {
-		return repo.GitRepo{}, fmt.Errorf("failed to checkout branch: %w", err)
+		return repo.GitRepo{}, fmt.Errorf("failed to checkout branch %s: %w", r.Config.Deployer.Git.Ref, err)
 	}
 
-	if err := rp.Pull(); err != nil {
-		return repo.GitRepo{}, fmt.Errorf("failed to pull latest changes: %w", err)
+	if err := rp.Pull(); err != nil && !repo.IsErrNoUpdates(err) {
+		return repo.GitRepo{}, fmt.Errorf("failed to pull latest changes from branch %s: %w", r.Config.Deployer.Git.Ref, err)
 	}
 
 	return rp, nil
 }
 
-func (r *ReleaseDeploymentReconciler) getSourceRepo(release *api.Release) (repo.GitRepo, error) {
+func (r *ReleaseDeploymentReconciler) getSourceRepo(token string, release *api.Release) (repo.GitRepo, error) {
 	var sfs *billy.BillyFs
 	if r.FsSource == nil {
 		sfs = billy.NewBaseOsFS()
@@ -213,17 +235,18 @@ func (r *ReleaseDeploymentReconciler) getSourceRepo(release *api.Release) (repo.
 		r.Logger,
 		repo.WithFS(sfs),
 		repo.WithGitRemoteInteractor(r.Remote),
+		repo.WithAuth("forge", token),
 	)
 	if err != nil {
 		return repo.GitRepo{}, err
 	}
 
-	if err := rp.Fetch(); err != nil {
+	if err := rp.Fetch(); err != nil && !repo.IsErrNoUpdates(err) {
 		return repo.GitRepo{}, fmt.Errorf("failed to fetch latest changes: %w", err)
 	}
 
 	if err := rp.CheckoutCommit(release.SourceCommit); err != nil {
-		return repo.GitRepo{}, fmt.Errorf("failed to checkout commit: %w", err)
+		return repo.GitRepo{}, fmt.Errorf("failed to checkout commit %s: %w", release.SourceCommit, err)
 	}
 
 	return rp, nil

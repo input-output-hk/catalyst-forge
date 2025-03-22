@@ -1,9 +1,15 @@
-up: kind-up postgres-up api-up operator-up gitea-up
+up: kind-up postgres-up gitea-up api-up operator-up git-up
+
+up-local: kind-up postgres-up gitea-up operator-up-local api-up git-up
 
 down:
   kind delete cluster --name foundry
-  docker stop kind-registry
-  docker rm kind-registry
+
+api:
+  earthly ../api+docker
+  docker tag foundry-api:latest localhost:5001/foundry-api:latest
+  docker push localhost:5001/foundry-api:latest
+  kubectl apply -f manifests/api.yml
 
 api-up:
   ./scripts/api.sh
@@ -17,8 +23,28 @@ gitea-up:
 kind-up:
   ./scripts/kind.sh
 
+operator:
+  earthly ../operator+docker
+  docker tag foundry-operator:latest localhost:5001/foundry-operator:latest
+  docker push localhost:5001/foundry-operator:latest
+  kubectl delete deployment operator
+
+  sed "s/GIT_TOKEN/$(cat .token)/g" manifests/operator.yml | kubectl apply -f -
+  kubectl wait --for=condition=available --timeout=60s deployment/operator
+  kubectl apply -f manifests/operator.yml
+
 operator-up:
   ./scripts/operator.sh
 
+operator-up-local:
+  kubectl apply -f ../operator/config/crd/bases/foundry.projectcatalyst.io_releasedeployments.yaml
+  jq -R '{token: .}' .token >../operator/config/samples/auth.json
+
 postgres-up:
   ./scripts/postgres.sh
+
+release:
+  ./scripts/release.sh
+
+release-local:
+  ./scripts/release.sh --local
