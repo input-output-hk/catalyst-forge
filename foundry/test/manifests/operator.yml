@@ -1,0 +1,51 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: operator
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: operator
+  template:
+    metadata:
+      labels:
+        app: operator
+    spec:
+      containers:
+      - name: operator
+        image: localhost:5001/foundry-operator:latest
+        env:
+          - name: CONFIG_PATH
+            value: "/config/operator.json"
+          - name: NAMESPACE
+            value: "default"
+        volumeMounts:
+          - name: config-volume
+            mountPath: /config
+      serviceAccountName: controller-manager
+      volumes:
+        - name: config-volume
+          configMap:
+            name: operator
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: operator
+data:
+  operator.json: |-
+    {
+      "api_url": "http://api:3001",
+      "deployer": {
+        "git": {
+          "creds": {
+            "provider": "local",
+            "path": "key"
+          },
+          "ref": "master",
+          "url": "gitea:3000/root/deployment"
+        },
+        "root_dir": "k8s"
+      }
+    }

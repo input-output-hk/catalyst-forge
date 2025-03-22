@@ -1,0 +1,32 @@
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: manager-role
+rules:
+- apiGroups:
+  - foundry.projectcatalyst.io
+  resources:
+  - releasedeployments
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - foundry.projectcatalyst.io
+  resources:
+  - releasedeployments/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - foundry.projectcatalyst.io
+  resources:
+  - releasedeployments/status
+  verbs:
+  - get
+  - patch
+  - update

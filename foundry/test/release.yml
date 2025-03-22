@@ -1,0 +1,7 @@
+apiVersion: foundry.projectcatalyst.io/v1alpha1
+kind: ReleaseDeployment
+metadata:
+  name: project-2-1742624001079047762
+spec:
+  id: project-2
+  release_id: project-2-1742624001079047762

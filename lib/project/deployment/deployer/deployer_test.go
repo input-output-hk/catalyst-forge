@@ -34,7 +34,9 @@ func TestDeployerCreateDeployment(t *testing.T) {
 
 	tests := []struct {
 		name     string
+		id       string
 		project  string
+		metadata map[string]string
 		bundle   sp.ModuleBundle
 		cfg      DeployerConfig
 		files    map[string]string
@@ -42,7 +44,11 @@ func TestDeployerCreateDeployment(t *testing.T) {
 	}{
 		{
 			name:    "success",
+			id:      "id",
 			project: "project",
+			metadata: map[string]string{
+				"key": "value",
+			},
 			bundle: sp.ModuleBundle{
 				Env: "test",
 				Modules: map[string]sp.Module{
@@ -72,6 +78,10 @@ func TestDeployerCreateDeployment(t *testing.T) {
 				require.NoError(t, err)
 				assert.True(t, e)
 
+				e, err = r.fs.Exists(mkPath("test", "project", "deployment.json"))
+				require.NoError(t, err)
+				assert.True(t, e)
+
 				c, err := r.fs.ReadFile(mkPath("test", "project", "main.yaml"))
 				require.NoError(t, err)
 				assert.Equal(t, manifestContent, string(c))
@@ -79,6 +89,20 @@ func TestDeployerCreateDeployment(t *testing.T) {
 				c, err = r.fs.ReadFile(mkPath("test", "project", MODULE_FILENAME))
 				require.NoError(t, err)
 				assert.Equal(t, r.result.RawBundle, c)
+
+				payload := `{
+  "id": "id",
+  "metadata": {
+    "key": "value"
+  },
+  "project": "project"
+}`
+				c, err = r.fs.ReadFile(mkPath("test", "project", "deployment.json"))
+				require.NoError(t, err)
+				assert.Equal(t, payload, string(c))
+
+				assert.Equal(t, "id", r.result.ID)
+				assert.Equal(t, "project", r.result.Project)
 
 				cfg := makeConfig()
 				auth := r.cloneOpts.Auth.(*http.BasicAuth)
@@ -89,6 +113,7 @@ func TestDeployerCreateDeployment(t *testing.T) {
 		},
 		{
 			name:    "dry run with extra files",
+			id:      "id",
 			project: "project",
 			bundle: sp.ModuleBundle{
 				Env: "test",
@@ -152,7 +177,6 @@ func TestDeployerCreateDeployment(t *testing.T) {
 			d := Deployer{
 				cfg:    tt.cfg,
 				ctx:    cuecontext.New(),
-				fs:     fs,
 				gen:    gen,
 				logger: testutils.NewNoopLogger(),
 				remote: remote,
@@ -164,7 +188,7 @@ func TestDeployerCreateDeployment(t *testing.T) {
 				Raw:    getRaw(tt.bundle),
 			}
 
-			result, err := d.CreateDeployment(tt.project, bundle, WithFS(fs))
+			result, err := d.CreateDeployment(tt.id, tt.project, bundle, WithFS(fs), WithMetadata(tt.metadata))
 			tt.validate(t, testResult{
 				cloneOpts: opts.Clone,
 				deployer:  d,
