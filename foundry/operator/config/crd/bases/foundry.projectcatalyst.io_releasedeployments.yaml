@@ -17,7 +17,7 @@ spec:
   - name: v1alpha1
     schema:
       openAPIV3Schema:
-        description: Release is the Schema for the releases API.
+        description: ReleaseDeployment is the Schema for the release deployments API.
         properties:
           apiVersion:
             description: |-
@@ -39,39 +39,19 @@ spec:
           spec:
             description: ReleaseDeploymentSpec defines the desired state of Release.
             properties:
-              git:
-                description: Git defines the source Git repository for the release.
-                properties:
-                  ref:
-                    description: Ref is the Git reference to use for the release.
-                    type: string
-                  url:
-                    description: URL is the URL of the source Git repository for the
-                      release.
-                    type: string
-                required:
-                - ref
-                - url
-                type: object
               id:
-                description: ID is the unique identifier of the release.
+                description: ID is the identifier for this deployment.
                 type: string
-              project:
-                description: Project is the name of the project within the source
-                  Git repository.
-                type: string
-              project_path:
-                description: ProjectPath is the path to the project within the source
-                  Git repository.
+              release_id:
+                description: ReleaseID is the identifier for the release this deployment
+                  belongs to.
                 type: string
             required:
-            - git
             - id
-            - project
-            - project_path
+            - release_id
             type: object
           status:
-            description: ReleaseStatus defines the observed state of Release.
+            description: ReleaseDeploymentStatus defines the observed state of Release.
             properties:
               conditions:
                 items:

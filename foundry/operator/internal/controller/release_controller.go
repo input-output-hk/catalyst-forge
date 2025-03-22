@@ -18,6 +18,7 @@ package controller
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 
 	"cuelang.org/go/cue/cuecontext"
@@ -26,11 +27,12 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
-	"github.com/input-output-hk/catalyst-forge/foundry/operator/api/v1alpha1"
+	api "github.com/input-output-hk/catalyst-forge/foundry/api/client"
+
 	foundryv1alpha1 "github.com/input-output-hk/catalyst-forge/foundry/operator/api/v1alpha1"
 	"github.com/input-output-hk/catalyst-forge/foundry/operator/pkg/config"
 	"github.com/input-output-hk/catalyst-forge/lib/project/deployment"
-	"github.com/input-output-hk/catalyst-forge/lib/project/deployment/deployer"
+	depl "github.com/input-output-hk/catalyst-forge/lib/project/deployment/deployer"
 	"github.com/input-output-hk/catalyst-forge/lib/project/secrets"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/fs/billy"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/git/repo"
@@ -40,6 +42,7 @@ import (
 // ReleaseDeploymentReconciler reconciles a Release object
 type ReleaseDeploymentReconciler struct {
 	client.Client
+	ApiClient     api.Client
 	Config        config.OperatorConfig
 	FsDeploy      *billy.BillyFs
 	FsSource      *billy.BillyFs
@@ -57,89 +60,118 @@ type ReleaseDeploymentReconciler struct {
 func (r *ReleaseDeploymentReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	log := log.FromContext(ctx)
 
-	// Load the filesystems to use for the deploy and source repositories.
-	dfs, sfs := r.getFs()
-
-	var release v1alpha1.ReleaseDeployment
-	if err := r.Get(ctx, req.NamespacedName, &release); err != nil {
+	// 1. Fetch the ReleaseDeployment resource
+	var resource foundryv1alpha1.ReleaseDeployment
+	if err := r.Get(ctx, req.NamespacedName, &resource); err != nil {
 		log.Error(err, "unable to fetch Release")
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
 
-	if release.Status.State == "Deployed" {
-		log.Info("Release already deployed")
-		return ctrl.Result{}, nil
-	}
-
-	release.Status.State = "Deploying"
-	if err := r.Status().Update(ctx, &release); err != nil {
-		log.Error(err, "unable to update Release status")
+	// 2. Fetch the associated ReleaseDeployment from the API
+	log.Info("Fetching release deployment from API", "releaseID", resource.Spec.ReleaseID, "deploymentID", resource.Spec.ID)
+	releaseDeployment, err := r.ApiClient.GetDeployment(ctx, resource.Spec.ReleaseID, resource.Spec.ID)
+	release := releaseDeployment.Release
+	if err != nil {
+		log.Error(err, "unable to find deployment")
 		return ctrl.Result{}, err
 	}
 
-	deployRepo, err := repo.NewCachedRepo(
-		r.Config.Deployer.Git.Url,
-		r.Logger,
-		repo.WithFS(dfs),
-		repo.WithGitRemoteInteractor(r.Remote),
-	)
+	// 3. Check if the deployment has already been completed
+	if isDeploymentComplete(releaseDeployment.Status) {
+		log.Info("Deployment already succeeded")
+		return ctrl.Result{}, nil
+	}
+
+	// 4. Set deployment status to running if not already set
+	log.Info("Checking deployment status", "status", releaseDeployment.Status)
+	if releaseDeployment.Status != api.DeploymentStatusRunning {
+		if err := r.ApiClient.UpdateDeploymentStatus(
+			ctx,
+			release.ID,
+			releaseDeployment.ID,
+			api.DeploymentStatusRunning,
+			"Deployment in progress",
+		); err != nil {
+			log.Error(err, "unable to update deployment")
+			return ctrl.Result{}, err
+		}
+	}
+
+	// resource.Status.State = "Deploying"
+	// if err := r.Status().Update(ctx, &resource); err != nil {
+	// 	log.Error(err, "unable to update Release status")
+	// 	return ctrl.Result{}, err
+	// }
+
+	// 5. Open the deployment repo
+	log.Info("Opening deployment repo", "url", r.Config.Deployer.Git.Url)
+	deployRepo, err := r.getDeployRepo()
 	if err != nil {
 		log.Error(err, "unable to get deployment repo")
 		return ctrl.Result{}, err
 	}
 
-	sourceRepo, err := repo.NewCachedRepo(
-		release.Spec.Git.URL,
-		r.Logger,
-		repo.WithFS(sfs),
-		repo.WithGitRemoteInteractor(r.Remote),
-	)
+	// 6. Open the source repo
+	log.Info("Opening source repo", "url", release.SourceRepo)
+	sourceRepo, err := r.getSourceRepo(release)
 	if err != nil {
 		log.Error(err, "unable to create repo")
 		return ctrl.Result{}, err
 	}
 
-	bundle, err := deployment.FetchBundle(sourceRepo, release.Spec.ProjectPath, r.SecretStore, r.Logger)
+	// 7. Fetch the bundle from the source repo
+	log.Info("Fetching bundle from source repo", "url", release.SourceRepo, "commit", release.SourceCommit)
+	bundle, err := deployment.FetchBundle(sourceRepo, release.ProjectPath, r.SecretStore, r.Logger)
 	if err != nil {
 		log.Error(err, "unable to fetch bundle")
 		return ctrl.Result{}, err
 	}
 
-	d := deployer.NewDeployer(
+	// 8. Create the deployment
+	log.Info("Creating deployment", "project", release.Project)
+	dp := depl.NewDeployer(
 		r.Config.Deployer,
 		r.ManifestStore,
 		r.SecretStore,
 		r.Logger,
 		cuecontext.New(),
-		deployer.WithGitRemoteInteractor(r.Remote),
+		depl.WithGitRemoteInteractor(r.Remote),
 	)
-	deployment, err := d.CreateDeployment(
-		release.Spec.ID,
-		release.Spec.Project,
+	deployment, err := dp.CreateDeployment(
+		resource.Spec.ID,
+		release.Project,
 		bundle,
-		deployer.WithRepo(&deployRepo),
+		depl.WithRepo(&deployRepo),
 	)
 	if err != nil {
 		log.Error(err, "unable to create deployment")
 		return ctrl.Result{}, err
 	}
 
+	// 9. Commit and push the deployment
+	log.Info("Committing and pushing deployment")
 	if err := deployment.Commit(); err != nil {
 		log.Error(err, "unable to commit deployment")
 		return ctrl.Result{}, err
 	}
 
-	release.Status.State = "Deployed"
-	if err := r.Status().Update(ctx, &release); err != nil {
-		log.Error(err, "unable to update Release status")
+	// 10. Update the deployment status to succeeded
+	log.Info("Updating deployment status to succeeded")
+	if err := r.ApiClient.UpdateDeploymentStatus(
+		ctx,
+		release.ID,
+		releaseDeployment.ID,
+		api.DeploymentStatusSucceeded,
+		"Deployment succeeded",
+	); err != nil {
+		log.Error(err, "unable to update deployment")
 		return ctrl.Result{}, err
 	}
 
 	return ctrl.Result{}, nil
 }
 
-// getFs returns the filesystems to use for the deploy and source repositories.
-func (r *ReleaseDeploymentReconciler) getFs() (*billy.BillyFs, *billy.BillyFs) {
+func (r *ReleaseDeploymentReconciler) getDeployRepo() (repo.GitRepo, error) {
 	var dfs *billy.BillyFs
 	if r.FsDeploy == nil {
 		dfs = billy.NewInMemoryFs()
@@ -147,6 +179,28 @@ func (r *ReleaseDeploymentReconciler) getFs() (*billy.BillyFs, *billy.BillyFs) {
 		dfs = r.FsDeploy
 	}
 
+	rp, err := repo.NewCachedRepo(
+		r.Config.Deployer.Git.Url,
+		r.Logger,
+		repo.WithFS(dfs),
+		repo.WithGitRemoteInteractor(r.Remote),
+	)
+	if err != nil {
+		return repo.GitRepo{}, err
+	}
+
+	if err := rp.CheckoutBranch(r.Config.Deployer.Git.Ref); err != nil {
+		return repo.GitRepo{}, fmt.Errorf("failed to checkout branch: %w", err)
+	}
+
+	if err := rp.Pull(); err != nil {
+		return repo.GitRepo{}, fmt.Errorf("failed to pull latest changes: %w", err)
+	}
+
+	return rp, nil
+}
+
+func (r *ReleaseDeploymentReconciler) getSourceRepo(release *api.Release) (repo.GitRepo, error) {
 	var sfs *billy.BillyFs
 	if r.FsSource == nil {
 		sfs = billy.NewBaseOsFS()
@@ -154,7 +208,31 @@ func (r *ReleaseDeploymentReconciler) getFs() (*billy.BillyFs, *billy.BillyFs) {
 		sfs = r.FsSource
 	}
 
-	return dfs, sfs
+	rp, err := repo.NewCachedRepo(
+		release.SourceRepo,
+		r.Logger,
+		repo.WithFS(sfs),
+		repo.WithGitRemoteInteractor(r.Remote),
+	)
+	if err != nil {
+		return repo.GitRepo{}, err
+	}
+
+	if err := rp.Fetch(); err != nil {
+		return repo.GitRepo{}, fmt.Errorf("failed to fetch latest changes: %w", err)
+	}
+
+	if err := rp.CheckoutCommit(release.SourceCommit); err != nil {
+		return repo.GitRepo{}, fmt.Errorf("failed to checkout commit: %w", err)
+	}
+
+	return rp, nil
+}
+
+// isDeploymentComplete checks if the deployment is complete
+// by checking if the status is either Succeeded or Failed.
+func isDeploymentComplete(status api.DeploymentStatus) bool {
+	return status == api.DeploymentStatusSucceeded || status == api.DeploymentStatusFailed
 }
 
 // SetupWithManager sets up the controller with the Manager.

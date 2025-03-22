@@ -25,12 +25,13 @@ import (
 
 	"cuelang.org/go/cue/cuecontext"
 	"github.com/go-git/go-billy/v5"
+	"github.com/go-git/go-git/v5/plumbing/cache"
 	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/go-git/go-git/v5/storage"
+	"github.com/go-git/go-git/v5/storage/filesystem"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes/scheme"
@@ -59,78 +60,16 @@ import (
 // http://onsi.github.io/ginkgo/ to learn more about Ginkgo.
 
 var (
-	ctx          context.Context
-	cancel       context.CancelFunc
-	testEnv      *envtest.Environment
-	cfg          *rest.Config
-	k8sClient    client.Client
-	controller   *ReleaseDeploymentReconciler
-	blueprint    sb.Blueprint
-	blueprintRaw string
-	bundleRaw    string
+	ctx        context.Context
+	cancel     context.CancelFunc
+	testEnv    *envtest.Environment
+	cfg        *rest.Config
+	k8sClient  client.Client
+	controller *ReleaseDeploymentReconciler
+
+	gitCreds        = map[string]string{"token": "value"}
+	manifestContent = "manifest"
 )
-
-type testConstants struct {
-	config                config.OperatorConfig
-	gitDeploy             testGitConstants
-	gitCreds              map[string]string
-	gitSrc                testGitConstants
-	manifest              string
-	projectName           string
-	release               foundryv1alpha1.ReleaseDeployment
-	releaseNamespacedName types.NamespacedName
-}
-
-type testGitConstants struct {
-	ref string
-	url string
-}
-
-var constants = testConstants{
-	config: config.OperatorConfig{
-		Deployer: deployer.DeployerConfig{
-			Git: deployer.DeployerConfigGit{
-				Creds: sc.Secret{
-					Provider: "local",
-					Path:     "key",
-				},
-				Ref: "main",
-				Url: "github.com/test/deploy",
-			},
-			RootDir: "root",
-		},
-	},
-	gitDeploy: testGitConstants{
-		ref: "main",
-		url: "github.com/test/deploy",
-	},
-	gitCreds: map[string]string{"token": "value"},
-	gitSrc: testGitConstants{
-		ref: "abc123",
-		url: "github.com/test/src",
-	},
-	manifest:    "manifest",
-	projectName: "project",
-	release: foundryv1alpha1.ReleaseDeployment{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "test-release",
-			Namespace: "default",
-		},
-		Spec: foundryv1alpha1.ReleaseDeploymentSpec{
-			Git: foundryv1alpha1.GitSpec{
-				Ref: "abc123",
-				URL: "github.com/test/src",
-			},
-			ID:          "project-001",
-			Project:     "project",
-			ProjectPath: "project",
-		},
-	},
-	releaseNamespacedName: types.NamespacedName{
-		Name:      "test-release",
-		Namespace: "default",
-	},
-}
 
 func TestControllers(t *testing.T) {
 	RegisterFailHandler(Fail)
@@ -168,44 +107,6 @@ var _ = BeforeSuite(func() {
 	k8sClient, err = client.New(cfg, client.Options{Scheme: scheme.Scheme})
 	Expect(err).NotTo(HaveOccurred())
 	Expect(k8sClient).NotTo(BeNil())
-
-	// setup test data
-	cc := cuecontext.New()
-	blueprintRaw = NewBlueprint()
-	v := cc.CompileString(blueprintRaw)
-	Expect(v.Decode(&blueprint)).NotTo(HaveOccurred())
-
-	bundleRaw = `{
-	_#def
-	_#def: {
-		env: string | *"dev"
-		modules: {
-			[string]: {
-				instance?: string
-				name?:     string
-				namespace: string | *"default"
-				path?:     string
-				registry?: string
-				type:      string | *"kcl"
-				values?:   _
-				version?:  string
-			}
-		}
-	} & {
-		env: "test"
-		modules: {
-			main: {
-				name:     "module"
-				version:  "v1.0.0"
-				instance: "project"
-				registry: "registry.com"
-				values: {
-					foo: "bar"
-				}
-			}
-		}
-	}
-}`
 
 	// setup controller
 	k8sManager, err := ctrl.NewManager(cfg, ctrl.Options{
@@ -254,32 +155,36 @@ func getFirstFoundEnvTestBinaryDir() string {
 	return ""
 }
 
-// NewMockController creates a new ReleaseReconciler with mocked components.
-func NewMockController(client client.Client, scheme *runtime.Scheme) *ReleaseDeploymentReconciler {
-	remote, err := NewMockGitRemoteInterface(map[string]map[string]string{
-		// Mocks the source repository where the deployment blueprint is stored
-		constants.release.Spec.Git.URL: {
-			"project/blueprint.cue": NewBlueprint(),
-		},
+func getNamespacedName(obj client.Object) types.NamespacedName {
+	return types.NamespacedName{
+		Name:      obj.GetName(),
+		Namespace: obj.GetNamespace(),
+	}
+}
 
-		// Mocks the deployment repository where the deployment is stored
-		// Uses an env.cue file which should be combined with the bundle
-		blueprint.Global.Deployment.Repo.Url: {
-			"root/test/project/env.cue": `main: values: { key1: "value1" }`,
-		},
-	})
-	Expect(err).ToNot(HaveOccurred())
+func NewMockController(client client.Client, scheme *runtime.Scheme) *ReleaseDeploymentReconciler {
+	// remote, err := NewMockGitRemoteInterface(map[string]map[string]string{
+	// 	// Mocks the source repository where the deployment blueprint is stored
+	// 	constants.release.Spec.Git.URL: {
+	// 		"project/blueprint.cue": NewBlueprint(),
+	// 	},
+
+	// 	// Mocks the deployment repository where the deployment is stored
+	// 	// Uses an env.cue file which should be combined with the bundle
+	// 	blueprint.Global.Deployment.Repo.Url: {
+	// 		"root/test/project/env.cue": `main: values: { key1: "value1" }`,
+	// 	},
+	// })
+	// Expect(err).ToNot(HaveOccurred())
 
 	return &ReleaseDeploymentReconciler{
 		Client:        client,
-		Config:        constants.config,
 		FsDeploy:      bfs.NewInMemoryFs(),
 		FsSource:      bfs.NewInMemoryFs(),
 		Logger:        testutils.NewNoopLogger(),
-		ManifestStore: tu.NewMockManifestStore(constants.manifest),
-		Remote:        remote,
+		ManifestStore: tu.NewMockManifestStore(manifestContent),
 		Scheme:        scheme,
-		SecretStore:   tu.NewMockSecretStore(constants.gitCreds),
+		SecretStore:   tu.NewMockSecretStore(gitCreds),
 	}
 }
 
@@ -334,13 +239,28 @@ func NewMockGitRemoteInterface(
 
 			return repo, nil
 		},
+		FetchFunc: func(repo *gg.Repository, o *gg.FetchOptions) error {
+			return nil
+		},
+		PullFunc: func(repo *gg.Repository, o *gg.PullOptions) error {
+			return nil
+		},
 		PushFunc: func(repo *gg.Repository, o *gg.PushOptions) error {
 			return nil
 		},
 	}, nil
 }
 
-func NewBlueprint() string {
+func NewBlueprint() *sb.Blueprint {
+	var blueprint sb.Blueprint
+	cc := cuecontext.New()
+	v := cc.CompileString(NewRawBlueprint())
+	Expect(v.Decode(&blueprint)).NotTo(HaveOccurred())
+
+	return &blueprint
+}
+
+func NewRawBlueprint() string {
 	return `
 		{
 			version: "1.0"
@@ -369,7 +289,7 @@ func NewBlueprint() string {
 						modules: "registry.com"
 					}
 					repo: {
-						ref: "main"
+						ref: "master"
 						url: "github.com/org/repo"
 					}
 					root: "root"
@@ -377,4 +297,77 @@ func NewBlueprint() string {
 			}
 		}
 	`
+}
+
+func NewConfig() config.OperatorConfig {
+	bp := NewBlueprint()
+	return config.OperatorConfig{
+		Deployer: deployer.DeployerConfig{
+			Git: deployer.DeployerConfigGit{
+				Creds: sc.Secret{
+					Provider: "local",
+					Path:     "key",
+				},
+				Ref: bp.Global.Deployment.Repo.Ref,
+				Url: bp.Global.Deployment.Repo.Url,
+			},
+			RootDir: bp.Global.Deployment.Root,
+		},
+	}
+}
+
+func NewRawBundle() string {
+	return `{
+	_#def
+	_#def: {
+		env: string | *"dev"
+		modules: {
+			[string]: {
+				instance?: string
+				name?:     string
+				namespace: string | *"default"
+				path?:     string
+				registry?: string
+				type:      string | *"kcl"
+				values?:   _
+				version?:  string
+			}
+		}
+	} & {
+		env: "test"
+		modules: {
+			main: {
+				name:     "module"
+				version:  "v1.0.0"
+				instance: "project"
+				registry: "registry.com"
+				values: {
+					foo: "bar"
+				}
+			}
+		}
+	}
+}`
+}
+
+func InitRepo(fs bfs.BillyFs, path, url string, remote remote.GitRemoteInteractor) (*gg.Repository, error) {
+	mock, ok := remote.(*rm.GitRemoteInteractorMock)
+	if !ok {
+		return nil, fmt.Errorf("failed to cast remote to mock")
+	}
+
+	gfs, err := fs.Raw().Chroot(filepath.Join(path, ".git"))
+	if err != nil {
+		return nil, fmt.Errorf("failed to chroot fs: %w", err)
+	}
+
+	wfs, err := fs.Raw().Chroot(path)
+	if err != nil {
+		return nil, fmt.Errorf("failed to chroot fs: %w", err)
+	}
+
+	storage := filesystem.NewStorage(gfs, cache.NewObjectLRUDefault())
+	return mock.CloneFunc(storage, wfs, &gg.CloneOptions{
+		URL: url,
+	})
 }

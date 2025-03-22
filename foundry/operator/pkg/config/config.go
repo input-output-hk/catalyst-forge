@@ -10,6 +10,7 @@ import (
 
 // OperatorConfig is the configuration for the operator.
 type OperatorConfig struct {
+	ApiUrl   string                  `json:"api_url"`
 	Deployer deployer.DeployerConfig `json:"deployer"`
 }
 

@@ -22,17 +22,11 @@ import (
 
 // ReleaseDeploymentSpec defines the desired state of Release.
 type ReleaseDeploymentSpec struct {
-	// Git defines the source Git repository for the release.
-	Git GitSpec `json:"git"`
-
-	// ID is the unique identifier of the release.
+	// ID is the identifier for this deployment.
 	ID string `json:"id"`
 
-	// Project is the name of the project within the source Git repository.
-	Project string `json:"project"`
-
-	// ProjectPath is the path to the project within the source Git repository.
-	ProjectPath string `json:"project_path"`
+	// ReleaseID is the identifier for the release this deployment belongs to.
+	ReleaseID string `json:"release_id"`
 }
 
 // GitSpec defines the source Git repository for the release.

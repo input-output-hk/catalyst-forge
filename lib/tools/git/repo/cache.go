@@ -51,7 +51,7 @@ func NewCachedRepo(url string, logger *slog.Logger, opts ...GitRepoOption) (GitR
 		r.wfs = bfs.NewOsFs(wp)
 	}
 
-	exists, err := r.fs.Exists(filepath.Join(gp))
+	exists, err := r.fs.Exists(gp)
 	if err != nil {
 		return GitRepo{}, fmt.Errorf("could not check if repo exists: %w", err)
 	} else if !exists {

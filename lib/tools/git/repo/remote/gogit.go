@@ -20,3 +20,12 @@ func (g GoGitRemoteInteractor) Fetch(repo *git.Repository, o *git.FetchOptions) 
 func (g GoGitRemoteInteractor) Push(repo *git.Repository, o *git.PushOptions) error {
 	return repo.Push(o)
 }
+
+func (g GoGitRemoteInteractor) Pull(repo *git.Repository, o *git.PullOptions) error {
+	wt, err := repo.Worktree()
+	if err != nil {
+		return err
+	}
+
+	return wt.Pull(o)
+}

@@ -18,4 +18,7 @@ type GitRemoteInteractor interface {
 
 	// Push pushes changes to a repository.
 	Push(repo *git.Repository, o *git.PushOptions) error
+
+	// Pull pulls changes from a repository.
+	Pull(repo *git.Repository, o *git.PullOptions) error
 }

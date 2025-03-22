@@ -22,6 +22,7 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
+	"time"
 
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
 	// to ensure that exec-entrypoint and run can make use of them.
@@ -39,6 +40,7 @@ import (
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 
+	api "github.com/input-output-hk/catalyst-forge/foundry/api/client"
 	foundryv1alpha1 "github.com/input-output-hk/catalyst-forge/foundry/operator/api/v1alpha1"
 	"github.com/input-output-hk/catalyst-forge/foundry/operator/internal/controller"
 	"github.com/input-output-hk/catalyst-forge/foundry/operator/pkg/config"
@@ -220,6 +222,7 @@ func main() {
 
 	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
 	if err = (&controller.ReleaseDeploymentReconciler{
+		ApiClient:     api.NewClient(cfg.ApiUrl, api.WithTimeout(10*time.Second)),
 		Client:        mgr.GetClient(),
 		Config:        cfg,
 		FsSource:      billy.NewBaseOsFS(),
