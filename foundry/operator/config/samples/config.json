@@ -1,0 +1,14 @@
+{
+    "api_url": "http://api:8080",
+    "deployer": {
+        "git": {
+            "creds": {
+                "provider": "local",
+                "path": "key"
+            },
+            "ref": "test",
+            "url": "test.com/repo"
+        },
+        "root_dir": "k8s"
+    }
+}

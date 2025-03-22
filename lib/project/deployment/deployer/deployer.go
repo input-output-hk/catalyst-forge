@@ -88,22 +88,22 @@ type DeploymentPayload struct {
 // DeployerConfig is the configuration for a Deployer.
 type DeployerConfig struct {
 	// Git is the configuration for the GitOps repository.
-	Git DeployerConfigGit
+	Git DeployerConfigGit `json:"git"`
 
 	// RootDir is the root directory in the GitOps repository to deploy to.
-	RootDir string
+	RootDir string `json:"root_dir"`
 }
 
 // DeployerConfigGit is the configuration for the GitOps repository.
 type DeployerConfigGit struct {
 	// Creds is the credentials to use for the GitOps repository.
-	Creds common.Secret
+	Creds common.Secret `json:"creds"`
 
 	// Ref is the Git reference to deploy to.
-	Ref string
+	Ref string `json:"ref"`
 
 	// Url is the URL of the GitOps repository.
-	Url string
+	Url string `json:"url"`
 }
 
 // Deployer performs GitOps deployments for projects.
