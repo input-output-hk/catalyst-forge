@@ -37,6 +37,8 @@ git -C git/deploy init &&
     git -C git/deploy push -u origin master
 
 cp -r repos/source git/source
+mv git/source/blueprint.cue.fake git/source/blueprint.cue
+mv git/source/project/blueprint.cue.fake git/source/project/blueprint.cue
 git -C git/source init &&
     git -C git/source config user.name "root" &&
     git -C git/source config user.email "root@example.com" &&
