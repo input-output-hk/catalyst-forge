@@ -25,7 +25,7 @@ This will perform the following:
 2. Deploy an instance of PostgreSQL
 3. Deploy an instance of [gitea](https://about.gitea.com/)
 4. Build the local version of Foundry API and deploy it
-5. Build a local version of Foundry Operator and deploy it (including all supporting resources)
+5. Build the local version of Foundry Operator and deploy it (including all supporting resources)
 6. Push a [deployment](./repos/deploy/) and a [source](./repos/source/) repo to Gitea
 
 To create a new test release, simply run:
@@ -44,10 +44,10 @@ just up-local
 ```
 
 Which will skip deploying the operator.
-After the cluster is up, you'll need to run the operator from its local directory:
+After the cluster is up, you can run a local version of the operator by running:
 
 ```
-go run cmd/main.go --config ./config/samples/config.json
+just operator-local
 ```
 
 Then you can create a test deployment with:
@@ -57,17 +57,20 @@ just release-local
 ```
 
 Note that by default the operator caches repositories at `$HOME/.cache/forge` which needs to be writable.
+You can clean up the cache by running:
+
+```
+just cleanup-local
+```
 
 ## Updating
 
-If you make changes to either the API or operator code, you can quickly deploy them with:
+If you make changes to either the API or operator code, you can quickly deploy the new containers with:
 
 ```
+# For API
 just api
-```
 
-Or
-
-```
+# For operator
 just operator
 ```

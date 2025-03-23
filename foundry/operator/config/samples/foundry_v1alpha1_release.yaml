@@ -6,4 +6,5 @@ metadata:
     app.kubernetes.io/managed-by: kustomize
   name: release-sample
 spec:
-  # TODO(user): Add fields here
+  id: project-001-123456789
+  release_id: project-001

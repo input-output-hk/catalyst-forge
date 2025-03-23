@@ -26,10 +26,10 @@ spec:
             mountPath: /config/operator.json
             subPath: operator.json
           - name: config-volume
-            mountPath: /app/config/samples/kcl/main.k
+            mountPath: /app/kcl/main.k
             subPath: main.k
           - name: config-volume
-            mountPath: /app/config/samples/kcl/kcl.mod
+            mountPath: /app/kcl/kcl.mod
             subPath: kcl.mod
           - name: git-secret
             mountPath: /secrets/git.json

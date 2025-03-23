@@ -14,6 +14,9 @@ api:
 api-up:
   ./scripts/api.sh
 
+cleanup-local:
+  rm -rf ~/.cache/forge
+
 git-up:
   ./scripts/git.sh
 
@@ -33,12 +36,16 @@ operator:
   kubectl wait --for=condition=available --timeout=60s deployment/operator
   kubectl apply -f manifests/operator.yml
 
+operator-local:
+  go build -C ../operator -o ../test/bin/operator cmd/main.go
+  ./bin/operator --config ./data/local.json
+
 operator-up:
   ./scripts/operator.sh
 
 operator-up-local:
   kubectl apply -f ../operator/config/crd/bases/foundry.projectcatalyst.io_releasedeployments.yaml
-  jq -R '{token: .}' .token >../operator/config/samples/auth.json
+  jq -R '{token: .}' .token >./data/auth.json
 
 postgres-up:
   ./scripts/postgres.sh

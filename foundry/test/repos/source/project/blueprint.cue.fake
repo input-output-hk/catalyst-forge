@@ -9,7 +9,7 @@
 				modules: {
 					main: {
 						name:    "module"
-						path:    "./config/samples/kcl"
+						path:    "./kcl"
 						values: {
 							foo: "bar"
 						}

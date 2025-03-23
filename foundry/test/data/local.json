@@ -4,7 +4,7 @@
         "git": {
             "creds": {
                 "provider": "local",
-                "path": "./config/samples/auth.json"
+                "path": "./data/auth.json"
             },
             "ref": "master",
             "url": "http://localhost:3000/root/deployment"
