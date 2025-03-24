@@ -29,9 +29,14 @@ type Client interface {
 	// Deployment operations
 	CreateDeployment(ctx context.Context, releaseID string) (*ReleaseDeployment, error)
 	GetDeployment(ctx context.Context, releaseID string, deployID string) (*ReleaseDeployment, error)
-	UpdateDeploymentStatus(ctx context.Context, releaseID string, deployID string, status DeploymentStatus, reason string) error
+	UpdateDeployment(ctx context.Context, releaseID string, deployment *ReleaseDeployment) (*ReleaseDeployment, error)
+	IncrementDeploymentAttempts(ctx context.Context, releaseID string, deployID string) (*ReleaseDeployment, error)
 	ListDeployments(ctx context.Context, releaseID string) ([]ReleaseDeployment, error)
 	GetLatestDeployment(ctx context.Context, releaseID string) (*ReleaseDeployment, error)
+
+	// Deployment event operations
+	AddDeploymentEvent(ctx context.Context, releaseID string, deployID string, name string, message string) (*ReleaseDeployment, error)
+	GetDeploymentEvents(ctx context.Context, releaseID string, deployID string) ([]DeploymentEvent, error)
 }
 
 // HTTPClient is an implementation of the Client interface that uses HTTP
@@ -76,7 +81,6 @@ func NewClient(baseURL string, options ...ClientOption) Client {
 // do performs an HTTP request and processes the response
 func (c *HTTPClient) do(ctx context.Context, method, path string, reqBody, respBody interface{}) error {
 	url := fmt.Sprintf("%s%s", c.baseURL, path)
-	fmt.Printf("Making %s request to %s", method, url)
 
 	var reqBodyReader io.Reader
 	if reqBody != nil {

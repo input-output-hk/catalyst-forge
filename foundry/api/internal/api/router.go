@@ -53,9 +53,13 @@ func SetupRouter(
 	// Deployment endpoints
 	r.POST("/release/:id/deploy", deploymentHandler.CreateDeployment)
 	r.GET("/release/:id/deploy/:deployId", deploymentHandler.GetDeployment)
-	r.PUT("/release/:id/deploy/:deployId/status", deploymentHandler.UpdateDeploymentStatus)
+	r.PUT("/release/:id/deploy/:deployId", deploymentHandler.UpdateDeployment)
 	r.GET("/release/:id/deployments", deploymentHandler.ListDeployments)
 	r.GET("/release/:id/deploy/latest", deploymentHandler.GetLatestDeployment)
+
+	// Deployment event endpoints
+	r.POST("/release/:id/deploy/:deployId/events", deploymentHandler.AddDeploymentEvent)
+	r.GET("/release/:id/deploy/:deployId/events", deploymentHandler.GetDeploymentEvents)
 
 	return r
 }

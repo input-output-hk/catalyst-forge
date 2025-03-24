@@ -34,6 +34,17 @@ type Release struct {
 	UpdatedAt time.Time `json:"updated_at"`
 }
 
+// DeploymentEvent represents an event that occurred during a deployment
+type DeploymentEvent struct {
+	ID           uint      `json:"id"`
+	DeploymentID string    `json:"deployment_id"`
+	Name         string    `json:"name"`
+	Message      string    `json:"message"`
+	Timestamp    time.Time `json:"timestamp"`
+	CreatedAt    time.Time `json:"created_at"`
+	UpdatedAt    time.Time `json:"updated_at"`
+}
+
 // ReleaseDeployment represents a point-in-time deployment of a specific release
 type ReleaseDeployment struct {
 	ID        string           `json:"id"` // Generated from ReleaseID + timestamp
@@ -41,9 +52,11 @@ type ReleaseDeployment struct {
 	Timestamp time.Time        `json:"timestamp"`
 	Status    DeploymentStatus `json:"status"`
 	Reason    string           `json:"reason,omitempty"`
+	Attempts  int              `json:"attempts"`
 
 	// Relationships
-	Release *Release `json:"release,omitempty"`
+	Release *Release          `json:"release,omitempty"`
+	Events  []DeploymentEvent `json:"events,omitempty"`
 
 	// Timestamps
 	CreatedAt time.Time `json:"created_at"`

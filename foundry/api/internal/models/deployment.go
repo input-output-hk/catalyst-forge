@@ -24,9 +24,11 @@ type ReleaseDeployment struct {
 	Timestamp time.Time        `gorm:"not null" json:"timestamp"`
 	Status    DeploymentStatus `gorm:"not null;type:string;default:'pending'" json:"status"`
 	Reason    string           `json:"reason,omitempty"`
+	Attempts  int              `gorm:"not null;default:0" json:"attempts"`
 
 	// Relationships
-	Release Release `gorm:"foreignKey:ReleaseID" json:"release,omitempty"`
+	Release Release           `gorm:"foreignKey:ReleaseID" json:"release,omitempty"`
+	Events  []DeploymentEvent `gorm:"foreignKey:DeploymentID" json:"events,omitempty"`
 
 	// Timestamps
 	CreatedAt time.Time      `gorm:"autoCreateTime" json:"created_at"`

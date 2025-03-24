@@ -32,19 +32,17 @@ func (c *HTTPClient) GetDeployment(ctx context.Context, releaseID string, deploy
 	return &resp, nil
 }
 
-// UpdateDeploymentStatus updates the status of a deployment
-func (c *HTTPClient) UpdateDeploymentStatus(ctx context.Context, releaseID string, deployID string, status DeploymentStatus, reason string) error {
-	path := fmt.Sprintf("/release/%s/deploy/%s/status", releaseID, deployID)
+// UpdateDeployment updates a deployment with new values
+func (c *HTTPClient) UpdateDeployment(ctx context.Context, releaseID string, deployment *ReleaseDeployment) (*ReleaseDeployment, error) {
+	path := fmt.Sprintf("/release/%s/deploy/%s", releaseID, deployment.ID)
 
-	payload := struct {
-		Status DeploymentStatus `json:"status"`
-		Reason string           `json:"reason"`
-	}{
-		Status: status,
-		Reason: reason,
+	var resp ReleaseDeployment
+	err := c.do(ctx, http.MethodPut, path, deployment, &resp)
+	if err != nil {
+		return nil, err
 	}
 
-	return c.do(ctx, http.MethodPut, path, payload, nil)
+	return &resp, nil
 }
 
 // ListDeployments retrieves all deployments for a release
@@ -58,6 +56,21 @@ func (c *HTTPClient) ListDeployments(ctx context.Context, releaseID string) ([]R
 	}
 
 	return resp, nil
+}
+
+// IncrementDeploymentAttempts increments the attempts counter for a deployment by 1
+func (c *HTTPClient) IncrementDeploymentAttempts(ctx context.Context, releaseID string, deployID string) (*ReleaseDeployment, error) {
+	// First get the current deployment
+	deployment, err := c.GetDeployment(ctx, releaseID, deployID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get deployment: %w", err)
+	}
+
+	// Increment the attempts counter
+	deployment.Attempts++
+
+	// Update the deployment
+	return c.UpdateDeployment(ctx, releaseID, deployment)
 }
 
 // GetLatestDeployment retrieves the most recent deployment for a release
