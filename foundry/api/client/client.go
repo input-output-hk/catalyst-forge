@@ -76,6 +76,7 @@ func NewClient(baseURL string, options ...ClientOption) Client {
 // do performs an HTTP request and processes the response
 func (c *HTTPClient) do(ctx context.Context, method, path string, reqBody, respBody interface{}) error {
 	url := fmt.Sprintf("%s%s", c.baseURL, path)
+	fmt.Printf("Making %s request to %s", method, url)
 
 	var reqBodyReader io.Reader
 	if reqBody != nil {

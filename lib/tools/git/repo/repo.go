@@ -120,7 +120,8 @@ func (g *GitRepo) Exists(path string) (bool, error) {
 func (g *GitRepo) Fetch(opts ...FetchOption) error {
 	g.logger.Debug("Fetching repository")
 	fo := &gg.FetchOptions{
-		Auth: g.auth,
+		Auth:       g.auth,
+		RemoteName: "origin",
 	}
 
 	for _, opt := range opts {
@@ -239,6 +240,11 @@ func (g *GitRepo) Init() error {
 	return nil
 }
 
+// IsErrNoUpdates returns true if the error is NoErrAlreadyUpToDate.
+func IsErrNoUpdates(err error) bool {
+	return errors.Is(err, gg.NoErrAlreadyUpToDate)
+}
+
 // MkdirAll creates a directory and all necessary parents.
 func (g *GitRepo) MkdirAll(path string) error {
 	return g.fs.MkdirAll(filepath.Join(g.basePath, path), 0755)
@@ -294,6 +300,14 @@ func (g *GitRepo) Open() error {
 	g.worktree = wt
 
 	return nil
+}
+
+// Pull fetches changes from the remote repository and merges them into the current branch.
+func (g *GitRepo) Pull() error {
+	return g.remote.Pull(g.raw, &gg.PullOptions{
+		Auth:       g.auth,
+		RemoteName: "origin",
+	})
 }
 
 // Push pushes changes to the remote repository.
