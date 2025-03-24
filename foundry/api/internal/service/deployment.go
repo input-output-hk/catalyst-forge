@@ -13,25 +13,32 @@ import (
 type DeploymentService interface {
 	CreateDeployment(ctx context.Context, releaseID string) (*models.ReleaseDeployment, error)
 	GetDeployment(ctx context.Context, id string) (*models.ReleaseDeployment, error)
-	UpdateDeploymentStatus(ctx context.Context, id string, status models.DeploymentStatus, reason string) error
+	UpdateDeployment(ctx context.Context, deployment *models.ReleaseDeployment) error
 	ListDeployments(ctx context.Context, releaseID string) ([]models.ReleaseDeployment, error)
 	GetLatestDeployment(ctx context.Context, releaseID string) (*models.ReleaseDeployment, error)
+
+	// Event operations
+	AddDeploymentEvent(ctx context.Context, deploymentID string, name string, message string) error
+	GetDeploymentEvents(ctx context.Context, deploymentID string) ([]models.DeploymentEvent, error)
 }
 
 // DeploymentServiceImpl implements the DeploymentService interface
 type DeploymentServiceImpl struct {
 	deploymentRepo repository.DeploymentRepository
 	releaseRepo    repository.ReleaseRepository
+	eventRepo      repository.EventRepository
 }
 
 // NewDeploymentService creates a new instance of DeploymentService
 func NewDeploymentService(
 	deploymentRepo repository.DeploymentRepository,
 	releaseRepo repository.ReleaseRepository,
+	eventRepo repository.EventRepository,
 ) DeploymentService {
 	return &DeploymentServiceImpl{
 		deploymentRepo: deploymentRepo,
 		releaseRepo:    releaseRepo,
+		eventRepo:      eventRepo,
 	}
 }
 
@@ -52,6 +59,7 @@ func (s *DeploymentServiceImpl) CreateDeployment(ctx context.Context, releaseID 
 		ReleaseID: releaseID,
 		Timestamp: now,
 		Status:    models.DeploymentStatusPending,
+		Attempts:  0,
 	}
 
 	if err := s.deploymentRepo.Create(ctx, deployment); err != nil {
@@ -75,18 +83,22 @@ func (s *DeploymentServiceImpl) GetDeployment(ctx context.Context, id string) (*
 	}
 	deployment.Release = *release
 
+	events, err := s.eventRepo.ListEventsByDeploymentID(ctx, id)
+	if err == nil {
+		deployment.Events = events
+	}
+
 	return deployment, nil
 }
 
-// UpdateDeploymentStatus updates the status of a deployment
-func (s *DeploymentServiceImpl) UpdateDeploymentStatus(ctx context.Context, id string, status models.DeploymentStatus, reason string) error {
-	deployment, err := s.deploymentRepo.GetByID(ctx, id)
+// UpdateDeployment updates a deployment with new values
+func (s *DeploymentServiceImpl) UpdateDeployment(ctx context.Context, deployment *models.ReleaseDeployment) error {
+	existing, err := s.deploymentRepo.GetByID(ctx, deployment.ID)
 	if err != nil {
 		return err
 	}
 
-	deployment.Status = status
-	deployment.Reason = reason
+	deployment.CreatedAt = existing.CreatedAt
 
 	return s.deploymentRepo.Update(ctx, deployment)
 }
@@ -109,4 +121,31 @@ func (s *DeploymentServiceImpl) GetLatestDeployment(ctx context.Context, release
 	}
 
 	return s.deploymentRepo.GetLatestByReleaseID(ctx, releaseID)
+}
+
+// AddDeploymentEvent adds a new event to a deployment
+func (s *DeploymentServiceImpl) AddDeploymentEvent(ctx context.Context, deploymentID string, name string, message string) error {
+	_, err := s.deploymentRepo.GetByID(ctx, deploymentID)
+	if err != nil {
+		return err
+	}
+
+	event := &models.DeploymentEvent{
+		DeploymentID: deploymentID,
+		Name:         name,
+		Message:      message,
+		Timestamp:    time.Now(),
+	}
+
+	return s.eventRepo.AddEvent(ctx, event)
+}
+
+// GetDeploymentEvents retrieves all events for a deployment
+func (s *DeploymentServiceImpl) GetDeploymentEvents(ctx context.Context, deploymentID string) ([]models.DeploymentEvent, error) {
+	_, err := s.deploymentRepo.GetByID(ctx, deploymentID)
+	if err != nil {
+		return nil, err
+	}
+
+	return s.eventRepo.ListEventsByDeploymentID(ctx, deploymentID)
 }

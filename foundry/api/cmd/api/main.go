@@ -44,6 +44,7 @@ func main() {
 		&models.ReleaseDeployment{},
 		&models.IDCounter{},
 		&models.ReleaseAlias{},
+		&models.DeploymentEvent{},
 	)
 	if err != nil {
 		logger.Error("Failed to run migrations", "error", err)
@@ -55,10 +56,11 @@ func main() {
 	deploymentRepo := repository.NewDeploymentRepository(db)
 	counterRepo := repository.NewIDCounterRepository(db)
 	aliasRepo := repository.NewAliasRepository(db)
+	eventRepo := repository.NewEventRepository(db)
 
 	// Initialize services
 	releaseService := service.NewReleaseService(releaseRepo, aliasRepo, counterRepo, deploymentRepo)
-	deploymentService := service.NewDeploymentService(deploymentRepo, releaseRepo)
+	deploymentService := service.NewDeploymentService(deploymentRepo, releaseRepo, eventRepo)
 
 	// Setup router
 	router := api.SetupRouter(releaseService, deploymentService, db, logger)
