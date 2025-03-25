@@ -31,6 +31,7 @@ import (
 
 	foundryv1alpha1 "github.com/input-output-hk/catalyst-forge/foundry/operator/api/v1alpha1"
 	"github.com/input-output-hk/catalyst-forge/foundry/operator/pkg/config"
+	"github.com/input-output-hk/catalyst-forge/foundry/operator/pkg/handlers"
 	"github.com/input-output-hk/catalyst-forge/lib/project/deployment"
 	depl "github.com/input-output-hk/catalyst-forge/lib/project/deployment/deployer"
 	"github.com/input-output-hk/catalyst-forge/lib/project/providers"
@@ -43,15 +44,17 @@ import (
 // ReleaseDeploymentReconciler reconciles a Release object
 type ReleaseDeploymentReconciler struct {
 	client.Client
-	ApiClient     api.Client
-	Config        config.OperatorConfig
-	FsDeploy      *billy.BillyFs
-	FsSource      *billy.BillyFs
-	Logger        *slog.Logger
-	ManifestStore deployment.ManifestGeneratorStore
-	Remote        remote.GitRemoteInteractor
-	Scheme        *runtime.Scheme
-	SecretStore   secrets.SecretStore
+	ApiClient         api.Client
+	Config            config.OperatorConfig
+	DeploymentHandler *handlers.ReleaseDeploymentHandler
+	FsDeploy          *billy.BillyFs
+	FsSource          *billy.BillyFs
+	Logger            *slog.Logger
+	ManifestStore     deployment.ManifestGeneratorStore
+	Remote            remote.GitRemoteInteractor
+	RepoHandler       *handlers.RepoHandler
+	Scheme            *runtime.Scheme
+	SecretStore       secrets.SecretStore
 }
 
 // +kubebuilder:rbac:groups=foundry.projectcatalyst.io,resources=releases,verbs=get;list;watch;create;update;patch;delete
@@ -70,35 +73,23 @@ func (r *ReleaseDeploymentReconciler) Reconcile(ctx context.Context, req ctrl.Re
 
 	// 2. Fetch the associated ReleaseDeployment from the API
 	log.Info("Fetching release deployment from API", "releaseID", resource.Spec.ReleaseID, "deploymentID", resource.Spec.ID)
-	releaseDeployment, err := r.ApiClient.GetDeployment(ctx, resource.Spec.ReleaseID, resource.Spec.ID)
-	if err != nil {
-		log.Error(err, "unable to fetch deployment")
+	dh := handlers.NewReleaseDeploymentHandler(ctx, r.ApiClient)
+	if err := dh.Load(&resource); err != nil {
+		log.Error(err, "unable to load deployment")
 		return ctrl.Result{}, err
-	} else if releaseDeployment == nil {
-		log.Error(err, "unable to find deployment")
-		return ctrl.Result{}, fmt.Errorf("unable to find deployment")
 	}
-	release := releaseDeployment.Release
+	release := dh.Release()
 
 	// 3. Check if the deployment has already been completed
-	if isDeploymentComplete(releaseDeployment.Status) {
+	if dh.IsCompleted() {
 		log.Info("Deployment already succeeded")
 		return ctrl.Result{}, nil
 	}
 
 	// 4. Set deployment status to running if not already set
-	log.Info("Checking deployment status", "status", releaseDeployment.Status)
-	if releaseDeployment.Status != api.DeploymentStatusRunning {
-		if err := r.ApiClient.UpdateDeploymentStatus(
-			ctx,
-			release.ID,
-			releaseDeployment.ID,
-			api.DeploymentStatusRunning,
-			"Deployment in progress",
-		); err != nil {
-			log.Error(err, "unable to update deployment")
-			return ctrl.Result{}, err
-		}
+	if err := dh.SetRunning(); err != nil {
+		log.Error(err, "unable to set deployment status to running")
+		return ctrl.Result{}, err
 	}
 
 	// resource.Status.State = "Deploying"
@@ -168,15 +159,9 @@ func (r *ReleaseDeploymentReconciler) Reconcile(ctx context.Context, req ctrl.Re
 	}
 
 	// 10. Update the deployment status to succeeded
-	log.Info("Updating deployment status to succeeded")
-	if err := r.ApiClient.UpdateDeploymentStatus(
-		ctx,
-		release.ID,
-		releaseDeployment.ID,
-		api.DeploymentStatusSucceeded,
-		"Deployment succeeded",
-	); err != nil {
-		log.Error(err, "unable to update deployment")
+	log.Info("Deployment succeeded")
+	if err := dh.SetSucceeded(); err != nil {
+		log.Error(err, "unable to set deployment status to succeeded")
 		return ctrl.Result{}, err
 	}
 
