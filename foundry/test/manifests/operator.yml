@@ -60,7 +60,8 @@ data:
           "url": "http://gitea:3000/root/deployment"
         },
         "root_dir": "k8s"
-      }
+      },
+      "max_attempts": 3
     }
   main.k: |-
     schema Deployment:

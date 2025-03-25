@@ -10,5 +10,6 @@
             "url": "http://localhost:3000/root/deployment"
         },
         "root_dir": "k8s"
-    }
+    },
+    "max_attempts": 3
 }

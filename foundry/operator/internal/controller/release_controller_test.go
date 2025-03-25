@@ -17,7 +17,6 @@ limitations under the License.
 package controller
 
 import (
-	"context"
 	"path/filepath"
 	"strings"
 	"time"
@@ -26,10 +25,8 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	api "github.com/input-output-hk/catalyst-forge/foundry/api/client"
-	am "github.com/input-output-hk/catalyst-forge/foundry/api/client/mocks"
 	foundryv1alpha1 "github.com/input-output-hk/catalyst-forge/foundry/operator/api/v1alpha1"
 )
 
@@ -40,86 +37,27 @@ var _ = Describe("ReleaseDeployment Controller", func() {
 			interval = time.Millisecond * 250
 		)
 
-		var (
-			ctx          = context.Background()
-			blueprint    = NewBlueprint()
-			blueprintRaw = NewRawBlueprint()
-			bundleRaw    = NewRawBundle()
-			config       = NewConfig()
-		)
-
 		Context("when the release deployment is valid", Ordered, func() {
 			var (
-				gotReleaseID string
-				gotDeployID  string
-
-				releaseDeploymentObj *foundryv1alpha1.ReleaseDeployment
-				releaseDeployment    *api.ReleaseDeployment
+				env mockEnv
 			)
 
 			BeforeAll(func() {
-				releaseDeploymentObj = &foundryv1alpha1.ReleaseDeployment{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "project-001-123456789",
-						Namespace: "default",
+				// Initialize the test environment
+				env.Init(
+					map[string]string{
+						"project/blueprint.cue": newRawBlueprint(),
 					},
-					Spec: foundryv1alpha1.ReleaseDeploymentSpec{
-						ID:        "project-001-123456789",
-						ReleaseID: "project-001",
-					},
-				}
-				releaseDeployment = &api.ReleaseDeployment{
-					ID:     "project-001-123456789",
-					Status: api.DeploymentStatusPending,
-					Release: &api.Release{
-						ID:          "project-001",
-						SourceRepo:  "github.com/repo/source",
-						Project:     "project",
-						ProjectPath: "project",
-						Bundle:      "bundle",
-					},
-				}
-
-				apiClient := am.ClientMock{
-					GetDeploymentFunc: func(ctx context.Context, releaseID string, deployID string) (*api.ReleaseDeployment, error) {
-						gotReleaseID = releaseID
-						gotDeployID = deployID
-						return releaseDeployment, nil
-					},
-					UpdateDeploymentStatusFunc: func(ctx context.Context, releaseID string, deployID string, status api.DeploymentStatus, reason string) error {
-						releaseDeployment.Status = status
-						return nil
-					},
-				}
-				remote, err := NewMockGitRemoteInterface(map[string]map[string]string{
-					releaseDeployment.Release.SourceRepo: {
-						"project/blueprint.cue": blueprintRaw,
-					},
-					blueprint.Global.Deployment.Repo.Url: {
+					map[string]string{
 						"root/test/project/env.cue": `main: values: { key1: "value1" }`,
 					},
-				})
-				Expect(err).ToNot(HaveOccurred())
-
-				rp, err := InitRepo(
-					*controller.FsSource,
-					makeCachePath(releaseDeployment.Release.SourceRepo),
-					releaseDeployment.Release.SourceRepo,
-					remote,
 				)
-				Expect(err).ToNot(HaveOccurred())
-				head, err := rp.Head()
-				Expect(err).ToNot(HaveOccurred())
-				releaseDeployment.Release.SourceCommit = head.Hash().String()
-
-				controller.ApiClient = &apiClient
-				controller.Config = config
-				controller.Remote = remote
+				env.ConfigureController(controller)
 
 				release := &foundryv1alpha1.ReleaseDeployment{}
-				err = k8sClient.Get(ctx, getNamespacedName(releaseDeploymentObj), release)
+				err := k8sClient.Get(ctx, getNamespacedName(env.releaseDeploymentObj), release)
 				if err != nil && errors.IsNotFound(err) {
-					Expect(k8sClient.Create(ctx, releaseDeploymentObj)).To(Succeed())
+					Expect(k8sClient.Create(ctx, env.releaseDeploymentObj)).To(Succeed())
 				}
 			})
 
@@ -138,47 +76,66 @@ var _ = Describe("ReleaseDeployment Controller", func() {
 				Eventually(func(g Gomega) {
 					//g.Expect(k8sClient.Get(ctx, getNamespacedName(releaseDeploymentObj), release)).To(Succeed())
 					//g.Expect(release.Status.State).To(Equal("Deployed"))
-					g.Expect(releaseDeployment.Status).To(Equal(api.DeploymentStatusSucceeded))
+					g.Expect(env.releaseDeployment.Status).To(Equal(api.DeploymentStatusSucceeded))
+					g.Expect(hasEvent(env.releaseDeployment.Events, "DeploymentSucceeded", "Deployment has succeeded")).To(BeTrue())
 				}, timeout, interval).Should(Succeed())
 			})
 
 			It("should have called the API client to get the deployment", func() {
-				Expect(gotDeployID).To(Equal(releaseDeployment.ID))
-				Expect(gotReleaseID).To(Equal(releaseDeployment.Release.ID))
+				Expect(len(env.mockClient.GetDeploymentCalls())).To(Equal(1))
+				Expect(env.mockClient.GetDeploymentCalls()[0].DeployID).To(Equal(env.releaseDeployment.ID))
+				Expect(env.mockClient.GetDeploymentCalls()[0].ReleaseID).To(Equal(env.releaseDeployment.Release.ID))
+			})
+
+			It("should have added a start event", func() {
+				Expect(hasEvent(env.releaseDeployment.Events, "DeploymentStarted", "Deployment has started")).To(BeTrue())
+			})
+
+			It("should have incremented the deployment attempts", func() {
+				Expect(env.releaseDeployment.Attempts).To(Equal(1))
 			})
 
 			It("should have cloned the source repository", func() {
-				path := makeCachePath(releaseDeployment.Release.SourceRepo)
-				Expect(controller.FsSource.Exists(path)).To(BeTrue())
+				path := makeCachePath(env.releaseDeployment.Release.SourceRepo)
+				Expect(env.sourceFs.Exists(path)).To(BeTrue())
 			})
 
 			It("should have cloned the deploy repository", func() {
-				path := makeCachePath(config.Deployer.Git.Url)
-				Expect(controller.FsDeploy.Exists(path)).To(BeTrue())
+				path := makeCachePath(env.config.Deployer.Git.Url)
+				Expect(env.deployFs.Exists(path)).To(BeTrue())
 			})
 
 			It("should have created the deployment files", func() {
-				path := makeCachePath(config.Deployer.Git.Url)
+				path := makeCachePath(env.config.Deployer.Git.Url)
 				path = filepath.Join(
 					path,
-					config.Deployer.RootDir,
-					blueprint.Project.Deployment.Bundle.Env,
-					releaseDeployment.Release.ProjectPath,
+					env.config.Deployer.RootDir,
+					env.blueprint.Project.Deployment.Bundle.Env,
+					env.releaseDeployment.Release.ProjectPath,
 				)
-				Expect(controller.FsDeploy.Exists(filepath.Join(path, "main.yaml"))).To(BeTrue())
-				Expect(controller.FsDeploy.Exists(filepath.Join(path, "module.cue"))).To(BeTrue())
+				Expect(env.deployFs.Exists(filepath.Join(path, "main.yaml"))).To(BeTrue())
+				Expect(env.deployFs.Exists(filepath.Join(path, "module.cue"))).To(BeTrue())
 
-				got, err := controller.FsDeploy.ReadFile(filepath.Join(path, "module.cue"))
+				got, err := env.deployFs.ReadFile(filepath.Join(path, "module.cue"))
 				Expect(err).NotTo(HaveOccurred())
-				Expect(string(got)).To(Equal(string(bundleRaw)))
+				Expect(string(got)).To(Equal(string(env.bundleRaw)))
 
-				got, err = controller.FsDeploy.ReadFile(filepath.Join(path, "main.yaml"))
+				got, err = env.deployFs.ReadFile(filepath.Join(path, "main.yaml"))
 				Expect(err).NotTo(HaveOccurred())
-				Expect(string(got)).To(Equal(string(manifestContent)))
+				Expect(string(got)).To(Equal(string(env.manifestContent)))
 			})
 		})
 	})
 })
+
+func hasEvent(events []api.DeploymentEvent, name string, message string) bool {
+	for _, event := range events {
+		if event.Name == name && event.Message == message {
+			return true
+		}
+	}
+	return false
+}
 
 func makeCachePath(url string) string {
 	pathParts := []string{xdg.CacheHome, "forge"}

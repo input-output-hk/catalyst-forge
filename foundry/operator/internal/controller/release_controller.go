@@ -18,7 +18,6 @@ package controller
 
 import (
 	"context"
-	"fmt"
 	"log/slog"
 
 	"cuelang.org/go/cue/cuecontext"
@@ -27,31 +26,26 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
-	api "github.com/input-output-hk/catalyst-forge/foundry/api/client"
-
 	foundryv1alpha1 "github.com/input-output-hk/catalyst-forge/foundry/operator/api/v1alpha1"
 	"github.com/input-output-hk/catalyst-forge/foundry/operator/pkg/config"
+	"github.com/input-output-hk/catalyst-forge/foundry/operator/pkg/handlers"
 	"github.com/input-output-hk/catalyst-forge/lib/project/deployment"
 	depl "github.com/input-output-hk/catalyst-forge/lib/project/deployment/deployer"
-	"github.com/input-output-hk/catalyst-forge/lib/project/providers"
 	"github.com/input-output-hk/catalyst-forge/lib/project/secrets"
-	"github.com/input-output-hk/catalyst-forge/lib/tools/fs/billy"
-	"github.com/input-output-hk/catalyst-forge/lib/tools/git/repo"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/git/repo/remote"
 )
 
 // ReleaseDeploymentReconciler reconciles a Release object
 type ReleaseDeploymentReconciler struct {
 	client.Client
-	ApiClient     api.Client
-	Config        config.OperatorConfig
-	FsDeploy      *billy.BillyFs
-	FsSource      *billy.BillyFs
-	Logger        *slog.Logger
-	ManifestStore deployment.ManifestGeneratorStore
-	Remote        remote.GitRemoteInteractor
-	Scheme        *runtime.Scheme
-	SecretStore   secrets.SecretStore
+	Config            config.OperatorConfig
+	DeploymentHandler *handlers.ReleaseDeploymentHandler
+	Logger            *slog.Logger
+	ManifestStore     deployment.ManifestGeneratorStore
+	Remote            remote.GitRemoteInteractor
+	RepoHandler       *handlers.RepoHandler
+	Scheme            *runtime.Scheme
+	SecretStore       secrets.SecretStore
 }
 
 // +kubebuilder:rbac:groups=foundry.projectcatalyst.io,resources=releases,verbs=get;list;watch;create;update;patch;delete
@@ -70,35 +64,34 @@ func (r *ReleaseDeploymentReconciler) Reconcile(ctx context.Context, req ctrl.Re
 
 	// 2. Fetch the associated ReleaseDeployment from the API
 	log.Info("Fetching release deployment from API", "releaseID", resource.Spec.ReleaseID, "deploymentID", resource.Spec.ID)
-	releaseDeployment, err := r.ApiClient.GetDeployment(ctx, resource.Spec.ReleaseID, resource.Spec.ID)
-	if err != nil {
-		log.Error(err, "unable to fetch deployment")
+	if err := r.DeploymentHandler.Load(&resource); err != nil {
+		log.Error(err, "unable to load deployment")
 		return ctrl.Result{}, err
-	} else if releaseDeployment == nil {
-		log.Error(err, "unable to find deployment")
-		return ctrl.Result{}, fmt.Errorf("unable to find deployment")
 	}
-	release := releaseDeployment.Release
+	release := r.DeploymentHandler.Release()
 
 	// 3. Check if the deployment has already been completed
-	if isDeploymentComplete(releaseDeployment.Status) {
-		log.Info("Deployment already succeeded")
+	if r.DeploymentHandler.IsCompleted() {
+		log.Info("Deployment already finished")
 		return ctrl.Result{}, nil
 	}
 
-	// 4. Set deployment status to running if not already set
-	log.Info("Checking deployment status", "status", releaseDeployment.Status)
-	if releaseDeployment.Status != api.DeploymentStatusRunning {
-		if err := r.ApiClient.UpdateDeploymentStatus(
-			ctx,
-			release.ID,
-			releaseDeployment.ID,
-			api.DeploymentStatusRunning,
-			"Deployment in progress",
-		); err != nil {
-			log.Error(err, "unable to update deployment")
+	// 4. Check if max attempts have been reached
+	if r.DeploymentHandler.MaxAttemptsReached(r.Config.MaxAttempts - 1) {
+		log.Info("Max attempts reached, setting deployment to failed")
+		if err := r.DeploymentHandler.SetFailed("Max attempts reached"); err != nil {
+			log.Error(err, "unable to set deployment status to failed")
+			r.DeploymentHandler.AddErrorEvent(nil, "Max attempts reached")
 			return ctrl.Result{}, err
 		}
+
+		return ctrl.Result{}, nil
+	}
+
+	// 5. Set deployment status to running if not already set
+	if err := r.DeploymentHandler.SetRunning(); err != nil {
+		log.Error(err, "unable to set deployment status to running")
+		return ctrl.Result{}, err
 	}
 
 	// resource.Status.State = "Deploying"
@@ -107,35 +100,26 @@ func (r *ReleaseDeploymentReconciler) Reconcile(ctx context.Context, req ctrl.Re
 	// 	return ctrl.Result{}, err
 	// }
 
-	// 5. Get the git auth token for repos
-	log.Info("Fetching git auth token")
-	token, err := r.getAuth()
-	if err != nil {
-		log.Error(err, "unable to get auth token")
-		return ctrl.Result{}, err
-	}
-	fmt.Println("token", token)
-
 	// 6. Open repos
 	log.Info("Opening deployment repo", "url", r.Config.Deployer.Git.Url)
-	deployRepo, err := r.getDeployRepo(token)
-	if err != nil {
-		log.Error(err, "unable to get deployment repo")
+	if err := r.RepoHandler.LoadDeploymentRepo(r.Config.Deployer.Git.Url, r.Config.Deployer.Git.Ref); err != nil {
+		log.Error(err, "unable to load deployment repo")
 		return ctrl.Result{}, err
 	}
 
 	log.Info("Opening source repo", "url", release.SourceRepo)
-	sourceRepo, err := r.getSourceRepo(token, release)
-	if err != nil {
-		log.Error(err, "unable to create repo")
+	if err := r.RepoHandler.LoadSourceRepo(release.SourceRepo, release.SourceCommit); err != nil {
+		log.Error(err, "unable to load source repo")
+		r.DeploymentHandler.AddErrorEvent(err, "Unable to load source repo")
 		return ctrl.Result{}, err
 	}
 
 	// 7. Fetch the bundle from the source repo
 	log.Info("Fetching bundle from source repo", "url", release.SourceRepo, "commit", release.SourceCommit)
-	bundle, err := deployment.FetchBundle(sourceRepo, release.ProjectPath, r.SecretStore, r.Logger)
+	bundle, err := deployment.FetchBundle(*r.RepoHandler.SourceRepo(), release.ProjectPath, r.SecretStore, r.Logger)
 	if err != nil {
 		log.Error(err, "unable to fetch bundle")
+		r.DeploymentHandler.AddErrorEvent(err, "Unable to fetch deployment bundle")
 		return ctrl.Result{}, err
 	}
 
@@ -153,10 +137,11 @@ func (r *ReleaseDeploymentReconciler) Reconcile(ctx context.Context, req ctrl.Re
 		resource.Spec.ID,
 		release.Project,
 		bundle,
-		depl.WithRepo(&deployRepo),
+		depl.WithRepo(r.RepoHandler.DeploymentRepo()),
 	)
 	if err != nil {
 		log.Error(err, "unable to create deployment")
+		r.DeploymentHandler.AddErrorEvent(err, "Unable to create deployment")
 		return ctrl.Result{}, err
 	}
 
@@ -164,98 +149,18 @@ func (r *ReleaseDeploymentReconciler) Reconcile(ctx context.Context, req ctrl.Re
 	log.Info("Committing and pushing deployment")
 	if err := deployment.Commit(); err != nil {
 		log.Error(err, "unable to commit deployment")
+		r.DeploymentHandler.AddErrorEvent(err, "Unable to commit deployment")
 		return ctrl.Result{}, err
 	}
 
 	// 10. Update the deployment status to succeeded
-	log.Info("Updating deployment status to succeeded")
-	if err := r.ApiClient.UpdateDeploymentStatus(
-		ctx,
-		release.ID,
-		releaseDeployment.ID,
-		api.DeploymentStatusSucceeded,
-		"Deployment succeeded",
-	); err != nil {
-		log.Error(err, "unable to update deployment")
+	log.Info("Deployment succeeded")
+	if err := r.DeploymentHandler.SetSucceeded(); err != nil {
+		log.Error(err, "unable to set deployment status to succeeded")
 		return ctrl.Result{}, err
 	}
 
 	return ctrl.Result{}, nil
-}
-
-func (r *ReleaseDeploymentReconciler) getAuth() (string, error) {
-	creds, err := providers.GetGitProviderCreds(&r.Config.Deployer.Git.Creds, &r.SecretStore, r.Logger)
-	if err != nil {
-		return "", err
-	}
-
-	return creds.Token, nil
-}
-
-func (r *ReleaseDeploymentReconciler) getDeployRepo(token string) (repo.GitRepo, error) {
-	var dfs *billy.BillyFs
-	if r.FsDeploy == nil {
-		dfs = billy.NewInMemoryFs()
-	} else {
-		dfs = r.FsDeploy
-	}
-
-	rp, err := repo.NewCachedRepo(
-		r.Config.Deployer.Git.Url,
-		r.Logger,
-		repo.WithFS(dfs),
-		repo.WithGitRemoteInteractor(r.Remote),
-		repo.WithAuth("forge", token),
-	)
-	if err != nil {
-		return repo.GitRepo{}, err
-	}
-
-	if err := rp.CheckoutBranch(r.Config.Deployer.Git.Ref); err != nil {
-		return repo.GitRepo{}, fmt.Errorf("failed to checkout branch %s: %w", r.Config.Deployer.Git.Ref, err)
-	}
-
-	if err := rp.Pull(); err != nil && !repo.IsErrNoUpdates(err) {
-		return repo.GitRepo{}, fmt.Errorf("failed to pull latest changes from branch %s: %w", r.Config.Deployer.Git.Ref, err)
-	}
-
-	return rp, nil
-}
-
-func (r *ReleaseDeploymentReconciler) getSourceRepo(token string, release *api.Release) (repo.GitRepo, error) {
-	var sfs *billy.BillyFs
-	if r.FsSource == nil {
-		sfs = billy.NewBaseOsFS()
-	} else {
-		sfs = r.FsSource
-	}
-
-	rp, err := repo.NewCachedRepo(
-		release.SourceRepo,
-		r.Logger,
-		repo.WithFS(sfs),
-		repo.WithGitRemoteInteractor(r.Remote),
-		repo.WithAuth("forge", token),
-	)
-	if err != nil {
-		return repo.GitRepo{}, err
-	}
-
-	if err := rp.Fetch(); err != nil && !repo.IsErrNoUpdates(err) {
-		return repo.GitRepo{}, fmt.Errorf("failed to fetch latest changes: %w", err)
-	}
-
-	if err := rp.CheckoutCommit(release.SourceCommit); err != nil {
-		return repo.GitRepo{}, fmt.Errorf("failed to checkout commit %s: %w", release.SourceCommit, err)
-	}
-
-	return rp, nil
-}
-
-// isDeploymentComplete checks if the deployment is complete
-// by checking if the status is either Succeeded or Failed.
-func isDeploymentComplete(status api.DeploymentStatus) bool {
-	return status == api.DeploymentStatusSucceeded || status == api.DeploymentStatusFailed
 }
 
 // SetupWithManager sets up the controller with the Manager.
