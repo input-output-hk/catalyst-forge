@@ -72,18 +72,20 @@ func (r *ReleaseDeploymentReconciler) Reconcile(ctx context.Context, req ctrl.Re
 
 	// 3. Check if the deployment has already been completed
 	if r.DeploymentHandler.IsCompleted() {
-		log.Info("Deployment already succeeded")
+		log.Info("Deployment already finished")
 		return ctrl.Result{}, nil
 	}
 
 	// 4. Check if max attempts have been reached
-	if r.DeploymentHandler.MaxAttemptsReached(r.Config.MaxAttempts) {
+	if r.DeploymentHandler.MaxAttemptsReached(r.Config.MaxAttempts - 1) {
 		log.Info("Max attempts reached, setting deployment to failed")
 		if err := r.DeploymentHandler.SetFailed("Max attempts reached"); err != nil {
 			log.Error(err, "unable to set deployment status to failed")
 			r.DeploymentHandler.AddErrorEvent(nil, "Max attempts reached")
 			return ctrl.Result{}, err
 		}
+
+		return ctrl.Result{}, nil
 	}
 
 	// 5. Set deployment status to running if not already set
