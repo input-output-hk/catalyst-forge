@@ -77,6 +77,7 @@ var _ = Describe("ReleaseDeployment Controller", func() {
 					//g.Expect(k8sClient.Get(ctx, getNamespacedName(releaseDeploymentObj), release)).To(Succeed())
 					//g.Expect(release.Status.State).To(Equal("Deployed"))
 					g.Expect(env.releaseDeployment.Status).To(Equal(api.DeploymentStatusSucceeded))
+					g.Expect(hasEvent(env.releaseDeployment.Events, "DeploymentSucceeded", "Deployment has succeeded")).To(BeTrue())
 				}, timeout, interval).Should(Succeed())
 			})
 
@@ -84,6 +85,14 @@ var _ = Describe("ReleaseDeployment Controller", func() {
 				Expect(len(env.mockClient.GetDeploymentCalls())).To(Equal(1))
 				Expect(env.mockClient.GetDeploymentCalls()[0].DeployID).To(Equal(env.releaseDeployment.ID))
 				Expect(env.mockClient.GetDeploymentCalls()[0].ReleaseID).To(Equal(env.releaseDeployment.Release.ID))
+			})
+
+			It("should have added a start event", func() {
+				Expect(hasEvent(env.releaseDeployment.Events, "DeploymentStarted", "Deployment has started")).To(BeTrue())
+			})
+
+			It("should have incremented the deployment attempts", func() {
+				Expect(env.releaseDeployment.Attempts).To(Equal(1))
 			})
 
 			It("should have cloned the source repository", func() {
@@ -118,6 +127,15 @@ var _ = Describe("ReleaseDeployment Controller", func() {
 		})
 	})
 })
+
+func hasEvent(events []api.DeploymentEvent, name string, message string) bool {
+	for _, event := range events {
+		if event.Name == name && event.Message == message {
+			return true
+		}
+	}
+	return false
+}
 
 func makeCachePath(url string) string {
 	pathParts := []string{xdg.CacheHome, "forge"}

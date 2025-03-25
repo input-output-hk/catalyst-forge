@@ -88,7 +88,18 @@ func (m *mockEnv) Init(sourceFiles, deployFiles map[string]string) {
 
 	// Setup the mock API client
 	m.mockClient = &am.ClientMock{
+		AddDeploymentEventFunc: func(ctx context.Context, releaseID string, deployID string, name string, message string) (*api.ReleaseDeployment, error) {
+			m.releaseDeployment.Events = append(m.releaseDeployment.Events, api.DeploymentEvent{
+				Name:    name,
+				Message: message,
+			})
+			return m.releaseDeployment, nil
+		},
 		GetDeploymentFunc: func(ctx context.Context, releaseID string, deployID string) (*api.ReleaseDeployment, error) {
+			return m.releaseDeployment, nil
+		},
+		IncrementDeploymentAttemptsFunc: func(ctx context.Context, releaseID string, deployID string) (*api.ReleaseDeployment, error) {
+			m.releaseDeployment.Attempts++
 			return m.releaseDeployment, nil
 		},
 		UpdateDeploymentFunc: func(ctx context.Context, releaseID string, deployment *api.ReleaseDeployment) (*api.ReleaseDeployment, error) {
@@ -244,6 +255,7 @@ func newConfig() config.OperatorConfig {
 			},
 			RootDir: bp.Global.Deployment.Root,
 		},
+		MaxAttempts: 3,
 	}
 }
 

@@ -18,7 +18,6 @@ package controller
 
 import (
 	"context"
-	"fmt"
 	"log/slog"
 
 	"cuelang.org/go/cue/cuecontext"
@@ -27,14 +26,11 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
-	api "github.com/input-output-hk/catalyst-forge/foundry/api/client"
-
 	foundryv1alpha1 "github.com/input-output-hk/catalyst-forge/foundry/operator/api/v1alpha1"
 	"github.com/input-output-hk/catalyst-forge/foundry/operator/pkg/config"
 	"github.com/input-output-hk/catalyst-forge/foundry/operator/pkg/handlers"
 	"github.com/input-output-hk/catalyst-forge/lib/project/deployment"
 	depl "github.com/input-output-hk/catalyst-forge/lib/project/deployment/deployer"
-	"github.com/input-output-hk/catalyst-forge/lib/project/providers"
 	"github.com/input-output-hk/catalyst-forge/lib/project/secrets"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/git/repo/remote"
 )
@@ -68,7 +64,6 @@ func (r *ReleaseDeploymentReconciler) Reconcile(ctx context.Context, req ctrl.Re
 
 	// 2. Fetch the associated ReleaseDeployment from the API
 	log.Info("Fetching release deployment from API", "releaseID", resource.Spec.ReleaseID, "deploymentID", resource.Spec.ID)
-	//dh := handlers.NewReleaseDeploymentHandler(ctx, r.ApiClient)
 	if err := r.DeploymentHandler.Load(&resource); err != nil {
 		log.Error(err, "unable to load deployment")
 		return ctrl.Result{}, err
@@ -81,7 +76,17 @@ func (r *ReleaseDeploymentReconciler) Reconcile(ctx context.Context, req ctrl.Re
 		return ctrl.Result{}, nil
 	}
 
-	// 4. Set deployment status to running if not already set
+	// 4. Check if max attempts have been reached
+	if r.DeploymentHandler.MaxAttemptsReached(r.Config.MaxAttempts) {
+		log.Info("Max attempts reached, setting deployment to failed")
+		if err := r.DeploymentHandler.SetFailed("Max attempts reached"); err != nil {
+			log.Error(err, "unable to set deployment status to failed")
+			r.DeploymentHandler.AddErrorEvent(nil, "Max attempts reached")
+			return ctrl.Result{}, err
+		}
+	}
+
+	// 5. Set deployment status to running if not already set
 	if err := r.DeploymentHandler.SetRunning(); err != nil {
 		log.Error(err, "unable to set deployment status to running")
 		return ctrl.Result{}, err
@@ -93,15 +98,6 @@ func (r *ReleaseDeploymentReconciler) Reconcile(ctx context.Context, req ctrl.Re
 	// 	return ctrl.Result{}, err
 	// }
 
-	// 5. Get the git auth token for repos
-	log.Info("Fetching git auth token")
-	token, err := r.getAuth()
-	if err != nil {
-		log.Error(err, "unable to get auth token")
-		return ctrl.Result{}, err
-	}
-	fmt.Println("token", token)
-
 	// 6. Open repos
 	log.Info("Opening deployment repo", "url", r.Config.Deployer.Git.Url)
 	if err := r.RepoHandler.LoadDeploymentRepo(r.Config.Deployer.Git.Url, r.Config.Deployer.Git.Ref); err != nil {
@@ -112,6 +108,7 @@ func (r *ReleaseDeploymentReconciler) Reconcile(ctx context.Context, req ctrl.Re
 	log.Info("Opening source repo", "url", release.SourceRepo)
 	if err := r.RepoHandler.LoadSourceRepo(release.SourceRepo, release.SourceCommit); err != nil {
 		log.Error(err, "unable to load source repo")
+		r.DeploymentHandler.AddErrorEvent(err, "Unable to load source repo")
 		return ctrl.Result{}, err
 	}
 
@@ -120,6 +117,7 @@ func (r *ReleaseDeploymentReconciler) Reconcile(ctx context.Context, req ctrl.Re
 	bundle, err := deployment.FetchBundle(*r.RepoHandler.SourceRepo(), release.ProjectPath, r.SecretStore, r.Logger)
 	if err != nil {
 		log.Error(err, "unable to fetch bundle")
+		r.DeploymentHandler.AddErrorEvent(err, "Unable to fetch deployment bundle")
 		return ctrl.Result{}, err
 	}
 
@@ -141,6 +139,7 @@ func (r *ReleaseDeploymentReconciler) Reconcile(ctx context.Context, req ctrl.Re
 	)
 	if err != nil {
 		log.Error(err, "unable to create deployment")
+		r.DeploymentHandler.AddErrorEvent(err, "Unable to create deployment")
 		return ctrl.Result{}, err
 	}
 
@@ -148,6 +147,7 @@ func (r *ReleaseDeploymentReconciler) Reconcile(ctx context.Context, req ctrl.Re
 	log.Info("Committing and pushing deployment")
 	if err := deployment.Commit(); err != nil {
 		log.Error(err, "unable to commit deployment")
+		r.DeploymentHandler.AddErrorEvent(err, "Unable to commit deployment")
 		return ctrl.Result{}, err
 	}
 
@@ -159,21 +159,6 @@ func (r *ReleaseDeploymentReconciler) Reconcile(ctx context.Context, req ctrl.Re
 	}
 
 	return ctrl.Result{}, nil
-}
-
-func (r *ReleaseDeploymentReconciler) getAuth() (string, error) {
-	creds, err := providers.GetGitProviderCreds(&r.Config.Deployer.Git.Creds, &r.SecretStore, r.Logger)
-	if err != nil {
-		return "", err
-	}
-
-	return creds.Token, nil
-}
-
-// isDeploymentComplete checks if the deployment is complete
-// by checking if the status is either Succeeded or Failed.
-func isDeploymentComplete(status api.DeploymentStatus) bool {
-	return status == api.DeploymentStatusSucceeded || status == api.DeploymentStatusFailed
 }
 
 // SetupWithManager sets up the controller with the Manager.
