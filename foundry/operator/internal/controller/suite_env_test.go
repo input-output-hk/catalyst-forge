@@ -16,6 +16,7 @@ import (
 	am "github.com/input-output-hk/catalyst-forge/foundry/api/client/mocks"
 	foundryv1alpha1 "github.com/input-output-hk/catalyst-forge/foundry/operator/api/v1alpha1"
 	"github.com/input-output-hk/catalyst-forge/foundry/operator/pkg/config"
+	"github.com/input-output-hk/catalyst-forge/foundry/operator/pkg/handlers"
 	"github.com/input-output-hk/catalyst-forge/lib/project/deployment"
 	"github.com/input-output-hk/catalyst-forge/lib/project/deployment/deployer"
 	"github.com/input-output-hk/catalyst-forge/lib/project/secrets"
@@ -25,28 +26,31 @@ import (
 	bfs "github.com/input-output-hk/catalyst-forge/lib/tools/fs/billy"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/git/repo/remote"
 	rm "github.com/input-output-hk/catalyst-forge/lib/tools/git/repo/remote/mocks"
+	"github.com/input-output-hk/catalyst-forge/lib/tools/testutils"
 	. "github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 type mockEnv struct {
-	blueprint            *sb.Blueprint
-	blueprintRaw         string
-	bundleRaw            string
-	config               config.OperatorConfig
-	deployFs             *bfs.BillyFs
-	manifestContent      string
-	mockClient           *am.ClientMock
-	mockManifestStore    deployment.ManifestGeneratorStore
-	mockRemote           *rm.GitRemoteInteractorMock
-	mockSecretStore      secrets.SecretStore
-	releaseDeploymentObj *foundryv1alpha1.ReleaseDeployment
-	releaseDeployment    *api.ReleaseDeployment
-	sourceFs             *bfs.BillyFs
-	sourceRepo           *gg.Repository
+	blueprint             *sb.Blueprint
+	blueprintRaw          string
+	bundleRaw             string
+	config                config.OperatorConfig
+	deployFs              *bfs.BillyFs
+	manifestContent       string
+	mockClient            *am.ClientMock
+	mockDeploymentHandler *handlers.ReleaseDeploymentHandler
+	mockManifestStore     deployment.ManifestGeneratorStore
+	mockRemote            *rm.GitRemoteInteractorMock
+	mockRepoHandler       *handlers.RepoHandler
+	mockSecretStore       secrets.SecretStore
+	releaseDeploymentObj  *foundryv1alpha1.ReleaseDeployment
+	releaseDeployment     *api.ReleaseDeployment
+	sourceFs              *bfs.BillyFs
+	sourceRepo            *gg.Repository
 }
 
-func (m *mockEnv) Init() {
+func (m *mockEnv) Init(sourceFiles, deployFiles map[string]string) {
 	var err error
 
 	// Setup filesystems
@@ -54,10 +58,10 @@ func (m *mockEnv) Init() {
 	m.sourceFs = bfs.NewInMemoryFs()
 
 	// Setup the default mock values
-	m.blueprint = NewBlueprint()
-	m.blueprintRaw = NewRawBlueprint()
-	m.bundleRaw = NewRawBundle()
-	m.config = NewConfig()
+	m.blueprint = newBlueprint()
+	m.blueprintRaw = newRawBlueprint()
+	m.bundleRaw = newRawBundle()
+	m.config = newConfig()
 	m.manifestContent = "manifest"
 
 	m.releaseDeploymentObj = &foundryv1alpha1.ReleaseDeployment{
@@ -94,13 +98,9 @@ func (m *mockEnv) Init() {
 	}
 
 	// Setup the mock Git remote
-	m.mockRemote, err = NewMockGitRemoteInterface(map[string]map[string]string{
-		m.releaseDeployment.Release.SourceRepo: {
-			"project/blueprint.cue": m.blueprintRaw,
-		},
-		m.blueprint.Global.Deployment.Repo.Url: {
-			"root/test/project/env.cue": `main: values: { key1: "value1" }`,
-		},
+	m.mockRemote, err = newMockGitRemoteInterface(map[string]map[string]string{
+		m.releaseDeployment.Release.SourceRepo: sourceFiles,
+		m.blueprint.Global.Deployment.Repo.Url: deployFiles,
 	})
 	Expect(err).ToNot(HaveOccurred())
 
@@ -110,8 +110,12 @@ func (m *mockEnv) Init() {
 	// Setup the mock secret store
 	m.mockSecretStore = tu.NewMockSecretStore(map[string]string{"token": "value"})
 
+	// Setup the mock handlers
+	m.mockDeploymentHandler = handlers.NewReleaseDeploymentHandler(context.Background(), m.mockClient)
+	m.mockRepoHandler = handlers.NewRepoHandler(m.deployFs, m.sourceFs, testutils.NewNoopLogger(), m.mockRemote, "token")
+
 	// Initialize the source repository (to properly set the source commit)
-	m.sourceRepo, err = InitRepo(
+	m.sourceRepo, err = initRepo(
 		*m.sourceFs,
 		makeCachePath(m.releaseDeployment.Release.SourceRepo),
 		m.releaseDeployment.Release.SourceRepo,
@@ -124,16 +128,15 @@ func (m *mockEnv) Init() {
 }
 
 func (m *mockEnv) ConfigureController(ctrl *ReleaseDeploymentReconciler) {
-	ctrl.ApiClient = m.mockClient
 	ctrl.Config = m.config
-	ctrl.FsDeploy = m.deployFs
-	ctrl.FsSource = m.sourceFs
+	ctrl.DeploymentHandler = m.mockDeploymentHandler
 	ctrl.ManifestStore = m.mockManifestStore
 	ctrl.Remote = m.mockRemote
+	ctrl.RepoHandler = m.mockRepoHandler
 	ctrl.SecretStore = m.mockSecretStore
 }
 
-func InitRepo(fs bfs.BillyFs, path, url string, remote remote.GitRemoteInteractor) (*gg.Repository, error) {
+func initRepo(fs bfs.BillyFs, path, url string, remote remote.GitRemoteInteractor) (*gg.Repository, error) {
 	mock, ok := remote.(*rm.GitRemoteInteractorMock)
 	if !ok {
 		return nil, fmt.Errorf("failed to cast remote to mock")
@@ -155,7 +158,7 @@ func InitRepo(fs bfs.BillyFs, path, url string, remote remote.GitRemoteInteracto
 	})
 }
 
-func NewMockGitRemoteInterface(
+func newMockGitRemoteInterface(
 	repos map[string]map[string]string,
 ) (*rm.GitRemoteInteractorMock, error) {
 	return &rm.GitRemoteInteractorMock{
@@ -218,17 +221,17 @@ func NewMockGitRemoteInterface(
 	}, nil
 }
 
-func NewBlueprint() *sb.Blueprint {
+func newBlueprint() *sb.Blueprint {
 	var blueprint sb.Blueprint
 	cc := cuecontext.New()
-	v := cc.CompileString(NewRawBlueprint())
+	v := cc.CompileString(newRawBlueprint())
 	Expect(v.Decode(&blueprint)).NotTo(HaveOccurred())
 
 	return &blueprint
 }
 
-func NewConfig() config.OperatorConfig {
-	bp := NewBlueprint()
+func newConfig() config.OperatorConfig {
+	bp := newBlueprint()
 	return config.OperatorConfig{
 		Deployer: deployer.DeployerConfig{
 			Git: deployer.DeployerConfigGit{
@@ -244,7 +247,7 @@ func NewConfig() config.OperatorConfig {
 	}
 }
 
-func NewRawBlueprint() string {
+func newRawBlueprint() string {
 	return `
 		{
 			version: "1.0"
@@ -283,7 +286,7 @@ func NewRawBlueprint() string {
 	`
 }
 
-func NewRawBundle() string {
+func newRawBundle() string {
 	return `{
 	_#def
 	_#def: {

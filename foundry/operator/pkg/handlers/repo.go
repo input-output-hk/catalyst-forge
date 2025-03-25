@@ -72,13 +72,13 @@ func (r *RepoHandler) LoadSourceRepo(url, commit string) error {
 }
 
 // DeploymentRepo returns the deployment repository.
-func (r *RepoHandler) DeploymentRepo() repo.GitRepo {
-	return r.deploymentRepo
+func (r *RepoHandler) DeploymentRepo() *repo.GitRepo {
+	return &r.deploymentRepo
 }
 
 // SourceRepo returns the source repository.
-func (r *RepoHandler) SourceRepo() repo.GitRepo {
-	return r.sourceRepo
+func (r *RepoHandler) SourceRepo() *repo.GitRepo {
+	return &r.sourceRepo
 }
 
 // NewRepoHandler creates a new RepoHandler.

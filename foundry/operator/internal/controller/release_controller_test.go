@@ -44,7 +44,14 @@ var _ = Describe("ReleaseDeployment Controller", func() {
 
 			BeforeAll(func() {
 				// Initialize the test environment
-				env.Init()
+				env.Init(
+					map[string]string{
+						"project/blueprint.cue": newRawBlueprint(),
+					},
+					map[string]string{
+						"root/test/project/env.cue": `main: values: { key1: "value1" }`,
+					},
+				)
 				env.ConfigureController(controller)
 
 				release := &foundryv1alpha1.ReleaseDeployment{}
@@ -81,12 +88,12 @@ var _ = Describe("ReleaseDeployment Controller", func() {
 
 			It("should have cloned the source repository", func() {
 				path := makeCachePath(env.releaseDeployment.Release.SourceRepo)
-				Expect(controller.FsSource.Exists(path)).To(BeTrue())
+				Expect(env.sourceFs.Exists(path)).To(BeTrue())
 			})
 
 			It("should have cloned the deploy repository", func() {
 				path := makeCachePath(env.config.Deployer.Git.Url)
-				Expect(controller.FsDeploy.Exists(path)).To(BeTrue())
+				Expect(env.deployFs.Exists(path)).To(BeTrue())
 			})
 
 			It("should have created the deployment files", func() {
@@ -97,14 +104,14 @@ var _ = Describe("ReleaseDeployment Controller", func() {
 					env.blueprint.Project.Deployment.Bundle.Env,
 					env.releaseDeployment.Release.ProjectPath,
 				)
-				Expect(controller.FsDeploy.Exists(filepath.Join(path, "main.yaml"))).To(BeTrue())
-				Expect(controller.FsDeploy.Exists(filepath.Join(path, "module.cue"))).To(BeTrue())
+				Expect(env.deployFs.Exists(filepath.Join(path, "main.yaml"))).To(BeTrue())
+				Expect(env.deployFs.Exists(filepath.Join(path, "module.cue"))).To(BeTrue())
 
-				got, err := controller.FsDeploy.ReadFile(filepath.Join(path, "module.cue"))
+				got, err := env.deployFs.ReadFile(filepath.Join(path, "module.cue"))
 				Expect(err).NotTo(HaveOccurred())
 				Expect(string(got)).To(Equal(string(env.bundleRaw)))
 
-				got, err = controller.FsDeploy.ReadFile(filepath.Join(path, "main.yaml"))
+				got, err = env.deployFs.ReadFile(filepath.Join(path, "main.yaml"))
 				Expect(err).NotTo(HaveOccurred())
 				Expect(string(got)).To(Equal(string(env.manifestContent)))
 			})

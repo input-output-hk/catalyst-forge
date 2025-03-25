@@ -17,6 +17,7 @@ limitations under the License.
 package main
 
 import (
+	"context"
 	"crypto/tls"
 	"flag"
 	"log/slog"
@@ -44,7 +45,9 @@ import (
 	foundryv1alpha1 "github.com/input-output-hk/catalyst-forge/foundry/operator/api/v1alpha1"
 	"github.com/input-output-hk/catalyst-forge/foundry/operator/internal/controller"
 	"github.com/input-output-hk/catalyst-forge/foundry/operator/pkg/config"
+	"github.com/input-output-hk/catalyst-forge/foundry/operator/pkg/handlers"
 	"github.com/input-output-hk/catalyst-forge/lib/project/deployment"
+	"github.com/input-output-hk/catalyst-forge/lib/project/providers"
 	"github.com/input-output-hk/catalyst-forge/lib/project/secrets"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/fs/billy"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/git/repo/remote"
@@ -223,17 +226,32 @@ func main() {
 	logger := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
 		Level: slog.LevelDebug,
 	}))
+
+	setupLog.Info("Fetching git auth token")
+	secretStore := secrets.NewDefaultSecretStore()
+	creds, err := providers.GetGitProviderCreds(&cfg.Deployer.Git.Creds, &secretStore, logger)
+	if err != nil {
+		setupLog.Error(err, "unable to get auth token")
+		os.Exit(1)
+	}
+
+	apiClient := api.NewClient(cfg.ApiUrl, api.WithTimeout(10*time.Second))
 	if err = (&controller.ReleaseDeploymentReconciler{
-		ApiClient:     api.NewClient(cfg.ApiUrl, api.WithTimeout(10*time.Second)),
-		Client:        mgr.GetClient(),
-		Config:        cfg,
-		FsDeploy:      billy.NewBaseOsFS(),
-		FsSource:      billy.NewBaseOsFS(),
-		Logger:        logger,
-		ManifestStore: deployment.NewDefaultManifestGeneratorStore(),
-		Remote:        remote.GoGitRemoteInteractor{},
-		Scheme:        mgr.GetScheme(),
-		SecretStore:   secrets.NewDefaultSecretStore(),
+		Client:            mgr.GetClient(),
+		Config:            cfg,
+		DeploymentHandler: handlers.NewReleaseDeploymentHandler(context.Background(), apiClient),
+		Logger:            logger,
+		ManifestStore:     deployment.NewDefaultManifestGeneratorStore(),
+		Remote:            remote.GoGitRemoteInteractor{},
+		RepoHandler: handlers.NewRepoHandler(
+			billy.NewBaseOsFS(),
+			billy.NewBaseOsFS(),
+			logger,
+			remote.GoGitRemoteInteractor{},
+			creds.Token,
+		),
+		Scheme:      mgr.GetScheme(),
+		SecretStore: secrets.NewDefaultSecretStore(),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Release")
 		os.Exit(1)
