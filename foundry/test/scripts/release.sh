@@ -23,14 +23,3 @@ DEPLOYMENT_ID=$(echo "$JSON" | jq -r '.deployments[0].id')
 RELEASE_ID=$(echo "$JSON" | jq -r '.id')
 echo "Release ID: $RELEASE_ID"
 echo "Deployment ID: $DEPLOYMENT_ID"
-
-echo ">>> Creating release deployment"
-kubectl apply -f - <<EOF
-apiVersion: foundry.projectcatalyst.io/v1alpha1
-kind: ReleaseDeployment
-metadata:
-  name: ${DEPLOYMENT_ID}
-spec:
-  id: ${DEPLOYMENT_ID}
-  release_id: ${RELEASE_ID}
-EOF

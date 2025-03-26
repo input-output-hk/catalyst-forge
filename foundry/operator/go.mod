@@ -15,8 +15,8 @@ require (
 	github.com/input-output-hk/catalyst-forge/lib/tools v0.0.0
 	github.com/onsi/ginkgo/v2 v2.22.0
 	github.com/onsi/gomega v1.36.1
-	k8s.io/apimachinery v0.32.2
-	k8s.io/client-go v0.32.2
+	k8s.io/apimachinery v0.32.3
+	k8s.io/client-go v0.32.3
 	sigs.k8s.io/controller-runtime v0.20.2
 )
 
@@ -248,7 +248,7 @@ require (
 	gopkg.in/warnings.v0 v0.1.2 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	helm.sh/helm/v3 v3.17.0 // indirect
-	k8s.io/api v0.32.2 // indirect
+	k8s.io/api v0.32.3 // indirect
 	k8s.io/apiextensions-apiserver v0.32.2 // indirect
 	k8s.io/apiserver v0.32.2 // indirect
 	k8s.io/cli-runtime v0.32.0 // indirect

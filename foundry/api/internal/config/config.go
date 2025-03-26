@@ -12,9 +12,10 @@ import (
 
 // Config represents the application configuration
 type Config struct {
-	Server   ServerConfig   `kong:"embed"`
-	Database DatabaseConfig `kong:"embed"`
-	Logging  LoggingConfig  `kong:"embed"`
+	Server     ServerConfig     `kong:"embed"`
+	Database   DatabaseConfig   `kong:"embed"`
+	Logging    LoggingConfig    `kong:"embed"`
+	Kubernetes KubernetesConfig `kong:"embed"`
 }
 
 // ServerConfig represents server-specific configuration
@@ -37,6 +38,12 @@ type DatabaseConfig struct {
 type LoggingConfig struct {
 	Level  string `kong:"help='Log level (debug, info, warn, error)',default='info',env='LOG_LEVEL'"`
 	Format string `kong:"help='Log format (json, text)',default='json',env='LOG_FORMAT'"`
+}
+
+// KubernetesConfig represents Kubernetes-specific configuration
+type KubernetesConfig struct {
+	Namespace string `kong:"help='Kubernetes namespace to use',default='default',env='K8S_NAMESPACE'"`
+	Enabled   bool   `kong:"help='Enable Kubernetes integration',default=false,env='K8S_ENABLED'"`
 }
 
 // Load parses command-line flags and environment variables to populate the Config

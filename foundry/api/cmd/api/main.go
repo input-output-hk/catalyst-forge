@@ -13,9 +13,17 @@ import (
 	"github.com/input-output-hk/catalyst-forge/foundry/api/internal/models"
 	"github.com/input-output-hk/catalyst-forge/foundry/api/internal/repository"
 	"github.com/input-output-hk/catalyst-forge/foundry/api/internal/service"
+	"github.com/input-output-hk/catalyst-forge/foundry/api/pkg/k8s"
+	"github.com/input-output-hk/catalyst-forge/foundry/api/pkg/k8s/mocks"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
+
+var mockK8sClient = mocks.ClientMock{
+	CreateDeploymentFunc: func(ctx context.Context, deployment *models.ReleaseDeployment) error {
+		return nil
+	},
+}
 
 func main() {
 	// Load configuration
@@ -51,6 +59,20 @@ func main() {
 		os.Exit(1)
 	}
 
+	// Initialize Kubernetes client if enabled
+	var k8sClient k8s.Client
+	if cfg.Kubernetes.Enabled {
+		logger.Info("Initializing Kubernetes client", "namespace", cfg.Kubernetes.Namespace)
+		k8sClient, err = k8s.New(cfg.Kubernetes.Namespace, logger)
+		if err != nil {
+			logger.Error("Failed to initialize Kubernetes client", "error", err)
+			os.Exit(1)
+		}
+	} else {
+		k8sClient = &mockK8sClient
+		logger.Info("Kubernetes integration is disabled")
+	}
+
 	// Initialize repositories
 	releaseRepo := repository.NewReleaseRepository(db)
 	deploymentRepo := repository.NewDeploymentRepository(db)
@@ -60,7 +82,7 @@ func main() {
 
 	// Initialize services
 	releaseService := service.NewReleaseService(releaseRepo, aliasRepo, counterRepo, deploymentRepo)
-	deploymentService := service.NewDeploymentService(deploymentRepo, releaseRepo, eventRepo)
+	deploymentService := service.NewDeploymentService(deploymentRepo, releaseRepo, eventRepo, k8sClient, db, logger)
 
 	// Setup router
 	router := api.SetupRouter(releaseService, deploymentService, db, logger)

@@ -12,6 +12,7 @@ spec:
       labels:
         app: api
     spec:
+      serviceAccountName: api
       containers:
       - name: api
         image: localhost:5001/foundry-api:latest
@@ -38,6 +39,8 @@ spec:
             value: "foundry"
           - name: DB_SSLMODE
             value: "disable"
+          - name: "K8S_ENABLED"
+            value: "true"
           - name: LOG_LEVEL
             value: "debug"
           - name: LOG_FORMAT
@@ -59,3 +62,34 @@ spec:
       targetPort: 3001
       protocol: TCP
   type: ClusterIP
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: api
+  namespace: default
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: api
+rules:
+- apiGroups:
+  - foundry.projectcatalyst.io
+  resources:
+  - releasedeployments
+  verbs:
+  - create
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: api
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: api
+subjects:
+- kind: ServiceAccount
+  name: api
+  namespace: default

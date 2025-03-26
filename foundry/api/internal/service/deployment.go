@@ -3,10 +3,13 @@ package service
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"time"
 
 	"github.com/input-output-hk/catalyst-forge/foundry/api/internal/models"
 	"github.com/input-output-hk/catalyst-forge/foundry/api/internal/repository"
+	"github.com/input-output-hk/catalyst-forge/foundry/api/pkg/k8s"
+	"gorm.io/gorm"
 )
 
 // DeploymentService defines the interface for deployment-related business operations
@@ -27,6 +30,9 @@ type DeploymentServiceImpl struct {
 	deploymentRepo repository.DeploymentRepository
 	releaseRepo    repository.ReleaseRepository
 	eventRepo      repository.EventRepository
+	k8sClient      k8s.Client
+	logger         *slog.Logger
+	db             *gorm.DB
 }
 
 // NewDeploymentService creates a new instance of DeploymentService
@@ -34,35 +40,61 @@ func NewDeploymentService(
 	deploymentRepo repository.DeploymentRepository,
 	releaseRepo repository.ReleaseRepository,
 	eventRepo repository.EventRepository,
+	k8sClient k8s.Client,
+	db *gorm.DB,
+	logger *slog.Logger,
 ) DeploymentService {
 	return &DeploymentServiceImpl{
 		deploymentRepo: deploymentRepo,
 		releaseRepo:    releaseRepo,
 		eventRepo:      eventRepo,
+		k8sClient:      k8sClient,
+		db:             db,
+		logger:         logger,
 	}
 }
 
 // CreateDeployment creates a new deployment for a release
 func (s *DeploymentServiceImpl) CreateDeployment(ctx context.Context, releaseID string) (*models.ReleaseDeployment, error) {
-	// Verify the release exists
 	release, err := s.releaseRepo.GetByID(ctx, releaseID)
 	if err != nil {
 		return nil, err
 	}
 
-	// Create the deployment
-	now := time.Now()
-	deploymentID := fmt.Sprintf("%s-%d", releaseID, now.UnixNano())
+	var deployment *models.ReleaseDeployment
+	err = s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		now := time.Now()
+		deploymentID := fmt.Sprintf("%s-%d", releaseID, now.UnixNano())
 
-	deployment := &models.ReleaseDeployment{
-		ID:        deploymentID,
-		ReleaseID: releaseID,
-		Timestamp: now,
-		Status:    models.DeploymentStatusPending,
-		Attempts:  0,
-	}
+		deployment = &models.ReleaseDeployment{
+			ID:        deploymentID,
+			ReleaseID: releaseID,
+			Timestamp: now,
+			Status:    models.DeploymentStatusPending,
+			Attempts:  0,
+		}
 
-	if err := s.deploymentRepo.Create(ctx, deployment); err != nil {
+		txDeploymentRepo := repository.NewDeploymentRepository(tx)
+		if err := txDeploymentRepo.Create(ctx, deployment); err != nil {
+			s.logger.Error("Failed to create deployment",
+				"deploymentID", deployment.ID,
+				"releaseID", releaseID,
+				"error", err)
+			return err
+		}
+
+		s.logger.Info("Creating Kubernetes deployment resource",
+			"deploymentID", deployment.ID,
+			"releaseID", releaseID)
+
+		if err := s.k8sClient.CreateDeployment(ctx, deployment); err != nil {
+			return fmt.Errorf("failed to create Kubernetes resource: %w", err)
+		}
+
+		return nil
+	})
+
+	if err != nil {
 		return nil, err
 	}
 

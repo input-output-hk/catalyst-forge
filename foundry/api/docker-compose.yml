@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   api:
     image: foundry-api:latest
@@ -16,6 +14,7 @@ services:
       DB_PASSWORD: changeme
       DB_NAME: foundry
       DB_SSLMODE: disable
+      K8S_ENABLED: "false"
       LOG_LEVEL: debug
       LOG_FORMAT: text
     ports:
