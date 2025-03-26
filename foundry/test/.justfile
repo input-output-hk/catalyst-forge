@@ -9,6 +9,7 @@ api:
   earthly ../api+docker
   docker tag foundry-api:latest localhost:5001/foundry-api:latest
   docker push localhost:5001/foundry-api:latest
+  kubectl delete deployment api
   kubectl apply -f manifests/api.yml
 
 api-up:
