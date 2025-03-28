@@ -55,6 +55,66 @@ func TestGitRepoClone(t *testing.T) {
 	assert.Equal(t, commit.Message, "test")
 }
 
+func TestGitRepoCheckoutRef(t *testing.T) {
+	t.Run("valid commit", func(t *testing.T) {
+		repo := newGitRepo(t)
+		oldHead, err := repo.raw.Head()
+		require.NoError(t, err)
+
+		require.NoError(t, repo.wfs.WriteFile("new.txt", []byte("test"), 0644))
+		require.NoError(t, repo.StageFile("new.txt"))
+		hash, err := repo.Commit("test")
+		require.NoError(t, err)
+		newHead, err := repo.raw.CommitObject(hash)
+		require.NoError(t, err)
+		require.NotEqual(t, oldHead.Hash(), newHead.Hash)
+
+		assert.NoError(t, repo.CheckoutRef(oldHead.Hash().String()))
+		head, err := repo.raw.Head()
+		require.NoError(t, err)
+		assert.Equal(t, head.Hash(), oldHead.Hash())
+	})
+
+	t.Run("valid branch", func(t *testing.T) {
+		repo := newGitRepo(t)
+		require.NoError(t, repo.NewBranch("test"))
+		require.NoError(t, repo.wfs.WriteFile("new.txt", []byte("test"), 0644))
+		require.NoError(t, repo.StageFile("new.txt"))
+		_, err := repo.Commit("test")
+		require.NoError(t, err)
+
+		assert.NoError(t, repo.CheckoutRef("master"))
+		branch, err := repo.GetCurrentBranch()
+		require.NoError(t, err)
+		assert.Equal(t, branch, "master")
+	})
+
+	t.Run("valid tag", func(t *testing.T) {
+		repo := newGitRepo(t)
+		head, err := repo.raw.Head()
+		require.NoError(t, err)
+		require.NoError(t, repo.CreateTag("v1.0.0", head.Hash().String(), "test tag"))
+
+		require.NoError(t, repo.wfs.WriteFile("new.txt", []byte("test"), 0644))
+		require.NoError(t, repo.StageFile("new.txt"))
+		_, err = repo.Commit("test")
+		require.NoError(t, err)
+
+		assert.NoError(t, repo.CheckoutRef("v1.0.0"))
+
+		newHead, err := repo.raw.Head()
+		require.NoError(t, err)
+		assert.Equal(t, head.Hash().String(), newHead.Hash().String())
+	})
+
+	t.Run("invalid ref", func(t *testing.T) {
+		repo := newGitRepo(t)
+
+		err := repo.CheckoutRef("invalid")
+		assert.Error(t, err)
+	})
+}
+
 func TestGitRepoCommit(t *testing.T) {
 	t.Run("succcess", func(t *testing.T) {
 		repo := newGitRepo(t)
@@ -70,6 +130,37 @@ func TestGitRepoCommit(t *testing.T) {
 		commit, err := repo.GetCommit(hash)
 		require.NoError(t, err)
 		assert.Equal(t, commit.Message, "test")
+	})
+}
+
+func TestGitRepoCreateTag(t *testing.T) {
+	t.Run("create annotated tag", func(t *testing.T) {
+		repo := newGitRepo(t)
+
+		require.NoError(t, repo.wfs.WriteFile("new.txt", []byte("contesttent"), 0644))
+		require.NoError(t, repo.StageFile("new.txt"))
+		commitHash, err := repo.Commit("test")
+		require.NoError(t, err)
+
+		err = repo.CreateTag("v1.0.0", commitHash.String(), "message")
+		assert.NoError(t, err)
+
+		tag, err := repo.raw.Tag("v1.0.0")
+		require.NoError(t, err)
+
+		tagObj, err := repo.raw.TagObject(tag.Hash())
+		require.NoError(t, err, "Should be able to get a tag object for an annotated tag")
+		assert.Equal(t, "message\n", tagObj.Message)
+
+		commit, err := tagObj.Commit()
+		require.NoError(t, err)
+		assert.Equal(t, commitHash.String(), commit.Hash.String())
+	})
+
+	t.Run("invalid commit hash", func(t *testing.T) {
+		repo := newGitRepo(t)
+		err := repo.CreateTag("invalid-tag", "not-a-hash", "")
+		assert.Error(t, err)
 	})
 }
 
