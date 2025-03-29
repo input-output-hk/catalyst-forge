@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	gg "github.com/go-git/go-git/v5"
@@ -43,6 +44,13 @@ type GitRepo struct {
 	worktree     *gg.Worktree
 }
 
+// CheckoutBranch checks out a branch with the given name.
+func (g *GitRepo) CheckoutBranch(branch string) error {
+	return g.worktree.Checkout(&gg.CheckoutOptions{
+		Branch: plumbing.NewBranchReferenceName(branch),
+	})
+}
+
 // CheckoutCommit checks out a commit with the given hash.
 func (g *GitRepo) CheckoutCommit(hash string) error {
 	return g.worktree.Checkout(&gg.CheckoutOptions{
@@ -50,11 +58,48 @@ func (g *GitRepo) CheckoutCommit(hash string) error {
 	})
 }
 
-// CheckoutBranch checks out a branch with the given name.
-func (g *GitRepo) CheckoutBranch(branch string) error {
-	return g.worktree.Checkout(&gg.CheckoutOptions{
-		Branch: plumbing.NewBranchReferenceName(branch),
-	})
+func (g *GitRepo) CheckoutRef(reference string) error {
+	// Initialize checkout options
+	checkoutOpts := &gg.CheckoutOptions{
+		Force: true,
+	}
+
+	// Try as a commit hash first
+	hash := plumbing.NewHash(reference)
+	if !hash.IsZero() {
+		_, err := g.raw.CommitObject(hash)
+		if err == nil {
+			checkoutOpts.Hash = hash
+			return g.worktree.Checkout(checkoutOpts)
+		}
+	}
+
+	// Try as a local branch
+	branchRefName := plumbing.NewBranchReferenceName(reference)
+	_, err := g.raw.Reference(branchRefName, true)
+	if err == nil {
+		checkoutOpts.Branch = branchRefName
+		return g.worktree.Checkout(checkoutOpts)
+	}
+
+	// Try as a tag
+	tagRefName := plumbing.NewTagReferenceName(reference)
+	tagRef, err := g.raw.Reference(tagRefName, true)
+	if err == nil {
+		tagObj, err := g.raw.TagObject(tagRef.Hash())
+		if err == nil {
+			commit, err := tagObj.Commit()
+			if err == nil {
+				checkoutOpts.Hash = commit.Hash
+				return g.worktree.Checkout(checkoutOpts)
+			}
+		} else if strings.Contains(err.Error(), "not a tag object") {
+			checkoutOpts.Hash = tagRef.Hash()
+			return g.worktree.Checkout(checkoutOpts)
+		}
+	}
+
+	return fmt.Errorf("reference not found: %s is not a valid commit hash, branch, or tag", reference)
 }
 
 // Clone loads a repository from a git remote.
@@ -102,6 +147,36 @@ func (g *GitRepo) Commit(msg string) (plumbing.Hash, error) {
 	}
 
 	return hash, nil
+}
+
+// CreateTag creates a tag with the given name and message.
+func (g *GitRepo) CreateTag(name, hash, message string) error {
+	commitHash := plumbing.NewHash(hash)
+	if commitHash.IsZero() {
+		return fmt.Errorf("invalid commit hash: %s", hash)
+	}
+
+	_, err := g.raw.CommitObject(commitHash)
+	if err != nil {
+		return fmt.Errorf("failed to find commit %s: %w", hash, err)
+	}
+
+	author, email := g.getAuthor()
+	opts := &gg.CreateTagOptions{
+		Message: message,
+		Tagger: &object.Signature{
+			Name:  author,
+			Email: email,
+			When:  time.Now(),
+		},
+	}
+
+	_, err = g.raw.CreateTag(name, commitHash, opts)
+	if err != nil {
+		return fmt.Errorf("failed to create tag %s: %w", name, err)
+	}
+
+	return nil
 }
 
 // Exists checks if a file exists in the repository.
