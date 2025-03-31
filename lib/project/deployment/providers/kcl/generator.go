@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"cuelang.org/go/cue"
 	"github.com/BurntSushi/toml"
 	"github.com/input-output-hk/catalyst-forge/lib/project/deployment/providers/kcl/client"
 	sp "github.com/input-output-hk/catalyst-forge/lib/schema/blueprint/project"
@@ -33,7 +34,7 @@ type KCLManifestGenerator struct {
 	logger *slog.Logger
 }
 
-func (g *KCLManifestGenerator) Generate(mod sp.Module, env string) ([]byte, error) {
+func (g *KCLManifestGenerator) Generate(mod sp.Module, raw cue.Value, env string) ([]byte, error) {
 	var conf client.KCLModuleConfig
 	var path string
 	if mod.Path != "" {

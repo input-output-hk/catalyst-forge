@@ -9,6 +9,8 @@ import (
 	"path/filepath"
 	"testing"
 
+	"cuelang.org/go/cue"
+	"cuelang.org/go/cue/cuecontext"
 	"github.com/input-output-hk/catalyst-forge/lib/project/deployment/providers/helm/downloader/mocks"
 	sp "github.com/input-output-hk/catalyst-forge/lib/schema/blueprint/project"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/testutils"
@@ -40,7 +42,7 @@ func TestHelmManifestGenerator(t *testing.T) {
 		Version: "1.0.0",
 	}
 
-	result, err := gen.Generate(mod, "test")
+	result, err := gen.Generate(mod, getRaw(mod), "test")
 	require.NoError(t, err)
 
 	golden, err := os.ReadFile("./testdata/golden.yaml")
@@ -103,4 +105,9 @@ func archive(dirPath string) (*bytes.Buffer, error) {
 	}
 
 	return &buf, nil
+}
+
+func getRaw(m sp.Module) cue.Value {
+	ctx := cuecontext.New()
+	return ctx.Encode(m)
 }

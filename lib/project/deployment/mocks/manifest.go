@@ -4,6 +4,7 @@
 package mocks
 
 import (
+	"cuelang.org/go/cue"
 	sp "github.com/input-output-hk/catalyst-forge/lib/schema/blueprint/project"
 	"sync"
 )
@@ -14,7 +15,7 @@ import (
 //
 //		// make and configure a mocked deployment.ManifestGenerator
 //		mockedManifestGenerator := &ManifestGeneratorMock{
-//			GenerateFunc: func(mod sp.Module, env string) ([]byte, error) {
+//			GenerateFunc: func(mod sp.Module, raw cue.Value, env string) ([]byte, error) {
 //				panic("mock out the Generate method")
 //			},
 //		}
@@ -25,7 +26,7 @@ import (
 //	}
 type ManifestGeneratorMock struct {
 	// GenerateFunc mocks the Generate method.
-	GenerateFunc func(mod sp.Module, env string) ([]byte, error)
+	GenerateFunc func(mod sp.Module, raw cue.Value, env string) ([]byte, error)
 
 	// calls tracks calls to the methods.
 	calls struct {
@@ -33,6 +34,8 @@ type ManifestGeneratorMock struct {
 		Generate []struct {
 			// Mod is the mod argument value.
 			Mod sp.Module
+			// Raw is the raw argument value.
+			Raw cue.Value
 			// Env is the env argument value.
 			Env string
 		}
@@ -41,21 +44,23 @@ type ManifestGeneratorMock struct {
 }
 
 // Generate calls GenerateFunc.
-func (mock *ManifestGeneratorMock) Generate(mod sp.Module, env string) ([]byte, error) {
+func (mock *ManifestGeneratorMock) Generate(mod sp.Module, raw cue.Value, env string) ([]byte, error) {
 	if mock.GenerateFunc == nil {
 		panic("ManifestGeneratorMock.GenerateFunc: method is nil but ManifestGenerator.Generate was just called")
 	}
 	callInfo := struct {
 		Mod sp.Module
+		Raw cue.Value
 		Env string
 	}{
 		Mod: mod,
+		Raw: raw,
 		Env: env,
 	}
 	mock.lockGenerate.Lock()
 	mock.calls.Generate = append(mock.calls.Generate, callInfo)
 	mock.lockGenerate.Unlock()
-	return mock.GenerateFunc(mod, env)
+	return mock.GenerateFunc(mod, raw, env)
 }
 
 // GenerateCalls gets all the calls that were made to Generate.
@@ -64,10 +69,12 @@ func (mock *ManifestGeneratorMock) Generate(mod sp.Module, env string) ([]byte, 
 //	len(mockedManifestGenerator.GenerateCalls())
 func (mock *ManifestGeneratorMock) GenerateCalls() []struct {
 	Mod sp.Module
+	Raw cue.Value
 	Env string
 } {
 	var calls []struct {
 		Mod sp.Module
+		Raw cue.Value
 		Env string
 	}
 	mock.lockGenerate.RLock()
