@@ -65,7 +65,8 @@ func (c *TemplateCmd) Run(ctx run.RunContext) error {
 			mod.Path = path
 		}
 
-		out, err := gen.Generate(mod, bundle.Bundle.Env)
+		raw := bundle.Raw.LookupPath(cue.ParsePath(fmt.Sprintf("modules.%s", c.Module)))
+		out, err := gen.Generate(mod, raw, bundle.Bundle.Env)
 		if err != nil {
 			return fmt.Errorf("failed to generate manifest: %w", err)
 		}

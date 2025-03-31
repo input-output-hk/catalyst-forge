@@ -98,7 +98,7 @@ func TestGeneratorGenerateBundle(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			mg := &mocks.ManifestGeneratorMock{
-				GenerateFunc: func(mod sp.Module, env string) ([]byte, error) {
+				GenerateFunc: func(mod sp.Module, raw cue.Value, env string) ([]byte, error) {
 					if tt.err {
 						return nil, fmt.Errorf("error")
 					}
@@ -120,7 +120,7 @@ func TestGeneratorGenerateBundle(t *testing.T) {
 				store:  store,
 			}
 
-			tt.bundle.Raw = getRaw(tt.bundle.Bundle)
+			tt.bundle.Raw = getRawBundle(tt.bundle.Bundle)
 			result, err := gen.GenerateBundle(tt.bundle, tt.env)
 			tt.validate(t, result, err)
 		})
@@ -177,7 +177,7 @@ func TestGeneratorGenerate(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			mg := &mocks.ManifestGeneratorMock{
-				GenerateFunc: func(mod sp.Module, env string) ([]byte, error) {
+				GenerateFunc: func(mod sp.Module, raw cue.Value, env string) ([]byte, error) {
 					if tt.err {
 						return nil, fmt.Errorf("error")
 					}
@@ -199,15 +199,22 @@ func TestGeneratorGenerate(t *testing.T) {
 				store:  store,
 			}
 
-			result, err := gen.Generate(tt.module, tt.env)
+			result, err := gen.Generate(tt.module, getRawModule(tt.module), tt.env)
 			tt.validate(t, result, err)
 		})
 	}
 }
 
-func getRaw(mod sp.ModuleBundle) cue.Value {
+func getRawBundle(b sp.ModuleBundle) cue.Value {
 	ctx := cuecontext.New()
-	v := ctx.Encode(mod)
+	v := ctx.Encode(b)
+
+	return v
+}
+
+func getRawModule(m sp.Module) cue.Value {
+	ctx := cuecontext.New()
+	v := ctx.Encode(m)
 
 	return v
 }

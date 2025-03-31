@@ -5,6 +5,7 @@ import (
 	"log/slog"
 	"path/filepath"
 
+	"cuelang.org/go/cue"
 	"github.com/go-git/go-billy/v5"
 	gg "github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing/object"
@@ -35,7 +36,7 @@ func NewMockManifestStore(manifest string) deployment.ManifestGeneratorStore {
 		map[deployment.Provider]func(*slog.Logger) deployment.ManifestGenerator{
 			deployment.ProviderKCL: func(logger *slog.Logger) deployment.ManifestGenerator {
 				return &dm.ManifestGeneratorMock{
-					GenerateFunc: func(mod sp.Module, env string) ([]byte, error) {
+					GenerateFunc: func(mod sp.Module, raw cue.Value, env string) ([]byte, error) {
 						return []byte(manifest), nil
 					},
 				}

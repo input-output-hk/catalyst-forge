@@ -58,6 +58,7 @@ func (g *GitRepo) CheckoutCommit(hash string) error {
 	})
 }
 
+// CheckoutRef checks out a reference (commit, branch, or tag) with the given name.
 func (g *GitRepo) CheckoutRef(reference string) error {
 	// Initialize checkout options
 	checkoutOpts := &gg.CheckoutOptions{
@@ -322,7 +323,7 @@ func IsErrNoUpdates(err error) bool {
 
 // MkdirAll creates a directory and all necessary parents.
 func (g *GitRepo) MkdirAll(path string) error {
-	return g.fs.MkdirAll(filepath.Join(g.basePath, path), 0755)
+	return g.wfs.MkdirAll(filepath.Join(g.basePath, path), 0755)
 }
 
 // NewBranch creates a new branch with the given name.

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log/slog"
 
+	"cuelang.org/go/cue"
 	"github.com/input-output-hk/catalyst-forge/lib/project/deployment/providers/helm/downloader"
 	sp "github.com/input-output-hk/catalyst-forge/lib/schema/blueprint/project"
 	"helm.sh/helm/v3/pkg/action"
@@ -15,7 +16,7 @@ type HelmManifestGenerator struct {
 	logger     *slog.Logger
 }
 
-func (h *HelmManifestGenerator) Generate(mod sp.Module, env string) ([]byte, error) {
+func (h *HelmManifestGenerator) Generate(mod sp.Module, raw cue.Value, env string) ([]byte, error) {
 	client := action.NewInstall(&action.Configuration{})
 
 	client.ReleaseName = mod.Instance
