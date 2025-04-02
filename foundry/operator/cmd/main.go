@@ -239,7 +239,7 @@ func main() {
 	if err = (&controller.ReleaseDeploymentReconciler{
 		Client:            mgr.GetClient(),
 		Config:            cfg,
-		DeploymentHandler: handlers.NewReleaseDeploymentHandler(context.Background(), apiClient),
+		DeploymentHandler: handlers.NewReleaseDeploymentHandler(context.Background(), apiClient, mgr.GetClient()),
 		Logger:            logger,
 		ManifestStore:     deployment.NewDefaultManifestGeneratorStore(),
 		Remote:            remote.GoGitRemoteInteractor{},
