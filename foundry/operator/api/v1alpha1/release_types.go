@@ -27,6 +27,12 @@ type ReleaseDeploymentSpec struct {
 
 	// ReleaseID is the identifier for the release this deployment belongs to.
 	ReleaseID string `json:"release_id"`
+
+	// TTL specifies the time to live for this deployment after completion (in seconds).
+	// After this period has elapsed since completion, the operator will delete the resource.
+	// +optional
+	// +kubebuilder:default=300
+	TTL int64 `json:"ttl,omitempty"`
 }
 
 // GitSpec defines the source Git repository for the release.
@@ -49,6 +55,10 @@ type ReleaseDeploymentStatus struct {
 
 	// State is the current state of the release.
 	State string `json:"state"`
+
+	// CompletionTime represents the time when this deployment completed (succeeded or failed).
+	// +optional
+	CompletionTime *metav1.Time `json:"completionTime,omitempty"`
 }
 
 // +kubebuilder:object:root=true

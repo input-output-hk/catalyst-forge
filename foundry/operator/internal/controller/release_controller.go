@@ -19,6 +19,7 @@ package controller
 import (
 	"context"
 	"log/slog"
+	"time"
 
 	"cuelang.org/go/cue/cuecontext"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -48,9 +49,9 @@ type ReleaseDeploymentReconciler struct {
 	SecretStore       secrets.SecretStore
 }
 
-// +kubebuilder:rbac:groups=foundry.projectcatalyst.io,resources=releases,verbs=get;list;watch;create;update;patch;delete
-// +kubebuilder:rbac:groups=foundry.projectcatalyst.io,resources=releases/status,verbs=get;update;patch
-// +kubebuilder:rbac:groups=foundry.projectcatalyst.io,resources=releases/finalizers,verbs=update
+// +kubebuilder:rbac:groups=foundry.projectcatalyst.io,resources=releasedeployments,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=foundry.projectcatalyst.io,resources=releasedeployments/status,verbs=get;update;patch
+// +kubebuilder:rbac:groups=foundry.projectcatalyst.io,resources=releasedeployments/finalizers,verbs=update
 
 func (r *ReleaseDeploymentReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	log := log.FromContext(ctx)
@@ -58,7 +59,7 @@ func (r *ReleaseDeploymentReconciler) Reconcile(ctx context.Context, req ctrl.Re
 	// 1. Fetch the ReleaseDeployment resource
 	var resource foundryv1alpha1.ReleaseDeployment
 	if err := r.Get(ctx, req.NamespacedName, &resource); err != nil {
-		log.Error(err, "unable to fetch Release")
+		log.Error(err, "unable to fetch ReleaseDeployment")
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
 
@@ -68,12 +69,39 @@ func (r *ReleaseDeploymentReconciler) Reconcile(ctx context.Context, req ctrl.Re
 		log.Error(err, "unable to load deployment")
 		return ctrl.Result{}, err
 	}
-	release := r.DeploymentHandler.Release()
 
-	// 3. Check if the deployment has already been completed
+	// 3. Check for TTL expiration on completed deployments
 	if r.DeploymentHandler.IsCompleted() {
-		log.Info("Deployment already finished")
-		return ctrl.Result{}, nil
+		log.Info("Deployment is completed, checking TTL")
+
+		if err := r.DeploymentHandler.UpdateCompletionTime(); err != nil {
+			log.Error(err, "unable to update completion time")
+			return ctrl.Result{}, err
+		}
+
+		expired, timeUntilExpiry := r.DeploymentHandler.IsExpired()
+		if expired {
+			log.Info("Deployment TTL has expired, deleting resource",
+				"completionTime", resource.Status.CompletionTime,
+				"ttl", resource.Spec.TTL)
+
+			if err := r.Delete(ctx, &resource); err != nil {
+				log.Error(err, "unable to delete expired deployment")
+				return ctrl.Result{}, err
+			}
+
+			return ctrl.Result{}, nil
+		}
+
+		// Add a 5 second buffer to avoid requeuing too early
+		requeueAfter := timeUntilExpiry + 5*time.Second
+		log.Info("Deployment not expired yet, requeuing",
+			"completionTime", resource.Status.CompletionTime,
+			"ttl", resource.Spec.TTL,
+			"timeUntilExpiry", timeUntilExpiry.String(),
+			"requeueAfter", requeueAfter.String())
+
+		return ctrl.Result{RequeueAfter: requeueAfter}, nil
 	}
 
 	// 4. Check if max attempts have been reached
@@ -94,19 +122,15 @@ func (r *ReleaseDeploymentReconciler) Reconcile(ctx context.Context, req ctrl.Re
 		return ctrl.Result{}, err
 	}
 
-	// resource.Status.State = "Deploying"
-	// if err := r.Status().Update(ctx, &resource); err != nil {
-	// 	log.Error(err, "unable to update Release status")
-	// 	return ctrl.Result{}, err
-	// }
-
 	// 6. Open repos
 	log.Info("Opening deployment repo", "url", r.Config.Deployer.Git.Url)
 	if err := r.RepoHandler.LoadDeploymentRepo(r.Config.Deployer.Git.Url, r.Config.Deployer.Git.Ref); err != nil {
 		log.Error(err, "unable to load deployment repo")
+		r.DeploymentHandler.AddErrorEvent(err, "Unable to load deployment repo")
 		return ctrl.Result{}, err
 	}
 
+	release := r.DeploymentHandler.Release()
 	log.Info("Opening source repo", "url", release.SourceRepo)
 	if err := r.RepoHandler.LoadSourceRepo(release.SourceRepo, release.SourceCommit); err != nil {
 		log.Error(err, "unable to load source repo")
@@ -160,6 +184,7 @@ func (r *ReleaseDeploymentReconciler) Reconcile(ctx context.Context, req ctrl.Re
 		return ctrl.Result{}, err
 	}
 
+	// Requeue to check TTL later
 	return ctrl.Result{}, nil
 }
 

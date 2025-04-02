@@ -33,7 +33,7 @@ import (
 var _ = Describe("ReleaseDeployment Controller", func() {
 	Context("When reconciling a release deployment", func() {
 		const (
-			timeout  = time.Second * 10
+			timeout  = time.Second * 5
 			interval = time.Millisecond * 250
 		)
 
@@ -43,7 +43,6 @@ var _ = Describe("ReleaseDeployment Controller", func() {
 			)
 
 			BeforeAll(func() {
-				// Initialize the test environment
 				env.Init(
 					map[string]string{
 						"project/blueprint.cue": newRawBlueprint(),
@@ -51,38 +50,33 @@ var _ = Describe("ReleaseDeployment Controller", func() {
 					map[string]string{
 						"root/test/project/env.cue": `main: values: { key1: "value1" }`,
 					},
+					k8sClient,
 				)
 				env.ConfigureController(controller)
 
-				release := &foundryv1alpha1.ReleaseDeployment{}
-				err := k8sClient.Get(ctx, getNamespacedName(env.releaseDeploymentObj), release)
+				err := k8sClient.Get(ctx, getNamespacedName(env.releaseDeploymentObj), env.releaseDeploymentObj)
 				if err != nil && errors.IsNotFound(err) {
 					Expect(k8sClient.Create(ctx, env.releaseDeploymentObj)).To(Succeed())
 				}
 			})
 
-			// AfterEach(func() {
-			// 	// TODO(user): Cleanup logic after each test, like removing the resource instance.
-			// 	resource := &foundryv1alpha1.Release{}
-			// 	err := k8sClient.Get(ctx, typeNamespacedName, resource)
-			// 	Expect(err).NotTo(HaveOccurred())
-
-			// 	By("Cleanup the specific resource instance Release")
-			// 	Expect(k8sClient.Delete(ctx, resource)).To(Succeed())
-			// })
+			AfterAll(func() {
+				err := k8sClient.Get(ctx, getNamespacedName(env.releaseDeploymentObj), env.releaseDeploymentObj)
+				if err == nil {
+					Expect(k8sClient.Delete(ctx, env.releaseDeploymentObj)).To(Succeed())
+				}
+			})
 
 			It("should set the status to succeeded", func() {
-				//release := &foundryv1alpha1.ReleaseDeployment{}
 				Eventually(func(g Gomega) {
-					//g.Expect(k8sClient.Get(ctx, getNamespacedName(releaseDeploymentObj), release)).To(Succeed())
-					//g.Expect(release.Status.State).To(Equal("Deployed"))
+					g.Expect(k8sClient.Get(ctx, getNamespacedName(env.releaseDeploymentObj), env.releaseDeploymentObj)).To(Succeed())
+					g.Expect(env.releaseDeploymentObj.Status.State).To(Equal(string(api.DeploymentStatusSucceeded)))
 					g.Expect(env.releaseDeployment.Status).To(Equal(api.DeploymentStatusSucceeded))
 					g.Expect(hasEvent(env.releaseDeployment.Events, "DeploymentSucceeded", "Deployment has succeeded")).To(BeTrue())
 				}, timeout, interval).Should(Succeed())
 			})
 
 			It("should have called the API client to get the deployment", func() {
-				Expect(len(env.mockClient.GetDeploymentCalls())).To(Equal(1))
 				Expect(env.mockClient.GetDeploymentCalls()[0].DeployID).To(Equal(env.releaseDeployment.ID))
 				Expect(env.mockClient.GetDeploymentCalls()[0].ReleaseID).To(Equal(env.releaseDeployment.Release.ID))
 			})
@@ -123,6 +117,26 @@ var _ = Describe("ReleaseDeployment Controller", func() {
 				got, err = env.deployFs.ReadFile(filepath.Join(path, "main.yaml"))
 				Expect(err).NotTo(HaveOccurred())
 				Expect(string(got)).To(Equal(string(env.manifestContent)))
+			})
+
+			Context("when the ttl expires", func() {
+				BeforeAll(func() {
+					err := k8sClient.Get(ctx, getNamespacedName(env.releaseDeploymentObj), env.releaseDeploymentObj)
+					Expect(err).To(Succeed())
+
+					env.mockClock.Advance(time.Hour * 1)
+					env.releaseDeploymentObj.Spec.TTL = 1
+					Expect(k8sClient.Update(ctx, env.releaseDeploymentObj)).To(Succeed())
+				})
+
+				It("should delete the deployment", func() {
+					Eventually(func(g Gomega) {
+						release := &foundryv1alpha1.ReleaseDeployment{}
+						err := k8sClient.Get(ctx, getNamespacedName(env.releaseDeploymentObj), release)
+						g.Expect(err).To(HaveOccurred())
+						g.Expect(errors.IsNotFound(err)).To(BeTrue())
+					}, timeout, interval).Should(Succeed())
+				})
 			})
 		})
 	})

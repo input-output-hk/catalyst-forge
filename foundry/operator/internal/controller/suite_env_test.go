@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"path/filepath"
+	"time"
 
 	"cuelang.org/go/cue/cuecontext"
 	"github.com/go-git/go-billy/v5"
@@ -29,6 +30,7 @@ import (
 	"github.com/input-output-hk/catalyst-forge/lib/tools/testutils"
 	. "github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 type mockEnv struct {
@@ -39,6 +41,7 @@ type mockEnv struct {
 	deployFs              *bfs.BillyFs
 	manifestContent       string
 	mockClient            *am.ClientMock
+	mockClock             *MockClock
 	mockDeploymentHandler *handlers.ReleaseDeploymentHandler
 	mockManifestStore     deployment.ManifestGeneratorStore
 	mockRemote            *rm.GitRemoteInteractorMock
@@ -50,7 +53,7 @@ type mockEnv struct {
 	sourceRepo            *gg.Repository
 }
 
-func (m *mockEnv) Init(sourceFiles, deployFiles map[string]string) {
+func (m *mockEnv) Init(sourceFiles, deployFiles map[string]string, k8sClient k8sclient.Client) {
 	var err error
 
 	// Setup filesystems
@@ -122,7 +125,8 @@ func (m *mockEnv) Init(sourceFiles, deployFiles map[string]string) {
 	m.mockSecretStore = tu.NewMockSecretStore(map[string]string{"token": "value"})
 
 	// Setup the mock handlers
-	m.mockDeploymentHandler = handlers.NewReleaseDeploymentHandler(context.Background(), m.mockClient)
+	m.mockClock = NewMockClock(time.Date(2025, 1, 1, 12, 0, 0, 0, time.UTC))
+	m.mockDeploymentHandler = handlers.NewReleaseDeploymentHandlerWithClock(context.Background(), m.mockClient, k8sClient, m.mockClock)
 	m.mockRepoHandler = handlers.NewRepoHandler(m.deployFs, m.sourceFs, testutils.NewNoopLogger(), m.mockRemote, "token")
 
 	// Initialize the source repository (to properly set the source commit)
