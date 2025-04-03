@@ -74,6 +74,7 @@ global: {
 		]
 	}
 	deployment: {
+		foundry: api: "https://foundry.projectcatalyst.io"
 		registries: {
 			containers: "ghcr.io/input-output-hk/catalyst-forge"
 			modules:    ci.providers.aws.ecr.registry + "/catalyst-deployments"
@@ -87,5 +88,6 @@ global: {
 	repo: {
 		defaultBranch: "master"
 		name:          "input-output-hk/catalyst-forge"
+		url:           "https://github.com/input-output-hk/catalyst-forge"
 	}
 }

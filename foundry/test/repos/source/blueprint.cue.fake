@@ -2,6 +2,7 @@
 	version: "1.0"
 	global: {
 		deployment: {
+			foundry: api: "http://localhost:3001"
 			registries: {
 				containers: "foo"
 				modules:    "bar"
@@ -11,6 +12,11 @@
 				url: "gitea:3000/root/deployment"
 			}
 			root: "k8s"
+		}
+		repo: {
+			defaultBranch: "master"
+			name:          "root/source"
+			url:           "http://gitea:3000/root/source"
 		}
 	}
 }
