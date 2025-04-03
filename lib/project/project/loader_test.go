@@ -30,8 +30,9 @@ bar:
 version: "1.0"
 global: {
   repo: {
+    defaultBranch: "main"
     name: "foo"
-	defaultBranch: "main"
+	url: "bar"
   }
 }
 project: name: "foo"
@@ -100,8 +101,9 @@ project: name: "foo"
 		version: "1.0"
 		global: {
 		  repo: {
+		    defaultBranch: "main"
 		    name: "foo"
-			defaultBranch: "main"
+			url: "bar"
 		  }
 		}
 		project: {
@@ -132,8 +134,9 @@ project: name: "foo"
 		version: "1.0"
 		global: {
 		  repo: {
+		    defaultBranch: "main"
 		    name: "foo"
-			defaultBranch: "main"
+			url: "bar"
 		  }
 		}
 		project: {
@@ -226,8 +229,9 @@ project: name: "foo"
 		version: "1.0"
 		global: {
 		  repo: {
+		    defaultBranch: "main"
 		    name: "foo"
-			defaultBranch: "main"
+			url: "bar"
 		  }
 		}
 		project: {
