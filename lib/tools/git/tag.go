@@ -15,11 +15,12 @@ var (
 func GetTag(r *repo.GitRepo) (string, error) {
 	var tag string
 	var err error
-	env := github.NewGithubEnv(nil)
+	ghr := github.NewDefaultGithubRepo(nil)
 
-	if github.InCI() {
-		tag = env.GetTag()
-		if tag == "" {
+	if github.InGithubActions() {
+		var ok bool
+		tag, ok = ghr.GetTag()
+		if !ok {
 			return "", ErrTagNotFound
 		}
 	} else {

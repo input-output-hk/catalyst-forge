@@ -12,10 +12,10 @@ var (
 )
 
 func GetBranch(repo *repo.GitRepo) (string, error) {
-	env := github.NewGithubEnv(nil)
+	ghr := github.NewDefaultGithubRepo(nil)
 
-	if github.InCI() {
-		ref := env.GetBranch()
+	if github.InGithubActions() {
+		ref := ghr.GetBranch()
 		if ref != "" {
 			return ref, nil
 		}

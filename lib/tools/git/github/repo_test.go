@@ -4,14 +4,13 @@ import (
 	"os"
 	"testing"
 
-	"github.com/google/go-github/v66/github"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/fs/billy"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/testutils"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-func TestGithubEnvGetBranch(t *testing.T) {
+func TestGithubRepoGetBranch(t *testing.T) {
 	tests := []struct {
 		name     string
 		env      map[string]string
@@ -44,113 +43,90 @@ func TestGithubEnvGetBranch(t *testing.T) {
 				defer os.Unsetenv(k)
 			}
 
-			gh := GithubEnv{}
+			gh := DefaultGithubRepo{}
 			tt.validate(t, gh.GetBranch())
 		})
 	}
 }
 
-func TestGithubEnvGetEventPayload(t *testing.T) {
-	payload, err := os.ReadFile("testdata/event.json")
+func TestGithubRepoGetCommit(t *testing.T) {
+	prPayload, err := os.ReadFile("testdata/event_pr.json")
+	require.NoError(t, err)
+
+	pushPayload, err := os.ReadFile("testdata/event_push.json")
 	require.NoError(t, err)
 
 	tests := []struct {
 		name     string
 		env      map[string]string
 		files    map[string]string
-		validate func(*testing.T, any, error)
+		validate func(*testing.T, string, error)
 	}{
 		{
-			name: "full",
+			name: "pull request",
 			env: map[string]string{
-				"GITHUB_EVENT_PATH": "/event.json",
 				"GITHUB_EVENT_NAME": "pull_request",
+				"GITHUB_EVENT_PATH": "/event.json",
 			},
 			files: map[string]string{
-				"/event.json": string(payload),
+				"/event.json": string(prPayload),
 			},
-			validate: func(t *testing.T, payload any, err error) {
+			validate: func(t *testing.T, commit string, err error) {
 				require.NoError(t, err)
-				_, ok := payload.(*github.PullRequestEvent)
-				require.True(t, ok)
+				assert.Equal(t, "0000000000000000000000000000000000000000", commit)
 			},
 		},
 		{
-			name: "missing path",
+			name: "push",
 			env: map[string]string{
-				"GITHUB_EVENT_NAME": "pull_request",
-			},
-			validate: func(t *testing.T, payload any, err error) {
-				require.ErrorIs(t, err, ErrNoEventFound)
-			},
-		},
-		{
-			name: "missing name",
-			env: map[string]string{
+				"GITHUB_EVENT_NAME": "push",
 				"GITHUB_EVENT_PATH": "/event.json",
 			},
 			files: map[string]string{
-				"/event.json": string(payload),
+				"/event.json": string(pushPayload),
 			},
-			validate: func(t *testing.T, payload any, err error) {
-				require.ErrorIs(t, err, ErrNoEventFound)
-			},
-		},
-		{
-			name: "invalid payload",
-			env: map[string]string{
-				"GITHUB_EVENT_PATH": "/event.json",
-				"GITHUB_EVENT_NAME": "pull_request",
-			},
-			files: map[string]string{
-				"/event.json": "invalid",
-			},
-			validate: func(t *testing.T, payload any, err error) {
-				require.Error(t, err)
+			validate: func(t *testing.T, commit string, err error) {
+				require.NoError(t, err)
+				assert.Equal(t, "0000000000000000000000000000000000000000", commit)
 			},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			logger := testutils.NewNoopLogger()
+
+			fs := billy.NewInMemoryFs()
+			testutils.SetupFS(t, fs, tt.files)
+
 			for k, v := range tt.env {
 				require.NoError(t, os.Setenv(k, v))
 				defer os.Unsetenv(k)
 			}
 
-			fs := billy.NewInMemoryFs()
-			testutils.SetupFS(t, fs, tt.files)
-
-			gh := GithubEnv{
+			gh := DefaultGithubRepo{
 				fs:     fs,
-				logger: testutils.NewNoopLogger(),
+				logger: logger,
 			}
-
-			payload, err := gh.GetEventPayload()
-			tt.validate(t, payload, err)
+			commit, err := gh.GetCommit()
+			tt.validate(t, commit, err)
 		})
 	}
 }
 
-func TestGithubEnvGetEventType(t *testing.T) {
-	gh := GithubEnv{}
-
-	require.NoError(t, os.Setenv("GITHUB_EVENT_NAME", "push"))
-	assert.Equal(t, "push", gh.GetEventType())
-}
-
-func TestGithubEnvGetTag(t *testing.T) {
+func TestGithubRepoGetTag(t *testing.T) {
 	tests := []struct {
 		name     string
 		env      map[string]string
-		validate func(*testing.T, string)
+		validate func(*testing.T, string, bool)
 	}{
 		{
 			name: "tag",
 			env: map[string]string{
 				"GITHUB_REF": "refs/tags/v1.0.0",
 			},
-			validate: func(t *testing.T, tag string) {
+			validate: func(t *testing.T, tag string, ok bool) {
+				assert.True(t, ok)
 				assert.Equal(t, "v1.0.0", tag)
 			},
 		},
@@ -159,7 +135,8 @@ func TestGithubEnvGetTag(t *testing.T) {
 			env: map[string]string{
 				"GITHUB_REF": "refs/heads/feature/branch",
 			},
-			validate: func(t *testing.T, tag string) {
+			validate: func(t *testing.T, tag string, ok bool) {
+				assert.False(t, ok)
 				assert.Empty(t, tag)
 			},
 		},
@@ -172,17 +149,18 @@ func TestGithubEnvGetTag(t *testing.T) {
 				defer os.Unsetenv(k)
 			}
 
-			gh := GithubEnv{}
-			tt.validate(t, gh.GetTag())
+			gh := DefaultGithubRepo{}
+			tag, ok := gh.GetTag()
+			tt.validate(t, tag, ok)
 		})
 	}
 }
 
-func TestGithubEnvHasEvent(t *testing.T) {
+func TestInGithubActions(t *testing.T) {
 	tests := []struct {
-		name   string
-		env    map[string]string
-		expect bool
+		name     string
+		env      map[string]string
+		validate func(*testing.T, bool)
 	}{
 		{
 			name: "has event",
@@ -190,21 +168,27 @@ func TestGithubEnvHasEvent(t *testing.T) {
 				"GITHUB_EVENT_PATH": "/path/to/event",
 				"GITHUB_EVENT_NAME": "push",
 			},
-			expect: true,
+			validate: func(t *testing.T, exists bool) {
+				assert.True(t, exists)
+			},
 		},
 		{
 			name: "missing path",
 			env: map[string]string{
 				"GITHUB_EVENT_NAME": "push",
 			},
-			expect: false,
+			validate: func(t *testing.T, exists bool) {
+				assert.False(t, exists)
+			},
 		},
 		{
 			name: "missing name",
 			env: map[string]string{
 				"GITHUB_EVENT_PATH": "/path/to/event",
 			},
-			expect: false,
+			validate: func(t *testing.T, exists bool) {
+				assert.False(t, exists)
+			},
 		},
 	}
 
@@ -215,8 +199,7 @@ func TestGithubEnvHasEvent(t *testing.T) {
 				defer os.Unsetenv(k)
 			}
 
-			gh := GithubEnv{}
-			assert.Equal(t, tt.expect, gh.HasEvent())
+			tt.validate(t, InGithubActions())
 		})
 	}
 }

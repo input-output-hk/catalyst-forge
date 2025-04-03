@@ -5,7 +5,6 @@ import (
 	"log/slog"
 
 	"cuelang.org/go/cue"
-	"github.com/google/go-github/v66/github"
 	sb "github.com/input-output-hk/catalyst-forge/lib/schema/blueprint"
 	sg "github.com/input-output-hk/catalyst-forge/lib/schema/blueprint/global"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/fs"
@@ -68,6 +67,7 @@ func NewDeploymentRuntime(logger *slog.Logger) *DeploymentRuntime {
 // GitRuntime is a runtime data loader for git related data.
 type GitRuntime struct {
 	fs     fs.Filesystem
+	gh     gh.GithubRepo
 	logger *slog.Logger
 }
 
@@ -96,54 +96,19 @@ func (g *GitRuntime) Load(project *Project) map[string]cue.Value {
 
 // getCommitHash returns the commit hash of the HEAD commit.
 func (g *GitRuntime) getCommitHash(repo *repo.GitRepo) (string, error) {
-	env := gh.NewCustomGithubEnv(g.fs, g.logger)
-	if env.HasEvent() {
-		if env.GetEventType() == "pull_request" {
-			g.logger.Debug("Found GitHub pull request event")
-			event, err := env.GetEventPayload()
-			if err != nil {
-				return "", fmt.Errorf("failed to get event payload: %w", err)
-			}
-
-			pr, ok := event.(*github.PullRequestEvent)
-			if !ok {
-				return "", fmt.Errorf("unexpected event type")
-			}
-
-			if pr.PullRequest.Head.SHA == nil {
-				return "", fmt.Errorf("pull request head SHA is empty")
-			}
-
-			return *pr.PullRequest.Head.SHA, nil
-		} else if env.GetEventType() == "push" {
-			g.logger.Debug("Found GitHub push event")
-			event, err := env.GetEventPayload()
-			if err != nil {
-				return "", fmt.Errorf("failed to get event payload: %w", err)
-			}
-
-			push, ok := event.(*github.PushEvent)
-			if !ok {
-				return "", fmt.Errorf("unexpected event type")
-			}
-
-			if push.After == nil {
-				return "", fmt.Errorf("push event after SHA is empty")
-			}
-
-			return *push.After, nil
+	if gh.InGithubActions() {
+		commit, err := g.gh.GetCommit()
+		if err != nil {
+			return "", fmt.Errorf("failed to get commit from GitHub event: %w", err)
 		}
+
+		return commit, nil
 	}
 
 	g.logger.Debug("No GitHub event found, getting commit hash from git repository")
-	ref, err := repo.Head()
+	obj, err := repo.HeadCommit()
 	if err != nil {
 		return "", fmt.Errorf("failed to get HEAD: %w", err)
-	}
-
-	obj, err := repo.GetCommit(ref.Hash())
-	if err != nil {
-		return "", fmt.Errorf("failed to get commit object: %w", err)
 	}
 
 	return obj.Hash.String(), nil
@@ -151,16 +116,21 @@ func (g *GitRuntime) getCommitHash(repo *repo.GitRepo) (string, error) {
 
 // NewGitRuntime creates a new GitRuntime.
 func NewGitRuntime(logger *slog.Logger) *GitRuntime {
+	fs := billy.NewBaseOsFS()
+	ghr := gh.NewCustomDefaultGithubRepo(fs, logger)
 	return &GitRuntime{
-		fs:     billy.NewBaseOsFS(),
+		fs:     fs,
+		gh:     &ghr,
 		logger: logger,
 	}
 }
 
 // NewCustomGitRuntime creates a new GitRuntime with a custom filesystem.
 func NewCustomGitRuntime(fs fs.Filesystem, logger *slog.Logger) *GitRuntime {
+	ghr := gh.NewCustomDefaultGithubRepo(fs, logger)
 	return &GitRuntime{
 		fs:     fs,
+		gh:     &ghr,
 		logger: logger,
 	}
 }
