@@ -261,6 +261,7 @@ func makeBlueprint() string {
 			}
 			global: {
 				deployment: {
+				    foundry: api: "https://foundry.com"
 					registries: {
 						containers: "registry.com"
 						modules: "registry.com"
@@ -270,6 +271,11 @@ func makeBlueprint() string {
 						url: "github.com/org/repo"
 					}
 					root: "root"
+				}
+				repo: {
+					defaultBranch: "master"
+					name: "org/repo"
+					url: "https://github.com/org/repo"
 				}
 			}
 		}
