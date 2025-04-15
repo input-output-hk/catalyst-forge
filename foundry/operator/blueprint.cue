@@ -1,6 +1,5 @@
 import "encoding/json"
 
-version: "1.0"
 project: {
 	name: "foundry-operator"
 

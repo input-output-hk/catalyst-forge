@@ -9,12 +9,10 @@ import (
 
 	"cuelang.org/go/cue"
 	"cuelang.org/go/cue/errors"
-	"github.com/Masterminds/semver/v3"
 	"github.com/input-output-hk/catalyst-forge/lib/project/blueprint/defaults"
 	s "github.com/input-output-hk/catalyst-forge/lib/schema"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/fs"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/fs/billy"
-	"github.com/input-output-hk/catalyst-forge/lib/tools/version"
 )
 
 //go:generate go run github.com/matryer/moq@latest --pkg mocks --out ./mocks/loader.go . BlueprintLoader
@@ -39,8 +37,9 @@ type DefaultBlueprintLoader struct {
 }
 
 func (b *DefaultBlueprintLoader) Load(projectPath, gitRootPath string) (RawBlueprint, error) {
-	files := make(map[string][]byte)
+	bpFiles := make(map[string][]byte)
 
+	// Try to load the project blueprint file
 	pbPath := filepath.Join(projectPath, BlueprintFileName)
 	pb, err := b.fs.ReadFile(pbPath)
 	if err != nil {
@@ -51,65 +50,52 @@ func (b *DefaultBlueprintLoader) Load(projectPath, gitRootPath string) (RawBluep
 			return RawBlueprint{}, fmt.Errorf("failed to read blueprint file: %w", err)
 		}
 	} else {
-		files[pbPath] = pb
+		bpFiles[pbPath] = pb
 	}
 
-	if projectPath != gitRootPath {
-		rootPath := filepath.Join(gitRootPath, BlueprintFileName)
-		rb, err := b.fs.ReadFile(rootPath)
+	// Try to load the root blueprint file
+	rbPath := filepath.Join(gitRootPath, BlueprintFileName)
+	if rbPath != pbPath {
+		rb, err := b.fs.ReadFile(rbPath)
 		if err != nil {
 			if os.IsNotExist(err) {
-				b.logger.Warn("No root blueprint file found", "path", rootPath)
+				b.logger.Warn("No root blueprint file found", "path", rbPath)
 			} else {
-				b.logger.Error("Failed to read blueprint file", "path", rootPath, "error", err)
+				b.logger.Error("Failed to read blueprint file", "path", rbPath, "error", err)
 				return RawBlueprint{}, fmt.Errorf("failed to read blueprint file: %w", err)
 			}
 		} else {
-			files[rootPath] = rb
+			bpFiles[rbPath] = rb
 		}
 	}
 
+	// If we have any files, unify them
+	v := b.ctx.CompileString("{}")
+	for path, data := range bpFiles {
+		b.logger.Debug("Loading blueprint file", "path", path)
+		bv := b.ctx.CompileBytes(data)
+		if err := bv.Err(); err != nil {
+			b.logger.Error("Failed to compile blueprint file", "path", path, "error", err)
+			return RawBlueprint{}, fmt.Errorf("failed to compile blueprint file: %w", err)
+		}
+
+		v = v.Unify(bv)
+	}
+
+	if err := v.Err(); err != nil {
+		b.logger.Error("Failed to unify blueprint files", "error", err)
+		return RawBlueprint{}, fmt.Errorf("failed to unify blueprint files: %w", err)
+	}
+
+	// Unify the schema with the user-defined blueprint
 	schema, err := s.LoadSchema(b.ctx)
 	if err != nil {
 		b.logger.Error("Failed to load schema", "error", err)
 		return RawBlueprint{}, fmt.Errorf("failed to load schema: %w", err)
 	}
+	finalBlueprint := schema.Unify(v)
 
-	var finalBlueprint cue.Value
-	var finalVersion *semver.Version
-	var bps BlueprintFiles
-	if len(files) > 0 {
-		for path, data := range files {
-			b.logger.Info("Loading blueprint file", "path", path)
-			bp, err := NewBlueprintFile(b.ctx, path, data)
-			if err != nil {
-				b.logger.Error("Failed to load blueprint file", "path", path, "error", err)
-				return RawBlueprint{}, fmt.Errorf("failed to load blueprint file: %w", err)
-			}
-
-			bps = append(bps, bp)
-		}
-
-		if err := bps.ValidateMajorVersions(); err != nil {
-			b.logger.Error("Major version mismatch")
-			return RawBlueprint{}, err
-		}
-
-		userBlueprint, err := bps.Unify(b.ctx)
-		if err != nil {
-			b.logger.Error("Failed to unify blueprint files", "error", err)
-			return RawBlueprint{}, fmt.Errorf("failed to unify blueprint files: %w", err)
-		}
-
-		finalVersion = bps.Version()
-		userBlueprint = userBlueprint.FillPath(cue.ParsePath("version"), finalVersion.String())
-		finalBlueprint = schema.Unify(userBlueprint)
-	} else {
-		b.logger.Warn("No blueprint files found, using default values")
-		finalVersion = schema.Version
-		finalBlueprint = schema.Value.FillPath(cue.ParsePath("version"), finalVersion)
-	}
-
+	// Apply default setters
 	defaultSetters := defaults.GetDefaultSetters()
 	for _, setter := range defaultSetters {
 		var err error
@@ -117,15 +103,6 @@ func (b *DefaultBlueprintLoader) Load(projectPath, gitRootPath string) (RawBluep
 		if err != nil {
 			b.logger.Error("Failed to set default values", "error", err)
 			return RawBlueprint{}, fmt.Errorf("failed to set default values: %w", err)
-		}
-	}
-
-	if err := version.ValidateVersions(finalVersion, schema.Version); err != nil {
-		if errors.Is(err, version.ErrMinorMismatch) {
-			b.logger.Warn("The minor version of the blueprint is greater than the supported version", "version", finalVersion)
-		} else {
-			b.logger.Error("The major version of the blueprint is greater than the supported version", "version", finalVersion)
-			return RawBlueprint{}, fmt.Errorf("the major version of the blueprint (%s) is different than the supported version: cannot continue", finalVersion.String())
 		}
 	}
 

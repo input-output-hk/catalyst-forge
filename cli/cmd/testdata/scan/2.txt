@@ -21,7 +21,6 @@ cmpenv stdout golden_2_ci.txt
 -- golden_2_ci.txt --
 ["$WORK+bar","$WORK+foo"]
 -- blueprint.cue --
-version: "1.0"
 project: name: "foo"
 -- Earthfile --
 VERSION 0.7

@@ -20,7 +20,6 @@ Image ./dir1+test output as test
 -- dir1/Earthfile --
 VERSION 0.8
 -- dir1/blueprint.cue --
-version: "1.0"
 project: {
     name: "test"
     ci: {
