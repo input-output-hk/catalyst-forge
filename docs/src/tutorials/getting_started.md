@@ -230,7 +230,6 @@ Catalyst Forge uses blueprint files in order to both identify projects within a 
 Add a new file in the root of the project folder called `blueprint.cue` with the following contents:
 
 ```cue
-version: "1.0.0"
 project: {
 	name: "hello-jmgilman" // Replace "jmgilman" with your GitHub username
 }
@@ -250,7 +249,6 @@ There are many more useful fields exposed in a blueprint file that can be explor
 The last step before pushing our code is to configure our releases in the blueprint file.
 
 ```cue
-version: "1.0.0"
 project: {
 	name: "hello-jmgilman"
 	release: {

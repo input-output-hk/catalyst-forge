@@ -37,8 +37,9 @@ type DefaultBlueprintLoader struct {
 }
 
 func (b *DefaultBlueprintLoader) Load(projectPath, gitRootPath string) (RawBlueprint, error) {
-	files := make(map[string][]byte)
+	bpFiles := make(map[string][]byte)
 
+	// Try to load the project blueprint file
 	pbPath := filepath.Join(projectPath, BlueprintFileName)
 	pb, err := b.fs.ReadFile(pbPath)
 	if err != nil {
@@ -49,56 +50,52 @@ func (b *DefaultBlueprintLoader) Load(projectPath, gitRootPath string) (RawBluep
 			return RawBlueprint{}, fmt.Errorf("failed to read blueprint file: %w", err)
 		}
 	} else {
-		files[pbPath] = pb
+		bpFiles[pbPath] = pb
 	}
 
-	if projectPath != gitRootPath {
-		rootPath := filepath.Join(gitRootPath, BlueprintFileName)
-		rb, err := b.fs.ReadFile(rootPath)
+	// Try to load the root blueprint file
+	rbPath := filepath.Join(gitRootPath, BlueprintFileName)
+	if rbPath != pbPath {
+		rb, err := b.fs.ReadFile(rbPath)
 		if err != nil {
 			if os.IsNotExist(err) {
-				b.logger.Warn("No root blueprint file found", "path", rootPath)
+				b.logger.Warn("No root blueprint file found", "path", rbPath)
 			} else {
-				b.logger.Error("Failed to read blueprint file", "path", rootPath, "error", err)
+				b.logger.Error("Failed to read blueprint file", "path", rbPath, "error", err)
 				return RawBlueprint{}, fmt.Errorf("failed to read blueprint file: %w", err)
 			}
 		} else {
-			files[rootPath] = rb
+			bpFiles[rbPath] = rb
 		}
 	}
 
+	// If we have any files, unify them
+	v := b.ctx.CompileString("{}")
+	for path, data := range bpFiles {
+		b.logger.Debug("Loading blueprint file", "path", path)
+		bv := b.ctx.CompileBytes(data)
+		if err := bv.Err(); err != nil {
+			b.logger.Error("Failed to compile blueprint file", "path", path, "error", err)
+			return RawBlueprint{}, fmt.Errorf("failed to compile blueprint file: %w", err)
+		}
+
+		v = v.Unify(bv)
+	}
+
+	if err := v.Err(); err != nil {
+		b.logger.Error("Failed to unify blueprint files", "error", err)
+		return RawBlueprint{}, fmt.Errorf("failed to unify blueprint files: %w", err)
+	}
+
+	// Unify the schema with the user-defined blueprint
 	schema, err := s.LoadSchema(b.ctx)
 	if err != nil {
 		b.logger.Error("Failed to load schema", "error", err)
 		return RawBlueprint{}, fmt.Errorf("failed to load schema: %w", err)
 	}
+	finalBlueprint := schema.Unify(v)
 
-	var finalBlueprint cue.Value
-	var bps BlueprintFiles
-	if len(files) > 0 {
-		for path, data := range files {
-			b.logger.Debug("Loading blueprint file", "path", path)
-			bp, err := NewBlueprintFile(b.ctx, path, data)
-			if err != nil {
-				b.logger.Error("Failed to load blueprint file", "path", path, "error", err)
-				return RawBlueprint{}, fmt.Errorf("failed to load blueprint file: %w", err)
-			}
-
-			bps = append(bps, bp)
-		}
-
-		userBlueprint, err := bps.Unify(b.ctx)
-		if err != nil {
-			b.logger.Error("Failed to unify blueprint files", "error", err)
-			return RawBlueprint{}, fmt.Errorf("failed to unify blueprint files: %w", err)
-		}
-
-		finalBlueprint = schema.Unify(userBlueprint)
-	} else {
-		b.logger.Warn("No blueprint files found, using default values")
-		finalBlueprint = schema.Value
-	}
-
+	// Apply default setters
 	defaultSetters := defaults.GetDefaultSetters()
 	for _, setter := range defaultSetters {
 		var err error

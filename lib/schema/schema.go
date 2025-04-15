@@ -8,7 +8,6 @@ import (
 	"cuelang.org/go/cue/load"
 	"github.com/Masterminds/semver/v3"
 	"github.com/input-output-hk/catalyst-forge/lib/schema/blueprint"
-	"github.com/input-output-hk/catalyst-forge/lib/tools/version"
 )
 
 // RawSchema represents the raw blueprint schema loaded from the embedded module.
@@ -39,14 +38,8 @@ func LoadSchema(ctx *cue.Context) (RawSchema, error) {
 		return RawSchema{}, fmt.Errorf("failed to load schema: %w", bv.Err())
 	}
 
-	version, err := version.GetVersion(v)
-	if err != nil {
-		return RawSchema{}, fmt.Errorf("failed to get schema version: %w", err)
-	}
-
 	return RawSchema{
-		Value:   bv,
-		Version: version,
+		Value: bv,
 	}, nil
 }
 

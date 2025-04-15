@@ -99,7 +99,7 @@ func TestFetchBundle(t *testing.T) {
 		{
 			name: "no bundle",
 			files: map[string]string{
-				"project/blueprint.cue": `version: "1.0"`,
+				"project/blueprint.cue": `{}`,
 			},
 			validate: func(t *testing.T, bundle ModuleBundle, err error) {
 				require.Error(t, err)
@@ -109,7 +109,7 @@ func TestFetchBundle(t *testing.T) {
 		{
 			name: "no project",
 			files: map[string]string{
-				"project1/blueprint.cue": `version: "1.0"`,
+				"project1/blueprint.cue": `{}`,
 			},
 			validate: func(t *testing.T, bundle ModuleBundle, err error) {
 				require.Error(t, err)
@@ -240,7 +240,6 @@ func TestValidate(t *testing.T) {
 func makeBlueprint() string {
 	return `
 		{
-			version: "1.0"
 			project: {
 				name: "project"
 				deployment: {

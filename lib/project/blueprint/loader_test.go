@@ -68,7 +68,6 @@ func TestBlueprintLoaderLoad(t *testing.T) {
 			gitRoot: "/tmp/dir1/dir2",
 			files: map[string]string{
 				"/tmp/dir1/dir2/blueprint.cue": `
-				version: "1.0"
 				project: {
 					name: "test"
 					ci: {
@@ -97,7 +96,6 @@ func TestBlueprintLoaderLoad(t *testing.T) {
 			gitRoot: "/tmp/dir1",
 			files: map[string]string{
 				"/tmp/dir1/dir2/blueprint.cue": `
-				version: "1.0"
 				project: {
 					name: "test"
 					ci: {

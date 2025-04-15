@@ -58,7 +58,7 @@ func main() {
 
 	fmt.Printf("Schema version: %s\n", schema.Version)
 
-	v := schema.Unify(ctx.CompileString(`{version: "1.0"}`))
+	v := schema.Unify(ctx.CompileString(`{ project: name: "foo" }`))
 	if v.Err() != nil {
 		log.Fatalf("failed to unify schema: %v", v.Err())
 	}

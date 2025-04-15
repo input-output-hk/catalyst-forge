@@ -266,7 +266,6 @@ func newConfig() config.OperatorConfig {
 func newRawBlueprint() string {
 	return `
 		{
-			version: "1.0"
 			project: {
 				name: "project"
 				deployment: {

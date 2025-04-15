@@ -27,7 +27,6 @@ bar:
 	ARG bar
 `
 	bp := `
-version: "1.0"
 global: {
   repo: {
     name: "foo"
@@ -97,7 +96,6 @@ project: name: "foo"
 			files: map[string]string{
 				"/project/Earthfile": earthfile,
 				"/project/blueprint.cue": `
-		version: "1.0"
 		global: {
 		  repo: {
 		    name: "foo"
@@ -129,7 +127,6 @@ project: name: "foo"
 			files: map[string]string{
 				"/project/Earthfile": earthfile,
 				"/project/blueprint.cue": `
-		version: "1.0"
 		global: {
 		  repo: {
 		    name: "foo"
@@ -212,7 +209,7 @@ project: name: "foo"
 				assert.Error(t, err)
 				assert.Equal(
 					t,
-					"failed to load blueprint: failed to load blueprint file: failed to compile CUE file: reference \"invalid\" not found",
+					"failed to load blueprint: failed to compile blueprint file: reference \"invalid\" not found",
 					err.Error(),
 				)
 			},
@@ -223,7 +220,6 @@ project: name: "foo"
 			files: map[string]string{
 				"/project/Earthfile": earthfile,
 				"/project/blueprint.cue": `
-		version: "1.0"
 		global: {
 		  repo: {
 		    name: "foo"

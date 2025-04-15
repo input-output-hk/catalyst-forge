@@ -269,7 +269,6 @@ func makeConfig() DeployerConfig {
 func makeBlueprint() string {
 	return `
 		{
-			version: "1.0"
 			project: {
 				name: "project"
 				deployment: {

@@ -1,4 +1,3 @@
-version: "1.0"
 project: {
 	name: "foundry-api"
 	ci: targets: {
