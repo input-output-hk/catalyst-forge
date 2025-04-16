@@ -7,7 +7,7 @@ rules:
 - apiGroups:
   - foundry.projectcatalyst.io
   resources:
-  - releases
+  - releasedeployments
   verbs:
   - create
   - delete
@@ -19,13 +19,13 @@ rules:
 - apiGroups:
   - foundry.projectcatalyst.io
   resources:
-  - releases/finalizers
+  - releasedeployments/finalizers
   verbs:
   - update
 - apiGroups:
   - foundry.projectcatalyst.io
   resources:
-  - releases/status
+  - releasedeployments/status
   verbs:
   - get
   - patch

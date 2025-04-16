@@ -29,8 +29,9 @@ bar:
 	bp := `
 global: {
   repo: {
+    defaultBranch: "main"
     name: "foo"
-	defaultBranch: "main"
+	url: "bar"
   }
 }
 project: name: "foo"
@@ -98,8 +99,9 @@ project: name: "foo"
 				"/project/blueprint.cue": `
 		global: {
 		  repo: {
+		    defaultBranch: "main"
 		    name: "foo"
-			defaultBranch: "main"
+			url: "bar"
 		  }
 		}
 		project: {
@@ -129,8 +131,9 @@ project: name: "foo"
 				"/project/blueprint.cue": `
 		global: {
 		  repo: {
+		    defaultBranch: "main"
 		    name: "foo"
-			defaultBranch: "main"
+			url: "bar"
 		  }
 		}
 		project: {
@@ -222,8 +225,9 @@ project: name: "foo"
 				"/project/blueprint.cue": `
 		global: {
 		  repo: {
+		    defaultBranch: "main"
 		    name: "foo"
-			defaultBranch: "main"
+			url: "bar"
 		  }
 		}
 		project: {
