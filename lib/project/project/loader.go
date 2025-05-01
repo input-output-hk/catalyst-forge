@@ -13,7 +13,7 @@ import (
 	"github.com/input-output-hk/catalyst-forge/lib/project/injector"
 	"github.com/input-output-hk/catalyst-forge/lib/project/secrets"
 	sb "github.com/input-output-hk/catalyst-forge/lib/schema/blueprint"
-	"github.com/input-output-hk/catalyst-forge/lib/tools/earthfile"
+	"github.com/input-output-hk/catalyst-forge/lib/tools/earthly"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/fs"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/fs/billy"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/git"
@@ -97,7 +97,7 @@ func (p *DefaultProjectLoader) Load(projectPath string) (Project, error) {
 		return Project{}, fmt.Errorf("failed to check for Earthfile: %w", err)
 	}
 
-	var ef *earthfile.Earthfile
+	var ef *earthly.Earthfile
 	if exists {
 		p.logger.Info("Parsing Earthfile", "path", efPath)
 		eff, err := p.fs.Open(efPath)
@@ -105,7 +105,7 @@ func (p *DefaultProjectLoader) Load(projectPath string) (Project, error) {
 			p.logger.Error("Failed to read Earthfile", "error", err, "path", efPath)
 			return Project{}, fmt.Errorf("failed to read Earthfile: %w", err)
 		}
-		efs, err := earthfile.ParseEarthfile(context.Background(), eff)
+		efs, err := earthly.ParseEarthfile(context.Background(), eff)
 		if err != nil {
 			p.logger.Error("Failed to parse Earthfile", "error", err, "path", efPath)
 			return Project{}, fmt.Errorf("failed to parse Earthfile: %w", err)

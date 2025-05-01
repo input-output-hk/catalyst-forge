@@ -10,7 +10,7 @@ import (
 	"github.com/input-output-hk/catalyst-forge/lib/project/blueprint"
 	"github.com/input-output-hk/catalyst-forge/lib/project/secrets"
 	sb "github.com/input-output-hk/catalyst-forge/lib/schema/blueprint"
-	"github.com/input-output-hk/catalyst-forge/lib/tools/earthfile"
+	"github.com/input-output-hk/catalyst-forge/lib/tools/earthly"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/git/repo"
 )
 
@@ -20,7 +20,7 @@ type Project struct {
 	Blueprint sb.Blueprint
 
 	// Earthfile is the project Earthfile.
-	Earthfile *earthfile.Earthfile
+	Earthfile *earthly.Earthfile
 
 	// Name is the project name.
 	Name string
@@ -121,7 +121,7 @@ func (p *Project) Raw() blueprint.RawBlueprint {
 func NewProject(
 	ctx *cue.Context,
 	repo *repo.GitRepo,
-	earthfile *earthfile.Earthfile,
+	earthfile *earthly.Earthfile,
 	name, path, repoRoot string,
 	blueprint sb.Blueprint,
 	tag *ProjectTag,

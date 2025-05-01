@@ -1,4 +1,4 @@
-package earthfile
+package earthly
 
 import (
 	"context"
