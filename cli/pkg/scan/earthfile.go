@@ -7,14 +7,14 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/input-output-hk/catalyst-forge/lib/tools/earthfile"
+	"github.com/input-output-hk/catalyst-forge/lib/tools/earthly"
 	w "github.com/input-output-hk/catalyst-forge/lib/tools/walker"
 )
 
 // ScanEarthfiles scans the given root path for Earthfiles and returns a map
 // that maps the path of the Earthfile to the targets defined in the Earthfile.
-func ScanEarthfiles(rootPath string, walker w.Walker, logger *slog.Logger) (map[string]earthfile.Earthfile, error) {
-	earthfiles := make(map[string]earthfile.Earthfile)
+func ScanEarthfiles(rootPath string, walker w.Walker, logger *slog.Logger) (map[string]earthly.Earthfile, error) {
+	earthfiles := make(map[string]earthly.Earthfile)
 
 	err := walker.Walk(rootPath, func(path string, fileType w.FileType, openFile func() (w.FileSeeker, error)) error {
 		if fileType != w.FileTypeFile {
@@ -30,7 +30,7 @@ func ScanEarthfiles(rootPath string, walker w.Walker, logger *slog.Logger) (map[
 		defer file.Close()
 
 		logger.Info("parsing Earthfile", "path", path)
-		earthfile, err := earthfile.ParseEarthfile(context.Background(), file)
+		earthfile, err := earthly.ParseEarthfile(context.Background(), file)
 		if err != nil {
 			logger.Error("error parsing Earthfile", "path", path, "error", err)
 			return fmt.Errorf("error parsing %s: %w", path, err)

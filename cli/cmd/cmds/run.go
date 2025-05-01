@@ -3,7 +3,7 @@ package cmds
 import (
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/earthly"
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/run"
-	"github.com/input-output-hk/catalyst-forge/lib/tools/earthfile"
+	te "github.com/input-output-hk/catalyst-forge/lib/tools/earthly"
 )
 
 type RunCmd struct {
@@ -15,7 +15,7 @@ type RunCmd struct {
 }
 
 func (c *RunCmd) Run(ctx run.RunContext) error {
-	ref, err := earthfile.ParseEarthfileRef(c.Path)
+	ref, err := te.ParseEarthfileRef(c.Path)
 	if err != nil {
 		return err
 	}
