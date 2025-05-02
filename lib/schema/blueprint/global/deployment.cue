@@ -4,6 +4,9 @@ package global
 	// Environment contains the default environment to deploy projects to.
 	environment: string | *"dev"
 
+	// Foundry contains the configuration for Foundry.
+	foundry: #DeploymentFoundry
+
 	// Registries contains the configuration for the global deployment registries.
 	registries: #DeploymentRegistries
 
@@ -12,6 +15,12 @@ package global
 
 	// Root contains the root deployment directory in the deployment repository.
 	root: string
+}
+
+// DeploymentFoundry contains the configuration for Foundry.
+#DeploymentFoundry: {
+	// api contains the URL of the Foundry API server.
+	api: string
 }
 
 // DeploymentRegistries contains the configuration for the global deployment registries.

@@ -10,6 +10,7 @@ import (
 	"github.com/input-output-hk/catalyst-forge/lib/project/blueprint"
 	lc "github.com/input-output-hk/catalyst-forge/lib/tools/cue"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/fs/billy"
+	ghm "github.com/input-output-hk/catalyst-forge/lib/tools/git/github/mocks"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/git/repo"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/testutils"
 	"github.com/stretchr/testify/assert"
@@ -66,17 +67,10 @@ func TestDeploymentRuntimeLoad(t *testing.T) {
 
 func TestGitRuntimeLoad(t *testing.T) {
 	ctx := cuecontext.New()
-	prPayload, err := os.ReadFile("testdata/event_pr.json")
-	require.NoError(t, err)
-
-	pushPayload, err := os.ReadFile("testdata/event_push.json")
-	require.NoError(t, err)
-
 	tests := []struct {
 		name     string
 		tag      *ProjectTag
-		env      map[string]string
-		files    map[string]string
+		ghResult string
 		validate func(*testing.T, repo.GitRepo, map[string]cue.Value)
 	}{
 		{
@@ -100,33 +94,11 @@ func TestGitRuntimeLoad(t *testing.T) {
 			},
 		},
 		{
-			name: "with pr event",
-			env: map[string]string{
-				"GITHUB_EVENT_NAME": "pull_request",
-				"GITHUB_EVENT_PATH": "/event.json",
-			},
-			files: map[string]string{
-				"/event.json": string(prPayload),
-			},
+			name:     "with github event",
+			ghResult: "hash",
 			validate: func(t *testing.T, repo repo.GitRepo, data map[string]cue.Value) {
-				require.NoError(t, err)
 				assert.Contains(t, data, "GIT_COMMIT_HASH")
-				assert.Equal(t, "0000000000000000000000000000000000000000", getString(t, data["GIT_COMMIT_HASH"]))
-			},
-		},
-		{
-			name: "with push event",
-			env: map[string]string{
-				"GITHUB_EVENT_NAME": "push",
-				"GITHUB_EVENT_PATH": "/event.json",
-			},
-			files: map[string]string{
-				"/event.json": string(pushPayload),
-			},
-			validate: func(t *testing.T, repo repo.GitRepo, data map[string]cue.Value) {
-				require.NoError(t, err)
-				assert.Contains(t, data, "GIT_COMMIT_HASH")
-				assert.Equal(t, "0000000000000000000000000000000000000000", getString(t, data["GIT_COMMIT_HASH"]))
+				assert.Equal(t, "hash", getString(t, data["GIT_COMMIT_HASH"]))
 			},
 		},
 	}
@@ -139,20 +111,15 @@ func TestGitRuntimeLoad(t *testing.T) {
 			err := repo.WriteFile("example.txt", []byte("example content"))
 			require.NoError(t, err)
 
+			if tt.ghResult != "" {
+				os.Setenv("GITHUB_EVENT_PATH", "foo")
+				os.Setenv("GITHUB_EVENT_NAME", "bar")
+				defer os.Unsetenv("GITHUB_EVENT_PATH")
+				defer os.Unsetenv("GITHUB_EVENT_NAME")
+			}
+
 			_, err = repo.Commit("Initial commit")
 			require.NoError(t, err)
-
-			if len(tt.env) > 0 {
-				for k, v := range tt.env {
-					require.NoError(t, os.Setenv(k, v))
-					defer os.Unsetenv(k)
-				}
-			}
-
-			fs := billy.NewInMemoryFs()
-			if len(tt.files) > 0 {
-				testutils.SetupFS(t, fs, tt.files)
-			}
 
 			project := &Project{
 				ctx:          ctx,
@@ -162,7 +129,17 @@ func TestGitRuntimeLoad(t *testing.T) {
 				logger:       logger,
 			}
 
-			runtime := NewCustomGitRuntime(fs, logger)
+			fs := billy.NewInMemoryFs()
+			ghr := &ghm.GithubRepoMock{
+				GetCommitFunc: func() (string, error) {
+					return tt.ghResult, nil
+				},
+			}
+			runtime := GitRuntime{
+				fs:     fs,
+				gh:     ghr,
+				logger: logger,
+			}
 			data := runtime.Load(project)
 			tt.validate(t, repo, data)
 		})
