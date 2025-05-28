@@ -181,9 +181,9 @@ runs:
       shell: bash
       run: |
         if [[ "${{ steps.earthly.outputs.version }}" == "latest" ]]; then
-          wget https://github.com/earthly/earthly/releases/latest/download/earthly-linux-amd64 -O /usr/local/bin/earthly
+          wget -q https://github.com/earthly/earthly/releases/latest/download/earthly-linux-amd64 -O /usr/local/bin/earthly
         else
-          wget https://github.com/earthly/earthly/releases/download/v${{ steps.earthly.outputs.version}}/earthly-linux-amd64 -O /usr/local/bin/earthly
+          wget -q https://github.com/earthly/earthly/releases/download/v${{ steps.earthly.outputs.version}}/earthly-linux-amd64 -O /usr/local/bin/earthly
         fi
 
         chmod +x /usr/local/bin/earthly

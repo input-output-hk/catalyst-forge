@@ -13,7 +13,6 @@ runs:
     - name: Cache Earthly binary
       id: cache-earthly
       uses: actions/cache@v4
-      if: inputs.skip_earthly == 'false'
       with:
         path: /usr/local/bin/earthly
         key: ${{ runner.os }}
@@ -21,7 +20,7 @@ runs:
       if: steps.cache-earthly.outputs.cache-hit == false
       shell: bash
       run: |
-        wget https://github.com/earthly/earthly/releases/latest/download/earthly-linux-amd64 -O /usr/local/bin/earthly
+        wget -q https://github.com/earthly/earthly/releases/latest/download/earthly-linux-amd64 -O /usr/local/bin/earthly
         chmod +x /usr/local/bin/earthly
         /usr/local/bin/earthly bootstrap
     - name: Login to Earthly Cloud
