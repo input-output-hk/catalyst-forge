@@ -2,11 +2,15 @@ package deployment
 
 import (
 	"fmt"
+	"log/slog"
 
 	"cuelang.org/go/cue"
+	"cuelang.org/go/cue/cuecontext"
 	"cuelang.org/go/cue/format"
 	"github.com/input-output-hk/catalyst-forge/lib/project/project"
+	"github.com/input-output-hk/catalyst-forge/lib/project/secrets"
 	sp "github.com/input-output-hk/catalyst-forge/lib/schema/blueprint/project"
+	"github.com/input-output-hk/catalyst-forge/lib/tools/git/repo"
 )
 
 // ModuleBundle represents a deployment module bundle.
@@ -23,6 +27,28 @@ func (d *ModuleBundle) Dump() ([]byte, error) {
 	}
 
 	return src, nil
+}
+
+// FetchBundle fetches a deployment bundle from the given project and repository.
+func FetchBundle(r repo.GitRepo, projectPath string, store secrets.SecretStore, logger *slog.Logger) (ModuleBundle, error) {
+	exists, err := r.Exists(projectPath)
+	if err != nil {
+		return ModuleBundle{}, fmt.Errorf("could not check if project path exists: %w", err)
+	} else if !exists {
+		return ModuleBundle{}, fmt.Errorf("project path does not exist: %s", projectPath)
+	}
+
+	loader := project.NewDefaultProjectLoader(cuecontext.New(), store, logger, project.WithFs(r.WorkFs()))
+	p, err := loader.Load("/" + projectPath)
+	if err != nil {
+		return ModuleBundle{}, fmt.Errorf("could not load project: %w", err)
+	}
+
+	if p.Blueprint.Project == nil || p.Blueprint.Project.Deployment == nil {
+		return ModuleBundle{}, fmt.Errorf("project does not have a deployment bundle")
+	}
+
+	return NewModuleBundle(&p), nil
 }
 
 // NewModuleBundle creates a new deployment module bundle from a project.

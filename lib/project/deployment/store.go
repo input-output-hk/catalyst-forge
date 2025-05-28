@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log/slog"
 
+	"github.com/input-output-hk/catalyst-forge/lib/project/deployment/providers/git"
 	"github.com/input-output-hk/catalyst-forge/lib/project/deployment/providers/helm"
 	"github.com/input-output-hk/catalyst-forge/lib/project/deployment/providers/kcl"
 )
@@ -12,6 +13,9 @@ import (
 type Provider string
 
 const (
+	// ProviderGit represents the Git manifest generator provider.
+	ProviderGit Provider = "git"
+
 	// ProviderHelm represents the Helm manifest generator provider.
 	ProviderHelm Provider = "helm"
 
@@ -28,6 +32,9 @@ type ManifestGeneratorStore struct {
 func NewDefaultManifestGeneratorStore() ManifestGeneratorStore {
 	return ManifestGeneratorStore{
 		store: map[Provider]func(*slog.Logger) ManifestGenerator{
+			ProviderGit: func(logger *slog.Logger) ManifestGenerator {
+				return git.NewGitManifestGenerator(logger)
+			},
 			ProviderHelm: func(logger *slog.Logger) ManifestGenerator {
 				return helm.NewHelmManifestGenerator(logger)
 			},

@@ -17,7 +17,8 @@ import (
 	"github.com/input-output-hk/catalyst-forge/lib/schema"
 	sp "github.com/input-output-hk/catalyst-forge/lib/schema/blueprint/project"
 	lc "github.com/input-output-hk/catalyst-forge/lib/tools/cue"
-	"github.com/spf13/afero"
+	"github.com/input-output-hk/catalyst-forge/lib/tools/fs"
+	"github.com/input-output-hk/catalyst-forge/lib/tools/fs/billy"
 )
 
 const CUE_BINARY = "cue"
@@ -31,7 +32,7 @@ type CueReleaser struct {
 	cue         executor.WrappedExecuter
 	ecr         aws.ECRClient
 	force       bool
-	fs          afero.Fs
+	fs          fs.Filesystem
 	handler     events.EventHandler
 	logger      *slog.Logger
 	project     project.Project
@@ -96,14 +97,14 @@ func (r *CueReleaser) Release() error {
 // loadModule loads the CUE module file.
 func (r *CueReleaser) loadModule() (string, error) {
 	modulePath := filepath.Join(r.project.Path, "cue.mod", "module.cue")
-	if exists, err := afero.Exists(r.fs, modulePath); err != nil {
+	if exists, err := r.fs.Exists(modulePath); err != nil {
 		return "", fmt.Errorf("failed to check if module file exists: %w", err)
 	} else if !exists {
 		return "", fmt.Errorf("module file does not exist: %s", modulePath)
 	}
 
 	r.logger.Info("Loading module", "path", modulePath)
-	contents, err := afero.ReadFile(r.fs, modulePath)
+	contents, err := r.fs.ReadFile(modulePath)
 	if err != nil {
 		return "", fmt.Errorf("failed to read module file: %w", err)
 	}
@@ -157,7 +158,7 @@ func NewCueReleaser(ctx run.RunContext,
 		config:      config,
 		cue:         cue,
 		ecr:         ecr,
-		fs:          afero.NewOsFs(),
+		fs:          billy.NewBaseOsFS(),
 		force:       force,
 		handler:     &handler,
 		logger:      ctx.Logger,

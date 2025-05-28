@@ -2,7 +2,6 @@ exec git init .
 exec forge validate ./
 
 -- blueprint.cue --
-version: "1.0"
 project: {
   name: "test"
   ci: {

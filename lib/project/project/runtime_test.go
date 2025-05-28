@@ -9,9 +9,9 @@ import (
 	"cuelang.org/go/cue/cuecontext"
 	"github.com/input-output-hk/catalyst-forge/lib/project/blueprint"
 	lc "github.com/input-output-hk/catalyst-forge/lib/tools/cue"
+	"github.com/input-output-hk/catalyst-forge/lib/tools/fs/billy"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/git/repo"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/testutils"
-	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -149,7 +149,7 @@ func TestGitRuntimeLoad(t *testing.T) {
 				}
 			}
 
-			fs := afero.NewMemMapFs()
+			fs := billy.NewInMemoryFs()
 			if len(tt.files) > 0 {
 				testutils.SetupFS(t, fs, tt.files)
 			}

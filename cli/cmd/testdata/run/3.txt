@@ -17,7 +17,6 @@ Artifact ./dir1+test output as test
 Image ./dir1+test output as test
 Artifact ./dir1+test output as test
 -- dir1/blueprint.cue --
-version: "1.0.0"
 project: name: "dir1"
 -- dir1/Earthfile --
 VERSION 0.8

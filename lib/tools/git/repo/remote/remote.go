@@ -13,6 +13,12 @@ type GitRemoteInteractor interface {
 	// Clone clones a repository.
 	Clone(s storage.Storer, worktree billy.Filesystem, o *git.CloneOptions) (*git.Repository, error)
 
+	// Fetch fetches changes from a repository.
+	Fetch(repo *git.Repository, o *git.FetchOptions) error
+
 	// Push pushes changes to a repository.
 	Push(repo *git.Repository, o *git.PushOptions) error
+
+	// Pull pulls changes from a repository.
+	Pull(repo *git.Repository, o *git.PullOptions) error
 }

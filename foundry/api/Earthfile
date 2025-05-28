@@ -20,8 +20,10 @@ src:
 
     CACHE --persist --sharing shared /go
 
-    COPY --dir cmd .
+    COPY --dir client cmd internal pkg .
     RUN go generate ./...
+
+    SAVE ARTIFACT . src
 
 check:
     FROM +src
@@ -37,21 +39,38 @@ build:
     ARG version="0.0.0"
 
     ENV CGO_ENABLED=0
-    RUN go build -ldflags="-extldflags=-static -X main.version=$version" -o bin/foundry cmd/main.go
+    RUN go build -ldflags="-extldflags=-static -X main.version=$version" -o bin/foundry-api cmd/api/main.go
     RUN file bin/foundry
 
-    SAVE ARTIFACT bin/foundry foundry
+    SAVE ARTIFACT bin/foundry-api foundry-api
 
 test:
-    FROM +build
+    FROM earthly/dind:ubuntu-24.04-docker-27.3.1-1
 
-    RUN go test ./...
+    COPY docker-compose.yml .
+
+    WITH DOCKER \
+        --load foundry-api:latest=(+docker) \
+        --load foundry-api-test:latest=(+docker-test) \
+        --compose docker-compose.yml \
+        --service api \
+        --service postgres
+        RUN docker compose up api-test
+    END
+
+docker-test:
+    FROM +src
+
+    COPY --dir test .
+
+    ENTRYPOINT ["/usr/local/go/bin/go", "test", "-v", "./test/..."]
+    SAVE IMAGE foundry-api-test:latest
 
 docker:
     FROM debian:bookworm-slim
     WORKDIR /app
 
-    ARG container="foundry"
+    ARG container="foundry-api"
     ARG tag="latest"
     ARG version="dev"
 
@@ -59,12 +78,16 @@ docker:
     ARG TARGETARCH
     ARG USERPLATFORM
 
+    RUN apt-get update && apt-get install -y curl postgresql-client
+
     COPY \
         --platform=$USERPLATFORM \
-        (+build/foundry \
+        (+build/foundry-api \
         --GOOS=$TARGETOS \
         --GOARCH=$TARGETARCH \
-        --version=$version) foundry
+        --version=$version) foundry-api
+    COPY --dir sql .
+    COPY entrypoint.sh .
 
-    ENTRYPOINT ["/app/foundry"]
+    ENTRYPOINT [ "/bin/bash", "/app/entrypoint.sh" ]
     SAVE IMAGE ${container}:${tag}

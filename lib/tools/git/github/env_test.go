@@ -5,8 +5,8 @@ import (
 	"testing"
 
 	"github.com/google/go-github/v66/github"
+	"github.com/input-output-hk/catalyst-forge/lib/tools/fs/billy"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/testutils"
-	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -118,7 +118,7 @@ func TestGithubEnvGetEventPayload(t *testing.T) {
 				defer os.Unsetenv(k)
 			}
 
-			fs := afero.NewMemMapFs()
+			fs := billy.NewInMemoryFs()
 			testutils.SetupFS(t, fs, tt.files)
 
 			gh := GithubEnv{

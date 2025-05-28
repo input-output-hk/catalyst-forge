@@ -3,8 +3,8 @@ package providers
 import (
 	"testing"
 
+	"github.com/input-output-hk/catalyst-forge/lib/tools/fs/billy"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/testutils"
-	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -35,15 +35,15 @@ func TestLocalClientGet(t *testing.T) {
 			},
 			expect:      "",
 			expectErr:   true,
-			expectedErr: "open foo: file does not exist",
+			expectedErr: "file does not exist",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			fs := afero.NewMemMapFs()
+			fs := billy.NewInMemoryFs()
 			for k, v := range tt.files {
-				afero.WriteFile(fs, k, []byte(v), 0644)
+				fs.WriteFile(k, []byte(v), 0644)
 			}
 
 			client := &LocalClient{

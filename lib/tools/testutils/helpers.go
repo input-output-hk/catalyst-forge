@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/spf13/afero"
+	"github.com/input-output-hk/catalyst-forge/lib/tools/fs"
 	"github.com/stretchr/testify/require"
 )
 
@@ -46,14 +46,14 @@ func NewStdoutLogger() *slog.Logger {
 }
 
 // SetupFS sets up the filesystem with the given files.
-func SetupFS(t *testing.T, fs afero.Fs, files map[string]string) {
+func SetupFS(t *testing.T, fs fs.Filesystem, files map[string]string) {
 	for path, content := range files {
 		dir := filepath.Dir(path)
 		if err := fs.MkdirAll(dir, 0755); err != nil {
 			t.Fatalf("failed to create directory %s: %v", dir, err)
 		}
 
-		if err := afero.WriteFile(fs, path, []byte(content), 0644); err != nil {
+		if err := fs.WriteFile(path, []byte(content), 0644); err != nil {
 			t.Fatalf("failed to write file %s: %v", path, err)
 		}
 	}

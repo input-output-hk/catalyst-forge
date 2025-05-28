@@ -11,7 +11,6 @@ Add a `blueprint.cue` to the root of your repository and add configuration for i
 Here is an example:
 
 ```cue
-version: "1.0"
 ci: {
 	providers: {
 		aws: {
@@ -76,7 +75,6 @@ The below list documents the expected format for each provider:
 If the secret uses a different format, the `maps` field of the secret can be used to map them correctly:
 
 ```cue
-version: "1.0"
 ci: {
 	providers: {
 		docker: {

@@ -1,0 +1,106 @@
+VERSION 0.8
+
+deps:
+    FROM golang:1.24.0-bookworm
+    WORKDIR /work/operator
+
+    ARG CONTROLLER_GEN_VERSION=v0.17.2
+    ARG ENVTEST_VERSION=latest
+    ARG KUSTOMIZE_VERSION=v5.5.0
+    ARG KUBERNETES_VERSION=1.32.0
+
+    RUN apt-get update && apt-get install -y curl gcc
+
+    # Install controller-gen, used to generate CRDs and RBAC
+    RUN go install sigs.k8s.io/controller-tools/cmd/controller-gen@${CONTROLLER_GEN_VERSION}
+
+    # Install envtest tools, used to set up a Kubernetes cluster for testing
+    RUN go install sigs.k8s.io/controller-runtime/tools/setup-envtest@${ENVTEST_VERSION}
+    RUN setup-envtest use ${KUBERNETES_VERSION}
+    ENV PATH="${PATH}:$(setup-envtest use -p path ${KUBERNETES_VERSION})"
+    ENV KUBEBUILDER_ASSETS="$(setup-envtest use -p path ${KUBERNETES_VERSION})"
+
+    # Install kustomize, used to patch the generated manifests
+    RUN curl --fail \
+        --remote-name \
+        --location \
+        "https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize%2F${KUSTOMIZE_VERSION}/kustomize_${KUSTOMIZE_VERSION}_linux_amd64.tar.gz"
+    RUN tar -xzvf kustomize_${KUSTOMIZE_VERSION}_linux_amd64.tar.gz -C /usr/local/bin && \
+        rm kustomize_${KUSTOMIZE_VERSION}_linux_amd64.tar.gz
+
+    # Copy local deps
+    COPY ../api+src/src /work/api
+    COPY ../../lib/project+src/src /lib/project
+    COPY ../../lib/schema+src/src /lib/schema
+    COPY ../../lib/tools+src/src /lib/tools
+
+    # Install go deps
+    RUN mkdir -p /go/cache && mkdir -p /go/modcache
+    ENV GOCACHE=/go/cache
+    ENV GOMODCACHE=/go/modcache
+    CACHE --persist --sharing shared /go
+
+    COPY go.mod go.sum .
+    RUN go mod download
+
+src:
+    FROM +deps
+
+    COPY --dir api cmd config hack internal pkg test .
+
+generate:
+    FROM +src
+
+    # Generate manifests
+    RUN controller-gen object:headerFile=./hack/boilerplate.go.txt paths=./...
+
+    # Generate API boilerplate
+    RUN controller-gen rbac:roleName=manager-role crd webhook paths=./... output:crd:artifacts:config=config/crd/bases
+
+    SAVE ARTIFACT api AS LOCAL api
+    SAVE ARTIFACT config AS LOCAL config
+
+check:
+    FROM +generate
+
+    RUN gofmt -l . | grep . && exit 1 || exit 0
+    RUN go vet ./...
+
+test:
+    FROM +generate
+
+    RUN go test -v ./internal/controller
+
+build:
+    FROM +generate
+
+    ARG GOOS
+    ARG GOARCH
+
+    ENV CGO_ENABLED=0
+    RUN go build -ldflags="-extldflags=-static" -o bin/foundry-operator cmd/main.go
+
+    SAVE ARTIFACT bin/foundry-operator foundry-operator
+
+docker:
+    FROM debian:bookworm-slim
+    WORKDIR /app
+
+    ARG container="foundry-operator"
+    ARG tag="latest"
+
+    ARG TARGETOS
+    ARG TARGETARCH
+    ARG USERPLATFORM
+
+    RUN apt-get update && apt-get install -y git
+
+    COPY \
+        --platform=$USERPLATFORM \
+        (+build/foundry-operator \
+        --GOOS=$TARGETOS \
+        --GOARCH=$TARGETARCH) foundry-operator
+    COPY entrypoint.sh .
+
+    ENTRYPOINT ["/app/entrypoint.sh"]
+    SAVE IMAGE ${container}:${tag}

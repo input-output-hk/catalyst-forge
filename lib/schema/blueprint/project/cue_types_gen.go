@@ -20,8 +20,10 @@ type Deployment struct {
 }
 
 type ModuleBundle struct {
+	// Env contains the environment to deploy the modules to.
 	Env string `json:"env"`
 
+	// Modules contains the deployment modules.
 	Modules map[string]Module `json:"modules"`
 }
 

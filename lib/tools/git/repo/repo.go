@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	gg "github.com/go-git/go-git/v5"
@@ -14,9 +15,9 @@ import (
 	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/go-git/go-git/v5/storage/filesystem"
+	"github.com/input-output-hk/catalyst-forge/lib/tools/fs"
+	bfs "github.com/input-output-hk/catalyst-forge/lib/tools/fs/billy"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/git/repo/remote"
-	"github.com/spf13/afero"
-	df "gopkg.in/jfontan/go-billy-desfacer.v0"
 )
 
 const (
@@ -28,35 +29,93 @@ var (
 	ErrTagNotFound = fmt.Errorf("tag not found")
 )
 
-type GitRepoOption func(*GitRepo)
-
 // GitRepo is a high-level representation of a git repository.
 type GitRepo struct {
 	auth         *http.BasicAuth
 	basePath     string
 	commitAuthor string
 	commitEmail  string
-	fs           afero.Fs
+	fs           *bfs.BillyFs
+	gfs          *bfs.BillyFs
+	wfs          *bfs.BillyFs
 	logger       *slog.Logger
 	raw          *gg.Repository
 	remote       remote.GitRemoteInteractor
 	worktree     *gg.Worktree
 }
 
-// Clone loads a repository from a git remote.
-func (g *GitRepo) Clone(path, url, branch string) error {
-	workdir := afero.NewBasePathFs(g.fs, path)
-	gitdir := afero.NewBasePathFs(g.fs, filepath.Join(path, ".git"))
-	ref := fmt.Sprintf("refs/heads/%s", branch)
-
-	g.logger.Debug("Cloning repository", "url", url, "ref", ref)
-	storage := filesystem.NewStorage(df.New(gitdir), cache.NewObjectLRUDefault())
-	repo, err := g.remote.Clone(storage, df.New(workdir), &gg.CloneOptions{
-		URL:           url,
-		Depth:         1,
-		ReferenceName: plumbing.ReferenceName(ref),
-		Auth:          g.auth,
+// CheckoutBranch checks out a branch with the given name.
+func (g *GitRepo) CheckoutBranch(branch string) error {
+	return g.worktree.Checkout(&gg.CheckoutOptions{
+		Branch: plumbing.NewBranchReferenceName(branch),
 	})
+}
+
+// CheckoutCommit checks out a commit with the given hash.
+func (g *GitRepo) CheckoutCommit(hash string) error {
+	return g.worktree.Checkout(&gg.CheckoutOptions{
+		Hash: plumbing.NewHash(hash),
+	})
+}
+
+// CheckoutRef checks out a reference (commit, branch, or tag) with the given name.
+func (g *GitRepo) CheckoutRef(reference string) error {
+	// Initialize checkout options
+	checkoutOpts := &gg.CheckoutOptions{
+		Force: true,
+	}
+
+	// Try as a commit hash first
+	hash := plumbing.NewHash(reference)
+	if !hash.IsZero() {
+		_, err := g.raw.CommitObject(hash)
+		if err == nil {
+			checkoutOpts.Hash = hash
+			return g.worktree.Checkout(checkoutOpts)
+		}
+	}
+
+	// Try as a local branch
+	branchRefName := plumbing.NewBranchReferenceName(reference)
+	_, err := g.raw.Reference(branchRefName, true)
+	if err == nil {
+		checkoutOpts.Branch = branchRefName
+		return g.worktree.Checkout(checkoutOpts)
+	}
+
+	// Try as a tag
+	tagRefName := plumbing.NewTagReferenceName(reference)
+	tagRef, err := g.raw.Reference(tagRefName, true)
+	if err == nil {
+		tagObj, err := g.raw.TagObject(tagRef.Hash())
+		if err == nil {
+			commit, err := tagObj.Commit()
+			if err == nil {
+				checkoutOpts.Hash = commit.Hash
+				return g.worktree.Checkout(checkoutOpts)
+			}
+		} else if strings.Contains(err.Error(), "not a tag object") {
+			checkoutOpts.Hash = tagRef.Hash()
+			return g.worktree.Checkout(checkoutOpts)
+		}
+	}
+
+	return fmt.Errorf("reference not found: %s is not a valid commit hash, branch, or tag", reference)
+}
+
+// Clone loads a repository from a git remote.
+func (g *GitRepo) Clone(url string, opts ...CloneOption) error {
+	g.logger.Debug("Cloning repository", "url", url)
+	storage := filesystem.NewStorage(g.gfs.Raw(), cache.NewObjectLRUDefault())
+
+	finalOpts := &gg.CloneOptions{
+		URL:  url,
+		Auth: g.auth,
+	}
+	for _, opt := range opts {
+		opt(finalOpts)
+	}
+	repo, err := g.remote.Clone(storage, g.wfs.Raw(), finalOpts)
 
 	if err != nil {
 		return err
@@ -67,7 +126,6 @@ func (g *GitRepo) Clone(path, url, branch string) error {
 		return fmt.Errorf("failed to get worktree: %w", err)
 	}
 
-	g.basePath = path
 	g.raw = repo
 	g.worktree = wt
 
@@ -92,9 +150,39 @@ func (g *GitRepo) Commit(msg string) (plumbing.Hash, error) {
 	return hash, nil
 }
 
+// CreateTag creates a tag with the given name and message.
+func (g *GitRepo) CreateTag(name, hash, message string) error {
+	commitHash := plumbing.NewHash(hash)
+	if commitHash.IsZero() {
+		return fmt.Errorf("invalid commit hash: %s", hash)
+	}
+
+	_, err := g.raw.CommitObject(commitHash)
+	if err != nil {
+		return fmt.Errorf("failed to find commit %s: %w", hash, err)
+	}
+
+	author, email := g.getAuthor()
+	opts := &gg.CreateTagOptions{
+		Message: message,
+		Tagger: &object.Signature{
+			Name:  author,
+			Email: email,
+			When:  time.Now(),
+		},
+	}
+
+	_, err = g.raw.CreateTag(name, commitHash, opts)
+	if err != nil {
+		return fmt.Errorf("failed to create tag %s: %w", name, err)
+	}
+
+	return nil
+}
+
 // Exists checks if a file exists in the repository.
 func (g *GitRepo) Exists(path string) (bool, error) {
-	_, err := g.fs.Stat(filepath.Join(g.basePath, path))
+	_, err := g.wfs.Stat(path)
 	if errors.Is(err, os.ErrNotExist) {
 		return false, nil
 	} else if err != nil {
@@ -102,6 +190,27 @@ func (g *GitRepo) Exists(path string) (bool, error) {
 	}
 
 	return true, nil
+}
+
+// Fetch fetches changes from the remote repository.
+func (g *GitRepo) Fetch(opts ...FetchOption) error {
+	g.logger.Debug("Fetching repository")
+	fo := &gg.FetchOptions{
+		Auth:       g.auth,
+		RemoteName: "origin",
+	}
+
+	for _, opt := range opts {
+		opt(fo)
+	}
+
+	err := g.remote.Fetch(g.raw, fo)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // GetCommit returns the commit with the given hash.
@@ -158,6 +267,21 @@ func (g *GitRepo) GetCurrentTag() (string, error) {
 	return tag, nil
 }
 
+// GitFs returns the filesystem for the .git directory.
+func (g *GitRepo) GitFs() fs.Filesystem {
+	return g.gfs
+}
+
+// HasBranch returns true if the repository has a branch with the given name.
+func (g *GitRepo) HasBranch(name string) (bool, error) {
+	_, err := g.raw.Reference(plumbing.NewBranchReferenceName(name), false)
+	if err != nil {
+		return false, nil
+	}
+
+	return true, nil
+}
+
 // HasChanges returns true if the repository has changes.
 func (g *GitRepo) HasChanges() (bool, error) {
 	status, err := g.worktree.Status()
@@ -174,18 +298,9 @@ func (g *GitRepo) Head() (*plumbing.Reference, error) {
 }
 
 // Init initializes a new repository at the given path.
-func (g *GitRepo) Init(path string) error {
-	var workdir afero.Fs
-	if path == "" {
-		workdir = g.fs
-	} else {
-		workdir = afero.NewBasePathFs(g.fs, path)
-	}
-
-	gitdir := afero.NewBasePathFs(g.fs, filepath.Join(path, ".git"))
-
-	storage := filesystem.NewStorage(df.New(gitdir), cache.NewObjectLRUDefault())
-	repo, err := gg.Init(storage, df.New(workdir))
+func (g *GitRepo) Init() error {
+	storage := filesystem.NewStorage(g.gfs.Raw(), cache.NewObjectLRUDefault())
+	repo, err := gg.Init(storage, g.wfs.Raw())
 	if err != nil {
 		return fmt.Errorf("failed to init repository: %w", err)
 	}
@@ -195,16 +310,20 @@ func (g *GitRepo) Init(path string) error {
 		return fmt.Errorf("failed to get worktree: %w", err)
 	}
 
-	g.basePath = path
 	g.raw = repo
 	g.worktree = wt
 
 	return nil
 }
 
+// IsErrNoUpdates returns true if the error is NoErrAlreadyUpToDate.
+func IsErrNoUpdates(err error) bool {
+	return errors.Is(err, gg.NoErrAlreadyUpToDate)
+}
+
 // MkdirAll creates a directory and all necessary parents.
 func (g *GitRepo) MkdirAll(path string) error {
-	return g.fs.MkdirAll(filepath.Join(g.basePath, path), 0755)
+	return g.wfs.MkdirAll(filepath.Join(g.basePath, path), 0755)
 }
 
 // NewBranch creates a new branch with the given name.
@@ -241,12 +360,9 @@ func (g *GitRepo) NewTag(commit plumbing.Hash, name, message string) (*plumbing.
 }
 
 // Open loads a repository from a local path.
-func (g *GitRepo) Open(path string) error {
-	workdir := afero.NewBasePathFs(g.fs, path)
-	gitdir := afero.NewBasePathFs(g.fs, filepath.Join(path, ".git"))
-
-	storage := filesystem.NewStorage(df.New(gitdir), cache.NewObjectLRUDefault())
-	repo, err := gg.Open(storage, df.New(workdir))
+func (g *GitRepo) Open() error {
+	storage := filesystem.NewStorage(g.gfs.Raw(), cache.NewObjectLRUDefault())
+	repo, err := gg.Open(storage, g.wfs.Raw())
 	if err != nil {
 		return fmt.Errorf("failed to open repository: %w", err)
 	}
@@ -256,16 +372,18 @@ func (g *GitRepo) Open(path string) error {
 		return fmt.Errorf("failed to get worktree: %w", err)
 	}
 
-	g.basePath = path
 	g.raw = repo
 	g.worktree = wt
 
 	return nil
 }
 
-// ReadFile reads the contents of a file in the repository.
-func (g *GitRepo) ReadFile(path string) ([]byte, error) {
-	return afero.ReadFile(g.fs, filepath.Join(g.basePath, path))
+// Pull fetches changes from the remote repository and merges them into the current branch.
+func (g *GitRepo) Pull() error {
+	return g.remote.Pull(g.raw, &gg.PullOptions{
+		Auth:       g.auth,
+		RemoteName: "origin",
+	})
 }
 
 // Push pushes changes to the remote repository.
@@ -280,14 +398,19 @@ func (g *GitRepo) Raw() *gg.Repository {
 	return g.raw
 }
 
+// ReadFile reads the contents of a file in the repository.
+func (g *GitRepo) ReadFile(path string) ([]byte, error) {
+	return g.wfs.ReadFile(path)
+}
+
 // ReadDir reads the contents of a directory in the repository.
 func (g *GitRepo) ReadDir(path string) ([]os.FileInfo, error) {
-	return afero.ReadDir(g.fs, filepath.Join(g.basePath, path))
+	return g.wfs.ReadDir(path)
 }
 
 // RemoveFile removes a file from the repository.
 func (g *GitRepo) RemoveFile(path string) error {
-	return g.fs.Remove(filepath.Join(g.basePath, path))
+	return g.wfs.Remove(path)
 }
 
 // SetAuth sets the authentication for the interacting with a remote repository.
@@ -315,11 +438,15 @@ func (g *GitRepo) UnstageFile(path string) error {
 	return nil
 }
 
+// WorkFs returns the filesystem for the working directory.
+func (g *GitRepo) WorkFs() fs.Filesystem {
+	return g.wfs
+}
+
 // WriteFile writes the given contents to the given path in the repository.
 // It also automatically adds the file to the staging area.
 func (g *GitRepo) WriteFile(path string, contents []byte) error {
-	newPath := filepath.Join(g.basePath, path)
-	if err := afero.WriteFile(g.fs, newPath, contents, 0644); err != nil {
+	if err := g.wfs.WriteFile(path, contents, 0644); err != nil {
 		return fmt.Errorf("failed to write file: %w", err)
 	}
 
@@ -346,60 +473,38 @@ func (g *GitRepo) getAuthor() (string, string) {
 	return author, email
 }
 
-// WithAuth sets the authentication for the interacting with a remote repository.
-func WithAuth(username, password string) GitRepoOption {
-	return func(g *GitRepo) {
-		g.auth = &http.BasicAuth{
-			Username: username,
-			Password: password,
-		}
-	}
-}
-
-// WithAuthor sets the author for all commits.
-func WithAuthor(name, email string) GitRepoOption {
-	return func(g *GitRepo) {
-		g.commitAuthor = name
-		g.commitEmail = email
-	}
-}
-
-// WithGitRemoteInteractor sets the remote interactor for the repository.
-func WithGitRemoteInteractor(remote remote.GitRemoteInteractor) GitRepoOption {
-	return func(g *GitRepo) {
-		g.remote = remote
-	}
-}
-
-// WithFS sets the filesystem for the repository.
-func WithFS(fs afero.Fs) GitRepoOption {
-	return func(g *GitRepo) {
-		g.fs = fs
-	}
-}
-
-// WithMemFS sets the repository to use an in-memory filesystem.
-func WithMemFS() GitRepoOption {
-	return func(g *GitRepo) {
-		g.fs = afero.NewMemMapFs()
-	}
-}
-
 // NewGitRepo creates a new GitRepo instance.
-func NewGitRepo(logger *slog.Logger, opts ...GitRepoOption) GitRepo {
+func NewGitRepo(
+	path string,
+	logger *slog.Logger,
+	opts ...GitRepoOption,
+) (GitRepo, error) {
 	r := GitRepo{
 		logger: logger,
+		remote: remote.GoGitRemoteInteractor{},
 	}
 
 	for _, opt := range opts {
 		opt(&r)
 	}
 
-	if r.fs == nil {
-		r.fs = afero.NewOsFs()
-	} else if r.remote == nil {
-		r.remote = remote.GoGitRemoteInteractor{}
+	if r.fs != nil {
+		ng, err := r.fs.Raw().Chroot(filepath.Join(path, ".git"))
+		if err != nil {
+			return GitRepo{}, fmt.Errorf("failed to chroot git filesystem: %w", err)
+		}
+
+		nw, err := r.fs.Raw().Chroot(path)
+		if err != nil {
+			return GitRepo{}, fmt.Errorf("failed to chroot worktree filesystem: %w", err)
+		}
+
+		r.gfs = bfs.NewFs(ng)
+		r.wfs = bfs.NewFs(nw)
+	} else {
+		r.gfs = bfs.NewOsFs(filepath.Join(path, ".git"))
+		r.wfs = bfs.NewOsFs(path)
 	}
 
-	return r
+	return r, nil
 }

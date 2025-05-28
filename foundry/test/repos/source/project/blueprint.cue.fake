@@ -1,0 +1,20 @@
+{
+	project: {
+		name: "project"
+		deployment: {
+			on: {}
+			bundle: {
+				env: "test"
+				modules: {
+					main: {
+						name:    "module"
+						path:    "./kcl"
+						values: {
+							foo: "bar"
+						}
+					}
+				}
+			}
+		}
+	}
+}

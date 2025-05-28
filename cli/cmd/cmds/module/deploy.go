@@ -5,7 +5,9 @@ import (
 
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/events"
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/run"
+	"github.com/input-output-hk/catalyst-forge/lib/project/deployment"
 	"github.com/input-output-hk/catalyst-forge/lib/project/deployment/deployer"
+	"github.com/input-output-hk/catalyst-forge/lib/tools/fs"
 )
 
 type DeployCmd struct {
@@ -14,6 +16,13 @@ type DeployCmd struct {
 }
 
 func (c *DeployCmd) Run(ctx run.RunContext) error {
+	exists, err := fs.Exists(c.Project)
+	if err != nil {
+		return fmt.Errorf("could not check if project exists: %w", err)
+	} else if !exists {
+		return fmt.Errorf("project does not exist: %s", c.Project)
+	}
+
 	project, err := ctx.ProjectLoader.Load(c.Project)
 	if err != nil {
 		return fmt.Errorf("could not load project: %w", err)
@@ -26,14 +35,39 @@ func (c *DeployCmd) Run(ctx run.RunContext) error {
 		dryrun = true
 	}
 
-	d := deployer.NewDeployer(&project, ctx.ManifestGeneratorStore, ctx.Logger, ctx.CueCtx, dryrun)
-	if err := d.Deploy(); err != nil {
-		if err == deployer.ErrNoChanges {
+	d := deployer.NewDeployer(
+		deployer.NewDeployerConfigFromProject(&project),
+		ctx.ManifestGeneratorStore,
+		ctx.SecretStore,
+		ctx.Logger,
+		ctx.CueCtx,
+	)
+
+	dr, err := d.CreateDeployment(project.Name, project.Name, deployment.NewModuleBundle(&project))
+	if err != nil {
+		return fmt.Errorf("failed creating deployment: %w", err)
+	}
+
+	if !dryrun {
+		changes, err := dr.HasChanges()
+		if err != nil {
+			return fmt.Errorf("failed checking for changes: %w", err)
+		}
+
+		if !changes {
 			ctx.Logger.Warn("no changes to deploy")
 			return nil
 		}
 
-		return fmt.Errorf("failed deploying project: %w", err)
+		if err := dr.Commit(); err != nil {
+			return fmt.Errorf("failed committing deployment: %w", err)
+		}
+	} else {
+		ctx.Logger.Info("Dry-run: not committing or pushing changes")
+		ctx.Logger.Info("Dumping manifests")
+		for _, r := range dr.Manifests {
+			fmt.Println(string(r))
+		}
 	}
 
 	return nil

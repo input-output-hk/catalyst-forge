@@ -10,10 +10,19 @@ runs:
   steps:
     - shell: bash
       run: echo "Building Forge CLI locally..."
-    - name: Install Earthly
-      uses: earthly/actions-setup@v1
+    - name: Cache Earthly binary
+      id: cache-earthly
+      uses: actions/cache@v4
       with:
-        version: latest
+        path: /usr/local/bin/earthly
+        key: ${{ runner.os }}
+    - name: Install Earthly
+      if: steps.cache-earthly.outputs.cache-hit == false
+      shell: bash
+      run: |
+        wget -q https://github.com/earthly/earthly/releases/latest/download/earthly-linux-amd64 -O /usr/local/bin/earthly
+        chmod +x /usr/local/bin/earthly
+        /usr/local/bin/earthly bootstrap
     - name: Login to Earthly Cloud
       if: steps.cache-binary.outputs.cache-hit == false
       shell: bash

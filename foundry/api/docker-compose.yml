@@ -1,0 +1,61 @@
+services:
+  api:
+    image: foundry-api:latest
+    container_name: api
+    environment:
+      HTTP_PORT: 5000
+      DB_SUPER_USER: postgres
+      DB_SUPER_PASSWORD: postgres
+      DB_ROOT_NAME: postgres
+      DB_INIT: "true"
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: foundry
+      DB_PASSWORD: changeme
+      DB_NAME: foundry
+      DB_SSLMODE: disable
+      K8S_ENABLED: "false"
+      LOG_LEVEL: debug
+      LOG_FORMAT: text
+    ports:
+      - "5000:5000"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/healthz"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: on-failure
+
+  api-test:
+    image: foundry-api-test:latest
+    container_name: api-test
+    environment:
+      API_URL: http://api:5000
+    depends_on:
+      api:
+        condition: service_healthy
+
+  postgres:
+    image: postgres:15-alpine
+    container_name: db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: releases
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: on-failure
+
+volumes:
+  postgres-data:

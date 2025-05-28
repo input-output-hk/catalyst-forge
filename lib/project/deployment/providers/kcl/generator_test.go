@@ -4,11 +4,13 @@ import (
 	"fmt"
 	"testing"
 
+	"cuelang.org/go/cue"
+	"cuelang.org/go/cue/cuecontext"
 	"github.com/input-output-hk/catalyst-forge/lib/project/deployment/providers/kcl/client"
 	"github.com/input-output-hk/catalyst-forge/lib/project/deployment/providers/kcl/client/mocks"
 	sp "github.com/input-output-hk/catalyst-forge/lib/schema/blueprint/project"
+	"github.com/input-output-hk/catalyst-forge/lib/tools/fs/billy"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/testutils"
-	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -126,7 +128,7 @@ version = "1.0.0"
 				},
 			}
 
-			fs := afero.NewMemMapFs()
+			fs := billy.NewInMemoryFs()
 			if tt.files != nil {
 				testutils.SetupFS(t, fs, tt.files)
 			}
@@ -137,7 +139,7 @@ version = "1.0.0"
 				logger: testutils.NewNoopLogger(),
 			}
 
-			out, err := g.Generate(tt.module, tt.env)
+			out, err := g.Generate(tt.module, getRaw(tt.module), tt.env)
 			tt.validate(t, testResult{
 				conf: c,
 				err:  err,
@@ -146,4 +148,9 @@ version = "1.0.0"
 			})
 		})
 	}
+}
+
+func getRaw(m sp.Module) cue.Value {
+	ctx := cuecontext.New()
+	return ctx.Encode(m)
 }

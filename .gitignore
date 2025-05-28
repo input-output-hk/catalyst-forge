@@ -10,3 +10,5 @@ node_modules
 !/.vscode/launch.recommended.json
 !/.vscode/settings.recommended.json
 !/.vscode/tasks.recommended.json
+
+.env

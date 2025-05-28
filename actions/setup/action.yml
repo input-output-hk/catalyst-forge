@@ -169,11 +169,25 @@ runs:
         fi
 
         echo "version=$VERSION" >> $GITHUB_OUTPUT
-    - name: Install Earthly
-      uses: earthly/actions-setup@v1
+    - name: Cache Earthly binary
+      id: cache-binary
+      uses: actions/cache@v4
       if: inputs.skip_earthly == 'false'
       with:
-        version: ${{ steps.earthly.outputs.version }}
+        path: /usr/local/bin/earthly
+        key: ${{ runner.os }}-${{ steps.earthly.outputs.version }}
+    - name: Install Earthly
+      if: inputs.skip_earthly == 'false' && steps.cache-binary.outputs.cache-hit == false
+      shell: bash
+      run: |
+        if [[ "${{ steps.earthly.outputs.version }}" == "latest" ]]; then
+          wget -q https://github.com/earthly/earthly/releases/latest/download/earthly-linux-amd64 -O /usr/local/bin/earthly
+        else
+          wget -q https://github.com/earthly/earthly/releases/download/v${{ steps.earthly.outputs.version}}/earthly-linux-amd64 -O /usr/local/bin/earthly
+        fi
+
+        chmod +x /usr/local/bin/earthly
+        /usr/local/bin/earthly bootstrap
     - name: Login to Earthly Cloud
       if: steps.earthly.outputs.token != '' && steps.earthly.conclusion == 'success'
       shell: bash

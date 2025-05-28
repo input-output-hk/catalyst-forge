@@ -1,0 +1,15 @@
+{
+	global: {
+		deployment: {
+			registries: {
+				containers: "foo"
+				modules:    "bar"
+			}
+			repo: {
+				ref: "master"
+				url: "gitea:3000/root/deployment"
+			}
+			root: "k8s"
+		}
+	}
+}

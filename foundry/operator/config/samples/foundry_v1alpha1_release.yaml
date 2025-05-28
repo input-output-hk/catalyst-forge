@@ -1,0 +1,10 @@
+apiVersion: foundry.projectcatalyst.io/v1alpha1
+kind: ReleaseDeployment
+metadata:
+  labels:
+    app.kubernetes.io/name: operator
+    app.kubernetes.io/managed-by: kustomize
+  name: release-sample
+spec:
+  id: project-001-123456789
+  release_id: project-001
