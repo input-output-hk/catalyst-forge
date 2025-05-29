@@ -10,8 +10,11 @@ import (
 	"github.com/alecthomas/kong"
 	"github.com/charmbracelet/log"
 	"github.com/input-output-hk/catalyst-forge/cli/cmd/cmds"
+	"github.com/input-output-hk/catalyst-forge/cli/cmd/cmds/deploy"
 	"github.com/input-output-hk/catalyst-forge/cli/cmd/cmds/module"
+	"github.com/input-output-hk/catalyst-forge/cli/cmd/cmds/release"
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/run"
+	"github.com/input-output-hk/catalyst-forge/lib/project/blueprint"
 	"github.com/input-output-hk/catalyst-forge/lib/project/deployment"
 	"github.com/input-output-hk/catalyst-forge/lib/project/project"
 	"github.com/input-output-hk/catalyst-forge/lib/project/secrets"
@@ -32,15 +35,17 @@ type GlobalArgs struct {
 var cli struct {
 	GlobalArgs
 
-	Dump     cmds.DumpCmd     `cmd:"" help:"Dumps a project's blueprint to JSON."`
-	CI       cmds.CICmd       `cmd:"" help:"Simulate a CI run."`
-	Mod      module.ModuleCmd `kong:"cmd" help:"Commands for working with deployment modules."`
-	Release  cmds.ReleaseCmd  `cmd:"" help:"Release a project."`
-	Run      cmds.RunCmd      `cmd:"" help:"Run an Earthly target."`
-	Scan     cmds.ScanCmd     `cmd:"" help:"Scan for Earthfiles."`
-	Secret   cmds.SecretCmd   `cmd:"" help:"Manage secrets."`
-	Validate cmds.ValidateCmd `cmd:"" help:"Validates a project."`
-	Version  VersionCmd       `cmd:"" help:"Print the version."`
+	Deployments deploy.DeployCmd   `cmd:"" help:"Commands for working with deployments."`
+	Dump        cmds.DumpCmd       `cmd:"" help:"Dumps a project's blueprint to JSON."`
+	CI          cmds.CICmd         `cmd:"" help:"Simulate a CI run."`
+	Mod         module.ModuleCmd   `kong:"cmd" help:"Commands for working with deployment modules."`
+	Release     cmds.ReleaseCmd    `cmd:"" help:"Release a project."`
+	Releases    release.ReleaseCmd `cmd:"" help:"Commands for dealing with Foundry releases."`
+	Run         cmds.RunCmd        `cmd:"" help:"Run an Earthly target."`
+	Scan        cmds.ScanCmd       `cmd:"" help:"Scan for Earthfiles."`
+	Secret      cmds.SecretCmd     `cmd:"" help:"Manage secrets."`
+	Validate    cmds.ValidateCmd   `cmd:"" help:"Validates a project."`
+	Version     VersionCmd         `cmd:"" help:"Print the version."`
 
 	InstallCompletions kongplete.InstallCompletions `cmd:"" help:"install shell completions"`
 }
@@ -92,15 +97,20 @@ func Run() int {
 	logger := slog.New(handler)
 	store := secrets.NewDefaultSecretStore()
 	cc := cuecontext.New()
-	loader := project.NewDefaultProjectLoader(cc, store, logger)
+	w := walker.NewDefaultFSWalker(logger)
+	rw := walker.NewDefaultFSReverseWalker(logger)
+	bl := blueprint.NewDefaultBlueprintLoader(cc, logger)
+	pl := project.NewDefaultProjectLoader(cc, store, logger)
 	runctx := run.RunContext{
+		BlueprintLoader:        &bl,
 		CI:                     cli.GlobalArgs.CI,
 		CueCtx:                 cc,
-		FSWalker:               walker.NewDefaultFSWalker(logger),
+		ReverseWalker:          &rw,
+		Walker:                 &w,
 		Local:                  cli.GlobalArgs.Local,
 		Logger:                 logger,
 		ManifestGeneratorStore: deployment.NewDefaultManifestGeneratorStore(),
-		ProjectLoader:          &loader,
+		ProjectLoader:          &pl,
 		SecretStore:            store,
 		Verbose:                cli.GlobalArgs.Verbose,
 	}
