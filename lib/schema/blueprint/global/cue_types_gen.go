@@ -26,6 +26,9 @@ type Deployment struct {
 	// Environment contains the default environment to deploy projects to.
 	Environment string `json:"environment"`
 
+	// Foundry contains the configuration for Foundry.
+	Foundry DeploymentFoundry `json:"foundry"`
+
 	// Registries contains the configuration for the global deployment registries.
 	Registries DeploymentRegistries `json:"registries"`
 
@@ -34,6 +37,12 @@ type Deployment struct {
 
 	// Root contains the root deployment directory in the deployment repository.
 	Root string `json:"root"`
+}
+
+// DeploymentFoundry contains the configuration for Foundry.
+type DeploymentFoundry struct {
+	// api contains the URL of the Foundry API server.
+	Api string `json:"api"`
 }
 
 // DeploymentRegistries contains the configuration for the global deployment registries.
@@ -72,9 +81,12 @@ type Global struct {
 }
 
 type Repo struct {
+	// DefaultBranch contains the default branch of the repository.
+	DefaultBranch string `json:"defaultBranch"`
+
 	// Name contains the name of the repository (e.g. "owner/repo-name").
 	Name string `json:"name"`
 
-	// DefaultBranch contains the default branch of the repository.
-	DefaultBranch string `json:"defaultBranch"`
+	// URL contains the URL to the repository (used for cloning).
+	Url string `json:"url"`
 }
