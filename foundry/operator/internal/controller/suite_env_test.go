@@ -305,7 +305,7 @@ func newRawBundle() string {
 	return `{
 	_#def
 	_#def: {
-		env: string | *"dev"
+		env: string
 		modules: {
 			[string]: {
 				instance?: string
