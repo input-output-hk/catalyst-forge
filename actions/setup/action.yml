@@ -188,16 +188,16 @@ runs:
 
         chmod +x /usr/local/bin/earthly
         /usr/local/bin/earthly bootstrap
-    - name: Login to Earthly Cloud
-      if: steps.earthly.outputs.token != '' && steps.earthly.conclusion == 'success'
-      shell: bash
-      run: |
-        earthly account login --token "${{ steps.earthly.outputs.token }}"
-    - name: Set Earthly organization
-      if: steps.earthly.outputs.token != '' && steps.earthly.conclusion == 'success'
-      shell: bash
-      run: |
-        earthly org select "${{ steps.earthly.outputs.org }}"
+    # - name: Login to Earthly Cloud
+    #   if: steps.earthly.outputs.token != '' && steps.earthly.conclusion == 'success'
+    #   shell: bash
+    #   run: |
+    #     earthly account login --token "${{ steps.earthly.outputs.token }}"
+    # - name: Set Earthly organization
+    #   if: steps.earthly.outputs.token != '' && steps.earthly.conclusion == 'success'
+    #   shell: bash
+    #   run: |
+    #     earthly org select "${{ steps.earthly.outputs.org }}"
 
     # Timoni Provider
     - name: Get Timoni provider configuration
@@ -285,4 +285,3 @@ runs:
       shell: bash
       run: |
         kcl version
-
