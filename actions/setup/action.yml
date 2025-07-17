@@ -20,7 +20,7 @@ inputs:
   skip_earthly:
     description: If true, skip installing Earthly and authenticating to Earthly Cloud
     required: false
-    default: "true"
+    default: "false"
   skip_github:
     description: If true, skip authenticating to GitHub Container Registry
     required: false
