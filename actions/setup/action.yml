@@ -80,6 +80,7 @@ runs:
       run: |
         echo "==== Docker Setup ====="
         BP=$(forge dump .)
+        echo "$BP"
 
         DOCKER=$(echo "$BP" | jq -r .global.ci.providers.docker.credentials)
         if [[ "$DOCKER" != "null" ]]; then
