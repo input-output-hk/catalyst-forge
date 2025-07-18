@@ -109,6 +109,7 @@ func (e *EarthlyExecutor) buildArguments(platform string) []string {
 	var earthlyArgs []string
 
 	earthlyArgs = append(earthlyArgs, "--platform", platform)
+	earthlyArgs = append(earthlyArgs, "--buildkit-image", "earthly/buildkitd:v0.8.15")
 	earthlyArgs = append(earthlyArgs, e.earthlyArgs...)
 
 	// If we have an artifact path and multiple platforms, we need to append the platform to the artifact path to avoid conflicts.
