@@ -18,9 +18,12 @@ package global
 }
 
 #Repo: {
-	// Name contains the name of the repository (e.g. "owner/repo-name").
-	name:          string
-
 	// DefaultBranch contains the default branch of the repository.
 	defaultBranch: string
+
+	// Name contains the name of the repository (e.g. "owner/repo-name").
+	name: string
+
+	// URL contains the URL to the repository (used for cloning).
+	url: string
 }

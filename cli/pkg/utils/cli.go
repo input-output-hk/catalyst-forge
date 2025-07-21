@@ -6,7 +6,7 @@ import (
 )
 
 // PrintJson prints the given data as a JSON string.
-func PrintJson(data interface{}, pretty bool) {
+func PrintJson(data interface{}, pretty bool) error {
 	var out []byte
 	var err error
 
@@ -17,9 +17,9 @@ func PrintJson(data interface{}, pretty bool) {
 	}
 
 	if err != nil {
-		fmt.Println(err)
-		return
+		return fmt.Errorf("failed to marshal data to JSON: %w", err)
 	}
 
 	fmt.Println(string(out))
+	return nil
 }

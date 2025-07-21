@@ -4,6 +4,7 @@ import (
 	"log/slog"
 
 	"cuelang.org/go/cue"
+	"github.com/input-output-hk/catalyst-forge/lib/project/blueprint"
 	"github.com/input-output-hk/catalyst-forge/lib/project/deployment"
 	"github.com/input-output-hk/catalyst-forge/lib/project/project"
 	"github.com/input-output-hk/catalyst-forge/lib/project/secrets"
@@ -12,14 +13,14 @@ import (
 
 // RunContext represents the context in which a CLI run is happening.
 type RunContext struct {
+	// BlueprintLoader is the blueprint loader to use for loading blueprints.
+	BlueprintLoader blueprint.BlueprintLoader
+
 	// CI is true if the run is happening in a CI environment.
 	CI bool
 
 	// CueCtx is the CUE context to use for CUE operations.
 	CueCtx *cue.Context
-
-	// FSWalker is the walker to use for walking the filesystem.
-	FSWalker walker.FSWalker
 
 	// Local is true if the run is happening in a local environment.
 	Local bool
@@ -33,9 +34,15 @@ type RunContext struct {
 	// ProjectLoader is the project loader to use for loading projects.
 	ProjectLoader project.ProjectLoader
 
+	// ReverseWalker is the reverse walker to use for walking the filesystem.
+	ReverseWalker walker.ReverseWalker
+
 	// SecretStore is the secret store to use for fetching secrets.
 	SecretStore secrets.SecretStore
 
 	// Verbose is the verbosity level of the run.
 	Verbose int
+
+	// Walker is the walker to use for walking the filesystem.
+	Walker walker.Walker
 }

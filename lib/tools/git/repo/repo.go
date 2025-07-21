@@ -297,6 +297,21 @@ func (g *GitRepo) Head() (*plumbing.Reference, error) {
 	return g.raw.Head()
 }
 
+// HeadCommit returns the HEAD commit of the current branch.
+func (g *GitRepo) HeadCommit() (*object.Commit, error) {
+	head, err := g.raw.Head()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get HEAD reference: %w", err)
+	}
+
+	commit, err := g.raw.CommitObject(head.Hash())
+	if err != nil {
+		return nil, fmt.Errorf("failed to get HEAD commit: %w", err)
+	}
+
+	return commit, nil
+}
+
 // Init initializes a new repository at the given path.
 func (g *GitRepo) Init() error {
 	storage := filesystem.NewStorage(g.gfs.Raw(), cache.NewObjectLRUDefault())

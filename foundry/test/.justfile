@@ -1,4 +1,4 @@
-up: kind-up postgres-up gitea-up api-up operator-up git-up
+up: kind-up postgres-up gitea-up api-up operator-up git-up forge
 
 up-local: kind-up postgres-up gitea-up operator-up-local api-up git-up
 
@@ -17,6 +17,9 @@ api-up:
 
 cleanup-local:
   rm -rf ~/.cache/forge
+
+forge:
+  earthly -a ../../cli+build/forge "$(pwd)/bin/forge"
 
 git-up:
   ./scripts/git.sh

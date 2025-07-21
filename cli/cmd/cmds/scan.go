@@ -42,7 +42,7 @@ func (c *ScanCmd) Run(ctx run.RunContext) error {
 		return fmt.Errorf("root path does not exist: %s", rootPath)
 	}
 
-	projects, err := scan.ScanProjects(rootPath, ctx.ProjectLoader, &ctx.FSWalker, ctx.Logger)
+	projects, err := scan.ScanProjects(rootPath, ctx.ProjectLoader, ctx.Walker, ctx.Logger)
 	if err != nil {
 		return err
 	}
