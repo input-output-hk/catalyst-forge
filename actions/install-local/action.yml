@@ -77,8 +77,8 @@ runs:
       id: tailscale
       shell: bash
       run: |
-        TAILSCALE=$(cue export -e global.ci.providers.tailcsale ./blueprint.cue)
-        CREDS=$(cue export -e global.ci.providers.tailcsale.credentials ./blueprint.cue)
+        TAILSCALE=$(cue export -e global.ci.providers.tailscale ./blueprint.cue)
+        CREDS=$(cue export -e global.ci.providers.tailscale.credentials ./blueprint.cue)
         TAGS="$(echo $TAILSCALE | jq -r .tags)"
         VERSION="$(echo $TAILSCALE | jq -r .version)"
         CLIENT_ID="$(echo $CREDS | jq -r .client_id)"
