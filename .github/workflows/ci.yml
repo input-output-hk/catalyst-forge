@@ -65,7 +65,7 @@ jobs:
         with:
           skip_docker: 'true'
           skip_github: 'true'
-          #skip_earthly: ${{ steps.local.outputs.skip }}
+          skip_earthly_install: ${{ steps.local.outputs.skip }}
       - name: Discovery
         id: discovery
         uses: input-output-hk/catalyst-forge/actions/discovery@deprecate-earthly-cloud

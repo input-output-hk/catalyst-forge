@@ -19,6 +19,12 @@ runs:
         wget -q https://github.com/earthly/earthly/releases/latest/download/earthly-linux-amd64 -O /usr/local/bin/earthly
         chmod +x /usr/local/bin/earthly
         /usr/local/bin/earthly bootstrap
+    - name: Cache binary
+      id: cache-binary
+      uses: actions/cache@v4
+      with:
+        path: /usr/local/bin/forge
+        key: ${{ runner.os }}-${{ github.sha }}
     - name: Install CUE
       uses: cue-lang/setup-cue@v1.0.0
       if: steps.cache-binary.outputs.cache-hit == false
@@ -64,12 +70,6 @@ runs:
         EOF
 
         echo "::add-mask::$(echo "$SECRET" | jq -r .SecretString | jq -r .host)"
-    - name: Cache binary
-      id: cache-binary
-      uses: actions/cache@v4
-      with:
-        path: /usr/local/bin/forge
-        key: ${{ runner.os }}-${{ github.sha }}
     - name: Build Forge CLI
       if: steps.cache-binary.outputs.cache-hit == false
       shell: bash

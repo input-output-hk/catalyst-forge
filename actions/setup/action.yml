@@ -17,8 +17,12 @@ inputs:
     description: If true, skip authenticating to DockerHub
     required: false
     default: "false"
-  skip_earthly:
-    description: If true, skip installing Earthly and authenticating to Earthly Cloud
+  skip_earthly_install:
+    description: If true, skip installing Earthly
+    required: false
+    default: "false"
+  skip_earthly_satellite:
+    description: If true, skip adding authentication for the remote Earthly satellite
     required: false
     default: "false"
   skip_github:
@@ -133,7 +137,7 @@ runs:
 
     # Earthly Provider
     - name: Get Earthly provider configuration
-      if: inputs.skip_earthly == 'false'
+      if: inputs.skip_earthly_install == 'false' && inputs.skip_earthly_satellite == 'false'
       id: earthly
       shell: bash
       run: |
@@ -162,12 +166,12 @@ runs:
     - name: Cache Earthly binary
       id: cache-binary
       uses: actions/cache@v4
-      if: inputs.skip_earthly == 'false'
+      if: inputs.skip_earthly_install == 'false'
       with:
         path: /usr/local/bin/earthly
         key: ${{ runner.os }}-${{ steps.earthly.outputs.version }}
     - name: Install Earthly
-      if: inputs.skip_earthly == 'false' && steps.cache-binary.outputs.cache-hit == false
+      if: inputs.skip_earthly_install == 'false' && steps.cache-binary.outputs.cache-hit == false
       shell: bash
       run: |
         if [[ "${{ steps.earthly.outputs.version }}" == "latest" ]]; then
@@ -179,9 +183,10 @@ runs:
         chmod +x /usr/local/bin/earthly
         /usr/local/bin/earthly bootstrap
     - name: Configure Earthly satellite credentials
-      if: inputs.skip_earthly == 'false' && steps.earthly.outputs.sat == 'true' && steps.earthly.conclusion == 'success'
+      if: inputs.skip_earthly_satellite == 'false' && steps.earthly.outputs.sat == 'true' && steps.earthly.conclusion == 'success'
       shell: bash
       run: |
+        rm -rf "$HOME/.earthly"
         forge configure-satellite -vvv --ci
 
     # Timoni Provider
