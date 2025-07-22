@@ -84,8 +84,8 @@ runs:
 
         TAGS="$(echo $TAILSCALE | jq -r .tags)"
         VERSION="$(echo $TAILSCALE | jq -r .version)"
-        CLIENT_ID="$(echo $SECRET | jq -r .client_id)"
-        CLIENT_SECRET="$(echo $SECRET | jq -r .client_secret)"
+        CLIENT_ID="$(echo $SECRET | jq -r .SecretString | jq -r .client_id)"
+        CLIENT_SECRET="$(echo $SECRET | jq -r .SecretString | jq -r .client_secret)"
 
         echo "::add-mask::$CLIENT_ID"
         echo "::add-mask::$CLIENT_SECRET"
