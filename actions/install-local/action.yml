@@ -45,7 +45,7 @@ runs:
       if: steps.cache-binary.outputs.cache-hit == false
       shell: bash
       run: |
-        mkdir -p ~/.earthly
+        mkdir -p "$HOME/.earthly"
 
         EARTHLY=$(cue export -e global.ci.providers.earthly.satellite.credentials ./blueprint.cue)
         SECRET_ID=$(echo "$EARTHLY" | jq -r .path)
@@ -55,7 +55,7 @@ runs:
         echo "$SECRET" | jq -r .SecretString | jq -r .certificate | base64 -d > ~/.earthly/cert.pem
         echo "$SECRET" | jq -r .SecretString | jq -r .private_key | base64 -d > ~/.earthly/key.pem
 
-        cat <<EOF > "~/.earthly/config.yml"
+        cat <<EOF > "$HOME/config.yml"
         global:
           buildkit_host: $(echo "$SECRET" | jq -r .SecretString | jq -r .host)
           tlsca: ca.pem
