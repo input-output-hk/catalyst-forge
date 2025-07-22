@@ -72,6 +72,34 @@ runs:
         EOF
 
         echo "::add-mask::$(echo "$SECRET" | jq -r .SecretString | jq -r .host)"
+    - name: Get Tailscale configuration
+      if: steps.cache-binary.outputs.cache-hit == false
+      id: tailscale
+      shell: bash
+      run: |
+        TAILSCALE=$(cue export -e global.ci.providers.tailcsale ./blueprint.cue)
+        CREDS=$(cue export -e global.ci.providers.tailcsale.credentials ./blueprint.cue)
+        TAGS="$(echo $TAILSCALE | jq -r .tags)"
+        VERSION="$(echo $TAILSCALE | jq -r .version)"
+        CLIENT_ID="$(echo $CREDS | jq -r .client_id)"
+        CLIENT_SECRET="$(echo $CREDS | jq -r .client_secret)"
+
+        echo "::add-mask::$CLIENT_ID"
+        echo "::add-mask::$CLIENT_SECRET"
+
+        echo "client-id=$CLIENT_ID" >> $GITHUB_OUTPUT
+        echo "client-secret=$CLIENT_SECRET" >> $GITHUB_OUTPUT
+        echo "tags=$TAGS" >> $GITHUB_OUTPUT
+        echo "version=$VERSION" >> $GITHUB_OUTPUT
+    - name: Install and configure Tailscale
+      if: steps.cache-binary.outputs.cache-hit == false
+      uses: tailscale/github-action@v3
+      with:
+        oauth-client-id: "${{ steps.tailscale.outputs.client-id }}"
+        oauth-secret: "${{ steps.tailscale.outputs.client-secret }}"
+        tags: "${{ steps.tailscale.outputs.tags }}"
+        use-cache: "true"
+        version: "${{ steps.tailscale.outputs.version }}"
     - name: Build Forge CLI
       if: steps.cache-binary.outputs.cache-hit == false
       shell: bash
