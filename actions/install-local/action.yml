@@ -1,44 +1,87 @@
 name: Install local forge CLI
 description: Installs a local version of the forge CLI
-inputs:
-  earthly_token:
-        description: Earthly token used to login to Earthly cloud for local build
-        required: true
 
 runs:
   using: composite
   steps:
-    - shell: bash
-      run: echo "Building Forge CLI locally..."
-    - name: Cache Earthly binary
-      id: cache-earthly
-      uses: actions/cache@v4
-      with:
-        path: /usr/local/bin/earthly
-        key: ${{ runner.os }}
-    - name: Install Earthly
-      if: steps.cache-earthly.outputs.cache-hit == false
-      shell: bash
-      run: |
-        wget -q https://github.com/earthly/earthly/releases/latest/download/earthly-linux-amd64 -O /usr/local/bin/earthly
-        chmod +x /usr/local/bin/earthly
-        /usr/local/bin/earthly bootstrap
-    - name: Login to Earthly Cloud
-      if: steps.cache-binary.outputs.cache-hit == false
-      shell: bash
-      run: |
-        earthly account login --token ${{ inputs.earthly_token }}
-        earthly org select Catalyst
     - name: Cache binary
       id: cache-binary
       uses: actions/cache@v4
       with:
         path: /usr/local/bin/forge
         key: ${{ runner.os }}-${{ github.sha }}
+    - shell: bash
+      if: steps.cache-binary.outputs.cache-hit == false
+      run: echo "Building Forge CLI locally..."
+    - name: Cache Earthly binary
+      id: cache-earthly
+      if: steps.cache-binary.outputs.cache-hit == false
+      uses: actions/cache@v4
+      with:
+        path: /usr/local/bin/earthly
+        key: ${{ runner.os }}
+    - name: Install Earthly
+      if: steps.cache-earthly.outputs.cache-hit == false && steps.cache-binary.outputs.cache-hit == false
+      shell: bash
+      run: |
+        wget -q https://github.com/earthly/earthly/releases/latest/download/earthly-linux-amd64 -O /usr/local/bin/earthly
+        chmod +x /usr/local/bin/earthly
+        /usr/local/bin/earthly bootstrap
+    - name: Install CUE
+      uses: cue-lang/setup-cue@v1.0.0
+      if: steps.cache-binary.outputs.cache-hit == false
+      with:
+        version: latest
+    - name: Get AWS configuration
+      id: aws
+      if: steps.cache-binary.outputs.cache-hit == false
+      shell: bash
+      run: |
+        AWS=$(cue export -e global.ci.providers.aws ./blueprint.cue)
+        REGION=$(echo "$AWS" | jq -r .region)
+        ROLE=$(echo "$AWS" | jq -r .role)
+
+        echo "region=$REGION" >> $GITHUB_OUTPUT
+        echo "role=$ROLE" >> $GITHUB_OUTPUT
+    - name: Login to AWS
+      uses: aws-actions/configure-aws-credentials@v4
+      if: steps.cache-binary.outputs.cache-hit == false
+      with:
+        aws-region: ${{ steps.aws.outputs.region }}
+        role-to-assume: ${{ steps.aws.outputs.role }}
+    - name: Configure Earthly satellite credentials
+      if: steps.cache-binary.outputs.cache-hit == false
+      shell: bash
+      run: |
+        mkdir -p "$HOME/.earthly"
+
+        EARTHLY=$(cue export -e global.ci.providers.earthly.satellite.credentials ./blueprint.cue)
+        SECRET_ID=$(echo "$EARTHLY" | jq -r .path)
+
+        SECRET=$(aws secretsmanager get-secret-value --secret-id "$SECRET_ID")
+        echo "$SECRET" | jq -r .SecretString | jq -r .ca_certificate | base64 -d > ~/.earthly/ca.pem
+        echo "$SECRET" | jq -r .SecretString | jq -r .certificate | base64 -d > ~/.earthly/cert.pem
+        echo "$SECRET" | jq -r .SecretString | jq -r .private_key | base64 -d > ~/.earthly/key.pem
+
+        cat <<EOF > "$HOME/.earthly/config.yml"
+        global:
+          buildkit_host: $(echo "$SECRET" | jq -r .SecretString | jq -r .host)
+          tlsca: ca.pem
+          tlscert: cert.pem
+          tlskey: key.pem
+        EOF
+
+        echo "::add-mask::$(echo "$SECRET" | jq -r .SecretString | jq -r .host)"
     - name: Build Forge CLI
       if: steps.cache-binary.outputs.cache-hit == false
       shell: bash
       run: |
-        echo "::group::Forge CLI Earthly Build"
-        earthly --sat ci --artifact ./cli+build/forge /usr/local/bin/forge
-        echo "::endgroup::"
+        earthly --artifact ./cli+build/forge /usr/local/bin/forge
+    - name: Set output cache-hit
+      shell: bash
+      run: echo "cache-hit=${{ steps.cache-binary.outputs.cache-hit }}" >> $GITHUB_OUTPUT
+
+outputs:
+  cache-hit:
+    description: "Whether the forge binary was restored from cache"
+    value: ${{ steps.cache-binary.outputs.cache-hit }}

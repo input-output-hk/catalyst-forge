@@ -47,6 +47,7 @@ jobs:
         with:
           version: ${{ inputs.forge_version }}
       - name: Install Local Forge
+        id: install-local
         uses: input-output-hk/catalyst-forge/actions/install-local@master
         if: ${{ inputs.forge_version == 'local' }}
         with:
@@ -64,7 +65,8 @@ jobs:
       - name: Setup CI
         uses: input-output-hk/catalyst-forge/actions/setup@master
         with:
-          skip_earthly: ${{ steps.local.outputs.skip }}
+          skip_earthly_install: ${{ steps.install-local.outputs.cache-hit == false }}
+          skip_earthly_satellite: ${{ steps.install-local.outputs.cache-hit == false }}
       - name: Run
         uses: input-output-hk/catalyst-forge/actions/run@master
         with:

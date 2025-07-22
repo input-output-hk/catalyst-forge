@@ -33,7 +33,6 @@ func Test_generateOpts(t *testing.T) {
 			src: `
 			{
 				global: ci: {
-					providers: earthly: satellite: "sat"
 					secrets: [
 						{
 							name: "bar"
@@ -77,9 +76,6 @@ func Test_generateOpts(t *testing.T) {
 				assert.Contains(t, ee.earthlyArgs, "--allow-privileged")
 				assert.Equal(t, 3, ee.opts.retries)
 				assert.Len(t, ee.secrets, 2)
-
-				assert.Contains(t, ee.earthlyArgs, "--sat")
-				assert.Contains(t, ee.earthlyArgs, "sat")
 			},
 		},
 		{
