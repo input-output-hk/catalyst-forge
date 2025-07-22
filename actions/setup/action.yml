@@ -33,6 +33,10 @@ inputs:
     description: If true, skips installing KCL CLI if the provider is configured
     required: false
     default: "false"
+  skip_tailscale:
+    description: If true, skips installing and authenticating with skip_tailscale
+    required: false
+    default: "false"
   skip_timoni:
     description: If true, skips installing Timoni CLI if the provider is configured
     required: false
@@ -275,3 +279,52 @@ runs:
       shell: bash
       run: |
         kcl version
+
+    # Tailscale Provider
+    - name: Get Tailscale provider configuration
+      id: tailscale
+      if: inputs.skip_tailscale  == 'false'
+      shell: bash
+      run: |
+        echo "==== Tailscale Setup ====="
+        BP=$(forge dump .)
+
+        TAILSCALE=$(echo "$BP" | jq -r .global.ci.providers.tailscale)
+        if [[ "$TAILSCALE" != "null" ]]; then
+          CONFIGURED="true"
+          VERSION=$(echo "$BP" | jq -r .global.ci.providers.tailscale.version)
+          if [[ "$VERSION" == "null" ]]; then
+            VERSION="latest"
+          fi
+
+          TAGS=$(echo "$BP" | jq -r .global.ci.providers.tailscale.tags)
+          if [[ "$TAGS" == "null" ]]; then
+            TAGS=""
+          fi
+
+          SECRET=$(forge secret get --project . global.ci.providers.tailscale.credentials)
+          CLIENT_ID=$(echo "$SECRET" | jq -r .client_id)
+          CLIENT_SECRET=$(echo "$SECRET" | jq -r .client_secret)
+
+          echo "::add-mask::$CLIENT_ID"
+          echo "::add-mask::$CLIENT_SECRET"
+
+          echo "client_id=$CLIENT_ID" >> $GITHUB_OUTPUT
+          echo "client_secret=$CLIENT_SECRET" >> $GITHUB_OUTPUT
+          echo "tags=$TAGS" >> $GITHUB_OUTPUT
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+        else
+          echo "Not configuring Tailscale"
+          CONFIGURED="false"
+        fi
+
+        echo "configured=$CONFIGURED" >> $GITHUB_OUTPUT
+    - name: Install and configure Tailscale
+      if: inputs.skip_tailscale  == 'false' && steps.tailscale.outputs.configured == 'true'
+      uses: tailscale/github-action@v3
+      with:
+        oauth-client-id: ${{ steps.tailscale.outputs.client_id }}
+        oauth-secret: ${{ steps.tailscale.outputs.client_secret }}
+        tags: ${{ steps.tailscale.outputs.tags }}
+        use-cache: "true"
+        version: ${{ steps.tailscale.outputs.version }}
