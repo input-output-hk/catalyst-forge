@@ -1,5 +1,10 @@
 name: Install local forge CLI
 description: Installs a local version of the forge CLI
+inputs:
+  aws_region:
+    description: The AWS region to use when fetching secrets
+    required: false
+    default: "eu-central-1"
 
 runs:
   using: composite
@@ -33,7 +38,7 @@ runs:
         EARTHLY=$(cue export -e global.ci.providers.earthly.satellite.credentials ./blueprint.cue)
         SECRET_ID=$(echo "$EARTHLY" | jq .path)
 
-        SECRET=$(aws secretsmanager get-secret-value --region eu-central-1 --secret-id "$SECRET_ID")
+        SECRET=$(aws secretsmanager get-secret-value --region "${{ inputs.aws_region }}" --secret-id "$SECRET_ID")
         echo "$SECRET" | jq -r .SecretString | jq -r .ca_certificate | base64 -d > ~/.earthly/ca.pem
         echo "$SECRET" | jq -r .SecretString | jq -r .certificate | base64 -d > ~/.earthly/cert.pem
         echo "$SECRET" | jq -r .SecretString | jq -r .private_key | base64 -d > ~/.earthly/key.pem
