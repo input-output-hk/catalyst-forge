@@ -55,19 +55,13 @@ jobs:
         id: local
         run: |
           forge version
-
-          if [[ "${{ inputs.forge_version }}" == "local" ]]; then
-            echo "skip=true" >> $GITHUB_OUTPUT
-          else
-            echo "skip=false" >> $GITHUB_OUTPUT
-          fi
       - name: Setup CI
         uses: input-output-hk/catalyst-forge/actions/setup@ci/v1.8.0
         with:
           skip_docker: 'true'
           skip_github: 'true'
-          skip_earthly_install: ${{ steps.install-local.outputs.cache-hit == false }}
-          skip_earthly_satellite: ${{ steps.install-local.outputs.cache-hit == false }}
+          skip_earthly_install: ${{ inputs.forge_version == 'local' && steps.install-local.outputs.cache-hit == false }}
+          skip_earthly_satellite: ${{ inputs.forge_version == 'local' && steps.install-local.outputs.cache-hit == false }}
       - name: Discovery
         id: discovery
         uses: input-output-hk/catalyst-forge/actions/discovery@ci/v1.8.0
