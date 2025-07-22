@@ -183,7 +183,7 @@ runs:
         chmod +x /usr/local/bin/earthly
         /usr/local/bin/earthly bootstrap
     - name: Configure Earthly satellite credentials
-      if: inputs.skip_earthly_satellite == 'false' && steps.earthly.outputs.sat == 'true' && steps.earthly.conclusion == 'success'
+      if: inputs.skip_earthly_satellite == 'false' && steps.earthly.conclusion == 'success'
       shell: bash
       run: |
         rm -rf "$HOME/.earthly"
