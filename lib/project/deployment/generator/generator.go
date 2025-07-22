@@ -43,11 +43,7 @@ func (d *Generator) GenerateBundle(b deployment.ModuleBundle, env cue.Value) (Ge
 	for name, module := range nb.Bundle.Modules {
 		d.logger.Debug("Generating module", "name", name)
 		raw := nb.Raw.LookupPath(cue.ParsePath(fmt.Sprintf("modules.%s", name)))
-<<<<<<< HEAD
-		result, err := d.Generate(module, raw, b.Bundle.Env)
-=======
 		result, err := d.Generate(module, raw, nb.Bundle.Env)
->>>>>>> master
 		if err != nil {
 			return GeneratorResult{}, fmt.Errorf("failed to generate module %s: %w", name, err)
 		}

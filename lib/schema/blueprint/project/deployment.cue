@@ -10,11 +10,7 @@ package project
 
 #ModuleBundle: {
 	// Env contains the environment to deploy the modules to.
-<<<<<<< HEAD
-	env: string | *"dev"
-=======
 	env: string
->>>>>>> master
 
 	// Modules contains the deployment modules.
 	modules: [string]: #Module
