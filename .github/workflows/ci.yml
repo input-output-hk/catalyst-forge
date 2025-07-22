@@ -54,8 +54,6 @@ jobs:
       - name: Install Local Forge
         uses: input-output-hk/catalyst-forge/actions/install-local@deprecate-earthly-cloud
         if: ${{ inputs.forge_version == 'local' }}
-        with:
-          earthly_token: ${{ secrets.earthly_token }}
       - name: Check forge version
         id: local
         run: |
