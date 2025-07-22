@@ -66,6 +66,7 @@ global: {
 					provider: "aws"
 					path:     "global/ci/tailscale"
 				}
+				tags:    "tag:cat-github"
 				version: "latest"
 			}
 		}

@@ -309,8 +309,8 @@ runs:
           echo "::add-mask::$CLIENT_ID"
           echo "::add-mask::$CLIENT_SECRET"
 
-          echo "client_id=$CLIENT_ID" >> $GITHUB_OUTPUT
-          echo "client_secret=$CLIENT_SECRET" >> $GITHUB_OUTPUT
+          echo "client-id=$CLIENT_ID" >> $GITHUB_OUTPUT
+          echo "client-secret=$CLIENT_SECRET" >> $GITHUB_OUTPUT
           echo "tags=$TAGS" >> $GITHUB_OUTPUT
           echo "version=$VERSION" >> $GITHUB_OUTPUT
         else
@@ -323,8 +323,8 @@ runs:
       if: inputs.skip_tailscale  == 'false' && steps.tailscale.outputs.configured == 'true'
       uses: tailscale/github-action@v3
       with:
-        oauth-client-id: "${{ steps.tailscale.outputs.client_id }}"
-        oauth-secret: "${{ steps.tailscale.outputs.client_secret }}"
+        oauth-client-id: "${{ steps.tailscale.outputs.client-id }}"
+        oauth-secret: "${{ steps.tailscale.outputs.client-secret }}"
         tags: "${{ steps.tailscale.outputs.tags }}"
         use-cache: "true"
         version: "${{ steps.tailscale.outputs.version }}"
