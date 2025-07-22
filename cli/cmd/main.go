@@ -32,15 +32,16 @@ type GlobalArgs struct {
 var cli struct {
 	GlobalArgs
 
-	Dump     cmds.DumpCmd     `cmd:"" help:"Dumps a project's blueprint to JSON."`
-	CI       cmds.CICmd       `cmd:"" help:"Simulate a CI run."`
-	Mod      module.ModuleCmd `kong:"cmd" help:"Commands for working with deployment modules."`
-	Release  cmds.ReleaseCmd  `cmd:"" help:"Release a project."`
-	Run      cmds.RunCmd      `cmd:"" help:"Run an Earthly target."`
-	Scan     cmds.ScanCmd     `cmd:"" help:"Scan for Earthfiles."`
-	Secret   cmds.SecretCmd   `cmd:"" help:"Manage secrets."`
-	Validate cmds.ValidateCmd `cmd:"" help:"Validates a project."`
-	Version  VersionCmd       `cmd:"" help:"Print the version."`
+	Dump               cmds.DumpCmd               `cmd:"" help:"Dumps a project's blueprint to JSON."`
+	CI                 cmds.CICmd                 `cmd:"" help:"Simulate a CI run."`
+	ConfigureSatellite cmds.ConfigureSatelliteCmd `cmd:"" help:"Configure the local system to use a remote Earthly Satellite."`
+	Mod                module.ModuleCmd           `kong:"cmd" help:"Commands for working with deployment modules."`
+	Release            cmds.ReleaseCmd            `cmd:"" help:"Release a project."`
+	Run                cmds.RunCmd                `cmd:"" help:"Run an Earthly target."`
+	Scan               cmds.ScanCmd               `cmd:"" help:"Scan for Earthfiles."`
+	Secret             cmds.SecretCmd             `cmd:"" help:"Manage secrets."`
+	Validate           cmds.ValidateCmd           `cmd:"" help:"Validates a project."`
+	Version            VersionCmd                 `cmd:"" help:"Print the version."`
 
 	InstallCompletions kongplete.InstallCompletions `cmd:"" help:"install shell completions"`
 }
