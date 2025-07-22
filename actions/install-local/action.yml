@@ -62,6 +62,8 @@ runs:
           tlscert: cert.pem
           tlskey: key.pem
         EOF
+
+        echo "::add-mask::$(echo "$SECRET" | jq -r .SecretString | jq -r .host)"
     - name: Cache binary
       id: cache-binary
       uses: actions/cache@v4
