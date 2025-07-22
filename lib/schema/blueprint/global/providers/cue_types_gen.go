@@ -105,8 +105,23 @@ type Providers struct {
 	// KCL contains the configuration for the KCL provider.
 	Kcl *KCL `json:"kcl,omitempty"`
 
+	// Tailscale contains the configuration for the Tailscale provider.
+	Tailscale *Tailscale `json:"tailscale,omitempty"`
+
 	// Timoni contains the configuration for the Timoni provider.
 	Timoni *Timoni `json:"timoni,omitempty"`
+}
+
+type Tailscale struct {
+	// Credentials contains the OAuth2 credentials for authenticating to the
+	// Tailscale network.
+	Credentials *common.Secret `json:"credentials,omitempty"`
+
+	// Tags is a comma-separated list of tags to impersonate.
+	Tags string `json:"tags,omitempty"`
+
+	// Version contains the version of Tailscale to install.
+	Version string `json:"version,omitempty"`
 }
 
 type Timoni struct {
