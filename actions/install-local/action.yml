@@ -19,13 +19,21 @@ runs:
         wget -q https://github.com/earthly/earthly/releases/latest/download/earthly-linux-amd64 -O /usr/local/bin/earthly
         chmod +x /usr/local/bin/earthly
         /usr/local/bin/earthly bootstrap
+    - name: Install CUE
+      uses: cue-lang/setup-cue@v1.0.0
+      if: steps.cache-binary.outputs.cache-hit == false
+      with:
+        version: latest
     - name: Configure Earthly satellite credentials
       if: steps.cache-binary.outputs.cache-hit == false
       shell: bash
       run: |
         mkdir -p ~/.earthly
 
-        SECRET=$(forge secret get --project . global.ci.providers.earthly.satellite.credentials)
+        EARTHLY=$(cue export -e global.ci.providers.earthly.satellite.credentials ./blueprint.cue)
+        SECRET_ID=$(echo "$EARTHLY" | jq .path)
+
+        SECRET=$(aws secretsmanager get-secret-value --secret-id "$SECRET_ID")
         echo "$SECRET" | jq -r .SecretString | jq -r .ca_certificate | base64 -d > ~/.earthly/ca.pem
         echo "$SECRET" | jq -r .SecretString | jq -r .certificate | base64 -d > ~/.earthly/cert.pem
         echo "$SECRET" | jq -r .SecretString | jq -r .private_key | base64 -d > ~/.earthly/key.pem
