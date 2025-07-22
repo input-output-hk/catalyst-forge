@@ -323,8 +323,8 @@ runs:
       if: inputs.skip_tailscale  == 'false' && steps.tailscale.outputs.configured == 'true'
       uses: tailscale/github-action@v3
       with:
-        oauth-client-id: ${{ steps.tailscale.outputs.client_id }}
-        oauth-secret: ${{ steps.tailscale.outputs.client_secret }}
-        tags: ${{ steps.tailscale.outputs.tags }}
+        oauth-client-id: "${{ steps.tailscale.outputs.client_id }}"
+        oauth-secret: "${{ steps.tailscale.outputs.client_secret }}"
+        tags: "${{ steps.tailscale.outputs.tags }}"
         use-cache: "true"
-        version: ${{ steps.tailscale.outputs.version }}
+        version: "${{ steps.tailscale.outputs.version }}"
