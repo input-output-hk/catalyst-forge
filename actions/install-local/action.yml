@@ -1,10 +1,5 @@
 name: Install local forge CLI
 description: Installs a local version of the forge CLI
-inputs:
-  aws_region:
-    description: The AWS region to use when fetching secrets
-    required: false
-    default: "eu-central-1"
 
 runs:
   using: composite
@@ -29,6 +24,23 @@ runs:
       if: steps.cache-binary.outputs.cache-hit == false
       with:
         version: latest
+    - name: Get AWS configuration
+      id: aws
+      if: steps.cache-binary.outputs.cache-hit == false
+      shell: bash
+      run: |
+        AWS=$(cue export -e global.ci.providers.aws ./blueprint.cue)
+        REGION=$(echo "$AWS" | jq -r .region)
+        ROLE=$(echo "$AWS" | jq -r .role)
+
+        echo "region=$REGION" >> $GITHUB_OUTPUT
+        echo "role=$ROLE" >> $GITHUB_OUTPUT
+    - name: Login to AWS
+      uses: aws-actions/configure-aws-credentials@v4
+      if: steps.cache-binary.outputs.cache-hit == false
+      with:
+        aws-region: ${{ steps.aws.outputs.region }}
+        role-to-assume: ${{ steps.aws.outputs.role }}
     - name: Configure Earthly satellite credentials
       if: steps.cache-binary.outputs.cache-hit == false
       shell: bash
@@ -36,9 +48,9 @@ runs:
         mkdir -p ~/.earthly
 
         EARTHLY=$(cue export -e global.ci.providers.earthly.satellite.credentials ./blueprint.cue)
-        SECRET_ID=$(echo "$EARTHLY" | jq .path)
+        SECRET_ID=$(echo "$EARTHLY" | jq -r .path)
 
-        SECRET=$(aws secretsmanager get-secret-value --region "${{ inputs.aws_region }}" --secret-id "$SECRET_ID")
+        SECRET=$(aws secretsmanager get-secret-value --secret-id "$SECRET_ID")
         echo "$SECRET" | jq -r .SecretString | jq -r .ca_certificate | base64 -d > ~/.earthly/ca.pem
         echo "$SECRET" | jq -r .SecretString | jq -r .certificate | base64 -d > ~/.earthly/cert.pem
         echo "$SECRET" | jq -r .SecretString | jq -r .private_key | base64 -d > ~/.earthly/key.pem
