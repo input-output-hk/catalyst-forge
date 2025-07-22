@@ -79,10 +79,13 @@ runs:
       run: |
         TAILSCALE=$(cue export -e global.ci.providers.tailscale ./blueprint.cue)
         CREDS=$(cue export -e global.ci.providers.tailscale.credentials ./blueprint.cue)
+        SECRET_ID=$(echo "$CREDS" | jq -r .path)
+        SECRET=$(aws secretsmanager get-secret-value --secret-id "$SECRET_ID")
+
         TAGS="$(echo $TAILSCALE | jq -r .tags)"
         VERSION="$(echo $TAILSCALE | jq -r .version)"
-        CLIENT_ID="$(echo $CREDS | jq -r .client_id)"
-        CLIENT_SECRET="$(echo $CREDS | jq -r .client_secret)"
+        CLIENT_ID="$(echo $SECRET | jq -r .client_id)"
+        CLIENT_SECRET="$(echo $SECRET | jq -r .client_secret)"
 
         echo "::add-mask::$CLIENT_ID"
         echo "::add-mask::$CLIENT_SECRET"
