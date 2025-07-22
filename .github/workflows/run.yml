@@ -56,17 +56,11 @@ jobs:
         id: local
         run: |
           forge version
-
-          if [[ "${{ inputs.forge_version }}" == "local" ]]; then
-            echo "skip=true" >> $GITHUB_OUTPUT
-          else
-            echo "skip=false" >> $GITHUB_OUTPUT
-          fi
       - name: Setup CI
         uses: input-output-hk/catalyst-forge/actions/setup@master
         with:
-          skip_earthly_install: ${{ steps.install-local.outputs.cache-hit == false }}
-          skip_earthly_satellite: ${{ steps.install-local.outputs.cache-hit == false }}
+          skip_earthly_install: ${{ inputs.forge_version == 'local' && steps.install-local.outputs.cache-hit == false }}
+          skip_earthly_satellite: ${{ inputs.forge_version == 'local' && steps.install-local.outputs.cache-hit == false }}
       - name: Run
         uses: input-output-hk/catalyst-forge/actions/run@master
         with:
