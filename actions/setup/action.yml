@@ -150,7 +150,7 @@ runs:
         if [[ "$EARTHLY" != "null" ]]; then
           VERSION=$(echo "$BP" | jq -r .global.ci.providers.earthly.version)
 
-          SATELLITE_CREDS=$(echo "$BP" | jq -r .global.ci.providers.earthly.satellite.creds)
+          SATELLITE_CREDS=$(echo "$BP" | jq -r .global.ci.providers.earthly.satellite.credentials)
           if [[ "$SATELLITE_CREDS" != "null" ]]; then
             CONFIG_SAT="true"
           else
