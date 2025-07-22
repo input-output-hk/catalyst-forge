@@ -55,7 +55,7 @@ runs:
         echo "$SECRET" | jq -r .SecretString | jq -r .certificate | base64 -d > ~/.earthly/cert.pem
         echo "$SECRET" | jq -r .SecretString | jq -r .private_key | base64 -d > ~/.earthly/key.pem
 
-        cat <<EOF > "$HOME/config.yml"
+        cat <<EOF > "$HOME/.earthly/config.yml"
         global:
           buildkit_host: $(echo "$SECRET" | jq -r .SecretString | jq -r .host)
           tlsca: ca.pem
@@ -72,6 +72,4 @@ runs:
       if: steps.cache-binary.outputs.cache-hit == false
       shell: bash
       run: |
-        echo "::group::Forge CLI Earthly Build"
         earthly --artifact ./cli+build/forge /usr/local/bin/forge
-        echo "::endgroup::"
