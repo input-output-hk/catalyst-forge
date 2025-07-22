@@ -93,8 +93,11 @@ func (p *DefaultProjectRunner) generateOpts(target string) ([]EarthlyExecutorOpt
 	}
 
 	if schema.HasEarthlyProviderDefined(p.project.Blueprint) {
-		if p.project.Blueprint.Global.Ci.Providers.Earthly.Satellite != "" && !p.ctx.Local {
-			opts = append(opts, WithSatellite(p.project.Blueprint.Global.Ci.Providers.Earthly.Satellite))
+		if p.project.Blueprint.Global.Ci.Providers.Earthly.Satellite != nil && p.ctx.Local {
+			// This is a hacky way to prevent Earthly from using the satellite
+			// from the Earthly configuration file as there is no native way to
+			// disable it.
+			opts = append(opts, WithConfig(""))
 		}
 	}
 

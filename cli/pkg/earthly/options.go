@@ -18,9 +18,18 @@ func WithArtifact(path string) EarthlyExecutorOption {
 	}
 }
 
+// WithCI is an option for configuring an EarthlyExecutor to run the CI
 func WithCI() EarthlyExecutorOption {
 	return func(e *EarthlyExecutor) {
 		e.opts.ci = true
+	}
+}
+
+// WithConfig is an option for configuring an EarthlyExecutor to use the given
+// Earthly config file.
+func WithConfig(config string) EarthlyExecutorOption {
+	return func(e *EarthlyExecutor) {
+		e.earthlyArgs = append(e.earthlyArgs, "--config", config)
 	}
 }
 
@@ -45,14 +54,6 @@ func WithPrivileged() EarthlyExecutorOption {
 func WithRetries(retries int) EarthlyExecutorOption {
 	return func(e *EarthlyExecutor) {
 		e.opts.retries = retries
-	}
-}
-
-// WithSatellite is an option for configuring an EarthlyExecutor with the
-// remote satellite to use.
-func WithSatellite(s string) EarthlyExecutorOption {
-	return func(e *EarthlyExecutor) {
-		e.earthlyArgs = append(e.earthlyArgs, "--sat", s)
 	}
 }
 

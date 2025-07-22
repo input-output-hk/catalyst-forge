@@ -23,7 +23,6 @@ const (
 	// This is the hardcoded default environment for the deployment.
 	// We always deploy to the dev environment by default and do not allow
 	// the user to change this.
-	// This is also the default for the `env` field in the deployment module.
 	DEFAULT_ENV = "dev"
 
 	// This is the name of the environment file which is merged with the deployment module.

@@ -45,17 +45,18 @@ type Docker struct {
 }
 
 type Earthly struct {
-	// Credentials contains the credentials to use for Earthly Cloud
-	Credentials *common.Secret `json:"credentials,omitempty"`
-
-	// Org specifies the Earthly Cloud organization to use.
-	Org string `json:"org,omitempty"`
-
-	// Satellite contains the satellite to use for caching.
-	Satellite string `json:"satellite,omitempty"`
+	// Satellite contains the configuration for a remote Earthly Satellite.
+	Satellite *EarthlySatellite `json:"satellite,omitempty"`
 
 	// Version contains the version of Earthly to install in CI.
 	Version string `json:"version,omitempty"`
+}
+
+// EarthlySatellite contains the configuration for a remote Earthly Satellite.
+type EarthlySatellite struct {
+	// Credentials contains the credentials to use for connecting to a remote
+	// Earthly Satellite.
+	Credentials *common.Secret `json:"credentials,omitempty"`
 }
 
 type Git struct {

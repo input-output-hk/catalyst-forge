@@ -164,15 +164,6 @@ func TestEarthlyExecutor_buildArguments(t *testing.T) {
 			platform: GetBuildPlatform(),
 			expect:   []string{"--platform", GetBuildPlatform(), "--allow-privileged", "/test/dir+foo"},
 		},
-		{
-			name: "with satellite",
-			e: NewEarthlyExecutor("/test/dir", "foo", nil, secrets.SecretStore{},
-				testutils.NewNoopLogger(),
-				WithSatellite("satellite"),
-			),
-			platform: GetBuildPlatform(),
-			expect:   []string{"--platform", GetBuildPlatform(), "--sat", "satellite", "/test/dir+foo"},
-		},
 	}
 
 	for _, tt := range tests {

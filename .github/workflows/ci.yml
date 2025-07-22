@@ -22,10 +22,6 @@ on:
         required: false
         type: boolean
         default: false
-    secrets:
-      earthly_token:
-        description: Optional Earthly token used to login to Earthly cloud during local builds of Forge CLI
-        required: false
 
 env:
   FORGE_REGEX_CHECK: ^check(-.*)?$
@@ -52,10 +48,9 @@ jobs:
         with:
           version: ${{ inputs.forge_version }}
       - name: Install Local Forge
-        uses: input-output-hk/catalyst-forge/actions/install-local@ci/v1.7.3
+        id: install-local
+        uses: input-output-hk/catalyst-forge/actions/install-local@master
         if: ${{ inputs.forge_version == 'local' }}
-        with:
-          earthly_token: ${{ secrets.earthly_token }}
       - name: Check forge version
         id: local
         run: |
@@ -71,7 +66,8 @@ jobs:
         with:
           skip_docker: 'true'
           skip_github: 'true'
-          skip_earthly: ${{ steps.local.outputs.skip }}
+          skip_earthly_install: ${{ steps.install-local.outputs.cache-hit == false }}
+          skip_earthly_satellite: ${{ steps.install-local.outputs.cache-hit == false }}
       - name: Discovery
         id: discovery
         uses: input-output-hk/catalyst-forge/actions/discovery@ci/v1.7.3

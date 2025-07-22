@@ -17,8 +17,12 @@ inputs:
     description: If true, skip authenticating to DockerHub
     required: false
     default: "false"
-  skip_earthly:
-    description: If true, skip installing Earthly and authenticating to Earthly Cloud
+  skip_earthly_install:
+    description: If true, skip installing Earthly
+    required: false
+    default: "false"
+  skip_earthly_satellite:
+    description: If true, skip adding authentication for the remote Earthly satellite
     required: false
     default: "false"
   skip_github:
@@ -133,7 +137,7 @@ runs:
 
     # Earthly Provider
     - name: Get Earthly provider configuration
-      if: inputs.skip_earthly == 'false'
+      if: inputs.skip_earthly_install == 'false' && inputs.skip_earthly_satellite == 'false'
       id: earthly
       shell: bash
       run: |
@@ -144,39 +148,34 @@ runs:
 
         EARTHLY=$(echo "$BP" | jq -r .global.ci.providers.earthly)
         if [[ "$EARTHLY" != "null" ]]; then
-          ORG=$(echo "$BP" | jq -r .global.ci.providers.earthly.org)
           VERSION=$(echo "$BP" | jq -r .global.ci.providers.earthly.version)
 
-          echo "org=$ORG" >> $GITHUB_OUTPUT
-
-          EARTHLY_CREDS=$(echo "$BP" | jq -r .global.ci.providers.earthly.credentials)
-          if [[ "$EARTHLY_CREDS" != "null" ]]; then
-            SECRET=$(forge secret get --project . global.ci.providers.earthly.credentials)
-            TOKEN=$(echo "$SECRET" | jq -r .token)
-
-            if [[ "$TOKEN" == "null" ]]; then
-              echo "Error: the earthly provider secret must map the secret value to 'token'"
-              exit 1
-            fi
-
-            echo "::add-mask::$TOKEN"
-            echo "token=$TOKEN" >> $GITHUB_OUTPUT
+          SATELLITE_CREDS=$(echo "$BP" | jq -r .global.ci.providers.earthly.satellite.credentials)
+          if [[ "$SATELLITE_CREDS" != "null" ]]; then
+            CONFIG_SAT="true"
           else
-            echo "No configuration found for Earthly Cloud provider"
+            CONFIG_SAT="false"
+            echo "No configuration found for remote Earthly satellite"
           fi
         else
-          echo "No configuration found for Earthly Cloud provider"
+          echo "No configuration found for Earthly provider"
         fi
 
+        echo "sat=$CONFIG_SAT" >> GITHUB_OUTPUT
         echo "version=$VERSION" >> $GITHUB_OUTPUT
     - name: Cache Earthly binary
       id: cache-binary
       uses: actions/cache@v4
+<<<<<<< HEAD
       if: inputs.skip_earthly == 'false'
+=======
+      if: inputs.skip_earthly_install == 'false'
+>>>>>>> master
       with:
         path: /usr/local/bin/earthly
         key: ${{ runner.os }}-${{ steps.earthly.outputs.version }}
     - name: Install Earthly
+<<<<<<< HEAD
       if: inputs.skip_earthly == 'false' && steps.cache-binary.outputs.cache-hit == false
       shell: bash
       run: |
@@ -190,14 +189,25 @@ runs:
         /usr/local/bin/earthly bootstrap
     - name: Login to Earthly Cloud
       if: steps.earthly.outputs.token != '' && steps.earthly.conclusion == 'success'
+=======
+      if: inputs.skip_earthly_install == 'false' && steps.cache-binary.outputs.cache-hit == false
+>>>>>>> master
       shell: bash
       run: |
-        earthly account login --token "${{ steps.earthly.outputs.token }}"
-    - name: Set Earthly organization
-      if: steps.earthly.outputs.token != '' && steps.earthly.conclusion == 'success'
+        if [[ "${{ steps.earthly.outputs.version }}" == "latest" ]]; then
+          wget -q https://github.com/earthly/earthly/releases/latest/download/earthly-linux-amd64 -O /usr/local/bin/earthly
+        else
+          wget -q https://github.com/earthly/earthly/releases/download/v${{ steps.earthly.outputs.version}}/earthly-linux-amd64 -O /usr/local/bin/earthly
+        fi
+
+        chmod +x /usr/local/bin/earthly
+        /usr/local/bin/earthly bootstrap
+    - name: Configure Earthly satellite credentials
+      if: inputs.skip_earthly_satellite == 'false' && steps.earthly.conclusion == 'success'
       shell: bash
       run: |
-        earthly org select "${{ steps.earthly.outputs.org }}"
+        rm -rf "$HOME/.earthly"
+        forge configure-satellite -vvv --ci
 
     # Timoni Provider
     - name: Get Timoni provider configuration
