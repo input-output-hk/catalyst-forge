@@ -4,27 +4,29 @@ description: Installs a local version of the forge CLI
 runs:
   using: composite
   steps:
-    - shell: bash
-      run: echo "Building Forge CLI locally..."
-    - name: Cache Earthly binary
-      id: cache-earthly
-      uses: actions/cache@v4
-      with:
-        path: /usr/local/bin/earthly
-        key: ${{ runner.os }}
-    - name: Install Earthly
-      if: steps.cache-earthly.outputs.cache-hit == false
-      shell: bash
-      run: |
-        wget -q https://github.com/earthly/earthly/releases/latest/download/earthly-linux-amd64 -O /usr/local/bin/earthly
-        chmod +x /usr/local/bin/earthly
-        /usr/local/bin/earthly bootstrap
     - name: Cache binary
       id: cache-binary
       uses: actions/cache@v4
       with:
         path: /usr/local/bin/forge
         key: ${{ runner.os }}-${{ github.sha }}
+    - shell: bash
+      if: steps.cache-binary.outputs.cache-hit == false
+      run: echo "Building Forge CLI locally..."
+    - name: Cache Earthly binary
+      id: cache-earthly
+      if: steps.cache-binary.outputs.cache-hit == false
+      uses: actions/cache@v4
+      with:
+        path: /usr/local/bin/earthly
+        key: ${{ runner.os }}
+    - name: Install Earthly
+      if: steps.cache-earthly.outputs.cache-hit == false && steps.cache-binary.outputs.cache-hit == false
+      shell: bash
+      run: |
+        wget -q https://github.com/earthly/earthly/releases/latest/download/earthly-linux-amd64 -O /usr/local/bin/earthly
+        chmod +x /usr/local/bin/earthly
+        /usr/local/bin/earthly bootstrap
     - name: Install CUE
       uses: cue-lang/setup-cue@v1.0.0
       if: steps.cache-binary.outputs.cache-hit == false
@@ -75,3 +77,11 @@ runs:
       shell: bash
       run: |
         earthly --artifact ./cli+build/forge /usr/local/bin/forge
+    - name: Set output cache-hit
+      shell: bash
+      run: echo "cache-hit=${{ steps.cache-binary.outputs.cache-hit }}" >> $GITHUB_OUTPUT
+
+outputs:
+  cache-hit:
+    description: "Whether the forge binary was restored from cache"
+    value: ${{ steps.cache-binary.outputs.cache-hit }}

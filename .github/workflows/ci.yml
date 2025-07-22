@@ -48,6 +48,7 @@ jobs:
         with:
           version: ${{ inputs.forge_version }}
       - name: Install Local Forge
+        id: install-local
         uses: input-output-hk/catalyst-forge/actions/install-local@deprecate-earthly-cloud
         if: ${{ inputs.forge_version == 'local' }}
       - name: Check forge version
@@ -65,7 +66,8 @@ jobs:
         with:
           skip_docker: 'true'
           skip_github: 'true'
-          skip_earthly_install: ${{ steps.local.outputs.skip }}
+          skip_earthly_install: ${{ steps.install-local.outputs.cache-hit == false }}
+          skip_earthly_satellite: ${{ steps.install-local.outputs.cache-hit == false }}
       - name: Discovery
         id: discovery
         uses: input-output-hk/catalyst-forge/actions/discovery@deprecate-earthly-cloud
