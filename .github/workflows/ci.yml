@@ -43,20 +43,20 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Install Forge
-        uses: input-output-hk/catalyst-forge/actions/install@master
+        uses: input-output-hk/catalyst-forge/actions/install@adds-tailscale
         if: ${{ inputs.forge_version != 'local' }}
         with:
           version: ${{ inputs.forge_version }}
       - name: Install Local Forge
         id: install-local
-        uses: input-output-hk/catalyst-forge/actions/install-local@master
+        uses: input-output-hk/catalyst-forge/actions/install-local@adds-tailscale
         if: ${{ inputs.forge_version == 'local' }}
       - name: Check forge version
         id: local
         run: |
           forge version
       - name: Setup CI
-        uses: input-output-hk/catalyst-forge/actions/setup@master
+        uses: input-output-hk/catalyst-forge/actions/setup@adds-tailscale
         with:
           skip_docker: 'true'
           skip_github: 'true'
@@ -64,7 +64,7 @@ jobs:
           skip_earthly_satellite: ${{ inputs.forge_version == 'local' && steps.install-local.outputs.cache-hit == false }}
       - name: Discovery
         id: discovery
-        uses: input-output-hk/catalyst-forge/actions/discovery@master
+        uses: input-output-hk/catalyst-forge/actions/discovery@adds-tailscale
         with:
           filters: |
             ${{ env.FORGE_REGEX_CHECK }}
@@ -76,7 +76,7 @@ jobs:
             ${{ env.FORGE_REGEX_PUBLISH }}
             ${{ env.FORGE_REGEX_NIGHTLY }}
   check:
-    uses: input-output-hk/catalyst-forge/.github/workflows/run.yml@master
+    uses: input-output-hk/catalyst-forge/.github/workflows/run.yml@adds-tailscale
     needs: [discover]
     if: (fromJson(needs.discover.outputs.earthfiles)['^check(-.*)?$'] != null) && !failure() && !cancelled()
     with:
@@ -88,7 +88,7 @@ jobs:
       earthly_token: ${{ secrets.earthly_token }}
 
   build:
-    uses: input-output-hk/catalyst-forge/.github/workflows/run.yml@master
+    uses: input-output-hk/catalyst-forge/.github/workflows/run.yml@adds-tailscale
     needs: [discover, check]
     if: (fromJson(needs.discover.outputs.earthfiles)['^build(-.*)?$'] != null) && !failure() && !cancelled()
     with:
@@ -100,7 +100,7 @@ jobs:
       earthly_token: ${{ secrets.earthly_token }}
 
   package:
-    uses: input-output-hk/catalyst-forge/.github/workflows/run.yml@master
+    uses: input-output-hk/catalyst-forge/.github/workflows/run.yml@adds-tailscale
     needs: [discover, check, build]
     if: (fromJson(needs.discover.outputs.earthfiles)['^package(-.*)?$'] != null) && !failure() && !cancelled()
     with:
@@ -112,7 +112,7 @@ jobs:
       earthly_token: ${{ secrets.earthly_token }}
 
   test:
-    uses: input-output-hk/catalyst-forge/.github/workflows/run.yml@master
+    uses: input-output-hk/catalyst-forge/.github/workflows/run.yml@adds-tailscale
     needs: [discover, check, build, package]
     if: (fromJson(needs.discover.outputs.earthfiles)['^test(-.*)?$'] != null) && !failure() && !cancelled()
     with:
@@ -124,7 +124,7 @@ jobs:
       earthly_token: ${{ secrets.earthly_token }}
 
   nightly:
-    uses: input-output-hk/catalyst-forge/.github/workflows/run.yml@master
+    uses: input-output-hk/catalyst-forge/.github/workflows/run.yml@adds-tailscale
     needs: [discover, check, build, package]
     if: (fromJson(needs.discover.outputs.earthfiles)['^nightly(-.*)?$'] != null) && !failure() && !cancelled() && inputs.nightly == true
     with:
@@ -136,7 +136,7 @@ jobs:
       earthly_token: ${{ secrets.earthly_token }}
 
   docs:
-    uses: input-output-hk/catalyst-forge/.github/workflows/docs.yml@master
+    uses: input-output-hk/catalyst-forge/.github/workflows/docs.yml@adds-tailscale
     needs: [discover, check, build, test]
     if: (fromJson(needs.discover.outputs.earthfiles)['^docs(-.*)?$'] != null) && !failure() && !cancelled()
     with:
@@ -146,7 +146,7 @@ jobs:
       earthly_token: ${{ secrets.earthly_token }}
 
   release:
-    uses: input-output-hk/catalyst-forge/.github/workflows/release.yml@master
+    uses: input-output-hk/catalyst-forge/.github/workflows/release.yml@adds-tailscale
     needs: [discover, check, build, test]
     if: (fromJson(needs.discover.outputs.releases)[0] != null) && !failure() && !cancelled()
     with:
@@ -158,7 +158,7 @@ jobs:
       earthly_token: ${{ secrets.earthly_token }}
 
   deploy:
-    uses: input-output-hk/catalyst-forge/.github/workflows/deploy.yml@master
+    uses: input-output-hk/catalyst-forge/.github/workflows/deploy.yml@adds-tailscale
     needs: [discover, check, build, test, release]
     if: (fromJson(needs.discover.outputs.deployments)[0] != null) && !failure() && !cancelled()
     with:
