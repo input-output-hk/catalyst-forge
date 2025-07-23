@@ -19,12 +19,11 @@ ci: {
 			role:     "arn:aws:iam::123456:role/ci"
 		}
 		earthly: {
-			credentials: {
+			satellite: credentials: {
 				provider: "aws"
 				path:     "path/to/secret"
 			}
-			org:       "myorg"
-			satellite: "sat"
+			version: "latest"
 		}
 	}
 }
@@ -52,10 +51,32 @@ jobs:
 
 The action will then perform the following:
 
-1. Install the latest version of the Forge CLI
-2. Authenticate to AWS via OIDC
-3. Authenticate to Earthly Cloud using the credentials in the AWS Secrets Manager secret stored at `path/to/secret`
-4. Set the default Earthly Cloud organization to `myorg`
+1. **AWS Provider Setup** (if configured):
+   - Authenticate to AWS using OIDC with the configured role
+   - Login to Amazon ECR if a registry is specified
+
+2. **Docker Provider Setup** (if configured):
+   - Login to Docker Hub using credentials from the configured secret
+
+3. **GitHub Provider Setup** (if configured):
+   - Login to GitHub Container Registry (ghcr.io) using the GitHub token
+
+4. **Earthly Provider Setup** (if configured):
+   - Install Earthly CLI (latest or specified version)
+   - Configure remote Earthly satellite authentication if credentials are provided
+
+5. **Timoni Provider Setup** (if configured):
+   - Install Timoni CLI with the specified version
+
+6. **CUE Provider Setup** (if configured):
+   - Install CUE CLI with the specified version
+
+7. **KCL Provider Setup** (if configured):
+   - Install KCL CLI with the specified version
+
+8. **Tailscale Provider Setup** (if configured):
+   - Install and configure Tailscale using OAuth2 credentials
+   - Apply specified tags to the Tailscale node
 
 ### Configuring Providers
 
@@ -70,7 +91,15 @@ The below list documents the expected format for each provider:
    - `username`: The username to login with
    - `password`: The password to login with
 1. Earthly
-  - `token`: The Earthly Cloud token to login with
+   - `ca_certificate`: Base64-encoded string containing the common CA certificate for mTLS
+   - `certificate`: Base64 encoded string containing the (signed) client certificate used to authenticate with the satellite
+   - `private_key`: Base64 encoded string containing the private key used to authenticate with the satellite
+   - `host`: The address of the remote satellite in the form of `tcp://hostname:8372`
+1. Tailscale
+   - `client_id`: The OAuth2 client ID used to authenticate with the Tailscale API
+   - `client_secret`: The OAuth2 secret key used to authenticate with the Tailscale API
+1. GitHub
+   - `token`: The access token used to authenticate with GitHub
 
 If the secret uses a different format, the `maps` field of the secret can be used to map them correctly:
 
@@ -103,7 +132,15 @@ Note that this _only_ works when run within the Catalyst Forge repository.
 
 ## Inputs
 
-| Name          | Description                              | Required | Default                 |
-| ------------- | ---------------------------------------- | -------- | ----------------------- |
-| forge_version | The version of the forge CLI to install  | No       | `"latest"`              |
-| github_token  | The GitHub token used for authentication | No       | `"${{ github.token }}"` |
+| Name                   | Description                                                          | Required | Default                 |
+| ---------------------- | -------------------------------------------------------------------- | -------- | ----------------------- |
+| github_token           | The GitHub token used for authentication                             | No       | `"${{ github.token }}"` |
+| skip_aws               | If true, skip authenticating with AWS and configuring ECR            | No       | `"false"`               |
+| skip_cue               | If true, skips installing CUE CLI if the provider is configured      | No       | `"false"`               |
+| skip_docker            | If true, skip authenticating to DockerHub                            | No       | `"false"`               |
+| skip_earthly_install   | If true, skip installing Earthly                                     | No       | `"false"`               |
+| skip_earthly_satellite | If true, skip adding authentication for the remote Earthly satellite | No       | `"false"`               |
+| skip_github            | If true, skip authenticating to GitHub Container Registry            | No       | `"false"`               |
+| skip_kcl               | If true, skips installing KCL CLI if the provider is configured      | No       | `"false"`               |
+| skip_tailscale         | If true, skips installing and authenticating with skip_tailscale     | No       | `"false"`               |
+| skip_timoni            | If true, skips installing Timoni CLI if the provider is configured   | No       | `"false"`               |

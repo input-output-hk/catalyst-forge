@@ -22,6 +22,9 @@ package providers
 	// KCL contains the configuration for the KCL provider.
 	kcl?: #KCL
 
+	// Tailscale contains the configuration for the Tailscale provider.
+	tailscale?: #Tailscale
+
 	// Timoni contains the configuration for the Timoni provider.
 	timoni?: #Timoni
 }
