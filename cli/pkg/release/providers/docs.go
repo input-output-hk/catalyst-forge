@@ -40,14 +40,14 @@ type DocsReleaser struct {
 
 // Release runs the docs release.
 func (r *DocsReleaser) Release() error {
-	r.logger.Info("Running docs release target", "project", r.project.Name, "target", r.release.Target, "dir", r.workdir)
-	if err := r.run(r.workdir); err != nil {
-		return fmt.Errorf("failed to run docs release target: %w", err)
-	}
+	// r.logger.Info("Running docs release target", "project", r.project.Name, "target", r.release.Target, "dir", r.workdir)
+	// if err := r.run(r.workdir); err != nil {
+	// 	return fmt.Errorf("failed to run docs release target: %w", err)
+	// }
 
-	if err := r.validateArtifacts(r.workdir); err != nil {
-		return fmt.Errorf("failed to validate artifacts: %w", err)
-	}
+	// if err := r.validateArtifacts(r.workdir); err != nil {
+	// 	return fmt.Errorf("failed to validate artifacts: %w", err)
+	// }
 
 	if !r.handler.Firing(r.project, r.project.GetReleaseEvents(r.releaseName)) && !r.force {
 		r.logger.Info("No release event is firing, skipping release")
@@ -70,9 +70,18 @@ func (r *DocsReleaser) Release() error {
 		owner := strings.Split(r.project.Blueprint.Global.Repo.Name, "/")[0]
 		repo := strings.Split(r.project.Blueprint.Global.Repo.Name, "/")[1]
 
-		if err := prClient.PostComment(owner, repo, pr, "Hello, world!"); err != nil {
-			return fmt.Errorf("failed to post comment to PR: %w", err)
+		comments, err := prClient.ListComments(owner, repo, pr)
+		if err != nil {
+			return fmt.Errorf("failed to list comments: %w", err)
 		}
+
+		for _, comment := range comments {
+			r.logger.Info("Comment", "author", comment.Author, "body", comment.Body)
+		}
+
+		// if err := prClient.PostComment(owner, repo, pr, "Hello, world!"); err != nil {
+		// 	return fmt.Errorf("failed to post comment to PR: %w", err)
+		// }
 	}
 
 	// if r.project.Blueprint.Global.Ci == nil || r.project.Blueprint.Global.Ci.Release == nil || r.project.Blueprint.Global.Ci.Release.Docs == nil {

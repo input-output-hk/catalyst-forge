@@ -20,16 +20,51 @@ type PRClient struct {
 	logger *slog.Logger
 }
 
-// CommentOptions contains options for posting a comment.
-type CommentOptions struct {
-	// Body is the comment content
-	Body string
-	// CommitID is the specific commit to comment on (optional)
-	CommitID string
-	// Path is the file path to comment on (optional)
-	Path string
-	// Position is the line position in the file (optional)
-	Position int
+// Comment represents the pared‑down information we care about.
+type Comment struct {
+	Author string
+	Body   string
+}
+
+// ListComments lists comments for a pull request.
+func (p *PRClient) ListComments(owner, repo string, prNumber int) ([]Comment, error) {
+	var all []Comment
+	ctx := context.Background()
+	opts := &github.IssueListCommentsOptions{
+		ListOptions: github.ListOptions{PerPage: 100},
+	}
+
+	for {
+		p.logger.Debug("Fetching PR comments page",
+			"owner", owner, "repo", repo, "pr", prNumber, "page", opts.Page)
+		comments, resp, err := p.client.Issues.ListComments(ctx, owner, repo, prNumber, opts)
+		if err != nil {
+			return nil, fmt.Errorf("failed to list comments: %w", err)
+		}
+
+		for _, c := range comments {
+			author := ""
+			if c.User != nil && c.User.Login != nil {
+				author = *c.User.Login
+			}
+			body := ""
+			if c.Body != nil {
+				body = *c.Body
+			}
+			all = append(all, Comment{
+				Author: author,
+				Body:   body,
+			})
+		}
+
+		// Break out when we've reached the last page.
+		if resp.NextPage == 0 {
+			break
+		}
+		opts.Page = resp.NextPage
+	}
+
+	return all, nil
 }
 
 // PostComment posts a comment to a pull request.
