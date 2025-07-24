@@ -149,10 +149,14 @@ func (r *DocsReleaser) cleanupBranches(client github.GithubClient, bucket, path 
 		branchNames = append(branchNames, branch.Name)
 	}
 
+	fmt.Printf("branchNames: %v\n", branchNames)
+
 	children, err := r.s3.ListImmediateChildren(bucket, path)
 	if err != nil {
 		return fmt.Errorf("failed to list immediate children: %w", err)
 	}
+
+	fmt.Printf("children: %v\n", children)
 
 	for _, child := range children {
 		if !slices.Contains(branchNames, child) {
