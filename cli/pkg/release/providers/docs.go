@@ -3,6 +3,7 @@ package providers
 import (
 	"fmt"
 	"log/slog"
+	"strings"
 
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/earthly"
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/events"
@@ -59,7 +60,14 @@ func (r *DocsReleaser) Release() error {
 			return fmt.Errorf("failed to get PR number")
 		}
 
-		r.logger.Info("PR number", "pr", pr)
+		prClient, err := github.NewPRClient(r.logger)
+		if err != nil {
+			return fmt.Errorf("failed to create PR client: %w", err)
+		}
+
+		owner := strings.Split(r.project.Blueprint.Global.Repo.Name, "/")[0]
+		repo := strings.Split(r.project.Blueprint.Global.Repo.Name, "/")[1]
+		prClient.PostComment(owner, repo, pr, "Hello, world!")
 	}
 
 	// if r.project.Blueprint.Global.Ci == nil || r.project.Blueprint.Global.Ci.Release == nil || r.project.Blueprint.Global.Ci.Release.Docs == nil {
