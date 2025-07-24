@@ -12,7 +12,6 @@ import (
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/providers/aws"
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/run"
 	"github.com/input-output-hk/catalyst-forge/lib/project/project"
-	"github.com/input-output-hk/catalyst-forge/lib/project/providers"
 	sp "github.com/input-output-hk/catalyst-forge/lib/schema/blueprint/project"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/fs"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/fs/billy"
@@ -54,19 +53,19 @@ type DocsReleaser struct {
 
 // Release runs the docs release.
 func (r *DocsReleaser) Release() error {
-	r.logger.Info("Running docs release target", "project", r.project.Name, "target", r.release.Target, "dir", r.workdir)
-	if err := r.run(r.workdir); err != nil {
-		return fmt.Errorf("failed to run docs release target: %w", err)
-	}
+	// r.logger.Info("Running docs release target", "project", r.project.Name, "target", r.release.Target, "dir", r.workdir)
+	// if err := r.run(r.workdir); err != nil {
+	// 	return fmt.Errorf("failed to run docs release target: %w", err)
+	// }
 
-	if err := r.validateArtifacts(r.workdir); err != nil {
-		return fmt.Errorf("failed to validate artifacts: %w", err)
-	}
+	// if err := r.validateArtifacts(r.workdir); err != nil {
+	// 	return fmt.Errorf("failed to validate artifacts: %w", err)
+	// }
 
-	if !r.handler.Firing(r.project, r.project.GetReleaseEvents(r.releaseName)) && !r.force {
-		r.logger.Info("No release event is firing, skipping release")
-		return nil
-	}
+	// if !r.handler.Firing(r.project, r.project.GetReleaseEvents(r.releaseName)) && !r.force {
+	// 	r.logger.Info("No release event is firing, skipping release")
+	// 	return nil
+	// }
 
 	if r.project.Blueprint.Global.Ci == nil || r.project.Blueprint.Global.Ci.Release == nil || r.project.Blueprint.Global.Ci.Release.Docs == nil {
 		return fmt.Errorf("global docs release configuration not found")
@@ -87,26 +86,65 @@ func (r *DocsReleaser) Release() error {
 		return fmt.Errorf("failed to generate S3 path: %w", err)
 	}
 
-	r.logger.Info("Cleaning existing docs from S3", "bucket", docsConfig.Bucket, "path", s3Path)
-	if err := r.s3.DeleteDirectory(docsConfig.Bucket, s3Path); err != nil {
-		return fmt.Errorf("failed to clean existing docs from S3: %w", err)
+	children, err := r.s3.ListImmediateChildren(docsConfig.Bucket, filepath.Dir(s3Path))
+	if err != nil {
+		return fmt.Errorf("failed to list immediate children: %w", err)
 	}
 
-	finalPath := filepath.Join(r.workdir, earthly.GetBuildPlatform())
-	r.logger.Info("Uploading docs to S3", "bucket", docsConfig.Bucket, "path", s3Path)
-	if err := r.s3.UploadDirectory(docsConfig.Bucket, s3Path, finalPath, r.fs); err != nil {
-		return fmt.Errorf("failed to upload docs to S3: %w", err)
+	for _, child := range children {
+		r.logger.Info("Found child", "child", child)
 	}
 
-	if github.InCI() {
-		if err := r.postComment(r.project.Blueprint.Global.Ci.Release.Docs.Url, projectName); err != nil {
-			return fmt.Errorf("failed to post comment: %w", err)
-		}
-	}
+	// r.logger.Info("Cleaning existing docs from S3", "bucket", docsConfig.Bucket, "path", s3Path)
+	// if err := r.s3.DeleteDirectory(docsConfig.Bucket, s3Path); err != nil {
+	// 	return fmt.Errorf("failed to clean existing docs from S3: %w", err)
+	// }
+
+	// finalPath := filepath.Join(r.workdir, earthly.GetBuildPlatform())
+	// r.logger.Info("Uploading docs to S3", "bucket", docsConfig.Bucket, "path", s3Path)
+	// if err := r.s3.UploadDirectory(docsConfig.Bucket, s3Path, finalPath, r.fs); err != nil {
+	// 	return fmt.Errorf("failed to upload docs to S3: %w", err)
+	// }
+
+	// if github.InCI() {
+	// 	client, err := providers.NewGithubClient(r.project, r.logger)
+	// 	if err != nil {
+	// 		return fmt.Errorf("failed to create github client: %w", err)
+	// 	}
+
+	// 	owner := strings.Split(r.project.Blueprint.Global.Repo.Name, "/")[0]
+	// 	repo := strings.Split(r.project.Blueprint.Global.Repo.Name, "/")[1]
+	// 	gc := github.NewGithubClient(owner, repo, client, r.logger)
+	// 	url := r.project.Blueprint.Global.Ci.Release.Docs.Url
+
+	// 	if err := r.postComment(gc, url, projectName); err != nil {
+	// 		return fmt.Errorf("failed to post comment: %w", err)
+	// 	}
+
+	// 	branch, err := git.GetBranch(r.project.Repo)
+	// 	if err != nil {
+	// 		return fmt.Errorf("failed to get branch: %w", err)
+	// 	}
+
+	// 	if branch != r.project.Blueprint.Global.Repo.DefaultBranch {
+	// 		if err := r.cleanupBranches(gc, docsConfig.Bucket, filepath.Dir(s3Path)); err != nil {
+	// 			return fmt.Errorf("failed to cleanup branches: %w", err)
+	// 		}
+	// 	}
+	// }
 
 	r.logger.Info("Docs release complete")
 	return nil
 }
+
+// func (r *DocsReleaser) cleanupBranches(client github.GithubClient, bucket, path string) error {
+// 	branches, err := client.ListBranches()
+// 	if err != nil {
+// 		return fmt.Errorf("failed to list GitHub branches: %w", err)
+// 	}
+
+// 	return nil
+// }
 
 // generatePath generates the S3 path for the docs.
 func (r *DocsReleaser) generatePath(projectName string) (string, error) {
@@ -132,7 +170,7 @@ func (r *DocsReleaser) generatePath(projectName string) (string, error) {
 	return s3Path + "/" + branch, nil
 }
 
-func (r *DocsReleaser) postComment(baseURL, name string) error {
+func (r *DocsReleaser) postComment(client github.GithubClient, baseURL, name string) error {
 	env := github.NewGithubEnv(r.logger)
 	if env.IsPR() {
 		pr := env.GetPRNumber()
@@ -141,16 +179,7 @@ func (r *DocsReleaser) postComment(baseURL, name string) error {
 			return nil
 		}
 
-		client, err := providers.NewGithubClient(r.project, r.logger)
-		if err != nil {
-			return fmt.Errorf("failed to create github client: %w", err)
-		}
-
-		prClient := github.NewPRClient(client, r.logger)
-		owner := strings.Split(r.project.Blueprint.Global.Repo.Name, "/")[0]
-		repo := strings.Split(r.project.Blueprint.Global.Repo.Name, "/")[1]
-
-		comments, err := prClient.ListComments(owner, repo, pr)
+		comments, err := client.ListPullRequestComments(pr)
 		if err != nil {
 			return fmt.Errorf("failed to list comments: %w", err)
 		}
@@ -173,7 +202,7 @@ func (r *DocsReleaser) postComment(baseURL, name string) error {
 		}
 
 		body := fmt.Sprintf(bodyTemplate, docsCommentPrefix, docURL)
-		if err := prClient.PostComment(owner, repo, pr, body); err != nil {
+		if err := client.PostPullRequestComment(pr, body); err != nil {
 			return fmt.Errorf("failed to post comment to PR: %w", err)
 		}
 	} else {

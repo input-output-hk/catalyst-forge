@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"mime"
 	"path/filepath"
+	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/aws/aws-sdk-go/aws"
@@ -84,6 +85,50 @@ func (c *S3Client) DeleteDirectory(bucket, prefix string) error {
 
 	c.logger.Debug("Successfully deleted directory from S3", "bucket", bucket, "prefix", prefix)
 	return nil
+}
+
+func (c *S3Client) ListImmediateChildren(bucket, prefix string) ([]string, error) {
+	if prefix != "" && !strings.HasSuffix(prefix, "/") {
+		prefix += "/"
+	}
+
+	var children []string
+	seen := make(map[string]struct{})
+
+	input := &s3.ListObjectsV2Input{
+		Bucket:    aws.String(bucket),
+		Prefix:    aws.String(prefix),
+		Delimiter: aws.String("/"),
+	}
+
+	for {
+		out, err := c.client.ListObjectsV2(context.Background(), input)
+		if err != nil {
+			return nil, fmt.Errorf("list objects (prefix=%s): %w", prefix, err)
+		}
+
+		for _, cp := range out.CommonPrefixes {
+			if cp.Prefix == nil {
+				continue
+			}
+
+			name := strings.TrimSuffix(strings.TrimPrefix(*cp.Prefix, prefix), "/")
+			if name == "" {
+				continue
+			}
+			if _, ok := seen[name]; !ok {
+				seen[name] = struct{}{}
+				children = append(children, name)
+			}
+		}
+
+		if out.IsTruncated != nil && !*out.IsTruncated {
+			break
+		}
+		input.ContinuationToken = out.NextContinuationToken
+	}
+
+	return children, nil
 }
 
 // UploadDirectory uploads all files from a local directory to S3.
