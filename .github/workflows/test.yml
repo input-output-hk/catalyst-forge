@@ -1,0 +1,32 @@
+name: Test
+
+on:
+  push:
+
+permissions:
+  id-token: write
+  contents: write
+  packages: write
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Local Forge
+        id: install-local
+        uses: input-output-hk/catalyst-forge/actions/install-local@master
+      - name: Check forge version
+        id: local
+        run: |
+          forge version
+      - name: Setup CI
+        uses: input-output-hk/catalyst-forge/actions/setup@master
+        with:
+          skip_docker: 'true'
+          skip_github: 'true'
+          skip_earthly_install: ${{ steps.install-local.outputs.cache-hit == false }}
+          skip_earthly_satellite: ${{ steps.install-local.outputs.cache-hit == false }}
+      - name: Test
+        run: |
+            forge release -vvv ./docs docs

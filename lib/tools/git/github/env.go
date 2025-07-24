@@ -5,6 +5,7 @@ import (
 	"io"
 	"log/slog"
 	"os"
+	"strconv"
 	"strings"
 
 	"github.com/google/go-github/v66/github"
@@ -23,6 +24,7 @@ type GithubEnv struct {
 	logger *slog.Logger
 }
 
+// GetBranch returns the current branch from the CI environment.
 func (g *GithubEnv) GetBranch() string {
 	ref, ok := os.LookupEnv("GITHUB_HEAD_REF")
 	if !ok || ref == "" {
@@ -71,6 +73,49 @@ func (g *GithubEnv) GetTag() string {
 	}
 
 	return ""
+}
+
+// IsPR returns whether the current environment is associated with a pull request.
+func (g *GithubEnv) IsPR() bool {
+	if _, ok := os.LookupEnv("GITHUB_HEAD_REF"); ok {
+		return true
+	}
+
+	if g.GetEventType() == "pull_request" {
+		return true
+	}
+
+	return false
+}
+
+// GetPRNumber returns the pull request number if the current environment is associated with a PR.
+// Returns 0 if not in a PR context or if the PR number cannot be determined.
+func (g *GithubEnv) GetPRNumber() int {
+	if !g.IsPR() {
+		return 0
+	}
+
+	if prNumberStr, ok := os.LookupEnv("GITHUB_EVENT_NUMBER"); ok {
+		if prNumber, err := strconv.Atoi(prNumberStr); err == nil {
+			return prNumber
+		}
+	}
+
+	if g.HasEvent() {
+		event, err := g.GetEventPayload()
+		if err != nil {
+			g.logger.Debug("Failed to get event payload for PR number", "error", err)
+			return 0
+		}
+
+		if prEvent, ok := event.(*github.PullRequestEvent); ok {
+			if prEvent.PullRequest != nil && prEvent.PullRequest.Number != nil {
+				return *prEvent.PullRequest.Number
+			}
+		}
+	}
+
+	return 0
 }
 
 // HasEvent returns whether a GitHub event payload exists.

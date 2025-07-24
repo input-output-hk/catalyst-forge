@@ -3,7 +3,6 @@ package providers
 import (
 	"fmt"
 	"log/slog"
-	"path/filepath"
 
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/earthly"
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/events"
@@ -13,6 +12,8 @@ import (
 	sp "github.com/input-output-hk/catalyst-forge/lib/schema/blueprint/project"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/fs"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/fs/billy"
+	"github.com/input-output-hk/catalyst-forge/lib/tools/git"
+	"github.com/input-output-hk/catalyst-forge/lib/tools/git/github"
 )
 
 // DocsReleaserConfig is the configuration for the docs release.
@@ -27,7 +28,7 @@ type DocsReleaser struct {
 	fs          fs.Filesystem
 	handler     events.EventHandler
 	logger      *slog.Logger
-	project     project.Project
+	project     *project.Project
 	release     sp.Release
 	releaseName string
 	runner      earthly.ProjectRunner
@@ -46,23 +47,60 @@ func (r *DocsReleaser) Release() error {
 		return fmt.Errorf("failed to validate artifacts: %w", err)
 	}
 
-	if !r.handler.Firing(&r.project, r.project.GetReleaseEvents(r.releaseName)) && !r.force {
+	if !r.handler.Firing(r.project, r.project.GetReleaseEvents(r.releaseName)) && !r.force {
 		r.logger.Info("No release event is firing, skipping release")
 		return nil
 	}
 
-	if r.project.Blueprint.Global.Ci == nil || r.project.Blueprint.Global.Ci.Release == nil || r.project.Blueprint.Global.Ci.Release.Docs == nil {
-		return fmt.Errorf("global docs release configuration not found")
+	env := github.NewGithubEnv(r.logger)
+	if env.IsPR() {
+		pr := env.GetPRNumber()
+		if pr == 0 {
+			return fmt.Errorf("failed to get PR number")
+		}
+
+		r.logger.Info("PR number", "pr", pr)
+	}
+
+	// if r.project.Blueprint.Global.Ci == nil || r.project.Blueprint.Global.Ci.Release == nil || r.project.Blueprint.Global.Ci.Release.Docs == nil {
+	// 	return fmt.Errorf("global docs release configuration not found")
+	// }
+
+	// docsConfig := r.project.Blueprint.Global.Ci.Release.Docs
+	// if docsConfig.Bucket == "" {
+	// 	return fmt.Errorf("no S3 bucket specified in global docs configuration")
+	// }
+
+	// s3Path, err := r.generatePath()
+	// if err != nil {
+	// 	return fmt.Errorf("failed to generate S3 path: %w", err)
+	// }
+
+	// r.logger.Info("Cleaning existing docs from S3", "bucket", docsConfig.Bucket, "path", s3Path)
+	// if err := r.s3.DeleteDirectory(docsConfig.Bucket, s3Path); err != nil {
+	// 	return fmt.Errorf("failed to clean existing docs from S3: %w", err)
+	// }
+
+	// finalPath := filepath.Join(r.workdir, earthly.GetBuildPlatform())
+	// r.logger.Info("Uploading docs to S3", "bucket", docsConfig.Bucket, "path", s3Path)
+	// if err := r.s3.UploadDirectory(docsConfig.Bucket, s3Path, finalPath, r.fs); err != nil {
+	// 	return fmt.Errorf("failed to upload docs to S3: %w", err)
+	// }
+
+	r.logger.Info("Docs release complete")
+	return nil
+}
+
+// generatePath generates the S3 path for the docs.
+func (r *DocsReleaser) generatePath() (string, error) {
+	projectName := r.config.Name
+	if projectName == "" {
+		projectName = r.project.Name
 	}
 
 	docsConfig := r.project.Blueprint.Global.Ci.Release.Docs
 	if docsConfig.Bucket == "" {
-		return fmt.Errorf("no S3 bucket specified in global docs configuration")
-	}
-
-	projectName := r.config.Name
-	if projectName == "" {
-		projectName = r.project.Name
+		return "", fmt.Errorf("no S3 bucket specified in global docs configuration")
 	}
 
 	s3Path := projectName
@@ -70,19 +108,16 @@ func (r *DocsReleaser) Release() error {
 		s3Path = docsConfig.Path + "/" + projectName
 	}
 
-	r.logger.Info("Cleaning existing docs from S3", "bucket", docsConfig.Bucket, "path", s3Path)
-	if err := r.s3.DeleteDirectory(docsConfig.Bucket, s3Path); err != nil {
-		return fmt.Errorf("failed to clean existing docs from S3: %w", err)
+	branch, err := git.GetBranch(r.project.Repo)
+	if err != nil {
+		return "", fmt.Errorf("failed to get branch: %w", err)
 	}
 
-	finalPath := filepath.Join(r.workdir, earthly.GetBuildPlatform())
-	r.logger.Info("Uploading docs to S3", "bucket", docsConfig.Bucket, "path", s3Path)
-	if err := r.s3.UploadDirectory(docsConfig.Bucket, s3Path, finalPath, r.fs); err != nil {
-		return fmt.Errorf("failed to upload docs to S3: %w", err)
+	if branch == r.project.Blueprint.Global.Repo.DefaultBranch {
+		return s3Path, nil
 	}
 
-	r.logger.Info("Docs release complete")
-	return nil
+	return s3Path + "/" + branch, nil
 }
 
 // run runs the docs release target.
@@ -151,7 +186,7 @@ func NewDocsReleaser(
 		fs:          fs,
 		handler:     &handler,
 		logger:      ctx.Logger,
-		project:     project,
+		project:     &project,
 		release:     release,
 		releaseName: name,
 		runner:      &runner,
