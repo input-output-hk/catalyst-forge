@@ -13,4 +13,7 @@ package global
 
 	// Path is the subpath within the bucket to upload the docs to.
 	path?: string | *""
+
+	// URL is the base URL to the docs.
+	url: string
 }

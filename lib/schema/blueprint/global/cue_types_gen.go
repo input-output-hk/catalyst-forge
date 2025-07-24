@@ -87,6 +87,9 @@ type DocsRelease struct {
 
 	// Path is the subpath within the bucket to upload the docs to.
 	Path string `json:"path,omitempty"`
+
+	// URL is the base URL to the docs.
+	Url string `json:"url"`
 }
 
 type Repo struct {

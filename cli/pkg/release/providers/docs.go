@@ -3,6 +3,7 @@ package providers
 import (
 	"fmt"
 	"log/slog"
+	"net/url"
 	"strings"
 
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/earthly"
@@ -16,6 +17,17 @@ import (
 	"github.com/input-output-hk/catalyst-forge/lib/tools/fs/billy"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/git"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/git/github"
+)
+
+const (
+	docsCommentPrefix = "<!-- forge:v1:docs-preview -->"
+	bodyTemplate      = `
+## 📚 Docs Preview
+
+The docs for this PR can be previewed at the following URL:
+
+%s
+`
 )
 
 // DocsReleaserConfig is the configuration for the docs release.
@@ -54,34 +66,10 @@ func (r *DocsReleaser) Release() error {
 		return nil
 	}
 
-	env := github.NewGithubEnv(r.logger)
-	if env.IsPR() {
-		pr := env.GetPRNumber()
-		if pr == 0 {
-			return fmt.Errorf("failed to get PR number")
+	if github.InCI() {
+		if err := r.postComment(r.project.Blueprint.Global.Ci.Release.Docs.Url); err != nil {
+			return fmt.Errorf("failed to post comment: %w", err)
 		}
-
-		client, err := providers.NewGithubClient(r.project, r.logger)
-		if err != nil {
-			return fmt.Errorf("failed to create github client: %w", err)
-		}
-
-		prClient := github.NewPRClient(client, r.logger)
-		owner := strings.Split(r.project.Blueprint.Global.Repo.Name, "/")[0]
-		repo := strings.Split(r.project.Blueprint.Global.Repo.Name, "/")[1]
-
-		comments, err := prClient.ListComments(owner, repo, pr)
-		if err != nil {
-			return fmt.Errorf("failed to list comments: %w", err)
-		}
-
-		for _, comment := range comments {
-			r.logger.Info("Comment", "author", comment.Author, "body", comment.Body)
-		}
-
-		// if err := prClient.PostComment(owner, repo, pr, "Hello, world!"); err != nil {
-		// 	return fmt.Errorf("failed to post comment to PR: %w", err)
-		// }
 	}
 
 	// if r.project.Blueprint.Global.Ci == nil || r.project.Blueprint.Global.Ci.Release == nil || r.project.Blueprint.Global.Ci.Release.Docs == nil {
@@ -140,6 +128,58 @@ func (r *DocsReleaser) generatePath() (string, error) {
 	}
 
 	return s3Path + "/" + branch, nil
+}
+
+func (r *DocsReleaser) postComment(baseURL string) error {
+	env := github.NewGithubEnv(r.logger)
+	if env.IsPR() {
+		pr := env.GetPRNumber()
+		if pr == 0 {
+			r.logger.Warn("No PR number found, skipping comment")
+			return nil
+		}
+
+		client, err := providers.NewGithubClient(r.project, r.logger)
+		if err != nil {
+			return fmt.Errorf("failed to create github client: %w", err)
+		}
+
+		prClient := github.NewPRClient(client, r.logger)
+		owner := strings.Split(r.project.Blueprint.Global.Repo.Name, "/")[0]
+		repo := strings.Split(r.project.Blueprint.Global.Repo.Name, "/")[1]
+
+		comments, err := prClient.ListComments(owner, repo, pr)
+		if err != nil {
+			return fmt.Errorf("failed to list comments: %w", err)
+		}
+
+		for _, comment := range comments {
+			r.logger.Info("Comment", "author", comment.Author, "body", comment.Body)
+			if comment.Author == "github-actions[bot]" && strings.Contains(comment.Body, docsCommentPrefix) {
+				r.logger.Info("Found existing comment, skipping	")
+				return nil
+			}
+		}
+
+		branch, err := git.GetBranch(r.project.Repo)
+		if err != nil {
+			return fmt.Errorf("failed to get branch: %w", err)
+		}
+
+		docURL, err := url.JoinPath(baseURL, branch)
+		if err != nil {
+			return fmt.Errorf("failed to join URL path: %w", err)
+		}
+
+		body := fmt.Sprintf(bodyTemplate, docURL)
+		if err := prClient.PostComment(owner, repo, pr, body); err != nil {
+			return fmt.Errorf("failed to post comment to PR: %w", err)
+		}
+	} else {
+		r.logger.Info("No PR found, skipping comment")
+	}
+
+	return nil
 }
 
 // run runs the docs release target.
