@@ -97,7 +97,7 @@ func (r *DocsReleaser) Release() error {
 	// }
 
 	if github.InCI() {
-		if err := r.postComment(r.project.Blueprint.Global.Ci.Release.Docs.Url); err != nil {
+		if err := r.postComment(r.project.Blueprint.Global.Ci.Release.Docs.Url, projectName); err != nil {
 			return fmt.Errorf("failed to post comment: %w", err)
 		}
 	}
