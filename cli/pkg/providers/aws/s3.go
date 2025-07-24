@@ -79,18 +79,21 @@ func (c *S3Client) DeleteDirectory(bucket, prefix string, exclude []string) erro
 		return fmt.Errorf("failed to list objects in S3: %w", err)
 	}
 
-	for _, object := range listOutput.Contents {
-		for _, exclude := range exclude {
-			match, err := regexp.MatchString(exclude, *object.Key)
-			if err != nil {
-				return fmt.Errorf("failed to match regex: %w", err)
-			} else if match {
-				continue
+	for _, obj := range listOutput.Contents {
+		skip := false
+		for _, pat := range exclude {
+			if regexp.MustCompile(pat).MatchString(*obj.Key) {
+				skip = true
+				break
 			}
 		}
+		if skip {
+			c.logger.Debug("Skipping delete (excluded)", "key", *obj.Key)
+			continue
+		}
 
-		if err := c.DeleteFile(bucket, *object.Key); err != nil {
-			return fmt.Errorf("failed to delete object %s: %w", *object.Key, err)
+		if err := c.DeleteFile(bucket, *obj.Key); err != nil {
+			return fmt.Errorf("failed to delete object %s: %w", *obj.Key, err)
 		}
 	}
 
