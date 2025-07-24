@@ -22,6 +22,7 @@ import (
 const (
 	docsCommentPrefix = "<!-- forge:v1:docs-preview -->"
 	bodyTemplate      = `
+%s
 ## 📚 Docs Preview
 
 The docs for this PR can be previewed at the following URL:
@@ -171,7 +172,7 @@ func (r *DocsReleaser) postComment(baseURL, name string) error {
 			return fmt.Errorf("failed to join URL path: %w", err)
 		}
 
-		body := fmt.Sprintf(bodyTemplate, docURL)
+		body := fmt.Sprintf(bodyTemplate, docsCommentPrefix, docURL)
 		if err := prClient.PostComment(owner, repo, pr, body); err != nil {
 			return fmt.Errorf("failed to post comment to PR: %w", err)
 		}
