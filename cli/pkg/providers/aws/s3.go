@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"mime"
 	"path/filepath"
+	"regexp"
 	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/service/s3"
@@ -66,7 +67,8 @@ func (c *S3Client) DeleteFile(bucket, key string) error {
 }
 
 // DeleteDirectory deletes all objects in a directory (prefix) from S3.
-func (c *S3Client) DeleteDirectory(bucket, prefix string) error {
+// exclude is a list of regexes to exclude from deletion.
+func (c *S3Client) DeleteDirectory(bucket, prefix string, exclude []string) error {
 	listInput := &s3.ListObjectsV2Input{
 		Bucket: aws.String(bucket),
 		Prefix: aws.String(prefix),
@@ -78,6 +80,15 @@ func (c *S3Client) DeleteDirectory(bucket, prefix string) error {
 	}
 
 	for _, object := range listOutput.Contents {
+		for _, exclude := range exclude {
+			match, err := regexp.MatchString(exclude, *object.Key)
+			if err != nil {
+				return fmt.Errorf("failed to match regex: %w", err)
+			} else if match {
+				continue
+			}
+		}
+
 		if err := c.DeleteFile(bucket, *object.Key); err != nil {
 			return fmt.Errorf("failed to delete object %s: %w", *object.Key, err)
 		}
