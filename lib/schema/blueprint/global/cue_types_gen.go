@@ -18,6 +18,9 @@ type CI struct {
 	// Registries contains the container registries to push images to.
 	Registries []string `json:"registries,omitempty"`
 
+	// Release contains the configuration for the release of a project.
+	Release *Release `json:"release,omitempty"`
+
 	// Secrets contains global secrets that will be passed to all targets.
 	Secrets []common.Secret `json:"secrets,omitempty"`
 }
@@ -69,6 +72,21 @@ type Global struct {
 	// This can be used by external tools or can be consumed using the @global() attribute.
 	// This field is not used by the blueprint itself.
 	State any/* CUE top */ `json:"state,omitempty"`
+}
+
+// Release contains the configuration for the release of a project.
+type Release struct {
+	// Docs is the configuration for the docs release type.
+	Docs *DocsRelease `json:"docs,omitempty"`
+}
+
+// DocsRelease contains the configuration for the docs release type.
+type DocsRelease struct {
+	// Bucket is the name of the S3 bucket to upload the docs to.
+	Bucket string `json:"bucket"`
+
+	// Path is the subpath within the bucket to upload the docs to.
+	Path string `json:"path,omitempty"`
 }
 
 type Repo struct {
