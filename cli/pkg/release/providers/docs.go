@@ -66,22 +66,21 @@ func (r *DocsReleaser) Release() error {
 		return nil
 	}
 
-	if github.InCI() {
-		if err := r.postComment(r.project.Blueprint.Global.Ci.Release.Docs.Url); err != nil {
-			return fmt.Errorf("failed to post comment: %w", err)
-		}
-	}
-
 	// if r.project.Blueprint.Global.Ci == nil || r.project.Blueprint.Global.Ci.Release == nil || r.project.Blueprint.Global.Ci.Release.Docs == nil {
 	// 	return fmt.Errorf("global docs release configuration not found")
 	// }
+
+	projectName := r.config.Name
+	if projectName == "" {
+		projectName = r.project.Name
+	}
 
 	// docsConfig := r.project.Blueprint.Global.Ci.Release.Docs
 	// if docsConfig.Bucket == "" {
 	// 	return fmt.Errorf("no S3 bucket specified in global docs configuration")
 	// }
 
-	// s3Path, err := r.generatePath()
+	// s3Path, err := r.generatePath(projectName)
 	// if err != nil {
 	// 	return fmt.Errorf("failed to generate S3 path: %w", err)
 	// }
@@ -97,17 +96,18 @@ func (r *DocsReleaser) Release() error {
 	// 	return fmt.Errorf("failed to upload docs to S3: %w", err)
 	// }
 
+	if github.InCI() {
+		if err := r.postComment(r.project.Blueprint.Global.Ci.Release.Docs.Url); err != nil {
+			return fmt.Errorf("failed to post comment: %w", err)
+		}
+	}
+
 	r.logger.Info("Docs release complete")
 	return nil
 }
 
 // generatePath generates the S3 path for the docs.
-func (r *DocsReleaser) generatePath() (string, error) {
-	projectName := r.config.Name
-	if projectName == "" {
-		projectName = r.project.Name
-	}
-
+func (r *DocsReleaser) generatePath(projectName string) (string, error) {
 	docsConfig := r.project.Blueprint.Global.Ci.Release.Docs
 	if docsConfig.Bucket == "" {
 		return "", fmt.Errorf("no S3 bucket specified in global docs configuration")
@@ -130,7 +130,7 @@ func (r *DocsReleaser) generatePath() (string, error) {
 	return s3Path + "/" + branch, nil
 }
 
-func (r *DocsReleaser) postComment(baseURL string) error {
+func (r *DocsReleaser) postComment(baseURL, name string) error {
 	env := github.NewGithubEnv(r.logger)
 	if env.IsPR() {
 		pr := env.GetPRNumber()
@@ -166,7 +166,7 @@ func (r *DocsReleaser) postComment(baseURL string) error {
 			return fmt.Errorf("failed to get branch: %w", err)
 		}
 
-		docURL, err := url.JoinPath(baseURL, branch)
+		docURL, err := url.JoinPath(baseURL, name, branch)
 		if err != nil {
 			return fmt.Errorf("failed to join URL path: %w", err)
 		}
