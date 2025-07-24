@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
-	"os"
 
 	"github.com/google/go-github/v66/github"
 )
@@ -57,24 +56,9 @@ func (p *PRClient) PostComment(owner, repo string, prNumber int, body string) er
 	return nil
 }
 
-// NewPRClient creates a new PRClient with authentication from environment.
-func NewPRClient(logger *slog.Logger) (*PRClient, error) {
-	token := os.Getenv("GITHUB_TOKEN")
-	if token == "" {
-		return nil, ErrNoGitHubToken
-	}
-
-	client := github.NewClient(nil).WithAuthToken(token)
-
-	return &PRClient{
-		client: client,
-		logger: logger,
-	}, nil
-}
-
-// NewCustomPRClient creates a new PRClient with a custom GitHub client.
-func NewCustomPRClient(client *github.Client, logger *slog.Logger) *PRClient {
-	return &PRClient{
+// NewPRClient creates a new PRClient with a Github client.
+func NewPRClient(client *github.Client, logger *slog.Logger) PRClient {
+	return PRClient{
 		client: client,
 		logger: logger,
 	}

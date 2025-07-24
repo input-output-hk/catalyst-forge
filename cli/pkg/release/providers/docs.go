@@ -10,6 +10,7 @@ import (
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/providers/aws"
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/run"
 	"github.com/input-output-hk/catalyst-forge/lib/project/project"
+	"github.com/input-output-hk/catalyst-forge/lib/project/providers"
 	sp "github.com/input-output-hk/catalyst-forge/lib/schema/blueprint/project"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/fs"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/fs/billy"
@@ -60,14 +61,18 @@ func (r *DocsReleaser) Release() error {
 			return fmt.Errorf("failed to get PR number")
 		}
 
-		prClient, err := github.NewPRClient(r.logger)
+		client, err := providers.NewGithubClient(r.project, r.logger)
 		if err != nil {
-			return fmt.Errorf("failed to create PR client: %w", err)
+			return fmt.Errorf("failed to create github client: %w", err)
 		}
 
+		prClient := github.NewPRClient(client, r.logger)
 		owner := strings.Split(r.project.Blueprint.Global.Repo.Name, "/")[0]
 		repo := strings.Split(r.project.Blueprint.Global.Repo.Name, "/")[1]
-		prClient.PostComment(owner, repo, pr, "Hello, world!")
+
+		if err := prClient.PostComment(owner, repo, pr, "Hello, world!"); err != nil {
+			return fmt.Errorf("failed to post comment to PR: %w", err)
+		}
 	}
 
 	// if r.project.Blueprint.Global.Ci == nil || r.project.Blueprint.Global.Ci.Release == nil || r.project.Blueprint.Global.Ci.Release.Docs == nil {

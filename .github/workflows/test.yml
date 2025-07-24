@@ -33,3 +33,5 @@ jobs:
       - name: Test
         run: |
             forge release -vvv ./docs docs
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
