@@ -118,15 +118,7 @@ func (g *DefaultGithubEnv) GetPRNumber() int {
 
 // IsPR returns whether the current environment is associated with a pull request.
 func (g *DefaultGithubEnv) IsPR() bool {
-	if _, ok := os.LookupEnv("GITHUB_HEAD_REF"); ok {
-		return true
-	}
-
-	if g.GetEventType() == "pull_request" {
-		return true
-	}
-
-	return false
+	return g.GetEventType() == "pull_request"
 }
 
 // HasEvent returns whether a GitHub event payload exists.
