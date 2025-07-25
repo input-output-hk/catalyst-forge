@@ -55,13 +55,6 @@ type DocsReleaser struct {
 
 // Release runs the docs release.
 func (r *DocsReleaser) Release() error {
-	// Testing
-	branch, err := git.GetBranch(r.project.Repo)
-	if err != nil {
-		return fmt.Errorf("failed to get branch: %w", err)
-	}
-	r.project.Blueprint.Global.Repo.DefaultBranch = branch
-
 	r.logger.Info("Running docs release target", "project", r.project.Name, "target", r.release.Target, "dir", r.workdir)
 	if err := r.run(r.workdir); err != nil {
 		return fmt.Errorf("failed to run docs release target: %w", err)
@@ -170,7 +163,7 @@ func (r *DocsReleaser) generatePath(projectName string) (string, error) {
 		s3Path = filepath.Join(docsConfig.Path, projectName)
 	}
 
-	branch, err := git.GetBranch(r.project.Repo)
+	branch, err := git.GetBranch(r.ghClient, r.project.Repo)
 	if err != nil {
 		return "", fmt.Errorf("failed to get branch: %w", err)
 	}
@@ -184,7 +177,7 @@ func (r *DocsReleaser) generatePath(projectName string) (string, error) {
 
 // isDefaultBranch returns true if the current branch is the default branch.
 func (r *DocsReleaser) isDefaultBranch() (bool, error) {
-	branch, err := git.GetBranch(r.project.Repo)
+	branch, err := git.GetBranch(r.ghClient, r.project.Repo)
 	if err != nil {
 		return false, fmt.Errorf("failed to get branch: %w", err)
 	}
@@ -213,7 +206,7 @@ func (r *DocsReleaser) postComment(baseURL, name string) error {
 			}
 		}
 
-		branch, err := git.GetBranch(r.project.Repo)
+		branch, err := git.GetBranch(r.ghClient, r.project.Repo)
 		if err != nil {
 			return fmt.Errorf("failed to get branch: %w", err)
 		}

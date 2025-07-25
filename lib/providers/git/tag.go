@@ -12,13 +12,9 @@ var (
 )
 
 // GetTag returns the tag of the current HEAD commit.
-func GetTag(r *repo.GitRepo) (string, error) {
+func GetTag(gc github.GithubClient, r *repo.GitRepo) (string, error) {
 	var tag string
 	var err error
-	gc, err := github.NewDefaultGithubClient("", "")
-	if err != nil {
-		return "", fmt.Errorf("failed to create github client: %w", err)
-	}
 
 	if github.InCI() {
 		tag = gc.Env().GetTag()

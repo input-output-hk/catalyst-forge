@@ -126,7 +126,6 @@ func (c *S3Client) ListImmediateChildren(bucket, prefix string) ([]string, error
 				continue
 			}
 
-			fmt.Printf("Common prefix: %s\n", *cp.Prefix)
 			name := strings.TrimSuffix(strings.TrimPrefix(*cp.Prefix, prefix), "/")
 			if name == "" {
 				continue
@@ -143,7 +142,6 @@ func (c *S3Client) ListImmediateChildren(bucket, prefix string) ([]string, error
 		input.ContinuationToken = out.NextContinuationToken
 	}
 
-	fmt.Printf("Children: %v\n", children)
 	return children, nil
 }
 

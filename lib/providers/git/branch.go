@@ -11,12 +11,7 @@ var (
 	ErrBranchNotFound = fmt.Errorf("branch not found")
 )
 
-func GetBranch(repo *repo.GitRepo) (string, error) {
-	gc, err := github.NewDefaultGithubClient("", "")
-	if err != nil {
-		return "", fmt.Errorf("failed to create github client: %w", err)
-	}
-
+func GetBranch(gc github.GithubClient, repo *repo.GitRepo) (string, error) {
 	if github.InCI() {
 		ref := gc.Env().GetBranch()
 		if ref != "" {

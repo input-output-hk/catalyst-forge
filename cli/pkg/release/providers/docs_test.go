@@ -43,12 +43,13 @@ func TestDocsReleaserRelease(t *testing.T) {
 		prPost  prPostResult
 	}
 
-	newProject := func(projectName, branch, bucket, docsPath string) project.Project {
-		repo := testutils.NewTestRepo(t)
-		require.NoError(t, repo.WriteFile("README.md", []byte("hello docs")))
-		_, err := repo.Commit("initial commit")
-		require.NoError(t, err)
+	type branchFile struct {
+		branch  string
+		name    string
+		content string
+	}
 
+	newProject := func(projectName, branch, bucket, docsPath string) project.Project {
 		return project.Project{
 			Name: projectName,
 			Blueprint: sb.Blueprint{
@@ -75,33 +76,49 @@ func TestDocsReleaserRelease(t *testing.T) {
 					},
 				},
 			},
-			Repo: &repo,
+			Repo: nil,
 		}
 	}
 
 	tests := []struct {
-		name        string
-		project     project.Project
-		releaseName string
-		prNumber    int
-		files       map[string]string
-		s3files     map[string]string
-		prComments  []gh.PullRequestComment
-		branches    []gh.Branch
-		inCI        bool
-		isPR        bool
-		validate    func(*testing.T, testResult)
+		name          string
+		projectName   string
+		defaultBranch string
+		bucket        string
+		prefix        string
+		releaseName   string
+		prNumber      int
+		curBranch     string
+		files         map[string]string
+		s3files       map[string]string
+		branchFiles   []branchFile
+		prComments    []gh.PullRequestComment
+		branches      []gh.Branch
+		inCI          bool
+		isPR          bool
+		validate      func(*testing.T, testResult)
 	}{
 		{
-			name:        "full",
-			project:     newProject("project", "master", "bucket", "prefix"),
-			releaseName: "test",
-			prNumber:    123,
+			name:          "default branch",
+			projectName:   "project",
+			defaultBranch: "master",
+			bucket:        "bucket",
+			prefix:        "prefix",
+			releaseName:   "test",
+			prNumber:      123,
+			curBranch:     "master",
 			files: map[string]string{
 				"index.html": "test docs",
 			},
 			s3files: map[string]string{
 				"test.html": "test",
+			},
+			branchFiles: []branchFile{
+				{
+					branch:  "mybranch",
+					name:    "index.html",
+					content: "test docs",
+				},
 			},
 			prComments: []gh.PullRequestComment{},
 			branches:   []gh.Branch{},
@@ -109,13 +126,6 @@ func TestDocsReleaserRelease(t *testing.T) {
 			isPR:       false,
 			validate: func(t *testing.T, result testResult) {
 				assert.NoError(t, result.err)
-
-				result.s3Fs.Walk("/", func(path string, info os.FileInfo, err error) error {
-					if err != nil {
-						return err
-					}
-					return nil
-				})
 
 				exists, err := result.s3Fs.Exists("/bucket/prefix/test/index.html")
 				require.NoError(t, err)
@@ -125,9 +135,93 @@ func TestDocsReleaserRelease(t *testing.T) {
 				require.NoError(t, err)
 				assert.False(t, exists)
 
+				exists, err = result.s3Fs.Exists("/bucket/prefix/test/b/mybranch/index.html")
+				require.NoError(t, err)
+				assert.False(t, exists)
+
 				content, err := result.s3Fs.ReadFile("/bucket/prefix/test/index.html")
 				require.NoError(t, err)
 				assert.Equal(t, "test docs", string(content))
+
+				assert.Equal(t, 0, result.prPost.prNumber)
+				assert.Equal(t, "", result.prPost.body)
+			},
+		},
+		{
+			name:          "pr",
+			projectName:   "project",
+			defaultBranch: "master",
+			bucket:        "bucket",
+			prefix:        "prefix",
+			releaseName:   "test",
+			prNumber:      123,
+			curBranch:     "mybranch",
+			files: map[string]string{
+				"index.html": "test docs",
+			},
+			s3files: map[string]string{
+				"test.html": "test",
+			},
+			prComments: []gh.PullRequestComment{},
+			branches:   []gh.Branch{},
+			inCI:       true,
+			isPR:       true,
+			validate: func(t *testing.T, result testResult) {
+				assert.NoError(t, result.err)
+
+				exists, err := result.s3Fs.Exists("/bucket/prefix/test/b/mybranch/index.html")
+				require.NoError(t, err)
+				assert.True(t, exists)
+
+				exists, err = result.s3Fs.Exists("/bucket/prefix/test/b/mybranch/test.html")
+				require.NoError(t, err)
+				assert.False(t, exists)
+
+				content, err := result.s3Fs.ReadFile("/bucket/prefix/test/b/mybranch/index.html")
+				require.NoError(t, err)
+				assert.Equal(t, "test docs", string(content))
+
+				expectedBody := `
+<!-- forge:v1:docs-preview -->
+## 📚 Docs Preview
+
+The docs for this PR can be previewed at the following URL:
+
+https://docs.example.com/test/b/mybranch
+`
+
+				assert.Equal(t, expectedBody, result.prPost.body)
+			},
+		},
+		{
+			name:          "pr comment exists",
+			projectName:   "project",
+			defaultBranch: "master",
+			bucket:        "bucket",
+			prefix:        "prefix",
+			releaseName:   "test",
+			prNumber:      123,
+			curBranch:     "mybranch",
+			files: map[string]string{
+				"index.html": "test docs",
+			},
+			s3files: map[string]string{
+				"test.html": "test",
+			},
+			prComments: []gh.PullRequestComment{
+				{
+					Author: "github-actions[bot]",
+					Body:   "<!-- forge:v1:docs-preview -->",
+				},
+			},
+			branches: []gh.Branch{},
+			inCI:     true,
+			isPR:     true,
+			validate: func(t *testing.T, result testResult) {
+				assert.NoError(t, result.err)
+
+				assert.Equal(t, 0, result.prPost.prNumber)
+				assert.Equal(t, "", result.prPost.body)
 			},
 		},
 	}
@@ -138,15 +232,31 @@ func TestDocsReleaserRelease(t *testing.T) {
 				t.Setenv("GITHUB_ACTIONS", "true")
 			}
 
+			prj := newProject(tt.projectName, tt.defaultBranch, tt.bucket, tt.prefix)
+
 			s3Fs := billy.NewInMemoryFs()
+			logger := testutils.NewNoopLogger()
 			for name, content := range tt.s3files {
 				p := filepath.Join("/",
-					tt.project.Blueprint.Global.Ci.Release.Docs.Bucket,
-					tt.project.Blueprint.Global.Ci.Release.Docs.Path,
+					prj.Blueprint.Global.Ci.Release.Docs.Bucket,
+					prj.Blueprint.Global.Ci.Release.Docs.Path,
 					tt.releaseName,
 					name,
 				)
 				require.NoError(t, s3Fs.WriteFile(p, []byte(content), 0o644))
+			}
+
+			for _, branchFile := range tt.branchFiles {
+				p := filepath.Join("/",
+					prj.Blueprint.Global.Ci.Release.Docs.Bucket,
+					prj.Blueprint.Global.Ci.Release.Docs.Path,
+					tt.releaseName,
+					"b",
+					branchFile.branch,
+					branchFile.name,
+				)
+				require.NoError(t, s3Fs.MkdirAll(filepath.Dir(p), 0o755))
+				require.NoError(t, s3Fs.WriteFile(p, []byte(branchFile.content), 0o644))
 			}
 
 			mockAWSS3 := &awsMocks.AWSS3ClientMock{
@@ -190,6 +300,29 @@ func TestDocsReleaserRelease(t *testing.T) {
 					}
 					bucketDir := "/" + bucket
 
+					if params.Delimiter != nil {
+						var prefixes []s3types.CommonPrefix
+
+						s3Fs.Walk("/", func(path string, info os.FileInfo, err error) error {
+							if err != nil {
+								return err
+							}
+
+							if info.IsDir() {
+								return nil
+							}
+
+							p1 := strings.TrimPrefix(path, "/"+tt.bucket+"/")
+							if strings.HasPrefix(p1, *params.Prefix) {
+								prefixes = append(prefixes, s3types.CommonPrefix{Prefix: &p1})
+							}
+							return nil
+						})
+
+						truncated := false
+						return &s3.ListObjectsV2Output{CommonPrefixes: prefixes, IsTruncated: &truncated}, nil
+					}
+
 					var contents []s3types.Object
 					_ = s3Fs.Walk(bucketDir, func(path string, info os.FileInfo, err error) error {
 						if err != nil {
@@ -211,6 +344,9 @@ func TestDocsReleaserRelease(t *testing.T) {
 			ghEnvMock := &ghMocks.GithubEnvMock{
 				IsPRFunc: func() bool {
 					return tt.isPR
+				},
+				GetBranchFunc: func() string {
+					return tt.curBranch
 				},
 				GetPRNumberFunc: func() int {
 					return tt.prNumber
@@ -242,16 +378,16 @@ func TestDocsReleaserRelease(t *testing.T) {
 				require.NoError(t, localFs.WriteFile(p, []byte(content), 0o644))
 			}
 
-			w := walker.NewCustomDefaultFSWalker(localFs, testutils.NewNoopLogger())
-			s3Client := aws.NewCustomS3Client(mockAWSS3, &w, testutils.NewNoopLogger())
+			w := walker.NewCustomDefaultFSWalker(localFs, logger)
+			s3Client := aws.NewCustomS3Client(mockAWSS3, &w, logger)
 			releaser := &DocsReleaser{
 				config:      DocsReleaserConfig{Name: tt.releaseName},
 				force:       true,
 				fs:          localFs,
 				ghClient:    ghMock,
 				handler:     &eventsMocks.EventHandlerMock{FiringFunc: func(_ *project.Project, _ map[string]cue.Value) bool { return true }},
-				logger:      testutils.NewNoopLogger(),
-				project:     &tt.project,
+				logger:      logger,
+				project:     &prj,
 				release:     sp.Release{Target: "docs"},
 				releaseName: "docs",
 				runner:      &earthlyMocks.ProjectRunnerMock{RunTargetFunc: func(string, ...earthly.EarthlyExecutorOption) error { return nil }},

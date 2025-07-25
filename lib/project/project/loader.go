@@ -12,6 +12,7 @@ import (
 	"github.com/input-output-hk/catalyst-forge/lib/project/blueprint"
 	"github.com/input-output-hk/catalyst-forge/lib/project/injector"
 	"github.com/input-output-hk/catalyst-forge/lib/providers/git"
+	"github.com/input-output-hk/catalyst-forge/lib/providers/github"
 	sb "github.com/input-output-hk/catalyst-forge/lib/schema/blueprint"
 	"github.com/input-output-hk/catalyst-forge/lib/secrets"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/earthly"
@@ -142,7 +143,13 @@ func (p *DefaultProjectLoader) Load(projectPath string) (Project, error) {
 
 	p.logger.Info("Loading tag data")
 	var tag *ProjectTag
-	gitTag, err := git.GetTag(&repo)
+
+	gc, err := github.NewDefaultGithubClient("", "")
+	if err != nil {
+		return Project{}, fmt.Errorf("failed to create github client: %w", err)
+	}
+
+	gitTag, err := git.GetTag(gc, &repo)
 	if err != nil {
 		p.logger.Warn("Failed to get git tag", "error", err)
 	} else if gitTag != "" {
