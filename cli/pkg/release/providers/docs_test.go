@@ -121,25 +121,29 @@ func TestDocsReleaserRelease(t *testing.T) {
 				},
 			},
 			prComments: []gh.PullRequestComment{},
-			branches:   []gh.Branch{},
-			inCI:       true,
-			isPR:       false,
+			branches: []gh.Branch{
+				{
+					Name: "master",
+				},
+			},
+			inCI: true,
+			isPR: false,
 			validate: func(t *testing.T, result testResult) {
 				assert.NoError(t, result.err)
 
-				exists, err := result.s3Fs.Exists("/bucket/prefix/test/index.html")
+				exists, err := result.s3Fs.Exists("/bucket/prefix/test/master/index.html")
 				require.NoError(t, err)
 				assert.True(t, exists)
 
-				exists, err = result.s3Fs.Exists("/bucket/prefix/test/test.html")
+				exists, err = result.s3Fs.Exists("/bucket/prefix/test/master/test.html")
 				require.NoError(t, err)
 				assert.False(t, exists)
 
-				exists, err = result.s3Fs.Exists("/bucket/prefix/test/b/mybranch/index.html")
+				exists, err = result.s3Fs.Exists("/bucket/prefix/test/mybranch/index.html")
 				require.NoError(t, err)
 				assert.False(t, exists)
 
-				content, err := result.s3Fs.ReadFile("/bucket/prefix/test/index.html")
+				content, err := result.s3Fs.ReadFile("/bucket/prefix/test/master/index.html")
 				require.NoError(t, err)
 				assert.Equal(t, "test docs", string(content))
 
@@ -169,15 +173,15 @@ func TestDocsReleaserRelease(t *testing.T) {
 			validate: func(t *testing.T, result testResult) {
 				assert.NoError(t, result.err)
 
-				exists, err := result.s3Fs.Exists("/bucket/prefix/test/b/mybranch/index.html")
+				exists, err := result.s3Fs.Exists("/bucket/prefix/test/mybranch/index.html")
 				require.NoError(t, err)
 				assert.True(t, exists)
 
-				exists, err = result.s3Fs.Exists("/bucket/prefix/test/b/mybranch/test.html")
+				exists, err = result.s3Fs.Exists("/bucket/prefix/test/mybranch/test.html")
 				require.NoError(t, err)
 				assert.False(t, exists)
 
-				content, err := result.s3Fs.ReadFile("/bucket/prefix/test/b/mybranch/index.html")
+				content, err := result.s3Fs.ReadFile("/bucket/prefix/test/mybranch/index.html")
 				require.NoError(t, err)
 				assert.Equal(t, "test docs", string(content))
 
@@ -187,7 +191,7 @@ func TestDocsReleaserRelease(t *testing.T) {
 
 The docs for this PR can be previewed at the following URL:
 
-https://docs.example.com/test/b/mybranch
+https://docs.example.com/test/mybranch
 `
 
 				assert.Equal(t, expectedBody, result.prPost.body)
@@ -241,6 +245,7 @@ https://docs.example.com/test/b/mybranch
 					prj.Blueprint.Global.Ci.Release.Docs.Bucket,
 					prj.Blueprint.Global.Ci.Release.Docs.Path,
 					tt.releaseName,
+					tt.curBranch,
 					name,
 				)
 				require.NoError(t, s3Fs.WriteFile(p, []byte(content), 0o644))
@@ -251,7 +256,6 @@ https://docs.example.com/test/b/mybranch
 					prj.Blueprint.Global.Ci.Release.Docs.Bucket,
 					prj.Blueprint.Global.Ci.Release.Docs.Path,
 					tt.releaseName,
-					"b",
 					branchFile.branch,
 					branchFile.name,
 				)
@@ -294,10 +298,6 @@ https://docs.example.com/test/b/mybranch
 				},
 				ListObjectsV2Func: func(ctx context.Context, params *s3.ListObjectsV2Input, optFns ...func(*s3.Options)) (*s3.ListObjectsV2Output, error) {
 					bucket := *params.Bucket
-					prefix := ""
-					if params.Prefix != nil {
-						prefix = *params.Prefix
-					}
 					bucketDir := "/" + bucket
 
 					if params.Delimiter != nil {
@@ -308,13 +308,14 @@ https://docs.example.com/test/b/mybranch
 								return err
 							}
 
-							if info.IsDir() {
+							if !info.IsDir() {
 								return nil
 							}
 
 							p1 := strings.TrimPrefix(path, "/"+tt.bucket+"/")
 							if strings.HasPrefix(p1, *params.Prefix) {
-								prefixes = append(prefixes, s3types.CommonPrefix{Prefix: &p1})
+								prefix := strings.TrimPrefix(p1, *params.Prefix)
+								prefixes = append(prefixes, s3types.CommonPrefix{Prefix: &prefix})
 							}
 							return nil
 						})
@@ -324,14 +325,14 @@ https://docs.example.com/test/b/mybranch
 					}
 
 					var contents []s3types.Object
-					_ = s3Fs.Walk(bucketDir, func(path string, info os.FileInfo, err error) error {
+					_ = s3Fs.Walk(filepath.Join(bucketDir, *params.Prefix), func(path string, info os.FileInfo, err error) error {
 						if err != nil {
 							return nil
 						}
 
-						relPath, _ := filepath.Rel(bucketDir, path)
-						if !info.IsDir() && strings.HasPrefix(relPath, prefix) {
-							contents = append(contents, s3types.Object{Key: &relPath})
+						if !info.IsDir() {
+							p := strings.TrimPrefix(path, bucketDir+"/")
+							contents = append(contents, s3types.Object{Key: &p})
 						}
 
 						return nil
