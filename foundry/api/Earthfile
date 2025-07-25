@@ -12,6 +12,9 @@ deps:
     ENV GOMODCACHE=/go/modcache
     CACHE --persist --sharing shared /go
 
+    # Copy local deps
+    COPY ../../lib/tools+src/src /lib/tools
+
     COPY go.mod go.sum .
     RUN go mod download
 
