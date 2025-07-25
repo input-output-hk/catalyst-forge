@@ -5,6 +5,7 @@ import (
 
 	"cuelang.org/go/cue"
 	"github.com/input-output-hk/catalyst-forge/lib/project/project"
+	"github.com/input-output-hk/catalyst-forge/lib/providers/github"
 )
 
 //go:generate go run github.com/matryer/moq@latest -pkg mocks -out mocks/handler.go . EventHandler
@@ -15,6 +16,7 @@ type EventType string
 const (
 	AlwaysEventName EventType = "always"
 	MergeEventName  EventType = "merge"
+	PREventName     EventType = "pr"
 	TagEventName    EventType = "tag"
 )
 
@@ -63,12 +65,21 @@ func (r *DefaultEventHandler) Firing(p *project.Project, events map[string]cue.V
 
 // NewDefaultEventHandler returns a new default event handler.
 func NewDefaultEventHandler(logger *slog.Logger) DefaultEventHandler {
+	// This should never error
+	gc, err := github.NewDefaultGithubClient("", "")
+	if err != nil {
+		panic(err)
+	}
+
 	return DefaultEventHandler{
 		logger: logger,
 		store: map[EventType]Event{
 			AlwaysEventName: &AlwaysEvent{},
 			MergeEventName: &MergeEvent{
 				logger: logger,
+			},
+			PREventName: &PREvent{
+				gc: gc,
 			},
 			TagEventName: &TagEvent{
 				logger: logger,

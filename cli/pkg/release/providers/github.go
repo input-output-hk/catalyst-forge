@@ -1,7 +1,7 @@
 package providers
 
 import (
-	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"path/filepath"
@@ -12,7 +12,7 @@ import (
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/events"
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/run"
 	"github.com/input-output-hk/catalyst-forge/lib/project/project"
-	"github.com/input-output-hk/catalyst-forge/lib/project/providers"
+	gh "github.com/input-output-hk/catalyst-forge/lib/providers/github"
 	sp "github.com/input-output-hk/catalyst-forge/lib/schema/blueprint/project"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/archive"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/fs"
@@ -25,7 +25,7 @@ type GithubReleaserConfig struct {
 }
 
 type GithubReleaser struct {
-	client      *github.Client
+	client      gh.GithubClient
 	config      GithubReleaserConfig
 	force       bool
 	fs          fs.Filesystem
@@ -71,15 +71,10 @@ func (r *GithubReleaser) Release() error {
 		assets = append(assets, filename)
 	}
 
-	parts := strings.Split(r.project.Blueprint.Global.Repo.Name, "/")
-	owner, repo := parts[0], parts[1]
-
-	ctx := context.Background()
-
-	release, resp, err := r.client.Repositories.GetReleaseByTag(ctx, owner, repo, r.project.Tag.Full)
-	if resp.StatusCode == 404 {
+	release, err := r.client.GetReleaseByTag(r.project.Tag.Full)
+	if errors.Is(err, gh.ErrReleaseNotFound) {
 		r.logger.Info("Creating release", "name", r.config.Name)
-		release, _, err = r.client.Repositories.CreateRelease(ctx, owner, repo, &github.RepositoryRelease{
+		release, err = r.client.CreateRelease(&github.RepositoryRelease{
 			Name:    &r.config.Name,
 			TagName: &r.project.Tag.Full,
 			Draft:   github.Bool(false),
@@ -101,28 +96,9 @@ func (r *GithubReleaser) Release() error {
 		}
 
 		r.logger.Info("Uploading asset", "asset", asset)
-		f, err := r.fs.Open(filepath.Join(r.workdir, asset))
-		if err != nil {
-			return fmt.Errorf("failed to open asset: %w", err)
-		}
-
-		stat, err := f.Stat()
-		if err != nil {
-			return fmt.Errorf("failed to stat asset: %w", err)
-		}
-
-		url := fmt.Sprintf("repos/%s/%s/releases/%d/assets?name=%s", owner, repo, *release.ID, asset)
-		req, err := r.client.NewUploadRequest(url, f, stat.Size(), "application/gzip")
-		if err != nil {
-			return fmt.Errorf("failed to create upload request: %w", err)
-		}
-
-		_, err = r.client.Do(ctx, req, nil)
-		if err != nil {
+		if err := r.client.UploadReleaseAsset(*release.ID, filepath.Join(r.workdir, asset)); err != nil {
 			return fmt.Errorf("failed to upload asset: %w", err)
 		}
-
-		f.Close()
 	}
 
 	return nil
@@ -205,7 +181,14 @@ func NewGithubReleaser(
 		return nil, fmt.Errorf("failed to create temporary directory: %w", err)
 	}
 
-	client, err := providers.NewGithubClient(&project, ctx.Logger)
+	owner := strings.Split(project.Blueprint.Global.Repo.Name, "/")[0]
+	repo := strings.Split(project.Blueprint.Global.Repo.Name, "/")[1]
+	client, err := gh.NewDefaultGithubClient(
+		owner,
+		repo,
+		gh.WithCredsOrEnv(project.Blueprint.Global.Ci.Providers.Github.Credentials),
+		gh.WithLogger(ctx.Logger),
+	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create github client: %w", err)
 	}

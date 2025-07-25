@@ -7,8 +7,8 @@ import (
 	"path/filepath"
 
 	"github.com/input-output-hk/catalyst-forge/lib/project/project"
-	"github.com/input-output-hk/catalyst-forge/lib/project/providers"
-	"github.com/input-output-hk/catalyst-forge/lib/project/secrets"
+	"github.com/input-output-hk/catalyst-forge/lib/providers/earthly"
+	"github.com/input-output-hk/catalyst-forge/lib/providers/secrets"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/fs"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/fs/billy"
 	"gopkg.in/yaml.v3"
@@ -17,7 +17,7 @@ import (
 // EarthlySatellite is used to configure the local system to use a remote Earthly Satellite.
 type EarthlySatellite struct {
 	ci          bool
-	creds       providers.EarthlyProviderCreds
+	creds       earthly.EarthlyProviderCreds
 	fs          fs.Filesystem
 	logger      *slog.Logger
 	path        string
@@ -104,7 +104,7 @@ func (s *EarthlySatellite) loadCredentials() error {
 		return fmt.Errorf("no satellite credentials found")
 	}
 
-	creds, err := providers.GetEarthlyProviderCreds(
+	creds, err := earthly.GetEarthlyProviderCreds(
 		s.project.Blueprint.Global.Ci.Providers.Earthly.Satellite.Credentials,
 		&s.secretStore,
 		s.logger,

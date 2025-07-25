@@ -3,7 +3,7 @@ package git
 import (
 	"fmt"
 
-	"github.com/input-output-hk/catalyst-forge/lib/tools/git/github"
+	"github.com/input-output-hk/catalyst-forge/lib/providers/github"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/git/repo"
 )
 
@@ -12,13 +12,12 @@ var (
 )
 
 // GetTag returns the tag of the current HEAD commit.
-func GetTag(r *repo.GitRepo) (string, error) {
+func GetTag(gc github.GithubClient, r *repo.GitRepo) (string, error) {
 	var tag string
 	var err error
-	env := github.NewGithubEnv(nil)
 
 	if github.InCI() {
-		tag = env.GetTag()
+		tag = gc.Env().GetTag()
 		if tag == "" {
 			return "", ErrTagNotFound
 		}

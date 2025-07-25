@@ -1,10 +1,10 @@
-package providers
+package git
 
 import (
 	"fmt"
 	"log/slog"
 
-	"github.com/input-output-hk/catalyst-forge/lib/project/secrets"
+	"github.com/input-output-hk/catalyst-forge/lib/providers/secrets"
 	"github.com/input-output-hk/catalyst-forge/lib/schema/blueprint/common"
 )
 
