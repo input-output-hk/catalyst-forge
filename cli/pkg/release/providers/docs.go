@@ -55,14 +55,6 @@ type DocsReleaser struct {
 
 // Release runs the docs release.
 func (r *DocsReleaser) Release() error {
-	// Testing
-	branch, err := git.GetBranch(r.ghClient, r.project.Repo)
-	if err != nil {
-		return fmt.Errorf("failed to get branch: %w", err)
-	}
-
-	r.project.Blueprint.Global.Repo.DefaultBranch = branch
-
 	r.logger.Info("Running docs release target", "project", r.project.Name, "target", r.release.Target, "dir", r.workdir)
 	if err := r.run(r.workdir); err != nil {
 		return fmt.Errorf("failed to run docs release target: %w", err)
@@ -108,6 +100,7 @@ func (r *DocsReleaser) Release() error {
 	}
 
 	if github.InCI() {
+		r.logger.Info("Posting comment", "url", docsConfig.Url, "project", projectName)
 		url := r.project.Blueprint.Global.Ci.Release.Docs.Url
 		if err := r.postComment(url, projectName); err != nil {
 			return fmt.Errorf("failed to post comment: %w", err)
@@ -119,6 +112,7 @@ func (r *DocsReleaser) Release() error {
 		}
 
 		if isDefault {
+			r.logger.Info("Cleaning up branches from S3", "bucket", docsConfig.Bucket, "path", filepath.Dir(s3Path))
 			if err := r.cleanupBranches(docsConfig.Bucket, filepath.Dir(s3Path)); err != nil {
 				return fmt.Errorf("failed to cleanup branches: %w", err)
 			}
@@ -140,13 +134,13 @@ func (r *DocsReleaser) cleanupBranches(bucket, path string) error {
 	for _, branch := range branches {
 		branchNames = append(branchNames, branch.Name)
 	}
-	fmt.Printf("branchNames: %v\n", branchNames)
+	r.logger.Info("Repo branches", "branches", branchNames)
 
 	children, err := r.s3.ListImmediateChildren(bucket, path)
-	fmt.Printf("children: %v\n", children)
 	if err != nil {
 		return fmt.Errorf("failed to list immediate children: %w", err)
 	}
+	r.logger.Info("Docs branches", "branches", children)
 
 	for _, child := range children {
 		if !slices.Contains(branchNames, child) {

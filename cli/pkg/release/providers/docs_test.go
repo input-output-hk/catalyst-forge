@@ -2,7 +2,6 @@ package providers
 
 import (
 	"context"
-	"fmt"
 	"io"
 	"os"
 	"path/filepath"
@@ -132,16 +131,6 @@ func TestDocsReleaserRelease(t *testing.T) {
 			validate: func(t *testing.T, result testResult) {
 				assert.NoError(t, result.err)
 
-				result.s3Fs.Walk("/", func(path string, info os.FileInfo, err error) error {
-					if err != nil {
-						return err
-					}
-
-					fmt.Println(path)
-
-					return nil
-				})
-
 				exists, err := result.s3Fs.Exists("/bucket/prefix/test/master/index.html")
 				require.NoError(t, err)
 				assert.True(t, exists)
@@ -162,83 +151,83 @@ func TestDocsReleaserRelease(t *testing.T) {
 				assert.Equal(t, "", result.prPost.body)
 			},
 		},
-		// 		{
-		// 			name:          "pr",
-		// 			projectName:   "project",
-		// 			defaultBranch: "master",
-		// 			bucket:        "bucket",
-		// 			prefix:        "prefix",
-		// 			releaseName:   "test",
-		// 			prNumber:      123,
-		// 			curBranch:     "mybranch",
-		// 			files: map[string]string{
-		// 				"index.html": "test docs",
-		// 			},
-		// 			s3files: map[string]string{
-		// 				"test.html": "test",
-		// 			},
-		// 			prComments: []gh.PullRequestComment{},
-		// 			branches:   []gh.Branch{},
-		// 			inCI:       true,
-		// 			isPR:       true,
-		// 			validate: func(t *testing.T, result testResult) {
-		// 				assert.NoError(t, result.err)
+		{
+			name:          "pr",
+			projectName:   "project",
+			defaultBranch: "master",
+			bucket:        "bucket",
+			prefix:        "prefix",
+			releaseName:   "test",
+			prNumber:      123,
+			curBranch:     "mybranch",
+			files: map[string]string{
+				"index.html": "test docs",
+			},
+			s3files: map[string]string{
+				"test.html": "test",
+			},
+			prComments: []gh.PullRequestComment{},
+			branches:   []gh.Branch{},
+			inCI:       true,
+			isPR:       true,
+			validate: func(t *testing.T, result testResult) {
+				assert.NoError(t, result.err)
 
-		// 				exists, err := result.s3Fs.Exists("/bucket/prefix/test/b/mybranch/index.html")
-		// 				require.NoError(t, err)
-		// 				assert.True(t, exists)
+				exists, err := result.s3Fs.Exists("/bucket/prefix/test/mybranch/index.html")
+				require.NoError(t, err)
+				assert.True(t, exists)
 
-		// 				exists, err = result.s3Fs.Exists("/bucket/prefix/test/b/mybranch/test.html")
-		// 				require.NoError(t, err)
-		// 				assert.False(t, exists)
+				exists, err = result.s3Fs.Exists("/bucket/prefix/test/mybranch/test.html")
+				require.NoError(t, err)
+				assert.False(t, exists)
 
-		// 				content, err := result.s3Fs.ReadFile("/bucket/prefix/test/b/mybranch/index.html")
-		// 				require.NoError(t, err)
-		// 				assert.Equal(t, "test docs", string(content))
+				content, err := result.s3Fs.ReadFile("/bucket/prefix/test/mybranch/index.html")
+				require.NoError(t, err)
+				assert.Equal(t, "test docs", string(content))
 
-		// 				expectedBody := `
-		// <!-- forge:v1:docs-preview -->
-		// ## 📚 Docs Preview
+				expectedBody := `
+<!-- forge:v1:docs-preview -->
+## 📚 Docs Preview
 
-		// The docs for this PR can be previewed at the following URL:
+The docs for this PR can be previewed at the following URL:
 
-		// https://docs.example.com/test/b/mybranch
-		// `
+https://docs.example.com/test/b/mybranch
+`
 
-		// 				assert.Equal(t, expectedBody, result.prPost.body)
-		// 			},
-		// 		},
-		// 		{
-		// 			name:          "pr comment exists",
-		// 			projectName:   "project",
-		// 			defaultBranch: "master",
-		// 			bucket:        "bucket",
-		// 			prefix:        "prefix",
-		// 			releaseName:   "test",
-		// 			prNumber:      123,
-		// 			curBranch:     "mybranch",
-		// 			files: map[string]string{
-		// 				"index.html": "test docs",
-		// 			},
-		// 			s3files: map[string]string{
-		// 				"test.html": "test",
-		// 			},
-		// 			prComments: []gh.PullRequestComment{
-		// 				{
-		// 					Author: "github-actions[bot]",
-		// 					Body:   "<!-- forge:v1:docs-preview -->",
-		// 				},
-		// 			},
-		// 			branches: []gh.Branch{},
-		// 			inCI:     true,
-		// 			isPR:     true,
-		// 			validate: func(t *testing.T, result testResult) {
-		// 				assert.NoError(t, result.err)
+				assert.Equal(t, expectedBody, result.prPost.body)
+			},
+		},
+		{
+			name:          "pr comment exists",
+			projectName:   "project",
+			defaultBranch: "master",
+			bucket:        "bucket",
+			prefix:        "prefix",
+			releaseName:   "test",
+			prNumber:      123,
+			curBranch:     "mybranch",
+			files: map[string]string{
+				"index.html": "test docs",
+			},
+			s3files: map[string]string{
+				"test.html": "test",
+			},
+			prComments: []gh.PullRequestComment{
+				{
+					Author: "github-actions[bot]",
+					Body:   "<!-- forge:v1:docs-preview -->",
+				},
+			},
+			branches: []gh.Branch{},
+			inCI:     true,
+			isPR:     true,
+			validate: func(t *testing.T, result testResult) {
+				assert.NoError(t, result.err)
 
-		// 				assert.Equal(t, 0, result.prPost.prNumber)
-		// 				assert.Equal(t, "", result.prPost.body)
-		// 			},
-		// 		},
+				assert.Equal(t, 0, result.prPost.prNumber)
+				assert.Equal(t, "", result.prPost.body)
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -303,7 +292,6 @@ func TestDocsReleaserRelease(t *testing.T) {
 					bucketDir := "/" + bucket
 					filePath := filepath.Join(bucketDir, key)
 
-					fmt.Println("deleting", filePath)
 					_ = s3Fs.Remove(filePath)
 
 					return &s3.DeleteObjectOutput{}, nil
@@ -320,13 +308,14 @@ func TestDocsReleaserRelease(t *testing.T) {
 								return err
 							}
 
-							if info.IsDir() {
+							if !info.IsDir() {
 								return nil
 							}
 
 							p1 := strings.TrimPrefix(path, "/"+tt.bucket+"/")
 							if strings.HasPrefix(p1, *params.Prefix) {
-								prefixes = append(prefixes, s3types.CommonPrefix{Prefix: &p1})
+								prefix := strings.TrimPrefix(p1, *params.Prefix)
+								prefixes = append(prefixes, s3types.CommonPrefix{Prefix: &prefix})
 							}
 							return nil
 						})
@@ -336,15 +325,14 @@ func TestDocsReleaserRelease(t *testing.T) {
 					}
 
 					var contents []s3types.Object
-					fmt.Println("walking", filepath.Join(bucketDir, *params.Prefix))
 					_ = s3Fs.Walk(filepath.Join(bucketDir, *params.Prefix), func(path string, info os.FileInfo, err error) error {
 						if err != nil {
 							return nil
 						}
 
 						if !info.IsDir() {
-							fmt.Println("adding", path)
-							contents = append(contents, s3types.Object{Key: &path})
+							p := strings.TrimPrefix(path, bucketDir+"/")
+							contents = append(contents, s3types.Object{Key: &p})
 						}
 
 						return nil
