@@ -6,11 +6,11 @@ import (
 
 	"cuelang.org/go/cue"
 	"github.com/google/go-github/v66/github"
+	gh "github.com/input-output-hk/catalyst-forge/lib/providers/github"
 	sb "github.com/input-output-hk/catalyst-forge/lib/schema/blueprint"
 	sg "github.com/input-output-hk/catalyst-forge/lib/schema/blueprint/global"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/fs"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/fs/billy"
-	gh "github.com/input-output-hk/catalyst-forge/lib/tools/git/github"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/git/repo"
 )
 
@@ -96,11 +96,15 @@ func (g *GitRuntime) Load(project *Project) map[string]cue.Value {
 
 // getCommitHash returns the commit hash of the HEAD commit.
 func (g *GitRuntime) getCommitHash(repo *repo.GitRepo) (string, error) {
-	env := gh.NewCustomGithubEnv(g.fs, g.logger)
-	if env.HasEvent() {
-		if env.GetEventType() == "pull_request" {
+	gc, err := gh.NewDefaultGithubClient("", "", gh.WithFs(g.fs), gh.WithLogger(g.logger))
+	if err != nil {
+		return "", fmt.Errorf("failed to create github client: %w", err)
+	}
+
+	if gc.Env().HasEvent() {
+		if gc.Env().GetEventType() == "pull_request" {
 			g.logger.Debug("Found GitHub pull request event")
-			event, err := env.GetEventPayload()
+			event, err := gc.Env().GetEventPayload()
 			if err != nil {
 				return "", fmt.Errorf("failed to get event payload: %w", err)
 			}
@@ -115,9 +119,9 @@ func (g *GitRuntime) getCommitHash(repo *repo.GitRepo) (string, error) {
 			}
 
 			return *pr.PullRequest.Head.SHA, nil
-		} else if env.GetEventType() == "push" {
-			g.logger.Debug("Found GitHub push event")
-			event, err := env.GetEventPayload()
+		} else if gc.Env().GetEventType() == "push" {
+			g.logger.Debug("xFound GitHub push event")
+			event, err := gc.Env().GetEventPayload()
 			if err != nil {
 				return "", fmt.Errorf("failed to get event payload: %w", err)
 			}

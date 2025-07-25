@@ -44,7 +44,7 @@ func TestGithubEnvGetBranch(t *testing.T) {
 				defer os.Unsetenv(k)
 			}
 
-			gh := GithubEnv{}
+			gh := DefaultGithubEnv{}
 			tt.validate(t, gh.GetBranch())
 		})
 	}
@@ -121,7 +121,7 @@ func TestGithubEnvGetEventPayload(t *testing.T) {
 			fs := billy.NewInMemoryFs()
 			testutils.SetupFS(t, fs, tt.files)
 
-			gh := GithubEnv{
+			gh := DefaultGithubEnv{
 				fs:     fs,
 				logger: testutils.NewNoopLogger(),
 			}
@@ -133,7 +133,7 @@ func TestGithubEnvGetEventPayload(t *testing.T) {
 }
 
 func TestGithubEnvGetEventType(t *testing.T) {
-	gh := GithubEnv{}
+	gh := DefaultGithubEnv{}
 
 	require.NoError(t, os.Setenv("GITHUB_EVENT_NAME", "push"))
 	assert.Equal(t, "push", gh.GetEventType())
@@ -172,7 +172,7 @@ func TestGithubEnvGetTag(t *testing.T) {
 				defer os.Unsetenv(k)
 			}
 
-			gh := GithubEnv{}
+			gh := DefaultGithubEnv{}
 			tt.validate(t, gh.GetTag())
 		})
 	}
@@ -215,7 +215,7 @@ func TestGithubEnvHasEvent(t *testing.T) {
 				defer os.Unsetenv(k)
 			}
 
-			gh := GithubEnv{}
+			gh := DefaultGithubEnv{}
 			assert.Equal(t, tt.expect, gh.HasEvent())
 		})
 	}

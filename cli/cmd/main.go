@@ -14,7 +14,7 @@ import (
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/run"
 	"github.com/input-output-hk/catalyst-forge/lib/project/deployment"
 	"github.com/input-output-hk/catalyst-forge/lib/project/project"
-	"github.com/input-output-hk/catalyst-forge/lib/project/secrets"
+	"github.com/input-output-hk/catalyst-forge/lib/providers/secrets"
 	schema "github.com/input-output-hk/catalyst-forge/lib/schema"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/walker"
 	"github.com/posener/complete"

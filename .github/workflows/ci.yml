@@ -135,16 +135,6 @@ jobs:
     secrets:
       earthly_token: ${{ secrets.earthly_token }}
 
-  docs:
-    uses: input-output-hk/catalyst-forge/.github/workflows/docs.yml@master
-    needs: [discover, check, build, test]
-    if: (fromJson(needs.discover.outputs.earthfiles)['^docs(-.*)?$'] != null) && !failure() && !cancelled()
-    with:
-      earthfiles: ${{ toJson(fromJson(needs.discover.outputs.earthfiles)['^docs(-.*)?$']) }}
-      forge_version: ${{ inputs.forge_version }}
-    secrets:
-      earthly_token: ${{ secrets.earthly_token }}
-
   release:
     uses: input-output-hk/catalyst-forge/.github/workflows/release.yml@master
     needs: [discover, check, build, test]

@@ -10,7 +10,7 @@ import (
 	"strings"
 
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/executor"
-	secretstore "github.com/input-output-hk/catalyst-forge/lib/project/secrets"
+	secretstore "github.com/input-output-hk/catalyst-forge/lib/providers/secrets"
 	sc "github.com/input-output-hk/catalyst-forge/lib/schema/blueprint/common"
 )
 

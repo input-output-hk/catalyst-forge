@@ -8,8 +8,8 @@ import (
 
 	"github.com/input-output-hk/catalyst-forge/cli/internal/testutils"
 	"github.com/input-output-hk/catalyst-forge/lib/project/project"
-	"github.com/input-output-hk/catalyst-forge/lib/project/secrets"
-	smocks "github.com/input-output-hk/catalyst-forge/lib/project/secrets/mocks"
+	"github.com/input-output-hk/catalyst-forge/lib/providers/secrets"
+	smocks "github.com/input-output-hk/catalyst-forge/lib/providers/secrets/mocks"
 	sb "github.com/input-output-hk/catalyst-forge/lib/schema/blueprint"
 	sc "github.com/input-output-hk/catalyst-forge/lib/schema/blueprint/common"
 	sg "github.com/input-output-hk/catalyst-forge/lib/schema/blueprint/global"

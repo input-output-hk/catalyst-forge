@@ -16,7 +16,9 @@ import (
 	// Registries contains the container registries to push images to.
 	registries?: [...string]
 
-	// Secrets contains global secrets that will be passed to all targets.
-	secrets?:[...common.#Secret]
-}
+	// Release contains the configuration for the release of a project.
+	release?: #Release
 
+	// Secrets contains global secrets that will be passed to all targets.
+	secrets?: [...common.#Secret]
+}

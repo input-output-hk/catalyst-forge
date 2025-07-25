@@ -6,7 +6,8 @@ import (
 
 	"cuelang.org/go/cue"
 	"github.com/input-output-hk/catalyst-forge/lib/project/project"
-	"github.com/input-output-hk/catalyst-forge/lib/tools/git"
+	"github.com/input-output-hk/catalyst-forge/lib/providers/git"
+	"github.com/input-output-hk/catalyst-forge/lib/providers/github"
 )
 
 // MergeEvent fires when a merge occurs to the default branch.
@@ -20,7 +21,12 @@ type MergeEventConfig struct {
 }
 
 func (m *MergeEvent) Firing(p *project.Project, config cue.Value) (bool, error) {
-	branch, err := git.GetBranch(p.Repo)
+	gc, err := github.NewDefaultGithubClient("", "")
+	if err != nil {
+		return false, fmt.Errorf("failed to create github client: %w", err)
+	}
+
+	branch, err := git.GetBranch(gc, p.Repo)
 	if err != nil {
 		return false, fmt.Errorf("failed to get branch: %w", err)
 	}

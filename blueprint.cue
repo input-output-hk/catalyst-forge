@@ -10,6 +10,10 @@ global: {
 		registries: [
 			"ghcr.io/input-output-hk/catalyst-forge",
 		]
+		release: docs: {
+			bucket: "docs.dev.projectcatalyst.io"
+			url:    "https://docs.dev.projectcatalyst.io/"
+		}
 		providers: {
 			aws: {
 				ecr: {
