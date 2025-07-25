@@ -6,7 +6,7 @@ package mocks
 import (
 	"sync"
 
-	"github.com/input-output-hk/catalyst-forge/lib/secrets"
+	"github.com/input-output-hk/catalyst-forge/lib/providers/secrets"
 )
 
 // Ensure, that SecretProviderMock does implement secrets.SecretProvider.

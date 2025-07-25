@@ -13,7 +13,6 @@ require (
 	github.com/input-output-hk/catalyst-forge/lib/project v0.0.0
 	github.com/input-output-hk/catalyst-forge/lib/providers v0.0.0
 	github.com/input-output-hk/catalyst-forge/lib/schema v0.0.0
-	github.com/input-output-hk/catalyst-forge/lib/secrets v0.0.0
 	github.com/input-output-hk/catalyst-forge/lib/tools v0.0.0
 	github.com/onsi/ginkgo/v2 v2.22.0
 	github.com/onsi/gomega v1.36.1
@@ -278,7 +277,7 @@ replace github.com/input-output-hk/catalyst-forge/lib/providers => ../../lib/pro
 
 replace github.com/input-output-hk/catalyst-forge/lib/schema => ../../lib/schema
 
-replace github.com/input-output-hk/catalyst-forge/lib/secrets => ../../lib/secrets
+replace github.com/input-output-hk/catalyst-forge/lib/provider/secrets => ../../lib/secrets
 
 replace github.com/input-output-hk/catalyst-forge/lib/tools => ../../lib/tools
 

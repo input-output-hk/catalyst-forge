@@ -48,7 +48,7 @@ import (
 	"github.com/input-output-hk/catalyst-forge/foundry/operator/pkg/handlers"
 	"github.com/input-output-hk/catalyst-forge/lib/project/deployment"
 	"github.com/input-output-hk/catalyst-forge/lib/providers/git"
-	"github.com/input-output-hk/catalyst-forge/lib/secrets"
+	"github.com/input-output-hk/catalyst-forge/lib/providers/secrets"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/fs/billy"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/git/repo/remote"
 	// +kubebuilder:scaffold:imports

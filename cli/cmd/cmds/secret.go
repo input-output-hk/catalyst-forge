@@ -7,8 +7,8 @@ import (
 
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/run"
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/utils"
+	"github.com/input-output-hk/catalyst-forge/lib/providers/secrets"
 	sc "github.com/input-output-hk/catalyst-forge/lib/schema/blueprint/common"
-	"github.com/input-output-hk/catalyst-forge/lib/secrets"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/fs"
 )
 

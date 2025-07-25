@@ -12,7 +12,6 @@ deps:
 
     COPY ../providers+src/src /providers
     COPY ../schema+src/src /schema
-    COPY ../secrets+src/src /secrets
     COPY ../tools+src/src /tools
 
     COPY go.mod go.sum .

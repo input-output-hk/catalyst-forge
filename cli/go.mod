@@ -5,9 +5,6 @@ go 1.24.2
 require (
 	cuelang.org/go v0.12.0
 	github.com/alecthomas/kong v0.9.0
-	github.com/aws/aws-sdk-go v1.55.7
-	github.com/aws/aws-sdk-go-v2 v1.36.6
-	github.com/aws/aws-sdk-go-v2/config v1.29.18
 	github.com/aws/aws-sdk-go-v2/service/ecr v1.46.0
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.84.1
 	github.com/charmbracelet/bubbles v0.20.0
@@ -18,7 +15,6 @@ require (
 	github.com/input-output-hk/catalyst-forge/lib/project v0.0.0
 	github.com/input-output-hk/catalyst-forge/lib/providers v0.0.0-00010101000000-000000000000
 	github.com/input-output-hk/catalyst-forge/lib/schema v0.0.0
-	github.com/input-output-hk/catalyst-forge/lib/secrets v0.0.0-00010101000000-000000000000
 	github.com/input-output-hk/catalyst-forge/lib/tools v0.0.0
 	github.com/posener/complete v1.2.3
 	github.com/rogpeppe/go-internal v1.13.2-0.20241226121412-a5dc8ff20d0a
@@ -48,7 +44,10 @@ require (
 	github.com/adrg/xdg v0.5.3 // indirect
 	github.com/antlr/antlr4/runtime/Go/antlr/v4 v4.0.0-20230219212500-1f9a474cc2dc // indirect
 	github.com/asaskevich/govalidator v0.0.0-20230301143203-a9d515a09cc2 // indirect
+	github.com/aws/aws-sdk-go v1.55.7 // indirect
+	github.com/aws/aws-sdk-go-v2 v1.36.6 // indirect
 	github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream v1.6.11 // indirect
+	github.com/aws/aws-sdk-go-v2/config v1.29.18 // indirect
 	github.com/aws/aws-sdk-go-v2/credentials v1.17.71 // indirect
 	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.16.33 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/configsources v1.3.37 // indirect
@@ -276,7 +275,5 @@ replace github.com/input-output-hk/catalyst-forge/lib/project => ../lib/project
 replace github.com/input-output-hk/catalyst-forge/lib/providers => ../lib/providers
 
 replace github.com/input-output-hk/catalyst-forge/lib/schema => ../lib/schema
-
-replace github.com/input-output-hk/catalyst-forge/lib/secrets => ../lib/secrets
 
 replace github.com/input-output-hk/catalyst-forge/lib/tools => ../lib/tools

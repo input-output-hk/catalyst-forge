@@ -8,7 +8,6 @@ require (
 	github.com/google/go-github/v66 v66.0.0
 	github.com/input-output-hk/catalyst-forge/lib/providers v0.0.0-00010101000000-000000000000
 	github.com/input-output-hk/catalyst-forge/lib/schema v0.0.0
-	github.com/input-output-hk/catalyst-forge/lib/secrets v0.0.0-00010101000000-000000000000
 	github.com/input-output-hk/catalyst-forge/lib/tools v0.0.0
 	github.com/stretchr/testify v1.10.0
 	helm.sh/helm/v3 v3.17.0
@@ -246,8 +245,6 @@ require (
 replace github.com/input-output-hk/catalyst-forge/lib/providers => ../providers
 
 replace github.com/input-output-hk/catalyst-forge/lib/schema => ../schema
-
-replace github.com/input-output-hk/catalyst-forge/lib/secrets => ../secrets
 
 replace github.com/input-output-hk/catalyst-forge/lib/tools => ../tools
 

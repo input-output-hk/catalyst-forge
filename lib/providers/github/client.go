@@ -9,7 +9,7 @@ import (
 	"path/filepath"
 
 	"github.com/google/go-github/v66/github"
-	"github.com/input-output-hk/catalyst-forge/lib/secrets"
+	"github.com/input-output-hk/catalyst-forge/lib/providers/secrets"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/fs"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/fs/billy"
 )

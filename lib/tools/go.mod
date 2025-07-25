@@ -46,6 +46,4 @@ require (
 
 replace github.com/input-output-hk/catalyst-forge/lib/providers => ../providers
 
-replace github.com/input-output-hk/catalyst-forge/lib/secrets => ../secrets
-
 replace github.com/input-output-hk/catalyst-forge/lib/schema => ../schema

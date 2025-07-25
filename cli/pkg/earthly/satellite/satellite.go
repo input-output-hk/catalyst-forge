@@ -8,7 +8,7 @@ import (
 
 	"github.com/input-output-hk/catalyst-forge/lib/project/project"
 	"github.com/input-output-hk/catalyst-forge/lib/providers/earthly"
-	"github.com/input-output-hk/catalyst-forge/lib/secrets"
+	"github.com/input-output-hk/catalyst-forge/lib/providers/secrets"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/fs"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/fs/billy"
 	"gopkg.in/yaml.v3"

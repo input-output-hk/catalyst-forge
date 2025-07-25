@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"log/slog"
 
+	"github.com/input-output-hk/catalyst-forge/lib/providers/secrets"
 	"github.com/input-output-hk/catalyst-forge/lib/schema/blueprint/common"
-	"github.com/input-output-hk/catalyst-forge/lib/secrets"
 )
 
 // EarthlyProviderCreds is the struct that holds the credentials for the Earthly provider.
