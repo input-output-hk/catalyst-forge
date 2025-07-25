@@ -75,70 +75,69 @@ jobs:
             ${{ env.FORGE_REGEX_RELEASE }}
             ${{ env.FORGE_REGEX_PUBLISH }}
             ${{ env.FORGE_REGEX_NIGHTLY }}
-  # check:
-  #   uses: input-output-hk/catalyst-forge/.github/workflows/run.yml@master
-  #   needs: [discover]
-  #   if: (fromJson(needs.discover.outputs.earthfiles)['^check(-.*)?$'] != null) && !failure() && !cancelled()
-  #   with:
-  #     earthfiles: ${{ toJson(fromJson(needs.discover.outputs.earthfiles)['^check(-.*)?$']) }}
-  #     forge_version: ${{ inputs.forge_version }}
-  #     local: ${{ inputs.local }}
-  #     verbosity: ${{ inputs.verbosity }}
-  #   secrets:
-  #     earthly_token: ${{ secrets.earthly_token }}
+  check:
+    uses: input-output-hk/catalyst-forge/.github/workflows/run.yml@master
+    needs: [discover]
+    if: (fromJson(needs.discover.outputs.earthfiles)['^check(-.*)?$'] != null) && !failure() && !cancelled()
+    with:
+      earthfiles: ${{ toJson(fromJson(needs.discover.outputs.earthfiles)['^check(-.*)?$']) }}
+      forge_version: ${{ inputs.forge_version }}
+      local: ${{ inputs.local }}
+      verbosity: ${{ inputs.verbosity }}
+    secrets:
+      earthly_token: ${{ secrets.earthly_token }}
 
-  # build:
-  #   uses: input-output-hk/catalyst-forge/.github/workflows/run.yml@master
-  #   needs: [discover, check]
-  #   if: (fromJson(needs.discover.outputs.earthfiles)['^build(-.*)?$'] != null) && !failure() && !cancelled()
-  #   with:
-  #     earthfiles: ${{ toJson(fromJson(needs.discover.outputs.earthfiles)['^build(-.*)?$']) }}
-  #     forge_version: ${{ inputs.forge_version }}
-  #     local: ${{ inputs.local }}
-  #     verbosity: ${{ inputs.verbosity }}
-  #   secrets:
-  #     earthly_token: ${{ secrets.earthly_token }}
+  build:
+    uses: input-output-hk/catalyst-forge/.github/workflows/run.yml@master
+    needs: [discover, check]
+    if: (fromJson(needs.discover.outputs.earthfiles)['^build(-.*)?$'] != null) && !failure() && !cancelled()
+    with:
+      earthfiles: ${{ toJson(fromJson(needs.discover.outputs.earthfiles)['^build(-.*)?$']) }}
+      forge_version: ${{ inputs.forge_version }}
+      local: ${{ inputs.local }}
+      verbosity: ${{ inputs.verbosity }}
+    secrets:
+      earthly_token: ${{ secrets.earthly_token }}
 
-  # package:
-  #   uses: input-output-hk/catalyst-forge/.github/workflows/run.yml@master
-  #   needs: [discover, check, build]
-  #   if: (fromJson(needs.discover.outputs.earthfiles)['^package(-.*)?$'] != null) && !failure() && !cancelled()
-  #   with:
-  #     earthfiles: ${{ toJson(fromJson(needs.discover.outputs.earthfiles)['^package(-.*)?$']) }}
-  #     forge_version: ${{ inputs.forge_version }}
-  #     local: ${{ inputs.local }}
-  #     verbosity: ${{ inputs.verbosity }}
-  #   secrets:
-  #     earthly_token: ${{ secrets.earthly_token }}
+  package:
+    uses: input-output-hk/catalyst-forge/.github/workflows/run.yml@master
+    needs: [discover, check, build]
+    if: (fromJson(needs.discover.outputs.earthfiles)['^package(-.*)?$'] != null) && !failure() && !cancelled()
+    with:
+      earthfiles: ${{ toJson(fromJson(needs.discover.outputs.earthfiles)['^package(-.*)?$']) }}
+      forge_version: ${{ inputs.forge_version }}
+      local: ${{ inputs.local }}
+      verbosity: ${{ inputs.verbosity }}
+    secrets:
+      earthly_token: ${{ secrets.earthly_token }}
 
-  # test:
-  #   uses: input-output-hk/catalyst-forge/.github/workflows/run.yml@master
-  #   needs: [discover, check, build, package]
-  #   if: (fromJson(needs.discover.outputs.earthfiles)['^test(-.*)?$'] != null) && !failure() && !cancelled()
-  #   with:
-  #     earthfiles: ${{ toJson(fromJson(needs.discover.outputs.earthfiles)['^test(-.*)?$']) }}
-  #     forge_version: ${{ inputs.forge_version }}
-  #     local: ${{ inputs.local }}
-  #     verbosity: ${{ inputs.verbosity }}
-  #   secrets:
-  #     earthly_token: ${{ secrets.earthly_token }}
+  test:
+    uses: input-output-hk/catalyst-forge/.github/workflows/run.yml@master
+    needs: [discover, check, build, package]
+    if: (fromJson(needs.discover.outputs.earthfiles)['^test(-.*)?$'] != null) && !failure() && !cancelled()
+    with:
+      earthfiles: ${{ toJson(fromJson(needs.discover.outputs.earthfiles)['^test(-.*)?$']) }}
+      forge_version: ${{ inputs.forge_version }}
+      local: ${{ inputs.local }}
+      verbosity: ${{ inputs.verbosity }}
+    secrets:
+      earthly_token: ${{ secrets.earthly_token }}
 
-  # nightly:
-  #   uses: input-output-hk/catalyst-forge/.github/workflows/run.yml@master
-  #   needs: [discover, check, build, package]
-  #   if: (fromJson(needs.discover.outputs.earthfiles)['^nightly(-.*)?$'] != null) && !failure() && !cancelled() && inputs.nightly == true
-  #   with:
-  #     earthfiles: ${{ toJson(fromJson(needs.discover.outputs.earthfiles)['^nightly(-.*)?$']) }}
-  #     forge_version: ${{ inputs.forge_version }}
-  #     local: ${{ inputs.local }}
-  #     verbosity: ${{ inputs.verbosity }}
-  #   secrets:
-  #     earthly_token: ${{ secrets.earthly_token }}
+  nightly:
+    uses: input-output-hk/catalyst-forge/.github/workflows/run.yml@master
+    needs: [discover, check, build, package]
+    if: (fromJson(needs.discover.outputs.earthfiles)['^nightly(-.*)?$'] != null) && !failure() && !cancelled() && inputs.nightly == true
+    with:
+      earthfiles: ${{ toJson(fromJson(needs.discover.outputs.earthfiles)['^nightly(-.*)?$']) }}
+      forge_version: ${{ inputs.forge_version }}
+      local: ${{ inputs.local }}
+      verbosity: ${{ inputs.verbosity }}
+    secrets:
+      earthly_token: ${{ secrets.earthly_token }}
 
   release:
     uses: input-output-hk/catalyst-forge/.github/workflows/release.yml@master
-    # needs: [discover, check, build, test]
-    needs: [discover]
+    needs: [discover, check, build, test]
     if: (fromJson(needs.discover.outputs.releases)[0] != null) && !failure() && !cancelled()
     with:
       releases: ${{ needs.discover.outputs.releases }}
@@ -148,29 +147,29 @@ jobs:
     secrets:
       earthly_token: ${{ secrets.earthly_token }}
 
-  # deploy:
-  #   uses: input-output-hk/catalyst-forge/.github/workflows/deploy.yml@master
-  #   needs: [discover, check, build, test, release]
-  #   if: (fromJson(needs.discover.outputs.deployments)[0] != null) && !failure() && !cancelled()
-  #   with:
-  #     deployments: ${{ needs.discover.outputs.deployments }}
-  #     forge_version: ${{ inputs.forge_version }}
-  #     local: ${{ inputs.local }}
-  #     verbosity: ${{ inputs.verbosity }}
-  #   secrets:
-  #     earthly_token: ${{ secrets.earthly_token }}
+  deploy:
+    uses: input-output-hk/catalyst-forge/.github/workflows/deploy.yml@master
+    needs: [discover, check, build, test, release]
+    if: (fromJson(needs.discover.outputs.deployments)[0] != null) && !failure() && !cancelled()
+    with:
+      deployments: ${{ needs.discover.outputs.deployments }}
+      forge_version: ${{ inputs.forge_version }}
+      local: ${{ inputs.local }}
+      verbosity: ${{ inputs.verbosity }}
+    secrets:
+      earthly_token: ${{ secrets.earthly_token }}
 
-  # final:
-  #   needs: [check, build, package, test, nightly, release, deploy]
-  #   if: ${{ always() && (contains(needs.*.result, 'failure') || !failure() && !cancelled()) }}
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - name: Final
-  #       run: |
-  #         if [[ "${{ contains(needs.*.result, 'failure') }}" == "true" ]]
-  #         then
-  #           echo "Run failed"
-  #           exit 1
-  #         else
-  #           echo "All done"
-  #         fi
+  final:
+    needs: [check, build, package, test, nightly, release, deploy]
+    if: ${{ always() && (contains(needs.*.result, 'failure') || !failure() && !cancelled()) }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Final
+        run: |
+          if [[ "${{ contains(needs.*.result, 'failure') }}" == "true" ]]
+          then
+            echo "Run failed"
+            exit 1
+          else
+            echo "All done"
+          fi
