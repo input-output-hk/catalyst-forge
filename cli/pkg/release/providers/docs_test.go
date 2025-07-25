@@ -18,6 +18,8 @@ import (
 	"github.com/input-output-hk/catalyst-forge/lib/project/project"
 	"github.com/input-output-hk/catalyst-forge/lib/providers/aws"
 	awsMocks "github.com/input-output-hk/catalyst-forge/lib/providers/aws/mocks"
+	gh "github.com/input-output-hk/catalyst-forge/lib/providers/github"
+	ghMocks "github.com/input-output-hk/catalyst-forge/lib/providers/github/mocks"
 	sb "github.com/input-output-hk/catalyst-forge/lib/schema/blueprint"
 	"github.com/input-output-hk/catalyst-forge/lib/schema/blueprint/global"
 	sp "github.com/input-output-hk/catalyst-forge/lib/schema/blueprint/project"
@@ -189,6 +191,18 @@ func TestDocsReleaserRelease(t *testing.T) {
 				},
 			}
 
+			ghMock := &ghMocks.GithubClientMock{
+				ListBranchesFunc: func() ([]gh.Branch, error) {
+					return nil, nil
+				},
+				ListPullRequestCommentsFunc: func(prNumber int) ([]gh.PullRequestComment, error) {
+					return nil, nil
+				},
+				PostPullRequestCommentFunc: func(prNumber int, body string) error {
+					return nil
+				},
+			}
+
 			localFs := billy.NewInMemoryFs()
 			for name, content := range tt.files {
 				p := filepath.Join("/", earthly.GetBuildPlatform(), name)
@@ -202,6 +216,7 @@ func TestDocsReleaserRelease(t *testing.T) {
 				config:      DocsReleaserConfig{Name: tt.releaseName},
 				force:       true,
 				fs:          localFs,
+				ghClient:    ghMock,
 				handler:     &eventsMocks.EventHandlerMock{FiringFunc: func(_ *project.Project, _ map[string]cue.Value) bool { return true }},
 				logger:      testutils.NewNoopLogger(),
 				project:     &tt.project,

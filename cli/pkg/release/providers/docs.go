@@ -89,7 +89,7 @@ func (r *DocsReleaser) Release() error {
 	}
 
 	r.logger.Info("Cleaning existing docs from S3", "bucket", docsConfig.Bucket, "path", s3Path)
-	if err := r.s3.DeleteDirectory(docsConfig.Bucket, s3Path, []string{".*/branches/.*"}); err != nil {
+	if err := r.s3.DeleteDirectory(docsConfig.Bucket, s3Path, []string{".*/b/.*"}); err != nil {
 		return fmt.Errorf("failed to clean existing docs from S3: %w", err)
 	}
 
@@ -111,7 +111,7 @@ func (r *DocsReleaser) Release() error {
 		}
 
 		if isDefault {
-			if err := r.cleanupBranches(docsConfig.Bucket, filepath.Join(s3Path, "branches")); err != nil {
+			if err := r.cleanupBranches(docsConfig.Bucket, filepath.Join(s3Path, "b")); err != nil {
 				return fmt.Errorf("failed to cleanup branches: %w", err)
 			}
 		}
@@ -171,7 +171,7 @@ func (r *DocsReleaser) generatePath(projectName string) (string, error) {
 		return s3Path, nil
 	}
 
-	return filepath.Join(s3Path, "branches", branch), nil
+	return filepath.Join(s3Path, "b", branch), nil
 }
 
 // isDefaultBranch returns true if the current branch is the default branch.
@@ -214,7 +214,7 @@ func (r *DocsReleaser) postComment(baseURL, name string) error {
 		if branch == r.project.Blueprint.Global.Repo.DefaultBranch {
 			docURL, err = url.JoinPath(baseURL, name)
 		} else {
-			docURL, err = url.JoinPath(baseURL, name, "branches", branch)
+			docURL, err = url.JoinPath(baseURL, name, "b", branch)
 		}
 		if err != nil {
 			return fmt.Errorf("failed to join URL path: %w", err)
