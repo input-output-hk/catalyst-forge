@@ -10,15 +10,14 @@ import (
 
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/earthly"
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/events"
-	"github.com/input-output-hk/catalyst-forge/cli/pkg/providers/aws"
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/run"
 	"github.com/input-output-hk/catalyst-forge/lib/project/project"
-	"github.com/input-output-hk/catalyst-forge/lib/project/providers"
+	"github.com/input-output-hk/catalyst-forge/lib/providers/aws"
+	"github.com/input-output-hk/catalyst-forge/lib/providers/git"
+	"github.com/input-output-hk/catalyst-forge/lib/providers/github"
 	sp "github.com/input-output-hk/catalyst-forge/lib/schema/blueprint/project"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/fs"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/fs/billy"
-	"github.com/input-output-hk/catalyst-forge/lib/tools/git"
-	"github.com/input-output-hk/catalyst-forge/lib/tools/git/github"
 )
 
 const (
@@ -43,6 +42,7 @@ type DocsReleaser struct {
 	config      DocsReleaserConfig
 	force       bool
 	fs          fs.Filesystem
+	ghClient    github.GithubClient
 	handler     events.EventHandler
 	logger      *slog.Logger
 	project     *project.Project
@@ -100,17 +100,8 @@ func (r *DocsReleaser) Release() error {
 	}
 
 	if github.InCI() {
-		client, err := providers.NewGithubClient(r.project, r.logger)
-		if err != nil {
-			return fmt.Errorf("failed to create github client: %w", err)
-		}
-
-		owner := strings.Split(r.project.Blueprint.Global.Repo.Name, "/")[0]
-		repo := strings.Split(r.project.Blueprint.Global.Repo.Name, "/")[1]
-		gc := github.NewGithubClient(owner, repo, client, r.logger)
 		url := r.project.Blueprint.Global.Ci.Release.Docs.Url
-
-		if err := r.postComment(gc, url, projectName); err != nil {
+		if err := r.postComment(url, projectName); err != nil {
 			return fmt.Errorf("failed to post comment: %w", err)
 		}
 
@@ -120,7 +111,7 @@ func (r *DocsReleaser) Release() error {
 		}
 
 		if isDefault {
-			if err := r.cleanupBranches(gc, docsConfig.Bucket, filepath.Join(s3Path, "branches")); err != nil {
+			if err := r.cleanupBranches(docsConfig.Bucket, filepath.Join(s3Path, "branches")); err != nil {
 				return fmt.Errorf("failed to cleanup branches: %w", err)
 			}
 		}
@@ -131,8 +122,8 @@ func (r *DocsReleaser) Release() error {
 }
 
 // cleanupBranches deletes branches from S3 that are no longer present in GitHub.
-func (r *DocsReleaser) cleanupBranches(client github.GithubClient, bucket, path string) error {
-	branches, err := client.ListBranches()
+func (r *DocsReleaser) cleanupBranches(bucket, path string) error {
+	branches, err := r.ghClient.ListBranches()
 	if err != nil {
 		return fmt.Errorf("failed to list GitHub branches: %w", err)
 	}
@@ -194,16 +185,15 @@ func (r *DocsReleaser) isDefaultBranch() (bool, error) {
 }
 
 // postComment posts a comment to the PR.
-func (r *DocsReleaser) postComment(client github.GithubClient, baseURL, name string) error {
-	env := github.NewGithubEnv(r.logger)
-	if env.IsPR() {
-		pr := env.GetPRNumber()
+func (r *DocsReleaser) postComment(baseURL, name string) error {
+	if r.ghClient.Env().IsPR() {
+		pr := r.ghClient.Env().GetPRNumber()
 		if pr == 0 {
 			r.logger.Warn("No PR number found, skipping comment")
 			return nil
 		}
 
-		comments, err := client.ListPullRequestComments(pr)
+		comments, err := r.ghClient.ListPullRequestComments(pr)
 		if err != nil {
 			return fmt.Errorf("failed to list comments: %w", err)
 		}
@@ -231,7 +221,7 @@ func (r *DocsReleaser) postComment(client github.GithubClient, baseURL, name str
 		}
 
 		body := fmt.Sprintf(bodyTemplate, docsCommentPrefix, docURL)
-		if err := client.PostPullRequestComment(pr, body); err != nil {
+		if err := r.ghClient.PostPullRequestComment(pr, body); err != nil {
 			return fmt.Errorf("failed to post comment to PR: %w", err)
 		}
 	} else {
@@ -299,12 +289,25 @@ func NewDocsReleaser(
 		return nil, fmt.Errorf("failed to create S3 client: %w", err)
 	}
 
+	owner := strings.Split(project.Blueprint.Global.Repo.Name, "/")[0]
+	repo := strings.Split(project.Blueprint.Global.Repo.Name, "/")[1]
+	ghClient, err := github.NewDefaultGithubClient(
+		owner,
+		repo,
+		github.WithCredsOrEnv(project.Blueprint.Global.Ci.Providers.Github.Credentials),
+		github.WithLogger(ctx.Logger),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create github client: %w", err)
+	}
+
 	handler := events.NewDefaultEventHandler(ctx.Logger)
 	runner := earthly.NewDefaultProjectRunner(ctx, &project)
 	return &DocsReleaser{
 		config:      config,
 		force:       force,
 		fs:          fs,
+		ghClient:    ghClient,
 		handler:     &handler,
 		logger:      ctx.Logger,
 		project:     &project,

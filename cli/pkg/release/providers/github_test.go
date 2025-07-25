@@ -6,19 +6,19 @@ import (
 	"compress/gzip"
 	"fmt"
 	"io"
-	"net/http"
 	"path/filepath"
 	"testing"
 
 	"github.com/google/go-github/v66/github"
 	"github.com/input-output-hk/catalyst-forge/lib/project/project"
+	gh "github.com/input-output-hk/catalyst-forge/lib/providers/github"
+	gm "github.com/input-output-hk/catalyst-forge/lib/providers/github/mocks"
 	sb "github.com/input-output-hk/catalyst-forge/lib/schema/blueprint"
 	sg "github.com/input-output-hk/catalyst-forge/lib/schema/blueprint/global"
 	sp "github.com/input-output-hk/catalyst-forge/lib/schema/blueprint/project"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/fs"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/fs/billy"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/testutils"
-	"github.com/migueleliasweb/go-github-mock/src/mock"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -105,8 +105,7 @@ func TestGithubReleaserRelease(t *testing.T) {
 
 				assert.True(t, created)
 
-				url := fmt.Sprintf("/repos/owner/repo/releases/123456/assets?name=%s", filename)
-				data, ok := uploads[url]
+				data, ok := uploads[filename]
 				assert.True(t, ok)
 
 				files := make(map[string]string)
@@ -161,8 +160,7 @@ func TestGithubReleaserRelease(t *testing.T) {
 					require.NoError(t, err)
 					assert.True(t, exists)
 
-					url := fmt.Sprintf("/repos/owner/repo/releases/123456/assets?name=%s", filename)
-					data, ok := uploads[url]
+					data, ok := uploads[filename]
 					assert.True(t, ok)
 
 					files := make(map[string]string)
@@ -348,67 +346,36 @@ func TestGithubReleaserRelease(t *testing.T) {
 
 			var releaseCreated bool
 			uploads := make(map[string][]byte)
-			client := github.NewClient(
-				mock.NewMockedHTTPClient(
-					mock.WithRequestMatchHandler(
-						mock.GetReposReleasesTagsByOwnerByRepoByTag,
-						http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-							body, _ := io.ReadAll(r.Body)
-							uploads[r.URL.String()] = body
-
-							if tt.ghRelease.ID == nil {
-								mock.WriteError(
-									w,
-									http.StatusNotFound,
-									"release not found",
-								)
-								return
-							}
-
-							w.Write(mock.MustMarshal(tt.ghRelease))
-						}),
-					),
-					mock.WithRequestMatchHandler(
-						mock.PostReposReleasesByOwnerByRepo,
-						http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-							if tt.createFail {
-								mock.WriteError(
-									w,
-									http.StatusInternalServerError,
-									"failed to create release",
-								)
-								return
-							}
-
-							releaseCreated = true
-							w.Write(mock.MustMarshal(github.RepositoryRelease{
-								ID: github.Int64(123456),
-							}))
-						}),
-					),
-					mock.WithRequestMatchHandler(
-						mock.PostReposReleasesAssetsByOwnerByRepoByReleaseId,
-						http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-							body, _ := io.ReadAll(r.Body)
-							uploads[r.URL.String()] = body
-
-							if tt.uploadFail {
-								mock.WriteError(
-									w,
-									http.StatusInternalServerError,
-									"failed to upload asset",
-								)
-								return
-							}
-
-							w.Write(mock.MustMarshal(github.ReleaseAsset{}))
-						}),
-					),
-				),
-			)
+			client := gm.GithubClientMock{
+				GetReleaseByTagFunc: func(tag string) (*github.RepositoryRelease, error) {
+					if tt.ghRelease.ID == nil {
+						return nil, gh.ErrReleaseNotFound
+					}
+					return &tt.ghRelease, nil
+				},
+				CreateReleaseFunc: func(opts *github.RepositoryRelease) (*github.RepositoryRelease, error) {
+					if tt.createFail {
+						return nil, fmt.Errorf("failed to create release")
+					}
+					releaseCreated = true
+					return &github.RepositoryRelease{
+						ID: github.Int64(123456),
+					}, nil
+				},
+				UploadReleaseAssetFunc: func(releaseID int64, path string) error {
+					if tt.uploadFail {
+						return fmt.Errorf("failed to upload asset")
+					}
+					assetName := filepath.Base(path)
+					assetContent, err := fs.ReadFile(path)
+					require.NoError(t, err)
+					uploads[assetName] = assetContent
+					return nil
+				},
+			}
 
 			releaser := GithubReleaser{
-				client:  client,
+				client:  &client,
 				config:  tt.config,
 				force:   tt.force,
 				fs:      fs,

@@ -10,9 +10,9 @@ import (
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/run"
 	"github.com/input-output-hk/catalyst-forge/lib/project/blueprint"
 	"github.com/input-output-hk/catalyst-forge/lib/project/project"
-	"github.com/input-output-hk/catalyst-forge/lib/project/secrets"
-	smocks "github.com/input-output-hk/catalyst-forge/lib/project/secrets/mocks"
 	schema "github.com/input-output-hk/catalyst-forge/lib/schema/blueprint"
+	"github.com/input-output-hk/catalyst-forge/lib/secrets"
+	smocks "github.com/input-output-hk/catalyst-forge/lib/secrets/mocks"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

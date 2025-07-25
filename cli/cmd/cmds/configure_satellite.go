@@ -7,8 +7,8 @@ import (
 
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/earthly/satellite"
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/run"
+	"github.com/input-output-hk/catalyst-forge/lib/providers/git"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/fs/billy"
-	"github.com/input-output-hk/catalyst-forge/lib/tools/git"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/walker"
 )
 

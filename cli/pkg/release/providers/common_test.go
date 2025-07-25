@@ -6,9 +6,9 @@ import (
 	"testing"
 
 	"github.com/aws/aws-sdk-go-v2/service/ecr"
-	"github.com/input-output-hk/catalyst-forge/cli/pkg/providers/aws"
-	"github.com/input-output-hk/catalyst-forge/cli/pkg/providers/aws/mocks"
 	"github.com/input-output-hk/catalyst-forge/lib/project/project"
+	"github.com/input-output-hk/catalyst-forge/lib/providers/aws"
+	"github.com/input-output-hk/catalyst-forge/lib/providers/aws/mocks"
 	sb "github.com/input-output-hk/catalyst-forge/lib/schema/blueprint"
 	sg "github.com/input-output-hk/catalyst-forge/lib/schema/blueprint/global"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/testutils"

@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"log/slog"
 
-	"github.com/input-output-hk/catalyst-forge/lib/project/secrets/providers"
+	"github.com/input-output-hk/catalyst-forge/lib/secrets/providers"
 )
 
 // SecretStore is a store of secret providers.

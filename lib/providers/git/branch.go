@@ -3,7 +3,7 @@ package git
 import (
 	"fmt"
 
-	"github.com/input-output-hk/catalyst-forge/lib/tools/git/github"
+	"github.com/input-output-hk/catalyst-forge/lib/providers/github"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/git/repo"
 )
 
@@ -12,10 +12,13 @@ var (
 )
 
 func GetBranch(repo *repo.GitRepo) (string, error) {
-	env := github.NewGithubEnv(nil)
+	gc, err := github.NewDefaultGithubClient("", "")
+	if err != nil {
+		return "", fmt.Errorf("failed to create github client: %w", err)
+	}
 
 	if github.InCI() {
-		ref := env.GetBranch()
+		ref := gc.Env().GetBranch()
 		if ref != "" {
 			return ref, nil
 		}

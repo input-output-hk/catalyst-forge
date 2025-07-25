@@ -8,8 +8,8 @@ import (
 
 	"cuelang.org/go/cue"
 	"github.com/input-output-hk/catalyst-forge/lib/project/blueprint"
-	"github.com/input-output-hk/catalyst-forge/lib/project/secrets"
 	sb "github.com/input-output-hk/catalyst-forge/lib/schema/blueprint"
+	"github.com/input-output-hk/catalyst-forge/lib/secrets"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/earthly"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/git/repo"
 )

@@ -6,7 +6,7 @@ import (
 
 	"cuelang.org/go/cue"
 	"github.com/input-output-hk/catalyst-forge/lib/project/project"
-	"github.com/input-output-hk/catalyst-forge/lib/tools/git"
+	"github.com/input-output-hk/catalyst-forge/lib/providers/git"
 )
 
 // MergeEvent fires when a merge occurs to the default branch.

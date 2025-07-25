@@ -6,9 +6,9 @@ import (
 	"testing"
 
 	emocks "github.com/input-output-hk/catalyst-forge/cli/pkg/executor/mocks"
-	"github.com/input-output-hk/catalyst-forge/lib/project/secrets"
-	smocks "github.com/input-output-hk/catalyst-forge/lib/project/secrets/mocks"
 	sc "github.com/input-output-hk/catalyst-forge/lib/schema/blueprint/common"
+	"github.com/input-output-hk/catalyst-forge/lib/secrets"
+	smocks "github.com/input-output-hk/catalyst-forge/lib/secrets/mocks"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/testutils"
 	"github.com/stretchr/testify/assert"
 )

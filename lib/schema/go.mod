@@ -1,11 +1,10 @@
 module github.com/input-output-hk/catalyst-forge/lib/schema
 
-go 1.23.0
+go 1.24.2
 
 require (
 	cuelang.org/go v0.12.0
 	github.com/Masterminds/semver/v3 v3.3.1
-	github.com/input-output-hk/catalyst-forge/lib/tools v0.0.0
 )
 
 require (
@@ -21,6 +20,7 @@ require (
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/protocolbuffers/txtpbfmt v0.0.0-20241112170944-20d2c9ebc01d // indirect
 	github.com/rogpeppe/go-internal v1.13.2-0.20241226121412-a5dc8ff20d0a // indirect
+	github.com/stretchr/testify v1.10.0 // indirect
 	golang.org/x/mod v0.22.0 // indirect
 	golang.org/x/net v0.34.0 // indirect
 	golang.org/x/oauth2 v0.25.0 // indirect

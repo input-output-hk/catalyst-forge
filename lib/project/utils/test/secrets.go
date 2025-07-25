@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"log/slog"
 
-	"github.com/input-output-hk/catalyst-forge/lib/project/secrets"
-	sm "github.com/input-output-hk/catalyst-forge/lib/project/secrets/mocks"
+	"github.com/input-output-hk/catalyst-forge/lib/secrets"
+	sm "github.com/input-output-hk/catalyst-forge/lib/secrets/mocks"
 )
 
 func NewMockSecretStore(result map[string]string) secrets.SecretStore {

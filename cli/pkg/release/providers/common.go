@@ -6,8 +6,8 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/input-output-hk/catalyst-forge/cli/pkg/providers/aws"
 	"github.com/input-output-hk/catalyst-forge/lib/project/project"
+	"github.com/input-output-hk/catalyst-forge/lib/providers/aws"
 	s "github.com/input-output-hk/catalyst-forge/lib/schema"
 )
 
@@ -27,7 +27,7 @@ func createECRRepoIfNotExists(client aws.ECRClient, p *project.Project, registry
 
 	if !exists {
 		logger.Info("ECR repository does not exist, creating", "name", name)
-		if err := client.CreateECRRepository(p, name); err != nil {
+		if err := client.CreateECRRepository(name, p.Blueprint.Global.Repo.Name, p.Path); err != nil {
 			return fmt.Errorf("failed to create ECR repository: %w", err)
 		}
 	}

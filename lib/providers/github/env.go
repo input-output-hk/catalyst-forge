@@ -2,7 +2,6 @@ package github
 
 import (
 	"fmt"
-	"io"
 	"log/slog"
 	"os"
 	"strconv"
@@ -10,7 +9,6 @@ import (
 
 	"github.com/google/go-github/v66/github"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/fs"
-	"github.com/input-output-hk/catalyst-forge/lib/tools/fs/billy"
 )
 
 var (
@@ -123,30 +121,6 @@ func (g *GithubEnv) HasEvent() bool {
 	_, pathExists := os.LookupEnv("GITHUB_EVENT_PATH")
 	_, nameExists := os.LookupEnv("GITHUB_EVENT_NAME")
 	return pathExists && nameExists
-}
-
-// NewGithubEnv creates a new GithubEnv.
-func NewGithubEnv(logger *slog.Logger) GithubEnv {
-	if logger == nil {
-		logger = slog.New(slog.NewTextHandler(io.Discard, nil))
-	}
-
-	return GithubEnv{
-		fs:     billy.NewBaseOsFS(),
-		logger: logger,
-	}
-}
-
-// NewCustomGithubEnv creates a new GithubEnv with a custom filesystem.
-func NewCustomGithubEnv(fs fs.Filesystem, logger *slog.Logger) GithubEnv {
-	if logger == nil {
-		logger = slog.New(slog.NewTextHandler(io.Discard, nil))
-	}
-
-	return GithubEnv{
-		fs:     fs,
-		logger: logger,
-	}
 }
 
 // InCI returns whether the code is running in a CI environment.

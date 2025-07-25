@@ -3,7 +3,7 @@ package git
 import (
 	"fmt"
 
-	"github.com/input-output-hk/catalyst-forge/lib/tools/git/github"
+	"github.com/input-output-hk/catalyst-forge/lib/providers/github"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/git/repo"
 )
 
@@ -15,10 +15,13 @@ var (
 func GetTag(r *repo.GitRepo) (string, error) {
 	var tag string
 	var err error
-	env := github.NewGithubEnv(nil)
+	gc, err := github.NewDefaultGithubClient("", "")
+	if err != nil {
+		return "", fmt.Errorf("failed to create github client: %w", err)
+	}
 
 	if github.InCI() {
-		tag = env.GetTag()
+		tag = gc.Env().GetTag()
 		if tag == "" {
 			return "", ErrTagNotFound
 		}

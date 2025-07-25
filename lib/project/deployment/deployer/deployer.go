@@ -10,9 +10,9 @@ import (
 	"github.com/input-output-hk/catalyst-forge/lib/project/deployment"
 	"github.com/input-output-hk/catalyst-forge/lib/project/deployment/generator"
 	"github.com/input-output-hk/catalyst-forge/lib/project/project"
-	"github.com/input-output-hk/catalyst-forge/lib/project/providers"
-	"github.com/input-output-hk/catalyst-forge/lib/project/secrets"
+	"github.com/input-output-hk/catalyst-forge/lib/providers/git"
 	"github.com/input-output-hk/catalyst-forge/lib/schema/blueprint/common"
+	"github.com/input-output-hk/catalyst-forge/lib/secrets"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/fs"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/fs/billy"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/git/repo"
@@ -332,7 +332,7 @@ func (d *Deployer) clone(url, ref string, fs fs.Filesystem) (repo.GitRepo, error
 		repo.WithFS(fs),
 	}
 
-	creds, err := providers.GetGitProviderCreds(&d.cfg.Git.Creds, &d.ss, d.logger)
+	creds, err := git.GetGitProviderCreds(&d.cfg.Git.Creds, &d.ss, d.logger)
 	if err != nil {
 		d.logger.Warn("could not get git provider credentials, not using any authentication", "error", err)
 	} else {

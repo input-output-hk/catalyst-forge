@@ -10,7 +10,6 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/ecr"
 	"github.com/aws/aws-sdk-go-v2/service/ecr/types"
 	"github.com/aws/aws-sdk-go/aws"
-	"github.com/input-output-hk/catalyst-forge/lib/project/project"
 )
 
 //go:generate go run github.com/matryer/moq@latest -skip-ensure --pkg mocks -out mocks/ecr.go . AWSECRClient
@@ -30,7 +29,7 @@ type ECRClient struct {
 // CreateECRRepository creates a new ECR repository.
 // By default, the repository is immutable and has image scanning enabled.
 // The repository is also tagged with metadata about the given project.
-func (c *ECRClient) CreateECRRepository(project *project.Project, name string) error {
+func (c *ECRClient) CreateECRRepository(name string, gitRepoName, gitRepoPath string) error {
 	input := &ecr.CreateRepositoryInput{
 		RepositoryName:     aws.String(name),
 		ImageTagMutability: types.ImageTagMutabilityImmutable,
@@ -47,11 +46,11 @@ func (c *ECRClient) CreateECRRepository(project *project.Project, name string) e
 			},
 			{
 				Key:   aws.String("Repo"),
-				Value: aws.String(project.Blueprint.Global.Repo.Name),
+				Value: aws.String(gitRepoName),
 			},
 			{
 				Key:   aws.String("RepoPath"),
-				Value: aws.String(project.Path),
+				Value: aws.String(gitRepoPath),
 			},
 		},
 	}

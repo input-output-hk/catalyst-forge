@@ -8,39 +8,23 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/ecr"
 	"github.com/aws/aws-sdk-go-v2/service/ecr/types"
 	"github.com/aws/aws-sdk-go/aws"
-	"github.com/input-output-hk/catalyst-forge/cli/internal/testutils"
-	"github.com/input-output-hk/catalyst-forge/cli/pkg/providers/aws/mocks"
-	"github.com/input-output-hk/catalyst-forge/lib/project/project"
-	sb "github.com/input-output-hk/catalyst-forge/lib/schema/blueprint"
-	sg "github.com/input-output-hk/catalyst-forge/lib/schema/blueprint/global"
+	"github.com/input-output-hk/catalyst-forge/lib/providers/aws/mocks"
+	"github.com/input-output-hk/catalyst-forge/lib/tools/testutils"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestECRClient_CreateECRRepository(t *testing.T) {
-	newProject := func(repo, path string) *project.Project {
-		return &project.Project{
-			Blueprint: sb.Blueprint{
-				Global: &sg.Global{
-					Repo: &sg.Repo{
-						Name: repo,
-					},
-				},
-			},
-			Path: path,
-		}
-	}
-
 	tests := []struct {
 		name     string
 		repo     string
-		project  *project.Project
+		path     string
 		fail     bool
 		validate func(t *testing.T, params *ecr.CreateRepositoryInput, err error)
 	}{
 		{
-			name:    "simple",
-			repo:    "myapp",
-			project: newProject("myapp", "/path/to/myapp"),
+			name: "simple",
+			repo: "myapp",
+			path: "/path/to/myapp",
 			validate: func(t *testing.T, params *ecr.CreateRepositoryInput, err error) {
 				assert.NoError(t, err)
 				assert.Equal(t, "myapp", *params.RepositoryName)
@@ -55,10 +39,10 @@ func TestECRClient_CreateECRRepository(t *testing.T) {
 			},
 		},
 		{
-			name:    "failed",
-			repo:    "myapp",
-			project: newProject("myapp", "/path/to/myapp"),
-			fail:    true,
+			name: "failed",
+			repo: "myapp",
+			path: "/path/to/myapp",
+			fail: true,
 			validate: func(t *testing.T, params *ecr.CreateRepositoryInput, err error) {
 				assert.Error(t, err)
 			},
@@ -85,7 +69,7 @@ func TestECRClient_CreateECRRepository(t *testing.T) {
 				logger: testutils.NewNoopLogger(),
 			}
 
-			err := client.CreateECRRepository(tt.project, tt.repo)
+			err := client.CreateECRRepository(tt.repo, tt.repo, tt.path)
 			tt.validate(t, pp, err)
 		})
 	}
