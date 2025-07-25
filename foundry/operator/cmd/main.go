@@ -47,8 +47,8 @@ import (
 	"github.com/input-output-hk/catalyst-forge/foundry/operator/pkg/config"
 	"github.com/input-output-hk/catalyst-forge/foundry/operator/pkg/handlers"
 	"github.com/input-output-hk/catalyst-forge/lib/project/deployment"
-	"github.com/input-output-hk/catalyst-forge/lib/project/providers"
-	"github.com/input-output-hk/catalyst-forge/lib/project/secrets"
+	"github.com/input-output-hk/catalyst-forge/lib/providers/git"
+	"github.com/input-output-hk/catalyst-forge/lib/secrets"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/fs/billy"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/git/repo/remote"
 	// +kubebuilder:scaffold:imports
@@ -229,7 +229,7 @@ func main() {
 
 	setupLog.Info("Fetching git auth token")
 	secretStore := secrets.NewDefaultSecretStore()
-	creds, err := providers.GetGitProviderCreds(&cfg.Deployer.Git.Creds, &secretStore, logger)
+	creds, err := git.GetGitProviderCreds(&cfg.Deployer.Git.Creds, &secretStore, logger)
 	if err != nil {
 		setupLog.Error(err, "unable to get auth token")
 		os.Exit(1)

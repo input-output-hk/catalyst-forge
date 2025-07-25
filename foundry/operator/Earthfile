@@ -1,7 +1,7 @@
 VERSION 0.8
 
 deps:
-    FROM golang:1.24.0-bookworm
+    FROM golang:1.24.2-bookworm
     WORKDIR /work/operator
 
     ARG CONTROLLER_GEN_VERSION=v0.17.2
@@ -31,8 +31,10 @@ deps:
     # Copy local deps
     COPY ../api+src/src /work/api
     COPY ../../lib/project+src/src /lib/project
+    COPY ../../lib/providers+src/src /lib/providers
     COPY ../../lib/schema+src/src /lib/schema
     COPY ../../lib/tools+src/src /lib/tools
+    COPY ../../lib/secrets+src/src /lib/secrets
 
     # Install go deps
     RUN mkdir -p /go/cache && mkdir -p /go/modcache

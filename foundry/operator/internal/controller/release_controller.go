@@ -32,7 +32,7 @@ import (
 	"github.com/input-output-hk/catalyst-forge/foundry/operator/pkg/handlers"
 	"github.com/input-output-hk/catalyst-forge/lib/project/deployment"
 	depl "github.com/input-output-hk/catalyst-forge/lib/project/deployment/deployer"
-	"github.com/input-output-hk/catalyst-forge/lib/project/secrets"
+	"github.com/input-output-hk/catalyst-forge/lib/secrets"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/git/repo/remote"
 )
 
