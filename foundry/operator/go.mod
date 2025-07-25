@@ -277,8 +277,6 @@ replace github.com/input-output-hk/catalyst-forge/lib/providers => ../../lib/pro
 
 replace github.com/input-output-hk/catalyst-forge/lib/schema => ../../lib/schema
 
-replace github.com/input-output-hk/catalyst-forge/lib/provider/secrets => ../../lib/secrets
-
 replace github.com/input-output-hk/catalyst-forge/lib/tools => ../../lib/tools
 
 replace github.com/input-output-hk/catalyst-forge/foundry/api => ../api

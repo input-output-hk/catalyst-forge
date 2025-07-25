@@ -34,7 +34,6 @@ deps:
     COPY ../../lib/providers+src/src /lib/providers
     COPY ../../lib/schema+src/src /lib/schema
     COPY ../../lib/tools+src/src /lib/tools
-    COPY ../../lib/secrets+src/src /lib/secrets
 
     # Install go deps
     RUN mkdir -p /go/cache && mkdir -p /go/modcache
