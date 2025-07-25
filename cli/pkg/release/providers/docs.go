@@ -55,6 +55,14 @@ type DocsReleaser struct {
 
 // Release runs the docs release.
 func (r *DocsReleaser) Release() error {
+	// Testing
+	branch, err := git.GetBranch(r.ghClient, r.project.Repo)
+	if err != nil {
+		return fmt.Errorf("failed to get branch: %w", err)
+	}
+
+	r.project.Blueprint.Global.Repo.DefaultBranch = branch
+
 	r.logger.Info("Running docs release target", "project", r.project.Name, "target", r.release.Target, "dir", r.workdir)
 	if err := r.run(r.workdir); err != nil {
 		return fmt.Errorf("failed to run docs release target: %w", err)
@@ -89,7 +97,7 @@ func (r *DocsReleaser) Release() error {
 	}
 
 	r.logger.Info("Cleaning existing docs from S3", "bucket", docsConfig.Bucket, "path", s3Path)
-	if err := r.s3.DeleteDirectory(docsConfig.Bucket, s3Path, []string{".*/b/.*"}); err != nil {
+	if err := r.s3.DeleteDirectory(docsConfig.Bucket, s3Path, nil); err != nil {
 		return fmt.Errorf("failed to clean existing docs from S3: %w", err)
 	}
 
@@ -111,11 +119,10 @@ func (r *DocsReleaser) Release() error {
 		}
 
 		if isDefault {
-			if err := r.cleanupBranches(docsConfig.Bucket, filepath.Join(s3Path, "b")); err != nil {
+			if err := r.cleanupBranches(docsConfig.Bucket, filepath.Dir(s3Path)); err != nil {
 				return fmt.Errorf("failed to cleanup branches: %w", err)
 			}
 		}
-
 	}
 
 	r.logger.Info("Docs release complete")
@@ -133,8 +140,10 @@ func (r *DocsReleaser) cleanupBranches(bucket, path string) error {
 	for _, branch := range branches {
 		branchNames = append(branchNames, branch.Name)
 	}
+	fmt.Printf("branchNames: %v\n", branchNames)
 
 	children, err := r.s3.ListImmediateChildren(bucket, path)
+	fmt.Printf("children: %v\n", children)
 	if err != nil {
 		return fmt.Errorf("failed to list immediate children: %w", err)
 	}
@@ -154,25 +163,19 @@ func (r *DocsReleaser) cleanupBranches(bucket, path string) error {
 // generatePath generates the S3 path for the docs.
 func (r *DocsReleaser) generatePath(projectName string) (string, error) {
 	docsConfig := r.project.Blueprint.Global.Ci.Release.Docs
-	if docsConfig.Bucket == "" {
-		return "", fmt.Errorf("no S3 bucket specified in global docs configuration")
-	}
-
-	s3Path := projectName
-	if docsConfig.Path != "" {
-		s3Path = filepath.Join(docsConfig.Path, projectName)
-	}
-
 	branch, err := git.GetBranch(r.ghClient, r.project.Repo)
 	if err != nil {
 		return "", fmt.Errorf("failed to get branch: %w", err)
 	}
 
-	if branch == r.project.Blueprint.Global.Repo.DefaultBranch {
-		return s3Path, nil
+	var s3Path string
+	if docsConfig.Path != "" {
+		s3Path = filepath.Join(docsConfig.Path, projectName, branch)
+	} else {
+		s3Path = filepath.Join(projectName, branch)
 	}
 
-	return filepath.Join(s3Path, "b", branch), nil
+	return s3Path, nil
 }
 
 // isDefaultBranch returns true if the current branch is the default branch.
