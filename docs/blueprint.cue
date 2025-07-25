@@ -4,7 +4,8 @@ project: {
 	release: {
 		docs: {
 			on: {
-				always: {}
+				merge: {}
+				pr: {}
 			}
 
 			config: {
