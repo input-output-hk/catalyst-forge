@@ -42,4 +42,4 @@ if [[ -n "${DB_INIT:-}" ]]; then
 fi
 
 echo "Starting Foundry API server..."
-exec "/app/foundry-api"
+exec "/app/foundry-api run"
