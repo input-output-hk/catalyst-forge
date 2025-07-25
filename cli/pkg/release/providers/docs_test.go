@@ -191,7 +191,7 @@ func TestDocsReleaserRelease(t *testing.T) {
 
 The docs for this PR can be previewed at the following URL:
 
-https://docs.example.com/test/b/mybranch
+https://docs.example.com/test/mybranch
 `
 
 				assert.Equal(t, expectedBody, result.prPost.body)

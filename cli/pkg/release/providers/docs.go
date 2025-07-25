@@ -208,12 +208,7 @@ func (r *DocsReleaser) postComment(baseURL, name string) error {
 			return fmt.Errorf("failed to get branch: %w", err)
 		}
 
-		var docURL string
-		if branch == r.project.Blueprint.Global.Repo.DefaultBranch {
-			docURL, err = url.JoinPath(baseURL, name)
-		} else {
-			docURL, err = url.JoinPath(baseURL, name, "b", branch)
-		}
+		docURL, err := url.JoinPath(baseURL, name, branch)
 		if err != nil {
 			return fmt.Errorf("failed to join URL path: %w", err)
 		}
