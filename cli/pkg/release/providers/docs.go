@@ -55,6 +55,13 @@ type DocsReleaser struct {
 
 // Release runs the docs release.
 func (r *DocsReleaser) Release() error {
+	// Testing
+	branch, err := git.GetBranch(r.project.Repo)
+	if err != nil {
+		return fmt.Errorf("failed to get branch: %w", err)
+	}
+	r.project.Blueprint.Global.Repo.DefaultBranch = branch
+
 	r.logger.Info("Running docs release target", "project", r.project.Name, "target", r.release.Target, "dir", r.workdir)
 	if err := r.run(r.workdir); err != nil {
 		return fmt.Errorf("failed to run docs release target: %w", err)
@@ -115,6 +122,7 @@ func (r *DocsReleaser) Release() error {
 				return fmt.Errorf("failed to cleanup branches: %w", err)
 			}
 		}
+
 	}
 
 	r.logger.Info("Docs release complete")

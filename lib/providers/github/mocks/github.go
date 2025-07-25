@@ -18,7 +18,7 @@ import (
 //			CreateReleaseFunc: func(opts *v66github.RepositoryRelease) (*v66github.RepositoryRelease, error) {
 //				panic("mock out the CreateRelease method")
 //			},
-//			EnvFunc: func() *providersgithub.GithubEnv {
+//			EnvFunc: func() providersgithub.GithubEnv {
 //				panic("mock out the Env method")
 //			},
 //			GetReleaseByTagFunc: func(tag string) (*v66github.RepositoryRelease, error) {
@@ -47,7 +47,7 @@ type GithubClientMock struct {
 	CreateReleaseFunc func(opts *v66github.RepositoryRelease) (*v66github.RepositoryRelease, error)
 
 	// EnvFunc mocks the Env method.
-	EnvFunc func() *providersgithub.GithubEnv
+	EnvFunc func() providersgithub.GithubEnv
 
 	// GetReleaseByTagFunc mocks the GetReleaseByTag method.
 	GetReleaseByTagFunc func(tag string) (*v66github.RepositoryRelease, error)
@@ -144,7 +144,7 @@ func (mock *GithubClientMock) CreateReleaseCalls() []struct {
 }
 
 // Env calls EnvFunc.
-func (mock *GithubClientMock) Env() *providersgithub.GithubEnv {
+func (mock *GithubClientMock) Env() providersgithub.GithubEnv {
 	if mock.EnvFunc == nil {
 		panic("GithubClientMock.EnvFunc: method is nil but GithubClient.Env was just called")
 	}

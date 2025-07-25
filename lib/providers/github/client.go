@@ -26,7 +26,7 @@ var (
 // GithubClient is the interface for the Github client.
 type GithubClient interface {
 	CreateRelease(opts *github.RepositoryRelease) (*github.RepositoryRelease, error)
-	Env() *GithubEnv
+	Env() GithubEnv
 	GetReleaseByTag(tag string) (*github.RepositoryRelease, error)
 	ListPullRequestComments(prNumber int) ([]PullRequestComment, error)
 	PostPullRequestComment(prNumber int, body string) error
@@ -37,7 +37,7 @@ type GithubClient interface {
 // DefaultGithubClient is the default implementation of the Github client.
 type DefaultGithubClient struct {
 	client      *github.Client
-	env         *GithubEnv
+	env         GithubEnv
 	fs          fs.Filesystem
 	logger      *slog.Logger
 	opts        *DefaultGithubClientOptions
@@ -60,7 +60,7 @@ type PullRequestComment struct {
 }
 
 // Env returns the Github environment.
-func (g *DefaultGithubClient) Env() *GithubEnv {
+func (g *DefaultGithubClient) Env() GithubEnv {
 	return g.env
 }
 
@@ -259,7 +259,7 @@ func NewDefaultGithubClient(owner, repoName string, opts ...DefaultGithubClientO
 	}
 
 	if gc.env == nil {
-		gc.env = &GithubEnv{
+		gc.env = &DefaultGithubEnv{
 			fs:     gc.fs,
 			logger: gc.logger,
 		}

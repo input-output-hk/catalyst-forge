@@ -2,7 +2,6 @@ package providers
 
 import (
 	"context"
-	"fmt"
 	"io"
 	"os"
 	"path/filepath"
@@ -32,10 +31,16 @@ import (
 )
 
 func TestDocsReleaserRelease(t *testing.T) {
+	type prPostResult struct {
+		prNumber int
+		body     string
+	}
+
 	type testResult struct {
 		localFs fs.Filesystem
 		s3Fs    fs.Filesystem
 		err     error
+		prPost  prPostResult
 	}
 
 	newProject := func(projectName, branch, bucket, docsPath string) project.Project {
@@ -78,20 +83,30 @@ func TestDocsReleaserRelease(t *testing.T) {
 		name        string
 		project     project.Project
 		releaseName string
+		prNumber    int
 		files       map[string]string
 		s3files     map[string]string
+		prComments  []gh.PullRequestComment
+		branches    []gh.Branch
+		inCI        bool
+		isPR        bool
 		validate    func(*testing.T, testResult)
 	}{
 		{
 			name:        "full",
 			project:     newProject("project", "master", "bucket", "prefix"),
 			releaseName: "test",
+			prNumber:    123,
 			files: map[string]string{
 				"index.html": "test docs",
 			},
 			s3files: map[string]string{
 				"test.html": "test",
 			},
+			prComments: []gh.PullRequestComment{},
+			branches:   []gh.Branch{},
+			inCI:       true,
+			isPR:       false,
 			validate: func(t *testing.T, result testResult) {
 				assert.NoError(t, result.err)
 
@@ -99,7 +114,6 @@ func TestDocsReleaserRelease(t *testing.T) {
 					if err != nil {
 						return err
 					}
-					fmt.Println(path)
 					return nil
 				})
 
@@ -120,6 +134,10 @@ func TestDocsReleaserRelease(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			if tt.inCI {
+				t.Setenv("GITHUB_ACTIONS", "true")
+			}
+
 			s3Fs := billy.NewInMemoryFs()
 			for name, content := range tt.s3files {
 				p := filepath.Join("/",
@@ -128,7 +146,6 @@ func TestDocsReleaserRelease(t *testing.T) {
 					tt.releaseName,
 					name,
 				)
-				fmt.Println(p)
 				require.NoError(t, s3Fs.WriteFile(p, []byte(content), 0o644))
 			}
 
@@ -191,14 +208,29 @@ func TestDocsReleaserRelease(t *testing.T) {
 				},
 			}
 
+			ghEnvMock := &ghMocks.GithubEnvMock{
+				IsPRFunc: func() bool {
+					return tt.isPR
+				},
+				GetPRNumberFunc: func() int {
+					return tt.prNumber
+				},
+			}
+
+			var prPost prPostResult
 			ghMock := &ghMocks.GithubClientMock{
+				EnvFunc: func() gh.GithubEnv {
+					return ghEnvMock
+				},
 				ListBranchesFunc: func() ([]gh.Branch, error) {
-					return nil, nil
+					return tt.branches, nil
 				},
 				ListPullRequestCommentsFunc: func(prNumber int) ([]gh.PullRequestComment, error) {
-					return nil, nil
+					return tt.prComments, nil
 				},
 				PostPullRequestCommentFunc: func(prNumber int, body string) error {
+					prPost.prNumber = prNumber
+					prPost.body = body
 					return nil
 				},
 			}
@@ -232,6 +264,7 @@ func TestDocsReleaserRelease(t *testing.T) {
 				localFs: localFs,
 				s3Fs:    s3Fs,
 				err:     err,
+				prPost:  prPost,
 			})
 		})
 	}

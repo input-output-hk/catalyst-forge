@@ -47,7 +47,7 @@ func WithFs(fs fs.Filesystem) DefaultGithubClientOption {
 }
 
 // WithGithubEnv sets the Github environment for the Github client.
-func WithGithubEnv(env *GithubEnv) DefaultGithubClientOption {
+func WithGithubEnv(env GithubEnv) DefaultGithubClientOption {
 	return func(c *DefaultGithubClient) {
 		c.env = env
 	}

@@ -16,14 +16,27 @@ var (
 	ErrTagNotFound  = fmt.Errorf("tag not found")
 )
 
+//go:generate go run github.com/matryer/moq@latest -skip-ensure --pkg mocks -out mocks/env.go . GithubEnv
+
 // GithubEnv provides GitHub environment information.
-type GithubEnv struct {
+type GithubEnv interface {
+	GetBranch() string
+	GetEventPayload() (any, error)
+	GetEventType() string
+	GetPRNumber() int
+	GetTag() string
+	IsPR() bool
+	HasEvent() bool
+}
+
+// DefaultGithubEnv provides the default implementation of the GithubEnv interface.
+type DefaultGithubEnv struct {
 	fs     fs.Filesystem
 	logger *slog.Logger
 }
 
 // GetBranch returns the current branch from the CI environment.
-func (g *GithubEnv) GetBranch() string {
+func (g *DefaultGithubEnv) GetBranch() string {
 	ref, ok := os.LookupEnv("GITHUB_HEAD_REF")
 	if !ok || ref == "" {
 		if strings.HasPrefix(os.Getenv("GITHUB_REF"), "refs/heads/") {
@@ -35,7 +48,7 @@ func (g *GithubEnv) GetBranch() string {
 }
 
 // GetEventPayload returns the GitHub event payload.
-func (g *GithubEnv) GetEventPayload() (any, error) {
+func (g *DefaultGithubEnv) GetEventPayload() (any, error) {
 	path, pathExists := os.LookupEnv("GITHUB_EVENT_PATH")
 	name, nameExists := os.LookupEnv("GITHUB_EVENT_NAME")
 
@@ -58,13 +71,13 @@ func (g *GithubEnv) GetEventPayload() (any, error) {
 }
 
 // GetEventType returns the GitHub event type.
-func (g *GithubEnv) GetEventType() string {
+func (g *DefaultGithubEnv) GetEventType() string {
 	return os.Getenv("GITHUB_EVENT_NAME")
 }
 
 // GetTag returns the tag from the CI environment if it exists.
 // If the tag is not found, an empty string is returned.
-func (g *GithubEnv) GetTag() string {
+func (g *DefaultGithubEnv) GetTag() string {
 	tag, exists := os.LookupEnv("GITHUB_REF")
 	if exists && strings.HasPrefix(tag, "refs/tags/") {
 		return strings.TrimPrefix(tag, "refs/tags/")
@@ -73,22 +86,9 @@ func (g *GithubEnv) GetTag() string {
 	return ""
 }
 
-// IsPR returns whether the current environment is associated with a pull request.
-func (g *GithubEnv) IsPR() bool {
-	if _, ok := os.LookupEnv("GITHUB_HEAD_REF"); ok {
-		return true
-	}
-
-	if g.GetEventType() == "pull_request" {
-		return true
-	}
-
-	return false
-}
-
 // GetPRNumber returns the pull request number if the current environment is associated with a PR.
 // Returns 0 if not in a PR context or if the PR number cannot be determined.
-func (g *GithubEnv) GetPRNumber() int {
+func (g *DefaultGithubEnv) GetPRNumber() int {
 	if !g.IsPR() {
 		return 0
 	}
@@ -116,8 +116,21 @@ func (g *GithubEnv) GetPRNumber() int {
 	return 0
 }
 
+// IsPR returns whether the current environment is associated with a pull request.
+func (g *DefaultGithubEnv) IsPR() bool {
+	if _, ok := os.LookupEnv("GITHUB_HEAD_REF"); ok {
+		return true
+	}
+
+	if g.GetEventType() == "pull_request" {
+		return true
+	}
+
+	return false
+}
+
 // HasEvent returns whether a GitHub event payload exists.
-func (g *GithubEnv) HasEvent() bool {
+func (g *DefaultGithubEnv) HasEvent() bool {
 	_, pathExists := os.LookupEnv("GITHUB_EVENT_PATH")
 	_, nameExists := os.LookupEnv("GITHUB_EVENT_NAME")
 	return pathExists && nameExists
