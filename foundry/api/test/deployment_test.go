@@ -1,10 +1,8 @@
 package test
 
 import (
-	"context"
 	"encoding/base64"
 	"fmt"
-	"os"
 	"testing"
 	"time"
 
@@ -15,13 +13,8 @@ import (
 )
 
 func TestDeploymentAPI(t *testing.T) {
-	apiURL := os.Getenv("API_URL")
-	if apiURL == "" {
-		apiURL = "http://localhost:8080"
-	}
-
-	c := client.NewClient(apiURL)
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	c := newTestClient()
+	ctx, cancel := newTestContext()
 	defer cancel()
 
 	projectName := fmt.Sprintf("test-project-deploy-%d", time.Now().Unix())
@@ -139,13 +132,8 @@ func TestDeploymentAPI(t *testing.T) {
 }
 
 func TestCreateReleaseWithDeployment(t *testing.T) {
-	apiURL := os.Getenv("API_URL")
-	if apiURL == "" {
-		apiURL = "http://localhost:8080"
-	}
-
-	c := client.NewClient(apiURL)
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	c := newTestClient()
+	ctx, cancel := newTestContext()
 	defer cancel()
 
 	projectName := fmt.Sprintf("test-project-auto-deploy-%d", time.Now().Unix())
@@ -176,13 +164,8 @@ func TestCreateReleaseWithDeployment(t *testing.T) {
 }
 
 func TestIncrementDeploymentAttemptsOnly(t *testing.T) {
-	apiURL := os.Getenv("API_URL")
-	if apiURL == "" {
-		apiURL = "http://localhost:8080"
-	}
-
-	c := client.NewClient(apiURL)
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	c := newTestClient()
+	ctx, cancel := newTestContext()
 	defer cancel()
 
 	projectName := fmt.Sprintf("test-increment-only-%d", time.Now().Unix())
@@ -230,13 +213,8 @@ func TestIncrementDeploymentAttemptsOnly(t *testing.T) {
 }
 
 func TestDeploymentEvents(t *testing.T) {
-	apiURL := os.Getenv("API_URL")
-	if apiURL == "" {
-		apiURL = "http://localhost:8080"
-	}
-
-	c := client.NewClient(apiURL)
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	c := newTestClient()
+	ctx, cancel := newTestContext()
 	defer cancel()
 
 	projectName := fmt.Sprintf("test-project-events-%d", time.Now().Unix())

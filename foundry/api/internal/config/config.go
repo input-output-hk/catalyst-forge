@@ -11,6 +11,7 @@ import (
 // Config represents the application configuration
 type Config struct {
 	Server     ServerConfig     `kong:"embed"`
+	Auth       AuthConfig       `kong:"embed"`
 	Database   DatabaseConfig   `kong:"embed"`
 	Logging    LoggingConfig    `kong:"embed"`
 	Kubernetes KubernetesConfig `kong:"embed"`
@@ -20,6 +21,12 @@ type Config struct {
 type ServerConfig struct {
 	HttpPort int           `kong:"help='HTTP port to listen on',default=8080,name='http-port',env='HTTP_PORT'"`
 	Timeout  time.Duration `kong:"help='Server timeout',default=30s,env='SERVER_TIMEOUT'"`
+}
+
+// AuthConfig represents authentication-specific configuration
+type AuthConfig struct {
+	PrivateKey string `kong:"help='Path to private key for JWT authentication',env='AUTH_PRIVATE_KEY'"`
+	PublicKey  string `kong:"help='Path to public key for JWT authentication',env='AUTH_PUBLIC_KEY'"`
 }
 
 // DatabaseConfig represents database-specific configuration

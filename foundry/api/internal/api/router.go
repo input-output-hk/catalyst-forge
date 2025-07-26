@@ -6,6 +6,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/input-output-hk/catalyst-forge/foundry/api/internal/api/handlers"
 	"github.com/input-output-hk/catalyst-forge/foundry/api/internal/api/middleware"
+	"github.com/input-output-hk/catalyst-forge/foundry/api/internal/auth"
 	"github.com/input-output-hk/catalyst-forge/foundry/api/internal/service"
 	"gorm.io/gorm"
 )
@@ -14,6 +15,7 @@ import (
 func SetupRouter(
 	releaseService service.ReleaseService,
 	deploymentService service.DeploymentService,
+	am *middleware.AuthMiddleware,
 	db *gorm.DB,
 	logger *slog.Logger,
 ) *gin.Engine {
@@ -39,27 +41,27 @@ func SetupRouter(
 	// Route Setup //
 
 	// Release endpoints
-	r.POST("/release", releaseHandler.CreateRelease)
-	r.GET("/release/:id", releaseHandler.GetRelease)
-	r.PUT("/release/:id", releaseHandler.UpdateRelease)
-	r.GET("/releases", releaseHandler.ListReleases)
+	r.POST("/release", am.ValidatePermissions([]auth.Permission{auth.PermReleaseWrite}), releaseHandler.CreateRelease)
+	r.GET("/release/:id", am.ValidatePermissions([]auth.Permission{auth.PermReleaseRead}), releaseHandler.GetRelease)
+	r.PUT("/release/:id", am.ValidatePermissions([]auth.Permission{auth.PermReleaseWrite}), releaseHandler.UpdateRelease)
+	r.GET("/releases", am.ValidatePermissions([]auth.Permission{auth.PermReleaseRead}), releaseHandler.ListReleases)
 
 	// Release aliases
-	r.GET("/release/alias/:name", releaseHandler.GetReleaseByAlias)
-	r.POST("/release/alias/:name", releaseHandler.CreateAlias)
-	r.DELETE("/release/alias/:name", releaseHandler.DeleteAlias)
-	r.GET("/release/:id/aliases", releaseHandler.ListAliases)
+	r.GET("/release/alias/:name", am.ValidatePermissions([]auth.Permission{auth.PermReleaseRead}), releaseHandler.GetReleaseByAlias)
+	r.POST("/release/alias/:name", am.ValidatePermissions([]auth.Permission{auth.PermReleaseWrite}), releaseHandler.CreateAlias)
+	r.DELETE("/release/alias/:name", am.ValidatePermissions([]auth.Permission{auth.PermReleaseWrite}), releaseHandler.DeleteAlias)
+	r.GET("/release/:id/aliases", am.ValidatePermissions([]auth.Permission{auth.PermReleaseRead}), releaseHandler.ListAliases)
 
 	// Deployment endpoints
-	r.POST("/release/:id/deploy", deploymentHandler.CreateDeployment)
-	r.GET("/release/:id/deploy/:deployId", deploymentHandler.GetDeployment)
-	r.PUT("/release/:id/deploy/:deployId", deploymentHandler.UpdateDeployment)
-	r.GET("/release/:id/deployments", deploymentHandler.ListDeployments)
-	r.GET("/release/:id/deploy/latest", deploymentHandler.GetLatestDeployment)
+	r.POST("/release/:id/deploy", am.ValidatePermissions([]auth.Permission{auth.PermDeploymentWrite}), deploymentHandler.CreateDeployment)
+	r.GET("/release/:id/deploy/:deployId", am.ValidatePermissions([]auth.Permission{auth.PermDeploymentRead}), deploymentHandler.GetDeployment)
+	r.PUT("/release/:id/deploy/:deployId", am.ValidatePermissions([]auth.Permission{auth.PermDeploymentWrite}), deploymentHandler.UpdateDeployment)
+	r.GET("/release/:id/deployments", am.ValidatePermissions([]auth.Permission{auth.PermDeploymentRead}), deploymentHandler.ListDeployments)
+	r.GET("/release/:id/deploy/latest", am.ValidatePermissions([]auth.Permission{auth.PermDeploymentRead}), deploymentHandler.GetLatestDeployment)
 
 	// Deployment event endpoints
-	r.POST("/release/:id/deploy/:deployId/events", deploymentHandler.AddDeploymentEvent)
-	r.GET("/release/:id/deploy/:deployId/events", deploymentHandler.GetDeploymentEvents)
+	r.POST("/release/:id/deploy/:deployId/events", am.ValidatePermissions([]auth.Permission{auth.PermDeploymentEventWrite}), deploymentHandler.AddDeploymentEvent)
+	r.GET("/release/:id/deploy/:deployId/events", am.ValidatePermissions([]auth.Permission{auth.PermDeploymentEventRead}), deploymentHandler.GetDeploymentEvents)
 
 	return r
 }
