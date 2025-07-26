@@ -13,41 +13,53 @@ spec:
         app: api
     spec:
       serviceAccountName: api
+      volumes:
+        - name: auth-keys
+          secret:
+            secretName: api-auth-keys
       containers:
-      - name: api
-        image: localhost:5001/foundry-api:latest
-        env:
-          - name: HTTP_PORT
-            value: "3001"
-          - name: DB_SUPER_USER
-            value: "postgres"
-          - name: DB_SUPER_PASSWORD
-            value: "postgres"
-          - name: DB_ROOT_NAME
-            value: "postgres"
-          - name: DB_INIT
-            value: "true"
-          - name: DB_HOST
-            value: "postgres"
-          - name: DB_PORT
-            value: "5432"
-          - name: DB_USER
-            value: "foundry"
-          - name: DB_PASSWORD
-            value: "changeme"
-          - name: DB_NAME
-            value: "foundry"
-          - name: DB_SSLMODE
-            value: "disable"
-          - name: "K8S_ENABLED"
-            value: "true"
-          - name: LOG_LEVEL
-            value: "debug"
-          - name: LOG_FORMAT
-            value: "text"
-        ports:
-        - containerPort: 3001
-          hostPort: 3001
+        - name: api
+          image: localhost:5001/foundry-api:latest
+          env:
+            - name: HTTP_PORT
+              value: "3001"
+            - name: DB_SUPER_USER
+              value: "postgres"
+            - name: DB_SUPER_PASSWORD
+              value: "postgres"
+            - name: DB_ROOT_NAME
+              value: "postgres"
+            - name: DB_INIT
+              value: "true"
+            - name: DB_HOST
+              value: "postgres"
+            - name: DB_PORT
+              value: "5432"
+            - name: DB_USER
+              value: "foundry"
+            - name: DB_PASSWORD
+              value: "changeme"
+            - name: DB_NAME
+              value: "foundry"
+            - name: DB_SSLMODE
+              value: "disable"
+            - name: "K8S_ENABLED"
+              value: "true"
+            - name: LOG_LEVEL
+              value: "debug"
+            - name: LOG_FORMAT
+              value: "text"
+            - name: AUTH_PRIVATE_KEY
+              value: "/etc/auth/private.pem"
+            - name: AUTH_PUBLIC_KEY
+              value: "/etc/auth/public.pem"
+          ports:
+            - containerPort: 3001
+              hostPort: 3001
+          volumeMounts:
+            - name: auth-keys
+              mountPath: /etc/auth
+              readOnly: true
 ---
 apiVersion: v1
 kind: Service
@@ -74,12 +86,12 @@ kind: ClusterRole
 metadata:
   name: api
 rules:
-- apiGroups:
-  - foundry.projectcatalyst.io
-  resources:
-  - releasedeployments
-  verbs:
-  - create
+  - apiGroups:
+      - foundry.projectcatalyst.io
+    resources:
+      - releasedeployments
+    verbs:
+      - create
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
@@ -90,6 +102,6 @@ roleRef:
   kind: ClusterRole
   name: api
 subjects:
-- kind: ServiceAccount
-  name: api
-  namespace: default
+  - kind: ServiceAccount
+    name: api
+    namespace: default

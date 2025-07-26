@@ -14,26 +14,29 @@ spec:
     spec:
       serviceAccountName: controller-manager
       containers:
-      - name: operator
-        image: localhost:5001/foundry-operator:latest
-        env:
-          - name: CONFIG_PATH
-            value: "/config/operator.json"
-          - name: NAMESPACE
-            value: "default"
-        volumeMounts:
-          - name: config-volume
-            mountPath: /config/operator.json
-            subPath: operator.json
-          - name: config-volume
-            mountPath: /app/kcl/main.k
-            subPath: main.k
-          - name: config-volume
-            mountPath: /app/kcl/kcl.mod
-            subPath: kcl.mod
-          - name: git-secret
-            mountPath: /secrets/git.json
-            subPath: git.json
+        - name: operator
+          image: localhost:5001/foundry-operator:latest
+          env:
+            - name: CONFIG_PATH
+              value: "/config/operator.json"
+            - name: NAMESPACE
+              value: "default"
+          volumeMounts:
+            - name: config-volume
+              mountPath: /config/operator.json
+              subPath: operator.json
+            - name: config-volume
+              mountPath: /app/kcl/main.k
+              subPath: main.k
+            - name: config-volume
+              mountPath: /app/kcl/kcl.mod
+              subPath: kcl.mod
+            - name: git-secret
+              mountPath: /secrets/git.json
+              subPath: git.json
+            - name: jwt-secret
+              mountPath: /secret/jwt.txt
+              subPath: jwt.txt
       volumes:
         - name: config-volume
           configMap:
@@ -41,6 +44,9 @@ spec:
         - name: git-secret
           secret:
             secretName: git
+        - name: jwt-secret
+          secret:
+            secretName: api-jwt-token
 ---
 apiVersion: v1
 kind: ConfigMap
@@ -49,7 +55,10 @@ metadata:
 data:
   operator.json: |-
     {
-      "api_url": "http://api:3001",
+      "api": {
+        "url": "http://api:3001",
+        "token_path": "/secret/jwt.txt"
+      },
       "deployer": {
         "git": {
           "creds": {
