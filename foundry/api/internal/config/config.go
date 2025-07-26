@@ -6,8 +6,6 @@ import (
 	"log/slog"
 	"os"
 	"time"
-
-	"github.com/alecthomas/kong"
 )
 
 // Config represents the application configuration
@@ -46,22 +44,13 @@ type KubernetesConfig struct {
 	Enabled   bool   `kong:"help='Enable Kubernetes integration',default=false,env='K8S_ENABLED'"`
 }
 
-// Load parses command-line flags and environment variables to populate the Config
-func Load() (*Config, error) {
-	var cfg Config
-	parser := kong.Must(&cfg)
-
-	_, err := parser.Parse(os.Args[1:])
-	if err != nil {
-		return nil, err
-	}
-
+// Validate validates the configuration
+func (c *Config) Validate() error {
 	// Validate required fields
-	if cfg.Database.Password == "" {
-		return nil, errors.New("database password is required (use --password or DB_PASSWORD env var)")
+	if c.Database.Password == "" {
+		return errors.New("database password is required (use --password or DB_PASSWORD env var)")
 	}
-
-	return &cfg, nil
+	return nil
 }
 
 // GetDSN returns the database connection string

@@ -12,6 +12,9 @@ deps:
     ENV GOMODCACHE=/go/modcache
     CACHE --persist --sharing shared /go
 
+    # Copy local deps
+    COPY ../../lib/tools+src/src /lib/tools
+
     COPY go.mod go.sum .
     RUN go mod download
 
@@ -76,12 +79,12 @@ docker:
 
     ARG TARGETOS
     ARG TARGETARCH
-    ARG USERPLATFORM
+    ARG TARGETPLATFORM
 
     RUN apt-get update && apt-get install -y curl postgresql-client
 
     COPY \
-        --platform=$USERPLATFORM \
+        --platform=$TARGETPLATFORM \
         (+build/foundry-api \
         --GOOS=$TARGETOS \
         --GOARCH=$TARGETARCH \

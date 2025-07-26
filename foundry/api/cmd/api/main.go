@@ -2,12 +2,16 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"os"
 	"os/signal"
+	"runtime"
 	"syscall"
 	"time"
 
+	"github.com/alecthomas/kong"
+	"github.com/input-output-hk/catalyst-forge/foundry/api/cmd/api/auth"
 	"github.com/input-output-hk/catalyst-forge/foundry/api/internal/api"
 	"github.com/input-output-hk/catalyst-forge/foundry/api/internal/config"
 	"github.com/input-output-hk/catalyst-forge/foundry/api/internal/models"
@@ -19,30 +23,53 @@ import (
 	"gorm.io/gorm"
 )
 
+var version = "dev"
+
 var mockK8sClient = mocks.ClientMock{
 	CreateDeploymentFunc: func(ctx context.Context, deployment *models.ReleaseDeployment) error {
 		return nil
 	},
 }
 
-func main() {
-	// Load configuration
-	cfg, err := config.Load()
-	if err != nil {
-		log.Fatalf("Failed to load configuration: %v", err)
+// CLI represents the command-line interface structure
+type CLI struct {
+	Run     RunCmd       `kong:"cmd,help='Start the API server'"`
+	Version VersionCmd   `kong:"cmd,help='Show version information'"`
+	Auth    auth.AuthCmd `kong:"cmd,help='Authentication management commands'"`
+}
+
+// RunCmd represents the run subcommand
+type RunCmd struct {
+	config.Config `kong:"embed"`
+}
+
+// VersionCmd represents the version subcommand
+type VersionCmd struct{}
+
+// Run executes the version subcommand
+func (v *VersionCmd) Run() error {
+	fmt.Printf("foundry api version %s %s/%s\n", version, runtime.GOOS, runtime.GOARCH)
+	return nil
+}
+
+// Run executes the run subcommand
+func (r *RunCmd) Run() error {
+	// Validate configuration
+	if err := r.Validate(); err != nil {
+		return err
 	}
 
 	// Initialize logger
-	logger, err := cfg.GetLogger()
+	logger, err := r.GetLogger()
 	if err != nil {
-		log.Fatalf("Failed to initialize logger: %v", err)
+		return err
 	}
 
 	// Connect to the database
-	db, err := gorm.Open(postgres.Open(cfg.GetDSN()), &gorm.Config{})
+	db, err := gorm.Open(postgres.Open(r.GetDSN()), &gorm.Config{})
 	if err != nil {
 		logger.Error("Failed to connect to database", "error", err)
-		os.Exit(1)
+		return err
 	}
 
 	// Run migrations
@@ -56,17 +83,17 @@ func main() {
 	)
 	if err != nil {
 		logger.Error("Failed to run migrations", "error", err)
-		os.Exit(1)
+		return err
 	}
 
 	// Initialize Kubernetes client if enabled
 	var k8sClient k8s.Client
-	if cfg.Kubernetes.Enabled {
-		logger.Info("Initializing Kubernetes client", "namespace", cfg.Kubernetes.Namespace)
-		k8sClient, err = k8s.New(cfg.Kubernetes.Namespace, logger)
+	if r.Kubernetes.Enabled {
+		logger.Info("Initializing Kubernetes client", "namespace", r.Kubernetes.Namespace)
+		k8sClient, err = k8s.New(r.Kubernetes.Namespace, logger)
 		if err != nil {
 			logger.Error("Failed to initialize Kubernetes client", "error", err)
-			os.Exit(1)
+			return err
 		}
 	} else {
 		k8sClient = &mockK8sClient
@@ -88,7 +115,7 @@ func main() {
 	router := api.SetupRouter(releaseService, deploymentService, db, logger)
 
 	// Initialize server
-	server := api.NewServer(cfg.GetServerAddr(), router, logger)
+	server := api.NewServer(r.GetServerAddr(), router, logger)
 
 	// Handle graceful shutdown
 	quit := make(chan os.Signal, 1)
@@ -102,7 +129,7 @@ func main() {
 		}
 	}()
 
-	logger.Info("API server started", "addr", cfg.GetServerAddr())
+	logger.Info("API server started", "addr", r.GetServerAddr())
 
 	// Wait for shutdown signal
 	<-quit
@@ -118,4 +145,23 @@ func main() {
 	}
 
 	logger.Info("Server exiting")
+	return nil
+}
+
+func main() {
+	var cli CLI
+	ctx := kong.Parse(&cli,
+		kong.Name("foundry-api"),
+		kong.Description("Catalyst Foundry API Server"),
+		kong.UsageOnError(),
+		kong.ConfigureHelp(kong.HelpOptions{
+			Compact: true,
+		}),
+	)
+
+	// Execute the selected subcommand
+	err := ctx.Run()
+	if err != nil {
+		log.Fatalf("Command failed: %v", err)
+	}
 }
