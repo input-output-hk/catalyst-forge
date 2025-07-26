@@ -13,6 +13,8 @@ import (
 	"github.com/alecthomas/kong"
 	"github.com/input-output-hk/catalyst-forge/foundry/api/cmd/api/auth"
 	"github.com/input-output-hk/catalyst-forge/foundry/api/internal/api"
+	"github.com/input-output-hk/catalyst-forge/foundry/api/internal/api/middleware"
+	am "github.com/input-output-hk/catalyst-forge/foundry/api/internal/auth"
 	"github.com/input-output-hk/catalyst-forge/foundry/api/internal/config"
 	"github.com/input-output-hk/catalyst-forge/foundry/api/internal/models"
 	"github.com/input-output-hk/catalyst-forge/foundry/api/internal/repository"
@@ -111,8 +113,16 @@ func (r *RunCmd) Run() error {
 	releaseService := service.NewReleaseService(releaseRepo, aliasRepo, counterRepo, deploymentRepo)
 	deploymentService := service.NewDeploymentService(deploymentRepo, releaseRepo, eventRepo, k8sClient, db, logger)
 
+	// Initialize middleware
+	authManager, err := am.NewAuthManager(r.Auth.PrivateKey, r.Auth.PublicKey, am.WithLogger(logger))
+	if err != nil {
+		logger.Error("Failed to initialize auth manager", "error", err)
+		return err
+	}
+	authMiddleware := middleware.NewAuthMiddleware(authManager, logger)
+
 	// Setup router
-	router := api.SetupRouter(releaseService, deploymentService, db, logger)
+	router := api.SetupRouter(releaseService, deploymentService, authMiddleware, db, logger)
 
 	// Initialize server
 	server := api.NewServer(r.GetServerAddr(), router, logger)

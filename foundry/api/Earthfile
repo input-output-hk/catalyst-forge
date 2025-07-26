@@ -57,6 +57,8 @@ test:
         --load foundry-api-test:latest=(+docker-test) \
         --compose docker-compose.yml \
         --service api \
+        --service auth \
+        --service auth-jwt \
         --service postgres
         RUN docker compose up api-test
     END

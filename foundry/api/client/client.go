@@ -43,6 +43,7 @@ type Client interface {
 type HTTPClient struct {
 	baseURL    string
 	httpClient *http.Client
+	token      string
 }
 
 // ClientOption is a function type for client configuration
@@ -59,6 +60,13 @@ func WithTimeout(timeout time.Duration) ClientOption {
 func WithTransport(transport http.RoundTripper) ClientOption {
 	return func(c *HTTPClient) {
 		c.httpClient.Transport = transport
+	}
+}
+
+// WithToken sets the JWT token for authentication
+func WithToken(token string) ClientOption {
+	return func(c *HTTPClient) {
+		c.token = token
 	}
 }
 
@@ -100,6 +108,11 @@ func (c *HTTPClient) do(ctx context.Context, method, path string, reqBody, respB
 		req.Header.Set("Content-Type", "application/json")
 	}
 	req.Header.Set("Accept", "application/json")
+
+	// Add JWT token to Authorization header if present
+	if c.token != "" {
+		req.Header.Set("Authorization", "Bearer "+c.token)
+	}
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {

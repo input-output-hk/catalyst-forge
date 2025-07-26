@@ -1,10 +1,8 @@
 package test
 
 import (
-	"context"
 	"encoding/base64"
 	"fmt"
-	"os"
 	"regexp"
 	"testing"
 	"time"
@@ -16,13 +14,8 @@ import (
 )
 
 func TestReleaseAPI(t *testing.T) {
-	apiURL := os.Getenv("API_URL")
-	if apiURL == "" {
-		apiURL = "http://localhost:8080"
-	}
-
-	c := client.NewClient(apiURL)
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	c := newTestClient()
+	ctx, cancel := newTestContext()
 	defer cancel()
 
 	projectName := fmt.Sprintf("test-project-%d", time.Now().Unix())
@@ -122,13 +115,8 @@ func TestReleaseAPI(t *testing.T) {
 }
 
 func TestReleaseWithDefaultBranch(t *testing.T) {
-	apiURL := os.Getenv("API_URL")
-	if apiURL == "" {
-		apiURL = "http://localhost:8080"
-	}
-
-	c := client.NewClient(apiURL)
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	c := newTestClient()
+	ctx, cancel := newTestContext()
 	defer cancel()
 
 	projectName := fmt.Sprintf("test-default-branch-%d", time.Now().Unix())
