@@ -92,12 +92,12 @@ docker:
 
     ARG TARGETOS
     ARG TARGETARCH
-    ARG USERPLATFORM
+    ARG TARGETPLATFORM
 
     RUN apt-get update && apt-get install -y git
 
     COPY \
-        --platform=$USERPLATFORM \
+        --platform=$TARGETPLATFORM \
         (+build/foundry-operator \
         --GOOS=$TARGETOS \
         --GOARCH=$TARGETARCH) foundry-operator

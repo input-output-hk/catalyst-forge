@@ -46,6 +46,12 @@ project: {
 							"LOG_FORMAT": {
 								value: "json"
 							}
+							"AUTH_PRIVATE_KEY": {
+								value: "/certs/private.pem"
+							}
+							"AUTH_PUBLIC_KEY": {
+								value: "/certs/public.pem"
+							}
 							"DB_INIT": {
 								value: "true"
 							}
@@ -96,6 +102,13 @@ project: {
 							}
 						}
 
+						mounts: {
+							certs: {
+								ref: secret: name: "certs"
+								path: "/certs"
+							}
+						}
+
 						port: 8080
 
 						probes: {
@@ -110,6 +123,9 @@ project: {
 					}
 
 					secrets: {
+						certs: {
+							ref: "foundry-api/certs"
+						}
 						db: {
 							ref: "db/foundry"
 						}

@@ -96,3 +96,20 @@ docker:
 
     ENTRYPOINT [ "/bin/bash", "/app/entrypoint.sh" ]
     SAVE IMAGE ${container}:${tag}
+
+certs:
+    FROM +build
+
+    RUN ./bin/foundry-api auth init --output-dir /certs
+
+    SAVE ARTIFACT /certs certs
+
+jwt:
+    FROM +build
+
+    COPY --dir certs .
+
+    RUN mkdir -p /jwt
+    RUN ./bin/foundry-api auth generate -a -k ./certs/private.pem > /jwt/token.txt
+
+    SAVE ARTIFACT /jwt jwt
