@@ -1,0 +1,68 @@
+name: Validate GHA OIDC
+
+on:
+  push:
+
+permissions:
+  id-token: write
+  contents: read
+
+
+env:
+  API_URL: "http://localhost:5000"
+  OIDC_AUDIENCE: "forge"
+
+jobs:
+  test-auth-endpoint:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Start API
+        run: |
+          docker compose -f ./foundry/api/docker-compose.yml up -d
+
+      - name: Wait for API to be ready
+        run: |
+          sleep 10
+
+      - name: Obtain OIDC ID token
+        id: oidc
+        shell: bash
+        run: |
+          set -euo pipefail
+          TOKEN_JSON=$(curl -sSL \
+            "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=${OIDC_AUDIENCE}" \
+            -H "Authorization: Bearer ${ACTIONS_ID_TOKEN_REQUEST_TOKEN}")
+
+          IDTOKEN=$(echo "$TOKEN_JSON" | jq -r .value)
+          echo "::add-mask::$IDTOKEN"         # keep it out of logs
+          echo "id_token=$IDTOKEN" >>"$GITHUB_OUTPUT"
+
+      - name: Call /auth/gha/validate
+        id: call-api
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          RESPONSE=$(curl -sS -w "\n%{http_code}" -X POST \
+            -H "Content-Type: application/json" \
+            -d "{\"token\":\"${{ steps.oidc.outputs.id_token }}\"}" \
+            "${API_URL}/auth/gha/validate")
+
+          BODY=$(echo "$RESPONSE" | head -n -1)
+          STATUS=$(echo "$RESPONSE" | tail -n1)
+
+          echo "status=$STATUS" >>"$GITHUB_OUTPUT"
+          echo "jwt=$BODY"     >>"$GITHUB_OUTPUT"
+
+          if [ "$STATUS" -ne 200 ]; then
+            echo "::error ::API returned HTTP $STATUS"
+            exit 1
+          fi
+
+      - name: Verify returned JWT shape
+        shell: bash
+        run: |
+          echo "JWT: ${{ steps.call-api.outputs.jwt }}"

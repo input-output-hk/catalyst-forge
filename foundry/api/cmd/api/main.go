@@ -13,8 +13,10 @@ import (
 	"github.com/alecthomas/kong"
 	"github.com/input-output-hk/catalyst-forge/foundry/api/cmd/api/auth"
 	"github.com/input-output-hk/catalyst-forge/foundry/api/internal/api"
+	"github.com/input-output-hk/catalyst-forge/foundry/api/internal/api/handlers"
 	"github.com/input-output-hk/catalyst-forge/foundry/api/internal/api/middleware"
 	am "github.com/input-output-hk/catalyst-forge/foundry/api/internal/auth"
+	ghauth "github.com/input-output-hk/catalyst-forge/foundry/api/internal/auth/github"
 	"github.com/input-output-hk/catalyst-forge/foundry/api/internal/config"
 	"github.com/input-output-hk/catalyst-forge/foundry/api/internal/models"
 	"github.com/input-output-hk/catalyst-forge/foundry/api/internal/repository"
@@ -121,8 +123,25 @@ func (r *RunCmd) Run() error {
 	}
 	authMiddleware := middleware.NewAuthMiddleware(authManager, logger)
 
+	// Initialize GitHub Actions OIDC client
+	ghaOIDCClient, err := ghauth.NewDefaultGithubActionsOIDCClient(context.Background(), "/tmp/gha-jwks-cache")
+	if err != nil {
+		logger.Error("Failed to initialize GHA OIDC client", "error", err)
+		return err
+	}
+
+	// Start the GHA OIDC cache
+	if err := ghaOIDCClient.StartCache(); err != nil {
+		logger.Error("Failed to start GHA OIDC cache", "error", err)
+		return err
+	}
+	defer ghaOIDCClient.StopCache()
+
+	// Initialize GHA handler
+	ghaHandler := handlers.NewGHAHandler(authManager, ghaOIDCClient, logger)
+
 	// Setup router
-	router := api.SetupRouter(releaseService, deploymentService, authMiddleware, db, logger)
+	router := api.SetupRouter(releaseService, deploymentService, authMiddleware, db, logger, ghaHandler)
 
 	// Initialize server
 	server := api.NewServer(r.GetServerAddr(), router, logger)

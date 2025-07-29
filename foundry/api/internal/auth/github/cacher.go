@@ -16,7 +16,17 @@ import (
 
 const githubJWKSURL = "https://token.actions.githubusercontent.com/.well-known/jwks"
 
-type GitHubJWKSCacher struct {
+//go:generate go run github.com/matryer/moq@latest -skip-ensure --pkg mocks --out ./mocks/cacher.go . GitHubJWKSCacher
+
+// JWKSCacher is an interface that provides a way to cache and retrieve JWKS.
+type GitHubJWKSCacher interface {
+	JWKS() *jose.JSONWebKeySet
+	Start(context.Context) error
+	Stop()
+}
+
+// GitHubJWKSCacher is a JWKSCacher that caches JWKS from the GitHub Actions endpoint.
+type DefaultGitHubJWKSCacher struct {
 	cachePath string
 	ttl       time.Duration
 	client    *http.Client
@@ -31,39 +41,39 @@ type GitHubJWKSCacher struct {
 }
 
 // GitHubJWKSCacherOption is a function that can be used to configure the GitHubJWKSCacher.
-type GitHubJWKSCacherOption func(*GitHubJWKSCacher)
+type GitHubJWKSCacherOption func(*DefaultGitHubJWKSCacher)
 
 // WithClient sets the http client to use for the GitHubJWKSCacher.
 func WithClient(client *http.Client) GitHubJWKSCacherOption {
-	return func(g *GitHubJWKSCacher) {
+	return func(g *DefaultGitHubJWKSCacher) {
 		g.client = client
 	}
 }
 
 // WithFS sets the file system to use for the GitHubJWKSCacher.
 func WithFS(fs fs.Filesystem) GitHubJWKSCacherOption {
-	return func(g *GitHubJWKSCacher) {
+	return func(g *DefaultGitHubJWKSCacher) {
 		g.fs = fs
 	}
 }
 
 // WithJWKSURL sets the URL to use for the GitHubJWKSCacher.
 func WithJWKSURL(jwksURL string) GitHubJWKSCacherOption {
-	return func(g *GitHubJWKSCacher) {
+	return func(g *DefaultGitHubJWKSCacher) {
 		g.jwksURL = jwksURL
 	}
 }
 
 // WithTTL sets the TTL for the GitHubJWKSCacher.
 func WithTTL(ttl time.Duration) GitHubJWKSCacherOption {
-	return func(g *GitHubJWKSCacher) {
+	return func(g *DefaultGitHubJWKSCacher) {
 		g.ttl = ttl
 	}
 }
 
 // Start loads the initial JWKS (from disk or the network) and kicks off the
 // refresh loop. It returns an error if *no* valid JWKS can be obtained.
-func (g *GitHubJWKSCacher) Start(parent context.Context) error {
+func (g *DefaultGitHubJWKSCacher) Start(parent context.Context) error {
 	g.ctx, g.stop = context.WithCancel(parent)
 
 	if err := g.loadFromDisk(); err != nil {
@@ -79,7 +89,7 @@ func (g *GitHubJWKSCacher) Start(parent context.Context) error {
 }
 
 // Stop signals the goroutine to exit and waits for it to finish.
-func (g *GitHubJWKSCacher) Stop() {
+func (g *DefaultGitHubJWKSCacher) Stop() {
 	if g.stop != nil {
 		g.stop()
 	}
@@ -87,14 +97,14 @@ func (g *GitHubJWKSCacher) Stop() {
 }
 
 // JWKS returns the current cached key set (read‑only copy).
-func (g *GitHubJWKSCacher) JWKS() *jose.JSONWebKeySet {
+func (g *DefaultGitHubJWKSCacher) JWKS() *jose.JSONWebKeySet {
 	g.mu.RLock()
 	defer g.mu.RUnlock()
 	return g.jwks
 }
 
 // refresher polls on a ticker until the context is cancelled.
-func (g *GitHubJWKSCacher) refresher() {
+func (g *DefaultGitHubJWKSCacher) refresher() {
 	defer g.wg.Done()
 
 	ticker := time.NewTicker(g.ttl)
@@ -111,7 +121,7 @@ func (g *GitHubJWKSCacher) refresher() {
 }
 
 // refresh downloads the JWKS and, if it parses, stores it to disk + memory.
-func (g *GitHubJWKSCacher) refresh() error {
+func (g *DefaultGitHubJWKSCacher) refresh() error {
 	req, _ := http.NewRequestWithContext(g.ctx, http.MethodGet, g.jwksURL, nil)
 	resp, err := g.client.Do(req)
 	if err != nil {
@@ -131,7 +141,7 @@ func (g *GitHubJWKSCacher) refresh() error {
 		return fmt.Errorf("jwks empty")
 	}
 
-	// Write to disk (best‑effort; ignore errors on shutdown tick).
+	// Write to disk (best‑effort)
 	if data, _ := json.Marshal(&ks); len(data) > 0 {
 		_ = g.fs.WriteFile(g.cachePath, data, 0o644)
 	}
@@ -143,15 +153,17 @@ func (g *GitHubJWKSCacher) refresh() error {
 }
 
 // loadFromDisk attempts to populate g.jwks from the cache file.
-func (g *GitHubJWKSCacher) loadFromDisk() error {
+func (g *DefaultGitHubJWKSCacher) loadFromDisk() error {
 	data, err := g.fs.ReadFile(g.cachePath)
 	if err != nil {
 		return err
 	}
 	var ks jose.JSONWebKeySet
 	if err := json.Unmarshal(data, &ks); err != nil {
+		fmt.Printf("error unmarshalling jwks: %v\n", err)
 		return err
 	}
+
 	if len(ks.Keys) == 0 {
 		return fmt.Errorf("jwks on disk had zero keys")
 	}
@@ -162,10 +174,15 @@ func (g *GitHubJWKSCacher) loadFromDisk() error {
 }
 
 // NewGitHubJWKSCacher creates a new GitHubJWKSCacher.
-func NewGitHubJWKSCacher(ctx context.Context, cachePath string, opts ...GitHubJWKSCacherOption) *GitHubJWKSCacher {
-	c := &GitHubJWKSCacher{
+func NewDefaultGitHubJWKSCacher(
+	ctx context.Context,
+	cachePath string,
+	opts ...GitHubJWKSCacherOption,
+) *DefaultGitHubJWKSCacher {
+	c := &DefaultGitHubJWKSCacher{
 		cachePath: cachePath,
 		ttl:       10 * time.Minute,
+		client:    &http.Client{Timeout: 30 * time.Second},
 		fs:        billy.NewBaseOsFS(),
 		jwksURL:   githubJWKSURL,
 	}

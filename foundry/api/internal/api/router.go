@@ -18,6 +18,7 @@ func SetupRouter(
 	am *middleware.AuthMiddleware,
 	db *gorm.DB,
 	logger *slog.Logger,
+	ghaHandler *handlers.GHAHandler,
 ) *gin.Engine {
 	r := gin.New()
 
@@ -39,6 +40,9 @@ func SetupRouter(
 	r.GET("/healthz", healthHandler.CheckHealth)
 
 	// Route Setup //
+
+	// GHA token validation endpoint
+	r.POST("/auth/gha/validate", ghaHandler.ValidateToken)
 
 	// Release endpoints
 	r.POST("/release", am.ValidatePermissions([]auth.Permission{auth.PermReleaseWrite}), releaseHandler.CreateRelease)
