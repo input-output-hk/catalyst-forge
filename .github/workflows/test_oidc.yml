@@ -80,7 +80,23 @@ jobs:
             exit 1
           fi
 
-      - name: Verify returned JWT shape
+      - name: Verify returned JWT token
         shell: bash
         run: |
-          echo "JWT: ${{ steps.call-api.outputs.jwt }}"
+          cat > release.json << 'EOF'
+          {
+            "bundle": "fake",
+            "project": "project",
+            "project_path": "project",
+            "source_repo": "http://gitea:3000/root/source",
+            "source_commit": "0e28b79ca8e72079c29b575d2b994cfef92b4c32"
+          }
+
+          EOF
+
+          JSON=$(cat release.json | curl -s -X POST "http://localhost:5000/release" \
+            -H "Content-Type: application/json" \
+            -H "Authorization: Bearer ${{ steps.call-api.outputs.jwt }}" \
+            -d @-)
+
+          echo "JSON: $JSON"
