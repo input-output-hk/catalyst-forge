@@ -96,30 +96,13 @@ func (h *GHAHandler) ValidateToken(c *gin.Context) {
 }
 
 // generatePermissions generates permissions based on the GitHub Actions token information
-func (h *GHAHandler) generatePermissions(tokenInfo *ghauth.TokenInfo) []auth.Permission {
+func (h *GHAHandler) generatePermissions(_ *ghauth.TokenInfo) []auth.Permission {
 	permissions := []auth.Permission{
 		auth.PermReleaseRead,
-		auth.PermDeploymentRead,
-		auth.PermDeploymentEventRead,
+		auth.PermReleaseWrite,
 	}
 
-	// Add write permissions for main branch or specific environments
-	if tokenInfo.Ref == "refs/heads/main" || tokenInfo.Ref == "refs/heads/master" {
-		permissions = append(permissions,
-			auth.PermReleaseWrite,
-			auth.PermDeploymentWrite,
-			auth.PermDeploymentEventWrite,
-		)
-	}
-
-	// Add write permissions for specific environments
-	if tokenInfo.Environment == "production" || tokenInfo.Environment == "staging" {
-		permissions = append(permissions,
-			auth.PermReleaseWrite,
-			auth.PermDeploymentWrite,
-			auth.PermDeploymentEventWrite,
-		)
-	}
+	// TODO: Add permissions based on the token information
 
 	return permissions
 }
