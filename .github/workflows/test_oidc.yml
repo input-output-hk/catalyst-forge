@@ -102,7 +102,7 @@ jobs:
 
           echo "JSON: $JSON"
 
-          if [ "$(echo "$JSON" | jq -r '.id')" != "null" ]; then
+          if [ "$(echo "$JSON" | jq -r '.id')" == "null" ]; then
             echo "::error ::Release ID is null"
             exit 1
           fi
