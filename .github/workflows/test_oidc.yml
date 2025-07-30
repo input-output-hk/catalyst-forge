@@ -71,9 +71,10 @@ jobs:
 
           BODY=$(echo "$RESPONSE" | head -n -1)
           STATUS=$(echo "$RESPONSE" | tail -n1)
+          JWT=$(echo "$BODY" | jq -r '.token')
 
           echo "status=$STATUS" >>"$GITHUB_OUTPUT"
-          echo "jwt=$BODY"     >>"$GITHUB_OUTPUT"
+          echo "jwt=$JWT"     >>"$GITHUB_OUTPUT"
 
           if [ "$STATUS" -ne 200 ]; then
             echo "::error ::API returned HTTP $STATUS"
@@ -94,9 +95,14 @@ jobs:
 
           EOF
 
-          JSON=$(cat release.json | curl -s -X POST "http://localhost:5000/release" \
+          JSON=$(cat release.json | curl -s -X POST "${API_URL}/release" \
             -H "Content-Type: application/json" \
             -H "Authorization: Bearer ${{ steps.call-api.outputs.jwt }}" \
             -d @-)
 
           echo "JSON: $JSON"
+
+          if [ "$(echo "$JSON" | jq -r '.id')" != "null" ]; then
+            echo "::error ::Release ID is null"
+            exit 1
+          fi
