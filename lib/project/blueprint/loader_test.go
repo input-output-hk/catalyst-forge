@@ -112,7 +112,9 @@ func TestBlueprintLoaderLoad(t *testing.T) {
 				project: ci: {
 					targets: {
 						test: {
-							retries: 3
+							retries: {
+								attempts: 3
+							}
 						}
 					}
 				}
@@ -125,7 +127,7 @@ func TestBlueprintLoaderLoad(t *testing.T) {
 				require.NoError(t, err)
 				assert.Equal(t, true, field1)
 
-				field2, err := v.LookupPath(cue.ParsePath("project.ci.targets.test.retries")).Int64()
+				field2, err := v.LookupPath(cue.ParsePath("project.ci.targets.test.retries.attempts")).Int64()
 				require.NoError(t, err)
 				assert.Equal(t, int64(3), field2)
 			},
