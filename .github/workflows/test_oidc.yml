@@ -58,7 +58,6 @@ jobs:
         with:
             result-encoding: string
             script: |
-                const core = require('@actions/core');
                 const token = await core.getIDToken('forge');
                 core.setOutput('token', token);
 
