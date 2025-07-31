@@ -58,7 +58,6 @@ async function run() {
       }
     }
 
-    core.info(`Version ${actualVersion} not found in cache, downloading...`);
     core.info(`Downloading version ${actualVersion} from ${assetUrl}`);
     const downloadPath = await tc.downloadTool(
       assetUrl,
