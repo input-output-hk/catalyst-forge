@@ -33,11 +33,11 @@ async function run() {
       forgeArgs.push("--local");
     }
 
+    forgeArgs.push(...command.split(" "));
+
     if (skipOutput === true) {
       forgeArgs.push("--skip-output");
     }
-
-    forgeArgs.push(...command.split(" "));
 
     if (args !== "") {
       forgeArgs.push(...args.split(" "));
