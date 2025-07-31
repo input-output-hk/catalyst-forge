@@ -43,12 +43,13 @@ jobs:
 
       - name: Wait for API to be ready
         run: |
-          sleep 10
+          sleep 1
 
       - name: Create GHA auth
         run: |
             forge -vvv --api-url "http://localhost:5050" api login "$(cat ./foundry/api/.secret/jwt.txt)"
             forge -vvv --api-url "http://localhost:5050" api auth gha create -a input-output-hk/catalyst-forge
+            rm -rf $HOME/.config/forge/config.toml
 
       - name: Obtain OIDC ID token
         id: oidc
@@ -70,28 +71,7 @@ jobs:
           JWT=$(echo "$BODY" | jq -r '.token')
           forge -vvv --api-url "http://localhost:5050" api login -t "gha" "${{ steps.oidc.outputs.id_token }}"
 
-    #   - name: Verify returned JWT token
-    #     shell: bash
-    #     run: |
-    #       cat > release.json << 'EOF'
-    #       {
-    #         "bundle": "fake",
-    #         "project": "project",
-    #         "project_path": "project",
-    #         "source_repo": "http://gitea:3000/root/source",
-    #         "source_commit": "0e28b79ca8e72079c29b575d2b994cfef92b4c32"
-    #       }
-
-    #       EOF
-
-    #       JSON=$(cat release.json | curl -s -X POST "${API_URL}/release" \
-    #         -H "Content-Type: application/json" \
-    #         -H "Authorization: Bearer ${{ steps.call-api.outputs.jwt }}" \
-    #         -d @-)
-
-    #       echo "JSON: $JSON"
-
-    #       if [ "$(echo "$JSON" | jq -r '.id')" == "null" ]; then
-    #         echo "::error ::Release ID is null"
-    #         exit 1
-    #       fi
+      - name: Verify returned JWT token
+        shell: bash
+        run: |
+          forge -vvv --api-url "http://localhost:5050" api auth gha list -j

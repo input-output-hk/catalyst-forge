@@ -15,6 +15,7 @@ type CreateCmd struct {
 	Description string            `short:"d" help:"The description of the authentication entry." default:""`
 	Repository  string            `arg:"" help:"The repository to create the authentication entry for."`
 	Permissions []auth.Permission `short:"p" help:"The permissions to grant to the authentication entry."`
+	JSON        bool              `short:"j" help:"Output as prettified JSON instead of table."`
 }
 
 func (c *CreateCmd) Run(ctx run.RunContext, cl client.Client) error {
@@ -35,6 +36,9 @@ func (c *CreateCmd) Run(ctx run.RunContext, cl client.Client) error {
 		return fmt.Errorf("failed to create authentication entry: %w", err)
 	}
 
-	ctx.Logger.Info("Authentication entry created", "id", auth.ID)
-	return nil
+	if c.JSON {
+		return outputJSON(auth)
+	}
+
+	return outputTable(auth)
 }
