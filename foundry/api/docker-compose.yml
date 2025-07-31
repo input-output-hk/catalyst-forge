@@ -55,17 +55,17 @@ services:
         condition: service_healthy
     restart: on-failure
 
-  # api-test:
-  #   image: foundry-api-test:latest
-  #   container_name: api-test
-  #   environment:
-  #     API_URL: http://api:5050
-  #     JWT_TOKEN_PATH: /data/jwt.txt
-  #   volumes:
-  #     - ./.secret:/data
-  #   depends_on:
-  #     api:
-  #       condition: service_healthy
+  api-test:
+    image: foundry-api-test:latest
+    container_name: api-test
+    environment:
+      API_URL: http://api:5050
+      JWT_TOKEN_PATH: /data/jwt.txt
+    volumes:
+      - ./.secret:/data
+    depends_on:
+      api:
+        condition: service_healthy
 
   postgres:
     image: postgres:15-alpine
