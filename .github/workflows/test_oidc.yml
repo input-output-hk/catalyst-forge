@@ -68,7 +68,7 @@ jobs:
         shell: bash
         run: |
           JWT=$(echo "$BODY" | jq -r '.token')
-          forge -vvv --api-url "http://localhost:5050" api login -t "gha" "$JWT"
+          forge -vvv --api-url "http://localhost:5050" api login -t "gha" "${{ steps.oidc.outputs.id_token }}"
 
     #   - name: Verify returned JWT token
     #     shell: bash
