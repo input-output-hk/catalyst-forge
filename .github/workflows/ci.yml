@@ -12,6 +12,11 @@ on:
         required: false
         type: string
         default: "false"
+      release_only:
+        description: Only run the release job
+        required: false
+        type: boolean
+        default: false
       verbosity:
         description: The verbosity level to use
         required: false
@@ -78,7 +83,7 @@ jobs:
   check:
     uses: input-output-hk/catalyst-forge/.github/workflows/run.yml@ci-improvements
     needs: [discover]
-    if: (fromJson(needs.discover.outputs.earthfiles)['^check(-.*)?$'] != null) && !failure() && !cancelled()
+    if: (fromJson(needs.discover.outputs.earthfiles)['^check(-.*)?$'] != null) && (inputs.release_only == false) && !failure() && !cancelled()
     with:
       earthfiles: ${{ toJson(fromJson(needs.discover.outputs.earthfiles)['^check(-.*)?$']) }}
       forge_version: ${{ inputs.forge_version }}
@@ -91,7 +96,7 @@ jobs:
   build:
     uses: input-output-hk/catalyst-forge/.github/workflows/run.yml@ci-improvements
     needs: [discover, check]
-    if: (fromJson(needs.discover.outputs.earthfiles)['^build(-.*)?$'] != null) && !failure() && !cancelled()
+    if: (fromJson(needs.discover.outputs.earthfiles)['^build(-.*)?$'] != null) && (inputs.release_only == false) && !failure() && !cancelled()
     with:
       earthfiles: ${{ toJson(fromJson(needs.discover.outputs.earthfiles)['^build(-.*)?$']) }}
       forge_version: ${{ inputs.forge_version }}
@@ -104,7 +109,7 @@ jobs:
   package:
     uses: input-output-hk/catalyst-forge/.github/workflows/run.yml@ci-improvements
     needs: [discover, check, build]
-    if: (fromJson(needs.discover.outputs.earthfiles)['^package(-.*)?$'] != null) && !failure() && !cancelled()
+    if: (fromJson(needs.discover.outputs.earthfiles)['^package(-.*)?$'] != null) && (inputs.release_only == false) && !failure() && !cancelled()
     with:
       earthfiles: ${{ toJson(fromJson(needs.discover.outputs.earthfiles)['^package(-.*)?$']) }}
       forge_version: ${{ inputs.forge_version }}
@@ -117,7 +122,7 @@ jobs:
   test:
     uses: input-output-hk/catalyst-forge/.github/workflows/run.yml@ci-improvements
     needs: [discover, check, build, package]
-    if: (fromJson(needs.discover.outputs.earthfiles)['^test(-.*)?$'] != null) && !failure() && !cancelled()
+    if: (fromJson(needs.discover.outputs.earthfiles)['^test(-.*)?$'] != null) && (inputs.release_only == false) && !failure() && !cancelled()
     with:
       earthfiles: ${{ toJson(fromJson(needs.discover.outputs.earthfiles)['^test(-.*)?$']) }}
       forge_version: ${{ inputs.forge_version }}
@@ -130,7 +135,7 @@ jobs:
   nightly:
     uses: input-output-hk/catalyst-forge/.github/workflows/run.yml@ci-improvements
     needs: [discover, check, build, package]
-    if: (fromJson(needs.discover.outputs.earthfiles)['^nightly(-.*)?$'] != null) && !failure() && !cancelled() && inputs.nightly == true
+    if: (fromJson(needs.discover.outputs.earthfiles)['^nightly(-.*)?$'] != null) && (inputs.release_only == false) && !failure() && !cancelled() && inputs.nightly == true
     with:
       earthfiles: ${{ toJson(fromJson(needs.discover.outputs.earthfiles)['^nightly(-.*)?$']) }}
       forge_version: ${{ inputs.forge_version }}

@@ -19,3 +19,4 @@ jobs:
       forge_version: local
       verbosity: debug
       nightly: true
+      release_only: true
