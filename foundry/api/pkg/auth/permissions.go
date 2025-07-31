@@ -12,6 +12,8 @@ const (
 	PermDeploymentEventWrite Permission = "deployment:event:write"
 	PermReleaseRead          Permission = "release:read"
 	PermReleaseWrite         Permission = "release:write"
+	PermGHAAuthRead          Permission = "gha:auth:read"
+	PermGHAAuthWrite         Permission = "gha:auth:write"
 )
 
 // AllPermissions is a list of all possible permissions
@@ -24,4 +26,6 @@ var AllPermissions = []Permission{
 	PermDeploymentEventWrite,
 	PermReleaseRead,
 	PermReleaseWrite,
+	PermGHAAuthRead,
+	PermGHAAuthWrite,
 }

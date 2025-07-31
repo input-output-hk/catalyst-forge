@@ -14,6 +14,15 @@ import (
 
 // Client interface defines the operations that can be performed against the API
 type Client interface {
+	// GHA operations
+	ValidateToken(ctx context.Context, req *ValidateTokenRequest) (*ValidateTokenResponse, error)
+	CreateAuth(ctx context.Context, req *CreateAuthRequest) (*GHARepositoryAuth, error)
+	GetAuth(ctx context.Context, id uint) (*GHARepositoryAuth, error)
+	GetAuthByRepository(ctx context.Context, repository string) (*GHARepositoryAuth, error)
+	UpdateAuth(ctx context.Context, id uint, req *UpdateAuthRequest) (*GHARepositoryAuth, error)
+	DeleteAuth(ctx context.Context, id uint) error
+	ListAuths(ctx context.Context) ([]GHARepositoryAuth, error)
+
 	// Release operations
 	CreateRelease(ctx context.Context, release *Release, deploy bool) (*Release, error)
 	GetRelease(ctx context.Context, id string) (*Release, error)

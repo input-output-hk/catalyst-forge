@@ -59,6 +59,12 @@ type EarthlySatellite struct {
 	Credentials *common.Secret `json:"credentials,omitempty"`
 }
 
+// Foundry contains the configuration for Catalyst Foundry.
+type Foundry struct {
+	// URL of the Foundry API.
+	Url string `json:"url"`
+}
+
 type Git struct {
 	// Credentials contains the credentials to use for interacting with private repositories.
 	Credentials common.Secret `json:"credentials"`
@@ -95,6 +101,9 @@ type Providers struct {
 
 	// Earthly contains the configuration for the Earthly Cloud provider.
 	Earthly *Earthly `json:"earthly,omitempty"`
+
+	// Foundry contains the configuration for Catalyst Foundry.
+	Foundry *Foundry `json:"foundry,omitempty"`
 
 	// Git contains the configuration for the Git provider.
 	Git *Git `json:"git,omitempty"`

@@ -6,8 +6,8 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/input-output-hk/catalyst-forge/foundry/api/internal/api/handlers"
 	"github.com/input-output-hk/catalyst-forge/foundry/api/internal/api/middleware"
-	"github.com/input-output-hk/catalyst-forge/foundry/api/internal/auth"
 	"github.com/input-output-hk/catalyst-forge/foundry/api/internal/service"
+	"github.com/input-output-hk/catalyst-forge/foundry/api/pkg/auth"
 	"gorm.io/gorm"
 )
 
@@ -18,6 +18,7 @@ func SetupRouter(
 	am *middleware.AuthMiddleware,
 	db *gorm.DB,
 	logger *slog.Logger,
+	ghaHandler *handlers.GHAHandler,
 ) *gin.Engine {
 	r := gin.New()
 
@@ -39,6 +40,17 @@ func SetupRouter(
 	r.GET("/healthz", healthHandler.CheckHealth)
 
 	// Route Setup //
+
+	// GHA token validation endpoint (no auth required)
+	r.POST("/gha/validate", ghaHandler.ValidateToken)
+
+	// GHA authentication management endpoints (requires auth)
+	r.POST("/gha/auth", am.ValidatePermissions([]auth.Permission{auth.PermGHAAuthWrite}), ghaHandler.CreateAuth)
+	r.GET("/gha/auth", am.ValidatePermissions([]auth.Permission{auth.PermGHAAuthRead}), ghaHandler.ListAuths)
+	r.GET("/gha/auth/:id", am.ValidatePermissions([]auth.Permission{auth.PermGHAAuthRead}), ghaHandler.GetAuth)
+	r.GET("/gha/auth/repository/:repository", am.ValidatePermissions([]auth.Permission{auth.PermGHAAuthRead}), ghaHandler.GetAuthByRepository)
+	r.PUT("/gha/auth/:id", am.ValidatePermissions([]auth.Permission{auth.PermGHAAuthWrite}), ghaHandler.UpdateAuth)
+	r.DELETE("/gha/auth/:id", am.ValidatePermissions([]auth.Permission{auth.PermGHAAuthWrite}), ghaHandler.DeleteAuth)
 
 	// Release endpoints
 	r.POST("/release", am.ValidatePermissions([]auth.Permission{auth.PermReleaseWrite}), releaseHandler.CreateRelease)

@@ -8,7 +8,7 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
-	"github.com/input-output-hk/catalyst-forge/foundry/api/internal/auth"
+	"github.com/input-output-hk/catalyst-forge/foundry/api/pkg/auth"
 )
 
 // AuthenticatedUser is a struct that contains the user information from the
