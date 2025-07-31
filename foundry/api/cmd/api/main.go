@@ -25,9 +25,31 @@ import (
 	"github.com/input-output-hk/catalyst-forge/foundry/api/pkg/k8s/mocks"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
+
+	_ "github.com/input-output-hk/catalyst-forge/foundry/api/docs"
 )
 
 var version = "dev"
+
+// @title           Catalyst Foundry API
+// @version         1.0
+// @description     API for managing releases and deployments in the Catalyst Foundry system.
+// @termsOfService  http://swagger.io/terms/
+
+// @contact.name   API Support
+// @contact.url    http://www.swagger.io/support
+// @contact.email  support@swagger.io
+
+// @license.name  Apache 2.0
+// @license.url   http://www.apache.org/licenses/LICENSE-2.0.html
+
+// @host      localhost:5050
+// @BasePath  /
+
+// @securityDefinitions.apikey BearerAuth
+// @in header
+// @name Authorization
+// @description Type "Bearer" followed by a space and JWT token.
 
 var mockK8sClient = mocks.ClientMock{
 	CreateDeploymentFunc: func(ctx context.Context, deployment *models.ReleaseDeployment) error {

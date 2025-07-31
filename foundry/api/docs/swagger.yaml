@@ -1,0 +1,1146 @@
+basePath: /
+definitions:
+  auth.Permission:
+    enum:
+    - alias:read
+    - alias:write
+    - deployment:read
+    - deployment:write
+    - deployment:event:read
+    - deployment:event:write
+    - release:read
+    - release:write
+    - gha:auth:read
+    - gha:auth:write
+    type: string
+    x-enum-varnames:
+    - PermAliasRead
+    - PermAliasWrite
+    - PermDeploymentRead
+    - PermDeploymentWrite
+    - PermDeploymentEventRead
+    - PermDeploymentEventWrite
+    - PermReleaseRead
+    - PermReleaseWrite
+    - PermGHAAuthRead
+    - PermGHAAuthWrite
+  handlers.AddEventRequest:
+    properties:
+      message:
+        type: string
+      name:
+        type: string
+    required:
+    - message
+    - name
+    type: object
+  handlers.CreateAliasRequest:
+    properties:
+      release_id:
+        type: string
+    required:
+    - release_id
+    type: object
+  handlers.CreateAuthRequest:
+    properties:
+      description:
+        type: string
+      enabled:
+        type: boolean
+      permissions:
+        items:
+          $ref: '#/definitions/auth.Permission'
+        type: array
+      repository:
+        type: string
+    required:
+    - permissions
+    - repository
+    type: object
+  handlers.CreateReleaseRequest:
+    properties:
+      bundle:
+        type: string
+      project:
+        type: string
+      project_path:
+        type: string
+      source_branch:
+        type: string
+      source_commit:
+        type: string
+      source_repo:
+        type: string
+    required:
+    - bundle
+    - project
+    - project_path
+    - source_commit
+    - source_repo
+    type: object
+  handlers.GHARepositoryAuthResponse:
+    properties:
+      created_at:
+        type: string
+      created_by:
+        type: string
+      description:
+        type: string
+      enabled:
+        type: boolean
+      id:
+        type: integer
+      permissions:
+        items:
+          type: string
+        type: array
+      repository:
+        type: string
+      updated_at:
+        type: string
+      updated_by:
+        type: string
+    type: object
+  handlers.UpdateAuthRequest:
+    properties:
+      description:
+        type: string
+      enabled:
+        type: boolean
+      permissions:
+        items:
+          $ref: '#/definitions/auth.Permission'
+        type: array
+      repository:
+        type: string
+    required:
+    - permissions
+    - repository
+    type: object
+  handlers.UpdateReleaseRequest:
+    properties:
+      bundle:
+        type: string
+      project_path:
+        type: string
+      source_branch:
+        type: string
+      source_commit:
+        type: string
+      source_repo:
+        type: string
+    type: object
+  handlers.ValidateTokenRequest:
+    properties:
+      audience:
+        type: string
+      token:
+        type: string
+    required:
+    - token
+    type: object
+  handlers.ValidateTokenResponse:
+    properties:
+      expires_at:
+        type: string
+      token:
+        type: string
+      user_id:
+        type: string
+    type: object
+  models.DeploymentEvent:
+    properties:
+      created_at:
+        type: string
+      deployment_id:
+        type: string
+      id:
+        type: integer
+      message:
+        type: string
+      name:
+        type: string
+      timestamp:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  models.DeploymentStatus:
+    enum:
+    - pending
+    - running
+    - succeeded
+    - failed
+    type: string
+    x-enum-varnames:
+    - DeploymentStatusPending
+    - DeploymentStatusRunning
+    - DeploymentStatusSucceeded
+    - DeploymentStatusFailed
+  models.Release:
+    properties:
+      bundle:
+        type: string
+      created:
+        type: string
+      created_at:
+        description: Timestamps
+        type: string
+      deployments:
+        description: Relationships
+        items:
+          $ref: '#/definitions/models.ReleaseDeployment'
+        type: array
+      id:
+        type: string
+      project:
+        type: string
+      project_path:
+        type: string
+      source_branch:
+        type: string
+      source_commit:
+        type: string
+      source_repo:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  models.ReleaseAlias:
+    properties:
+      created_at:
+        type: string
+      name:
+        type: string
+      release:
+        allOf:
+        - $ref: '#/definitions/models.Release'
+        description: Relationships
+      release_id:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  models.ReleaseDeployment:
+    properties:
+      attempts:
+        type: integer
+      created_at:
+        description: Timestamps
+        type: string
+      events:
+        items:
+          $ref: '#/definitions/models.DeploymentEvent'
+        type: array
+      id:
+        type: string
+      reason:
+        type: string
+      release:
+        allOf:
+        - $ref: '#/definitions/models.Release'
+        description: Relationships
+      release_id:
+        type: string
+      status:
+        $ref: '#/definitions/models.DeploymentStatus'
+      timestamp:
+        type: string
+      updated_at:
+        type: string
+    type: object
+host: localhost:5050
+info:
+  contact:
+    email: support@swagger.io
+    name: API Support
+    url: http://www.swagger.io/support
+  description: API for managing releases and deployments in the Catalyst Foundry system.
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+  termsOfService: http://swagger.io/terms/
+  title: Catalyst Foundry API
+  version: "1.0"
+paths:
+  /gha/auth:
+    get:
+      consumes:
+      - application/json
+      description: Get all GitHub Actions authentication configurations
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of authentication configurations
+          schema:
+            items:
+              $ref: '#/definitions/handlers.GHARepositoryAuthResponse'
+            type: array
+        "401":
+          description: Authentication required
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: List GHA authentication configurations
+      tags:
+      - gha
+    post:
+      consumes:
+      - application/json
+      description: Create a new GitHub Actions authentication configuration for a
+        repository
+      parameters:
+      - description: GHA authentication configuration
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.CreateAuthRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Authentication configuration created
+          schema:
+            $ref: '#/definitions/handlers.GHARepositoryAuthResponse'
+        "400":
+          description: Invalid request
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Authentication required
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Create GHA authentication configuration
+      tags:
+      - gha
+  /gha/auth/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Delete a GitHub Actions authentication configuration
+      parameters:
+      - description: Authentication configuration ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Authentication configuration deleted
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Invalid ID parameter
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Authentication required
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Delete GHA authentication configuration
+      tags:
+      - gha
+    get:
+      consumes:
+      - application/json
+      description: Get a specific GitHub Actions authentication configuration by its
+        ID
+      parameters:
+      - description: Authentication configuration ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Authentication configuration
+          schema:
+            $ref: '#/definitions/handlers.GHARepositoryAuthResponse'
+        "400":
+          description: Invalid ID parameter
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Authentication required
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Authentication configuration not found
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get GHA authentication configuration by ID
+      tags:
+      - gha
+    put:
+      consumes:
+      - application/json
+      description: Update an existing GitHub Actions authentication configuration
+      parameters:
+      - description: Authentication configuration ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Updated GHA authentication configuration
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.UpdateAuthRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Authentication configuration updated
+          schema:
+            $ref: '#/definitions/handlers.GHARepositoryAuthResponse'
+        "400":
+          description: Invalid request
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Authentication required
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Authentication configuration not found
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Update GHA authentication configuration
+      tags:
+      - gha
+  /gha/auth/repository/{repository}:
+    get:
+      consumes:
+      - application/json
+      description: Get a GitHub Actions authentication configuration by repository
+        name
+      parameters:
+      - description: Repository name
+        in: path
+        name: repository
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Authentication configuration
+          schema:
+            $ref: '#/definitions/handlers.GHARepositoryAuthResponse'
+        "401":
+          description: Authentication required
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Authentication configuration not found
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get GHA authentication configuration by repository
+      tags:
+      - gha
+  /gha/validate:
+    post:
+      consumes:
+      - application/json
+      description: Validate a GitHub Actions OIDC token and return a JWT token
+      parameters:
+      - description: Token validation request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.ValidateTokenRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Token validated successfully
+          schema:
+            $ref: '#/definitions/handlers.ValidateTokenResponse'
+        "400":
+          description: Invalid request
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Invalid token
+          schema:
+            additionalProperties: true
+            type: object
+        "403":
+          description: Repository not authorized
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Validate GitHub Actions token
+      tags:
+      - gha
+  /healthz:
+    get:
+      consumes:
+      - application/json
+      description: Check the health status of the API service
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Service is healthy
+          schema:
+            additionalProperties: true
+            type: object
+        "503":
+          description: Service is unhealthy
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Health check
+      tags:
+      - health
+  /release:
+    post:
+      consumes:
+      - application/json
+      description: Create a new release with the specified source repository and project
+        details
+      parameters:
+      - description: Release creation request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.CreateReleaseRequest'
+      - description: Deploy the release immediately
+        enum:
+        - "true"
+        - "false"
+        - "1"
+        - "0"
+        in: query
+        name: deploy
+        type: string
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Release created successfully
+          schema:
+            $ref: '#/definitions/models.Release'
+        "400":
+          description: Invalid request
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Authentication required
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Create a new release
+      tags:
+      - releases
+  /release/{id}:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve a specific release by its ID
+      parameters:
+      - description: Release ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Release details
+          schema:
+            $ref: '#/definitions/models.Release'
+        "401":
+          description: Authentication required
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Release not found
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get a release by ID
+      tags:
+      - releases
+    put:
+      consumes:
+      - application/json
+      description: Update an existing release with new information
+      parameters:
+      - description: Release ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Release update request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.UpdateReleaseRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Release updated successfully
+          schema:
+            $ref: '#/definitions/models.Release'
+        "400":
+          description: Invalid request
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Authentication required
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Release not found
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Update a release
+      tags:
+      - releases
+  /release/{id}/aliases:
+    get:
+      consumes:
+      - application/json
+      description: Get all aliases for a specific release
+      parameters:
+      - description: Release ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of aliases
+          schema:
+            items:
+              $ref: '#/definitions/models.ReleaseAlias'
+            type: array
+        "401":
+          description: Authentication required
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: List release aliases
+      tags:
+      - releases
+  /release/{id}/deploy:
+    post:
+      consumes:
+      - application/json
+      description: Create a new deployment for a release
+      parameters:
+      - description: Release ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Deployment created successfully
+          schema:
+            $ref: '#/definitions/models.ReleaseDeployment'
+        "401":
+          description: Authentication required
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Create a deployment
+      tags:
+      - deployments
+  /release/{id}/deploy/{deployId}:
+    get:
+      consumes:
+      - application/json
+      description: Get a specific deployment by its ID
+      parameters:
+      - description: Release ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Deployment ID
+        in: path
+        name: deployId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Deployment details
+          schema:
+            $ref: '#/definitions/models.ReleaseDeployment'
+        "401":
+          description: Authentication required
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Deployment not found
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get a deployment
+      tags:
+      - deployments
+    put:
+      consumes:
+      - application/json
+      description: Update an existing deployment
+      parameters:
+      - description: Release ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Deployment ID
+        in: path
+        name: deployId
+        required: true
+        type: string
+      - description: Deployment update request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.ReleaseDeployment'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Deployment updated successfully
+          schema:
+            $ref: '#/definitions/models.ReleaseDeployment'
+        "400":
+          description: Invalid request
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Authentication required
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Update a deployment
+      tags:
+      - deployments
+  /release/{id}/deploy/{deployId}/events:
+    get:
+      consumes:
+      - application/json
+      description: Get all events for a deployment
+      parameters:
+      - description: Release ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Deployment ID
+        in: path
+        name: deployId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of deployment events
+          schema:
+            items:
+              $ref: '#/definitions/models.DeploymentEvent'
+            type: array
+        "401":
+          description: Authentication required
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get deployment events
+      tags:
+      - deployments
+    post:
+      consumes:
+      - application/json
+      description: Add an event to a deployment
+      parameters:
+      - description: Release ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Deployment ID
+        in: path
+        name: deployId
+        required: true
+        type: string
+      - description: Event details
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.AddEventRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Deployment with updated events
+          schema:
+            $ref: '#/definitions/models.ReleaseDeployment'
+        "400":
+          description: Invalid request
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Authentication required
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Add deployment event
+      tags:
+      - deployments
+  /release/{id}/deploy/latest:
+    get:
+      consumes:
+      - application/json
+      description: Get the most recent deployment for a release
+      parameters:
+      - description: Release ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Latest deployment
+          schema:
+            $ref: '#/definitions/models.ReleaseDeployment'
+        "401":
+          description: Authentication required
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: No deployments found
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get latest deployment
+      tags:
+      - deployments
+  /release/{id}/deployments:
+    get:
+      consumes:
+      - application/json
+      description: Get all deployments for a release
+      parameters:
+      - description: Release ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of deployments
+          schema:
+            items:
+              $ref: '#/definitions/models.ReleaseDeployment'
+            type: array
+        "401":
+          description: Authentication required
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: List deployments
+      tags:
+      - deployments
+  /release/alias/{name}:
+    delete:
+      consumes:
+      - application/json
+      description: Delete an alias for a release
+      parameters:
+      - description: Alias name
+        in: path
+        name: name
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Alias deleted successfully
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Authentication required
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Delete a release alias
+      tags:
+      - releases
+    get:
+      consumes:
+      - application/json
+      description: Retrieve a release by its alias name
+      parameters:
+      - description: Release alias name
+        in: path
+        name: name
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Release details
+          schema:
+            $ref: '#/definitions/models.Release'
+        "401":
+          description: Authentication required
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Release alias not found
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get release by alias
+      tags:
+      - releases
+    post:
+      consumes:
+      - application/json
+      description: Create an alias for a release
+      parameters:
+      - description: Alias name
+        in: path
+        name: name
+        required: true
+        type: string
+      - description: Alias creation request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.CreateAliasRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Alias created successfully
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Invalid request
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Authentication required
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Create a release alias
+      tags:
+      - releases
+  /releases:
+    get:
+      consumes:
+      - application/json
+      description: Get all releases, optionally filtered by project
+      parameters:
+      - description: Filter releases by project name
+        in: query
+        name: project
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of releases
+          schema:
+            items:
+              $ref: '#/definitions/models.Release'
+            type: array
+        "401":
+          description: Authentication required
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: List releases
+      tags:
+      - releases
+securityDefinitions:
+  BearerAuth:
+    description: Type "Bearer" followed by a space and JWT token.
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"
