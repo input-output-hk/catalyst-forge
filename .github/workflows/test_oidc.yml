@@ -47,7 +47,7 @@ jobs:
 
       - name: Create GHA auth
         run: |
-            forge -vvv --api-url "http://localhost:5050" api login "$(cat ./.secret/jwt.txt)"
+            forge -vvv --api-url "http://localhost:5050" api login "$(cat ./foundry/api/.secret/jwt.txt)"
             forge -vvv --api-url "http://localhost:5050" api auth gha create -a input-output-hk/catalyst-forge
 
       - name: Obtain OIDC ID token
