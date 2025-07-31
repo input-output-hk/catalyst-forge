@@ -8,6 +8,8 @@ import (
 	"github.com/input-output-hk/catalyst-forge/foundry/api/internal/api/middleware"
 	"github.com/input-output-hk/catalyst-forge/foundry/api/internal/service"
 	"github.com/input-output-hk/catalyst-forge/foundry/api/pkg/auth"
+	swaggerFiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
 	"gorm.io/gorm"
 )
 
@@ -38,6 +40,9 @@ func SetupRouter(
 
 	// Health check endpoint
 	r.GET("/healthz", healthHandler.CheckHealth)
+
+	// Swagger documentation
+	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
 	// Route Setup //
 

@@ -23,7 +23,7 @@ src:
 
     CACHE --persist --sharing shared /go
 
-    COPY --dir client cmd internal pkg .
+    COPY --dir client cmd docs internal pkg .
     RUN go generate ./...
 
     SAVE ARTIFACT . src
@@ -113,3 +113,17 @@ jwt:
     RUN ./bin/foundry-api auth generate -a -k ./certs/private.pem > /jwt/token.txt
 
     SAVE ARTIFACT /jwt jwt
+
+swagger:
+    FROM +src
+
+    RUN go install github.com/swaggo/swag/cmd/swag@latest
+    RUN swag init -g cmd/api/main.go -o docs
+
+    SAVE ARTIFACT docs docs AS LOCAL docs
+
+check-swagger:
+    FROM +swagger
+
+    COPY --dir docs /docs
+    RUN diff -r docs ../docs

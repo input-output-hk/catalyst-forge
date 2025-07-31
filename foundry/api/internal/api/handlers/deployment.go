@@ -24,6 +24,17 @@ func NewDeploymentHandler(deploymentService service.DeploymentService, logger *s
 }
 
 // CreateDeployment handles the POST /release/{id}/deploy endpoint
+// @Summary Create a deployment
+// @Description Create a new deployment for a release
+// @Tags deployments
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param id path string true "Release ID"
+// @Success 201 {object} models.ReleaseDeployment "Deployment created successfully"
+// @Failure 401 {object} map[string]interface{} "Authentication required"
+// @Failure 500 {object} map[string]interface{} "Internal server error"
+// @Router /release/{id}/deploy [post]
 func (h *DeploymentHandler) CreateDeployment(c *gin.Context) {
 	releaseID := c.Param("id")
 
@@ -38,6 +49,18 @@ func (h *DeploymentHandler) CreateDeployment(c *gin.Context) {
 }
 
 // GetDeployment handles the GET /release/:id/deploy/:deployId endpoint
+// @Summary Get a deployment
+// @Description Get a specific deployment by its ID
+// @Tags deployments
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param id path string true "Release ID"
+// @Param deployId path string true "Deployment ID"
+// @Success 200 {object} models.ReleaseDeployment "Deployment details"
+// @Failure 401 {object} map[string]interface{} "Authentication required"
+// @Failure 404 {object} map[string]interface{} "Deployment not found"
+// @Router /release/{id}/deploy/{deployId} [get]
 func (h *DeploymentHandler) GetDeployment(c *gin.Context) {
 	deploymentID := c.Param("deployId")
 
@@ -52,6 +75,20 @@ func (h *DeploymentHandler) GetDeployment(c *gin.Context) {
 }
 
 // UpdateDeployment handles the PUT /release/:id/deploy/:deployId endpoint
+// @Summary Update a deployment
+// @Description Update an existing deployment
+// @Tags deployments
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param id path string true "Release ID"
+// @Param deployId path string true "Deployment ID"
+// @Param request body models.ReleaseDeployment true "Deployment update request"
+// @Success 200 {object} models.ReleaseDeployment "Deployment updated successfully"
+// @Failure 400 {object} map[string]interface{} "Invalid request"
+// @Failure 401 {object} map[string]interface{} "Authentication required"
+// @Failure 500 {object} map[string]interface{} "Internal server error"
+// @Router /release/{id}/deploy/{deployId} [put]
 func (h *DeploymentHandler) UpdateDeployment(c *gin.Context) {
 	deploymentID := c.Param("deployId")
 
@@ -87,6 +124,17 @@ func (h *DeploymentHandler) UpdateDeployment(c *gin.Context) {
 }
 
 // ListDeployments handles the GET /release/{id}/deployments endpoint
+// @Summary List deployments
+// @Description Get all deployments for a release
+// @Tags deployments
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param id path string true "Release ID"
+// @Success 200 {array} models.ReleaseDeployment "List of deployments"
+// @Failure 401 {object} map[string]interface{} "Authentication required"
+// @Failure 500 {object} map[string]interface{} "Internal server error"
+// @Router /release/{id}/deployments [get]
 func (h *DeploymentHandler) ListDeployments(c *gin.Context) {
 	releaseID := c.Param("id")
 
@@ -101,6 +149,17 @@ func (h *DeploymentHandler) ListDeployments(c *gin.Context) {
 }
 
 // GetLatestDeployment handles the GET /release/{id}/deploy/latest endpoint
+// @Summary Get latest deployment
+// @Description Get the most recent deployment for a release
+// @Tags deployments
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param id path string true "Release ID"
+// @Success 200 {object} models.ReleaseDeployment "Latest deployment"
+// @Failure 401 {object} map[string]interface{} "Authentication required"
+// @Failure 404 {object} map[string]interface{} "No deployments found"
+// @Router /release/{id}/deploy/latest [get]
 func (h *DeploymentHandler) GetLatestDeployment(c *gin.Context) {
 	releaseID := c.Param("id")
 
@@ -121,6 +180,20 @@ type AddEventRequest struct {
 }
 
 // AddDeploymentEvent handles the POST /release/:id/deploy/:deployId/events endpoint
+// @Summary Add deployment event
+// @Description Add an event to a deployment
+// @Tags deployments
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param id path string true "Release ID"
+// @Param deployId path string true "Deployment ID"
+// @Param request body AddEventRequest true "Event details"
+// @Success 200 {object} models.ReleaseDeployment "Deployment with updated events"
+// @Failure 400 {object} map[string]interface{} "Invalid request"
+// @Failure 401 {object} map[string]interface{} "Authentication required"
+// @Failure 500 {object} map[string]interface{} "Internal server error"
+// @Router /release/{id}/deploy/{deployId}/events [post]
 func (h *DeploymentHandler) AddDeploymentEvent(c *gin.Context) {
 	deploymentID := c.Param("deployId")
 
@@ -149,6 +222,18 @@ func (h *DeploymentHandler) AddDeploymentEvent(c *gin.Context) {
 }
 
 // GetDeploymentEvents handles the GET /release/:id/deploy/:deployId/events endpoint
+// @Summary Get deployment events
+// @Description Get all events for a deployment
+// @Tags deployments
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param id path string true "Release ID"
+// @Param deployId path string true "Deployment ID"
+// @Success 200 {array} models.DeploymentEvent "List of deployment events"
+// @Failure 401 {object} map[string]interface{} "Authentication required"
+// @Failure 500 {object} map[string]interface{} "Internal server error"
+// @Router /release/{id}/deploy/{deployId}/events [get]
 func (h *DeploymentHandler) GetDeploymentEvents(c *gin.Context) {
 	deploymentID := c.Param("deployId")
 

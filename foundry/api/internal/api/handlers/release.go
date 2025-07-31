@@ -34,6 +34,19 @@ type CreateReleaseRequest struct {
 }
 
 // CreateRelease handles the POST /release endpoint
+// @Summary Create a new release
+// @Description Create a new release with the specified source repository and project details
+// @Tags releases
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param request body CreateReleaseRequest true "Release creation request"
+// @Param deploy query string false "Deploy the release immediately" Enums(true, false, 1, 0)
+// @Success 201 {object} models.Release "Release created successfully"
+// @Failure 400 {object} map[string]interface{} "Invalid request"
+// @Failure 401 {object} map[string]interface{} "Authentication required"
+// @Failure 500 {object} map[string]interface{} "Internal server error"
+// @Router /release [post]
 func (h *ReleaseHandler) CreateRelease(c *gin.Context) {
 	var req CreateReleaseRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -74,6 +87,17 @@ func (h *ReleaseHandler) CreateRelease(c *gin.Context) {
 }
 
 // GetRelease handles the GET /release/{id} endpoint
+// @Summary Get a release by ID
+// @Description Retrieve a specific release by its ID
+// @Tags releases
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param id path string true "Release ID"
+// @Success 200 {object} models.Release "Release details"
+// @Failure 401 {object} map[string]interface{} "Authentication required"
+// @Failure 404 {object} map[string]interface{} "Release not found"
+// @Router /release/{id} [get]
 func (h *ReleaseHandler) GetRelease(c *gin.Context) {
 	id := c.Param("id")
 
@@ -97,6 +121,20 @@ type UpdateReleaseRequest struct {
 }
 
 // UpdateRelease handles the PUT /release/{id} endpoint
+// @Summary Update a release
+// @Description Update an existing release with new information
+// @Tags releases
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param id path string true "Release ID"
+// @Param request body UpdateReleaseRequest true "Release update request"
+// @Success 200 {object} models.Release "Release updated successfully"
+// @Failure 400 {object} map[string]interface{} "Invalid request"
+// @Failure 401 {object} map[string]interface{} "Authentication required"
+// @Failure 404 {object} map[string]interface{} "Release not found"
+// @Failure 500 {object} map[string]interface{} "Internal server error"
+// @Router /release/{id} [put]
 func (h *ReleaseHandler) UpdateRelease(c *gin.Context) {
 	id := c.Param("id")
 
@@ -144,6 +182,17 @@ func (h *ReleaseHandler) UpdateRelease(c *gin.Context) {
 }
 
 // ListReleases handles the GET /releases endpoint
+// @Summary List releases
+// @Description Get all releases, optionally filtered by project
+// @Tags releases
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param project query string false "Filter releases by project name"
+// @Success 200 {array} models.Release "List of releases"
+// @Failure 401 {object} map[string]interface{} "Authentication required"
+// @Failure 500 {object} map[string]interface{} "Internal server error"
+// @Router /releases [get]
 func (h *ReleaseHandler) ListReleases(c *gin.Context) {
 	projectName := c.Query("project")
 
@@ -166,6 +215,17 @@ func (h *ReleaseHandler) ListReleases(c *gin.Context) {
 }
 
 // GetReleaseByAlias handles GET /release/alias/{name} endpoint
+// @Summary Get release by alias
+// @Description Retrieve a release by its alias name
+// @Tags releases
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param name path string true "Release alias name"
+// @Success 200 {object} models.Release "Release details"
+// @Failure 401 {object} map[string]interface{} "Authentication required"
+// @Failure 404 {object} map[string]interface{} "Release alias not found"
+// @Router /release/alias/{name} [get]
 func (h *ReleaseHandler) GetReleaseByAlias(c *gin.Context) {
 	name := c.Param("name")
 
@@ -185,6 +245,19 @@ type CreateAliasRequest struct {
 }
 
 // CreateAlias handles POST /release/alias/{name} endpoint
+// @Summary Create a release alias
+// @Description Create an alias for a release
+// @Tags releases
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param name path string true "Alias name"
+// @Param request body CreateAliasRequest true "Alias creation request"
+// @Success 201 {object} map[string]interface{} "Alias created successfully"
+// @Failure 400 {object} map[string]interface{} "Invalid request"
+// @Failure 401 {object} map[string]interface{} "Authentication required"
+// @Failure 500 {object} map[string]interface{} "Internal server error"
+// @Router /release/alias/{name} [post]
 func (h *ReleaseHandler) CreateAlias(c *gin.Context) {
 	name := c.Param("name")
 
@@ -205,6 +278,17 @@ func (h *ReleaseHandler) CreateAlias(c *gin.Context) {
 }
 
 // DeleteAlias handles DELETE /release/alias/{name} endpoint
+// @Summary Delete a release alias
+// @Description Delete an alias for a release
+// @Tags releases
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param name path string true "Alias name"
+// @Success 200 {object} map[string]interface{} "Alias deleted successfully"
+// @Failure 401 {object} map[string]interface{} "Authentication required"
+// @Failure 500 {object} map[string]interface{} "Internal server error"
+// @Router /release/alias/{name} [delete]
 func (h *ReleaseHandler) DeleteAlias(c *gin.Context) {
 	name := c.Param("name")
 
@@ -218,6 +302,17 @@ func (h *ReleaseHandler) DeleteAlias(c *gin.Context) {
 }
 
 // ListAliases handles GET /release/{id}/aliases endpoint
+// @Summary List release aliases
+// @Description Get all aliases for a specific release
+// @Tags releases
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param id path string true "Release ID"
+// @Success 200 {array} models.ReleaseAlias "List of aliases"
+// @Failure 401 {object} map[string]interface{} "Authentication required"
+// @Failure 500 {object} map[string]interface{} "Internal server error"
+// @Router /release/{id}/aliases [get]
 func (h *ReleaseHandler) ListAliases(c *gin.Context) {
 	releaseID := c.Param("id")
 
