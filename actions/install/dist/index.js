@@ -45518,18 +45518,6 @@ async function run() {
       assetUrl = await getVersionedAsset(octokit, version);
     }
 
-    // Check if the tool is already cached using the actual version
-    let toolPath = tc.find(releaseName, actualVersion);
-    core.info(`Looking for cached version: ${releaseName} ${actualVersion}`);
-    core.info(`Cache search result: ${toolPath || "not found"}`);
-    core.info(`Platform: ${process.platform}/${process.arch}`);
-
-    if (toolPath) {
-      core.info(`Found cached version ${actualVersion} at ${toolPath}`);
-      core.addPath(toolPath);
-      return;
-    }
-
     // Try to restore from GitHub cache if caching is enabled
     if (enableCaching) {
       const cacheKey = `forge-cli-${actualVersion}-${process.platform}-${process.arch}`;
