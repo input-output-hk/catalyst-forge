@@ -84,11 +84,19 @@ func (e EarthlyExecutor) Run() error {
 		e.opts.platforms = []string{GetBuildPlatform()}
 	}
 
+	var attempts int
 	for _, platform := range e.opts.platforms {
 		for i := 0; i < int(e.opts.retries.Attempts)+1; i++ {
+			attempts++
 			arguments := e.buildArguments(platform)
 
-			e.logger.Info("Executing Earthly", "attempt", i, "attempts", e.opts.retries.Attempts, "arguments", arguments, "platform", platform, "filters", e.opts.retries.Filters)
+			e.logger.Info("Executing Earthly",
+				"attempt", i,
+				"attempts", e.opts.retries.Attempts,
+				"filters", e.opts.retries.Filters,
+				"arguments", arguments,
+				"platform", platform,
+			)
 			output, err = e.executor.Execute("earthly", arguments...)
 			if err == nil {
 				break
@@ -96,7 +104,6 @@ func (e EarthlyExecutor) Run() error {
 
 			if len(e.opts.retries.Filters) > 0 {
 				found := false
-				fmt.Println("output", string(output))
 				for _, filter := range e.opts.retries.Filters {
 					if strings.Contains(string(output), filter) {
 						e.logger.Info("Found filter", "filter", filter)
@@ -111,6 +118,8 @@ func (e EarthlyExecutor) Run() error {
 				}
 			}
 
+			e.logger.Error("Failed to run Earthly", "error", err)
+
 			if e.opts.retries.Delay != "" {
 				delay, err := time.ParseDuration(e.opts.retries.Delay)
 				if err != nil {
@@ -120,14 +129,20 @@ func (e EarthlyExecutor) Run() error {
 					time.Sleep(delay)
 				}
 			}
-
-			e.logger.Error("Failed to run Earthly", "error", err)
 		}
 	}
 
 	if err != nil {
-		e.logger.Error("Failed to run Earthly", "error", err)
+		if attempts > 1 {
+			e.logger.Error(fmt.Sprintf("Failed to run Earthly after %d attempts", attempts), "error", err)
+		} else {
+			e.logger.Error("Failed to run Earthly", "error", err)
+		}
 		return fmt.Errorf("failed to run Earthly: %w", err)
+	}
+
+	if attempts > 1 {
+		e.logger.Info(fmt.Sprintf("Earthly run succeeded after %d attempts", attempts))
 	}
 
 	return nil
