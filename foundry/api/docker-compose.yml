@@ -43,7 +43,7 @@ services:
     volumes:
       - ./.secret:/data
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:5000/healthz"]
+      test: ["CMD", "curl", "-f", "http://localhost:5050/healthz"]
       interval: 10s
       timeout: 5s
       retries: 3
