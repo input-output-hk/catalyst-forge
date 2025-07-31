@@ -1,6 +1,9 @@
 const core = require("@actions/core");
 const github = require("@actions/github");
 const tc = require("@actions/tool-cache");
+const cache = require("@actions/cache");
+const fs = require("fs");
+const path = require("path");
 
 const assetPrefix = "forge-cli";
 const releaseName = "forge-cli";
@@ -31,7 +34,6 @@ async function run() {
     }
 
     // Check if the tool is already cached using the actual version
-    listCachedTools(releaseName);
     let toolPath = tc.find(releaseName, actualVersion);
     core.info(`Looking for cached version: ${releaseName} ${actualVersion}`);
     core.info(`Cache search result: ${toolPath || "not found"}`);
@@ -41,6 +43,23 @@ async function run() {
       core.info(`Found cached version ${actualVersion} at ${toolPath}`);
       core.addPath(toolPath);
       return;
+    }
+
+    // Try to restore from GitHub cache
+    const cacheKey = `forge-cli-${actualVersion}-${process.platform}-${process.arch}`;
+    const cachePath = path.join(process.env.RUNNER_TOOL_CACHE || "/opt/hostedtoolcache", releaseName, actualVersion, process.arch);
+
+    core.info(`Attempting to restore from GitHub cache with key: ${cacheKey}`);
+    const cacheHit = await cache.restoreCache([cachePath], cacheKey);
+
+    if (cacheHit) {
+      core.info(`Restored from GitHub cache: ${cacheHit}`);
+      toolPath = tc.find(releaseName, actualVersion);
+      if (toolPath) {
+        core.info(`Found cached version ${actualVersion} at ${toolPath}`);
+        core.addPath(toolPath);
+        return;
+      }
     }
 
     core.info(`Version ${actualVersion} not found in cache, downloading...`);
@@ -59,6 +78,10 @@ async function run() {
     core.info(`Caching tool with key: ${releaseName} ${actualVersion}`);
     toolPath = await tc.cacheDir(extractPath, releaseName, actualVersion);
     core.addPath(toolPath);
+
+    // Save to GitHub cache for future runs
+    core.info(`Saving to GitHub cache with key: ${cacheKey}`);
+    await cache.saveCache([cachePath], cacheKey);
 
     core.info(
       `Installed and cached forge CLI version ${actualVersion} to ${toolPath}`,
@@ -184,7 +207,7 @@ async function getVersionedAsset(octokit, version) {
   return asset.url;
 }
 
-async function installLocal() {}
+async function installLocal() { }
 
 /**
  * Checks if the given version is a valid semantic version.
@@ -201,36 +224,19 @@ function isSemVer(version) {
  */
 function listCachedTools(toolName) {
   try {
-    // This is a simple way to check what's in the cache
-    const fs = require("fs");
-    const path = require("path");
     const cacheDir = process.env.RUNNER_TOOL_CACHE || "/opt/hostedtoolcache";
+    const toolDir = path.join(cacheDir, toolName);
 
     core.info(`Cache directory: ${cacheDir}`);
+    core.info(`Tool cache directory: ${toolDir}`);
 
-    if (fs.existsSync(cacheDir)) {
-      const toolDir = path.join(cacheDir, toolName);
-      core.info(`Tool cache directory: ${toolDir}`);
-
-      if (fs.existsSync(toolDir)) {
-        const versions = fs.readdirSync(toolDir);
-        core.info(
-          `Available cached versions for ${toolName}: ${versions.join(", ")}`,
-        );
-
-        // Check the structure of each version directory
-        versions.forEach((version) => {
-          const versionDir = path.join(toolDir, version);
-          if (fs.existsSync(versionDir)) {
-            const contents = fs.readdirSync(versionDir);
-            core.info(`Version ${version} contents: ${contents.join(", ")}`);
-          }
-        });
-      } else {
-        core.info(`No cache directory found for ${toolName}`);
-      }
+    if (fs.existsSync(toolDir)) {
+      const versions = fs.readdirSync(toolDir);
+      core.info(
+        `Available cached versions for ${toolName}: ${versions.join(", ")}`,
+      );
     } else {
-      core.info(`Cache directory not found: ${cacheDir}`);
+      core.info(`No cache directory found for ${toolName}`);
     }
   } catch (error) {
     core.info(`Error listing cached tools: ${error.message}`);
