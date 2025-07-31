@@ -31,7 +31,12 @@ async function run() {
     }
 
     // Check if the tool is already cached using the actual version
+    listCachedTools(releaseName);
     let toolPath = tc.find(releaseName, actualVersion);
+    core.info(`Looking for cached version: ${releaseName} ${actualVersion}`);
+    core.info(`Cache search result: ${toolPath || "not found"}`);
+    core.info(`Platform: ${process.platform}/${process.arch}`);
+
     if (toolPath) {
       core.info(`Found cached version ${actualVersion} at ${toolPath}`);
       core.addPath(toolPath);
@@ -51,6 +56,7 @@ async function run() {
     const extractPath = await tc.extractTar(downloadPath);
 
     // Cache the extracted tool with proper versioning
+    core.info(`Caching tool with key: ${releaseName} ${actualVersion}`);
     toolPath = await tc.cacheDir(extractPath, releaseName, actualVersion);
     core.addPath(toolPath);
 
@@ -187,4 +193,46 @@ async function installLocal() {}
  */
 function isSemVer(version) {
   return /^\d+\.\d+\.\d+$/.test(version);
+}
+
+/**
+ * Lists all cached tools for debugging purposes.
+ * @param {string} toolName The name of the tool to list.
+ */
+function listCachedTools(toolName) {
+  try {
+    // This is a simple way to check what's in the cache
+    const fs = require("fs");
+    const path = require("path");
+    const cacheDir = process.env.RUNNER_TOOL_CACHE || "/opt/hostedtoolcache";
+
+    core.info(`Cache directory: ${cacheDir}`);
+
+    if (fs.existsSync(cacheDir)) {
+      const toolDir = path.join(cacheDir, toolName);
+      core.info(`Tool cache directory: ${toolDir}`);
+
+      if (fs.existsSync(toolDir)) {
+        const versions = fs.readdirSync(toolDir);
+        core.info(
+          `Available cached versions for ${toolName}: ${versions.join(", ")}`,
+        );
+
+        // Check the structure of each version directory
+        versions.forEach((version) => {
+          const versionDir = path.join(toolDir, version);
+          if (fs.existsSync(versionDir)) {
+            const contents = fs.readdirSync(versionDir);
+            core.info(`Version ${version} contents: ${contents.join(", ")}`);
+          }
+        });
+      } else {
+        core.info(`No cache directory found for ${toolName}`);
+      }
+    } else {
+      core.info(`Cache directory not found: ${cacheDir}`);
+    }
+  } catch (error) {
+    core.info(`Error listing cached tools: ${error.message}`);
+  }
 }
