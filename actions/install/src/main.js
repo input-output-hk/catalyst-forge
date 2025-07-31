@@ -57,7 +57,9 @@ async function run() {
         process.arch,
       );
 
-      core.info(`Attempting to restore from GitHub cache with key: ${cacheKey}`);
+      core.info(
+        `Attempting to restore from GitHub cache with key: ${cacheKey}`,
+      );
       const cacheHit = await cache.restoreCache([cachePath], cacheKey);
 
       if (cacheHit) {
@@ -104,9 +106,7 @@ async function run() {
       core.addPath(toolPath);
     }
 
-    core.info(
-      `Installed forge CLI version ${actualVersion} to ${toolPath}`,
-    );
+    core.info(`Installed forge CLI version ${actualVersion} to ${toolPath}`);
   } catch (error) {
     core.setFailed(error.message);
   }
