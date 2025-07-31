@@ -96,6 +96,7 @@ func (e EarthlyExecutor) Run() error {
 
 			if len(e.opts.retries.Filters) > 0 {
 				found := false
+				fmt.Println("output", string(output))
 				for _, filter := range e.opts.retries.Filters {
 					if strings.Contains(string(output), filter) {
 						e.logger.Info("Found filter", "filter", filter)
