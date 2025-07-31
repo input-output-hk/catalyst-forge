@@ -88,7 +88,7 @@ func (e EarthlyExecutor) Run() error {
 		for i := 0; i < int(e.opts.retries.Attempts)+1; i++ {
 			arguments := e.buildArguments(platform)
 
-			e.logger.Info("Executing Earthly", "attempt", i, "attempts", e.opts.retries.Attempts, "arguments", arguments, "platform", platform)
+			e.logger.Info("Executing Earthly", "attempt", i, "attempts", e.opts.retries.Attempts, "arguments", arguments, "platform", platform, "filters", e.opts.retries.Filters)
 			output, err = e.executor.Execute("earthly", arguments...)
 			if err == nil {
 				break
@@ -98,12 +98,14 @@ func (e EarthlyExecutor) Run() error {
 				found := false
 				for _, filter := range e.opts.retries.Filters {
 					if strings.Contains(string(output), filter) {
+						e.logger.Info("Found filter", "filter", filter)
 						found = true
 						break
 					}
 				}
 
 				if !found {
+					e.logger.Info("No filter found", "filters", e.opts.retries.Filters)
 					break
 				}
 			}

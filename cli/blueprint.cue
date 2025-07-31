@@ -2,7 +2,7 @@ project: {
 	name: "forge-cli"
 	ci: targets: {
 		check: retries: {
-			attempts: 2
+			attempts: 3
 			filters: [
 				"uh oh",
 			]
