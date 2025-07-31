@@ -65,6 +65,14 @@ func WithSecrets(secrets []sc.Secret) EarthlyExecutorOption {
 	}
 }
 
+// WithSkipOutput is an option for configuring an EarthlyExecutor to skip
+// outputting any images or artifacts.
+func WithSkipOutput() EarthlyExecutorOption {
+	return func(e *EarthlyExecutor) {
+		e.earthlyArgs = append(e.earthlyArgs, "--no-output")
+	}
+}
+
 // WithEarthlyArgs is an option for configuring an EarthlyExecutor with
 // additional arguments that will be passed to the Earthly target.
 func WithTargetArgs(args ...string) EarthlyExecutorOption {

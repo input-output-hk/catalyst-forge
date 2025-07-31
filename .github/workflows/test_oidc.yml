@@ -22,14 +22,14 @@ jobs:
 
       - name: Install Local Forge
         id: install-local
-        uses: input-output-hk/catalyst-forge/actions/install-local@master
+        uses: input-output-hk/catalyst-forge/actions/install-local@ci-improvements
       - name: Check forge version
         id: local
         run: |
           forge version
 
       - name: Setup CI
-        uses: input-output-hk/catalyst-forge/actions/setup@master
+        uses: input-output-hk/catalyst-forge/actions/setup@ci-improvements
         with:
           skip_docker: 'true'
           skip_github: 'true'

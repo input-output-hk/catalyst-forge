@@ -3990,6 +3990,10 @@ async function run() {
       forgeArgs.push("--local");
     }
 
+    if (skipOutput === true) {
+      forgeArgs.push("--skip-output");
+    }
+
     forgeArgs.push(...command.split(" "));
 
     if (args !== "") {

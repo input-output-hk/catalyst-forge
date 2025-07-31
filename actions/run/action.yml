@@ -12,6 +12,10 @@ inputs:
     description: Forces local mode
     required: false
     default: "false"
+  skip_output:
+    description: Skip outputting any images or artifacts
+    required: false
+    default: "false"
   target_args:
     description: Extra arguments to pass to the target (if command is "run")
     required: false
