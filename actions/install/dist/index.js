@@ -45533,11 +45533,9 @@ async function run() {
         `Attempting to restore from GitHub cache with key: ${cacheKey}`,
       );
       const cacheHit = await cache.restoreCache([cachePath], cacheKey);
-
       if (cacheHit) {
-        core.info(`Restored from GitHub cache: ${cacheHit}`);
+        core.info(`Restored cached version ${actualVersion} to ${cachePath}`);
         core.addPath(cachePath);
-        core.info(`Found cached version ${actualVersion} at ${cachePath}`);
         return;
       }
     }
