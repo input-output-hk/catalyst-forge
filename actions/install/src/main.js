@@ -47,19 +47,22 @@ async function run() {
 
     // Try to restore from GitHub cache
     const cacheKey = `forge-cli-${actualVersion}-${process.platform}-${process.arch}`;
-    const cachePath = path.join(process.env.RUNNER_TOOL_CACHE || "/opt/hostedtoolcache", releaseName, actualVersion, process.arch);
+    const cachePath = path.join(
+      process.cwd(),
+      ".forge-cache",
+      releaseName,
+      actualVersion,
+      process.arch,
+    );
 
     core.info(`Attempting to restore from GitHub cache with key: ${cacheKey}`);
     const cacheHit = await cache.restoreCache([cachePath], cacheKey);
 
     if (cacheHit) {
       core.info(`Restored from GitHub cache: ${cacheHit}`);
-      toolPath = tc.find(releaseName, actualVersion);
-      if (toolPath) {
-        core.info(`Found cached version ${actualVersion} at ${toolPath}`);
-        core.addPath(toolPath);
-        return;
-      }
+      core.addPath(cachePath);
+      core.info(`Found cached version ${actualVersion} at ${cachePath}`);
+      return;
     }
 
     core.info(`Version ${actualVersion} not found in cache, downloading...`);
@@ -72,14 +75,14 @@ async function run() {
         accept: "application/octet-stream",
       },
     );
-    const extractPath = await tc.extractTar(downloadPath);
 
-    // Cache the extracted tool with proper versioning
+    fs.mkdirSync(cachePath, { recursive: true });
+    const extractPath = await tc.extractTar(downloadPath, cachePath);
+
     core.info(`Caching tool with key: ${releaseName} ${actualVersion}`);
     toolPath = await tc.cacheDir(extractPath, releaseName, actualVersion);
     core.addPath(toolPath);
 
-    // Save to GitHub cache for future runs
     core.info(`Saving to GitHub cache with key: ${cacheKey}`);
     await cache.saveCache([cachePath], cacheKey);
 
@@ -207,7 +210,7 @@ async function getVersionedAsset(octokit, version) {
   return asset.url;
 }
 
-async function installLocal() { }
+async function installLocal() {}
 
 /**
  * Checks if the given version is a valid semantic version.
@@ -226,9 +229,10 @@ function listCachedTools(toolName) {
   try {
     const cacheDir = process.env.RUNNER_TOOL_CACHE || "/opt/hostedtoolcache";
     const toolDir = path.join(cacheDir, toolName);
+    const githubCacheDir = path.join(process.cwd(), ".forge-cache", toolName);
 
-    core.info(`Cache directory: ${cacheDir}`);
     core.info(`Tool cache directory: ${toolDir}`);
+    core.info(`GitHub cache directory: ${githubCacheDir}`);
 
     if (fs.existsSync(toolDir)) {
       const versions = fs.readdirSync(toolDir);
@@ -236,7 +240,16 @@ function listCachedTools(toolName) {
         `Available cached versions for ${toolName}: ${versions.join(", ")}`,
       );
     } else {
-      core.info(`No cache directory found for ${toolName}`);
+      core.info(`No tool cache directory found for ${toolName}`);
+    }
+
+    if (fs.existsSync(githubCacheDir)) {
+      const versions = fs.readdirSync(githubCacheDir);
+      core.info(
+        `Available GitHub cached versions for ${toolName}: ${versions.join(", ")}`,
+      );
+    } else {
+      core.info(`No GitHub cache directory found for ${toolName}`);
     }
   } catch (error) {
     core.info(`Error listing cached tools: ${error.message}`);
