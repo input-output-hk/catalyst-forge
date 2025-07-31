@@ -1,4 +1,4 @@
-package auth
+package github
 
 import (
 	"context"
@@ -47,8 +47,26 @@ type TokenInfo struct {
 	Environment       string
 }
 
-// ghaTokenClaims is the claims of a GitHub Actions ID token.
-type ghaTokenClaims struct {
+// DefaultGithubActionsOIDCClientOption is a function that can be used to
+// configure a DefaultGithubActionsOIDCClient.
+type DefaultGithubActionsOIDCClientOption func(*DefaultGithubActionsOIDCClient)
+
+// WithClient sets the HTTP client for the DefaultGithubActionsOIDCClient.
+func WithHTTPClient(client *http.Client) DefaultGithubActionsOIDCClientOption {
+	return func(c *DefaultGithubActionsOIDCClient) {
+		c.client = client
+	}
+}
+
+// WithCacher sets the cacher for the DefaultGithubActionsOIDCClient.
+func WithCacher(cacher GitHubJWKSCacher) DefaultGithubActionsOIDCClientOption {
+	return func(c *DefaultGithubActionsOIDCClient) {
+		c.cacher = cacher
+	}
+}
+
+// GitHubActionsTokenClaims is the claims of a GitHub Actions ID token.
+type GitHubActionsTokenClaims struct {
 	jwt.Claims
 
 	Repository        string `json:"repository"`
@@ -75,6 +93,7 @@ func (g *DefaultGithubActionsOIDCClient) Verify(token, audience string) (*TokenI
 	}
 
 	ks := g.cacher.JWKS()
+	fmt.Printf("ks: %+v\n", ks)
 	if ks == nil || len(ks.Keys) == 0 {
 		return nil, fmt.Errorf("jwks cache is empty")
 	}
@@ -89,7 +108,7 @@ func (g *DefaultGithubActionsOIDCClient) Verify(token, audience string) (*TokenI
 		return nil, fmt.Errorf("kid %q not found in JWKS cache", kid)
 	}
 
-	var claims ghaTokenClaims
+	var claims GitHubActionsTokenClaims
 	if err := parsed.Claims(matched[0].Key, &claims); err != nil {
 		return nil, fmt.Errorf("signature verification failed: %w", err)
 	}
@@ -140,7 +159,7 @@ func (g *DefaultGithubActionsOIDCClient) StopCache() {
 }
 
 // NewDefaultGithubActionsOIDCClient creates a new DefaultGithubActionsOIDCClient instance.
-func NewDefaultGithubActionsOIDCClient(ctx context.Context, cachePath string) (*DefaultGithubActionsOIDCClient, error) {
+func NewDefaultGithubActionsOIDCClient(ctx context.Context, cachePath string, opts ...DefaultGithubActionsOIDCClientOption) (*DefaultGithubActionsOIDCClient, error) {
 	// You can customize the transport here (proxy, keep‑alives, etc.).
 	httpClient := &http.Client{
 		Timeout: 10 * time.Second,
@@ -155,9 +174,15 @@ func NewDefaultGithubActionsOIDCClient(ctx context.Context, cachePath string) (*
 
 	cacher := NewDefaultGitHubJWKSCacher(ctx, cachePath)
 
-	return &DefaultGithubActionsOIDCClient{
+	client := &DefaultGithubActionsOIDCClient{
 		client: httpClient,
 		cacher: cacher,
 		ctx:    ctx,
-	}, nil
+	}
+
+	for _, opt := range opts {
+		opt(client)
+	}
+
+	return client, nil
 }
