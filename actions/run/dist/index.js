@@ -3964,6 +3964,7 @@ async function run() {
     const args = core.getInput("args", { required: false });
     const command = core.getInput("command", { required: true });
     const local = core.getBooleanInput("local", { required: false });
+    const skipOutput = core.getBooleanInput("skip_output", { required: false });
     const targetArgs = core.getInput("target_args", { required: false });
     const verbosity = core.getInput("verbosity", { required: false });
 
