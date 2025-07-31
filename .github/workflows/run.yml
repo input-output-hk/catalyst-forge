@@ -16,6 +16,11 @@ on:
         required: false
         type: string
         default: "false"
+      skip_output:
+        description: Skip outputting any images or artifacts
+        required: false
+        type: string
+        default: "false"
       target_args:
         description: Extra arguments to pass to the target (if command is "run")
         required: false
@@ -67,6 +72,7 @@ jobs:
           command: run
           args: ${{ matrix.earthfile }}
           local: ${{ inputs.local }}
+          skip_output: ${{ inputs.skip_output }}
           target_args: ${{ inputs.target_args }}
           verbosity: ${{ inputs.verbosity }}
         env:
