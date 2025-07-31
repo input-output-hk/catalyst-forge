@@ -20,13 +20,26 @@ async function run() {
     }
 
     let assetUrl;
+    let actualVersion = version;
+
     if (version === "latest") {
       assetUrl = await getLatestAsset(octokit);
+      // For "latest", we need to determine the actual version for caching
+      actualVersion = await getLatestVersion(octokit);
     } else {
       assetUrl = await getVersionedAsset(octokit, version);
     }
 
-    core.info(`Downloading version ${version} from ${assetUrl}`);
+    // Check if the tool is already cached using the actual version
+    let toolPath = tc.find(releaseName, actualVersion);
+    if (toolPath) {
+      core.info(`Found cached version ${actualVersion} at ${toolPath}`);
+      core.addPath(toolPath);
+      return;
+    }
+
+    core.info(`Version ${actualVersion} not found in cache, downloading...`);
+    core.info(`Downloading version ${actualVersion} from ${assetUrl}`);
     const downloadPath = await tc.downloadTool(
       assetUrl,
       undefined,
@@ -36,9 +49,14 @@ async function run() {
       },
     );
     const extractPath = await tc.extractTar(downloadPath);
-    core.addPath(extractPath);
 
-    core.info(`Installed forge CLI version ${version} to ${extractPath}`);
+    // Cache the extracted tool with proper versioning
+    toolPath = await tc.cacheDir(extractPath, releaseName, actualVersion);
+    core.addPath(toolPath);
+
+    core.info(
+      `Installed and cached forge CLI version ${actualVersion} to ${toolPath}`,
+    );
   } catch (error) {
     core.setFailed(error.message);
   }
@@ -107,6 +125,32 @@ async function getLatestAsset(octokit) {
   }
 
   throw new Error(`No asset found for ${assetName}`);
+}
+
+/**
+ * Returns the version number of the latest release.
+ * @param {Object} octokit The octokit instance to use.
+ * @returns {Promise<string>} The version number of the latest release.
+ */
+async function getLatestVersion(octokit) {
+  const releases = await getReleases(octokit);
+
+  for (let i = 0; i < releases.length; i++) {
+    const release = releases[i];
+    const asset = release.assets.find((a) => a.name === getAssetName());
+
+    if (asset) {
+      // Extract version from tag name (e.g., "forge-cli/v1.2.3" -> "1.2.3")
+      const versionMatch = release.tag_name.match(
+        new RegExp(`${releaseName}/v(.+)`),
+      );
+      if (versionMatch) {
+        return versionMatch[1];
+      }
+    }
+  }
+
+  throw new Error("No latest version found");
 }
 
 /**
