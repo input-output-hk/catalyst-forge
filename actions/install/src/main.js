@@ -14,6 +14,7 @@ async function run() {
   try {
     const githubToken = core.getInput("github_token");
     const version = core.getInput("version");
+    const enableCaching = core.getBooleanInput("enable_caching");
 
     const octokit = github.getOctokit(githubToken);
 
@@ -45,24 +46,26 @@ async function run() {
       return;
     }
 
-    // Try to restore from GitHub cache
-    const cacheKey = `forge-cli-${actualVersion}-${process.platform}-${process.arch}`;
-    const cachePath = path.join(
-      process.cwd(),
-      ".forge-cache",
-      releaseName,
-      actualVersion,
-      process.arch,
-    );
+    // Try to restore from GitHub cache if caching is enabled
+    if (enableCaching) {
+      const cacheKey = `forge-cli-${actualVersion}-${process.platform}-${process.arch}`;
+      const cachePath = path.join(
+        process.cwd(),
+        ".forge-cache",
+        releaseName,
+        actualVersion,
+        process.arch,
+      );
 
-    core.info(`Attempting to restore from GitHub cache with key: ${cacheKey}`);
-    const cacheHit = await cache.restoreCache([cachePath], cacheKey);
+      core.info(`Attempting to restore from GitHub cache with key: ${cacheKey}`);
+      const cacheHit = await cache.restoreCache([cachePath], cacheKey);
 
-    if (cacheHit) {
-      core.info(`Restored from GitHub cache: ${cacheHit}`);
-      core.addPath(cachePath);
-      core.info(`Found cached version ${actualVersion} at ${cachePath}`);
-      return;
+      if (cacheHit) {
+        core.info(`Restored from GitHub cache: ${cacheHit}`);
+        core.addPath(cachePath);
+        core.info(`Found cached version ${actualVersion} at ${cachePath}`);
+        return;
+      }
     }
 
     core.info(`Version ${actualVersion} not found in cache, downloading...`);
@@ -76,18 +79,33 @@ async function run() {
       },
     );
 
-    fs.mkdirSync(cachePath, { recursive: true });
-    const extractPath = await tc.extractTar(downloadPath, cachePath);
+    if (enableCaching) {
+      const cacheKey = `forge-cli-${actualVersion}-${process.platform}-${process.arch}`;
+      const cachePath = path.join(
+        process.cwd(),
+        ".forge-cache",
+        releaseName,
+        actualVersion,
+        process.arch,
+      );
 
-    core.info(`Caching tool with key: ${releaseName} ${actualVersion}`);
-    toolPath = await tc.cacheDir(extractPath, releaseName, actualVersion);
-    core.addPath(toolPath);
+      fs.mkdirSync(cachePath, { recursive: true });
+      const extractPath = await tc.extractTar(downloadPath, cachePath);
 
-    core.info(`Saving to GitHub cache with key: ${cacheKey}`);
-    await cache.saveCache([cachePath], cacheKey);
+      core.info(`Caching tool with key: ${releaseName} ${actualVersion}`);
+      toolPath = await tc.cacheDir(extractPath, releaseName, actualVersion);
+      core.addPath(toolPath);
+
+      core.info(`Saving to GitHub cache with key: ${cacheKey}`);
+      await cache.saveCache([cachePath], cacheKey);
+    } else {
+      const extractPath = await tc.extractTar(downloadPath);
+      toolPath = await tc.cacheDir(extractPath, releaseName, actualVersion);
+      core.addPath(toolPath);
+    }
 
     core.info(
-      `Installed and cached forge CLI version ${actualVersion} to ${toolPath}`,
+      `Installed forge CLI version ${actualVersion} to ${toolPath}`,
     );
   } catch (error) {
     core.setFailed(error.message);
@@ -210,8 +228,6 @@ async function getVersionedAsset(octokit, version) {
   return asset.url;
 }
 
-async function installLocal() {}
-
 /**
  * Checks if the given version is a valid semantic version.
  * @param {string} version The version to check.
@@ -219,39 +235,4 @@ async function installLocal() {}
  */
 function isSemVer(version) {
   return /^\d+\.\d+\.\d+$/.test(version);
-}
-
-/**
- * Lists all cached tools for debugging purposes.
- * @param {string} toolName The name of the tool to list.
- */
-function listCachedTools(toolName) {
-  try {
-    const cacheDir = process.env.RUNNER_TOOL_CACHE || "/opt/hostedtoolcache";
-    const toolDir = path.join(cacheDir, toolName);
-    const githubCacheDir = path.join(process.cwd(), ".forge-cache", toolName);
-
-    core.info(`Tool cache directory: ${toolDir}`);
-    core.info(`GitHub cache directory: ${githubCacheDir}`);
-
-    if (fs.existsSync(toolDir)) {
-      const versions = fs.readdirSync(toolDir);
-      core.info(
-        `Available cached versions for ${toolName}: ${versions.join(", ")}`,
-      );
-    } else {
-      core.info(`No tool cache directory found for ${toolName}`);
-    }
-
-    if (fs.existsSync(githubCacheDir)) {
-      const versions = fs.readdirSync(githubCacheDir);
-      core.info(
-        `Available GitHub cached versions for ${toolName}: ${versions.join(", ")}`,
-      );
-    } else {
-      core.info(`No GitHub cache directory found for ${toolName}`);
-    }
-  } catch (error) {
-    core.info(`Error listing cached tools: ${error.message}`);
-  }
 }

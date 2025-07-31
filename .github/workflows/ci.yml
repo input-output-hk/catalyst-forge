@@ -51,6 +51,7 @@ jobs:
         uses: input-output-hk/catalyst-forge/actions/install@ci-improvements
         if: ${{ inputs.forge_version != 'local' }}
         with:
+          enable_caching: "false"
           version: ${{ inputs.forge_version }}
       - name: Install Local Forge
         id: install-local
