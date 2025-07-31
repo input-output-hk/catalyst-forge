@@ -15,12 +15,12 @@ import (
 	"github.com/input-output-hk/catalyst-forge/foundry/api/internal/api"
 	"github.com/input-output-hk/catalyst-forge/foundry/api/internal/api/handlers"
 	"github.com/input-output-hk/catalyst-forge/foundry/api/internal/api/middleware"
-	am "github.com/input-output-hk/catalyst-forge/foundry/api/internal/auth"
-	ghauth "github.com/input-output-hk/catalyst-forge/foundry/api/internal/auth/github"
 	"github.com/input-output-hk/catalyst-forge/foundry/api/internal/config"
 	"github.com/input-output-hk/catalyst-forge/foundry/api/internal/models"
 	"github.com/input-output-hk/catalyst-forge/foundry/api/internal/repository"
 	"github.com/input-output-hk/catalyst-forge/foundry/api/internal/service"
+	am "github.com/input-output-hk/catalyst-forge/foundry/api/pkg/auth"
+	ghauth "github.com/input-output-hk/catalyst-forge/foundry/api/pkg/auth/github"
 	"github.com/input-output-hk/catalyst-forge/foundry/api/pkg/k8s"
 	"github.com/input-output-hk/catalyst-forge/foundry/api/pkg/k8s/mocks"
 	"gorm.io/driver/postgres"
@@ -84,6 +84,7 @@ func (r *RunCmd) Run() error {
 		&models.IDCounter{},
 		&models.ReleaseAlias{},
 		&models.DeploymentEvent{},
+		&models.GHARepositoryAuth{},
 	)
 	if err != nil {
 		logger.Error("Failed to run migrations", "error", err)
@@ -110,10 +111,12 @@ func (r *RunCmd) Run() error {
 	counterRepo := repository.NewIDCounterRepository(db)
 	aliasRepo := repository.NewAliasRepository(db)
 	eventRepo := repository.NewEventRepository(db)
+	ghaAuthRepo := repository.NewGHAAuthRepository(db)
 
 	// Initialize services
 	releaseService := service.NewReleaseService(releaseRepo, aliasRepo, counterRepo, deploymentRepo)
 	deploymentService := service.NewDeploymentService(deploymentRepo, releaseRepo, eventRepo, k8sClient, db, logger)
+	ghaAuthService := service.NewGHAAuthService(ghaAuthRepo, logger)
 
 	// Initialize middleware
 	authManager, err := am.NewAuthManager(r.Auth.PrivateKey, r.Auth.PublicKey, am.WithLogger(logger))
@@ -138,7 +141,7 @@ func (r *RunCmd) Run() error {
 	defer ghaOIDCClient.StopCache()
 
 	// Initialize GHA handler
-	ghaHandler := handlers.NewGHAHandler(authManager, ghaOIDCClient, logger)
+	ghaHandler := handlers.NewGHAHandler(authManager, ghaOIDCClient, ghaAuthService, logger)
 
 	// Setup router
 	router := api.SetupRouter(releaseService, deploymentService, authMiddleware, db, logger, ghaHandler)

@@ -13,6 +13,9 @@ package providers
 	// Earthly contains the configuration for the Earthly Cloud provider.
 	earthly?: #Earthly
 
+	// Foundry contains the configuration for Catalyst Foundry.
+	foundry?: #Foundry
+
 	// Git contains the configuration for the Git provider.
 	git?: #Git
 

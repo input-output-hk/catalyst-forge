@@ -25,6 +25,9 @@ var _ client.Client = &ClientMock{}
 //			CreateAliasFunc: func(ctx context.Context, aliasName string, releaseID string) error {
 //				panic("mock out the CreateAlias method")
 //			},
+//			CreateAuthFunc: func(ctx context.Context, req *client.CreateAuthRequest) (*client.GHARepositoryAuth, error) {
+//				panic("mock out the CreateAuth method")
+//			},
 //			CreateDeploymentFunc: func(ctx context.Context, releaseID string) (*client.ReleaseDeployment, error) {
 //				panic("mock out the CreateDeployment method")
 //			},
@@ -33,6 +36,15 @@ var _ client.Client = &ClientMock{}
 //			},
 //			DeleteAliasFunc: func(ctx context.Context, aliasName string) error {
 //				panic("mock out the DeleteAlias method")
+//			},
+//			DeleteAuthFunc: func(ctx context.Context, id uint) error {
+//				panic("mock out the DeleteAuth method")
+//			},
+//			GetAuthFunc: func(ctx context.Context, id uint) (*client.GHARepositoryAuth, error) {
+//				panic("mock out the GetAuth method")
+//			},
+//			GetAuthByRepositoryFunc: func(ctx context.Context, repository string) (*client.GHARepositoryAuth, error) {
+//				panic("mock out the GetAuthByRepository method")
 //			},
 //			GetDeploymentFunc: func(ctx context.Context, releaseID string, deployID string) (*client.ReleaseDeployment, error) {
 //				panic("mock out the GetDeployment method")
@@ -55,17 +67,26 @@ var _ client.Client = &ClientMock{}
 //			ListAliasesFunc: func(ctx context.Context, releaseID string) ([]client.ReleaseAlias, error) {
 //				panic("mock out the ListAliases method")
 //			},
+//			ListAuthsFunc: func(ctx context.Context) ([]client.GHARepositoryAuth, error) {
+//				panic("mock out the ListAuths method")
+//			},
 //			ListDeploymentsFunc: func(ctx context.Context, releaseID string) ([]client.ReleaseDeployment, error) {
 //				panic("mock out the ListDeployments method")
 //			},
 //			ListReleasesFunc: func(ctx context.Context, projectName string) ([]client.Release, error) {
 //				panic("mock out the ListReleases method")
 //			},
+//			UpdateAuthFunc: func(ctx context.Context, id uint, req *client.UpdateAuthRequest) (*client.GHARepositoryAuth, error) {
+//				panic("mock out the UpdateAuth method")
+//			},
 //			UpdateDeploymentFunc: func(ctx context.Context, releaseID string, deployment *client.ReleaseDeployment) (*client.ReleaseDeployment, error) {
 //				panic("mock out the UpdateDeployment method")
 //			},
 //			UpdateReleaseFunc: func(ctx context.Context, release *client.Release) (*client.Release, error) {
 //				panic("mock out the UpdateRelease method")
+//			},
+//			ValidateTokenFunc: func(ctx context.Context, req *client.ValidateTokenRequest) (*client.ValidateTokenResponse, error) {
+//				panic("mock out the ValidateToken method")
 //			},
 //		}
 //
@@ -80,6 +101,9 @@ type ClientMock struct {
 	// CreateAliasFunc mocks the CreateAlias method.
 	CreateAliasFunc func(ctx context.Context, aliasName string, releaseID string) error
 
+	// CreateAuthFunc mocks the CreateAuth method.
+	CreateAuthFunc func(ctx context.Context, req *client.CreateAuthRequest) (*client.GHARepositoryAuth, error)
+
 	// CreateDeploymentFunc mocks the CreateDeployment method.
 	CreateDeploymentFunc func(ctx context.Context, releaseID string) (*client.ReleaseDeployment, error)
 
@@ -88,6 +112,15 @@ type ClientMock struct {
 
 	// DeleteAliasFunc mocks the DeleteAlias method.
 	DeleteAliasFunc func(ctx context.Context, aliasName string) error
+
+	// DeleteAuthFunc mocks the DeleteAuth method.
+	DeleteAuthFunc func(ctx context.Context, id uint) error
+
+	// GetAuthFunc mocks the GetAuth method.
+	GetAuthFunc func(ctx context.Context, id uint) (*client.GHARepositoryAuth, error)
+
+	// GetAuthByRepositoryFunc mocks the GetAuthByRepository method.
+	GetAuthByRepositoryFunc func(ctx context.Context, repository string) (*client.GHARepositoryAuth, error)
 
 	// GetDeploymentFunc mocks the GetDeployment method.
 	GetDeploymentFunc func(ctx context.Context, releaseID string, deployID string) (*client.ReleaseDeployment, error)
@@ -110,17 +143,26 @@ type ClientMock struct {
 	// ListAliasesFunc mocks the ListAliases method.
 	ListAliasesFunc func(ctx context.Context, releaseID string) ([]client.ReleaseAlias, error)
 
+	// ListAuthsFunc mocks the ListAuths method.
+	ListAuthsFunc func(ctx context.Context) ([]client.GHARepositoryAuth, error)
+
 	// ListDeploymentsFunc mocks the ListDeployments method.
 	ListDeploymentsFunc func(ctx context.Context, releaseID string) ([]client.ReleaseDeployment, error)
 
 	// ListReleasesFunc mocks the ListReleases method.
 	ListReleasesFunc func(ctx context.Context, projectName string) ([]client.Release, error)
 
+	// UpdateAuthFunc mocks the UpdateAuth method.
+	UpdateAuthFunc func(ctx context.Context, id uint, req *client.UpdateAuthRequest) (*client.GHARepositoryAuth, error)
+
 	// UpdateDeploymentFunc mocks the UpdateDeployment method.
 	UpdateDeploymentFunc func(ctx context.Context, releaseID string, deployment *client.ReleaseDeployment) (*client.ReleaseDeployment, error)
 
 	// UpdateReleaseFunc mocks the UpdateRelease method.
 	UpdateReleaseFunc func(ctx context.Context, release *client.Release) (*client.Release, error)
+
+	// ValidateTokenFunc mocks the ValidateToken method.
+	ValidateTokenFunc func(ctx context.Context, req *client.ValidateTokenRequest) (*client.ValidateTokenResponse, error)
 
 	// calls tracks calls to the methods.
 	calls struct {
@@ -146,6 +188,13 @@ type ClientMock struct {
 			// ReleaseID is the releaseID argument value.
 			ReleaseID string
 		}
+		// CreateAuth holds details about calls to the CreateAuth method.
+		CreateAuth []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// Req is the req argument value.
+			Req *client.CreateAuthRequest
+		}
 		// CreateDeployment holds details about calls to the CreateDeployment method.
 		CreateDeployment []struct {
 			// Ctx is the ctx argument value.
@@ -168,6 +217,27 @@ type ClientMock struct {
 			Ctx context.Context
 			// AliasName is the aliasName argument value.
 			AliasName string
+		}
+		// DeleteAuth holds details about calls to the DeleteAuth method.
+		DeleteAuth []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// ID is the id argument value.
+			ID uint
+		}
+		// GetAuth holds details about calls to the GetAuth method.
+		GetAuth []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// ID is the id argument value.
+			ID uint
+		}
+		// GetAuthByRepository holds details about calls to the GetAuthByRepository method.
+		GetAuthByRepository []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// Repository is the repository argument value.
+			Repository string
 		}
 		// GetDeployment holds details about calls to the GetDeployment method.
 		GetDeployment []struct {
@@ -224,6 +294,11 @@ type ClientMock struct {
 			// ReleaseID is the releaseID argument value.
 			ReleaseID string
 		}
+		// ListAuths holds details about calls to the ListAuths method.
+		ListAuths []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+		}
 		// ListDeployments holds details about calls to the ListDeployments method.
 		ListDeployments []struct {
 			// Ctx is the ctx argument value.
@@ -237,6 +312,15 @@ type ClientMock struct {
 			Ctx context.Context
 			// ProjectName is the projectName argument value.
 			ProjectName string
+		}
+		// UpdateAuth holds details about calls to the UpdateAuth method.
+		UpdateAuth []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// ID is the id argument value.
+			ID uint
+			// Req is the req argument value.
+			Req *client.UpdateAuthRequest
 		}
 		// UpdateDeployment holds details about calls to the UpdateDeployment method.
 		UpdateDeployment []struct {
@@ -254,12 +338,23 @@ type ClientMock struct {
 			// Release is the release argument value.
 			Release *client.Release
 		}
+		// ValidateToken holds details about calls to the ValidateToken method.
+		ValidateToken []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// Req is the req argument value.
+			Req *client.ValidateTokenRequest
+		}
 	}
 	lockAddDeploymentEvent          sync.RWMutex
 	lockCreateAlias                 sync.RWMutex
+	lockCreateAuth                  sync.RWMutex
 	lockCreateDeployment            sync.RWMutex
 	lockCreateRelease               sync.RWMutex
 	lockDeleteAlias                 sync.RWMutex
+	lockDeleteAuth                  sync.RWMutex
+	lockGetAuth                     sync.RWMutex
+	lockGetAuthByRepository         sync.RWMutex
 	lockGetDeployment               sync.RWMutex
 	lockGetDeploymentEvents         sync.RWMutex
 	lockGetLatestDeployment         sync.RWMutex
@@ -267,10 +362,13 @@ type ClientMock struct {
 	lockGetReleaseByAlias           sync.RWMutex
 	lockIncrementDeploymentAttempts sync.RWMutex
 	lockListAliases                 sync.RWMutex
+	lockListAuths                   sync.RWMutex
 	lockListDeployments             sync.RWMutex
 	lockListReleases                sync.RWMutex
+	lockUpdateAuth                  sync.RWMutex
 	lockUpdateDeployment            sync.RWMutex
 	lockUpdateRelease               sync.RWMutex
+	lockValidateToken               sync.RWMutex
 }
 
 // AddDeploymentEvent calls AddDeploymentEventFunc.
@@ -358,6 +456,42 @@ func (mock *ClientMock) CreateAliasCalls() []struct {
 	mock.lockCreateAlias.RLock()
 	calls = mock.calls.CreateAlias
 	mock.lockCreateAlias.RUnlock()
+	return calls
+}
+
+// CreateAuth calls CreateAuthFunc.
+func (mock *ClientMock) CreateAuth(ctx context.Context, req *client.CreateAuthRequest) (*client.GHARepositoryAuth, error) {
+	if mock.CreateAuthFunc == nil {
+		panic("ClientMock.CreateAuthFunc: method is nil but Client.CreateAuth was just called")
+	}
+	callInfo := struct {
+		Ctx context.Context
+		Req *client.CreateAuthRequest
+	}{
+		Ctx: ctx,
+		Req: req,
+	}
+	mock.lockCreateAuth.Lock()
+	mock.calls.CreateAuth = append(mock.calls.CreateAuth, callInfo)
+	mock.lockCreateAuth.Unlock()
+	return mock.CreateAuthFunc(ctx, req)
+}
+
+// CreateAuthCalls gets all the calls that were made to CreateAuth.
+// Check the length with:
+//
+//	len(mockedClient.CreateAuthCalls())
+func (mock *ClientMock) CreateAuthCalls() []struct {
+	Ctx context.Context
+	Req *client.CreateAuthRequest
+} {
+	var calls []struct {
+		Ctx context.Context
+		Req *client.CreateAuthRequest
+	}
+	mock.lockCreateAuth.RLock()
+	calls = mock.calls.CreateAuth
+	mock.lockCreateAuth.RUnlock()
 	return calls
 }
 
@@ -470,6 +604,114 @@ func (mock *ClientMock) DeleteAliasCalls() []struct {
 	mock.lockDeleteAlias.RLock()
 	calls = mock.calls.DeleteAlias
 	mock.lockDeleteAlias.RUnlock()
+	return calls
+}
+
+// DeleteAuth calls DeleteAuthFunc.
+func (mock *ClientMock) DeleteAuth(ctx context.Context, id uint) error {
+	if mock.DeleteAuthFunc == nil {
+		panic("ClientMock.DeleteAuthFunc: method is nil but Client.DeleteAuth was just called")
+	}
+	callInfo := struct {
+		Ctx context.Context
+		ID  uint
+	}{
+		Ctx: ctx,
+		ID:  id,
+	}
+	mock.lockDeleteAuth.Lock()
+	mock.calls.DeleteAuth = append(mock.calls.DeleteAuth, callInfo)
+	mock.lockDeleteAuth.Unlock()
+	return mock.DeleteAuthFunc(ctx, id)
+}
+
+// DeleteAuthCalls gets all the calls that were made to DeleteAuth.
+// Check the length with:
+//
+//	len(mockedClient.DeleteAuthCalls())
+func (mock *ClientMock) DeleteAuthCalls() []struct {
+	Ctx context.Context
+	ID  uint
+} {
+	var calls []struct {
+		Ctx context.Context
+		ID  uint
+	}
+	mock.lockDeleteAuth.RLock()
+	calls = mock.calls.DeleteAuth
+	mock.lockDeleteAuth.RUnlock()
+	return calls
+}
+
+// GetAuth calls GetAuthFunc.
+func (mock *ClientMock) GetAuth(ctx context.Context, id uint) (*client.GHARepositoryAuth, error) {
+	if mock.GetAuthFunc == nil {
+		panic("ClientMock.GetAuthFunc: method is nil but Client.GetAuth was just called")
+	}
+	callInfo := struct {
+		Ctx context.Context
+		ID  uint
+	}{
+		Ctx: ctx,
+		ID:  id,
+	}
+	mock.lockGetAuth.Lock()
+	mock.calls.GetAuth = append(mock.calls.GetAuth, callInfo)
+	mock.lockGetAuth.Unlock()
+	return mock.GetAuthFunc(ctx, id)
+}
+
+// GetAuthCalls gets all the calls that were made to GetAuth.
+// Check the length with:
+//
+//	len(mockedClient.GetAuthCalls())
+func (mock *ClientMock) GetAuthCalls() []struct {
+	Ctx context.Context
+	ID  uint
+} {
+	var calls []struct {
+		Ctx context.Context
+		ID  uint
+	}
+	mock.lockGetAuth.RLock()
+	calls = mock.calls.GetAuth
+	mock.lockGetAuth.RUnlock()
+	return calls
+}
+
+// GetAuthByRepository calls GetAuthByRepositoryFunc.
+func (mock *ClientMock) GetAuthByRepository(ctx context.Context, repository string) (*client.GHARepositoryAuth, error) {
+	if mock.GetAuthByRepositoryFunc == nil {
+		panic("ClientMock.GetAuthByRepositoryFunc: method is nil but Client.GetAuthByRepository was just called")
+	}
+	callInfo := struct {
+		Ctx        context.Context
+		Repository string
+	}{
+		Ctx:        ctx,
+		Repository: repository,
+	}
+	mock.lockGetAuthByRepository.Lock()
+	mock.calls.GetAuthByRepository = append(mock.calls.GetAuthByRepository, callInfo)
+	mock.lockGetAuthByRepository.Unlock()
+	return mock.GetAuthByRepositoryFunc(ctx, repository)
+}
+
+// GetAuthByRepositoryCalls gets all the calls that were made to GetAuthByRepository.
+// Check the length with:
+//
+//	len(mockedClient.GetAuthByRepositoryCalls())
+func (mock *ClientMock) GetAuthByRepositoryCalls() []struct {
+	Ctx        context.Context
+	Repository string
+} {
+	var calls []struct {
+		Ctx        context.Context
+		Repository string
+	}
+	mock.lockGetAuthByRepository.RLock()
+	calls = mock.calls.GetAuthByRepository
+	mock.lockGetAuthByRepository.RUnlock()
 	return calls
 }
 
@@ -737,6 +979,38 @@ func (mock *ClientMock) ListAliasesCalls() []struct {
 	return calls
 }
 
+// ListAuths calls ListAuthsFunc.
+func (mock *ClientMock) ListAuths(ctx context.Context) ([]client.GHARepositoryAuth, error) {
+	if mock.ListAuthsFunc == nil {
+		panic("ClientMock.ListAuthsFunc: method is nil but Client.ListAuths was just called")
+	}
+	callInfo := struct {
+		Ctx context.Context
+	}{
+		Ctx: ctx,
+	}
+	mock.lockListAuths.Lock()
+	mock.calls.ListAuths = append(mock.calls.ListAuths, callInfo)
+	mock.lockListAuths.Unlock()
+	return mock.ListAuthsFunc(ctx)
+}
+
+// ListAuthsCalls gets all the calls that were made to ListAuths.
+// Check the length with:
+//
+//	len(mockedClient.ListAuthsCalls())
+func (mock *ClientMock) ListAuthsCalls() []struct {
+	Ctx context.Context
+} {
+	var calls []struct {
+		Ctx context.Context
+	}
+	mock.lockListAuths.RLock()
+	calls = mock.calls.ListAuths
+	mock.lockListAuths.RUnlock()
+	return calls
+}
+
 // ListDeployments calls ListDeploymentsFunc.
 func (mock *ClientMock) ListDeployments(ctx context.Context, releaseID string) ([]client.ReleaseDeployment, error) {
 	if mock.ListDeploymentsFunc == nil {
@@ -806,6 +1080,46 @@ func (mock *ClientMock) ListReleasesCalls() []struct {
 	mock.lockListReleases.RLock()
 	calls = mock.calls.ListReleases
 	mock.lockListReleases.RUnlock()
+	return calls
+}
+
+// UpdateAuth calls UpdateAuthFunc.
+func (mock *ClientMock) UpdateAuth(ctx context.Context, id uint, req *client.UpdateAuthRequest) (*client.GHARepositoryAuth, error) {
+	if mock.UpdateAuthFunc == nil {
+		panic("ClientMock.UpdateAuthFunc: method is nil but Client.UpdateAuth was just called")
+	}
+	callInfo := struct {
+		Ctx context.Context
+		ID  uint
+		Req *client.UpdateAuthRequest
+	}{
+		Ctx: ctx,
+		ID:  id,
+		Req: req,
+	}
+	mock.lockUpdateAuth.Lock()
+	mock.calls.UpdateAuth = append(mock.calls.UpdateAuth, callInfo)
+	mock.lockUpdateAuth.Unlock()
+	return mock.UpdateAuthFunc(ctx, id, req)
+}
+
+// UpdateAuthCalls gets all the calls that were made to UpdateAuth.
+// Check the length with:
+//
+//	len(mockedClient.UpdateAuthCalls())
+func (mock *ClientMock) UpdateAuthCalls() []struct {
+	Ctx context.Context
+	ID  uint
+	Req *client.UpdateAuthRequest
+} {
+	var calls []struct {
+		Ctx context.Context
+		ID  uint
+		Req *client.UpdateAuthRequest
+	}
+	mock.lockUpdateAuth.RLock()
+	calls = mock.calls.UpdateAuth
+	mock.lockUpdateAuth.RUnlock()
 	return calls
 }
 
@@ -882,5 +1196,41 @@ func (mock *ClientMock) UpdateReleaseCalls() []struct {
 	mock.lockUpdateRelease.RLock()
 	calls = mock.calls.UpdateRelease
 	mock.lockUpdateRelease.RUnlock()
+	return calls
+}
+
+// ValidateToken calls ValidateTokenFunc.
+func (mock *ClientMock) ValidateToken(ctx context.Context, req *client.ValidateTokenRequest) (*client.ValidateTokenResponse, error) {
+	if mock.ValidateTokenFunc == nil {
+		panic("ClientMock.ValidateTokenFunc: method is nil but Client.ValidateToken was just called")
+	}
+	callInfo := struct {
+		Ctx context.Context
+		Req *client.ValidateTokenRequest
+	}{
+		Ctx: ctx,
+		Req: req,
+	}
+	mock.lockValidateToken.Lock()
+	mock.calls.ValidateToken = append(mock.calls.ValidateToken, callInfo)
+	mock.lockValidateToken.Unlock()
+	return mock.ValidateTokenFunc(ctx, req)
+}
+
+// ValidateTokenCalls gets all the calls that were made to ValidateToken.
+// Check the length with:
+//
+//	len(mockedClient.ValidateTokenCalls())
+func (mock *ClientMock) ValidateTokenCalls() []struct {
+	Ctx context.Context
+	Req *client.ValidateTokenRequest
+} {
+	var calls []struct {
+		Ctx context.Context
+		Req *client.ValidateTokenRequest
+	}
+	mock.lockValidateToken.RLock()
+	calls = mock.calls.ValidateToken
+	mock.lockValidateToken.RUnlock()
 	return calls
 }

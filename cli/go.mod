@@ -4,7 +4,8 @@ go 1.24.2
 
 require (
 	cuelang.org/go v0.12.0
-	github.com/alecthomas/kong v0.9.0
+	github.com/BurntSushi/toml v1.4.0
+	github.com/alecthomas/kong v1.2.1
 	github.com/aws/aws-sdk-go-v2/service/ecr v1.46.0
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.84.1
 	github.com/charmbracelet/bubbles v0.20.0
@@ -12,12 +13,13 @@ require (
 	github.com/charmbracelet/lipgloss v0.13.0
 	github.com/charmbracelet/log v0.4.0
 	github.com/google/go-github/v66 v66.0.0
+	github.com/input-output-hk/catalyst-forge/foundry/api v0.0.0-00010101000000-000000000000
 	github.com/input-output-hk/catalyst-forge/lib/project v0.0.0
 	github.com/input-output-hk/catalyst-forge/lib/providers v0.0.0-00010101000000-000000000000
 	github.com/input-output-hk/catalyst-forge/lib/schema v0.0.0
 	github.com/input-output-hk/catalyst-forge/lib/tools v0.0.0
 	github.com/posener/complete v1.2.3
-	github.com/rogpeppe/go-internal v1.13.2-0.20241226121412-a5dc8ff20d0a
+	github.com/rogpeppe/go-internal v1.14.1
 	github.com/stretchr/testify v1.10.0
 	github.com/willabides/kongplete v0.4.0
 	golang.org/x/exp v0.0.0-20241009180824-f66d83c29e7c
@@ -33,7 +35,6 @@ require (
 	dario.cat/mergo v1.0.1 // indirect
 	github.com/AdaLogics/go-fuzz-headers v0.0.0-20230811130428-ced1acdcaa24 // indirect
 	github.com/Azure/go-ansiterm v0.0.0-20230124172434-306776ec8161 // indirect
-	github.com/BurntSushi/toml v1.4.0 // indirect
 	github.com/MakeNowJust/heredoc v1.0.0 // indirect
 	github.com/Masterminds/goutils v1.1.1 // indirect
 	github.com/Masterminds/semver/v3 v3.3.1 // indirect
@@ -124,6 +125,7 @@ require (
 	github.com/gofrs/flock v0.12.1 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang-collections/collections v0.0.0-20130729185459-604e922904d3 // indirect
+	github.com/golang-jwt/jwt/v5 v5.2.3 // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/golang/protobuf v1.5.4 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
@@ -247,12 +249,12 @@ require (
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect
 	helm.sh/helm/v3 v3.17.0 // indirect
-	k8s.io/api v0.32.2 // indirect
+	k8s.io/api v0.32.3 // indirect
 	k8s.io/apiextensions-apiserver v0.32.2 // indirect
-	k8s.io/apimachinery v0.32.2 // indirect
+	k8s.io/apimachinery v0.32.3 // indirect
 	k8s.io/apiserver v0.32.2 // indirect
 	k8s.io/cli-runtime v0.32.0 // indirect
-	k8s.io/client-go v0.32.2 // indirect
+	k8s.io/client-go v0.32.3 // indirect
 	k8s.io/component-base v0.32.2 // indirect
 	k8s.io/klog/v2 v2.130.1 // indirect
 	k8s.io/kube-openapi v0.0.0-20241105132330-32ad38e42d3f // indirect
@@ -269,6 +271,8 @@ require (
 	sigs.k8s.io/structured-merge-diff/v4 v4.4.2 // indirect
 	sigs.k8s.io/yaml v1.4.0 // indirect
 )
+
+replace github.com/input-output-hk/catalyst-forge/foundry/api => ../foundry/api
 
 replace github.com/input-output-hk/catalyst-forge/lib/project => ../lib/project
 

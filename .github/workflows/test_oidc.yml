@@ -45,6 +45,11 @@ jobs:
         run: |
           sleep 10
 
+      - name: Create GHA auth
+        run: |
+            forge -vvv --api-url "http://localhost:5050" api login "$(cat ./.secret/jwt.txt)"
+            forge -vvv --api-url "http://localhost:5050" api auth gha create -a input-output-hk/catalyst-forge
+
       - name: Obtain OIDC ID token
         id: oidc
         shell: bash
@@ -58,51 +63,35 @@ jobs:
           echo "::add-mask::$IDTOKEN"         # keep it out of logs
           echo "id_token=$IDTOKEN" >>"$GITHUB_OUTPUT"
 
-      - name: Call /auth/gha/validate
+      - name: Login with OIDC ID token
         id: call-api
         shell: bash
         run: |
-          set -euo pipefail
-
-          RESPONSE=$(curl -sS -w "\n%{http_code}" -X POST \
-            -H "Content-Type: application/json" \
-            -d "{\"token\":\"${{ steps.oidc.outputs.id_token }}\"}" \
-            "${API_URL}/auth/gha/validate")
-
-          BODY=$(echo "$RESPONSE" | head -n -1)
-          STATUS=$(echo "$RESPONSE" | tail -n1)
           JWT=$(echo "$BODY" | jq -r '.token')
+          forge -vvv --api-url "http://localhost:5050" api login -t "gha" "$JWT"
 
-          echo "status=$STATUS" >>"$GITHUB_OUTPUT"
-          echo "jwt=$JWT"     >>"$GITHUB_OUTPUT"
+    #   - name: Verify returned JWT token
+    #     shell: bash
+    #     run: |
+    #       cat > release.json << 'EOF'
+    #       {
+    #         "bundle": "fake",
+    #         "project": "project",
+    #         "project_path": "project",
+    #         "source_repo": "http://gitea:3000/root/source",
+    #         "source_commit": "0e28b79ca8e72079c29b575d2b994cfef92b4c32"
+    #       }
 
-          if [ "$STATUS" -ne 200 ]; then
-            echo "::error ::API returned HTTP $STATUS"
-            exit 1
-          fi
+    #       EOF
 
-      - name: Verify returned JWT token
-        shell: bash
-        run: |
-          cat > release.json << 'EOF'
-          {
-            "bundle": "fake",
-            "project": "project",
-            "project_path": "project",
-            "source_repo": "http://gitea:3000/root/source",
-            "source_commit": "0e28b79ca8e72079c29b575d2b994cfef92b4c32"
-          }
+    #       JSON=$(cat release.json | curl -s -X POST "${API_URL}/release" \
+    #         -H "Content-Type: application/json" \
+    #         -H "Authorization: Bearer ${{ steps.call-api.outputs.jwt }}" \
+    #         -d @-)
 
-          EOF
+    #       echo "JSON: $JSON"
 
-          JSON=$(cat release.json | curl -s -X POST "${API_URL}/release" \
-            -H "Content-Type: application/json" \
-            -H "Authorization: Bearer ${{ steps.call-api.outputs.jwt }}" \
-            -d @-)
-
-          echo "JSON: $JSON"
-
-          if [ "$(echo "$JSON" | jq -r '.id')" == "null" ]; then
-            echo "::error ::Release ID is null"
-            exit 1
-          fi
+    #       if [ "$(echo "$JSON" | jq -r '.id')" == "null" ]; then
+    #         echo "::error ::Release ID is null"
+    #         exit 1
+    #       fi

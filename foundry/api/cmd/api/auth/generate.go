@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/input-output-hk/catalyst-forge/foundry/api/internal/auth"
+	"github.com/input-output-hk/catalyst-forge/foundry/api/pkg/auth"
 )
 
 type GenerateCmd struct {
