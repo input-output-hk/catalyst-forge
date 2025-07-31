@@ -51,7 +51,7 @@ func WithPrivileged() EarthlyExecutorOption {
 
 // WithRetries is an option for configuring an EarthlyExecutor with the number
 // of retries to attempt if the Earthly target fails.
-func WithRetries(retries int) EarthlyExecutorOption {
+func WithRetries(retries sc.CIRetries) EarthlyExecutorOption {
 	return func(e *EarthlyExecutor) {
 		e.opts.retries = retries
 	}

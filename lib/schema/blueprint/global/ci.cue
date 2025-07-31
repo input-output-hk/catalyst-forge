@@ -19,6 +19,9 @@ import (
 	// Release contains the configuration for the release of a project.
 	release?: #Release
 
+	// Retries contains the configuration for the retries of an Earthly target.
+	retries?: common.#CIRetries
+
 	// Secrets contains global secrets that will be passed to all targets.
 	secrets?: [...common.#Secret]
 }

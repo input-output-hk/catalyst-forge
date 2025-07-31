@@ -53,7 +53,9 @@ func Test_generateOpts(t *testing.T) {
 						}
 						platforms: ["linux/amd64"]
 						privileged: true
-						retries: 3
+						retries: {
+							attempts: 3
+						}
 						secrets: [
 							{
 								name: "foo"
@@ -74,7 +76,7 @@ func Test_generateOpts(t *testing.T) {
 				assert.NotContains(t, ee.targetArgs, "baz")
 				assert.Contains(t, ee.opts.platforms, "linux/amd64")
 				assert.Contains(t, ee.earthlyArgs, "--allow-privileged")
-				assert.Equal(t, 3, ee.opts.retries)
+				assert.Equal(t, int64(3), ee.opts.retries.Attempts)
 				assert.Len(t, ee.secrets, 2)
 			},
 		},
