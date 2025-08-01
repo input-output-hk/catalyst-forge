@@ -1,10 +1,10 @@
 exec git init .
 
-exec forge scan .
+exec forge scan blueprint .
 cmp stdout golden.txt
 
 -- golden.txt --
-["./dir1","./dir2"]
+{"./dir1":{"project":{"name":"dir1","container":"dir1"}},"./dir2":{"project":{"name":"dir2","container":"dir2"}}}
 -- dir1/blueprint.cue --
 project: name: "dir1"
 -- dir2/blueprint.cue --

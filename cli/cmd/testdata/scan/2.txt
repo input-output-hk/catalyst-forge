@@ -1,15 +1,15 @@
 exec git init .
 
-exec forge scan --earthfile .
+exec forge scan earthfile .
 cmp stdout golden_1.txt
 
-exec forge --ci scan --earthfile .
+exec forge scan earthfile --enumerate .
 cmp stdout golden_1_ci.txt
 
-exec forge scan --absolute --earthfile .
+exec forge scan earthfile --absolute .
 cmpenv stdout golden_2.txt
 
-exec forge --ci scan --absolute --earthfile .
+exec forge scan earthfile --enumerate --absolute .
 cmpenv stdout golden_2_ci.txt
 
 -- golden_1.txt --

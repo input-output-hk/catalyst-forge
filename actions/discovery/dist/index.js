@@ -3983,7 +3983,7 @@ module.exports = {
  * @param {string} path The path to scan
  */
 async function runDeploymentScan(absolute, path) {
-  const args = ["-vv", "scan", "--blueprint", "--filter", "project.deployment"];
+  const args = ["-vv", "scan", "blueprint", "--filter", "project.deployment"];
 
   if (absolute === true) {
     args.push("--absolute");
@@ -4005,7 +4005,7 @@ async function runDeploymentScan(absolute, path) {
  * @param {string} path The path to scan
  */
 async function runEarthfileScan(filters, absolute, path) {
-  let args = ["-vv", "scan", "--ci", "--earthfile"];
+  let args = ["-vv", "scan", "earthfile", "--enumerate"];
 
   if (absolute === true) {
     args.push("--absolute");
@@ -4027,7 +4027,7 @@ async function runEarthfileScan(filters, absolute, path) {
  * @param {string} path The path to scan
  */
 async function runReleaseScan(absolute, path) {
-  const args = ["-vv", "scan", "--blueprint", "--filter", "project.release"];
+  const args = ["-vv", "scan", "blueprint", "--filter", "project.release"];
 
   if (absolute === true) {
     args.push("--absolute");

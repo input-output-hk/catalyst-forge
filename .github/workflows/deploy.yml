@@ -38,23 +38,23 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Install Forge
-        uses: input-output-hk/catalyst-forge/actions/install@master
+        uses: input-output-hk/catalyst-forge/actions/install@filter-by-earthfile
         if: ${{ inputs.forge_version != 'local' }}
         with:
           version: ${{ inputs.forge_version }}
       - name: Install Local Forge
         id: install-local
-        uses: input-output-hk/catalyst-forge/actions/install-local@master
+        uses: input-output-hk/catalyst-forge/actions/install-local@filter-by-earthfile
         if: ${{ inputs.forge_version == 'local' }}
       - name: Check forge version
         run: forge version
       - name: Setup CI
-        uses: input-output-hk/catalyst-forge/actions/setup@master
+        uses: input-output-hk/catalyst-forge/actions/setup@filter-by-earthfile
         with:
           skip_earthly_install: ${{ inputs.forge_version == 'local' && steps.install-local.outputs.cache-hit == false }}
           skip_earthly_satellite: ${{ inputs.forge_version == 'local' && steps.install-local.outputs.cache-hit == false }}
       - name: Deploy
-        uses: input-output-hk/catalyst-forge/actions/run@master
+        uses: input-output-hk/catalyst-forge/actions/run@filter-by-earthfile
         with:
           command: mod deploy
           args: ${{ matrix.deployment }}
