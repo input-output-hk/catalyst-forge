@@ -62,21 +62,21 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Install Forge
-        uses: input-output-hk/catalyst-forge/actions/install@ci/v1.9.0
+        uses: input-output-hk/catalyst-forge/actions/install@ci/v1.10.0
         if: ${{ inputs.forge_version != 'local' }}
         with:
           enable_caching: "true"
           version: ${{ inputs.forge_version }}
       - name: Install Local Forge
         id: install-local
-        uses: input-output-hk/catalyst-forge/actions/install-local@ci/v1.9.0
+        uses: input-output-hk/catalyst-forge/actions/install-local@ci/v1.10.0
         if: ${{ inputs.forge_version == 'local' }}
       - name: Check forge version
         id: local
         run: |
           forge version
       - name: Setup CI
-        uses: input-output-hk/catalyst-forge/actions/setup@ci/v1.9.0
+        uses: input-output-hk/catalyst-forge/actions/setup@ci/v1.10.0
         with:
           skip_docker: 'true'
           skip_github: 'true'
@@ -84,7 +84,7 @@ jobs:
           skip_earthly_satellite: ${{ inputs.forge_version == 'local' && steps.install-local.outputs.cache-hit == false }}
       - name: Discovery
         id: discovery
-        uses: input-output-hk/catalyst-forge/actions/discovery@ci/v1.9.0
+        uses: input-output-hk/catalyst-forge/actions/discovery@ci/v1.10.0
         with:
           filters: |
             ${{ env.FORGE_REGEX_CHECK }}
@@ -97,7 +97,7 @@ jobs:
             ${{ env.FORGE_REGEX_NIGHTLY }}
           tags: ${{ inputs.tags }}
   check:
-    uses: input-output-hk/catalyst-forge/.github/workflows/run.yml@ci/v1.9.0
+    uses: input-output-hk/catalyst-forge/.github/workflows/run.yml@ci/v1.10.0
     needs: [discover]
     if: (fromJson(needs.discover.outputs.earthfiles)['^check(-.*)?$'] != null) && (inputs.release_only == false) && !failure() && !cancelled()
     with:
@@ -108,7 +108,7 @@ jobs:
       verbosity: ${{ inputs.verbosity }}
 
   build:
-    uses: input-output-hk/catalyst-forge/.github/workflows/run.yml@ci/v1.9.0
+    uses: input-output-hk/catalyst-forge/.github/workflows/run.yml@ci/v1.10.0
     needs: [discover, check]
     if: (fromJson(needs.discover.outputs.earthfiles)['^build(-.*)?$'] != null) && (inputs.release_only == false) && !failure() && !cancelled()
     with:
@@ -119,7 +119,7 @@ jobs:
       verbosity: ${{ inputs.verbosity }}
 
   package:
-    uses: input-output-hk/catalyst-forge/.github/workflows/run.yml@ci/v1.9.0
+    uses: input-output-hk/catalyst-forge/.github/workflows/run.yml@ci/v1.10.0
     needs: [discover, check, build]
     if: (fromJson(needs.discover.outputs.earthfiles)['^package(-.*)?$'] != null) && (inputs.release_only == false) && !failure() && !cancelled()
     with:
@@ -130,7 +130,7 @@ jobs:
       verbosity: ${{ inputs.verbosity }}
 
   test:
-    uses: input-output-hk/catalyst-forge/.github/workflows/run.yml@ci/v1.9.0
+    uses: input-output-hk/catalyst-forge/.github/workflows/run.yml@ci/v1.10.0
     needs: [discover, check, build, package]
     if: (fromJson(needs.discover.outputs.earthfiles)['^test(-.*)?$'] != null) && (inputs.release_only == false) && !failure() && !cancelled()
     with:
@@ -141,7 +141,7 @@ jobs:
       verbosity: ${{ inputs.verbosity }}
 
   release:
-    uses: input-output-hk/catalyst-forge/.github/workflows/release.yml@ci/v1.9.0
+    uses: input-output-hk/catalyst-forge/.github/workflows/release.yml@ci/v1.10.0
     needs: [discover, check, build, test]
     if: (fromJson(needs.discover.outputs.releases)[0] != null) && !inputs.skip_release && !failure() && !cancelled()
     with:
@@ -151,7 +151,7 @@ jobs:
       verbosity: ${{ inputs.verbosity }}
 
   deploy:
-    uses: input-output-hk/catalyst-forge/.github/workflows/deploy.yml@ci/v1.9.0
+    uses: input-output-hk/catalyst-forge/.github/workflows/deploy.yml@ci/v1.10.0
     needs: [discover, check, build, test, release]
     if: (fromJson(needs.discover.outputs.deployments)[0] != null) && !inputs.skip_deploy && !failure() && !cancelled()
     with:
