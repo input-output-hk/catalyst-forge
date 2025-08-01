@@ -2,6 +2,18 @@
 
 package common
 
+// CIRetries contains the configuration for the retries of an Earthly target.
+type CIRetries struct {
+	// Attempts contains the number of attempts to retry the target.
+	Attempts int64 `json:"attempts"`
+
+	// Delay contains the delay between retries.
+	Delay string `json:"delay"`
+
+	// Filters filters retries based on the log lines from the Earthly run.
+	Filters []string `json:"filters,omitempty"`
+}
+
 type Secret struct {
 	// Maps contains mappings for Earthly secret names to JSON keys in the secret.
 	// Mutually exclusive with Name.

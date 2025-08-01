@@ -4,11 +4,12 @@ const exec = require("@actions/exec");
 async function run() {
   try {
     const absolute = core.getBooleanInput("absolute", { required: false });
-    const path = core.getInput("path", { required: true });
     const filters = core.getInput("filters", { required: false });
+    const path = core.getInput("path", { required: true });
+    const tags = core.getInput("tags", { required: false });
 
     await runDeploymentScan(absolute, path);
-    await runEarthfileScan(filters, absolute, path);
+    await runEarthfileScan(filters, absolute, path, tags);
     await runReleaseScan(absolute, path);
   } catch (error) {
     core.setFailed(error.message);
@@ -25,7 +26,7 @@ module.exports = {
  * @param {string} path The path to scan
  */
 async function runDeploymentScan(absolute, path) {
-  const args = ["-vv", "scan", "--blueprint", "--filter", "project.deployment"];
+  const args = ["-vv", "scan", "blueprint", "--filter", "project.deployment"];
 
   if (absolute === true) {
     args.push("--absolute");
@@ -46,14 +47,15 @@ async function runDeploymentScan(absolute, path) {
  * @param {boolean} absolute Whether to use absolute paths or not
  * @param {string} path The path to scan
  */
-async function runEarthfileScan(filters, absolute, path) {
-  let args = ["-vv", "scan", "--ci", "--earthfile"];
+async function runEarthfileScan(filters, absolute, path, tags) {
+  let args = ["-vv", "scan", "earthfile", "--enumerate"];
 
   if (absolute === true) {
     args.push("--absolute");
   }
 
   args = args.concat(filtersToArgs(filters));
+  args = args.concat(tagsToArgs(tags));
   args.push(path);
 
   core.info(`Running forge ${args.join(" ")}`);
@@ -69,7 +71,7 @@ async function runEarthfileScan(filters, absolute, path) {
  * @param {string} path The path to scan
  */
 async function runReleaseScan(absolute, path) {
-  const args = ["-vv", "scan", "--blueprint", "--filter", "project.release"];
+  const args = ["-vv", "scan", "blueprint", "--filter", "project.release"];
 
   if (absolute === true) {
     args.push("--absolute");
@@ -99,6 +101,22 @@ function filtersToArgs(input) {
   const result = [];
   for (const line of lines) {
     result.push("--filter", line);
+  }
+
+  return result;
+}
+
+/**
+ * Converts the tags input string to command line arguments.
+ * @param {string} input The tags input string
+ * @returns {string[]} The tags as command line arguments
+ */
+function tagsToArgs(input) {
+  const lines = input.trim().split("\n");
+
+  const result = [];
+  for (const line of lines) {
+    result.push("--tag", line);
   }
 
   return result;

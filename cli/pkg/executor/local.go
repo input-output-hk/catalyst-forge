@@ -69,11 +69,11 @@ func (e *LocalExecutor) Execute(command string, args ...string) ([]byte, error) 
 		}()
 
 		if err := cmd.Wait(); err != nil {
-			return nil, err
+			return buffer.Bytes(), err
 		}
 
 		if err := <-errChan; err != nil {
-			return nil, err
+			return buffer.Bytes(), err
 		}
 
 		return buffer.Bytes(), nil

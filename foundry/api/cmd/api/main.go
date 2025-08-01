@@ -2,22 +2,54 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"os"
 	"os/signal"
+	"runtime"
 	"syscall"
 	"time"
 
+	"github.com/alecthomas/kong"
+	"github.com/input-output-hk/catalyst-forge/foundry/api/cmd/api/auth"
 	"github.com/input-output-hk/catalyst-forge/foundry/api/internal/api"
+	"github.com/input-output-hk/catalyst-forge/foundry/api/internal/api/handlers"
+	"github.com/input-output-hk/catalyst-forge/foundry/api/internal/api/middleware"
 	"github.com/input-output-hk/catalyst-forge/foundry/api/internal/config"
 	"github.com/input-output-hk/catalyst-forge/foundry/api/internal/models"
 	"github.com/input-output-hk/catalyst-forge/foundry/api/internal/repository"
 	"github.com/input-output-hk/catalyst-forge/foundry/api/internal/service"
+	am "github.com/input-output-hk/catalyst-forge/foundry/api/pkg/auth"
+	ghauth "github.com/input-output-hk/catalyst-forge/foundry/api/pkg/auth/github"
 	"github.com/input-output-hk/catalyst-forge/foundry/api/pkg/k8s"
 	"github.com/input-output-hk/catalyst-forge/foundry/api/pkg/k8s/mocks"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
+
+	_ "github.com/input-output-hk/catalyst-forge/foundry/api/docs"
 )
+
+var version = "dev"
+
+// @title           Catalyst Foundry API
+// @version         1.0
+// @description     API for managing releases and deployments in the Catalyst Foundry system.
+// @termsOfService  http://swagger.io/terms/
+
+// @contact.name   API Support
+// @contact.url    http://www.swagger.io/support
+// @contact.email  support@swagger.io
+
+// @license.name  Apache 2.0
+// @license.url   http://www.apache.org/licenses/LICENSE-2.0.html
+
+// @host      localhost:5050
+// @BasePath  /
+
+// @securityDefinitions.apikey BearerAuth
+// @in header
+// @name Authorization
+// @description Type "Bearer" followed by a space and JWT token.
 
 var mockK8sClient = mocks.ClientMock{
 	CreateDeploymentFunc: func(ctx context.Context, deployment *models.ReleaseDeployment) error {
@@ -25,24 +57,45 @@ var mockK8sClient = mocks.ClientMock{
 	},
 }
 
-func main() {
-	// Load configuration
-	cfg, err := config.Load()
-	if err != nil {
-		log.Fatalf("Failed to load configuration: %v", err)
+// CLI represents the command-line interface structure
+type CLI struct {
+	Run     RunCmd       `kong:"cmd,help='Start the API server'"`
+	Version VersionCmd   `kong:"cmd,help='Show version information'"`
+	Auth    auth.AuthCmd `kong:"cmd,help='Authentication management commands'"`
+}
+
+// RunCmd represents the run subcommand
+type RunCmd struct {
+	config.Config `kong:"embed"`
+}
+
+// VersionCmd represents the version subcommand
+type VersionCmd struct{}
+
+// Run executes the version subcommand
+func (v *VersionCmd) Run() error {
+	fmt.Printf("foundry api version %s %s/%s\n", version, runtime.GOOS, runtime.GOARCH)
+	return nil
+}
+
+// Run executes the run subcommand
+func (r *RunCmd) Run() error {
+	// Validate configuration
+	if err := r.Validate(); err != nil {
+		return err
 	}
 
 	// Initialize logger
-	logger, err := cfg.GetLogger()
+	logger, err := r.GetLogger()
 	if err != nil {
-		log.Fatalf("Failed to initialize logger: %v", err)
+		return err
 	}
 
 	// Connect to the database
-	db, err := gorm.Open(postgres.Open(cfg.GetDSN()), &gorm.Config{})
+	db, err := gorm.Open(postgres.Open(r.GetDSN()), &gorm.Config{})
 	if err != nil {
 		logger.Error("Failed to connect to database", "error", err)
-		os.Exit(1)
+		return err
 	}
 
 	// Run migrations
@@ -53,20 +106,21 @@ func main() {
 		&models.IDCounter{},
 		&models.ReleaseAlias{},
 		&models.DeploymentEvent{},
+		&models.GHARepositoryAuth{},
 	)
 	if err != nil {
 		logger.Error("Failed to run migrations", "error", err)
-		os.Exit(1)
+		return err
 	}
 
 	// Initialize Kubernetes client if enabled
 	var k8sClient k8s.Client
-	if cfg.Kubernetes.Enabled {
-		logger.Info("Initializing Kubernetes client", "namespace", cfg.Kubernetes.Namespace)
-		k8sClient, err = k8s.New(cfg.Kubernetes.Namespace, logger)
+	if r.Kubernetes.Enabled {
+		logger.Info("Initializing Kubernetes client", "namespace", r.Kubernetes.Namespace)
+		k8sClient, err = k8s.New(r.Kubernetes.Namespace, logger)
 		if err != nil {
 			logger.Error("Failed to initialize Kubernetes client", "error", err)
-			os.Exit(1)
+			return err
 		}
 	} else {
 		k8sClient = &mockK8sClient
@@ -79,16 +133,43 @@ func main() {
 	counterRepo := repository.NewIDCounterRepository(db)
 	aliasRepo := repository.NewAliasRepository(db)
 	eventRepo := repository.NewEventRepository(db)
+	ghaAuthRepo := repository.NewGHAAuthRepository(db)
 
 	// Initialize services
 	releaseService := service.NewReleaseService(releaseRepo, aliasRepo, counterRepo, deploymentRepo)
 	deploymentService := service.NewDeploymentService(deploymentRepo, releaseRepo, eventRepo, k8sClient, db, logger)
+	ghaAuthService := service.NewGHAAuthService(ghaAuthRepo, logger)
+
+	// Initialize middleware
+	authManager, err := am.NewAuthManager(r.Auth.PrivateKey, r.Auth.PublicKey, am.WithLogger(logger))
+	if err != nil {
+		logger.Error("Failed to initialize auth manager", "error", err)
+		return err
+	}
+	authMiddleware := middleware.NewAuthMiddleware(authManager, logger)
+
+	// Initialize GitHub Actions OIDC client
+	ghaOIDCClient, err := ghauth.NewDefaultGithubActionsOIDCClient(context.Background(), "/tmp/gha-jwks-cache")
+	if err != nil {
+		logger.Error("Failed to initialize GHA OIDC client", "error", err)
+		return err
+	}
+
+	// Start the GHA OIDC cache
+	if err := ghaOIDCClient.StartCache(); err != nil {
+		logger.Error("Failed to start GHA OIDC cache", "error", err)
+		return err
+	}
+	defer ghaOIDCClient.StopCache()
+
+	// Initialize GHA handler
+	ghaHandler := handlers.NewGHAHandler(authManager, ghaOIDCClient, ghaAuthService, logger)
 
 	// Setup router
-	router := api.SetupRouter(releaseService, deploymentService, db, logger)
+	router := api.SetupRouter(releaseService, deploymentService, authMiddleware, db, logger, ghaHandler)
 
 	// Initialize server
-	server := api.NewServer(cfg.GetServerAddr(), router, logger)
+	server := api.NewServer(r.GetServerAddr(), router, logger)
 
 	// Handle graceful shutdown
 	quit := make(chan os.Signal, 1)
@@ -102,7 +183,7 @@ func main() {
 		}
 	}()
 
-	logger.Info("API server started", "addr", cfg.GetServerAddr())
+	logger.Info("API server started", "addr", r.GetServerAddr())
 
 	// Wait for shutdown signal
 	<-quit
@@ -118,4 +199,23 @@ func main() {
 	}
 
 	logger.Info("Server exiting")
+	return nil
+}
+
+func main() {
+	var cli CLI
+	ctx := kong.Parse(&cli,
+		kong.Name("foundry-api"),
+		kong.Description("Catalyst Foundry API Server"),
+		kong.UsageOnError(),
+		kong.ConfigureHelp(kong.HelpOptions{
+			Compact: true,
+		}),
+	)
+
+	// Execute the selected subcommand
+	err := ctx.Run()
+	if err != nil {
+		log.Fatalf("Command failed: %v", err)
+	}
 }

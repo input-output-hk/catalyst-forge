@@ -21,10 +21,6 @@ on:
         required: false
         type: string
         default: "info"
-    secrets:
-      earthly_token:
-        description: Optional Earthly token used to login to Earthly cloud during local builds of Forge CLI
-        required: false
 
 env:
   CONTAINER: container
@@ -48,23 +44,15 @@ jobs:
           version: ${{ inputs.forge_version }}
       - name: Install Local Forge
         uses: input-output-hk/catalyst-forge/actions/install-local@ci/v1.9.0
+        id: install-local
         if: ${{ inputs.forge_version == 'local' }}
-        with:
-          earthly_token: ${{ secrets.earthly_token }}
       - name: Check forge version
-        id: local
-        run: |
-          forge version
-
-          if [[ "${{ inputs.forge_version }}" == "local" ]]; then
-            echo "skip=true" >> $GITHUB_OUTPUT
-          else
-            echo "skip=false" >> $GITHUB_OUTPUT
-          fi
+        run: forge version
       - name: Setup CI
         uses: input-output-hk/catalyst-forge/actions/setup@ci/v1.9.0
         with:
-          skip_earthly: ${{ steps.local.outputs.skip }}
+          skip_earthly_install: ${{ inputs.forge_version == 'local' && steps.install-local.outputs.cache-hit == false }}
+          skip_earthly_satellite: ${{ inputs.forge_version == 'local' && steps.install-local.outputs.cache-hit == false }}
       - name: Deploy
         uses: input-output-hk/catalyst-forge/actions/run@ci/v1.9.0
         with:

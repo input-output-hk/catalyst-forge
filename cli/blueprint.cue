@@ -1,6 +1,7 @@
 project: {
 	name: "forge-cli"
 	ci: targets: {
+		check: tags: ["nightly"]
 		github: {
 			args: {
 				version: string | *"dev" @forge(name="GIT_TAG")
@@ -12,7 +13,7 @@ project: {
 				"darwin/arm64",
 			]
 		}
-		test: retries: 3
+		test: retries: attempts: 3
 	}
 	release: {
 		github: {

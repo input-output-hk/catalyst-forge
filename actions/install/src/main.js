@@ -1,6 +1,9 @@
 const core = require("@actions/core");
 const github = require("@actions/github");
 const tc = require("@actions/tool-cache");
+const cache = require("@actions/cache");
+const fs = require("fs");
+const path = require("path");
 
 const assetPrefix = "forge-cli";
 const releaseName = "forge-cli";
@@ -11,6 +14,7 @@ async function run() {
   try {
     const githubToken = core.getInput("github_token");
     const version = core.getInput("version");
+    const enableCaching = core.getBooleanInput("enable_caching");
 
     const octokit = github.getOctokit(githubToken);
 
@@ -20,13 +24,39 @@ async function run() {
     }
 
     let assetUrl;
+    let actualVersion = version;
+
     if (version === "latest") {
       assetUrl = await getLatestAsset(octokit);
+      // For "latest", we need to determine the actual version for caching
+      actualVersion = await getLatestVersion(octokit);
     } else {
       assetUrl = await getVersionedAsset(octokit, version);
     }
 
-    core.info(`Downloading version ${version} from ${assetUrl}`);
+    // Try to restore from GitHub cache if caching is enabled
+    if (enableCaching) {
+      const cacheKey = `forge-cli-${actualVersion}-${process.platform}-${process.arch}`;
+      const cachePath = path.join(
+        process.cwd(),
+        ".forge-cache",
+        releaseName,
+        actualVersion,
+        process.arch,
+      );
+
+      core.info(
+        `Attempting to restore from GitHub cache with key: ${cacheKey}`,
+      );
+      const cacheHit = await cache.restoreCache([cachePath], cacheKey);
+      if (cacheHit) {
+        core.info(`Restored cached version ${actualVersion} to ${cachePath}`);
+        core.addPath(cachePath);
+        return;
+      }
+    }
+
+    core.info(`Downloading version ${actualVersion} from ${assetUrl}`);
     const downloadPath = await tc.downloadTool(
       assetUrl,
       undefined,
@@ -35,10 +65,33 @@ async function run() {
         accept: "application/octet-stream",
       },
     );
-    const extractPath = await tc.extractTar(downloadPath);
-    core.addPath(extractPath);
 
-    core.info(`Installed forge CLI version ${version} to ${extractPath}`);
+    if (enableCaching) {
+      const cacheKey = `forge-cli-${actualVersion}-${process.platform}-${process.arch}`;
+      const cachePath = path.join(
+        process.cwd(),
+        ".forge-cache",
+        releaseName,
+        actualVersion,
+        process.arch,
+      );
+
+      fs.mkdirSync(cachePath, { recursive: true });
+      const extractPath = await tc.extractTar(downloadPath, cachePath);
+
+      core.info(`Caching tool with key: ${releaseName} ${actualVersion}`);
+      toolPath = await tc.cacheDir(extractPath, releaseName, actualVersion);
+      core.addPath(toolPath);
+
+      core.info(`Saving to GitHub cache with key: ${cacheKey}`);
+      await cache.saveCache([cachePath], cacheKey);
+    } else {
+      const extractPath = await tc.extractTar(downloadPath);
+      toolPath = await tc.cacheDir(extractPath, releaseName, actualVersion);
+      core.addPath(toolPath);
+    }
+
+    core.info(`Installed forge CLI version ${actualVersion} to ${toolPath}`);
   } catch (error) {
     core.setFailed(error.message);
   }
@@ -110,6 +163,32 @@ async function getLatestAsset(octokit) {
 }
 
 /**
+ * Returns the version number of the latest release.
+ * @param {Object} octokit The octokit instance to use.
+ * @returns {Promise<string>} The version number of the latest release.
+ */
+async function getLatestVersion(octokit) {
+  const releases = await getReleases(octokit);
+
+  for (let i = 0; i < releases.length; i++) {
+    const release = releases[i];
+    const asset = release.assets.find((a) => a.name === getAssetName());
+
+    if (asset) {
+      // Extract version from tag name (e.g., "forge-cli/v1.2.3" -> "1.2.3")
+      const versionMatch = release.tag_name.match(
+        new RegExp(`${releaseName}/v(.+)`),
+      );
+      if (versionMatch) {
+        return versionMatch[1];
+      }
+    }
+  }
+
+  throw new Error("No latest version found");
+}
+
+/**
  * Returns the download URL of the asset for the given version.
  * @param {Object} octokit The octokit instance to use.
  * @param {string} version The version of the asset to get.
@@ -133,8 +212,6 @@ async function getVersionedAsset(octokit, version) {
 
   return asset.url;
 }
-
-async function installLocal() {}
 
 /**
  * Checks if the given version is a valid semantic version.

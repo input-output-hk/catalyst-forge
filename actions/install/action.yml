@@ -1,6 +1,10 @@
 name: Install
 description: Install Forge CLI
 inputs:
+  enable_caching:
+    description: Enable caching for faster subsequent installations
+    required: false
+    default: "false"
   github_token:
     description: Github token for querying the API
     required: false

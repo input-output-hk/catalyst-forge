@@ -42,7 +42,9 @@ Artifact foo output as bar`), nil
 			name: "with retries",
 			earthlyExec: NewEarthlyExecutor("/test/dir", "foo", nil, secrets.SecretStore{},
 				testutils.NewNoopLogger(),
-				WithRetries(3),
+				WithRetries(sc.CIRetries{
+					Attempts: 3,
+				}),
 			),
 			mockExec: emocks.ExecutorMock{
 				ExecuteFunc: func(command string, args ...string) ([]byte, error) {
@@ -52,6 +54,40 @@ Artifact foo output as bar`), nil
 			expect:      nil,
 			expectErr:   true,
 			expectCalls: 4,
+		},
+		{
+			name: "with filtered retries - match",
+			earthlyExec: NewEarthlyExecutor("/test/dir", "foo", nil, secrets.SecretStore{},
+				testutils.NewNoopLogger(),
+				WithRetries(sc.CIRetries{
+					Attempts: 3,
+				}),
+			),
+			mockExec: emocks.ExecutorMock{
+				ExecuteFunc: func(command string, args ...string) ([]byte, error) {
+					return []byte("some error occurred"), fmt.Errorf("error")
+				},
+			},
+			expect:      nil,
+			expectErr:   true,
+			expectCalls: 4,
+		},
+		{
+			name: "with filtered retries - no match",
+			earthlyExec: NewEarthlyExecutor("/test/dir", "foo", nil, secrets.SecretStore{},
+				testutils.NewNoopLogger(),
+				WithRetries(sc.CIRetries{
+					Attempts: 3,
+				}),
+			),
+			mockExec: emocks.ExecutorMock{
+				ExecuteFunc: func(command string, args ...string) ([]byte, error) {
+					return []byte("something bad happened"), fmt.Errorf("error")
+				},
+			},
+			expect:      nil,
+			expectErr:   true,
+			expectCalls: 1,
 		},
 		{
 			name: "with platforms",

@@ -1,9 +1,30 @@
 services:
+  auth:
+    image: foundry-api:latest
+    container_name: auth
+    entrypoint: ["/bin/sh", "-c", "/app/foundry-api auth init --output-dir /data"]
+    volumes:
+      - ./.secret:/data
+    restart: on-failure
+
+  auth-jwt:
+    image: foundry-api:latest
+    container_name: auth-jwt
+    entrypoint: ["/bin/sh", "-c", "/app/foundry-api auth generate -a -k /data/private.pem >/data/jwt.txt"]
+    volumes:
+      - ./.secret:/data
+    restart: on-failure
+    depends_on:
+      auth:
+        condition: service_started
+
   api:
     image: foundry-api:latest
     container_name: api
     environment:
-      HTTP_PORT: 5000
+      HTTP_PORT: 5050
+      AUTH_PRIVATE_KEY: /data/private.pem
+      AUTH_PUBLIC_KEY: /data/public.pem
       DB_SUPER_USER: postgres
       DB_SUPER_PASSWORD: postgres
       DB_ROOT_NAME: postgres
@@ -18,14 +39,19 @@ services:
       LOG_LEVEL: debug
       LOG_FORMAT: text
     ports:
-      - "5000:5000"
+      - "5050:5050"
+      - "8080:8080"
+    volumes:
+      - ./.secret:/data
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:5000/healthz"]
+      test: ["CMD", "curl", "-f", "http://localhost:5050/healthz"]
       interval: 10s
       timeout: 5s
       retries: 3
       start_period: 10s
     depends_on:
+      auth:
+        condition: service_started
       postgres:
         condition: service_healthy
     restart: on-failure
@@ -34,7 +60,10 @@ services:
     image: foundry-api-test:latest
     container_name: api-test
     environment:
-      API_URL: http://api:5000
+      API_URL: http://api:5050
+      JWT_TOKEN_PATH: /data/jwt.txt
+    volumes:
+      - ./.secret:/data
     depends_on:
       api:
         condition: service_healthy

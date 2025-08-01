@@ -23,6 +23,7 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
@@ -235,7 +236,15 @@ func main() {
 		os.Exit(1)
 	}
 
-	apiClient := api.NewClient(cfg.ApiUrl, api.WithTimeout(10*time.Second))
+	setupLog.Info("Reading JWT token from file", "path", cfg.Api.TokenPath)
+	jwtToken, err := os.ReadFile(cfg.Api.TokenPath)
+	if err != nil {
+		setupLog.Error(err, "unable to read JWT token")
+		os.Exit(1)
+	}
+
+	jwtTokenStr := strings.TrimSpace(string(jwtToken))
+	apiClient := api.NewClient(cfg.Api.Url, api.WithTimeout(10*time.Second), api.WithToken(jwtTokenStr))
 	if err = (&controller.ReleaseDeploymentReconciler{
 		Client:            mgr.GetClient(),
 		Config:            cfg,

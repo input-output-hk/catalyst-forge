@@ -6,13 +6,12 @@ import (
 	"log/slog"
 	"os"
 	"time"
-
-	"github.com/alecthomas/kong"
 )
 
 // Config represents the application configuration
 type Config struct {
 	Server     ServerConfig     `kong:"embed"`
+	Auth       AuthConfig       `kong:"embed"`
 	Database   DatabaseConfig   `kong:"embed"`
 	Logging    LoggingConfig    `kong:"embed"`
 	Kubernetes KubernetesConfig `kong:"embed"`
@@ -22,6 +21,12 @@ type Config struct {
 type ServerConfig struct {
 	HttpPort int           `kong:"help='HTTP port to listen on',default=8080,name='http-port',env='HTTP_PORT'"`
 	Timeout  time.Duration `kong:"help='Server timeout',default=30s,env='SERVER_TIMEOUT'"`
+}
+
+// AuthConfig represents authentication-specific configuration
+type AuthConfig struct {
+	PrivateKey string `kong:"help='Path to private key for JWT authentication',env='AUTH_PRIVATE_KEY'"`
+	PublicKey  string `kong:"help='Path to public key for JWT authentication',env='AUTH_PUBLIC_KEY'"`
 }
 
 // DatabaseConfig represents database-specific configuration
@@ -46,22 +51,13 @@ type KubernetesConfig struct {
 	Enabled   bool   `kong:"help='Enable Kubernetes integration',default=false,env='K8S_ENABLED'"`
 }
 
-// Load parses command-line flags and environment variables to populate the Config
-func Load() (*Config, error) {
-	var cfg Config
-	parser := kong.Must(&cfg)
-
-	_, err := parser.Parse(os.Args[1:])
-	if err != nil {
-		return nil, err
-	}
-
+// Validate validates the configuration
+func (c *Config) Validate() error {
 	// Validate required fields
-	if cfg.Database.Password == "" {
-		return nil, errors.New("database password is required (use --password or DB_PASSWORD env var)")
+	if c.Database.Password == "" {
+		return errors.New("database password is required (use --password or DB_PASSWORD env var)")
 	}
-
-	return &cfg, nil
+	return nil
 }
 
 // GetDSN returns the database connection string

@@ -48,6 +48,10 @@ project: {
 									ref: config: name: "config"
 									path: "/config"
 								}
+								jwt: {
+									ref: secret: name: "jwt"
+									path: "/secret"
+								}
 							}
 
 							// probes: {
@@ -57,7 +61,10 @@ project: {
 						}
 
 						configs: config: data: "operator.json": json.Marshal({
-							api_url: "http://foundry-api:8080"
+							api: {
+								url:        "http://foundry-api:8080"
+								token_path: "/secret/token"
+							}
 							deployer: {
 								git: {
 									creds: {
@@ -92,6 +99,12 @@ project: {
 									verbs: ["get", "patch", "update"]
 								},
 							]
+						}
+
+						secrets: {
+							jwt: {
+								ref: "foundry-operator/token"
+							}
 						}
 					}
 				}

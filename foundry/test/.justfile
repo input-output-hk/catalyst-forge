@@ -6,7 +6,7 @@ down:
   kind delete cluster --name foundry
 
 api:
-  earthly ../api+docker
+  earthly --config "" ../api+docker
   docker tag foundry-api:latest localhost:5001/foundry-api:latest
   docker push localhost:5001/foundry-api:latest
   kubectl delete deployment api
@@ -28,7 +28,7 @@ kind-up:
   ./scripts/kind.sh
 
 operator:
-  earthly ../operator+docker
+  earthly --config "" ../operator+docker
   docker tag foundry-operator:latest localhost:5001/foundry-operator:latest
   docker push localhost:5001/foundry-operator:latest
   kubectl delete deployment operator

@@ -16,6 +16,11 @@ on:
         required: false
         type: string
         default: "false"
+      skip_output:
+        description: Skip outputting any images or artifacts
+        required: false
+        type: string
+        default: "false"
       target_args:
         description: Extra arguments to pass to the target (if command is "run")
         required: false
@@ -26,10 +31,6 @@ on:
         required: false
         type: string
         default: "info"
-    secrets:
-      earthly_token:
-        description: Optional Earthly token used to login to Earthly cloud during local builds of Forge CLI
-        required: false
 
 jobs:
   run:
@@ -50,12 +51,8 @@ jobs:
         id: install-local
         uses: input-output-hk/catalyst-forge/actions/install-local@ci/v1.9.0
         if: ${{ inputs.forge_version == 'local' }}
-        with:
-          earthly_token: ${{ secrets.earthly_token }}
       - name: Check forge version
-        id: local
-        run: |
-          forge version
+        run: forge version
       - name: Setup CI
         uses: input-output-hk/catalyst-forge/actions/setup@ci/v1.9.0
         with:
@@ -67,6 +64,7 @@ jobs:
           command: run
           args: ${{ matrix.earthfile }}
           local: ${{ inputs.local }}
+          skip_output: ${{ inputs.skip_output }}
           target_args: ${{ inputs.target_args }}
           verbosity: ${{ inputs.verbosity }}
         env:

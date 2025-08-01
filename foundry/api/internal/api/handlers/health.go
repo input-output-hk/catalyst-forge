@@ -23,6 +23,14 @@ func NewHealthHandler(db *gorm.DB, logger *slog.Logger) *HealthHandler {
 }
 
 // CheckHealth handles the /healthz endpoint
+// @Summary Health check
+// @Description Check the health status of the API service
+// @Tags health
+// @Accept json
+// @Produce json
+// @Success 200 {object} map[string]interface{} "Service is healthy"
+// @Failure 503 {object} map[string]interface{} "Service is unhealthy"
+// @Router /healthz [get]
 func (h *HealthHandler) CheckHealth(c *gin.Context) {
 	// Check database connection
 	sqlDB, err := h.db.DB()

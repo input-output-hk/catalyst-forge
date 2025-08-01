@@ -12,6 +12,9 @@ deps:
     ENV GOMODCACHE=/go/modcache
     CACHE --persist --sharing shared /go
 
+    # Copy local deps
+    COPY ../../lib/tools+src/src /lib/tools
+
     COPY go.mod go.sum .
     RUN go mod download
 
@@ -20,7 +23,7 @@ src:
 
     CACHE --persist --sharing shared /go
 
-    COPY --dir client cmd internal pkg .
+    COPY --dir client cmd docs internal pkg .
     RUN go generate ./...
 
     SAVE ARTIFACT . src
@@ -54,6 +57,8 @@ test:
         --load foundry-api-test:latest=(+docker-test) \
         --compose docker-compose.yml \
         --service api \
+        --service auth \
+        --service auth-jwt \
         --service postgres
         RUN docker compose up api-test
     END
@@ -67,7 +72,7 @@ docker-test:
     SAVE IMAGE foundry-api-test:latest
 
 docker:
-    FROM debian:bookworm-slim
+    FROM debian:latest
     WORKDIR /app
 
     ARG container="foundry-api"
@@ -76,12 +81,12 @@ docker:
 
     ARG TARGETOS
     ARG TARGETARCH
-    ARG USERPLATFORM
+    ARG TARGETPLATFORM
 
     RUN apt-get update && apt-get install -y curl postgresql-client
 
     COPY \
-        --platform=$USERPLATFORM \
+        --platform=$TARGETPLATFORM \
         (+build/foundry-api \
         --GOOS=$TARGETOS \
         --GOARCH=$TARGETARCH \
@@ -91,3 +96,34 @@ docker:
 
     ENTRYPOINT [ "/bin/bash", "/app/entrypoint.sh" ]
     SAVE IMAGE ${container}:${tag}
+
+certs:
+    FROM +build
+
+    RUN ./bin/foundry-api auth init --output-dir /certs
+
+    SAVE ARTIFACT /certs certs
+
+jwt:
+    FROM +build
+
+    COPY --dir certs .
+
+    RUN mkdir -p /jwt
+    RUN ./bin/foundry-api auth generate -a -k ./certs/private.pem > /jwt/token.txt
+
+    SAVE ARTIFACT /jwt jwt
+
+swagger:
+    FROM +src
+
+    RUN go install github.com/swaggo/swag/cmd/swag@latest
+    RUN swag init -g cmd/api/main.go -o docs
+
+    SAVE ARTIFACT docs docs AS LOCAL docs
+
+check-swagger:
+    FROM +swagger
+
+    COPY --dir docs /docs
+    RUN diff -r docs ../docs

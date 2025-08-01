@@ -1,0 +1,73 @@
+name: Validate GHA OIDC
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  API_URL: "http://localhost:5000"
+  OIDC_AUDIENCE: "forge"
+
+jobs:
+  test-auth-endpoint:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Local Forge
+        id: install-local
+        uses: input-output-hk/catalyst-forge/actions/install-local@master
+      - name: Check forge version
+        id: local
+        run: |
+          forge version
+
+      - name: Setup CI
+        uses: input-output-hk/catalyst-forge/actions/setup@master
+        with:
+          skip_docker: 'true'
+          skip_github: 'true'
+
+      - name: Build image
+        run: |
+            forge run ./foundry/api+docker
+
+      - name: Start API
+        run: |
+          docker compose -f ./foundry/api/docker-compose.yml up -d auth auth-jwt api postgres
+
+      - name: Wait for API to be ready
+        run: |
+          sleep 1
+
+      - name: Create GHA auth
+        run: |
+            forge -vvv --api-url "http://localhost:5050" api login "$(cat ./foundry/api/.secret/jwt.txt)"
+            forge -vvv --api-url "http://localhost:5050" api auth gha create -a input-output-hk/catalyst-forge
+            rm -rf $HOME/.config/forge/config.toml
+
+      - name: Get OIDC token
+        id: oidc
+        uses: actions/github-script@v7
+        with:
+            result-encoding: string
+            script: |
+                const token = await core.getIDToken('forge');
+                core.setOutput('token', token);
+
+      - name: Login with OIDC ID token
+        id: call-api
+        shell: bash
+        run: |
+          forge -vvv --api-url "http://localhost:5050" api login -t "gha" "${{ steps.oidc.outputs.token }}"
+
+      - name: Verify returned JWT token
+        shell: bash
+        run: |
+          forge -vvv --api-url "http://localhost:5050" api auth gha list -j

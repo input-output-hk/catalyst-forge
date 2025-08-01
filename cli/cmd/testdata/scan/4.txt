@@ -1,6 +1,6 @@
 exec git init .
 
-exec forge scan --pretty --blueprint --filter 'project.name' .
+exec forge scan blueprint --pretty --filter 'project.name' .
 cmp stdout golden.txt
 
 -- golden.txt --
