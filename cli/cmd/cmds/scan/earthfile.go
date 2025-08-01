@@ -21,7 +21,7 @@ type EarthfileCmd struct {
 	FilterSource FilterType `short:"s" help:"The source to filter by [earthfile | targets]." default:"targets"`
 	Pretty       bool       `short:"p" help:"Pretty print JSON output."`
 	RootPath     string     `kong:"arg,predictor=path" help:"Root path to scan for Earthfiles and their respective targets."`
-	Tags         []string   `short:"t" help:"The tags to filter by (only used when filtering by targets)."`
+	Tag          []string   `short:"t" help:"The tags to filter by (only used when filtering by targets)."`
 }
 
 type FilterType string
@@ -48,8 +48,8 @@ func (c *EarthfileCmd) Run(ctx run.RunContext) error {
 			return err
 		}
 
-		if len(c.Tags) > 0 {
-			result = filterByTags(projects, result, c.Tags)
+		if len(c.Tag) > 0 {
+			result = filterByTags(projects, result, c.Tag)
 		}
 
 		if c.Enumerate {
