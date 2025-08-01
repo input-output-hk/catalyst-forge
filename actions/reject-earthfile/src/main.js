@@ -70,7 +70,6 @@ async function run() {
       try {
         const result = await exec.getExecOutput("forge", forgeArgs, {
           silent: true,
-          ignoreReturnCode: true,
         });
 
         let jsonResult;
