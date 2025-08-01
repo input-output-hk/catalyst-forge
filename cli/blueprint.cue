@@ -1,12 +1,6 @@
 project: {
 	name: "forge-cli"
 	ci: targets: {
-		check: retries: {
-			attempts: 2
-			filters: [
-				"uh oh",
-			]
-		}
 		github: {
 			args: {
 				version: string | *"dev" @forge(name="GIT_TAG")

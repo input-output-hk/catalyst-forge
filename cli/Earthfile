@@ -35,9 +35,6 @@ check:
     RUN gofmt -l . | grep . && exit 1 || exit 0
     RUN go vet ./...
 
-    RUN echo "uh oh bad things happened"
-    RUN exit 1
-
 build:
     FROM +src
 
