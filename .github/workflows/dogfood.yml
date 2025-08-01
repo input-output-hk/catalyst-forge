@@ -25,7 +25,7 @@ jobs:
         with:
           filter-source: earthfile
           filters: |
-            \s*FROM.*?:latest, No images should be built using the 'latest' tag
+            \s*FROM.*?:foobar, No images should be built using the 'latest' tag
   ci:
     uses: ./.github/workflows/ci.yml
     needs: [reject]
