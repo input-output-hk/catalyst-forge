@@ -19,7 +19,6 @@ import (
 	"github.com/input-output-hk/catalyst-forge/foundry/api/internal/models"
 	"github.com/input-output-hk/catalyst-forge/foundry/api/internal/repository"
 	"github.com/input-output-hk/catalyst-forge/foundry/api/internal/service"
-	am "github.com/input-output-hk/catalyst-forge/foundry/api/pkg/auth"
 	ghauth "github.com/input-output-hk/catalyst-forge/foundry/api/pkg/auth/github"
 	"github.com/input-output-hk/catalyst-forge/foundry/api/pkg/k8s"
 	"github.com/input-output-hk/catalyst-forge/foundry/api/pkg/k8s/mocks"
@@ -27,6 +26,7 @@ import (
 	"gorm.io/gorm"
 
 	_ "github.com/input-output-hk/catalyst-forge/foundry/api/docs"
+	"github.com/input-output-hk/catalyst-forge/foundry/api/pkg/auth/jwt"
 )
 
 var version = "dev"
@@ -141,12 +141,12 @@ func (r *RunCmd) Run() error {
 	ghaAuthService := service.NewGHAAuthService(ghaAuthRepo, logger)
 
 	// Initialize middleware
-	authManager, err := am.NewAuthManager(r.Auth.PrivateKey, r.Auth.PublicKey, am.WithLogger(logger))
+	jwtManager, err := jwt.NewJWTManager(r.Auth.PrivateKey, r.Auth.PublicKey, jwt.WithLogger(logger))
 	if err != nil {
-		logger.Error("Failed to initialize auth manager", "error", err)
+		logger.Error("Failed to initialize JWT manager", "error", err)
 		return err
 	}
-	authMiddleware := middleware.NewAuthMiddleware(authManager, logger)
+	authMiddleware := middleware.NewAuthMiddleware(jwtManager, logger)
 
 	// Initialize GitHub Actions OIDC client
 	ghaOIDCClient, err := ghauth.NewDefaultGithubActionsOIDCClient(context.Background(), "/tmp/gha-jwks-cache")
@@ -163,7 +163,7 @@ func (r *RunCmd) Run() error {
 	defer ghaOIDCClient.StopCache()
 
 	// Initialize GHA handler
-	ghaHandler := handlers.NewGHAHandler(authManager, ghaOIDCClient, ghaAuthService, logger)
+	ghaHandler := handlers.NewGHAHandler(jwtManager, ghaOIDCClient, ghaAuthService, logger)
 
 	// Setup router
 	router := api.SetupRouter(releaseService, deploymentService, authMiddleware, db, logger, ghaHandler)

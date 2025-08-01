@@ -5,7 +5,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/input-output-hk/catalyst-forge/foundry/api/pkg/auth"
+	"github.com/input-output-hk/catalyst-forge/foundry/api/pkg/auth/jwt"
 )
 
 type InitCmd struct {
@@ -18,7 +18,7 @@ func (i *InitCmd) Run() error {
 		return fmt.Errorf("failed to create output directory: %w", err)
 	}
 
-	keyPair, err := auth.GenerateES256Keys()
+	keyPair, err := jwt.GenerateES256Keys()
 	if err != nil {
 		return fmt.Errorf("failed to generate ES256 keys: %w", err)
 	}

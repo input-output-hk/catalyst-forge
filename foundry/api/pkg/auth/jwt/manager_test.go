@@ -1,4 +1,4 @@
-package auth
+package jwt
 
 import (
 	"crypto/ecdsa"
@@ -9,25 +9,26 @@ import (
 	"testing"
 	"time"
 
+	"github.com/input-output-hk/catalyst-forge/foundry/api/pkg/auth"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/fs/billy"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-func TestAuthManager(t *testing.T) {
+func TestJWTManager(t *testing.T) {
 	tests := []struct {
 		name        string
 		audiences   []string
 		issuer      string
-		permissions []Permission
-		validate    func(*testing.T, string, error, *AuthManager)
+		permissions []auth.Permission
+		validate    func(*testing.T, string, error, *JWTManager)
 	}{
 		{
 			name:        "default values",
 			audiences:   nil,
 			issuer:      "",
-			permissions: []Permission{PermAliasRead},
-			validate: func(t *testing.T, token string, err error, am *AuthManager) {
+			permissions: []auth.Permission{auth.PermAliasRead},
+			validate: func(t *testing.T, token string, err error, am *JWTManager) {
 				require.NoError(t, err)
 				assert.NotEmpty(t, token)
 
@@ -36,16 +37,16 @@ func TestAuthManager(t *testing.T) {
 				assert.Equal(t, "user_id", claims.UserID)
 				assert.Equal(t, ISSUER, claims.Issuer)
 				assert.Equal(t, []string{AUDIENCE}, []string(claims.Audience))
-				assert.Equal(t, []Permission{PermAliasRead}, claims.Permissions)
+				assert.Equal(t, []auth.Permission{auth.PermAliasRead}, claims.Permissions)
 				assert.True(t, claims.ExpiresAt.Time.After(time.Now()))
 				assert.True(t, claims.IssuedAt.Time.Before(time.Now().Add(time.Second)))
 				assert.True(t, claims.NotBefore.Time.Before(time.Now().Add(time.Second)))
 
-				hasPermission, err := am.HasPermission(token, PermAliasRead)
+				hasPermission, err := am.HasPermission(token, auth.PermAliasRead)
 				require.NoError(t, err)
 				assert.True(t, hasPermission)
 
-				hasPermission, err = am.HasPermission(token, PermAliasWrite)
+				hasPermission, err = am.HasPermission(token, auth.PermAliasWrite)
 				require.NoError(t, err)
 				assert.False(t, hasPermission)
 			},
@@ -54,8 +55,8 @@ func TestAuthManager(t *testing.T) {
 			name:        "custom audiences",
 			audiences:   []string{"custom-audience", "another-audience"},
 			issuer:      "",
-			permissions: []Permission{PermDeploymentRead, PermDeploymentWrite},
-			validate: func(t *testing.T, token string, err error, am *AuthManager) {
+			permissions: []auth.Permission{auth.PermDeploymentRead, auth.PermDeploymentWrite},
+			validate: func(t *testing.T, token string, err error, am *JWTManager) {
 				require.NoError(t, err)
 				assert.NotEmpty(t, token)
 
@@ -64,18 +65,18 @@ func TestAuthManager(t *testing.T) {
 				assert.Equal(t, "user_id", claims.UserID)
 				assert.Equal(t, ISSUER, claims.Issuer)
 				assert.Equal(t, []string{"custom-audience", "another-audience"}, []string(claims.Audience))
-				assert.Equal(t, []Permission{PermDeploymentRead, PermDeploymentWrite}, claims.Permissions)
+				assert.Equal(t, []auth.Permission{auth.PermDeploymentRead, auth.PermDeploymentWrite}, claims.Permissions)
 				assert.True(t, claims.ExpiresAt.Time.After(time.Now()))
 
-				hasPermission, err := am.HasPermission(token, PermDeploymentRead)
+				hasPermission, err := am.HasPermission(token, auth.PermDeploymentRead)
 				require.NoError(t, err)
 				assert.True(t, hasPermission)
 
-				hasPermission, err = am.HasPermission(token, PermDeploymentWrite)
+				hasPermission, err = am.HasPermission(token, auth.PermDeploymentWrite)
 				require.NoError(t, err)
 				assert.True(t, hasPermission)
 
-				hasPermission, err = am.HasPermission(token, PermAliasRead)
+				hasPermission, err = am.HasPermission(token, auth.PermAliasRead)
 				require.NoError(t, err)
 				assert.False(t, hasPermission)
 			},
@@ -84,8 +85,8 @@ func TestAuthManager(t *testing.T) {
 			name:        "custom issuer",
 			audiences:   nil,
 			issuer:      "custom-issuer.com",
-			permissions: []Permission{},
-			validate: func(t *testing.T, token string, err error, am *AuthManager) {
+			permissions: []auth.Permission{},
+			validate: func(t *testing.T, token string, err error, am *JWTManager) {
 				require.NoError(t, err)
 				assert.NotEmpty(t, token)
 
@@ -97,7 +98,7 @@ func TestAuthManager(t *testing.T) {
 				assert.Empty(t, claims.Permissions)
 				assert.True(t, claims.ExpiresAt.Time.After(time.Now()))
 
-				hasPermission, err := am.HasPermission(token, PermAliasRead)
+				hasPermission, err := am.HasPermission(token, auth.PermAliasRead)
 				require.NoError(t, err)
 				assert.False(t, hasPermission)
 			},
@@ -106,8 +107,8 @@ func TestAuthManager(t *testing.T) {
 			name:        "custom audiences and issuer",
 			audiences:   []string{"test-audience"},
 			issuer:      "test-issuer.org",
-			permissions: []Permission{PermReleaseRead, PermReleaseWrite, PermDeploymentEventRead},
-			validate: func(t *testing.T, token string, err error, am *AuthManager) {
+			permissions: []auth.Permission{auth.PermReleaseRead, auth.PermReleaseWrite, auth.PermDeploymentEventRead},
+			validate: func(t *testing.T, token string, err error, am *JWTManager) {
 				require.NoError(t, err)
 				assert.NotEmpty(t, token)
 
@@ -116,14 +117,14 @@ func TestAuthManager(t *testing.T) {
 				assert.Equal(t, "user_id", claims.UserID)
 				assert.Equal(t, "test-issuer.org", claims.Issuer)
 				assert.Equal(t, []string{"test-audience"}, []string(claims.Audience))
-				assert.Equal(t, []Permission{PermReleaseRead, PermReleaseWrite, PermDeploymentEventRead}, claims.Permissions)
+				assert.Equal(t, []auth.Permission{auth.PermReleaseRead, auth.PermReleaseWrite, auth.PermDeploymentEventRead}, claims.Permissions)
 				assert.True(t, claims.ExpiresAt.Time.After(time.Now()))
 
-				hasPermission, err := am.HasPermission(token, PermReleaseRead)
+				hasPermission, err := am.HasPermission(token, auth.PermReleaseRead)
 				require.NoError(t, err)
 				assert.True(t, hasPermission)
 
-				hasPermission, err = am.HasPermission(token, PermDeploymentEventWrite)
+				hasPermission, err = am.HasPermission(token, auth.PermDeploymentEventWrite)
 				require.NoError(t, err)
 				assert.False(t, hasPermission)
 			},
@@ -132,8 +133,8 @@ func TestAuthManager(t *testing.T) {
 			name:        "empty audiences",
 			audiences:   []string{},
 			issuer:      "",
-			permissions: []Permission{PermAliasWrite},
-			validate: func(t *testing.T, token string, err error, am *AuthManager) {
+			permissions: []auth.Permission{auth.PermAliasWrite},
+			validate: func(t *testing.T, token string, err error, am *JWTManager) {
 				require.NoError(t, err)
 				assert.NotEmpty(t, token)
 
@@ -142,10 +143,10 @@ func TestAuthManager(t *testing.T) {
 				assert.Equal(t, "user_id", claims.UserID)
 				assert.Equal(t, ISSUER, claims.Issuer)
 				assert.Nil(t, claims.Audience)
-				assert.Equal(t, []Permission{PermAliasWrite}, claims.Permissions)
+				assert.Equal(t, []auth.Permission{auth.PermAliasWrite}, claims.Permissions)
 				assert.True(t, claims.ExpiresAt.Time.After(time.Now()))
 
-				hasPermission, err := am.HasPermission(token, PermAliasWrite)
+				hasPermission, err := am.HasPermission(token, auth.PermAliasWrite)
 				require.NoError(t, err)
 				assert.True(t, hasPermission)
 			},
@@ -154,7 +155,7 @@ func TestAuthManager(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			am := newAuthManager(t, test.audiences, test.issuer)
+			am := newJWTManager(t, test.audiences, test.issuer)
 			token, err := am.GenerateToken("user_id", test.permissions, time.Minute)
 			test.validate(t, token, err, am)
 		})
@@ -196,7 +197,7 @@ func TestGenerateES256Keys(t *testing.T) {
 	assert.NotEqual(t, string(keyPair.PrivateKeyPEM), string(keyPair2.PrivateKeyPEM))
 }
 
-func newAuthManager(t *testing.T, audiences []string, issuer string) *AuthManager {
+func newJWTManager(t *testing.T, audiences []string, issuer string) *JWTManager {
 	fs := billy.NewInMemoryFs()
 	kp, err := GenerateES256Keys()
 	require.NoError(t, err)
@@ -224,7 +225,7 @@ func newAuthManager(t *testing.T, audiences []string, issuer string) *AuthManage
 		issuer = ISSUER
 	}
 
-	return &AuthManager{
+	return &JWTManager{
 		audiences:  audiences,
 		issuer:     issuer,
 		fs:         fs,

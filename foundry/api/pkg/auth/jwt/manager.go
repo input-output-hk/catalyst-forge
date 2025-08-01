@@ -1,4 +1,4 @@
-package auth
+package jwt
 
 import (
 	"crypto/ecdsa"
@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/input-output-hk/catalyst-forge/foundry/api/pkg/auth"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/fs"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/fs/billy"
 )
@@ -21,8 +22,8 @@ const (
 	AUDIENCE = "catalyst-forge"
 )
 
-// AuthManager handles authentication operations including JWT token management and key generation
-type AuthManager struct {
+// JWTManager handles authentication operations including JWT token management and key generation
+type JWTManager struct {
 	audiences  []string
 	fs         fs.Filesystem
 	issuer     string
@@ -33,8 +34,8 @@ type AuthManager struct {
 
 // Claims represents the JWT claims structure
 type Claims struct {
-	UserID      string       `json:"user_id"`
-	Permissions []Permission `json:"permissions"`
+	UserID      string            `json:"user_id"`
+	Permissions []auth.Permission `json:"permissions"`
 	jwt.RegisteredClaims
 }
 
@@ -44,42 +45,42 @@ type ES256KeyPair struct {
 	PublicKeyPEM  []byte
 }
 
-// AuthManagerOption is a function that configures an AuthManager
-type AuthManagerOption func(*AuthManager)
+// JWTManagerOption is a function that configures a JWTManager
+type JWTManagerOption func(*JWTManager)
 
-// WithAudiences sets the audiences for the AuthManager
-func WithAudiences(audiences []string) AuthManagerOption {
-	return func(am *AuthManager) {
+// WithAudiences sets the audiences for the JWTManager
+func WithAudiences(audiences []string) JWTManagerOption {
+	return func(am *JWTManager) {
 		am.audiences = audiences
 	}
 }
 
-// WithFilesystem sets the filesystem for the AuthManager
-func WithFilesystem(fs fs.Filesystem) AuthManagerOption {
-	return func(am *AuthManager) {
+// WithFilesystem sets the filesystem for the JWTManager
+func WithFilesystem(fs fs.Filesystem) JWTManagerOption {
+	return func(am *JWTManager) {
 		am.fs = fs
 	}
 }
 
-// WithIssuer sets the issuer for the AuthManager
-func WithIssuer(issuer string) AuthManagerOption {
-	return func(am *AuthManager) {
+// WithIssuer sets the issuer for the JWTManager
+func WithIssuer(issuer string) JWTManagerOption {
+	return func(am *JWTManager) {
 		am.issuer = issuer
 	}
 }
 
-// WithLogger sets the logger for the AuthManager
-func WithLogger(logger *slog.Logger) AuthManagerOption {
-	return func(am *AuthManager) {
+// WithLogger sets the logger for the JWTManager
+func WithLogger(logger *slog.Logger) JWTManagerOption {
+	return func(am *JWTManager) {
 		am.logger = logger
 	}
 }
 
-// NewAuthManager creates a new auth manager with the provided keys
+// NewJWTManager creates a new JWT manager with the provided keys
 // The public key is optional, if not provided, only validation is supported
 // The private key is also optional, if not provided, only signing is supported
-func NewAuthManager(privateKeyPath, publicKeyPath string, opts ...AuthManagerOption) (*AuthManager, error) {
-	am := &AuthManager{
+func NewJWTManager(privateKeyPath, publicKeyPath string, opts ...JWTManagerOption) (*JWTManager, error) {
+	am := &JWTManager{
 		audiences: []string{AUDIENCE},
 		fs:        billy.NewBaseOsFS(),
 		issuer:    ISSUER,
@@ -126,7 +127,7 @@ func NewAuthManager(privateKeyPath, publicKeyPath string, opts ...AuthManagerOpt
 		am.logger.Warn("no public key provided, only signing is supported")
 	}
 
-	return &AuthManager{
+	return &JWTManager{
 		privateKey: privateKey,
 		publicKey:  ecdsaPublicKey,
 		issuer:     am.issuer,
@@ -135,9 +136,9 @@ func NewAuthManager(privateKeyPath, publicKeyPath string, opts ...AuthManagerOpt
 }
 
 // GenerateToken creates a new JWT token for the given user ID
-func (am *AuthManager) GenerateToken(
+func (am *JWTManager) GenerateToken(
 	userID string,
-	permissions []Permission,
+	permissions []auth.Permission,
 	expiration time.Duration) (string, error) {
 	if am.privateKey == nil {
 		return "", fmt.Errorf("no private key provided, only validation is supported")
@@ -161,7 +162,7 @@ func (am *AuthManager) GenerateToken(
 }
 
 // HasPermission checks if the token has the given permission
-func (am *AuthManager) HasPermission(tokenString string, permission Permission) (bool, error) {
+func (am *JWTManager) HasPermission(tokenString string, permission auth.Permission) (bool, error) {
 	claims, err := am.ValidateToken(tokenString)
 	if err != nil {
 		return false, fmt.Errorf("failed to validate token: %w", err)
@@ -177,7 +178,7 @@ func (am *AuthManager) HasPermission(tokenString string, permission Permission) 
 }
 
 // ValidateToken validates and parses a JWT token
-func (am *AuthManager) ValidateToken(tokenString string) (*Claims, error) {
+func (am *JWTManager) ValidateToken(tokenString string) (*Claims, error) {
 	if am.publicKey == nil {
 		return nil, fmt.Errorf("no public key provided, only signing is supported")
 	}
@@ -201,7 +202,7 @@ func (am *AuthManager) ValidateToken(tokenString string) (*Claims, error) {
 }
 
 // loadPrivateKey loads a ECDSA private key from a PEM file
-func (am *AuthManager) loadPrivateKey(path string) ([]byte, error) {
+func (am *JWTManager) loadPrivateKey(path string) ([]byte, error) {
 	block, err := am.loadPEMFile(path)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load PEM file: %w", err)
@@ -215,7 +216,7 @@ func (am *AuthManager) loadPrivateKey(path string) ([]byte, error) {
 }
 
 // loadPublicKey loads a public key from a PEM file
-func (am *AuthManager) loadPublicKey(path string) ([]byte, error) {
+func (am *JWTManager) loadPublicKey(path string) ([]byte, error) {
 	block, err := am.loadPEMFile(path)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load PEM file: %w", err)
@@ -229,7 +230,7 @@ func (am *AuthManager) loadPublicKey(path string) ([]byte, error) {
 }
 
 // loadPEMFile loads a PEM file from disk
-func (am *AuthManager) loadPEMFile(path string) (*pem.Block, error) {
+func (am *JWTManager) loadPEMFile(path string) (*pem.Block, error) {
 	data, err := am.fs.ReadFile(path)
 	if err != nil {
 		return nil, err
