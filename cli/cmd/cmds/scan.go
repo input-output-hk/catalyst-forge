@@ -2,6 +2,7 @@ package cmds
 
 import (
 	"fmt"
+	"os"
 	"path/filepath"
 	"regexp"
 	"sort"
@@ -10,18 +11,28 @@ import (
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/run"
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/scan"
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/utils"
+	"github.com/input-output-hk/catalyst-forge/lib/project/project"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/fs"
 	"golang.org/x/exp/maps"
 )
 
 type ScanCmd struct {
-	Absolute  bool     `short:"a" help:"Output absolute paths."`
-	Blueprint bool     `help:"Return the blueprint for each project."`
-	Earthfile bool     `help:"Return the Earthfile targets for each project."`
-	Filter    []string `short:"f" help:"Filter Earthfile targets by regular expression or blueprint results by path."`
-	Pretty    bool     `help:"Pretty print JSON output."`
-	RootPath  string   `kong:"arg,predictor=path" help:"Root path to scan for Earthfiles and their respective targets."`
+	Absolute     bool       `short:"a" help:"Output absolute paths."`
+	Blueprint    bool       `help:"Return the blueprint for each project."`
+	Earthfile    bool       `help:"Return the Earthfile targets for each project."`
+	Filter       []string   `short:"f" help:"Filter Earthfile targets by regular expression or blueprint results by path."`
+	FilterSource FilterType `short:"s" help:"The source to filter." enum:"blueprint,earthfile,targets" default:"targets"`
+	Pretty       bool       `help:"Pretty print JSON output."`
+	RootPath     string     `kong:"arg,predictor=path" help:"Root path to scan for Earthfiles and their respective targets."`
 }
+
+type FilterType string
+
+const (
+	FilterTypeBlueprint FilterType = "blueprint"
+	FilterTypeEarthfile FilterType = "earthfile"
+	FilterTypeTargets   FilterType = "targets"
+)
 
 func (c *ScanCmd) Run(ctx run.RunContext) error {
 	var rootPath string
@@ -51,19 +62,7 @@ func (c *ScanCmd) Run(ctx run.RunContext) error {
 	case c.Blueprint && c.Earthfile:
 		return fmt.Errorf("must specify one of --blueprint or --earthfile")
 	case c.Blueprint && len(c.Filter) > 0:
-		result := make(map[string]map[string]cue.Value)
-		for path, project := range projects {
-			for _, filter := range c.Filter {
-				v := project.Raw().Get(filter)
-				if v.Exists() {
-					if _, ok := result[path]; !ok {
-						result[path] = make(map[string]cue.Value)
-					}
-					result[path][filter] = v
-				}
-			}
-		}
-
+		result := filterByBlueprint(projects, c.Filter)
 		utils.PrintJson(result, c.Pretty)
 	case c.Blueprint:
 		result := make(map[string]cue.Value)
@@ -73,30 +72,9 @@ func (c *ScanCmd) Run(ctx run.RunContext) error {
 
 		utils.PrintJson(result, c.Pretty)
 	case c.Earthfile && len(c.Filter) > 0:
-		result := make(map[string]map[string][]string)
-		for _, filter := range c.Filter {
-			filterExpr, err := regexp.Compile(filter)
-			if err != nil {
-				return err
-			}
-
-			for path, project := range projects {
-				if project.Earthfile != nil {
-					targets := project.Earthfile.FilterTargets(func(target string) bool {
-						return filterExpr.MatchString(target)
-					})
-
-					if len(targets) > 0 {
-						if _, ok := result[filter]; !ok {
-							result[filter] = make(map[string][]string)
-						}
-
-						result[filter][path] = targets
-					}
-
-					ctx.Logger.Debug("Filtered Earthfile", "path", path, "targets", targets)
-				}
-			}
+		result, err := filterByTargets(ctx, projects, c.Filter)
+		if err != nil {
+			return err
 		}
 
 		if ctx.CI {
@@ -125,6 +103,13 @@ func (c *ScanCmd) Run(ctx run.RunContext) error {
 		} else {
 			utils.PrintJson(result, c.Pretty)
 		}
+	case c.FilterSource == FilterTypeEarthfile && len(c.Filter) > 0:
+		result, err := filterByEarthfile(ctx, projects, c.Filter)
+		if err != nil {
+			return err
+		}
+
+		utils.PrintJson(result, c.Pretty)
 	default:
 		keys := maps.Keys(projects)
 		sort.Strings(keys)
@@ -132,6 +117,82 @@ func (c *ScanCmd) Run(ctx run.RunContext) error {
 	}
 
 	return nil
+}
+
+// filterByBlueprint filters the projects by the blueprint using the given filters.
+func filterByBlueprint(projects map[string]project.Project, filters []string) map[string]map[string]cue.Value {
+	result := make(map[string]map[string]cue.Value)
+	for path, project := range projects {
+		for _, filter := range filters {
+			v := project.Raw().Get(filter)
+			if v.Exists() {
+				if _, ok := result[path]; !ok {
+					result[path] = make(map[string]cue.Value)
+				}
+				result[path][filter] = v
+			}
+		}
+	}
+
+	return result
+}
+
+// filterByEarthfile filters the projects by the Earthfile contents using the given filters.
+func filterByEarthfile(ctx run.RunContext, projects map[string]project.Project, filters []string) (map[string][]string, error) {
+	result := make(map[string][]string)
+	for _, filter := range filters {
+		filterExpr, err := regexp.Compile(filter)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, project := range projects {
+			if project.Earthfile != nil {
+				path := filepath.Join(project.Path, "Earthfile")
+				contents, err := os.ReadFile(path)
+				if err != nil {
+					return nil, fmt.Errorf("failed to read Earthfile: %w", err)
+				}
+
+				if filterExpr.Match(contents) {
+					result[filter] = append(result[filter], path)
+				}
+			}
+		}
+	}
+
+	return result, nil
+}
+
+// filterByTargets filters the projects by the targets using the given filters.
+func filterByTargets(ctx run.RunContext, projects map[string]project.Project, filters []string) (map[string]map[string][]string, error) {
+	result := make(map[string]map[string][]string)
+	for _, filter := range filters {
+		filterExpr, err := regexp.Compile(filter)
+		if err != nil {
+			return nil, err
+		}
+
+		for path, project := range projects {
+			if project.Earthfile != nil {
+				targets := project.Earthfile.FilterTargets(func(target string) bool {
+					return filterExpr.MatchString(target)
+				})
+
+				if len(targets) > 0 {
+					if _, ok := result[filter]; !ok {
+						result[filter] = make(map[string][]string)
+					}
+
+					result[filter][path] = targets
+				}
+
+				ctx.Logger.Debug("Filtered Earthfile", "path", path, "targets", targets)
+			}
+		}
+	}
+
+	return result, nil
 }
 
 // enumerate enumerates the Earthfile+Target pairs from the target map.
