@@ -10,6 +10,9 @@ inputs:
   path:
     description: The path to search from
     default: "."
+  tags:
+    description: A newline separated list of tags to filter targets by
+    default: ""
 outputs:
   deployments:
     description: The deployments discovered

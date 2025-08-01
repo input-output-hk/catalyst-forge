@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"slices"
 	"sort"
 
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/run"
@@ -20,6 +21,7 @@ type EarthfileCmd struct {
 	FilterSource FilterType `short:"s" help:"The source to filter by [earthfile | targets]." default:"targets"`
 	Pretty       bool       `short:"p" help:"Pretty print JSON output."`
 	RootPath     string     `kong:"arg,predictor=path" help:"Root path to scan for Earthfiles and their respective targets."`
+	Tags         []string   `short:"t" help:"The tags to filter by (only used when filtering by targets)."`
 }
 
 type FilterType string
@@ -44,6 +46,10 @@ func (c *EarthfileCmd) Run(ctx run.RunContext) error {
 		result, err := filterByTargets(ctx, projects, c.Filter)
 		if err != nil {
 			return err
+		}
+
+		if len(c.Tags) > 0 {
+			result = filterByTags(projects, result, c.Tags)
 		}
 
 		if c.Enumerate {
@@ -133,6 +139,35 @@ func filterByEarthfile(projects map[string]project.Project, filters []string) (m
 	}
 
 	return result, nil
+}
+
+// filterByTags filters the scan results by the given tags.
+func filterByTags(projects map[string]project.Project, input map[string]map[string][]string, tags []string) map[string]map[string][]string {
+	result := make(map[string]map[string][]string)
+	for filter, targetMap := range input {
+		if _, ok := result[filter]; !ok {
+			result[filter] = make(map[string][]string)
+		}
+
+		for path, targets := range targetMap {
+			for _, target := range targets {
+				project := projects[path]
+				if project.Blueprint.Project != nil &&
+					project.Blueprint.Project.Ci != nil &&
+					project.Blueprint.Project.Ci.Targets != nil {
+					if targetConfig, ok := project.Blueprint.Project.Ci.Targets[target]; ok {
+						for _, tag := range targetConfig.Tags {
+							if slices.Contains(tags, tag) {
+								result[filter][path] = append(result[filter][path], target)
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+
+	return result
 }
 
 // filterByTargets filters the projects by the targets using the given filters.

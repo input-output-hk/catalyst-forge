@@ -81,6 +81,8 @@ jobs:
             ${{ env.FORGE_REGEX_RELEASE }}
             ${{ env.FORGE_REGEX_PUBLISH }}
             ${{ env.FORGE_REGEX_NIGHTLY }}
+          tags: |
+            nightly
   check:
     uses: input-output-hk/catalyst-forge/.github/workflows/run.yml@filter-by-earthfile
     needs: [discover]
