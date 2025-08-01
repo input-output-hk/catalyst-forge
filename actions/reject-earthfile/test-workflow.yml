@@ -16,33 +16,43 @@ jobs:
       - name: Test - No rejections (should pass)
         uses: ./.github/actions/reject-earthfile
         with:
-          filters: "nonexistent, contain nonexistent targets"
+          filters: |
+            nonexistent
+            contain nonexistent targets
 
       - name: Test - With rejections (should fail)
         uses: ./.github/actions/reject-earthfile
         continue-on-error: true
         with:
           filters: |
-            build, contain build targets
-            test, contain test targets
+            build
+            contain build targets
+            test
+            contain test targets
 
       - name: Test - Multiple filters with some matches
         uses: ./.github/actions/reject-earthfile
         continue-on-error: true
         with:
           filters: |
-            nonexistent, contain nonexistent targets
-            build, contain build targets
+            nonexistent
+            contain nonexistent targets
+            build
+            contain build targets
 
       - name: Test - Filter by Earthfile contents
         uses: ./.github/actions/reject-earthfile
         continue-on-error: true
         with:
-          filters: "FROM, use FROM directive"
+          filters: |
+            FROM
+            use FROM directive
           filter-source: "earthfile"
 
       - name: Test - Custom root path
         uses: ./.github/actions/reject-earthfile
         with:
-          filters: "nonexistent, contain nonexistent targets"
+          filters: |
+            nonexistent
+            contain nonexistent targets
           root-path: "./actions"

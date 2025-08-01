@@ -9,17 +9,22 @@ async function run() {
       core.getInput("filter-source", { required: false }) || "targets";
     const verbosity = core.getInput("verbosity", { required: false }) || "info";
 
-    const filterPairs = filters
-      .split("\n")
-      .filter((line) => line.trim() !== "");
+    const lines = filters.split("\n").filter((line) => line.trim() !== "");
     const expressions = [];
     const messages = [];
 
-    for (const pair of filterPairs) {
-      const [expr, ...msgParts] = pair.split(",");
-      if (expr && msgParts.length > 0) {
-        expressions.push(expr.trim());
-        messages.push(msgParts.join(",").trim());
+    // Parse alternating lines as expressions and error messages
+    for (let i = 0; i < lines.length; i += 2) {
+      const expr = lines[i]?.trim();
+      const msg = lines[i + 1]?.trim();
+
+      if (expr && msg) {
+        expressions.push(expr);
+        messages.push(msg);
+      } else if (expr && !msg) {
+        core.warning(
+          `Expression "${expr}" has no corresponding error message, skipping`,
+        );
       }
     }
 
@@ -31,7 +36,8 @@ async function run() {
     core.info(`Found ${expressions.length} filter expressions to check`);
 
     let hasRejections = false;
-    let rejectionOutput = "";
+    let rejectionOutput =
+      "Some Earthfiles failed to pass the filter expressions:\n\n";
 
     for (let i = 0; i < expressions.length; i++) {
       const expr = expressions[i];
@@ -89,7 +95,7 @@ async function run() {
 
           rejectionOutput += `❌ ${msg}:\n`;
           for (const path of sortedPaths) {
-            rejectionOutput += `- ${path}\n`;
+            rejectionOutput += `  - ${path}\n`;
           }
           rejectionOutput += "\n";
         }

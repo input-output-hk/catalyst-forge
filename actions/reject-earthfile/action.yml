@@ -4,9 +4,11 @@ inputs:
   filters:
     description: |
       Newline-separated list of filter expressions and error messages.
-      Format: "expr1, error message 1
-      expr2, error message 2"
-      Each filter should be separated by newline, with the expression and error message separated by comma.
+      Format: "expr1
+      error message 1
+      expr2
+      error message 2"
+      Each expression should be on its own line, followed by its error message on the next line.
     required: true
   root-path:
     description: Root path to scan for Earthfiles

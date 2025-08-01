@@ -6,13 +6,15 @@ This GitHub Action scans for Earthfiles that match certain filter expressions an
 
 ### `filters` (required)
 
-A newline-separated list of filter expressions and error messages. Each filter should be in the format `"expression, error message"`.
+A newline-separated list of filter expressions and error messages. Each expression should be on its own line, followed by its error message on the next line.
 
 **Example:**
 
 ```
-prod, contain production targets
-debug, contain debug targets
+prod
+contain production targets
+debug
+contain debug targets
 ```
 
 ### `root-path` (optional)
@@ -38,7 +40,9 @@ The verbosity level for the forge command. Can be `"error"`, `"info"`, or `"debu
 - name: Reject Earthfiles with production targets
   uses: ./.github/actions/reject-earthfile
   with:
-    filters: "prod, contain production targets"
+    filters: |
+      prod
+      contain production targets
 ```
 
 ### Multiple Filters
@@ -48,9 +52,12 @@ The verbosity level for the forge command. Can be `"error"`, `"info"`, or `"debu
   uses: ./.github/actions/reject-earthfile
   with:
     filters: |
-      prod, contain production targets
-      debug, contain debug targets
-      test, contain test targets
+      prod
+      contain production targets
+      debug
+      contain debug targets
+      test
+      contain test targets
 ```
 
 ### Filter by Earthfile Contents
@@ -59,7 +66,9 @@ The verbosity level for the forge command. Can be `"error"`, `"info"`, or `"debu
 - name: Reject Earthfiles with certain content
   uses: ./.github/actions/reject-earthfile
   with:
-    filters: "FROM alpine, use Alpine base image"
+    filters: |
+      FROM alpine
+      use Alpine base image
     filter-source: "earthfile"
 ```
 
@@ -69,7 +78,9 @@ The verbosity level for the forge command. Can be `"error"`, `"info"`, or `"debu
 - name: Reject Earthfiles in specific directory
   uses: ./.github/actions/reject-earthfile
   with:
-    filters: "prod, contain production targets"
+    filters: |
+      prod
+      contain production targets
     root-path: "./apps"
 ```
 
