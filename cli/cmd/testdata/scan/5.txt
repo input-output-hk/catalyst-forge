@@ -1,2 +1,0 @@
-exec git init .
-! exec forge scan --earthfile --blueprint .

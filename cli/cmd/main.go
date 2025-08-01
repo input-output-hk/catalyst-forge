@@ -12,6 +12,7 @@ import (
 	"github.com/input-output-hk/catalyst-forge/cli/cmd/cmds"
 	"github.com/input-output-hk/catalyst-forge/cli/cmd/cmds/api"
 	"github.com/input-output-hk/catalyst-forge/cli/cmd/cmds/module"
+	"github.com/input-output-hk/catalyst-forge/cli/cmd/cmds/scan"
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/config"
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/run"
 	"github.com/input-output-hk/catalyst-forge/lib/project/deployment"
@@ -45,7 +46,7 @@ type CLI struct {
 	Mod                module.ModuleCmd           `kong:"cmd" help:"Commands for working with deployment modules."`
 	Release            cmds.ReleaseCmd            `cmd:"" help:"Release a project."`
 	Run                cmds.RunCmd                `cmd:"" help:"Run an Earthly target."`
-	Scan               cmds.ScanCmd               `cmd:"" help:"Scan for Earthfiles."`
+	Scan               scan.ScanCmd               `cmd:"" help:"Commands for scanning for projects."`
 	Secret             cmds.SecretCmd             `cmd:"" help:"Manage secrets."`
 	Validate           cmds.ValidateCmd           `cmd:"" help:"Validates a project."`
 	Version            VersionCmd                 `cmd:"" help:"Print the version."`

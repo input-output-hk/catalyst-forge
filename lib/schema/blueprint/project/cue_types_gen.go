@@ -96,6 +96,9 @@ type Target struct {
 	// Retries contains the configuration for the retries of an Earthly target.
 	Retries *common.CIRetries `json:"retries,omitempty"`
 
+	// Tags are used to uniquely identify a target when scanning.
+	Tags []string `json:"tags,omitempty"`
+
 	// Secrets contains the secrets to pass to the target.
 	Secrets []common.Secret `json:"secrets,omitempty"`
 }

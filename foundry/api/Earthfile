@@ -72,7 +72,7 @@ docker-test:
     SAVE IMAGE foundry-api-test:latest
 
 docker:
-    FROM debian:bookworm-slim
+    FROM debian:latest
     WORKDIR /app
 
     ARG container="foundry-api"

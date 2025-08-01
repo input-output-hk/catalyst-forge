@@ -1,6 +1,7 @@
 project: {
 	name: "forge-cli"
 	ci: targets: {
+		check: tags: ["nightly"]
 		github: {
 			args: {
 				version: string | *"dev" @forge(name="GIT_TAG")

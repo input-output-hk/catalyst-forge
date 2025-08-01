@@ -21,6 +21,9 @@ import "github.com/input-output-hk/catalyst-forge/lib/schema/blueprint/common"
 	// Retries contains the configuration for the retries of an Earthly target.
 	retries?: common.#CIRetries
 
+	// Tags are used to uniquely identify a target when scanning.
+	tags?: [...string]
+
 	// Secrets contains the secrets to pass to the target.
 	secrets?: [...common.#Secret]
 }

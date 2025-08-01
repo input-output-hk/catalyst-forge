@@ -17,6 +17,21 @@ on:
         required: false
         type: boolean
         default: false
+      tags:
+        description: A newline separated list of tags to filter Earthly targets by
+        required: false
+        type: string
+        default: ""
+      skip_release:
+        description: Skip the release job
+        required: false
+        type: boolean
+        default: false
+      skip_deploy:
+        description: Skip the deploy job
+        required: false
+        type: boolean
+        default: false
       verbosity:
         description: The verbosity level to use
         required: false
@@ -36,7 +51,6 @@ env:
   FORGE_REGEX_DOCS: ^docs(-.*)?$
   FORGE_REGEX_RELEASE: ^release(-.*)?$
   FORGE_REGEX_PUBLISH: ^publish(-.*)?$
-  FORGE_REGEX_NIGHTLY: ^nightly(-.*)?$
 
 jobs:
   discover:
@@ -81,6 +95,7 @@ jobs:
             ${{ env.FORGE_REGEX_RELEASE }}
             ${{ env.FORGE_REGEX_PUBLISH }}
             ${{ env.FORGE_REGEX_NIGHTLY }}
+          tags: ${{ inputs.tags }}
   check:
     uses: input-output-hk/catalyst-forge/.github/workflows/run.yml@master
     needs: [discover]
@@ -125,21 +140,10 @@ jobs:
       skip_output: true
       verbosity: ${{ inputs.verbosity }}
 
-  nightly:
-    uses: input-output-hk/catalyst-forge/.github/workflows/run.yml@master
-    needs: [discover, check, build, package]
-    if: (fromJson(needs.discover.outputs.earthfiles)['^nightly(-.*)?$'] != null) && (inputs.release_only == false) && !failure() && !cancelled() && inputs.nightly == true
-    with:
-      earthfiles: ${{ toJson(fromJson(needs.discover.outputs.earthfiles)['^nightly(-.*)?$']) }}
-      forge_version: ${{ inputs.forge_version }}
-      local: ${{ inputs.local }}
-      skip_output: true
-      verbosity: ${{ inputs.verbosity }}
-
   release:
     uses: input-output-hk/catalyst-forge/.github/workflows/release.yml@master
     needs: [discover, check, build, test]
-    if: (fromJson(needs.discover.outputs.releases)[0] != null) && !failure() && !cancelled()
+    if: (fromJson(needs.discover.outputs.releases)[0] != null) && !inputs.skip_release && !failure() && !cancelled()
     with:
       releases: ${{ needs.discover.outputs.releases }}
       forge_version: ${{ inputs.forge_version }}
@@ -149,7 +153,7 @@ jobs:
   deploy:
     uses: input-output-hk/catalyst-forge/.github/workflows/deploy.yml@master
     needs: [discover, check, build, test, release]
-    if: (fromJson(needs.discover.outputs.deployments)[0] != null) && !failure() && !cancelled()
+    if: (fromJson(needs.discover.outputs.deployments)[0] != null) && !inputs.skip_deploy && !failure() && !cancelled()
     with:
       deployments: ${{ needs.discover.outputs.deployments }}
       forge_version: ${{ inputs.forge_version }}
@@ -157,7 +161,7 @@ jobs:
       verbosity: ${{ inputs.verbosity }}
 
   final:
-    needs: [check, build, package, test, nightly, release, deploy]
+    needs: [check, build, package, test, release, deploy]
     if: ${{ always() && (contains(needs.*.result, 'failure') || !failure() && !cancelled()) }}
     runs-on: ubuntu-latest
     steps:
