@@ -13,26 +13,8 @@ permissions:
   pull-requests: write
 
 jobs:
-  reject:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Install Local Forge
-        id: install-local
-        uses: input-output-hk/catalyst-forge/actions/install-local@filter-by-earthfile
-      - name: Reject Earthfile
-        uses: ./actions/reject-earthfile
-        with:
-          filter-source: earthfile
-          filters: |
-            \s*FROM.*?:latest
-              No images should be built using the 'latest' tag
-
-            check(-.*)?
-              No check targets should be defined
   ci:
     uses: ./.github/workflows/ci.yml
-    needs: [reject]
     with:
       forge_version: local
       verbosity: debug
