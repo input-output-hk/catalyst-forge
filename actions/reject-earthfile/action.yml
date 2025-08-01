@@ -1,0 +1,26 @@
+name: Reject Earthfile
+description: Reject Earthfiles that match certain filter expressions
+inputs:
+  filters:
+    description: |
+      Newline-separated list of filter expressions and error messages.
+      Format: "expr1, error message 1
+      expr2, error message 2"
+      Each filter should be separated by newline, with the expression and error message separated by comma.
+    required: true
+  root-path:
+    description: Root path to scan for Earthfiles
+    required: false
+    default: "."
+  filter-source:
+    description: The source to filter by [earthfile | targets]
+    required: false
+    default: "targets"
+  verbosity:
+    description: The verbosity level to use
+    required: false
+    default: "info"
+
+runs:
+  using: node20
+  main: dist/index.js

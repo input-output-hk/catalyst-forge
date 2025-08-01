@@ -1,0 +1,48 @@
+name: Test Reject Earthfile Action
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test-reject-earthfile:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Forge
+        uses: ./.github/actions/setup
+
+      - name: Test - No rejections (should pass)
+        uses: ./.github/actions/reject-earthfile
+        with:
+          filters: "nonexistent, contain nonexistent targets"
+
+      - name: Test - With rejections (should fail)
+        uses: ./.github/actions/reject-earthfile
+        continue-on-error: true
+        with:
+          filters: |
+            build, contain build targets
+            test, contain test targets
+
+      - name: Test - Multiple filters with some matches
+        uses: ./.github/actions/reject-earthfile
+        continue-on-error: true
+        with:
+          filters: |
+            nonexistent, contain nonexistent targets
+            build, contain build targets
+
+      - name: Test - Filter by Earthfile contents
+        uses: ./.github/actions/reject-earthfile
+        continue-on-error: true
+        with:
+          filters: "FROM, use FROM directive"
+          filter-source: "earthfile"
+
+      - name: Test - Custom root path
+        uses: ./.github/actions/reject-earthfile
+        with:
+          filters: "nonexistent, contain nonexistent targets"
+          root-path: "./actions"
