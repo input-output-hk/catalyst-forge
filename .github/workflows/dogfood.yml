@@ -17,6 +17,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Install Local Forge
+        id: install-local
+        uses: input-output-hk/catalyst-forge/actions/install-local@filter-by-earthfile
       - name: Reject Earthfile
         uses: ./actions/reject-earthfile
         with:
