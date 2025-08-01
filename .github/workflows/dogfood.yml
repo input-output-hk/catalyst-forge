@@ -17,6 +17,9 @@ jobs:
     uses: ./.github/workflows/ci.yml
     with:
       forge_version: local
-      verbosity: debug
-      nightly: true
       release_only: ${{ github.ref == 'refs/heads/master' || startsWith(github.ref, 'refs/tags/') }}
+      skip_release: true
+      skip_deploy: true
+      tags: |
+        nightly
+      verbosity: debug

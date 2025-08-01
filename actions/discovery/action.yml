@@ -11,7 +11,7 @@ inputs:
     description: The path to search from
     default: "."
   tags:
-    description: A newline separated list of tags to filter targets by
+    description: A newline separated list of tags to filter Earthly targets by
     default: ""
 outputs:
   deployments:
