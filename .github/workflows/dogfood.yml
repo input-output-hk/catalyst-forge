@@ -18,7 +18,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Reject Earthfile
-        uses: ./.github/actions/reject-earthfile
+        uses: ./actions/reject-earthfile
         with:
           filter-source: earthfile
           filters: |
