@@ -8,6 +8,7 @@ import (
 	"path"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/executor"
 	secretstore "github.com/input-output-hk/catalyst-forge/lib/providers/secrets"
@@ -29,7 +30,7 @@ type earthlyExecutorOptions struct {
 	artifact  string
 	ci        bool
 	platforms []string
-	retries   int
+	retries   sc.CIRetries
 }
 
 // EarthlyExecutor is an Executor that runs Earthly targets.
@@ -56,6 +57,7 @@ type EarthlyExecutionResult struct {
 func (e EarthlyExecutor) Run() error {
 	var (
 		err     error
+		output  []byte
 		secrets []EarthlySecret
 	)
 
@@ -82,23 +84,65 @@ func (e EarthlyExecutor) Run() error {
 		e.opts.platforms = []string{GetBuildPlatform()}
 	}
 
+	var attempts int
 	for _, platform := range e.opts.platforms {
-		for i := 0; i < e.opts.retries+1; i++ {
+		for i := 0; i < int(e.opts.retries.Attempts)+1; i++ {
+			attempts++
 			arguments := e.buildArguments(platform)
 
-			e.logger.Info("Executing Earthly", "attempt", i, "retries", e.opts.retries, "arguments", arguments, "platform", platform)
-			_, err = e.executor.Execute("earthly", arguments...)
+			e.logger.Info("Executing Earthly",
+				"attempt", i,
+				"attempts", e.opts.retries.Attempts,
+				"filters", e.opts.retries.Filters,
+				"arguments", arguments,
+				"platform", platform,
+			)
+			output, err = e.executor.Execute("earthly", arguments...)
 			if err == nil {
 				break
 			}
 
+			if len(e.opts.retries.Filters) > 0 {
+				found := false
+				for _, filter := range e.opts.retries.Filters {
+					if strings.Contains(string(output), filter) {
+						e.logger.Info("Found filter", "filter", filter)
+						found = true
+						break
+					}
+				}
+
+				if !found {
+					e.logger.Info("No filter found", "filters", e.opts.retries.Filters)
+					break
+				}
+			}
+
 			e.logger.Error("Failed to run Earthly", "error", err)
+
+			if e.opts.retries.Delay != "" {
+				delay, err := time.ParseDuration(e.opts.retries.Delay)
+				if err != nil {
+					e.logger.Error("Failed to parse delay duration", "error", err)
+				} else {
+					e.logger.Info("Sleeping for delay", "delay", delay)
+					time.Sleep(delay)
+				}
+			}
 		}
 	}
 
 	if err != nil {
-		e.logger.Error("Failed to run Earthly", "error", err)
+		if attempts > 1 {
+			e.logger.Error(fmt.Sprintf("Failed to run Earthly after %d attempts", attempts), "error", err)
+		} else {
+			e.logger.Error("Failed to run Earthly", "error", err)
+		}
 		return fmt.Errorf("failed to run Earthly: %w", err)
+	}
+
+	if attempts > 1 {
+		e.logger.Info(fmt.Sprintf("Earthly run succeeded after %d attempts", attempts))
 	}
 
 	return nil

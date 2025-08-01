@@ -21,6 +21,9 @@ type CI struct {
 	// Release contains the configuration for the release of a project.
 	Release *Release `json:"release,omitempty"`
 
+	// Retries contains the configuration for the retries of an Earthly target.
+	Retries *common.CIRetries `json:"retries,omitempty"`
+
 	// Secrets contains global secrets that will be passed to all targets.
 	Secrets []common.Secret `json:"secrets,omitempty"`
 }

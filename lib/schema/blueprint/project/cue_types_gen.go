@@ -93,8 +93,8 @@ type Target struct {
 	// Privileged determines if the target should run in privileged mode.
 	Privileged bool `json:"privileged,omitempty"`
 
-	// Retries contains the number of times to retry the target.
-	Retries int64 `json:"retries,omitempty"`
+	// Retries contains the configuration for the retries of an Earthly target.
+	Retries *common.CIRetries `json:"retries,omitempty"`
 
 	// Secrets contains the secrets to pass to the target.
 	Secrets []common.Secret `json:"secrets,omitempty"`

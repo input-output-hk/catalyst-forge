@@ -11,6 +11,7 @@ type RunCmd struct {
 	Path       string   `kong:"arg,predictor=path" help:"The path to the target to execute (i.e., ./dir1+test)."`
 	Platform   []string `short:"p" help:"Run the target with the given platform."`
 	Pretty     bool     `help:"Pretty print JSON output."`
+	SkipOutput bool     `short:"s" help:"Skip outputting any images or artifacts."`
 	TargetArgs []string `arg:"" help:"Arguments to pass to the target." default:""`
 }
 
@@ -58,6 +59,10 @@ func generateOpts(flags *RunCmd, ctx run.RunContext) []earthly.EarthlyExecutorOp
 
 		if len(flags.TargetArgs) > 0 && flags.TargetArgs[0] != "" {
 			opts = append(opts, earthly.WithTargetArgs(flags.TargetArgs...))
+		}
+
+		if flags.SkipOutput {
+			opts = append(opts, earthly.WithSkipOutput())
 		}
 	}
 

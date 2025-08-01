@@ -82,8 +82,13 @@ func (p *DefaultProjectRunner) generateOpts(target string) ([]EarthlyExecutorOpt
 				opts = append(opts, WithPrivileged())
 			}
 
-			if targetConfig.Retries > 0 {
-				opts = append(opts, WithRetries(int(targetConfig.Retries)))
+			// Prioritize local retries over global retries.
+			if targetConfig.Retries != nil {
+				opts = append(opts, WithRetries(*targetConfig.Retries))
+			} else if schema.HasGlobalCIDefined(p.project.Blueprint) {
+				if p.project.Blueprint.Global.Ci.Retries != nil {
+					opts = append(opts, WithRetries(*p.project.Blueprint.Global.Ci.Retries))
+				}
 			}
 
 			if len(targetConfig.Secrets) > 0 {

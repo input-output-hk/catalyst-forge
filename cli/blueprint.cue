@@ -12,7 +12,7 @@ project: {
 				"darwin/arm64",
 			]
 		}
-		test: retries: 3
+		test: retries: attempts: 3
 	}
 	release: {
 		github: {
