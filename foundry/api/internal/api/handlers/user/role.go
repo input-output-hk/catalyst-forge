@@ -4,6 +4,7 @@ import (
 	"log/slog"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/input-output-hk/catalyst-forge/foundry/api/internal/models/user"
@@ -23,6 +24,16 @@ func NewRoleHandler(roleService userservice.RoleService, logger *slog.Logger) *R
 		roleService: roleService,
 		logger:      logger,
 	}
+}
+
+// Role represents a role in the system (swagger-compatible version)
+// @Description Role represents a role in the system
+type Role struct {
+	ID          uint      `json:"id" example:"1"`
+	Name        string    `json:"name" example:"admin"`
+	Permissions []string  `json:"permissions" example:"user:read,user:write"`
+	CreatedAt   time.Time `json:"created_at" example:"2023-01-01T00:00:00Z"`
+	UpdatedAt   time.Time `json:"updated_at" example:"2023-01-01T00:00:00Z"`
 }
 
 // CreateRoleRequest represents the request body for creating a role
@@ -45,7 +56,7 @@ type UpdateRoleRequest struct {
 // @Produce json
 // @Param request body CreateRoleRequest true "Role creation request"
 // @Param admin query bool false "If true, ignore permissions and add all permissions"
-// @Success 201 {object} user.Role "Role created successfully"
+// @Success 201 {object} Role "Role created successfully"
 // @Failure 400 {object} map[string]interface{} "Invalid request"
 // @Failure 409 {object} map[string]interface{} "Role already exists"
 // @Failure 500 {object} map[string]interface{} "Internal server error"
@@ -95,7 +106,7 @@ func (h *RoleHandler) CreateRole(c *gin.Context) {
 // @Tags roles
 // @Produce json
 // @Param id path string true "Role ID"
-// @Success 200 {object} user.Role "Role found"
+// @Success 200 {object} Role "Role found"
 // @Failure 404 {object} map[string]interface{} "Role not found"
 // @Failure 500 {object} map[string]interface{} "Internal server error"
 // @Router /auth/roles/{id} [get]
@@ -128,7 +139,7 @@ func (h *RoleHandler) GetRole(c *gin.Context) {
 // @Tags roles
 // @Produce json
 // @Param name path string true "Role name"
-// @Success 200 {object} user.Role "Role found"
+// @Success 200 {object} Role "Role found"
 // @Failure 404 {object} map[string]interface{} "Role not found"
 // @Failure 500 {object} map[string]interface{} "Internal server error"
 // @Router /auth/roles/name/{name} [get]
@@ -155,7 +166,7 @@ func (h *RoleHandler) GetRoleByName(c *gin.Context) {
 // @Produce json
 // @Param id path string true "Role ID"
 // @Param request body UpdateRoleRequest true "Role update request"
-// @Success 200 {object} user.Role "Role updated successfully"
+// @Success 200 {object} Role "Role updated successfully"
 // @Failure 400 {object} map[string]interface{} "Invalid request"
 // @Failure 404 {object} map[string]interface{} "Role not found"
 // @Failure 500 {object} map[string]interface{} "Internal server error"
@@ -240,7 +251,7 @@ func (h *RoleHandler) DeleteRole(c *gin.Context) {
 // @Description Retrieve a list of all roles
 // @Tags roles
 // @Produce json
-// @Success 200 {array} user.Role "List of roles"
+// @Success 200 {array} Role "List of roles"
 // @Failure 500 {object} map[string]interface{} "Internal server error"
 // @Router /auth/roles [get]
 func (h *RoleHandler) ListRoles(c *gin.Context) {

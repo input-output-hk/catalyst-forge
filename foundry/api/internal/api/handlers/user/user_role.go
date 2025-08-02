@@ -4,6 +4,7 @@ import (
 	"log/slog"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	userservice "github.com/input-output-hk/catalyst-forge/foundry/api/internal/service/user"
@@ -23,6 +24,28 @@ func NewUserRoleHandler(userRoleService userservice.UserRoleService, logger *slo
 	}
 }
 
+// UserRole represents a many-to-many relationship between users and roles (swagger-compatible version)
+// @Description UserRole represents a many-to-many relationship between users and roles
+type UserRole struct {
+	ID        uint      `json:"id" example:"1"`
+	UserID    uint      `json:"user_id" example:"123"`
+	RoleID    uint      `json:"role_id" example:"456"`
+	User      *User     `json:"user,omitempty"`
+	Role      *Role     `json:"role,omitempty"`
+	CreatedAt time.Time `json:"created_at" example:"2023-01-01T00:00:00Z"`
+	UpdatedAt time.Time `json:"updated_at" example:"2023-01-01T00:00:00Z"`
+}
+
+// User represents a user in the system (swagger-compatible version)
+// @Description User represents a user in the system
+type User struct {
+	ID        uint      `json:"id" example:"123"`
+	Email     string    `json:"email" example:"user@example.com"`
+	Status    string    `json:"status" example:"active"`
+	CreatedAt time.Time `json:"created_at" example:"2023-01-01T00:00:00Z"`
+	UpdatedAt time.Time `json:"updated_at" example:"2023-01-01T00:00:00Z"`
+}
+
 // AssignUserToRoleRequest represents the request body for assigning a user to a role
 type AssignUserToRoleRequest struct {
 	UserID string `json:"user_id" binding:"required"`
@@ -37,7 +60,7 @@ type AssignUserToRoleRequest struct {
 // @Produce json
 // @Param user_id query string true "User ID"
 // @Param role_id query string true "Role ID"
-// @Success 201 {object} user.UserRole "User assigned to role successfully"
+// @Success 201 {object} UserRole "User assigned to role successfully"
 // @Failure 400 {object} map[string]interface{} "Invalid request"
 // @Failure 404 {object} map[string]interface{} "User or role not found"
 // @Failure 409 {object} map[string]interface{} "User already has this role"
@@ -135,7 +158,7 @@ func (h *UserRoleHandler) RemoveUserFromRole(c *gin.Context) {
 // @Tags user-roles
 // @Produce json
 // @Param user_id query string true "User ID"
-// @Success 200 {array} user.UserRole "List of user roles"
+// @Success 200 {array} UserRole "List of user roles"
 // @Failure 404 {object} map[string]interface{} "User not found"
 // @Failure 500 {object} map[string]interface{} "Internal server error"
 // @Router /auth/user-roles [get]
@@ -175,7 +198,7 @@ func (h *UserRoleHandler) GetUserRoles(c *gin.Context) {
 // @Tags user-roles
 // @Produce json
 // @Param role_id query string true "Role ID"
-// @Success 200 {array} user.UserRole "List of role users"
+// @Success 200 {array} UserRole "List of role users"
 // @Failure 404 {object} map[string]interface{} "Role not found"
 // @Failure 500 {object} map[string]interface{} "Internal server error"
 // @Router /auth/role-users [get]
