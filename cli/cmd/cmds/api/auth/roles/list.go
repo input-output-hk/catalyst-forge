@@ -6,14 +6,14 @@ import (
 
 	"github.com/input-output-hk/catalyst-forge/cli/cmd/cmds/api/auth/common"
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/run"
-	"github.com/input-output-hk/catalyst-forge/foundry/api/client"
+	"github.com/input-output-hk/catalyst-forge/foundry/api/client/users"
 )
 
 type ListCmd struct {
 	JSON bool `short:"j" help:"Output as prettified JSON instead of table."`
 }
 
-func (c *ListCmd) Run(ctx run.RunContext, cl client.Client) error {
+func (c *ListCmd) Run(ctx run.RunContext, cl interface{ Roles() *users.RolesClient }) error {
 	roles, err := c.listRoles(cl)
 	if err != nil {
 		return err
@@ -27,8 +27,8 @@ func (c *ListCmd) Run(ctx run.RunContext, cl client.Client) error {
 }
 
 // listRoles retrieves all roles.
-func (c *ListCmd) listRoles(cl client.Client) ([]client.Role, error) {
-	roles, err := cl.ListRoles(context.Background())
+func (c *ListCmd) listRoles(cl interface{ Roles() *users.RolesClient }) ([]users.Role, error) {
+	roles, err := cl.Roles().List(context.Background())
 	if err != nil {
 		return nil, fmt.Errorf("failed to list roles: %w", err)
 	}

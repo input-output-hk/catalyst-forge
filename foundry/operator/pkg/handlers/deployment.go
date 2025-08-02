@@ -8,6 +8,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/input-output-hk/catalyst-forge/foundry/api/client"
+	"github.com/input-output-hk/catalyst-forge/foundry/api/client/deployments"
+	"github.com/input-output-hk/catalyst-forge/foundry/api/client/releases"
 	foundryv1alpha1 "github.com/input-output-hk/catalyst-forge/foundry/operator/api/v1alpha1"
 	"github.com/input-output-hk/catalyst-forge/foundry/operator/pkg/util"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
@@ -18,7 +20,7 @@ type ReleaseDeploymentHandler struct {
 	ctx        context.Context
 	client     client.Client    // API client
 	k8sClient  k8sclient.Client // Kubernetes client
-	deployment *client.ReleaseDeployment
+	deployment *deployments.ReleaseDeployment
 	resource   *foundryv1alpha1.ReleaseDeployment
 	clock      util.Clock // Clock interface for time operations
 }
@@ -34,8 +36,8 @@ func (r *ReleaseDeploymentHandler) AddErrorEvent(err error, reason string) error
 
 // IsCompleted checks if the ReleaseDeployment is completed.
 func (r *ReleaseDeploymentHandler) IsCompleted() bool {
-	return r.deployment.Status == client.DeploymentStatusSucceeded ||
-		r.deployment.Status == client.DeploymentStatusFailed
+	return r.deployment.Status == deployments.DeploymentStatusSucceeded ||
+		r.deployment.Status == deployments.DeploymentStatusFailed
 }
 
 // IsExpired checks if the deployment has expired based on the TTL.
@@ -56,7 +58,7 @@ func (r *ReleaseDeploymentHandler) IsExpired() (bool, time.Duration) {
 // It returns an error if the deployment cannot be loaded.
 func (r *ReleaseDeploymentHandler) Load(resource *foundryv1alpha1.ReleaseDeployment) error {
 	r.resource = resource
-	releaseDeployment, err := r.client.GetDeployment(r.ctx, r.resource.Spec.ReleaseID, r.resource.Spec.ID)
+	releaseDeployment, err := r.client.Deployments().Get(r.ctx, r.resource.Spec.ReleaseID, r.resource.Spec.ID)
 	if err != nil {
 		return err
 	} else if releaseDeployment == nil {
@@ -73,7 +75,7 @@ func (r *ReleaseDeploymentHandler) MaxAttemptsReached(max int) bool {
 }
 
 // Release returns the ReleaseDeployment from the handler.
-func (r *ReleaseDeploymentHandler) Release() *client.Release {
+func (r *ReleaseDeploymentHandler) Release() *releases.Release {
 	return r.deployment.Release
 }
 
@@ -83,14 +85,14 @@ func (r *ReleaseDeploymentHandler) SetFailed(reason string) error {
 		return err
 	}
 
-	if r.deployment.Status != client.DeploymentStatusFailed {
-		if err := r.setAPIStatus(client.DeploymentStatusFailed, reason); err != nil {
+	if r.deployment.Status != deployments.DeploymentStatusFailed {
+		if err := r.setAPIStatus(deployments.DeploymentStatusFailed, reason); err != nil {
 			return fmt.Errorf("failed to set deployment API status: %w", err)
 		}
 	}
 
-	if r.resource.Status.State != string(client.DeploymentStatusFailed) {
-		if err := r.setState(string(client.DeploymentStatusFailed)); err != nil {
+	if r.resource.Status.State != string(deployments.DeploymentStatusFailed) {
+		if err := r.setState(string(deployments.DeploymentStatusFailed)); err != nil {
 			return fmt.Errorf("failed to set deployment state: %w", err)
 		}
 	}
@@ -105,9 +107,9 @@ func (r *ReleaseDeploymentHandler) SetFailed(reason string) error {
 // SetRunning sets the status of the ReleaseDeployment to running and increments
 // the attempts counter.
 func (r *ReleaseDeploymentHandler) SetRunning() error {
-	_, err := r.client.IncrementDeploymentAttempts(
+	_, err := r.client.Deployments().IncrementAttempts(
 		r.ctx,
-		r.deployment.Release.ID,
+		r.deployment.ReleaseID,
 		r.deployment.ID,
 	)
 	if err != nil {
@@ -118,8 +120,8 @@ func (r *ReleaseDeploymentHandler) SetRunning() error {
 		return err
 	}
 
-	if r.deployment.Status != client.DeploymentStatusRunning {
-		return r.setAPIStatus(client.DeploymentStatusRunning, "Deployment in progress")
+	if r.deployment.Status != deployments.DeploymentStatusRunning {
+		return r.setAPIStatus(deployments.DeploymentStatusRunning, "Deployment in progress")
 	}
 
 	return nil
@@ -131,14 +133,14 @@ func (r *ReleaseDeploymentHandler) SetSucceeded() error {
 		return err
 	}
 
-	if r.deployment.Status != client.DeploymentStatusSucceeded {
-		if err := r.setAPIStatus(client.DeploymentStatusSucceeded, "Deployment succeeded"); err != nil {
+	if r.deployment.Status != deployments.DeploymentStatusSucceeded {
+		if err := r.setAPIStatus(deployments.DeploymentStatusSucceeded, "Deployment succeeded"); err != nil {
 			return fmt.Errorf("failed to set deployment API status: %w", err)
 		}
 	}
 
-	if r.resource.Status.State != string(client.DeploymentStatusSucceeded) {
-		if err := r.setState(string(client.DeploymentStatusSucceeded)); err != nil {
+	if r.resource.Status.State != string(deployments.DeploymentStatusSucceeded) {
+		if err := r.setState(string(deployments.DeploymentStatusSucceeded)); err != nil {
 			return fmt.Errorf("failed to set deployment state: %w", err)
 		}
 	}
@@ -167,7 +169,7 @@ func (r *ReleaseDeploymentHandler) UpdateCompletionTime() error {
 
 // addEvent adds an event to the ReleaseDeployment.
 func (r *ReleaseDeploymentHandler) addEvent(name string, message string) error {
-	_, err := r.client.AddDeploymentEvent(
+	_, err := r.client.Events().Add(
 		r.ctx,
 		r.deployment.ReleaseID,
 		r.deployment.ID,
@@ -179,12 +181,12 @@ func (r *ReleaseDeploymentHandler) addEvent(name string, message string) error {
 }
 
 // setStatus sets the status of the ReleaseDeployment.
-func (r *ReleaseDeploymentHandler) setAPIStatus(status client.DeploymentStatus, reason string) error {
+func (r *ReleaseDeploymentHandler) setAPIStatus(status deployments.DeploymentStatus, reason string) error {
 	r.deployment.Status = status
 	r.deployment.Reason = reason
-	_, err := r.client.UpdateDeployment(
+	_, err := r.client.Deployments().Update(
 		r.ctx,
-		r.deployment.Release.ID,
+		r.deployment.ReleaseID,
 		r.deployment,
 	)
 

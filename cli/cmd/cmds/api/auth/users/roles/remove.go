@@ -6,7 +6,7 @@ import (
 	"strconv"
 
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/run"
-	"github.com/input-output-hk/catalyst-forge/foundry/api/client"
+	"github.com/input-output-hk/catalyst-forge/foundry/api/client/users"
 )
 
 type RemoveCmd struct {
@@ -16,7 +16,10 @@ type RemoveCmd struct {
 	RoleName  *string `short:"n" help:"The name of the role to remove from (mutually exclusive with --role-id)."`
 }
 
-func (c *RemoveCmd) Run(ctx run.RunContext, cl client.Client) error {
+func (c *RemoveCmd) Run(ctx run.RunContext, cl interface {
+	Users() *users.UsersClient
+	Roles() *users.RolesClient
+}) error {
 	if c.UserID == nil && c.UserEmail == nil {
 		return fmt.Errorf("either --user-id or --user-email must be specified")
 	}
@@ -37,11 +40,14 @@ func (c *RemoveCmd) Run(ctx run.RunContext, cl client.Client) error {
 }
 
 // removeUserFromRole removes a user from a role.
-func (c *RemoveCmd) removeUserFromRole(cl client.Client) error {
+func (c *RemoveCmd) removeUserFromRole(cl interface {
+	Users() *users.UsersClient
+	Roles() *users.RolesClient
+}) error {
 	var userID uint
 
 	if c.UserEmail != nil {
-		user, err := cl.GetUserByEmail(context.Background(), *c.UserEmail)
+		user, err := cl.Users().GetByEmail(context.Background(), *c.UserEmail)
 		if err != nil {
 			return fmt.Errorf("failed to find user with email %s: %w", *c.UserEmail, err)
 		}
@@ -57,7 +63,7 @@ func (c *RemoveCmd) removeUserFromRole(cl client.Client) error {
 	var roleID uint
 
 	if c.RoleName != nil {
-		role, err := cl.GetRoleByName(context.Background(), *c.RoleName)
+		role, err := cl.Roles().GetByName(context.Background(), *c.RoleName)
 		if err != nil {
 			return fmt.Errorf("failed to find role with name %s: %w", *c.RoleName, err)
 		}
@@ -70,7 +76,7 @@ func (c *RemoveCmd) removeUserFromRole(cl client.Client) error {
 		roleID = uint(parsedID)
 	}
 
-	if err := cl.RemoveUserFromRole(context.Background(), userID, roleID); err != nil {
+	if err := cl.Roles().RemoveUser(context.Background(), userID, roleID); err != nil {
 		return fmt.Errorf("failed to remove user from role: %w", err)
 	}
 

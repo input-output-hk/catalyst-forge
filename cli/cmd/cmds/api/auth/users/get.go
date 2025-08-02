@@ -7,7 +7,7 @@ import (
 
 	"github.com/input-output-hk/catalyst-forge/cli/cmd/cmds/api/auth/common"
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/run"
-	"github.com/input-output-hk/catalyst-forge/foundry/api/client"
+	"github.com/input-output-hk/catalyst-forge/foundry/api/client/users"
 )
 
 type GetCmd struct {
@@ -16,7 +16,7 @@ type GetCmd struct {
 	JSON  bool    `short:"j" help:"Output as prettified JSON instead of table."`
 }
 
-func (c *GetCmd) Run(ctx run.RunContext, cl client.Client) error {
+func (c *GetCmd) Run(ctx run.RunContext, cl interface{ Users() *users.UsersClient }) error {
 	if c.ID == nil && c.Email == nil {
 		return fmt.Errorf("either --id or --email must be specified")
 	}
@@ -38,20 +38,20 @@ func (c *GetCmd) Run(ctx run.RunContext, cl client.Client) error {
 }
 
 // retrieveUser retrieves a user by ID or email.
-func (c *GetCmd) retrieveUser(cl client.Client) (*client.User, error) {
+func (c *GetCmd) retrieveUser(cl interface{ Users() *users.UsersClient }) (*users.User, error) {
 	if c.ID != nil {
 		id, err := strconv.ParseUint(*c.ID, 10, 32)
 		if err != nil {
 			return nil, fmt.Errorf("invalid ID format: %w", err)
 		}
-		user, err := cl.GetUser(context.Background(), uint(id))
+		user, err := cl.Users().Get(context.Background(), uint(id))
 		if err != nil {
 			return nil, fmt.Errorf("failed to get user by ID: %w", err)
 		}
 		return user, nil
 	}
 
-	user, err := cl.GetUserByEmail(context.Background(), *c.Email)
+	user, err := cl.Users().GetByEmail(context.Background(), *c.Email)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get user by email: %w", err)
 	}

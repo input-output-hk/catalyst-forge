@@ -6,7 +6,7 @@ import (
 	"strconv"
 
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/run"
-	"github.com/input-output-hk/catalyst-forge/foundry/api/client"
+	"github.com/input-output-hk/catalyst-forge/foundry/api/client/users"
 )
 
 type ListCmd struct {
@@ -17,7 +17,10 @@ type ListCmd struct {
 	JSON      bool    `short:"j" help:"Output as prettified JSON instead of table."`
 }
 
-func (c *ListCmd) Run(ctx run.RunContext, cl client.Client) error {
+func (c *ListCmd) Run(ctx run.RunContext, cl interface {
+	Users() *users.UsersClient
+	Roles() *users.RolesClient
+}) error {
 	userSpecified := c.UserID != nil || c.UserEmail != nil
 	roleSpecified := c.RoleID != nil || c.RoleName != nil
 
@@ -37,11 +40,14 @@ func (c *ListCmd) Run(ctx run.RunContext, cl client.Client) error {
 }
 
 // listUserRoles lists roles for a specific user.
-func (c *ListCmd) listUserRoles(cl client.Client) error {
+func (c *ListCmd) listUserRoles(cl interface {
+	Users() *users.UsersClient
+	Roles() *users.RolesClient
+}) error {
 	var userID uint
 
 	if c.UserEmail != nil {
-		user, err := cl.GetUserByEmail(context.Background(), *c.UserEmail)
+		user, err := cl.Users().GetByEmail(context.Background(), *c.UserEmail)
 		if err != nil {
 			return fmt.Errorf("failed to find user with email %s: %w", *c.UserEmail, err)
 		}
@@ -54,7 +60,7 @@ func (c *ListCmd) listUserRoles(cl client.Client) error {
 		userID = uint(parsedID)
 	}
 
-	userRoles, err := cl.GetUserRoles(context.Background(), userID)
+	userRoles, err := cl.Roles().GetUserRoles(context.Background(), userID)
 	if err != nil {
 		return fmt.Errorf("failed to get user roles: %w", err)
 	}
@@ -73,11 +79,14 @@ func (c *ListCmd) listUserRoles(cl client.Client) error {
 }
 
 // listRoleUsers lists users for a specific role.
-func (c *ListCmd) listRoleUsers(cl client.Client) error {
+func (c *ListCmd) listRoleUsers(cl interface {
+	Users() *users.UsersClient
+	Roles() *users.RolesClient
+}) error {
 	var roleID uint
 
 	if c.RoleName != nil {
-		role, err := cl.GetRoleByName(context.Background(), *c.RoleName)
+		role, err := cl.Roles().GetByName(context.Background(), *c.RoleName)
 		if err != nil {
 			return fmt.Errorf("failed to find role with name %s: %w", *c.RoleName, err)
 		}
@@ -90,7 +99,7 @@ func (c *ListCmd) listRoleUsers(cl client.Client) error {
 		roleID = uint(parsedID)
 	}
 
-	userRoles, err := cl.GetRoleUsers(context.Background(), roleID)
+	userRoles, err := cl.Roles().GetRoleUsers(context.Background(), roleID)
 	if err != nil {
 		return fmt.Errorf("failed to get role users: %w", err)
 	}

@@ -14,7 +14,7 @@ type ListCmd struct {
 }
 
 func (c *ListCmd) Run(ctx run.RunContext, cl client.Client) error {
-	userKeys, err := cl.ListUserKeys(context.Background())
+	userKeys, err := cl.Keys().List(context.Background())
 	if err != nil {
 		return fmt.Errorf("failed to list user keys: %w", err)
 	}

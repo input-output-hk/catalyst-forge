@@ -7,7 +7,7 @@ import (
 
 	"github.com/input-output-hk/catalyst-forge/cli/cmd/cmds/api/auth/common"
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/run"
-	"github.com/input-output-hk/catalyst-forge/foundry/api/client"
+	"github.com/input-output-hk/catalyst-forge/foundry/api/client/users"
 )
 
 type ActivateCmd struct {
@@ -17,7 +17,10 @@ type ActivateCmd struct {
 	JSON   bool    `short:"j" help:"Output as prettified JSON instead of table."`
 }
 
-func (c *ActivateCmd) Run(ctx run.RunContext, cl client.Client) error {
+func (c *ActivateCmd) Run(ctx run.RunContext, cl interface {
+	Keys() *users.KeysClient
+	Users() *users.UsersClient
+}) error {
 	if c.UserID == nil && c.Email == nil {
 		return fmt.Errorf("either --user-id or --email must be specified")
 	}
@@ -39,14 +42,17 @@ func (c *ActivateCmd) Run(ctx run.RunContext, cl client.Client) error {
 }
 
 // activateUserKey activates a user key by KID.
-func (c *ActivateCmd) activateUserKey(cl client.Client) (*client.UserKey, error) {
-	userKey, err := cl.GetUserKeyByKid(context.Background(), c.Kid)
+func (c *ActivateCmd) activateUserKey(cl interface {
+	Keys() *users.KeysClient
+	Users() *users.UsersClient
+}) (*users.UserKey, error) {
+	userKey, err := cl.Keys().GetByKid(context.Background(), c.Kid)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get user key by KID: %w", err)
 	}
 
 	if c.Email != nil {
-		user, err := cl.GetUserByEmail(context.Background(), *c.Email)
+		user, err := cl.Users().GetByEmail(context.Background(), *c.Email)
 		if err != nil {
 			return nil, fmt.Errorf("failed to get user by email: %w", err)
 		}
@@ -65,14 +71,15 @@ func (c *ActivateCmd) activateUserKey(cl client.Client) (*client.UserKey, error)
 		}
 	}
 
-	req := &client.UpdateUserKeyRequest{
+	status := "active"
+	req := &users.UpdateUserKeyRequest{
 		UserID:    &userKey.UserID,
 		Kid:       &userKey.Kid,
 		PubKeyB64: &userKey.PubKeyB64,
-		Status:    &[]string{"active"}[0],
+		Status:    &status,
 	}
 
-	updatedUserKey, err := cl.UpdateUserKey(context.Background(), userKey.ID, req)
+	updatedUserKey, err := cl.Keys().Update(context.Background(), userKey.ID, req)
 	if err != nil {
 		return nil, fmt.Errorf("failed to activate user key: %w", err)
 	}

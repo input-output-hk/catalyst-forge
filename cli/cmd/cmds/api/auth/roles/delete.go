@@ -6,7 +6,7 @@ import (
 	"strconv"
 
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/run"
-	"github.com/input-output-hk/catalyst-forge/foundry/api/client"
+	"github.com/input-output-hk/catalyst-forge/foundry/api/client/users"
 )
 
 type DeleteCmd struct {
@@ -14,7 +14,7 @@ type DeleteCmd struct {
 	Name *string `short:"n" help:"The name of the role to delete (mutually exclusive with --id)."`
 }
 
-func (c *DeleteCmd) Run(ctx run.RunContext, cl client.Client) error {
+func (c *DeleteCmd) Run(ctx run.RunContext, cl interface{ Roles() *users.RolesClient }) error {
 	if c.ID == nil && c.Name == nil {
 		return fmt.Errorf("either --id or --name must be specified")
 	}
@@ -40,11 +40,11 @@ func (c *DeleteCmd) Run(ctx run.RunContext, cl client.Client) error {
 }
 
 // deleteRole deletes a role by ID or name.
-func (c *DeleteCmd) deleteRole(cl client.Client) error {
+func (c *DeleteCmd) deleteRole(cl interface{ Roles() *users.RolesClient }) error {
 	var roleID uint
 
 	if c.Name != nil {
-		role, err := cl.GetRoleByName(context.Background(), *c.Name)
+		role, err := cl.Roles().GetByName(context.Background(), *c.Name)
 		if err != nil {
 			return fmt.Errorf("failed to get role by name: %w", err)
 		}
@@ -57,7 +57,7 @@ func (c *DeleteCmd) deleteRole(cl client.Client) error {
 		roleID = uint(parsedID)
 	}
 
-	err := cl.DeleteRole(context.Background(), roleID)
+	err := cl.Roles().Delete(context.Background(), roleID)
 	if err != nil {
 		return fmt.Errorf("failed to delete role: %w", err)
 	}

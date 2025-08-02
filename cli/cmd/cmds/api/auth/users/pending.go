@@ -6,14 +6,14 @@ import (
 
 	"github.com/input-output-hk/catalyst-forge/cli/cmd/cmds/api/auth/common"
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/run"
-	"github.com/input-output-hk/catalyst-forge/foundry/api/client"
+	"github.com/input-output-hk/catalyst-forge/foundry/api/client/users"
 )
 
 type PendingCmd struct {
 	JSON bool `short:"j" help:"Output as prettified JSON instead of table."`
 }
 
-func (c *PendingCmd) Run(ctx run.RunContext, cl client.Client) error {
+func (c *PendingCmd) Run(ctx run.RunContext, cl interface{ Users() *users.UsersClient }) error {
 	users, err := c.getPendingUsers(cl)
 	if err != nil {
 		return err
@@ -27,8 +27,8 @@ func (c *PendingCmd) Run(ctx run.RunContext, cl client.Client) error {
 }
 
 // getPendingUsers retrieves all pending users.
-func (c *PendingCmd) getPendingUsers(cl client.Client) ([]client.User, error) {
-	users, err := cl.GetPendingUsers(context.Background())
+func (c *PendingCmd) getPendingUsers(cl interface{ Users() *users.UsersClient }) ([]users.User, error) {
+	users, err := cl.Users().GetPending(context.Background())
 	if err != nil {
 		return nil, fmt.Errorf("failed to get pending users: %w", err)
 	}

@@ -8,6 +8,7 @@ import (
 	"github.com/input-output-hk/catalyst-forge/cli/cmd/cmds/api/auth/common"
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/run"
 	"github.com/input-output-hk/catalyst-forge/foundry/api/client"
+	"github.com/input-output-hk/catalyst-forge/foundry/api/client/users"
 )
 
 type UpdateCmd struct {
@@ -42,11 +43,11 @@ func (c *UpdateCmd) Run(ctx run.RunContext, cl client.Client) error {
 }
 
 // updateUserKey updates a user key by ID or KID.
-func (c *UpdateCmd) updateUserKey(cl client.Client) (*client.UserKey, error) {
+func (c *UpdateCmd) updateUserKey(cl client.Client) (*users.UserKey, error) {
 	var keyID uint
 
 	if c.Kid != nil {
-		userKey, err := cl.GetUserKeyByKid(context.Background(), *c.Kid)
+		userKey, err := cl.Keys().GetByKid(context.Background(), *c.Kid)
 		if err != nil {
 			return nil, fmt.Errorf("failed to get user key by KID: %w", err)
 		}
@@ -59,7 +60,7 @@ func (c *UpdateCmd) updateUserKey(cl client.Client) (*client.UserKey, error) {
 		keyID = uint(parsedID)
 	}
 
-	req := &client.UpdateUserKeyRequest{}
+	req := &users.UpdateUserKeyRequest{}
 
 	if c.UserID != nil {
 		userID, err := strconv.ParseUint(*c.UserID, 10, 32)
@@ -82,7 +83,7 @@ func (c *UpdateCmd) updateUserKey(cl client.Client) (*client.UserKey, error) {
 		req.Status = c.Status
 	}
 
-	userKey, err := cl.UpdateUserKey(context.Background(), keyID, req)
+	userKey, err := cl.Keys().Update(context.Background(), keyID, req)
 	if err != nil {
 		return nil, fmt.Errorf("failed to update user key: %w", err)
 	}

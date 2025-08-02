@@ -8,6 +8,7 @@ import (
 	"github.com/input-output-hk/catalyst-forge/cli/cmd/cmds/api/auth/common"
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/run"
 	"github.com/input-output-hk/catalyst-forge/foundry/api/client"
+	"github.com/input-output-hk/catalyst-forge/foundry/api/client/users"
 )
 
 type CreateCmd struct {
@@ -41,11 +42,11 @@ func (c *CreateCmd) Run(ctx run.RunContext, cl client.Client) error {
 }
 
 // createUserKey creates a user key for the given user.
-func (c *CreateCmd) createUserKey(cl client.Client) (*client.UserKey, error) {
+func (c *CreateCmd) createUserKey(cl client.Client) (*users.UserKey, error) {
 	var userID uint
 
 	if c.Email != nil {
-		user, err := cl.GetUserByEmail(context.Background(), *c.Email)
+		user, err := cl.Users().GetByEmail(context.Background(), *c.Email)
 		if err != nil {
 			return nil, fmt.Errorf("failed to get user by email: %w", err)
 		}
@@ -58,7 +59,7 @@ func (c *CreateCmd) createUserKey(cl client.Client) (*client.UserKey, error) {
 		userID = uint(parsedUserID)
 	}
 
-	userKey, err := cl.CreateUserKey(context.Background(), &client.CreateUserKeyRequest{
+	userKey, err := cl.Keys().Create(context.Background(), &users.CreateUserKeyRequest{
 		UserID:    userID,
 		Kid:       c.Kid,
 		PubKeyB64: c.PubKeyB64,

@@ -7,11 +7,11 @@ import (
 
 	"github.com/charmbracelet/lipgloss"
 	"github.com/charmbracelet/lipgloss/table"
-	"github.com/input-output-hk/catalyst-forge/foundry/api/client"
+	"github.com/input-output-hk/catalyst-forge/foundry/api/client/users"
 )
 
 // User output functions
-func OutputUserJSON(user *client.User) error {
+func OutputUserJSON(user *users.User) error {
 	jsonData, err := json.MarshalIndent(user, "", "  ")
 	if err != nil {
 		return fmt.Errorf("failed to marshal JSON: %w", err)
@@ -20,7 +20,7 @@ func OutputUserJSON(user *client.User) error {
 	return nil
 }
 
-func OutputUserTable(user *client.User) error {
+func OutputUserTable(user *users.User) error {
 	t := table.New().
 		Border(lipgloss.RoundedBorder()).
 		BorderStyle(lipgloss.NewStyle().Foreground(lipgloss.Color("62"))).
@@ -48,7 +48,7 @@ func OutputUserTable(user *client.User) error {
 	return nil
 }
 
-func OutputUsersJSON(users []client.User) error {
+func OutputUsersJSON(users []users.User) error {
 	jsonData, err := json.MarshalIndent(users, "", "  ")
 	if err != nil {
 		return fmt.Errorf("failed to marshal JSON: %w", err)
@@ -57,7 +57,7 @@ func OutputUsersJSON(users []client.User) error {
 	return nil
 }
 
-func OutputUsersTable(users []client.User) error {
+func OutputUsersTable(users []users.User) error {
 	if len(users) == 0 {
 		fmt.Println("No users found.")
 		return nil
@@ -94,7 +94,7 @@ func OutputUsersTable(users []client.User) error {
 }
 
 // UserKey output functions
-func OutputUserKeyJSON(userKey *client.UserKey) error {
+func OutputUserKeyJSON(userKey *users.UserKey) error {
 	jsonData, err := json.MarshalIndent(userKey, "", "  ")
 	if err != nil {
 		return fmt.Errorf("failed to marshal JSON: %w", err)
@@ -103,7 +103,7 @@ func OutputUserKeyJSON(userKey *client.UserKey) error {
 	return nil
 }
 
-func OutputUserKeyTable(userKey *client.UserKey) error {
+func OutputUserKeyTable(userKey *users.UserKey) error {
 	t := table.New().
 		Border(lipgloss.RoundedBorder()).
 		BorderStyle(lipgloss.NewStyle().Foreground(lipgloss.Color("62"))).
@@ -132,7 +132,7 @@ func OutputUserKeyTable(userKey *client.UserKey) error {
 	return nil
 }
 
-func OutputUserKeysJSON(userKeys []client.UserKey) error {
+func OutputUserKeysJSON(userKeys []users.UserKey) error {
 	jsonData, err := json.MarshalIndent(userKeys, "", "  ")
 	if err != nil {
 		return fmt.Errorf("failed to marshal JSON: %w", err)
@@ -141,7 +141,7 @@ func OutputUserKeysJSON(userKeys []client.UserKey) error {
 	return nil
 }
 
-func OutputUserKeysTable(userKeys []client.UserKey) error {
+func OutputUserKeysTable(userKeys []users.UserKey) error {
 	if len(userKeys) == 0 {
 		fmt.Println("No user keys found.")
 		return nil
@@ -179,7 +179,7 @@ func OutputUserKeysTable(userKeys []client.UserKey) error {
 }
 
 // Role output functions
-func OutputRoleJSON(role *client.Role) error {
+func OutputRoleJSON(role *users.Role) error {
 	jsonData, err := json.MarshalIndent(role, "", "  ")
 	if err != nil {
 		return fmt.Errorf("failed to marshal JSON: %w", err)
@@ -188,7 +188,7 @@ func OutputRoleJSON(role *client.Role) error {
 	return nil
 }
 
-func OutputRoleTable(role *client.Role) error {
+func OutputRoleTable(role *users.Role) error {
 	t := table.New().
 		Border(lipgloss.RoundedBorder()).
 		BorderStyle(lipgloss.NewStyle().Foreground(lipgloss.Color("62"))).
@@ -217,7 +217,7 @@ func OutputRoleTable(role *client.Role) error {
 	return nil
 }
 
-func OutputRolesJSON(roles []client.Role) error {
+func OutputRolesJSON(roles []users.Role) error {
 	jsonData, err := json.MarshalIndent(roles, "", "  ")
 	if err != nil {
 		return fmt.Errorf("failed to marshal JSON: %w", err)
@@ -226,7 +226,7 @@ func OutputRolesJSON(roles []client.Role) error {
 	return nil
 }
 
-func OutputRolesTable(roles []client.Role) error {
+func OutputRolesTable(roles []users.Role) error {
 	if len(roles) == 0 {
 		fmt.Println("No roles found.")
 		return nil

@@ -10,6 +10,7 @@ import (
 	"github.com/charmbracelet/lipgloss/table"
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/run"
 	"github.com/input-output-hk/catalyst-forge/foundry/api/client"
+	"github.com/input-output-hk/catalyst-forge/foundry/api/client/gha"
 )
 
 type ListCmd struct {
@@ -17,7 +18,7 @@ type ListCmd struct {
 }
 
 func (c *ListCmd) Run(ctx run.RunContext, cl client.Client) error {
-	auths, err := cl.ListAuths(context.Background())
+	auths, err := cl.GHA().ListAuths(context.Background())
 	if err != nil {
 		return fmt.Errorf("failed to list authentication entries: %w", err)
 	}
@@ -29,7 +30,7 @@ func (c *ListCmd) Run(ctx run.RunContext, cl client.Client) error {
 	return outputTableList(auths)
 }
 
-func outputJSONList(auths []client.GHARepositoryAuth) error {
+func outputJSONList(auths []gha.GHARepositoryAuth) error {
 	jsonData, err := json.MarshalIndent(auths, "", "  ")
 	if err != nil {
 		return fmt.Errorf("failed to marshal JSON: %w", err)
@@ -38,7 +39,7 @@ func outputJSONList(auths []client.GHARepositoryAuth) error {
 	return nil
 }
 
-func outputTableList(auths []client.GHARepositoryAuth) error {
+func outputTableList(auths []gha.GHARepositoryAuth) error {
 	if len(auths) == 0 {
 		fmt.Println("No authentication entries found.")
 		return nil

@@ -7,7 +7,7 @@ import (
 
 	"github.com/input-output-hk/catalyst-forge/cli/cmd/cmds/api/auth/common"
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/run"
-	"github.com/input-output-hk/catalyst-forge/foundry/api/client"
+	"github.com/input-output-hk/catalyst-forge/foundry/api/client/users"
 )
 
 type UpdateCmd struct {
@@ -18,7 +18,7 @@ type UpdateCmd struct {
 	JSON     bool    `short:"j" help:"Output as prettified JSON instead of table."`
 }
 
-func (c *UpdateCmd) Run(ctx run.RunContext, cl client.Client) error {
+func (c *UpdateCmd) Run(ctx run.RunContext, cl interface{ Users() *users.UsersClient }) error {
 	if c.ID == nil && c.Email == nil {
 		return fmt.Errorf("either --id or --email must be specified")
 	}
@@ -40,11 +40,11 @@ func (c *UpdateCmd) Run(ctx run.RunContext, cl client.Client) error {
 }
 
 // updateUser updates a user by ID or email.
-func (c *UpdateCmd) updateUser(cl client.Client) (*client.User, error) {
+func (c *UpdateCmd) updateUser(cl interface{ Users() *users.UsersClient }) (*users.User, error) {
 	var userID uint
 
 	if c.Email != nil {
-		user, err := cl.GetUserByEmail(context.Background(), *c.Email)
+		user, err := cl.Users().GetByEmail(context.Background(), *c.Email)
 		if err != nil {
 			return nil, fmt.Errorf("failed to get user by email: %w", err)
 		}
@@ -57,7 +57,7 @@ func (c *UpdateCmd) updateUser(cl client.Client) (*client.User, error) {
 		userID = uint(parsedID)
 	}
 
-	req := &client.UpdateUserRequest{}
+	req := &users.UpdateUserRequest{}
 
 	if c.NewEmail != nil {
 		req.Email = *c.NewEmail
@@ -67,7 +67,7 @@ func (c *UpdateCmd) updateUser(cl client.Client) (*client.User, error) {
 		req.Status = *c.Status
 	}
 
-	user, err := cl.UpdateUser(context.Background(), userID, req)
+	user, err := cl.Users().Update(context.Background(), userID, req)
 	if err != nil {
 		return nil, fmt.Errorf("failed to update user: %w", err)
 	}

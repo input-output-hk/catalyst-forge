@@ -6,8 +6,9 @@ import (
 
 	"github.com/charmbracelet/huh"
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/run"
-	"github.com/input-output-hk/catalyst-forge/foundry/api/client"
-	"github.com/input-output-hk/catalyst-forge/foundry/api/pkg/auth"
+	"github.com/input-output-hk/catalyst-forge/foundry/api/client/auth"
+	"github.com/input-output-hk/catalyst-forge/foundry/api/client/gha"
+	authpkg "github.com/input-output-hk/catalyst-forge/foundry/api/pkg/auth"
 )
 
 type LoginCmd struct {
@@ -20,11 +21,14 @@ type EmailForm struct {
 	Email string `form:"email"`
 }
 
-func (c *LoginCmd) Run(ctx run.RunContext, cl client.Client) error {
+func (c *LoginCmd) Run(ctx run.RunContext, cl interface {
+	GHA() *gha.GHAClient
+	Auth() *auth.AuthClient
+}) error {
 	var jwt string
 	var form EmailForm
 
-	manager := auth.NewAuthManager(auth.WithFilesystem(ctx.FS))
+	manager := authpkg.NewAuthManager(authpkg.WithFilesystem(ctx.FS))
 
 	emailFlow := huh.NewForm(
 		huh.NewGroup(
@@ -48,7 +52,7 @@ func (c *LoginCmd) Run(ctx run.RunContext, cl client.Client) error {
 
 	switch c.Type {
 	case "gha":
-		resp, err := cl.ValidateToken(context.Background(), &client.ValidateTokenRequest{
+		resp, err := cl.GHA().ValidateToken(context.Background(), &gha.ValidateTokenRequest{
 			Token: c.Token,
 		})
 		if err != nil {
@@ -87,7 +91,7 @@ func (c *LoginCmd) Run(ctx run.RunContext, cl client.Client) error {
 			}
 
 			ctx.Logger.Debug("Creating challenge", "email", email, "kid", kp.Kid())
-			challenge, err := cl.CreateChallenge(context.Background(), &client.ChallengeRequest{
+			challenge, err := cl.Auth().CreateChallenge(context.Background(), &auth.ChallengeRequest{
 				Email: email,
 				Kid:   kp.Kid(),
 			})
@@ -102,7 +106,7 @@ func (c *LoginCmd) Run(ctx run.RunContext, cl client.Client) error {
 			}
 
 			ctx.Logger.Debug("Logging in", "challengeResponse", challengeResponse)
-			resp, err := cl.Login(context.Background(), challengeResponse)
+			resp, err := cl.Auth().Login(context.Background(), challengeResponse)
 			if err != nil {
 				return fmt.Errorf("failed to login: %w", err)
 			}

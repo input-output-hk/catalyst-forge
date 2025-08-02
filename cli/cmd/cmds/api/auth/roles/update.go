@@ -7,7 +7,7 @@ import (
 
 	"github.com/input-output-hk/catalyst-forge/cli/cmd/cmds/api/auth/common"
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/run"
-	"github.com/input-output-hk/catalyst-forge/foundry/api/client"
+	"github.com/input-output-hk/catalyst-forge/foundry/api/client/users"
 )
 
 type UpdateCmd struct {
@@ -18,7 +18,7 @@ type UpdateCmd struct {
 	JSON        bool     `short:"j" help:"Output as prettified JSON instead of table."`
 }
 
-func (c *UpdateCmd) Run(ctx run.RunContext, cl client.Client) error {
+func (c *UpdateCmd) Run(ctx run.RunContext, cl interface{ Roles() *users.RolesClient }) error {
 	if c.ID == nil && c.Name == nil {
 		return fmt.Errorf("either --id or --name must be specified")
 	}
@@ -40,11 +40,11 @@ func (c *UpdateCmd) Run(ctx run.RunContext, cl client.Client) error {
 }
 
 // updateRole updates a role by ID or name.
-func (c *UpdateCmd) updateRole(cl client.Client) (*client.Role, error) {
+func (c *UpdateCmd) updateRole(cl interface{ Roles() *users.RolesClient }) (*users.Role, error) {
 	var roleID uint
 
 	if c.Name != nil {
-		role, err := cl.GetRoleByName(context.Background(), *c.Name)
+		role, err := cl.Roles().GetByName(context.Background(), *c.Name)
 		if err != nil {
 			return nil, fmt.Errorf("failed to get role by name: %w", err)
 		}
@@ -57,17 +57,17 @@ func (c *UpdateCmd) updateRole(cl client.Client) (*client.Role, error) {
 		roleID = uint(parsedID)
 	}
 
-	req := &client.UpdateRoleRequest{}
+	req := &users.UpdateRoleRequest{}
 
-	var currentRole *client.Role
+	var currentRole *users.Role
 	var err error
 	if c.Name != nil {
-		currentRole, err = cl.GetRoleByName(context.Background(), *c.Name)
+		currentRole, err = cl.Roles().GetByName(context.Background(), *c.Name)
 		if err != nil {
 			return nil, fmt.Errorf("failed to get role by name: %w", err)
 		}
 	} else if c.ID != nil {
-		currentRole, err = cl.GetRole(context.Background(), roleID)
+		currentRole, err = cl.Roles().Get(context.Background(), roleID)
 		if err != nil {
 			return nil, fmt.Errorf("failed to get role by ID: %w", err)
 		}
@@ -86,7 +86,7 @@ func (c *UpdateCmd) updateRole(cl client.Client) (*client.Role, error) {
 		req.Permissions = currentRole.Permissions
 	}
 
-	role, err := cl.UpdateRole(context.Background(), roleID, req)
+	role, err := cl.Roles().Update(context.Background(), roleID, req)
 	if err != nil {
 		return nil, fmt.Errorf("failed to update role: %w", err)
 	}

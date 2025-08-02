@@ -10,6 +10,7 @@ import (
 	"github.com/charmbracelet/huh"
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/run"
 	"github.com/input-output-hk/catalyst-forge/foundry/api/client"
+	"github.com/input-output-hk/catalyst-forge/foundry/api/client/users"
 	"github.com/input-output-hk/catalyst-forge/foundry/api/pkg/auth"
 )
 
@@ -23,7 +24,10 @@ type RegisterForm struct {
 	Email    string `form:"email"`
 }
 
-func (c *RegisterCmd) Run(ctx run.RunContext, cl client.Client) error {
+func (c *RegisterCmd) Run(ctx run.RunContext, cl interface {
+	Users() *users.UsersClient
+	Keys() *users.KeysClient
+}) error {
 	var form RegisterForm
 
 	manager := auth.NewAuthManager(auth.WithFilesystem(ctx.FS))
@@ -82,13 +86,13 @@ func (c *RegisterCmd) Run(ctx run.RunContext, cl client.Client) error {
 	}
 
 	fmt.Println("Registering new user...")
-	_, err = cl.RegisterUser(context.Background(), &client.RegisterUserRequest{
+	_, err = cl.Users().Register(context.Background(), &users.RegisterUserRequest{
 		Email: form.Email,
 	})
 
-	if err != nil && !errors.Is(err, client.ErrStatusConflict) {
-		return fmt.Errorf("failed to register user: %w", err)
-	} else if err != nil {
+	// Check if the error is a conflict (user already exists)
+	var apiErr *client.APIError
+	if err != nil && errors.As(err, &apiErr) && apiErr.IsConflict() {
 		if !c.Force {
 			if err := userExistFlow.Run(); err != nil {
 				return fmt.Errorf("failed to run user exist flow: %w", err)
@@ -101,6 +105,8 @@ func (c *RegisterCmd) Run(ctx run.RunContext, cl client.Client) error {
 		} else {
 			fmt.Println("User already exists, registering key set...")
 		}
+	} else if err != nil {
+		return fmt.Errorf("failed to register user: %w", err)
 	} else {
 		fmt.Printf("User %s registered successfully\n", form.Email)
 	}
@@ -119,7 +125,7 @@ func (c *RegisterCmd) Run(ctx run.RunContext, cl client.Client) error {
 	fmt.Println("Key set saved successfully")
 
 	fmt.Println("Registering key set...")
-	_, err = cl.RegisterUserKey(context.Background(), &client.RegisterUserKeyRequest{
+	_, err = cl.Keys().Register(context.Background(), &users.RegisterUserKeyRequest{
 		Email:     form.Email,
 		Kid:       keyset.Kid(),
 		PubKeyB64: keyset.EncodePublicKey(),

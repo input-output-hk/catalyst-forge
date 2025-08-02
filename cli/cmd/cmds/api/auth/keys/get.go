@@ -8,6 +8,7 @@ import (
 	"github.com/input-output-hk/catalyst-forge/cli/cmd/cmds/api/auth/common"
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/run"
 	"github.com/input-output-hk/catalyst-forge/foundry/api/client"
+	"github.com/input-output-hk/catalyst-forge/foundry/api/client/users"
 )
 
 type GetCmd struct {
@@ -44,20 +45,20 @@ func (c *GetCmd) Run(ctx run.RunContext, cl client.Client) error {
 }
 
 // retrieveUserKey retrieves a user key by ID or KID.
-func (c *GetCmd) retrieveUserKey(cl client.Client) (*client.UserKey, error) {
+func (c *GetCmd) retrieveUserKey(cl client.Client) (*users.UserKey, error) {
 	if c.ID != nil {
 		id, err := strconv.ParseUint(*c.ID, 10, 32)
 		if err != nil {
 			return nil, fmt.Errorf("invalid ID format: %w", err)
 		}
-		userKey, err := cl.GetUserKey(context.Background(), uint(id))
+		userKey, err := cl.Keys().Get(context.Background(), uint(id))
 		if err != nil {
 			return nil, fmt.Errorf("failed to get user key by ID: %w", err)
 		}
 		return userKey, nil
 	}
 
-	userKey, err := cl.GetUserKeyByKid(context.Background(), *c.Kid)
+	userKey, err := cl.Keys().GetByKid(context.Background(), *c.Kid)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get user key by KID: %w", err)
 	}
@@ -71,15 +72,15 @@ func (c *GetCmd) getByUser(cl client.Client) error {
 		return fmt.Errorf("invalid user ID format: %w", err)
 	}
 
-	var userKeys []client.UserKey
+	var userKeys []users.UserKey
 
 	if c.Active {
-		userKeys, err = cl.GetActiveUserKeysByUserID(context.Background(), uint(userID))
+		userKeys, err = cl.Keys().GetActiveByUserID(context.Background(), uint(userID))
 		if err != nil {
 			return fmt.Errorf("failed to get active user keys: %w", err)
 		}
 	} else {
-		userKeys, err = cl.GetUserKeysByUserID(context.Background(), uint(userID))
+		userKeys, err = cl.Keys().GetByUserID(context.Background(), uint(userID))
 		if err != nil {
 			return fmt.Errorf("failed to get user keys: %w", err)
 		}

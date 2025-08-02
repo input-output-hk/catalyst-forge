@@ -8,6 +8,7 @@ import (
 	"github.com/input-output-hk/catalyst-forge/cli/cmd/cmds/api/auth/common"
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/run"
 	"github.com/input-output-hk/catalyst-forge/foundry/api/client"
+	"github.com/input-output-hk/catalyst-forge/foundry/api/client/users"
 )
 
 type RevokeCmd struct {
@@ -38,11 +39,11 @@ func (c *RevokeCmd) Run(ctx run.RunContext, cl client.Client) error {
 }
 
 // revokeUserKey revokes a user key by ID or KID.
-func (c *RevokeCmd) revokeUserKey(cl client.Client) (*client.UserKey, error) {
+func (c *RevokeCmd) revokeUserKey(cl client.Client) (*users.UserKey, error) {
 	var keyID uint
 
 	if c.Kid != nil {
-		userKey, err := cl.GetUserKeyByKid(context.Background(), *c.Kid)
+		userKey, err := cl.Keys().GetByKid(context.Background(), *c.Kid)
 		if err != nil {
 			return nil, fmt.Errorf("failed to get user key by KID: %w", err)
 		}
@@ -55,7 +56,7 @@ func (c *RevokeCmd) revokeUserKey(cl client.Client) (*client.UserKey, error) {
 		keyID = uint(parsedID)
 	}
 
-	userKey, err := cl.RevokeUserKey(context.Background(), keyID)
+	userKey, err := cl.Keys().Revoke(context.Background(), keyID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to revoke user key: %w", err)
 	}

@@ -44,7 +44,7 @@ func (c *DeleteCmd) deleteUserKey(cl client.Client) error {
 	var keyID uint
 
 	if c.Kid != nil {
-		userKey, err := cl.GetUserKeyByKid(context.Background(), *c.Kid)
+		userKey, err := cl.Keys().GetByKid(context.Background(), *c.Kid)
 		if err != nil {
 			return fmt.Errorf("failed to get user key by KID: %w", err)
 		}
@@ -57,7 +57,7 @@ func (c *DeleteCmd) deleteUserKey(cl client.Client) error {
 		keyID = uint(parsedID)
 	}
 
-	err := cl.DeleteUserKey(context.Background(), keyID)
+	err := cl.Keys().Delete(context.Background(), keyID)
 	if err != nil {
 		return fmt.Errorf("failed to delete user key: %w", err)
 	}

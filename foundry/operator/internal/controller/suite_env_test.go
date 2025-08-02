@@ -13,8 +13,13 @@ import (
 	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/go-git/go-git/v5/storage"
 	"github.com/go-git/go-git/v5/storage/filesystem"
-	api "github.com/input-output-hk/catalyst-forge/foundry/api/client"
-	am "github.com/input-output-hk/catalyst-forge/foundry/api/client/mocks"
+	"github.com/input-output-hk/catalyst-forge/foundry/api/client"
+	"github.com/input-output-hk/catalyst-forge/foundry/api/client/auth"
+	"github.com/input-output-hk/catalyst-forge/foundry/api/client/deployments"
+	"github.com/input-output-hk/catalyst-forge/foundry/api/client/deployments/mocks"
+	"github.com/input-output-hk/catalyst-forge/foundry/api/client/gha"
+	"github.com/input-output-hk/catalyst-forge/foundry/api/client/releases"
+	"github.com/input-output-hk/catalyst-forge/foundry/api/client/users"
 	foundryv1alpha1 "github.com/input-output-hk/catalyst-forge/foundry/operator/api/v1alpha1"
 	"github.com/input-output-hk/catalyst-forge/foundry/operator/pkg/config"
 	"github.com/input-output-hk/catalyst-forge/foundry/operator/pkg/handlers"
@@ -40,7 +45,9 @@ type mockEnv struct {
 	config                config.OperatorConfig
 	deployFs              *bfs.BillyFs
 	manifestContent       string
-	mockClient            *am.ClientMock
+	mockClient            client.Client
+	mockDeploymentsClient *mocks.DeploymentsClientInterfaceMock
+	mockEventsClient      *mocks.EventsClientInterfaceMock
 	mockClock             *MockClock
 	mockDeploymentHandler *handlers.ReleaseDeploymentHandler
 	mockManifestStore     deployment.ManifestGeneratorStore
@@ -48,7 +55,7 @@ type mockEnv struct {
 	mockRepoHandler       *handlers.RepoHandler
 	mockSecretStore       secrets.SecretStore
 	releaseDeploymentObj  *foundryv1alpha1.ReleaseDeployment
-	releaseDeployment     *api.ReleaseDeployment
+	releaseDeployment     *deployments.ReleaseDeployment
 	sourceFs              *bfs.BillyFs
 	sourceRepo            *gg.Repository
 }
@@ -77,10 +84,10 @@ func (m *mockEnv) Init(sourceFiles, deployFiles map[string]string, k8sClient k8s
 			ReleaseID: "project-001",
 		},
 	}
-	m.releaseDeployment = &api.ReleaseDeployment{
+	m.releaseDeployment = &deployments.ReleaseDeployment{
 		ID:     "project-001-123456789",
-		Status: api.DeploymentStatusPending,
-		Release: &api.Release{
+		Status: deployments.DeploymentStatusPending,
+		Release: &releases.Release{
 			ID:          "project-001",
 			SourceRepo:  "github.com/repo/source",
 			Project:     "project",
@@ -89,26 +96,36 @@ func (m *mockEnv) Init(sourceFiles, deployFiles map[string]string, k8sClient k8s
 		},
 	}
 
-	// Setup the mock API client
-	m.mockClient = &am.ClientMock{
-		AddDeploymentEventFunc: func(ctx context.Context, releaseID string, deployID string, name string, message string) (*api.ReleaseDeployment, error) {
-			m.releaseDeployment.Events = append(m.releaseDeployment.Events, api.DeploymentEvent{
-				Name:    name,
-				Message: message,
-			})
-			return m.releaseDeployment, nil
-		},
-		GetDeploymentFunc: func(ctx context.Context, releaseID string, deployID string) (*api.ReleaseDeployment, error) {
-			return m.releaseDeployment, nil
-		},
-		IncrementDeploymentAttemptsFunc: func(ctx context.Context, releaseID string, deployID string) (*api.ReleaseDeployment, error) {
-			m.releaseDeployment.Attempts++
-			return m.releaseDeployment, nil
-		},
-		UpdateDeploymentFunc: func(ctx context.Context, releaseID string, deployment *api.ReleaseDeployment) (*api.ReleaseDeployment, error) {
-			m.releaseDeployment = deployment
-			return m.releaseDeployment, nil
-		},
+	// Setup the mock category clients
+	m.mockDeploymentsClient = &mocks.DeploymentsClientInterfaceMock{}
+	m.mockEventsClient = &mocks.EventsClientInterfaceMock{}
+
+	// Setup the mock deployments client
+	m.mockDeploymentsClient.GetFunc = func(ctx context.Context, releaseID string, deployID string) (*deployments.ReleaseDeployment, error) {
+		return m.releaseDeployment, nil
+	}
+	m.mockDeploymentsClient.IncrementAttemptsFunc = func(ctx context.Context, releaseID string, deployID string) (*deployments.ReleaseDeployment, error) {
+		m.releaseDeployment.Attempts++
+		return m.releaseDeployment, nil
+	}
+	m.mockDeploymentsClient.UpdateFunc = func(ctx context.Context, releaseID string, deployment *deployments.ReleaseDeployment) (*deployments.ReleaseDeployment, error) {
+		m.releaseDeployment = deployment
+		return m.releaseDeployment, nil
+	}
+
+	// Setup the mock events client
+	m.mockEventsClient.AddFunc = func(ctx context.Context, releaseID string, deployID string, name string, message string) (*deployments.ReleaseDeployment, error) {
+		m.releaseDeployment.Events = append(m.releaseDeployment.Events, deployments.DeploymentEvent{
+			Name:    name,
+			Message: message,
+		})
+		return m.releaseDeployment, nil
+	}
+
+	// Create a mock client that returns our category clients
+	m.mockClient = &mockClient{
+		deployments: m.mockDeploymentsClient,
+		events:      m.mockEventsClient,
 	}
 
 	// Setup the mock Git remote
@@ -140,6 +157,48 @@ func (m *mockEnv) Init(sourceFiles, deployFiles map[string]string, k8sClient k8s
 	head, err := m.sourceRepo.Head()
 	Expect(err).ToNot(HaveOccurred())
 	m.releaseDeployment.Release.SourceCommit = head.Hash().String()
+}
+
+// mockClient implements client.Client for testing
+type mockClient struct {
+	deployments deployments.DeploymentsClientInterface
+	events      deployments.EventsClientInterface
+}
+
+func (m *mockClient) Users() users.UsersClientInterface {
+	return nil
+}
+
+func (m *mockClient) Roles() users.RolesClientInterface {
+	return nil
+}
+
+func (m *mockClient) Keys() users.KeysClientInterface {
+	return nil
+}
+
+func (m *mockClient) Auth() auth.AuthClientInterface {
+	return nil
+}
+
+func (m *mockClient) GHA() gha.GHAClientInterface {
+	return nil
+}
+
+func (m *mockClient) Releases() releases.ReleasesClientInterface {
+	return nil
+}
+
+func (m *mockClient) Aliases() releases.AliasesClientInterface {
+	return nil
+}
+
+func (m *mockClient) Deployments() deployments.DeploymentsClientInterface {
+	return m.deployments
+}
+
+func (m *mockClient) Events() deployments.EventsClientInterface {
+	return m.events
 }
 
 func (m *mockEnv) ConfigureController(ctrl *ReleaseDeploymentReconciler) {

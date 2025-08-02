@@ -6,7 +6,7 @@ import (
 	"strconv"
 
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/run"
-	"github.com/input-output-hk/catalyst-forge/foundry/api/client"
+	"github.com/input-output-hk/catalyst-forge/foundry/api/client/users"
 )
 
 type DeleteCmd struct {
@@ -14,7 +14,7 @@ type DeleteCmd struct {
 	Email *string `short:"e" help:"The email of the user to delete (mutually exclusive with --id)."`
 }
 
-func (c *DeleteCmd) Run(ctx run.RunContext, cl client.Client) error {
+func (c *DeleteCmd) Run(ctx run.RunContext, cl interface{ Users() *users.UsersClient }) error {
 	if c.ID == nil && c.Email == nil {
 		return fmt.Errorf("either --id or --email must be specified")
 	}
@@ -40,11 +40,11 @@ func (c *DeleteCmd) Run(ctx run.RunContext, cl client.Client) error {
 }
 
 // deleteUser deletes a user by ID or email.
-func (c *DeleteCmd) deleteUser(cl client.Client) error {
+func (c *DeleteCmd) deleteUser(cl interface{ Users() *users.UsersClient }) error {
 	var userID uint
 
 	if c.Email != nil {
-		user, err := cl.GetUserByEmail(context.Background(), *c.Email)
+		user, err := cl.Users().GetByEmail(context.Background(), *c.Email)
 		if err != nil {
 			return fmt.Errorf("failed to get user by email: %w", err)
 		}
@@ -57,7 +57,7 @@ func (c *DeleteCmd) deleteUser(cl client.Client) error {
 		userID = uint(parsedID)
 	}
 
-	err := cl.DeleteUser(context.Background(), userID)
+	err := cl.Users().Delete(context.Background(), userID)
 	if err != nil {
 		return fmt.Errorf("failed to delete user: %w", err)
 	}
