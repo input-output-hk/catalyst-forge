@@ -34,10 +34,10 @@ type CreateUserKeyRequest struct {
 
 // UpdateUserKeyRequest represents the request body for updating a user key
 type UpdateUserKeyRequest struct {
-	UserID    uint   `json:"user_id" binding:"required"`
-	Kid       string `json:"kid" binding:"required"`
-	PubKeyB64 string `json:"pubkey_b64" binding:"required"`
-	Status    string `json:"status,omitempty"`
+	UserID    *uint   `json:"user_id,omitempty"`
+	Kid       *string `json:"kid,omitempty"`
+	PubKeyB64 *string `json:"pubkey_b64,omitempty"`
+	Status    *string `json:"status,omitempty"`
 }
 
 // RegisterUserKeyRequest represents the request body for registering a user key
@@ -382,12 +382,18 @@ func (h *UserKeyHandler) UpdateUserKey(c *gin.Context) {
 		return
 	}
 
-	// Update fields
-	existingUserKey.UserID = req.UserID
-	existingUserKey.Kid = req.Kid
-	existingUserKey.PubKeyB64 = req.PubKeyB64
-	if req.Status != "" {
-		existingUserKey.Status = user.UserKeyStatus(req.Status)
+	// Update fields only if provided
+	if req.UserID != nil {
+		existingUserKey.UserID = *req.UserID
+	}
+	if req.Kid != nil {
+		existingUserKey.Kid = *req.Kid
+	}
+	if req.PubKeyB64 != nil {
+		existingUserKey.PubKeyB64 = *req.PubKeyB64
+	}
+	if req.Status != nil {
+		existingUserKey.Status = user.UserKeyStatus(*req.Status)
 	}
 
 	if err := h.userKeyService.UpdateUserKey(existingUserKey); err != nil {

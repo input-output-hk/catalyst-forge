@@ -138,6 +138,7 @@ func SetupRouter(
 	r.DELETE("/auth/keys/:id", am.ValidatePermissions([]auth.Permission{auth.PermUserKeyWrite}), userKeyHandler.DeleteUserKey)
 	r.POST("/auth/keys/:id/revoke", am.ValidatePermissions([]auth.Permission{auth.PermUserKeyWrite}), userKeyHandler.RevokeUserKey)
 	r.GET("/auth/keys/user/:user_id", am.ValidatePermissions([]auth.Permission{auth.PermUserKeyRead}), userKeyHandler.GetUserKeysByUserID)
+	r.GET("/auth/keys/user/:user_id/active", am.ValidatePermissions([]auth.Permission{auth.PermUserKeyRead}), userKeyHandler.GetActiveUserKeysByUserID)
 	r.GET("/auth/keys/user/:user_id/inactive", am.ValidatePermissions([]auth.Permission{auth.PermUserKeyRead}), userKeyHandler.GetInactiveUserKeysByUserID)
 
 	// Role endpoints

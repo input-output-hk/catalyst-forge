@@ -66,19 +66,20 @@ func (c *UpdateCmd) updateUserKey(cl client.Client) (*client.UserKey, error) {
 		if err != nil {
 			return nil, fmt.Errorf("invalid user ID format: %w", err)
 		}
-		req.UserID = uint(userID)
+		userIDUint := uint(userID)
+		req.UserID = &userIDUint
 	}
 
 	if c.NewKid != nil {
-		req.Kid = *c.NewKid
+		req.Kid = c.NewKid
 	}
 
 	if c.PubKeyB64 != nil {
-		req.PubKeyB64 = *c.PubKeyB64
+		req.PubKeyB64 = c.PubKeyB64
 	}
 
 	if c.Status != nil {
-		req.Status = *c.Status
+		req.Status = c.Status
 	}
 
 	userKey, err := cl.UpdateUserKey(context.Background(), keyID, req)

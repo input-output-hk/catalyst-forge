@@ -127,10 +127,10 @@ type LoginResponse struct {
 
 // UpdateUserKeyRequest represents the request body for updating a user key
 type UpdateUserKeyRequest struct {
-	UserID    uint   `json:"user_id"`
-	Kid       string `json:"kid"`
-	PubKeyB64 string `json:"pubkey_b64"`
-	Status    string `json:"status,omitempty"`
+	UserID    *uint   `json:"user_id,omitempty"`
+	Kid       *string `json:"kid,omitempty"`
+	PubKeyB64 *string `json:"pubkey_b64,omitempty"`
+	Status    *string `json:"status,omitempty"`
 }
 
 // GHARepositoryAuth represents the authentication configuration for a GitHub repository

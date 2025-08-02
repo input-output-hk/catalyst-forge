@@ -59,12 +59,31 @@ func (c *UpdateCmd) updateRole(cl client.Client) (*client.Role, error) {
 
 	req := &client.UpdateRoleRequest{}
 
+	var currentRole *client.Role
+	var err error
+	if c.Name != nil {
+		currentRole, err = cl.GetRoleByName(context.Background(), *c.Name)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get role by name: %w", err)
+		}
+	} else if c.ID != nil {
+		currentRole, err = cl.GetRole(context.Background(), roleID)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get role by ID: %w", err)
+		}
+	}
+
 	if c.NewName != nil {
 		req.Name = *c.NewName
+	} else {
+		req.Name = currentRole.Name
 	}
 
 	if len(c.Permissions) > 0 {
 		req.Permissions = c.Permissions
+	} else {
+		// If no permissions provided, use the current permissions
+		req.Permissions = currentRole.Permissions
 	}
 
 	role, err := cl.UpdateRole(context.Background(), roleID, req)

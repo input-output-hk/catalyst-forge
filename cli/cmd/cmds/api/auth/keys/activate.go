@@ -66,10 +66,10 @@ func (c *ActivateCmd) activateUserKey(cl client.Client) (*client.UserKey, error)
 	}
 
 	req := &client.UpdateUserKeyRequest{
-		UserID:    userKey.UserID,
-		Kid:       userKey.Kid,
-		PubKeyB64: userKey.PubKeyB64,
-		Status:    "active",
+		UserID:    &userKey.UserID,
+		Kid:       &userKey.Kid,
+		PubKeyB64: &userKey.PubKeyB64,
+		Status:    &[]string{"active"}[0],
 	}
 
 	updatedUserKey, err := cl.UpdateUserKey(context.Background(), userKey.ID, req)
