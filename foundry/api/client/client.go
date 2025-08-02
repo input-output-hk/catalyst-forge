@@ -12,7 +12,7 @@ import (
 
 	"github.com/input-output-hk/catalyst-forge/foundry/api/client/auth"
 	"github.com/input-output-hk/catalyst-forge/foundry/api/client/deployments"
-	"github.com/input-output-hk/catalyst-forge/foundry/api/client/gha"
+	"github.com/input-output-hk/catalyst-forge/foundry/api/client/github"
 	"github.com/input-output-hk/catalyst-forge/foundry/api/client/releases"
 	"github.com/input-output-hk/catalyst-forge/foundry/api/client/users"
 )
@@ -81,7 +81,7 @@ type Client interface {
 	Roles() users.RolesClientInterface
 	Keys() users.KeysClientInterface
 	Auth() auth.AuthClientInterface
-	GHA() gha.GHAClientInterface
+	Github() github.GithubClientInterface
 	Releases() releases.ReleasesClientInterface
 	Aliases() releases.AliasesClientInterface
 	Deployments() deployments.DeploymentsClientInterface
@@ -99,7 +99,7 @@ type HTTPClient struct {
 	roles       users.RolesClientInterface
 	keys        users.KeysClientInterface
 	auth        auth.AuthClientInterface
-	gha         gha.GHAClientInterface
+	github      github.GithubClientInterface
 	releases    releases.ReleasesClientInterface
 	aliases     releases.AliasesClientInterface
 	deployments deployments.DeploymentsClientInterface
@@ -148,7 +148,7 @@ func NewClient(baseURL string, options ...ClientOption) Client {
 	client.roles = users.NewRolesClient(client.do)
 	client.keys = users.NewKeysClient(client.do)
 	client.auth = auth.NewAuthClient(client.do)
-	client.gha = gha.NewGHAClient(client.do)
+	client.github = github.NewGithubClient(client.do)
 	client.releases = releases.NewReleasesClient(client.do)
 	client.aliases = releases.NewAliasesClient(client.do)
 	client.deployments = deployments.NewDeploymentsClient(client.do)
@@ -248,8 +248,8 @@ func (c *HTTPClient) Auth() auth.AuthClientInterface {
 	return c.auth
 }
 
-func (c *HTTPClient) GHA() gha.GHAClientInterface {
-	return c.gha
+func (c *HTTPClient) Github() github.GithubClientInterface {
+	return c.github
 }
 
 func (c *HTTPClient) Releases() releases.ReleasesClientInterface {

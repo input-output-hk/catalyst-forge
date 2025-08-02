@@ -109,7 +109,7 @@ func (r *RunCmd) Run() error {
 		&models.IDCounter{},
 		&models.ReleaseAlias{},
 		&models.DeploymentEvent{},
-		&models.GHARepositoryAuth{},
+		&models.GithubRepositoryAuth{},
 		&user.User{},
 		&user.Role{},
 		&user.UserRole{},
@@ -158,7 +158,7 @@ func (r *RunCmd) Run() error {
 	counterRepo := repository.NewIDCounterRepository(db)
 	aliasRepo := repository.NewAliasRepository(db)
 	eventRepo := repository.NewEventRepository(db)
-	ghaAuthRepo := repository.NewGHAAuthRepository(db)
+	ghaAuthRepo := repository.NewGithubAuthRepository(db)
 
 	// Initialize user repositories
 	userRepo := userrepo.NewUserRepository(db)
@@ -169,7 +169,7 @@ func (r *RunCmd) Run() error {
 	// Initialize services
 	releaseService := service.NewReleaseService(releaseRepo, aliasRepo, counterRepo, deploymentRepo)
 	deploymentService := service.NewDeploymentService(deploymentRepo, releaseRepo, eventRepo, k8sClient, db, logger)
-	ghaAuthService := service.NewGHAAuthService(ghaAuthRepo, logger)
+	ghaAuthService := service.NewGithubAuthService(ghaAuthRepo, logger)
 
 	// Initialize user services
 	userService := userservice.NewUserService(userRepo, logger)

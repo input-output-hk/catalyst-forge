@@ -1,4 +1,4 @@
-package gha
+package github
 
 import (
 	"time"
@@ -6,8 +6,8 @@ import (
 	"github.com/input-output-hk/catalyst-forge/foundry/api/pkg/auth"
 )
 
-// GHARepositoryAuth represents the authentication configuration for a GitHub repository
-type GHARepositoryAuth struct {
+// GithubRepositoryAuth represents the authentication configuration for a GitHub repository
+type GithubRepositoryAuth struct {
 	ID          uint      `json:"id"`
 	Repository  string    `json:"repository"`  // Format: "owner/repo"
 	Permissions []string  `json:"permissions"` // Array of permission strings

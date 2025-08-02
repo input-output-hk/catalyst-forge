@@ -1,4 +1,4 @@
-package gha
+package github
 
 import (
 	"context"
@@ -13,7 +13,7 @@ type DeleteCmd struct {
 }
 
 func (c *DeleteCmd) Run(ctx run.RunContext, cl client.Client) error {
-	err := cl.GHA().DeleteAuth(context.Background(), c.ID)
+	err := cl.Github().DeleteAuth(context.Background(), c.ID)
 	if err != nil {
 		return fmt.Errorf("failed to delete authentication entry: %w", err)
 	}

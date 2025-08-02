@@ -15,9 +15,9 @@ import (
 	"github.com/input-output-hk/catalyst-forge/foundry/api/pkg/auth/jwt"
 )
 
-// GHARepositoryAuthResponse represents the response structure for GHA authentication
+// GithubRepositoryAuthResponse represents the response structure for GHA authentication
 // This is used to avoid the pq.StringArray issue in Swagger generation
-type GHARepositoryAuthResponse struct {
+type GithubRepositoryAuthResponse struct {
 	ID          uint      `json:"id"`
 	Repository  string    `json:"repository"`
 	Permissions []string  `json:"permissions"`
@@ -29,17 +29,17 @@ type GHARepositoryAuthResponse struct {
 	UpdatedAt   time.Time `json:"updated_at"`
 }
 
-// GHAHandler handles GitHub Actions authentication endpoints
-type GHAHandler struct {
+// GithubHandler handles GitHub Actions authentication endpoints
+type GithubHandler struct {
 	jwtManager  *jwt.JWTManager
 	oidcClient  ghauth.GithubActionsOIDCClient
-	authService service.GHAAuthService
+	authService service.GithubAuthService
 	logger      *slog.Logger
 }
 
-// NewGHAHandler creates a new GHA authentication handler
-func NewGHAHandler(jwtManager *jwt.JWTManager, oidcClient ghauth.GithubActionsOIDCClient, authService service.GHAAuthService, logger *slog.Logger) *GHAHandler {
-	return &GHAHandler{
+// NewGithubHandler creates a new GitHub authentication handler
+func NewGithubHandler(jwtManager *jwt.JWTManager, oidcClient ghauth.GithubActionsOIDCClient, authService service.GithubAuthService, logger *slog.Logger) *GithubHandler {
+	return &GithubHandler{
 		jwtManager:  jwtManager,
 		oidcClient:  oidcClient,
 		authService: authService,
@@ -76,7 +76,7 @@ type UpdateAuthRequest struct {
 	Description string            `json:"description,omitempty"`
 }
 
-// ValidateToken handles the /gha/validate endpoint
+// ValidateToken handles the /auth/github/login endpoint
 // @Summary Validate GitHub Actions token
 // @Description Validate a GitHub Actions OIDC token and return a JWT token
 // @Tags gha
@@ -88,8 +88,8 @@ type UpdateAuthRequest struct {
 // @Failure 401 {object} map[string]interface{} "Invalid token"
 // @Failure 403 {object} map[string]interface{} "Repository not authorized"
 // @Failure 500 {object} map[string]interface{} "Internal server error"
-// @Router /gha/validate [post]
-func (h *GHAHandler) ValidateToken(c *gin.Context) {
+// @Router /auth/github/login [post]
+func (h *GithubHandler) ValidateToken(c *gin.Context) {
 	var req ValidateTokenRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		h.logger.Warn("Invalid request body", "error", err)
@@ -146,7 +146,7 @@ func (h *GHAHandler) ValidateToken(c *gin.Context) {
 	})
 }
 
-// CreateAuth handles the POST /gha/auth endpoint
+// CreateAuth handles the POST /auth/github endpoint
 // @Summary Create GHA authentication configuration
 // @Description Create a new GitHub Actions authentication configuration for a repository
 // @Tags gha
@@ -154,12 +154,12 @@ func (h *GHAHandler) ValidateToken(c *gin.Context) {
 // @Produce json
 // @Security BearerAuth
 // @Param request body CreateAuthRequest true "GHA authentication configuration"
-// @Success 201 {object} GHARepositoryAuthResponse "Authentication configuration created"
+// @Success 201 {object} GithubRepositoryAuthResponse "Authentication configuration created"
 // @Failure 400 {object} map[string]interface{} "Invalid request"
 // @Failure 401 {object} map[string]interface{} "Authentication required"
 // @Failure 500 {object} map[string]interface{} "Internal server error"
-// @Router /gha/auth [post]
-func (h *GHAHandler) CreateAuth(c *gin.Context) {
+// @Router /auth/github [post]
+func (h *GithubHandler) CreateAuth(c *gin.Context) {
 	var req CreateAuthRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		h.logger.Warn("Invalid request body", "error", err)
@@ -182,7 +182,7 @@ func (h *GHAHandler) CreateAuth(c *gin.Context) {
 	authenticatedUser := user.(*middleware.AuthenticatedUser)
 
 	// Create the authentication configuration
-	auth := &models.GHARepositoryAuth{
+	auth := &models.GithubRepositoryAuth{
 		Repository:  req.Repository,
 		Enabled:     req.Enabled,
 		Description: req.Description,
@@ -206,7 +206,7 @@ func (h *GHAHandler) CreateAuth(c *gin.Context) {
 	c.JSON(http.StatusCreated, auth)
 }
 
-// GetAuth handles the GET /gha/auth/:id endpoint
+// GetAuth handles the GET /auth/github/:id endpoint
 // @Summary Get GHA authentication configuration by ID
 // @Description Get a specific GitHub Actions authentication configuration by its ID
 // @Tags gha
@@ -214,12 +214,12 @@ func (h *GHAHandler) CreateAuth(c *gin.Context) {
 // @Produce json
 // @Security BearerAuth
 // @Param id path int true "Authentication configuration ID"
-// @Success 200 {object} GHARepositoryAuthResponse "Authentication configuration"
+// @Success 200 {object} GithubRepositoryAuthResponse "Authentication configuration"
 // @Failure 400 {object} map[string]interface{} "Invalid ID parameter"
 // @Failure 401 {object} map[string]interface{} "Authentication required"
 // @Failure 404 {object} map[string]interface{} "Authentication configuration not found"
-// @Router /gha/auth/{id} [get]
-func (h *GHAHandler) GetAuth(c *gin.Context) {
+// @Router /auth/github/{id} [get]
+func (h *GithubHandler) GetAuth(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := strconv.ParseUint(idStr, 10, 32)
 	if err != nil {
@@ -242,7 +242,7 @@ func (h *GHAHandler) GetAuth(c *gin.Context) {
 	c.JSON(http.StatusOK, auth)
 }
 
-// GetAuthByRepository handles the GET /gha/auth/repository/:repository endpoint
+// GetAuthByRepository handles the GET /auth/github/repository/:repository endpoint
 // @Summary Get GHA authentication configuration by repository
 // @Description Get a GitHub Actions authentication configuration by repository name
 // @Tags gha
@@ -250,11 +250,11 @@ func (h *GHAHandler) GetAuth(c *gin.Context) {
 // @Produce json
 // @Security BearerAuth
 // @Param repository path string true "Repository name"
-// @Success 200 {object} GHARepositoryAuthResponse "Authentication configuration"
+// @Success 200 {object} GithubRepositoryAuthResponse "Authentication configuration"
 // @Failure 401 {object} map[string]interface{} "Authentication required"
 // @Failure 404 {object} map[string]interface{} "Authentication configuration not found"
-// @Router /gha/auth/repository/{repository} [get]
-func (h *GHAHandler) GetAuthByRepository(c *gin.Context) {
+// @Router /auth/github/repository/{repository} [get]
+func (h *GithubHandler) GetAuthByRepository(c *gin.Context) {
 	repository := c.Param("repository")
 
 	auth, err := h.authService.GetAuthByRepository(repository)
@@ -269,7 +269,7 @@ func (h *GHAHandler) GetAuthByRepository(c *gin.Context) {
 	c.JSON(http.StatusOK, auth)
 }
 
-// UpdateAuth handles the PUT /gha/auth/:id endpoint
+// UpdateAuth handles the PUT /auth/github/:id endpoint
 // @Summary Update GHA authentication configuration
 // @Description Update an existing GitHub Actions authentication configuration
 // @Tags gha
@@ -278,13 +278,13 @@ func (h *GHAHandler) GetAuthByRepository(c *gin.Context) {
 // @Security BearerAuth
 // @Param id path int true "Authentication configuration ID"
 // @Param request body UpdateAuthRequest true "Updated GHA authentication configuration"
-// @Success 200 {object} GHARepositoryAuthResponse "Authentication configuration updated"
+// @Success 200 {object} GithubRepositoryAuthResponse "Authentication configuration updated"
 // @Failure 400 {object} map[string]interface{} "Invalid request"
 // @Failure 401 {object} map[string]interface{} "Authentication required"
 // @Failure 404 {object} map[string]interface{} "Authentication configuration not found"
 // @Failure 500 {object} map[string]interface{} "Internal server error"
-// @Router /gha/auth/{id} [put]
-func (h *GHAHandler) UpdateAuth(c *gin.Context) {
+// @Router /auth/github/{id} [put]
+func (h *GithubHandler) UpdateAuth(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := strconv.ParseUint(idStr, 10, 32)
 	if err != nil {
@@ -349,7 +349,7 @@ func (h *GHAHandler) UpdateAuth(c *gin.Context) {
 	c.JSON(http.StatusOK, existing)
 }
 
-// DeleteAuth handles the DELETE /gha/auth/:id endpoint
+// DeleteAuth handles the DELETE /auth/github/:id endpoint
 // @Summary Delete GHA authentication configuration
 // @Description Delete a GitHub Actions authentication configuration
 // @Tags gha
@@ -361,8 +361,8 @@ func (h *GHAHandler) UpdateAuth(c *gin.Context) {
 // @Failure 400 {object} map[string]interface{} "Invalid ID parameter"
 // @Failure 401 {object} map[string]interface{} "Authentication required"
 // @Failure 500 {object} map[string]interface{} "Internal server error"
-// @Router /gha/auth/{id} [delete]
-func (h *GHAHandler) DeleteAuth(c *gin.Context) {
+// @Router /auth/github/{id} [delete]
+func (h *GithubHandler) DeleteAuth(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := strconv.ParseUint(idStr, 10, 32)
 	if err != nil {
@@ -388,18 +388,18 @@ func (h *GHAHandler) DeleteAuth(c *gin.Context) {
 	})
 }
 
-// ListAuths handles the GET /gha/auth endpoint
+// ListAuths handles the GET /auth/github endpoint
 // @Summary List GHA authentication configurations
 // @Description Get all GitHub Actions authentication configurations
 // @Tags gha
 // @Accept json
 // @Produce json
 // @Security BearerAuth
-// @Success 200 {array} GHARepositoryAuthResponse "List of authentication configurations"
+// @Success 200 {array} GithubRepositoryAuthResponse "List of authentication configurations"
 // @Failure 401 {object} map[string]interface{} "Authentication required"
 // @Failure 500 {object} map[string]interface{} "Internal server error"
-// @Router /gha/auth [get]
-func (h *GHAHandler) ListAuths(c *gin.Context) {
+// @Router /auth/github [get]
+func (h *GithubHandler) ListAuths(c *gin.Context) {
 	auths, err := h.authService.ListAuths()
 	if err != nil {
 		h.logger.Error("Failed to list GHA authentication configurations", "error", err)

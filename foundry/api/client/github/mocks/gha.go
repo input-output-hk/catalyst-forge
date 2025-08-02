@@ -9,32 +9,32 @@ import (
 	"sync"
 )
 
-// Ensure, that GHAClientInterfaceMock does implement gha.GHAClientInterface.
+// Ensure, that GithubClientInterfaceMock does implement gha.GithubClientInterface.
 // If this is not the case, regenerate this file with moq.
-var _ gha.GHAClientInterface = &GHAClientInterfaceMock{}
+var _ gha.GithubClientInterface = &GithubClientInterfaceMock{}
 
-// GHAClientInterfaceMock is a mock implementation of gha.GHAClientInterface.
+// GithubClientInterfaceMock is a mock implementation of gha.GithubClientInterface.
 //
-//	func TestSomethingThatUsesGHAClientInterface(t *testing.T) {
+//	func TestSomethingThatUsesGithubClientInterface(t *testing.T) {
 //
-//		// make and configure a mocked gha.GHAClientInterface
-//		mockedGHAClientInterface := &GHAClientInterfaceMock{
-//			CreateAuthFunc: func(ctx context.Context, req *gha.CreateAuthRequest) (*gha.GHARepositoryAuth, error) {
+//		// make and configure a mocked gha.GithubClientInterface
+//		mockedGithubClientInterface := &GithubClientInterfaceMock{
+//			CreateAuthFunc: func(ctx context.Context, req *gha.CreateAuthRequest) (*gha.GithubRepositoryAuth, error) {
 //				panic("mock out the CreateAuth method")
 //			},
 //			DeleteAuthFunc: func(ctx context.Context, id uint) error {
 //				panic("mock out the DeleteAuth method")
 //			},
-//			GetAuthFunc: func(ctx context.Context, id uint) (*gha.GHARepositoryAuth, error) {
+//			GetAuthFunc: func(ctx context.Context, id uint) (*gha.GithubRepositoryAuth, error) {
 //				panic("mock out the GetAuth method")
 //			},
-//			GetAuthByRepositoryFunc: func(ctx context.Context, repository string) (*gha.GHARepositoryAuth, error) {
+//			GetAuthByRepositoryFunc: func(ctx context.Context, repository string) (*gha.GithubRepositoryAuth, error) {
 //				panic("mock out the GetAuthByRepository method")
 //			},
-//			ListAuthsFunc: func(ctx context.Context) ([]gha.GHARepositoryAuth, error) {
+//			ListAuthsFunc: func(ctx context.Context) ([]gha.GithubRepositoryAuth, error) {
 //				panic("mock out the ListAuths method")
 //			},
-//			UpdateAuthFunc: func(ctx context.Context, id uint, req *gha.UpdateAuthRequest) (*gha.GHARepositoryAuth, error) {
+//			UpdateAuthFunc: func(ctx context.Context, id uint, req *gha.UpdateAuthRequest) (*gha.GithubRepositoryAuth, error) {
 //				panic("mock out the UpdateAuth method")
 //			},
 //			ValidateTokenFunc: func(ctx context.Context, req *gha.ValidateTokenRequest) (*gha.ValidateTokenResponse, error) {
@@ -42,28 +42,28 @@ var _ gha.GHAClientInterface = &GHAClientInterfaceMock{}
 //			},
 //		}
 //
-//		// use mockedGHAClientInterface in code that requires gha.GHAClientInterface
+//		// use mockedGithubClientInterface in code that requires gha.GithubClientInterface
 //		// and then make assertions.
 //
 //	}
-type GHAClientInterfaceMock struct {
+type GithubClientInterfaceMock struct {
 	// CreateAuthFunc mocks the CreateAuth method.
-	CreateAuthFunc func(ctx context.Context, req *gha.CreateAuthRequest) (*gha.GHARepositoryAuth, error)
+	CreateAuthFunc func(ctx context.Context, req *gha.CreateAuthRequest) (*gha.GithubRepositoryAuth, error)
 
 	// DeleteAuthFunc mocks the DeleteAuth method.
 	DeleteAuthFunc func(ctx context.Context, id uint) error
 
 	// GetAuthFunc mocks the GetAuth method.
-	GetAuthFunc func(ctx context.Context, id uint) (*gha.GHARepositoryAuth, error)
+	GetAuthFunc func(ctx context.Context, id uint) (*gha.GithubRepositoryAuth, error)
 
 	// GetAuthByRepositoryFunc mocks the GetAuthByRepository method.
-	GetAuthByRepositoryFunc func(ctx context.Context, repository string) (*gha.GHARepositoryAuth, error)
+	GetAuthByRepositoryFunc func(ctx context.Context, repository string) (*gha.GithubRepositoryAuth, error)
 
 	// ListAuthsFunc mocks the ListAuths method.
-	ListAuthsFunc func(ctx context.Context) ([]gha.GHARepositoryAuth, error)
+	ListAuthsFunc func(ctx context.Context) ([]gha.GithubRepositoryAuth, error)
 
 	// UpdateAuthFunc mocks the UpdateAuth method.
-	UpdateAuthFunc func(ctx context.Context, id uint, req *gha.UpdateAuthRequest) (*gha.GHARepositoryAuth, error)
+	UpdateAuthFunc func(ctx context.Context, id uint, req *gha.UpdateAuthRequest) (*gha.GithubRepositoryAuth, error)
 
 	// ValidateTokenFunc mocks the ValidateToken method.
 	ValidateTokenFunc func(ctx context.Context, req *gha.ValidateTokenRequest) (*gha.ValidateTokenResponse, error)
@@ -130,9 +130,9 @@ type GHAClientInterfaceMock struct {
 }
 
 // CreateAuth calls CreateAuthFunc.
-func (mock *GHAClientInterfaceMock) CreateAuth(ctx context.Context, req *gha.CreateAuthRequest) (*gha.GHARepositoryAuth, error) {
+func (mock *GithubClientInterfaceMock) CreateAuth(ctx context.Context, req *gha.CreateAuthRequest) (*gha.GithubRepositoryAuth, error) {
 	if mock.CreateAuthFunc == nil {
-		panic("GHAClientInterfaceMock.CreateAuthFunc: method is nil but GHAClientInterface.CreateAuth was just called")
+		panic("GithubClientInterfaceMock.CreateAuthFunc: method is nil but GithubClientInterface.CreateAuth was just called")
 	}
 	callInfo := struct {
 		Ctx context.Context
@@ -150,8 +150,8 @@ func (mock *GHAClientInterfaceMock) CreateAuth(ctx context.Context, req *gha.Cre
 // CreateAuthCalls gets all the calls that were made to CreateAuth.
 // Check the length with:
 //
-//	len(mockedGHAClientInterface.CreateAuthCalls())
-func (mock *GHAClientInterfaceMock) CreateAuthCalls() []struct {
+//	len(mockedGithubClientInterface.CreateAuthCalls())
+func (mock *GithubClientInterfaceMock) CreateAuthCalls() []struct {
 	Ctx context.Context
 	Req *gha.CreateAuthRequest
 } {
@@ -166,9 +166,9 @@ func (mock *GHAClientInterfaceMock) CreateAuthCalls() []struct {
 }
 
 // DeleteAuth calls DeleteAuthFunc.
-func (mock *GHAClientInterfaceMock) DeleteAuth(ctx context.Context, id uint) error {
+func (mock *GithubClientInterfaceMock) DeleteAuth(ctx context.Context, id uint) error {
 	if mock.DeleteAuthFunc == nil {
-		panic("GHAClientInterfaceMock.DeleteAuthFunc: method is nil but GHAClientInterface.DeleteAuth was just called")
+		panic("GithubClientInterfaceMock.DeleteAuthFunc: method is nil but GithubClientInterface.DeleteAuth was just called")
 	}
 	callInfo := struct {
 		Ctx context.Context
@@ -186,8 +186,8 @@ func (mock *GHAClientInterfaceMock) DeleteAuth(ctx context.Context, id uint) err
 // DeleteAuthCalls gets all the calls that were made to DeleteAuth.
 // Check the length with:
 //
-//	len(mockedGHAClientInterface.DeleteAuthCalls())
-func (mock *GHAClientInterfaceMock) DeleteAuthCalls() []struct {
+//	len(mockedGithubClientInterface.DeleteAuthCalls())
+func (mock *GithubClientInterfaceMock) DeleteAuthCalls() []struct {
 	Ctx context.Context
 	ID  uint
 } {
@@ -202,9 +202,9 @@ func (mock *GHAClientInterfaceMock) DeleteAuthCalls() []struct {
 }
 
 // GetAuth calls GetAuthFunc.
-func (mock *GHAClientInterfaceMock) GetAuth(ctx context.Context, id uint) (*gha.GHARepositoryAuth, error) {
+func (mock *GithubClientInterfaceMock) GetAuth(ctx context.Context, id uint) (*gha.GithubRepositoryAuth, error) {
 	if mock.GetAuthFunc == nil {
-		panic("GHAClientInterfaceMock.GetAuthFunc: method is nil but GHAClientInterface.GetAuth was just called")
+		panic("GithubClientInterfaceMock.GetAuthFunc: method is nil but GithubClientInterface.GetAuth was just called")
 	}
 	callInfo := struct {
 		Ctx context.Context
@@ -222,8 +222,8 @@ func (mock *GHAClientInterfaceMock) GetAuth(ctx context.Context, id uint) (*gha.
 // GetAuthCalls gets all the calls that were made to GetAuth.
 // Check the length with:
 //
-//	len(mockedGHAClientInterface.GetAuthCalls())
-func (mock *GHAClientInterfaceMock) GetAuthCalls() []struct {
+//	len(mockedGithubClientInterface.GetAuthCalls())
+func (mock *GithubClientInterfaceMock) GetAuthCalls() []struct {
 	Ctx context.Context
 	ID  uint
 } {
@@ -238,9 +238,9 @@ func (mock *GHAClientInterfaceMock) GetAuthCalls() []struct {
 }
 
 // GetAuthByRepository calls GetAuthByRepositoryFunc.
-func (mock *GHAClientInterfaceMock) GetAuthByRepository(ctx context.Context, repository string) (*gha.GHARepositoryAuth, error) {
+func (mock *GithubClientInterfaceMock) GetAuthByRepository(ctx context.Context, repository string) (*gha.GithubRepositoryAuth, error) {
 	if mock.GetAuthByRepositoryFunc == nil {
-		panic("GHAClientInterfaceMock.GetAuthByRepositoryFunc: method is nil but GHAClientInterface.GetAuthByRepository was just called")
+		panic("GithubClientInterfaceMock.GetAuthByRepositoryFunc: method is nil but GithubClientInterface.GetAuthByRepository was just called")
 	}
 	callInfo := struct {
 		Ctx        context.Context
@@ -258,8 +258,8 @@ func (mock *GHAClientInterfaceMock) GetAuthByRepository(ctx context.Context, rep
 // GetAuthByRepositoryCalls gets all the calls that were made to GetAuthByRepository.
 // Check the length with:
 //
-//	len(mockedGHAClientInterface.GetAuthByRepositoryCalls())
-func (mock *GHAClientInterfaceMock) GetAuthByRepositoryCalls() []struct {
+//	len(mockedGithubClientInterface.GetAuthByRepositoryCalls())
+func (mock *GithubClientInterfaceMock) GetAuthByRepositoryCalls() []struct {
 	Ctx        context.Context
 	Repository string
 } {
@@ -274,9 +274,9 @@ func (mock *GHAClientInterfaceMock) GetAuthByRepositoryCalls() []struct {
 }
 
 // ListAuths calls ListAuthsFunc.
-func (mock *GHAClientInterfaceMock) ListAuths(ctx context.Context) ([]gha.GHARepositoryAuth, error) {
+func (mock *GithubClientInterfaceMock) ListAuths(ctx context.Context) ([]gha.GithubRepositoryAuth, error) {
 	if mock.ListAuthsFunc == nil {
-		panic("GHAClientInterfaceMock.ListAuthsFunc: method is nil but GHAClientInterface.ListAuths was just called")
+		panic("GithubClientInterfaceMock.ListAuthsFunc: method is nil but GithubClientInterface.ListAuths was just called")
 	}
 	callInfo := struct {
 		Ctx context.Context
@@ -292,8 +292,8 @@ func (mock *GHAClientInterfaceMock) ListAuths(ctx context.Context) ([]gha.GHARep
 // ListAuthsCalls gets all the calls that were made to ListAuths.
 // Check the length with:
 //
-//	len(mockedGHAClientInterface.ListAuthsCalls())
-func (mock *GHAClientInterfaceMock) ListAuthsCalls() []struct {
+//	len(mockedGithubClientInterface.ListAuthsCalls())
+func (mock *GithubClientInterfaceMock) ListAuthsCalls() []struct {
 	Ctx context.Context
 } {
 	var calls []struct {
@@ -306,9 +306,9 @@ func (mock *GHAClientInterfaceMock) ListAuthsCalls() []struct {
 }
 
 // UpdateAuth calls UpdateAuthFunc.
-func (mock *GHAClientInterfaceMock) UpdateAuth(ctx context.Context, id uint, req *gha.UpdateAuthRequest) (*gha.GHARepositoryAuth, error) {
+func (mock *GithubClientInterfaceMock) UpdateAuth(ctx context.Context, id uint, req *gha.UpdateAuthRequest) (*gha.GithubRepositoryAuth, error) {
 	if mock.UpdateAuthFunc == nil {
-		panic("GHAClientInterfaceMock.UpdateAuthFunc: method is nil but GHAClientInterface.UpdateAuth was just called")
+		panic("GithubClientInterfaceMock.UpdateAuthFunc: method is nil but GithubClientInterface.UpdateAuth was just called")
 	}
 	callInfo := struct {
 		Ctx context.Context
@@ -328,8 +328,8 @@ func (mock *GHAClientInterfaceMock) UpdateAuth(ctx context.Context, id uint, req
 // UpdateAuthCalls gets all the calls that were made to UpdateAuth.
 // Check the length with:
 //
-//	len(mockedGHAClientInterface.UpdateAuthCalls())
-func (mock *GHAClientInterfaceMock) UpdateAuthCalls() []struct {
+//	len(mockedGithubClientInterface.UpdateAuthCalls())
+func (mock *GithubClientInterfaceMock) UpdateAuthCalls() []struct {
 	Ctx context.Context
 	ID  uint
 	Req *gha.UpdateAuthRequest
@@ -346,9 +346,9 @@ func (mock *GHAClientInterfaceMock) UpdateAuthCalls() []struct {
 }
 
 // ValidateToken calls ValidateTokenFunc.
-func (mock *GHAClientInterfaceMock) ValidateToken(ctx context.Context, req *gha.ValidateTokenRequest) (*gha.ValidateTokenResponse, error) {
+func (mock *GithubClientInterfaceMock) ValidateToken(ctx context.Context, req *gha.ValidateTokenRequest) (*gha.ValidateTokenResponse, error) {
 	if mock.ValidateTokenFunc == nil {
-		panic("GHAClientInterfaceMock.ValidateTokenFunc: method is nil but GHAClientInterface.ValidateToken was just called")
+		panic("GithubClientInterfaceMock.ValidateTokenFunc: method is nil but GithubClientInterface.ValidateToken was just called")
 	}
 	callInfo := struct {
 		Ctx context.Context
@@ -366,8 +366,8 @@ func (mock *GHAClientInterfaceMock) ValidateToken(ctx context.Context, req *gha.
 // ValidateTokenCalls gets all the calls that were made to ValidateToken.
 // Check the length with:
 //
-//	len(mockedGHAClientInterface.ValidateTokenCalls())
-func (mock *GHAClientInterfaceMock) ValidateTokenCalls() []struct {
+//	len(mockedGithubClientInterface.ValidateTokenCalls())
+func (mock *GithubClientInterfaceMock) ValidateTokenCalls() []struct {
 	Ctx context.Context
 	Req *gha.ValidateTokenRequest
 } {

@@ -8,7 +8,7 @@ import (
 	"gorm.io/gorm"
 )
 
-type GHARepositoryAuth struct {
+type GithubRepositoryAuth struct {
 	ID          uint           `gorm:"primaryKey"          json:"id"`
 	Repository  string         `gorm:"not null;uniqueIndex" json:"repository"`
 	Permissions pq.StringArray `gorm:"type:text[];not null" json:"permissions"`
@@ -22,11 +22,11 @@ type GHARepositoryAuth struct {
 	DeletedAt gorm.DeletedAt `gorm:"index" json:"-"`
 }
 
-func (GHARepositoryAuth) TableName() string { return "gha_repository_auths" }
+func (GithubRepositoryAuth) TableName() string { return "github_repository_auths" }
 
 // ----- helpers --------------------------------------------------------------
 
-func (g *GHARepositoryAuth) GetPermissions() []auth.Permission {
+func (g *GithubRepositoryAuth) GetPermissions() []auth.Permission {
 	out := make([]auth.Permission, len(g.Permissions))
 	for i, p := range g.Permissions {
 		out[i] = auth.Permission(p)
@@ -34,7 +34,7 @@ func (g *GHARepositoryAuth) GetPermissions() []auth.Permission {
 	return out
 }
 
-func (g *GHARepositoryAuth) SetPermissions(perms []auth.Permission) {
+func (g *GithubRepositoryAuth) SetPermissions(perms []auth.Permission) {
 	g.Permissions = make(pq.StringArray, len(perms))
 	for i, p := range perms {
 		g.Permissions[i] = string(p)

@@ -1,4 +1,4 @@
-package gha
+package github
 
 import (
 	"context"
@@ -6,7 +6,7 @@ import (
 
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/run"
 	"github.com/input-output-hk/catalyst-forge/foundry/api/client"
-	"github.com/input-output-hk/catalyst-forge/foundry/api/client/gha"
+	"github.com/input-output-hk/catalyst-forge/foundry/api/client/github"
 	"github.com/input-output-hk/catalyst-forge/foundry/api/pkg/auth"
 )
 
@@ -27,7 +27,7 @@ func (c *CreateCmd) Run(ctx run.RunContext, cl client.Client) error {
 		permissions = c.Permissions
 	}
 
-	auth, err := cl.GHA().CreateAuth(context.Background(), &gha.CreateAuthRequest{
+	auth, err := cl.Github().CreateAuth(context.Background(), &github.CreateAuthRequest{
 		Repository:  c.Repository,
 		Permissions: permissions,
 		Description: c.Description,

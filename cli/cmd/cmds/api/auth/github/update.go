@@ -1,4 +1,4 @@
-package gha
+package github
 
 import (
 	"context"
@@ -6,7 +6,7 @@ import (
 
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/run"
 	"github.com/input-output-hk/catalyst-forge/foundry/api/client"
-	"github.com/input-output-hk/catalyst-forge/foundry/api/client/gha"
+	"github.com/input-output-hk/catalyst-forge/foundry/api/client/github"
 	"github.com/input-output-hk/catalyst-forge/foundry/api/pkg/auth"
 )
 
@@ -21,7 +21,7 @@ type UpdateCmd struct {
 
 func (c *UpdateCmd) Run(ctx run.RunContext, cl client.Client) error {
 	// Build the update request
-	req := &gha.UpdateAuthRequest{}
+	req := &github.UpdateAuthRequest{}
 
 	if c.Admin != nil {
 		if *c.Admin {
@@ -41,7 +41,7 @@ func (c *UpdateCmd) Run(ctx run.RunContext, cl client.Client) error {
 		req.Description = *c.Description
 	}
 
-	auth, err := cl.GHA().UpdateAuth(context.Background(), c.ID, req)
+	auth, err := cl.Github().UpdateAuth(context.Background(), c.ID, req)
 	if err != nil {
 		return fmt.Errorf("failed to update authentication entry: %w", err)
 	}

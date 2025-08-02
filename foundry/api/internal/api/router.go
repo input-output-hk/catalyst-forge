@@ -31,7 +31,7 @@ func SetupRouter(
 	logger *slog.Logger,
 	jwtManager *jwt.JWTManager,
 	ghaOIDCClient ghauth.GithubActionsOIDCClient,
-	ghaAuthService service.GHAAuthService,
+	ghaAuthService service.GithubAuthService,
 	redisClient *redis.Client,
 ) *gin.Engine {
 	r := gin.New()
@@ -62,8 +62,8 @@ func SetupRouter(
 	authManager := auth.NewAuthManager(auth.WithRedis(redisClient))
 	authHandler := handlers.NewAuthHandler(userKeyService, userService, userRoleService, roleService, authManager, jwtManager, logger)
 
-	// GHA handler
-	ghaHandler := handlers.NewGHAHandler(jwtManager, ghaOIDCClient, ghaAuthService, logger)
+	// GitHub handler
+	githubHandler := handlers.NewGithubHandler(jwtManager, ghaOIDCClient, ghaAuthService, logger)
 
 	// Health check endpoint
 	r.GET("/healthz", healthHandler.CheckHealth)
@@ -72,17 +72,6 @@ func SetupRouter(
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
 	// Route Setup //
-
-	// GHA token validation endpoint (no auth required)
-	r.POST("/gha/validate", ghaHandler.ValidateToken)
-
-	// GHA authentication management endpoints (requires auth)
-	r.POST("/gha/auth", am.ValidatePermissions([]auth.Permission{auth.PermGHAAuthWrite}), ghaHandler.CreateAuth)
-	r.GET("/gha/auth", am.ValidatePermissions([]auth.Permission{auth.PermGHAAuthRead}), ghaHandler.ListAuths)
-	r.GET("/gha/auth/:id", am.ValidatePermissions([]auth.Permission{auth.PermGHAAuthRead}), ghaHandler.GetAuth)
-	r.GET("/gha/auth/repository/:repository", am.ValidatePermissions([]auth.Permission{auth.PermGHAAuthRead}), ghaHandler.GetAuthByRepository)
-	r.PUT("/gha/auth/:id", am.ValidatePermissions([]auth.Permission{auth.PermGHAAuthWrite}), ghaHandler.UpdateAuth)
-	r.DELETE("/gha/auth/:id", am.ValidatePermissions([]auth.Permission{auth.PermGHAAuthWrite}), ghaHandler.DeleteAuth)
 
 	// Release endpoints
 	r.POST("/release", am.ValidatePermissions([]auth.Permission{auth.PermReleaseWrite}), releaseHandler.CreateRelease)
@@ -107,6 +96,14 @@ func SetupRouter(
 	r.POST("/release/:id/deploy/:deployId/events", am.ValidatePermissions([]auth.Permission{auth.PermDeploymentEventWrite}), deploymentHandler.AddDeploymentEvent)
 	r.GET("/release/:id/deploy/:deployId/events", am.ValidatePermissions([]auth.Permission{auth.PermDeploymentEventRead}), deploymentHandler.GetDeploymentEvents)
 
+	// GitHub authentication management endpoints (requires auth)
+	r.POST("/auth/github", am.ValidatePermissions([]auth.Permission{auth.PermGHAAuthWrite}), githubHandler.CreateAuth)
+	r.GET("/auth/github", am.ValidatePermissions([]auth.Permission{auth.PermGHAAuthRead}), githubHandler.ListAuths)
+	r.GET("/auth/github/:id", am.ValidatePermissions([]auth.Permission{auth.PermGHAAuthRead}), githubHandler.GetAuth)
+	r.GET("/auth/github/repository/:repository", am.ValidatePermissions([]auth.Permission{auth.PermGHAAuthRead}), githubHandler.GetAuthByRepository)
+	r.PUT("/auth/github/:id", am.ValidatePermissions([]auth.Permission{auth.PermGHAAuthWrite}), githubHandler.UpdateAuth)
+	r.DELETE("/auth/github/:id", am.ValidatePermissions([]auth.Permission{auth.PermGHAAuthWrite}), githubHandler.DeleteAuth)
+
 	// Registration endpoints
 	r.POST("/auth/users/register", userHandler.RegisterUser)
 	r.POST("/auth/keys/register", userKeyHandler.RegisterUserKey)
@@ -114,6 +111,7 @@ func SetupRouter(
 	// Authentication endpoints
 	r.POST("/auth/challenge", authHandler.CreateChallenge)
 	r.POST("/auth/login", authHandler.Login)
+	r.POST("/auth/github/login", githubHandler.ValidateToken)
 
 	// Pending endpoints
 	r.GET("/auth/pending/users", am.ValidatePermissions([]auth.Permission{auth.PermUserRead}), userHandler.GetPendingUsers)

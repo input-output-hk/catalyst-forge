@@ -7,7 +7,7 @@ import (
 	"github.com/input-output-hk/catalyst-forge/foundry/api/client"
 	"github.com/input-output-hk/catalyst-forge/foundry/api/client/auth"
 	"github.com/input-output-hk/catalyst-forge/foundry/api/client/deployments"
-	"github.com/input-output-hk/catalyst-forge/foundry/api/client/gha"
+	"github.com/input-output-hk/catalyst-forge/foundry/api/client/github"
 	"github.com/input-output-hk/catalyst-forge/foundry/api/client/releases"
 	"github.com/input-output-hk/catalyst-forge/foundry/api/client/users"
 	"sync"
@@ -35,8 +35,8 @@ var _ client.Client = &ClientMock{}
 //			EventsFunc: func() deployments.EventsClientInterface {
 //				panic("mock out the Events method")
 //			},
-//			GHAFunc: func() gha.GHAClientInterface {
-//				panic("mock out the GHA method")
+//			GithubFunc: func() github.GithubClientInterface {
+//				panic("mock out the Github method")
 //			},
 //			KeysFunc: func() users.KeysClientInterface {
 //				panic("mock out the Keys method")
@@ -69,8 +69,8 @@ type ClientMock struct {
 	// EventsFunc mocks the Events method.
 	EventsFunc func() deployments.EventsClientInterface
 
-	// GHAFunc mocks the GHA method.
-	GHAFunc func() gha.GHAClientInterface
+	// GithubFunc mocks the Github method.
+	GithubFunc func() github.GithubClientInterface
 
 	// KeysFunc mocks the Keys method.
 	KeysFunc func() users.KeysClientInterface
@@ -98,8 +98,8 @@ type ClientMock struct {
 		// Events holds details about calls to the Events method.
 		Events []struct {
 		}
-		// GHA holds details about calls to the GHA method.
-		GHA []struct {
+		// Github holds details about calls to the Github method.
+		Github []struct {
 		}
 		// Keys holds details about calls to the Keys method.
 		Keys []struct {
@@ -118,7 +118,7 @@ type ClientMock struct {
 	lockAuth        sync.RWMutex
 	lockDeployments sync.RWMutex
 	lockEvents      sync.RWMutex
-	lockGHA         sync.RWMutex
+	lockGithub      sync.RWMutex
 	lockKeys        sync.RWMutex
 	lockReleases    sync.RWMutex
 	lockRoles       sync.RWMutex
@@ -233,30 +233,30 @@ func (mock *ClientMock) EventsCalls() []struct {
 	return calls
 }
 
-// GHA calls GHAFunc.
-func (mock *ClientMock) GHA() gha.GHAClientInterface {
-	if mock.GHAFunc == nil {
-		panic("ClientMock.GHAFunc: method is nil but Client.GHA was just called")
+// Github calls GithubFunc.
+func (mock *ClientMock) Github() github.GithubClientInterface {
+	if mock.GithubFunc == nil {
+		panic("ClientMock.GithubFunc: method is nil but Client.Github was just called")
 	}
 	callInfo := struct {
 	}{}
-	mock.lockGHA.Lock()
-	mock.calls.GHA = append(mock.calls.GHA, callInfo)
-	mock.lockGHA.Unlock()
-	return mock.GHAFunc()
+	mock.lockGithub.Lock()
+	mock.calls.Github = append(mock.calls.Github, callInfo)
+	mock.lockGithub.Unlock()
+	return mock.GithubFunc()
 }
 
-// GHACalls gets all the calls that were made to GHA.
+// GithubCalls gets all the calls that were made to Github.
 // Check the length with:
 //
-//	len(mockedClient.GHACalls())
-func (mock *ClientMock) GHACalls() []struct {
+//	len(mockedClient.GithubCalls())
+func (mock *ClientMock) GithubCalls() []struct {
 } {
 	var calls []struct {
 	}
-	mock.lockGHA.RLock()
-	calls = mock.calls.GHA
-	mock.lockGHA.RUnlock()
+	mock.lockGithub.RLock()
+	calls = mock.calls.Github
+	mock.lockGithub.RUnlock()
 	return calls
 }
 

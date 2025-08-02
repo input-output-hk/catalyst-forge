@@ -1,4 +1,4 @@
-package gha
+package github
 
 import (
 	"context"
@@ -6,7 +6,7 @@ import (
 
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/run"
 	"github.com/input-output-hk/catalyst-forge/foundry/api/client"
-	"github.com/input-output-hk/catalyst-forge/foundry/api/client/gha"
+	"github.com/input-output-hk/catalyst-forge/foundry/api/client/github"
 )
 
 type GetCmd struct {
@@ -36,16 +36,16 @@ func (c *GetCmd) Run(ctx run.RunContext, cl client.Client) error {
 	return outputTable(auth)
 }
 
-func (c *GetCmd) retrieveAuth(cl client.Client) (*gha.GHARepositoryAuth, error) {
+func (c *GetCmd) retrieveAuth(cl client.Client) (*github.GithubRepositoryAuth, error) {
 	if c.ID != nil {
-		auth, err := cl.GHA().GetAuth(context.Background(), *c.ID)
+		auth, err := cl.Github().GetAuth(context.Background(), *c.ID)
 		if err != nil {
 			return nil, fmt.Errorf("failed to get authentication entry by ID: %w", err)
 		}
 		return auth, nil
 	}
 
-	auth, err := cl.GHA().GetAuthByRepository(context.Background(), *c.Repository)
+	auth, err := cl.Github().GetAuthByRepository(context.Background(), *c.Repository)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get authentication entry by repository: %w", err)
 	}

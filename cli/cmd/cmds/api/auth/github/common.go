@@ -1,4 +1,4 @@
-package gha
+package github
 
 import (
 	"encoding/json"
@@ -7,10 +7,10 @@ import (
 
 	"github.com/charmbracelet/lipgloss"
 	"github.com/charmbracelet/lipgloss/table"
-	"github.com/input-output-hk/catalyst-forge/foundry/api/client/gha"
+	"github.com/input-output-hk/catalyst-forge/foundry/api/client/github"
 )
 
-func outputJSON(auth *gha.GHARepositoryAuth) error {
+func outputJSON(auth *github.GithubRepositoryAuth) error {
 	jsonData, err := json.MarshalIndent(auth, "", "  ")
 	if err != nil {
 		return fmt.Errorf("failed to marshal JSON: %w", err)
@@ -19,7 +19,7 @@ func outputJSON(auth *gha.GHARepositoryAuth) error {
 	return nil
 }
 
-func outputTable(auth *gha.GHARepositoryAuth) error {
+func outputTable(auth *github.GithubRepositoryAuth) error {
 	t := table.New().
 		Border(lipgloss.RoundedBorder()).
 		BorderStyle(lipgloss.NewStyle().Foreground(lipgloss.Color("62"))).

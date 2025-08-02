@@ -7,14 +7,14 @@ import (
 	"github.com/charmbracelet/huh"
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/run"
 	"github.com/input-output-hk/catalyst-forge/foundry/api/client/auth"
-	"github.com/input-output-hk/catalyst-forge/foundry/api/client/gha"
+	"github.com/input-output-hk/catalyst-forge/foundry/api/client/github"
 	authpkg "github.com/input-output-hk/catalyst-forge/foundry/api/pkg/auth"
 )
 
 type LoginCmd struct {
 	Email string `short:"e" help:"The email of the user to login as."`
 	Token string `help:"An existing JWT token to use for authentication." env:"FOUNDRY_TOKEN"`
-	Type  string `short:"t" help:"The type of login to perform." enum:"gha,foundry" default:"foundry"`
+	Type  string `short:"t" help:"The type of login to perform." enum:"github,foundry" default:"foundry"`
 }
 
 type EmailForm struct {
@@ -22,7 +22,7 @@ type EmailForm struct {
 }
 
 func (c *LoginCmd) Run(ctx run.RunContext, cl interface {
-	GHA() *gha.GHAClient
+	Github() *github.GithubClient
 	Auth() *auth.AuthClient
 }) error {
 	var jwt string
@@ -51,8 +51,8 @@ func (c *LoginCmd) Run(ctx run.RunContext, cl interface {
 	)
 
 	switch c.Type {
-	case "gha":
-		resp, err := cl.GHA().ValidateToken(context.Background(), &gha.ValidateTokenRequest{
+	case "github":
+		resp, err := cl.Github().ValidateToken(context.Background(), &github.ValidateTokenRequest{
 			Token: c.Token,
 		})
 		if err != nil {

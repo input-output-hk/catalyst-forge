@@ -181,7 +181,7 @@ func (m *mockClient) Auth() auth.AuthClientInterface {
 	return nil
 }
 
-func (m *mockClient) GHA() gha.GHAClientInterface {
+func (m *mockClient) GHA() gha.GithubClientInterface {
 	return nil
 }
 

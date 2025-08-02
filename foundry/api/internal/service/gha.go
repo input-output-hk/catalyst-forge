@@ -9,35 +9,35 @@ import (
 	"github.com/input-output-hk/catalyst-forge/foundry/api/pkg/auth"
 )
 
-//go:generate go run github.com/matryer/moq@latest -skip-ensure --pkg mocks --out ./mocks/gha_auth.go . GHAAuthService
+//go:generate go run github.com/matryer/moq@latest -skip-ensure --pkg mocks --out ./mocks/gha_auth.go . GithubAuthService
 
-// GHAAuthService defines the interface for GitHub Actions authentication service operations
-type GHAAuthService interface {
-	CreateAuth(auth *models.GHARepositoryAuth) error
-	GetAuthByID(id uint) (*models.GHARepositoryAuth, error)
-	GetAuthByRepository(repository string) (*models.GHARepositoryAuth, error)
-	UpdateAuth(auth *models.GHARepositoryAuth) error
+// GithubAuthService defines the interface for GitHub Actions authentication service operations
+type GithubAuthService interface {
+	CreateAuth(auth *models.GithubRepositoryAuth) error
+	GetAuthByID(id uint) (*models.GithubRepositoryAuth, error)
+	GetAuthByRepository(repository string) (*models.GithubRepositoryAuth, error)
+	UpdateAuth(auth *models.GithubRepositoryAuth) error
 	DeleteAuth(id uint) error
-	ListAuths() ([]models.GHARepositoryAuth, error)
+	ListAuths() ([]models.GithubRepositoryAuth, error)
 	GetPermissionsForRepository(repository string) ([]auth.Permission, error)
 }
 
-// DefaultGHAAuthService is the default implementation of GHAAuthService
-type DefaultGHAAuthService struct {
-	repo   repository.GHAAuthRepository
+// DefaultGithubAuthService is the default implementation of GithubAuthService
+type DefaultGithubAuthService struct {
+	repo   repository.GithubAuthRepository
 	logger *slog.Logger
 }
 
-// NewGHAAuthService creates a new GitHub Actions authentication service
-func NewGHAAuthService(repo repository.GHAAuthRepository, logger *slog.Logger) *DefaultGHAAuthService {
-	return &DefaultGHAAuthService{
+// NewGithubAuthService creates a new GitHub Actions authentication service
+func NewGithubAuthService(repo repository.GithubAuthRepository, logger *slog.Logger) *DefaultGithubAuthService {
+	return &DefaultGithubAuthService{
 		repo:   repo,
 		logger: logger,
 	}
 }
 
 // CreateAuth creates a new GitHub Actions authentication configuration
-func (s *DefaultGHAAuthService) CreateAuth(auth *models.GHARepositoryAuth) error {
+func (s *DefaultGithubAuthService) CreateAuth(auth *models.GithubRepositoryAuth) error {
 	// Validate that the repository format is correct (owner/repo)
 	if err := s.validateRepositoryFormat(auth.Repository); err != nil {
 		return fmt.Errorf("invalid repository format: %w", err)
@@ -57,17 +57,17 @@ func (s *DefaultGHAAuthService) CreateAuth(auth *models.GHARepositoryAuth) error
 }
 
 // GetAuthByID retrieves a GitHub Actions authentication configuration by ID
-func (s *DefaultGHAAuthService) GetAuthByID(id uint) (*models.GHARepositoryAuth, error) {
+func (s *DefaultGithubAuthService) GetAuthByID(id uint) (*models.GithubRepositoryAuth, error) {
 	return s.repo.GetByID(id)
 }
 
 // GetAuthByRepository retrieves a GitHub Actions authentication configuration by repository name
-func (s *DefaultGHAAuthService) GetAuthByRepository(repository string) (*models.GHARepositoryAuth, error) {
+func (s *DefaultGithubAuthService) GetAuthByRepository(repository string) (*models.GithubRepositoryAuth, error) {
 	return s.repo.GetByRepository(repository)
 }
 
 // UpdateAuth updates an existing GitHub Actions authentication configuration
-func (s *DefaultGHAAuthService) UpdateAuth(auth *models.GHARepositoryAuth) error {
+func (s *DefaultGithubAuthService) UpdateAuth(auth *models.GithubRepositoryAuth) error {
 	// Validate that the repository format is correct
 	if err := s.validateRepositoryFormat(auth.Repository); err != nil {
 		return fmt.Errorf("invalid repository format: %w", err)
@@ -81,7 +81,7 @@ func (s *DefaultGHAAuthService) UpdateAuth(auth *models.GHARepositoryAuth) error
 }
 
 // DeleteAuth deletes a GitHub Actions authentication configuration
-func (s *DefaultGHAAuthService) DeleteAuth(id uint) error {
+func (s *DefaultGithubAuthService) DeleteAuth(id uint) error {
 	auth, err := s.repo.GetByID(id)
 	if err != nil {
 		return fmt.Errorf("failed to get auth configuration: %w", err)
@@ -94,17 +94,17 @@ func (s *DefaultGHAAuthService) DeleteAuth(id uint) error {
 }
 
 // ListAuths retrieves all GitHub Actions authentication configurations
-func (s *DefaultGHAAuthService) ListAuths() ([]models.GHARepositoryAuth, error) {
+func (s *DefaultGithubAuthService) ListAuths() ([]models.GithubRepositoryAuth, error) {
 	return s.repo.List()
 }
 
 // GetPermissionsForRepository retrieves the permissions for a specific repository
-func (s *DefaultGHAAuthService) GetPermissionsForRepository(repository string) ([]auth.Permission, error) {
+func (s *DefaultGithubAuthService) GetPermissionsForRepository(repository string) ([]auth.Permission, error) {
 	return s.repo.GetPermissionsForRepository(repository)
 }
 
 // validateRepositoryFormat validates that the repository name follows the owner/repo format
-func (s *DefaultGHAAuthService) validateRepositoryFormat(repository string) error {
+func (s *DefaultGithubAuthService) validateRepositoryFormat(repository string) error {
 	if repository == "" {
 		return fmt.Errorf("repository name cannot be empty")
 	}
