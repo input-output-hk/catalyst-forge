@@ -4,7 +4,7 @@ services:
     container_name: auth
     entrypoint: ["/bin/sh", "-c", "/app/foundry-api auth init --output-dir /data"]
     volumes:
-      - ./.secret:/data
+      - ./.auth:/data
     restart: on-failure
 
   auth-jwt:
@@ -12,7 +12,7 @@ services:
     container_name: auth-jwt
     entrypoint: ["/bin/sh", "-c", "/app/foundry-api auth generate -a -k /data/private.pem >/data/jwt.txt"]
     volumes:
-      - ./.secret:/data
+      - ./.auth:/data
     restart: on-failure
     depends_on:
       auth:
@@ -38,11 +38,15 @@ services:
       K8S_ENABLED: "false"
       LOG_LEVEL: debug
       LOG_FORMAT: text
+      REDIS_HOST: valkey
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ""
+      REDIS_DB: 0
     ports:
       - "5050:5050"
       - "8080:8080"
     volumes:
-      - ./.secret:/data
+      - ./.auth:/data
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:5050/healthz"]
       interval: 10s
@@ -54,6 +58,8 @@ services:
         condition: service_started
       postgres:
         condition: service_healthy
+      valkey:
+        condition: service_healthy
     restart: on-failure
 
   api-test:
@@ -63,7 +69,7 @@ services:
       API_URL: http://api:5050
       JWT_TOKEN_PATH: /data/jwt.txt
     volumes:
-      - ./.secret:/data
+      - ./.auth:/data
     depends_on:
       api:
         condition: service_healthy
@@ -86,5 +92,39 @@ services:
       retries: 5
     restart: on-failure
 
+  valkey:
+    image: valkey/valkey:7-alpine
+    container_name: valkey
+    ports:
+      - "6379:6379"
+    volumes:
+      - valkey-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    restart: on-failure
+
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@foundry.dev
+      PGADMIN_DEFAULT_PASSWORD: admin
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+      PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED: 'False'
+    ports:
+      - "5051:80"
+    volumes:
+      - pgadmin-data:/var/lib/pgadmin
+      - ./pgadmin-servers.json:/pgadmin4/servers.json
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: on-failure
+
 volumes:
   postgres-data:
+  valkey-data:
+  pgadmin-data:

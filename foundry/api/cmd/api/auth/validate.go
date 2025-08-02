@@ -3,7 +3,7 @@ package auth
 import (
 	"fmt"
 
-	"github.com/input-output-hk/catalyst-forge/foundry/api/pkg/auth"
+	"github.com/input-output-hk/catalyst-forge/foundry/api/pkg/auth/jwt"
 )
 
 type ValidateCmd struct {
@@ -12,7 +12,7 @@ type ValidateCmd struct {
 }
 
 func (g *ValidateCmd) Run() error {
-	am, err := auth.NewAuthManager("", g.PublicKey)
+	am, err := jwt.NewJWTManager("", g.PublicKey)
 	if err != nil {
 		return err
 	}

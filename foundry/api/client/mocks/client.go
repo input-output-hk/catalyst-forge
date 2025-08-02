@@ -4,8 +4,12 @@
 package mocks
 
 import (
-	"context"
 	"github.com/input-output-hk/catalyst-forge/foundry/api/client"
+	"github.com/input-output-hk/catalyst-forge/foundry/api/client/auth"
+	"github.com/input-output-hk/catalyst-forge/foundry/api/client/deployments"
+	"github.com/input-output-hk/catalyst-forge/foundry/api/client/github"
+	"github.com/input-output-hk/catalyst-forge/foundry/api/client/releases"
+	"github.com/input-output-hk/catalyst-forge/foundry/api/client/users"
 	"sync"
 )
 
@@ -19,74 +23,32 @@ var _ client.Client = &ClientMock{}
 //
 //		// make and configure a mocked client.Client
 //		mockedClient := &ClientMock{
-//			AddDeploymentEventFunc: func(ctx context.Context, releaseID string, deployID string, name string, message string) (*client.ReleaseDeployment, error) {
-//				panic("mock out the AddDeploymentEvent method")
+//			AliasesFunc: func() releases.AliasesClientInterface {
+//				panic("mock out the Aliases method")
 //			},
-//			CreateAliasFunc: func(ctx context.Context, aliasName string, releaseID string) error {
-//				panic("mock out the CreateAlias method")
+//			AuthFunc: func() auth.AuthClientInterface {
+//				panic("mock out the Auth method")
 //			},
-//			CreateAuthFunc: func(ctx context.Context, req *client.CreateAuthRequest) (*client.GHARepositoryAuth, error) {
-//				panic("mock out the CreateAuth method")
+//			DeploymentsFunc: func() deployments.DeploymentsClientInterface {
+//				panic("mock out the Deployments method")
 //			},
-//			CreateDeploymentFunc: func(ctx context.Context, releaseID string) (*client.ReleaseDeployment, error) {
-//				panic("mock out the CreateDeployment method")
+//			EventsFunc: func() deployments.EventsClientInterface {
+//				panic("mock out the Events method")
 //			},
-//			CreateReleaseFunc: func(ctx context.Context, release *client.Release, deploy bool) (*client.Release, error) {
-//				panic("mock out the CreateRelease method")
+//			GithubFunc: func() github.GithubClientInterface {
+//				panic("mock out the Github method")
 //			},
-//			DeleteAliasFunc: func(ctx context.Context, aliasName string) error {
-//				panic("mock out the DeleteAlias method")
+//			KeysFunc: func() users.KeysClientInterface {
+//				panic("mock out the Keys method")
 //			},
-//			DeleteAuthFunc: func(ctx context.Context, id uint) error {
-//				panic("mock out the DeleteAuth method")
+//			ReleasesFunc: func() releases.ReleasesClientInterface {
+//				panic("mock out the Releases method")
 //			},
-//			GetAuthFunc: func(ctx context.Context, id uint) (*client.GHARepositoryAuth, error) {
-//				panic("mock out the GetAuth method")
+//			RolesFunc: func() users.RolesClientInterface {
+//				panic("mock out the Roles method")
 //			},
-//			GetAuthByRepositoryFunc: func(ctx context.Context, repository string) (*client.GHARepositoryAuth, error) {
-//				panic("mock out the GetAuthByRepository method")
-//			},
-//			GetDeploymentFunc: func(ctx context.Context, releaseID string, deployID string) (*client.ReleaseDeployment, error) {
-//				panic("mock out the GetDeployment method")
-//			},
-//			GetDeploymentEventsFunc: func(ctx context.Context, releaseID string, deployID string) ([]client.DeploymentEvent, error) {
-//				panic("mock out the GetDeploymentEvents method")
-//			},
-//			GetLatestDeploymentFunc: func(ctx context.Context, releaseID string) (*client.ReleaseDeployment, error) {
-//				panic("mock out the GetLatestDeployment method")
-//			},
-//			GetReleaseFunc: func(ctx context.Context, id string) (*client.Release, error) {
-//				panic("mock out the GetRelease method")
-//			},
-//			GetReleaseByAliasFunc: func(ctx context.Context, aliasName string) (*client.Release, error) {
-//				panic("mock out the GetReleaseByAlias method")
-//			},
-//			IncrementDeploymentAttemptsFunc: func(ctx context.Context, releaseID string, deployID string) (*client.ReleaseDeployment, error) {
-//				panic("mock out the IncrementDeploymentAttempts method")
-//			},
-//			ListAliasesFunc: func(ctx context.Context, releaseID string) ([]client.ReleaseAlias, error) {
-//				panic("mock out the ListAliases method")
-//			},
-//			ListAuthsFunc: func(ctx context.Context) ([]client.GHARepositoryAuth, error) {
-//				panic("mock out the ListAuths method")
-//			},
-//			ListDeploymentsFunc: func(ctx context.Context, releaseID string) ([]client.ReleaseDeployment, error) {
-//				panic("mock out the ListDeployments method")
-//			},
-//			ListReleasesFunc: func(ctx context.Context, projectName string) ([]client.Release, error) {
-//				panic("mock out the ListReleases method")
-//			},
-//			UpdateAuthFunc: func(ctx context.Context, id uint, req *client.UpdateAuthRequest) (*client.GHARepositoryAuth, error) {
-//				panic("mock out the UpdateAuth method")
-//			},
-//			UpdateDeploymentFunc: func(ctx context.Context, releaseID string, deployment *client.ReleaseDeployment) (*client.ReleaseDeployment, error) {
-//				panic("mock out the UpdateDeployment method")
-//			},
-//			UpdateReleaseFunc: func(ctx context.Context, release *client.Release) (*client.Release, error) {
-//				panic("mock out the UpdateRelease method")
-//			},
-//			ValidateTokenFunc: func(ctx context.Context, req *client.ValidateTokenRequest) (*client.ValidateTokenResponse, error) {
-//				panic("mock out the ValidateToken method")
+//			UsersFunc: func() users.UsersClientInterface {
+//				panic("mock out the Users method")
 //			},
 //		}
 //
@@ -95,1142 +57,313 @@ var _ client.Client = &ClientMock{}
 //
 //	}
 type ClientMock struct {
-	// AddDeploymentEventFunc mocks the AddDeploymentEvent method.
-	AddDeploymentEventFunc func(ctx context.Context, releaseID string, deployID string, name string, message string) (*client.ReleaseDeployment, error)
+	// AliasesFunc mocks the Aliases method.
+	AliasesFunc func() releases.AliasesClientInterface
 
-	// CreateAliasFunc mocks the CreateAlias method.
-	CreateAliasFunc func(ctx context.Context, aliasName string, releaseID string) error
+	// AuthFunc mocks the Auth method.
+	AuthFunc func() auth.AuthClientInterface
 
-	// CreateAuthFunc mocks the CreateAuth method.
-	CreateAuthFunc func(ctx context.Context, req *client.CreateAuthRequest) (*client.GHARepositoryAuth, error)
+	// DeploymentsFunc mocks the Deployments method.
+	DeploymentsFunc func() deployments.DeploymentsClientInterface
 
-	// CreateDeploymentFunc mocks the CreateDeployment method.
-	CreateDeploymentFunc func(ctx context.Context, releaseID string) (*client.ReleaseDeployment, error)
+	// EventsFunc mocks the Events method.
+	EventsFunc func() deployments.EventsClientInterface
 
-	// CreateReleaseFunc mocks the CreateRelease method.
-	CreateReleaseFunc func(ctx context.Context, release *client.Release, deploy bool) (*client.Release, error)
+	// GithubFunc mocks the Github method.
+	GithubFunc func() github.GithubClientInterface
 
-	// DeleteAliasFunc mocks the DeleteAlias method.
-	DeleteAliasFunc func(ctx context.Context, aliasName string) error
+	// KeysFunc mocks the Keys method.
+	KeysFunc func() users.KeysClientInterface
 
-	// DeleteAuthFunc mocks the DeleteAuth method.
-	DeleteAuthFunc func(ctx context.Context, id uint) error
+	// ReleasesFunc mocks the Releases method.
+	ReleasesFunc func() releases.ReleasesClientInterface
 
-	// GetAuthFunc mocks the GetAuth method.
-	GetAuthFunc func(ctx context.Context, id uint) (*client.GHARepositoryAuth, error)
+	// RolesFunc mocks the Roles method.
+	RolesFunc func() users.RolesClientInterface
 
-	// GetAuthByRepositoryFunc mocks the GetAuthByRepository method.
-	GetAuthByRepositoryFunc func(ctx context.Context, repository string) (*client.GHARepositoryAuth, error)
-
-	// GetDeploymentFunc mocks the GetDeployment method.
-	GetDeploymentFunc func(ctx context.Context, releaseID string, deployID string) (*client.ReleaseDeployment, error)
-
-	// GetDeploymentEventsFunc mocks the GetDeploymentEvents method.
-	GetDeploymentEventsFunc func(ctx context.Context, releaseID string, deployID string) ([]client.DeploymentEvent, error)
-
-	// GetLatestDeploymentFunc mocks the GetLatestDeployment method.
-	GetLatestDeploymentFunc func(ctx context.Context, releaseID string) (*client.ReleaseDeployment, error)
-
-	// GetReleaseFunc mocks the GetRelease method.
-	GetReleaseFunc func(ctx context.Context, id string) (*client.Release, error)
-
-	// GetReleaseByAliasFunc mocks the GetReleaseByAlias method.
-	GetReleaseByAliasFunc func(ctx context.Context, aliasName string) (*client.Release, error)
-
-	// IncrementDeploymentAttemptsFunc mocks the IncrementDeploymentAttempts method.
-	IncrementDeploymentAttemptsFunc func(ctx context.Context, releaseID string, deployID string) (*client.ReleaseDeployment, error)
-
-	// ListAliasesFunc mocks the ListAliases method.
-	ListAliasesFunc func(ctx context.Context, releaseID string) ([]client.ReleaseAlias, error)
-
-	// ListAuthsFunc mocks the ListAuths method.
-	ListAuthsFunc func(ctx context.Context) ([]client.GHARepositoryAuth, error)
-
-	// ListDeploymentsFunc mocks the ListDeployments method.
-	ListDeploymentsFunc func(ctx context.Context, releaseID string) ([]client.ReleaseDeployment, error)
-
-	// ListReleasesFunc mocks the ListReleases method.
-	ListReleasesFunc func(ctx context.Context, projectName string) ([]client.Release, error)
-
-	// UpdateAuthFunc mocks the UpdateAuth method.
-	UpdateAuthFunc func(ctx context.Context, id uint, req *client.UpdateAuthRequest) (*client.GHARepositoryAuth, error)
-
-	// UpdateDeploymentFunc mocks the UpdateDeployment method.
-	UpdateDeploymentFunc func(ctx context.Context, releaseID string, deployment *client.ReleaseDeployment) (*client.ReleaseDeployment, error)
-
-	// UpdateReleaseFunc mocks the UpdateRelease method.
-	UpdateReleaseFunc func(ctx context.Context, release *client.Release) (*client.Release, error)
-
-	// ValidateTokenFunc mocks the ValidateToken method.
-	ValidateTokenFunc func(ctx context.Context, req *client.ValidateTokenRequest) (*client.ValidateTokenResponse, error)
+	// UsersFunc mocks the Users method.
+	UsersFunc func() users.UsersClientInterface
 
 	// calls tracks calls to the methods.
 	calls struct {
-		// AddDeploymentEvent holds details about calls to the AddDeploymentEvent method.
-		AddDeploymentEvent []struct {
-			// Ctx is the ctx argument value.
-			Ctx context.Context
-			// ReleaseID is the releaseID argument value.
-			ReleaseID string
-			// DeployID is the deployID argument value.
-			DeployID string
-			// Name is the name argument value.
-			Name string
-			// Message is the message argument value.
-			Message string
+		// Aliases holds details about calls to the Aliases method.
+		Aliases []struct {
 		}
-		// CreateAlias holds details about calls to the CreateAlias method.
-		CreateAlias []struct {
-			// Ctx is the ctx argument value.
-			Ctx context.Context
-			// AliasName is the aliasName argument value.
-			AliasName string
-			// ReleaseID is the releaseID argument value.
-			ReleaseID string
+		// Auth holds details about calls to the Auth method.
+		Auth []struct {
 		}
-		// CreateAuth holds details about calls to the CreateAuth method.
-		CreateAuth []struct {
-			// Ctx is the ctx argument value.
-			Ctx context.Context
-			// Req is the req argument value.
-			Req *client.CreateAuthRequest
+		// Deployments holds details about calls to the Deployments method.
+		Deployments []struct {
 		}
-		// CreateDeployment holds details about calls to the CreateDeployment method.
-		CreateDeployment []struct {
-			// Ctx is the ctx argument value.
-			Ctx context.Context
-			// ReleaseID is the releaseID argument value.
-			ReleaseID string
+		// Events holds details about calls to the Events method.
+		Events []struct {
 		}
-		// CreateRelease holds details about calls to the CreateRelease method.
-		CreateRelease []struct {
-			// Ctx is the ctx argument value.
-			Ctx context.Context
-			// Release is the release argument value.
-			Release *client.Release
-			// Deploy is the deploy argument value.
-			Deploy bool
+		// Github holds details about calls to the Github method.
+		Github []struct {
 		}
-		// DeleteAlias holds details about calls to the DeleteAlias method.
-		DeleteAlias []struct {
-			// Ctx is the ctx argument value.
-			Ctx context.Context
-			// AliasName is the aliasName argument value.
-			AliasName string
+		// Keys holds details about calls to the Keys method.
+		Keys []struct {
 		}
-		// DeleteAuth holds details about calls to the DeleteAuth method.
-		DeleteAuth []struct {
-			// Ctx is the ctx argument value.
-			Ctx context.Context
-			// ID is the id argument value.
-			ID uint
+		// Releases holds details about calls to the Releases method.
+		Releases []struct {
 		}
-		// GetAuth holds details about calls to the GetAuth method.
-		GetAuth []struct {
-			// Ctx is the ctx argument value.
-			Ctx context.Context
-			// ID is the id argument value.
-			ID uint
+		// Roles holds details about calls to the Roles method.
+		Roles []struct {
 		}
-		// GetAuthByRepository holds details about calls to the GetAuthByRepository method.
-		GetAuthByRepository []struct {
-			// Ctx is the ctx argument value.
-			Ctx context.Context
-			// Repository is the repository argument value.
-			Repository string
-		}
-		// GetDeployment holds details about calls to the GetDeployment method.
-		GetDeployment []struct {
-			// Ctx is the ctx argument value.
-			Ctx context.Context
-			// ReleaseID is the releaseID argument value.
-			ReleaseID string
-			// DeployID is the deployID argument value.
-			DeployID string
-		}
-		// GetDeploymentEvents holds details about calls to the GetDeploymentEvents method.
-		GetDeploymentEvents []struct {
-			// Ctx is the ctx argument value.
-			Ctx context.Context
-			// ReleaseID is the releaseID argument value.
-			ReleaseID string
-			// DeployID is the deployID argument value.
-			DeployID string
-		}
-		// GetLatestDeployment holds details about calls to the GetLatestDeployment method.
-		GetLatestDeployment []struct {
-			// Ctx is the ctx argument value.
-			Ctx context.Context
-			// ReleaseID is the releaseID argument value.
-			ReleaseID string
-		}
-		// GetRelease holds details about calls to the GetRelease method.
-		GetRelease []struct {
-			// Ctx is the ctx argument value.
-			Ctx context.Context
-			// ID is the id argument value.
-			ID string
-		}
-		// GetReleaseByAlias holds details about calls to the GetReleaseByAlias method.
-		GetReleaseByAlias []struct {
-			// Ctx is the ctx argument value.
-			Ctx context.Context
-			// AliasName is the aliasName argument value.
-			AliasName string
-		}
-		// IncrementDeploymentAttempts holds details about calls to the IncrementDeploymentAttempts method.
-		IncrementDeploymentAttempts []struct {
-			// Ctx is the ctx argument value.
-			Ctx context.Context
-			// ReleaseID is the releaseID argument value.
-			ReleaseID string
-			// DeployID is the deployID argument value.
-			DeployID string
-		}
-		// ListAliases holds details about calls to the ListAliases method.
-		ListAliases []struct {
-			// Ctx is the ctx argument value.
-			Ctx context.Context
-			// ReleaseID is the releaseID argument value.
-			ReleaseID string
-		}
-		// ListAuths holds details about calls to the ListAuths method.
-		ListAuths []struct {
-			// Ctx is the ctx argument value.
-			Ctx context.Context
-		}
-		// ListDeployments holds details about calls to the ListDeployments method.
-		ListDeployments []struct {
-			// Ctx is the ctx argument value.
-			Ctx context.Context
-			// ReleaseID is the releaseID argument value.
-			ReleaseID string
-		}
-		// ListReleases holds details about calls to the ListReleases method.
-		ListReleases []struct {
-			// Ctx is the ctx argument value.
-			Ctx context.Context
-			// ProjectName is the projectName argument value.
-			ProjectName string
-		}
-		// UpdateAuth holds details about calls to the UpdateAuth method.
-		UpdateAuth []struct {
-			// Ctx is the ctx argument value.
-			Ctx context.Context
-			// ID is the id argument value.
-			ID uint
-			// Req is the req argument value.
-			Req *client.UpdateAuthRequest
-		}
-		// UpdateDeployment holds details about calls to the UpdateDeployment method.
-		UpdateDeployment []struct {
-			// Ctx is the ctx argument value.
-			Ctx context.Context
-			// ReleaseID is the releaseID argument value.
-			ReleaseID string
-			// Deployment is the deployment argument value.
-			Deployment *client.ReleaseDeployment
-		}
-		// UpdateRelease holds details about calls to the UpdateRelease method.
-		UpdateRelease []struct {
-			// Ctx is the ctx argument value.
-			Ctx context.Context
-			// Release is the release argument value.
-			Release *client.Release
-		}
-		// ValidateToken holds details about calls to the ValidateToken method.
-		ValidateToken []struct {
-			// Ctx is the ctx argument value.
-			Ctx context.Context
-			// Req is the req argument value.
-			Req *client.ValidateTokenRequest
+		// Users holds details about calls to the Users method.
+		Users []struct {
 		}
 	}
-	lockAddDeploymentEvent          sync.RWMutex
-	lockCreateAlias                 sync.RWMutex
-	lockCreateAuth                  sync.RWMutex
-	lockCreateDeployment            sync.RWMutex
-	lockCreateRelease               sync.RWMutex
-	lockDeleteAlias                 sync.RWMutex
-	lockDeleteAuth                  sync.RWMutex
-	lockGetAuth                     sync.RWMutex
-	lockGetAuthByRepository         sync.RWMutex
-	lockGetDeployment               sync.RWMutex
-	lockGetDeploymentEvents         sync.RWMutex
-	lockGetLatestDeployment         sync.RWMutex
-	lockGetRelease                  sync.RWMutex
-	lockGetReleaseByAlias           sync.RWMutex
-	lockIncrementDeploymentAttempts sync.RWMutex
-	lockListAliases                 sync.RWMutex
-	lockListAuths                   sync.RWMutex
-	lockListDeployments             sync.RWMutex
-	lockListReleases                sync.RWMutex
-	lockUpdateAuth                  sync.RWMutex
-	lockUpdateDeployment            sync.RWMutex
-	lockUpdateRelease               sync.RWMutex
-	lockValidateToken               sync.RWMutex
+	lockAliases     sync.RWMutex
+	lockAuth        sync.RWMutex
+	lockDeployments sync.RWMutex
+	lockEvents      sync.RWMutex
+	lockGithub      sync.RWMutex
+	lockKeys        sync.RWMutex
+	lockReleases    sync.RWMutex
+	lockRoles       sync.RWMutex
+	lockUsers       sync.RWMutex
 }
 
-// AddDeploymentEvent calls AddDeploymentEventFunc.
-func (mock *ClientMock) AddDeploymentEvent(ctx context.Context, releaseID string, deployID string, name string, message string) (*client.ReleaseDeployment, error) {
-	if mock.AddDeploymentEventFunc == nil {
-		panic("ClientMock.AddDeploymentEventFunc: method is nil but Client.AddDeploymentEvent was just called")
+// Aliases calls AliasesFunc.
+func (mock *ClientMock) Aliases() releases.AliasesClientInterface {
+	if mock.AliasesFunc == nil {
+		panic("ClientMock.AliasesFunc: method is nil but Client.Aliases was just called")
 	}
 	callInfo := struct {
-		Ctx       context.Context
-		ReleaseID string
-		DeployID  string
-		Name      string
-		Message   string
-	}{
-		Ctx:       ctx,
-		ReleaseID: releaseID,
-		DeployID:  deployID,
-		Name:      name,
-		Message:   message,
-	}
-	mock.lockAddDeploymentEvent.Lock()
-	mock.calls.AddDeploymentEvent = append(mock.calls.AddDeploymentEvent, callInfo)
-	mock.lockAddDeploymentEvent.Unlock()
-	return mock.AddDeploymentEventFunc(ctx, releaseID, deployID, name, message)
+	}{}
+	mock.lockAliases.Lock()
+	mock.calls.Aliases = append(mock.calls.Aliases, callInfo)
+	mock.lockAliases.Unlock()
+	return mock.AliasesFunc()
 }
 
-// AddDeploymentEventCalls gets all the calls that were made to AddDeploymentEvent.
+// AliasesCalls gets all the calls that were made to Aliases.
 // Check the length with:
 //
-//	len(mockedClient.AddDeploymentEventCalls())
-func (mock *ClientMock) AddDeploymentEventCalls() []struct {
-	Ctx       context.Context
-	ReleaseID string
-	DeployID  string
-	Name      string
-	Message   string
+//	len(mockedClient.AliasesCalls())
+func (mock *ClientMock) AliasesCalls() []struct {
 } {
 	var calls []struct {
-		Ctx       context.Context
-		ReleaseID string
-		DeployID  string
-		Name      string
-		Message   string
 	}
-	mock.lockAddDeploymentEvent.RLock()
-	calls = mock.calls.AddDeploymentEvent
-	mock.lockAddDeploymentEvent.RUnlock()
+	mock.lockAliases.RLock()
+	calls = mock.calls.Aliases
+	mock.lockAliases.RUnlock()
 	return calls
 }
 
-// CreateAlias calls CreateAliasFunc.
-func (mock *ClientMock) CreateAlias(ctx context.Context, aliasName string, releaseID string) error {
-	if mock.CreateAliasFunc == nil {
-		panic("ClientMock.CreateAliasFunc: method is nil but Client.CreateAlias was just called")
+// Auth calls AuthFunc.
+func (mock *ClientMock) Auth() auth.AuthClientInterface {
+	if mock.AuthFunc == nil {
+		panic("ClientMock.AuthFunc: method is nil but Client.Auth was just called")
 	}
 	callInfo := struct {
-		Ctx       context.Context
-		AliasName string
-		ReleaseID string
-	}{
-		Ctx:       ctx,
-		AliasName: aliasName,
-		ReleaseID: releaseID,
-	}
-	mock.lockCreateAlias.Lock()
-	mock.calls.CreateAlias = append(mock.calls.CreateAlias, callInfo)
-	mock.lockCreateAlias.Unlock()
-	return mock.CreateAliasFunc(ctx, aliasName, releaseID)
+	}{}
+	mock.lockAuth.Lock()
+	mock.calls.Auth = append(mock.calls.Auth, callInfo)
+	mock.lockAuth.Unlock()
+	return mock.AuthFunc()
 }
 
-// CreateAliasCalls gets all the calls that were made to CreateAlias.
+// AuthCalls gets all the calls that were made to Auth.
 // Check the length with:
 //
-//	len(mockedClient.CreateAliasCalls())
-func (mock *ClientMock) CreateAliasCalls() []struct {
-	Ctx       context.Context
-	AliasName string
-	ReleaseID string
+//	len(mockedClient.AuthCalls())
+func (mock *ClientMock) AuthCalls() []struct {
 } {
 	var calls []struct {
-		Ctx       context.Context
-		AliasName string
-		ReleaseID string
 	}
-	mock.lockCreateAlias.RLock()
-	calls = mock.calls.CreateAlias
-	mock.lockCreateAlias.RUnlock()
+	mock.lockAuth.RLock()
+	calls = mock.calls.Auth
+	mock.lockAuth.RUnlock()
 	return calls
 }
 
-// CreateAuth calls CreateAuthFunc.
-func (mock *ClientMock) CreateAuth(ctx context.Context, req *client.CreateAuthRequest) (*client.GHARepositoryAuth, error) {
-	if mock.CreateAuthFunc == nil {
-		panic("ClientMock.CreateAuthFunc: method is nil but Client.CreateAuth was just called")
+// Deployments calls DeploymentsFunc.
+func (mock *ClientMock) Deployments() deployments.DeploymentsClientInterface {
+	if mock.DeploymentsFunc == nil {
+		panic("ClientMock.DeploymentsFunc: method is nil but Client.Deployments was just called")
 	}
 	callInfo := struct {
-		Ctx context.Context
-		Req *client.CreateAuthRequest
-	}{
-		Ctx: ctx,
-		Req: req,
-	}
-	mock.lockCreateAuth.Lock()
-	mock.calls.CreateAuth = append(mock.calls.CreateAuth, callInfo)
-	mock.lockCreateAuth.Unlock()
-	return mock.CreateAuthFunc(ctx, req)
+	}{}
+	mock.lockDeployments.Lock()
+	mock.calls.Deployments = append(mock.calls.Deployments, callInfo)
+	mock.lockDeployments.Unlock()
+	return mock.DeploymentsFunc()
 }
 
-// CreateAuthCalls gets all the calls that were made to CreateAuth.
+// DeploymentsCalls gets all the calls that were made to Deployments.
 // Check the length with:
 //
-//	len(mockedClient.CreateAuthCalls())
-func (mock *ClientMock) CreateAuthCalls() []struct {
-	Ctx context.Context
-	Req *client.CreateAuthRequest
+//	len(mockedClient.DeploymentsCalls())
+func (mock *ClientMock) DeploymentsCalls() []struct {
 } {
 	var calls []struct {
-		Ctx context.Context
-		Req *client.CreateAuthRequest
 	}
-	mock.lockCreateAuth.RLock()
-	calls = mock.calls.CreateAuth
-	mock.lockCreateAuth.RUnlock()
+	mock.lockDeployments.RLock()
+	calls = mock.calls.Deployments
+	mock.lockDeployments.RUnlock()
 	return calls
 }
 
-// CreateDeployment calls CreateDeploymentFunc.
-func (mock *ClientMock) CreateDeployment(ctx context.Context, releaseID string) (*client.ReleaseDeployment, error) {
-	if mock.CreateDeploymentFunc == nil {
-		panic("ClientMock.CreateDeploymentFunc: method is nil but Client.CreateDeployment was just called")
+// Events calls EventsFunc.
+func (mock *ClientMock) Events() deployments.EventsClientInterface {
+	if mock.EventsFunc == nil {
+		panic("ClientMock.EventsFunc: method is nil but Client.Events was just called")
 	}
 	callInfo := struct {
-		Ctx       context.Context
-		ReleaseID string
-	}{
-		Ctx:       ctx,
-		ReleaseID: releaseID,
-	}
-	mock.lockCreateDeployment.Lock()
-	mock.calls.CreateDeployment = append(mock.calls.CreateDeployment, callInfo)
-	mock.lockCreateDeployment.Unlock()
-	return mock.CreateDeploymentFunc(ctx, releaseID)
+	}{}
+	mock.lockEvents.Lock()
+	mock.calls.Events = append(mock.calls.Events, callInfo)
+	mock.lockEvents.Unlock()
+	return mock.EventsFunc()
 }
 
-// CreateDeploymentCalls gets all the calls that were made to CreateDeployment.
+// EventsCalls gets all the calls that were made to Events.
 // Check the length with:
 //
-//	len(mockedClient.CreateDeploymentCalls())
-func (mock *ClientMock) CreateDeploymentCalls() []struct {
-	Ctx       context.Context
-	ReleaseID string
+//	len(mockedClient.EventsCalls())
+func (mock *ClientMock) EventsCalls() []struct {
 } {
 	var calls []struct {
-		Ctx       context.Context
-		ReleaseID string
 	}
-	mock.lockCreateDeployment.RLock()
-	calls = mock.calls.CreateDeployment
-	mock.lockCreateDeployment.RUnlock()
+	mock.lockEvents.RLock()
+	calls = mock.calls.Events
+	mock.lockEvents.RUnlock()
 	return calls
 }
 
-// CreateRelease calls CreateReleaseFunc.
-func (mock *ClientMock) CreateRelease(ctx context.Context, release *client.Release, deploy bool) (*client.Release, error) {
-	if mock.CreateReleaseFunc == nil {
-		panic("ClientMock.CreateReleaseFunc: method is nil but Client.CreateRelease was just called")
+// Github calls GithubFunc.
+func (mock *ClientMock) Github() github.GithubClientInterface {
+	if mock.GithubFunc == nil {
+		panic("ClientMock.GithubFunc: method is nil but Client.Github was just called")
 	}
 	callInfo := struct {
-		Ctx     context.Context
-		Release *client.Release
-		Deploy  bool
-	}{
-		Ctx:     ctx,
-		Release: release,
-		Deploy:  deploy,
-	}
-	mock.lockCreateRelease.Lock()
-	mock.calls.CreateRelease = append(mock.calls.CreateRelease, callInfo)
-	mock.lockCreateRelease.Unlock()
-	return mock.CreateReleaseFunc(ctx, release, deploy)
+	}{}
+	mock.lockGithub.Lock()
+	mock.calls.Github = append(mock.calls.Github, callInfo)
+	mock.lockGithub.Unlock()
+	return mock.GithubFunc()
 }
 
-// CreateReleaseCalls gets all the calls that were made to CreateRelease.
+// GithubCalls gets all the calls that were made to Github.
 // Check the length with:
 //
-//	len(mockedClient.CreateReleaseCalls())
-func (mock *ClientMock) CreateReleaseCalls() []struct {
-	Ctx     context.Context
-	Release *client.Release
-	Deploy  bool
+//	len(mockedClient.GithubCalls())
+func (mock *ClientMock) GithubCalls() []struct {
 } {
 	var calls []struct {
-		Ctx     context.Context
-		Release *client.Release
-		Deploy  bool
 	}
-	mock.lockCreateRelease.RLock()
-	calls = mock.calls.CreateRelease
-	mock.lockCreateRelease.RUnlock()
+	mock.lockGithub.RLock()
+	calls = mock.calls.Github
+	mock.lockGithub.RUnlock()
 	return calls
 }
 
-// DeleteAlias calls DeleteAliasFunc.
-func (mock *ClientMock) DeleteAlias(ctx context.Context, aliasName string) error {
-	if mock.DeleteAliasFunc == nil {
-		panic("ClientMock.DeleteAliasFunc: method is nil but Client.DeleteAlias was just called")
+// Keys calls KeysFunc.
+func (mock *ClientMock) Keys() users.KeysClientInterface {
+	if mock.KeysFunc == nil {
+		panic("ClientMock.KeysFunc: method is nil but Client.Keys was just called")
 	}
 	callInfo := struct {
-		Ctx       context.Context
-		AliasName string
-	}{
-		Ctx:       ctx,
-		AliasName: aliasName,
-	}
-	mock.lockDeleteAlias.Lock()
-	mock.calls.DeleteAlias = append(mock.calls.DeleteAlias, callInfo)
-	mock.lockDeleteAlias.Unlock()
-	return mock.DeleteAliasFunc(ctx, aliasName)
+	}{}
+	mock.lockKeys.Lock()
+	mock.calls.Keys = append(mock.calls.Keys, callInfo)
+	mock.lockKeys.Unlock()
+	return mock.KeysFunc()
 }
 
-// DeleteAliasCalls gets all the calls that were made to DeleteAlias.
+// KeysCalls gets all the calls that were made to Keys.
 // Check the length with:
 //
-//	len(mockedClient.DeleteAliasCalls())
-func (mock *ClientMock) DeleteAliasCalls() []struct {
-	Ctx       context.Context
-	AliasName string
+//	len(mockedClient.KeysCalls())
+func (mock *ClientMock) KeysCalls() []struct {
 } {
 	var calls []struct {
-		Ctx       context.Context
-		AliasName string
 	}
-	mock.lockDeleteAlias.RLock()
-	calls = mock.calls.DeleteAlias
-	mock.lockDeleteAlias.RUnlock()
+	mock.lockKeys.RLock()
+	calls = mock.calls.Keys
+	mock.lockKeys.RUnlock()
 	return calls
 }
 
-// DeleteAuth calls DeleteAuthFunc.
-func (mock *ClientMock) DeleteAuth(ctx context.Context, id uint) error {
-	if mock.DeleteAuthFunc == nil {
-		panic("ClientMock.DeleteAuthFunc: method is nil but Client.DeleteAuth was just called")
+// Releases calls ReleasesFunc.
+func (mock *ClientMock) Releases() releases.ReleasesClientInterface {
+	if mock.ReleasesFunc == nil {
+		panic("ClientMock.ReleasesFunc: method is nil but Client.Releases was just called")
 	}
 	callInfo := struct {
-		Ctx context.Context
-		ID  uint
-	}{
-		Ctx: ctx,
-		ID:  id,
-	}
-	mock.lockDeleteAuth.Lock()
-	mock.calls.DeleteAuth = append(mock.calls.DeleteAuth, callInfo)
-	mock.lockDeleteAuth.Unlock()
-	return mock.DeleteAuthFunc(ctx, id)
+	}{}
+	mock.lockReleases.Lock()
+	mock.calls.Releases = append(mock.calls.Releases, callInfo)
+	mock.lockReleases.Unlock()
+	return mock.ReleasesFunc()
 }
 
-// DeleteAuthCalls gets all the calls that were made to DeleteAuth.
+// ReleasesCalls gets all the calls that were made to Releases.
 // Check the length with:
 //
-//	len(mockedClient.DeleteAuthCalls())
-func (mock *ClientMock) DeleteAuthCalls() []struct {
-	Ctx context.Context
-	ID  uint
+//	len(mockedClient.ReleasesCalls())
+func (mock *ClientMock) ReleasesCalls() []struct {
 } {
 	var calls []struct {
-		Ctx context.Context
-		ID  uint
 	}
-	mock.lockDeleteAuth.RLock()
-	calls = mock.calls.DeleteAuth
-	mock.lockDeleteAuth.RUnlock()
+	mock.lockReleases.RLock()
+	calls = mock.calls.Releases
+	mock.lockReleases.RUnlock()
 	return calls
 }
 
-// GetAuth calls GetAuthFunc.
-func (mock *ClientMock) GetAuth(ctx context.Context, id uint) (*client.GHARepositoryAuth, error) {
-	if mock.GetAuthFunc == nil {
-		panic("ClientMock.GetAuthFunc: method is nil but Client.GetAuth was just called")
+// Roles calls RolesFunc.
+func (mock *ClientMock) Roles() users.RolesClientInterface {
+	if mock.RolesFunc == nil {
+		panic("ClientMock.RolesFunc: method is nil but Client.Roles was just called")
 	}
 	callInfo := struct {
-		Ctx context.Context
-		ID  uint
-	}{
-		Ctx: ctx,
-		ID:  id,
-	}
-	mock.lockGetAuth.Lock()
-	mock.calls.GetAuth = append(mock.calls.GetAuth, callInfo)
-	mock.lockGetAuth.Unlock()
-	return mock.GetAuthFunc(ctx, id)
+	}{}
+	mock.lockRoles.Lock()
+	mock.calls.Roles = append(mock.calls.Roles, callInfo)
+	mock.lockRoles.Unlock()
+	return mock.RolesFunc()
 }
 
-// GetAuthCalls gets all the calls that were made to GetAuth.
+// RolesCalls gets all the calls that were made to Roles.
 // Check the length with:
 //
-//	len(mockedClient.GetAuthCalls())
-func (mock *ClientMock) GetAuthCalls() []struct {
-	Ctx context.Context
-	ID  uint
+//	len(mockedClient.RolesCalls())
+func (mock *ClientMock) RolesCalls() []struct {
 } {
 	var calls []struct {
-		Ctx context.Context
-		ID  uint
 	}
-	mock.lockGetAuth.RLock()
-	calls = mock.calls.GetAuth
-	mock.lockGetAuth.RUnlock()
+	mock.lockRoles.RLock()
+	calls = mock.calls.Roles
+	mock.lockRoles.RUnlock()
 	return calls
 }
 
-// GetAuthByRepository calls GetAuthByRepositoryFunc.
-func (mock *ClientMock) GetAuthByRepository(ctx context.Context, repository string) (*client.GHARepositoryAuth, error) {
-	if mock.GetAuthByRepositoryFunc == nil {
-		panic("ClientMock.GetAuthByRepositoryFunc: method is nil but Client.GetAuthByRepository was just called")
+// Users calls UsersFunc.
+func (mock *ClientMock) Users() users.UsersClientInterface {
+	if mock.UsersFunc == nil {
+		panic("ClientMock.UsersFunc: method is nil but Client.Users was just called")
 	}
 	callInfo := struct {
-		Ctx        context.Context
-		Repository string
-	}{
-		Ctx:        ctx,
-		Repository: repository,
-	}
-	mock.lockGetAuthByRepository.Lock()
-	mock.calls.GetAuthByRepository = append(mock.calls.GetAuthByRepository, callInfo)
-	mock.lockGetAuthByRepository.Unlock()
-	return mock.GetAuthByRepositoryFunc(ctx, repository)
+	}{}
+	mock.lockUsers.Lock()
+	mock.calls.Users = append(mock.calls.Users, callInfo)
+	mock.lockUsers.Unlock()
+	return mock.UsersFunc()
 }
 
-// GetAuthByRepositoryCalls gets all the calls that were made to GetAuthByRepository.
+// UsersCalls gets all the calls that were made to Users.
 // Check the length with:
 //
-//	len(mockedClient.GetAuthByRepositoryCalls())
-func (mock *ClientMock) GetAuthByRepositoryCalls() []struct {
-	Ctx        context.Context
-	Repository string
+//	len(mockedClient.UsersCalls())
+func (mock *ClientMock) UsersCalls() []struct {
 } {
 	var calls []struct {
-		Ctx        context.Context
-		Repository string
 	}
-	mock.lockGetAuthByRepository.RLock()
-	calls = mock.calls.GetAuthByRepository
-	mock.lockGetAuthByRepository.RUnlock()
-	return calls
-}
-
-// GetDeployment calls GetDeploymentFunc.
-func (mock *ClientMock) GetDeployment(ctx context.Context, releaseID string, deployID string) (*client.ReleaseDeployment, error) {
-	if mock.GetDeploymentFunc == nil {
-		panic("ClientMock.GetDeploymentFunc: method is nil but Client.GetDeployment was just called")
-	}
-	callInfo := struct {
-		Ctx       context.Context
-		ReleaseID string
-		DeployID  string
-	}{
-		Ctx:       ctx,
-		ReleaseID: releaseID,
-		DeployID:  deployID,
-	}
-	mock.lockGetDeployment.Lock()
-	mock.calls.GetDeployment = append(mock.calls.GetDeployment, callInfo)
-	mock.lockGetDeployment.Unlock()
-	return mock.GetDeploymentFunc(ctx, releaseID, deployID)
-}
-
-// GetDeploymentCalls gets all the calls that were made to GetDeployment.
-// Check the length with:
-//
-//	len(mockedClient.GetDeploymentCalls())
-func (mock *ClientMock) GetDeploymentCalls() []struct {
-	Ctx       context.Context
-	ReleaseID string
-	DeployID  string
-} {
-	var calls []struct {
-		Ctx       context.Context
-		ReleaseID string
-		DeployID  string
-	}
-	mock.lockGetDeployment.RLock()
-	calls = mock.calls.GetDeployment
-	mock.lockGetDeployment.RUnlock()
-	return calls
-}
-
-// GetDeploymentEvents calls GetDeploymentEventsFunc.
-func (mock *ClientMock) GetDeploymentEvents(ctx context.Context, releaseID string, deployID string) ([]client.DeploymentEvent, error) {
-	if mock.GetDeploymentEventsFunc == nil {
-		panic("ClientMock.GetDeploymentEventsFunc: method is nil but Client.GetDeploymentEvents was just called")
-	}
-	callInfo := struct {
-		Ctx       context.Context
-		ReleaseID string
-		DeployID  string
-	}{
-		Ctx:       ctx,
-		ReleaseID: releaseID,
-		DeployID:  deployID,
-	}
-	mock.lockGetDeploymentEvents.Lock()
-	mock.calls.GetDeploymentEvents = append(mock.calls.GetDeploymentEvents, callInfo)
-	mock.lockGetDeploymentEvents.Unlock()
-	return mock.GetDeploymentEventsFunc(ctx, releaseID, deployID)
-}
-
-// GetDeploymentEventsCalls gets all the calls that were made to GetDeploymentEvents.
-// Check the length with:
-//
-//	len(mockedClient.GetDeploymentEventsCalls())
-func (mock *ClientMock) GetDeploymentEventsCalls() []struct {
-	Ctx       context.Context
-	ReleaseID string
-	DeployID  string
-} {
-	var calls []struct {
-		Ctx       context.Context
-		ReleaseID string
-		DeployID  string
-	}
-	mock.lockGetDeploymentEvents.RLock()
-	calls = mock.calls.GetDeploymentEvents
-	mock.lockGetDeploymentEvents.RUnlock()
-	return calls
-}
-
-// GetLatestDeployment calls GetLatestDeploymentFunc.
-func (mock *ClientMock) GetLatestDeployment(ctx context.Context, releaseID string) (*client.ReleaseDeployment, error) {
-	if mock.GetLatestDeploymentFunc == nil {
-		panic("ClientMock.GetLatestDeploymentFunc: method is nil but Client.GetLatestDeployment was just called")
-	}
-	callInfo := struct {
-		Ctx       context.Context
-		ReleaseID string
-	}{
-		Ctx:       ctx,
-		ReleaseID: releaseID,
-	}
-	mock.lockGetLatestDeployment.Lock()
-	mock.calls.GetLatestDeployment = append(mock.calls.GetLatestDeployment, callInfo)
-	mock.lockGetLatestDeployment.Unlock()
-	return mock.GetLatestDeploymentFunc(ctx, releaseID)
-}
-
-// GetLatestDeploymentCalls gets all the calls that were made to GetLatestDeployment.
-// Check the length with:
-//
-//	len(mockedClient.GetLatestDeploymentCalls())
-func (mock *ClientMock) GetLatestDeploymentCalls() []struct {
-	Ctx       context.Context
-	ReleaseID string
-} {
-	var calls []struct {
-		Ctx       context.Context
-		ReleaseID string
-	}
-	mock.lockGetLatestDeployment.RLock()
-	calls = mock.calls.GetLatestDeployment
-	mock.lockGetLatestDeployment.RUnlock()
-	return calls
-}
-
-// GetRelease calls GetReleaseFunc.
-func (mock *ClientMock) GetRelease(ctx context.Context, id string) (*client.Release, error) {
-	if mock.GetReleaseFunc == nil {
-		panic("ClientMock.GetReleaseFunc: method is nil but Client.GetRelease was just called")
-	}
-	callInfo := struct {
-		Ctx context.Context
-		ID  string
-	}{
-		Ctx: ctx,
-		ID:  id,
-	}
-	mock.lockGetRelease.Lock()
-	mock.calls.GetRelease = append(mock.calls.GetRelease, callInfo)
-	mock.lockGetRelease.Unlock()
-	return mock.GetReleaseFunc(ctx, id)
-}
-
-// GetReleaseCalls gets all the calls that were made to GetRelease.
-// Check the length with:
-//
-//	len(mockedClient.GetReleaseCalls())
-func (mock *ClientMock) GetReleaseCalls() []struct {
-	Ctx context.Context
-	ID  string
-} {
-	var calls []struct {
-		Ctx context.Context
-		ID  string
-	}
-	mock.lockGetRelease.RLock()
-	calls = mock.calls.GetRelease
-	mock.lockGetRelease.RUnlock()
-	return calls
-}
-
-// GetReleaseByAlias calls GetReleaseByAliasFunc.
-func (mock *ClientMock) GetReleaseByAlias(ctx context.Context, aliasName string) (*client.Release, error) {
-	if mock.GetReleaseByAliasFunc == nil {
-		panic("ClientMock.GetReleaseByAliasFunc: method is nil but Client.GetReleaseByAlias was just called")
-	}
-	callInfo := struct {
-		Ctx       context.Context
-		AliasName string
-	}{
-		Ctx:       ctx,
-		AliasName: aliasName,
-	}
-	mock.lockGetReleaseByAlias.Lock()
-	mock.calls.GetReleaseByAlias = append(mock.calls.GetReleaseByAlias, callInfo)
-	mock.lockGetReleaseByAlias.Unlock()
-	return mock.GetReleaseByAliasFunc(ctx, aliasName)
-}
-
-// GetReleaseByAliasCalls gets all the calls that were made to GetReleaseByAlias.
-// Check the length with:
-//
-//	len(mockedClient.GetReleaseByAliasCalls())
-func (mock *ClientMock) GetReleaseByAliasCalls() []struct {
-	Ctx       context.Context
-	AliasName string
-} {
-	var calls []struct {
-		Ctx       context.Context
-		AliasName string
-	}
-	mock.lockGetReleaseByAlias.RLock()
-	calls = mock.calls.GetReleaseByAlias
-	mock.lockGetReleaseByAlias.RUnlock()
-	return calls
-}
-
-// IncrementDeploymentAttempts calls IncrementDeploymentAttemptsFunc.
-func (mock *ClientMock) IncrementDeploymentAttempts(ctx context.Context, releaseID string, deployID string) (*client.ReleaseDeployment, error) {
-	if mock.IncrementDeploymentAttemptsFunc == nil {
-		panic("ClientMock.IncrementDeploymentAttemptsFunc: method is nil but Client.IncrementDeploymentAttempts was just called")
-	}
-	callInfo := struct {
-		Ctx       context.Context
-		ReleaseID string
-		DeployID  string
-	}{
-		Ctx:       ctx,
-		ReleaseID: releaseID,
-		DeployID:  deployID,
-	}
-	mock.lockIncrementDeploymentAttempts.Lock()
-	mock.calls.IncrementDeploymentAttempts = append(mock.calls.IncrementDeploymentAttempts, callInfo)
-	mock.lockIncrementDeploymentAttempts.Unlock()
-	return mock.IncrementDeploymentAttemptsFunc(ctx, releaseID, deployID)
-}
-
-// IncrementDeploymentAttemptsCalls gets all the calls that were made to IncrementDeploymentAttempts.
-// Check the length with:
-//
-//	len(mockedClient.IncrementDeploymentAttemptsCalls())
-func (mock *ClientMock) IncrementDeploymentAttemptsCalls() []struct {
-	Ctx       context.Context
-	ReleaseID string
-	DeployID  string
-} {
-	var calls []struct {
-		Ctx       context.Context
-		ReleaseID string
-		DeployID  string
-	}
-	mock.lockIncrementDeploymentAttempts.RLock()
-	calls = mock.calls.IncrementDeploymentAttempts
-	mock.lockIncrementDeploymentAttempts.RUnlock()
-	return calls
-}
-
-// ListAliases calls ListAliasesFunc.
-func (mock *ClientMock) ListAliases(ctx context.Context, releaseID string) ([]client.ReleaseAlias, error) {
-	if mock.ListAliasesFunc == nil {
-		panic("ClientMock.ListAliasesFunc: method is nil but Client.ListAliases was just called")
-	}
-	callInfo := struct {
-		Ctx       context.Context
-		ReleaseID string
-	}{
-		Ctx:       ctx,
-		ReleaseID: releaseID,
-	}
-	mock.lockListAliases.Lock()
-	mock.calls.ListAliases = append(mock.calls.ListAliases, callInfo)
-	mock.lockListAliases.Unlock()
-	return mock.ListAliasesFunc(ctx, releaseID)
-}
-
-// ListAliasesCalls gets all the calls that were made to ListAliases.
-// Check the length with:
-//
-//	len(mockedClient.ListAliasesCalls())
-func (mock *ClientMock) ListAliasesCalls() []struct {
-	Ctx       context.Context
-	ReleaseID string
-} {
-	var calls []struct {
-		Ctx       context.Context
-		ReleaseID string
-	}
-	mock.lockListAliases.RLock()
-	calls = mock.calls.ListAliases
-	mock.lockListAliases.RUnlock()
-	return calls
-}
-
-// ListAuths calls ListAuthsFunc.
-func (mock *ClientMock) ListAuths(ctx context.Context) ([]client.GHARepositoryAuth, error) {
-	if mock.ListAuthsFunc == nil {
-		panic("ClientMock.ListAuthsFunc: method is nil but Client.ListAuths was just called")
-	}
-	callInfo := struct {
-		Ctx context.Context
-	}{
-		Ctx: ctx,
-	}
-	mock.lockListAuths.Lock()
-	mock.calls.ListAuths = append(mock.calls.ListAuths, callInfo)
-	mock.lockListAuths.Unlock()
-	return mock.ListAuthsFunc(ctx)
-}
-
-// ListAuthsCalls gets all the calls that were made to ListAuths.
-// Check the length with:
-//
-//	len(mockedClient.ListAuthsCalls())
-func (mock *ClientMock) ListAuthsCalls() []struct {
-	Ctx context.Context
-} {
-	var calls []struct {
-		Ctx context.Context
-	}
-	mock.lockListAuths.RLock()
-	calls = mock.calls.ListAuths
-	mock.lockListAuths.RUnlock()
-	return calls
-}
-
-// ListDeployments calls ListDeploymentsFunc.
-func (mock *ClientMock) ListDeployments(ctx context.Context, releaseID string) ([]client.ReleaseDeployment, error) {
-	if mock.ListDeploymentsFunc == nil {
-		panic("ClientMock.ListDeploymentsFunc: method is nil but Client.ListDeployments was just called")
-	}
-	callInfo := struct {
-		Ctx       context.Context
-		ReleaseID string
-	}{
-		Ctx:       ctx,
-		ReleaseID: releaseID,
-	}
-	mock.lockListDeployments.Lock()
-	mock.calls.ListDeployments = append(mock.calls.ListDeployments, callInfo)
-	mock.lockListDeployments.Unlock()
-	return mock.ListDeploymentsFunc(ctx, releaseID)
-}
-
-// ListDeploymentsCalls gets all the calls that were made to ListDeployments.
-// Check the length with:
-//
-//	len(mockedClient.ListDeploymentsCalls())
-func (mock *ClientMock) ListDeploymentsCalls() []struct {
-	Ctx       context.Context
-	ReleaseID string
-} {
-	var calls []struct {
-		Ctx       context.Context
-		ReleaseID string
-	}
-	mock.lockListDeployments.RLock()
-	calls = mock.calls.ListDeployments
-	mock.lockListDeployments.RUnlock()
-	return calls
-}
-
-// ListReleases calls ListReleasesFunc.
-func (mock *ClientMock) ListReleases(ctx context.Context, projectName string) ([]client.Release, error) {
-	if mock.ListReleasesFunc == nil {
-		panic("ClientMock.ListReleasesFunc: method is nil but Client.ListReleases was just called")
-	}
-	callInfo := struct {
-		Ctx         context.Context
-		ProjectName string
-	}{
-		Ctx:         ctx,
-		ProjectName: projectName,
-	}
-	mock.lockListReleases.Lock()
-	mock.calls.ListReleases = append(mock.calls.ListReleases, callInfo)
-	mock.lockListReleases.Unlock()
-	return mock.ListReleasesFunc(ctx, projectName)
-}
-
-// ListReleasesCalls gets all the calls that were made to ListReleases.
-// Check the length with:
-//
-//	len(mockedClient.ListReleasesCalls())
-func (mock *ClientMock) ListReleasesCalls() []struct {
-	Ctx         context.Context
-	ProjectName string
-} {
-	var calls []struct {
-		Ctx         context.Context
-		ProjectName string
-	}
-	mock.lockListReleases.RLock()
-	calls = mock.calls.ListReleases
-	mock.lockListReleases.RUnlock()
-	return calls
-}
-
-// UpdateAuth calls UpdateAuthFunc.
-func (mock *ClientMock) UpdateAuth(ctx context.Context, id uint, req *client.UpdateAuthRequest) (*client.GHARepositoryAuth, error) {
-	if mock.UpdateAuthFunc == nil {
-		panic("ClientMock.UpdateAuthFunc: method is nil but Client.UpdateAuth was just called")
-	}
-	callInfo := struct {
-		Ctx context.Context
-		ID  uint
-		Req *client.UpdateAuthRequest
-	}{
-		Ctx: ctx,
-		ID:  id,
-		Req: req,
-	}
-	mock.lockUpdateAuth.Lock()
-	mock.calls.UpdateAuth = append(mock.calls.UpdateAuth, callInfo)
-	mock.lockUpdateAuth.Unlock()
-	return mock.UpdateAuthFunc(ctx, id, req)
-}
-
-// UpdateAuthCalls gets all the calls that were made to UpdateAuth.
-// Check the length with:
-//
-//	len(mockedClient.UpdateAuthCalls())
-func (mock *ClientMock) UpdateAuthCalls() []struct {
-	Ctx context.Context
-	ID  uint
-	Req *client.UpdateAuthRequest
-} {
-	var calls []struct {
-		Ctx context.Context
-		ID  uint
-		Req *client.UpdateAuthRequest
-	}
-	mock.lockUpdateAuth.RLock()
-	calls = mock.calls.UpdateAuth
-	mock.lockUpdateAuth.RUnlock()
-	return calls
-}
-
-// UpdateDeployment calls UpdateDeploymentFunc.
-func (mock *ClientMock) UpdateDeployment(ctx context.Context, releaseID string, deployment *client.ReleaseDeployment) (*client.ReleaseDeployment, error) {
-	if mock.UpdateDeploymentFunc == nil {
-		panic("ClientMock.UpdateDeploymentFunc: method is nil but Client.UpdateDeployment was just called")
-	}
-	callInfo := struct {
-		Ctx        context.Context
-		ReleaseID  string
-		Deployment *client.ReleaseDeployment
-	}{
-		Ctx:        ctx,
-		ReleaseID:  releaseID,
-		Deployment: deployment,
-	}
-	mock.lockUpdateDeployment.Lock()
-	mock.calls.UpdateDeployment = append(mock.calls.UpdateDeployment, callInfo)
-	mock.lockUpdateDeployment.Unlock()
-	return mock.UpdateDeploymentFunc(ctx, releaseID, deployment)
-}
-
-// UpdateDeploymentCalls gets all the calls that were made to UpdateDeployment.
-// Check the length with:
-//
-//	len(mockedClient.UpdateDeploymentCalls())
-func (mock *ClientMock) UpdateDeploymentCalls() []struct {
-	Ctx        context.Context
-	ReleaseID  string
-	Deployment *client.ReleaseDeployment
-} {
-	var calls []struct {
-		Ctx        context.Context
-		ReleaseID  string
-		Deployment *client.ReleaseDeployment
-	}
-	mock.lockUpdateDeployment.RLock()
-	calls = mock.calls.UpdateDeployment
-	mock.lockUpdateDeployment.RUnlock()
-	return calls
-}
-
-// UpdateRelease calls UpdateReleaseFunc.
-func (mock *ClientMock) UpdateRelease(ctx context.Context, release *client.Release) (*client.Release, error) {
-	if mock.UpdateReleaseFunc == nil {
-		panic("ClientMock.UpdateReleaseFunc: method is nil but Client.UpdateRelease was just called")
-	}
-	callInfo := struct {
-		Ctx     context.Context
-		Release *client.Release
-	}{
-		Ctx:     ctx,
-		Release: release,
-	}
-	mock.lockUpdateRelease.Lock()
-	mock.calls.UpdateRelease = append(mock.calls.UpdateRelease, callInfo)
-	mock.lockUpdateRelease.Unlock()
-	return mock.UpdateReleaseFunc(ctx, release)
-}
-
-// UpdateReleaseCalls gets all the calls that were made to UpdateRelease.
-// Check the length with:
-//
-//	len(mockedClient.UpdateReleaseCalls())
-func (mock *ClientMock) UpdateReleaseCalls() []struct {
-	Ctx     context.Context
-	Release *client.Release
-} {
-	var calls []struct {
-		Ctx     context.Context
-		Release *client.Release
-	}
-	mock.lockUpdateRelease.RLock()
-	calls = mock.calls.UpdateRelease
-	mock.lockUpdateRelease.RUnlock()
-	return calls
-}
-
-// ValidateToken calls ValidateTokenFunc.
-func (mock *ClientMock) ValidateToken(ctx context.Context, req *client.ValidateTokenRequest) (*client.ValidateTokenResponse, error) {
-	if mock.ValidateTokenFunc == nil {
-		panic("ClientMock.ValidateTokenFunc: method is nil but Client.ValidateToken was just called")
-	}
-	callInfo := struct {
-		Ctx context.Context
-		Req *client.ValidateTokenRequest
-	}{
-		Ctx: ctx,
-		Req: req,
-	}
-	mock.lockValidateToken.Lock()
-	mock.calls.ValidateToken = append(mock.calls.ValidateToken, callInfo)
-	mock.lockValidateToken.Unlock()
-	return mock.ValidateTokenFunc(ctx, req)
-}
-
-// ValidateTokenCalls gets all the calls that were made to ValidateToken.
-// Check the length with:
-//
-//	len(mockedClient.ValidateTokenCalls())
-func (mock *ClientMock) ValidateTokenCalls() []struct {
-	Ctx context.Context
-	Req *client.ValidateTokenRequest
-} {
-	var calls []struct {
-		Ctx context.Context
-		Req *client.ValidateTokenRequest
-	}
-	mock.lockValidateToken.RLock()
-	calls = mock.calls.ValidateToken
-	mock.lockValidateToken.RUnlock()
+	mock.lockUsers.RLock()
+	calls = mock.calls.Users
+	mock.lockUsers.RUnlock()
 	return calls
 }

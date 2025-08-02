@@ -15,6 +15,7 @@ const (
 )
 
 type CLIConfig struct {
+	Email string `toml:"email"`
 	Token string `toml:"token"`
 	fs    fs.Filesystem
 }

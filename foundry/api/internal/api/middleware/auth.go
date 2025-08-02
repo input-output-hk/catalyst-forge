@@ -9,6 +9,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/input-output-hk/catalyst-forge/foundry/api/pkg/auth"
+	"github.com/input-output-hk/catalyst-forge/foundry/api/pkg/auth/jwt"
 )
 
 // AuthenticatedUser is a struct that contains the user information from the
@@ -16,7 +17,7 @@ import (
 type AuthenticatedUser struct {
 	ID          string
 	Permissions []auth.Permission
-	Claims      *auth.Claims
+	Claims      *jwt.Claims
 }
 
 // hasPermissions checks if the user has the required permissions
@@ -31,8 +32,8 @@ func (u *AuthenticatedUser) hasPermissions(permissions []auth.Permission) bool {
 
 // AuthMiddleware provides a middleware that validates a user's permissions
 type AuthMiddleware struct {
-	authManager *auth.AuthManager
-	logger      *slog.Logger
+	jwtManager *jwt.JWTManager
+	logger     *slog.Logger
 }
 
 // ValidatePermissions returns a middleware that validates a user's permissions
@@ -85,7 +86,7 @@ func (h *AuthMiddleware) getToken(c *gin.Context) (string, error) {
 
 // getUser validates the token and returns the authenticated user
 func (h *AuthMiddleware) getUser(token string) (*AuthenticatedUser, error) {
-	claims, err := h.authManager.ValidateToken(token)
+	claims, err := h.jwtManager.ValidateToken(token)
 	if err != nil {
 		return nil, err
 	}
@@ -98,9 +99,9 @@ func (h *AuthMiddleware) getUser(token string) (*AuthenticatedUser, error) {
 }
 
 // NewAuthMiddleware creates a new AuthMiddlewareHandler
-func NewAuthMiddleware(authManager *auth.AuthManager, logger *slog.Logger) *AuthMiddleware {
+func NewAuthMiddleware(jwtManager *jwt.JWTManager, logger *slog.Logger) *AuthMiddleware {
 	return &AuthMiddleware{
-		authManager: authManager,
-		logger:      logger,
+		jwtManager: jwtManager,
+		logger:     logger,
 	}
 }

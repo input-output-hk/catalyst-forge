@@ -12,4 +12,4 @@ node_modules
 !/.vscode/tasks.recommended.json
 
 .env
-.secret
+.auth

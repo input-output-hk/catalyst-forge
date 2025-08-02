@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/input-output-hk/catalyst-forge/foundry/api/pkg/auth"
+	"github.com/input-output-hk/catalyst-forge/foundry/api/pkg/auth/jwt"
 )
 
 type GenerateCmd struct {
@@ -15,7 +16,7 @@ type GenerateCmd struct {
 }
 
 func (g *GenerateCmd) Run() error {
-	am, err := auth.NewAuthManager(g.PrivateKey, "")
+	am, err := jwt.NewJWTManager(g.PrivateKey, "")
 	if err != nil {
 		return err
 	}

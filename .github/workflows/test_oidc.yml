@@ -40,7 +40,7 @@ jobs:
 
       - name: Start API
         run: |
-          docker compose -f ./foundry/api/docker-compose.yml up -d auth auth-jwt api postgres
+          docker compose -f ./foundry/api/docker-compose.yml up -d auth auth-jwt api postgres valkey
 
       - name: Wait for API to be ready
         run: |
@@ -48,8 +48,8 @@ jobs:
 
       - name: Create GHA auth
         run: |
-            forge -vvv --api-url "http://localhost:5050" api login "$(cat ./foundry/api/.secret/jwt.txt)"
-            forge -vvv --api-url "http://localhost:5050" api auth gha create -a input-output-hk/catalyst-forge
+            forge -vvv --api-url "http://localhost:5050" api login --token "$(cat ./foundry/api/.auth/jwt.txt)"
+            forge -vvv --api-url "http://localhost:5050" api auth github create -a input-output-hk/catalyst-forge
             rm -rf $HOME/.config/forge/config.toml
 
       - name: Get OIDC token
@@ -65,9 +65,9 @@ jobs:
         id: call-api
         shell: bash
         run: |
-          forge -vvv --api-url "http://localhost:5050" api login -t "gha" "${{ steps.oidc.outputs.token }}"
+          forge -vvv --api-url "http://localhost:5050" api login -t "github" --token "${{ steps.oidc.outputs.token }}"
 
       - name: Verify returned JWT token
         shell: bash
         run: |
-          forge -vvv --api-url "http://localhost:5050" api auth gha list -j
+          forge -vvv --api-url "http://localhost:5050" api auth github list -j

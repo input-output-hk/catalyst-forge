@@ -1,283 +1,186 @@
 package auth
 
 import (
-	"crypto/ecdsa"
-	"crypto/elliptic"
+	"context"
+	"crypto/ed25519"
 	"crypto/rand"
+	"crypto/sha256"
 	"crypto/x509"
+	"encoding/base64"
+	"encoding/json"
 	"encoding/pem"
 	"fmt"
-	"io"
-	"log/slog"
+	"path/filepath"
 	"time"
 
-	"github.com/golang-jwt/jwt/v5"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/fs"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/fs/billy"
+	"github.com/redis/go-redis/v9"
 )
 
-const (
-	ISSUER   = "foundry.projectcatalyst.io"
-	AUDIENCE = "catalyst-forge"
-)
-
-// AuthManager handles authentication operations including JWT token management and key generation
+// AuthManager exposes registration and authentication helpers.
 type AuthManager struct {
-	audiences  []string
-	fs         fs.Filesystem
-	issuer     string
-	logger     *slog.Logger
-	privateKey *ecdsa.PrivateKey
-	publicKey  *ecdsa.PublicKey
+	fs  fs.Filesystem
+	rdb *redis.Client
 }
 
-// Claims represents the JWT claims structure
-type Claims struct {
-	UserID      string       `json:"user_id"`
-	Permissions []Permission `json:"permissions"`
-	jwt.RegisteredClaims
-}
-
-// ES256KeyPair represents a pair of ES256 keys with their raw contents
-type ES256KeyPair struct {
-	PrivateKeyPEM []byte
-	PublicKeyPEM  []byte
-}
-
-// AuthManagerOption is a function that configures an AuthManager
+// AuthManagerOption is a function that can be used to configure the AuthManager.
 type AuthManagerOption func(*AuthManager)
 
-// WithAudiences sets the audiences for the AuthManager
-func WithAudiences(audiences []string) AuthManagerOption {
-	return func(am *AuthManager) {
-		am.audiences = audiences
-	}
-}
-
-// WithFilesystem sets the filesystem for the AuthManager
+// WithFilesystem sets the filesystem to use for the AuthManager.
 func WithFilesystem(fs fs.Filesystem) AuthManagerOption {
 	return func(am *AuthManager) {
 		am.fs = fs
 	}
 }
 
-// WithIssuer sets the issuer for the AuthManager
-func WithIssuer(issuer string) AuthManagerOption {
+// WithRedis sets the Redis client to use for the AuthManager.
+func WithRedis(rdb *redis.Client) AuthManagerOption {
 	return func(am *AuthManager) {
-		am.issuer = issuer
+		am.rdb = rdb
 	}
 }
 
-// WithLogger sets the logger for the AuthManager
-func WithLogger(logger *slog.Logger) AuthManagerOption {
-	return func(am *AuthManager) {
-		am.logger = logger
-	}
-}
-
-// NewAuthManager creates a new auth manager with the provided keys
-// The public key is optional, if not provided, only validation is supported
-// The private key is also optional, if not provided, only signing is supported
-func NewAuthManager(privateKeyPath, publicKeyPath string, opts ...AuthManagerOption) (*AuthManager, error) {
+// NewAuthManager returns a new AuthManager.
+func NewAuthManager(opts ...AuthManagerOption) *AuthManager {
 	am := &AuthManager{
-		audiences: []string{AUDIENCE},
-		fs:        billy.NewBaseOsFS(),
-		issuer:    ISSUER,
-		logger:    slog.New(slog.NewTextHandler(io.Discard, nil)),
+		fs: billy.NewBaseOsFS(),
 	}
 
 	for _, opt := range opts {
 		opt(am)
 	}
 
-	var privateKey *ecdsa.PrivateKey
-	if privateKeyPath != "" {
-		privateKeyBytes, err := am.loadPrivateKey(privateKeyPath)
-		if err != nil {
-			return nil, fmt.Errorf("failed to load private key: %w", err)
-		}
-
-		privateKey, err = x509.ParseECPrivateKey(privateKeyBytes)
-		if err != nil {
-			return nil, fmt.Errorf("failed to parse private key: %w", err)
-		}
-	} else {
-		am.logger.Warn("no private key provided, only validation is supported")
-	}
-
-	var ecdsaPublicKey *ecdsa.PublicKey
-	var ok bool
-	if publicKeyPath != "" {
-		publicKeyBytes, err := am.loadPublicKey(publicKeyPath)
-		if err != nil {
-			return nil, fmt.Errorf("failed to load public key: %w", err)
-		}
-
-		publicKey, err := x509.ParsePKIXPublicKey(publicKeyBytes)
-		if err != nil {
-			return nil, fmt.Errorf("failed to parse public key: %w", err)
-		}
-
-		ecdsaPublicKey, ok = publicKey.(*ecdsa.PublicKey)
-		if !ok {
-			return nil, fmt.Errorf("public key is not an ECDSA key")
-		}
-	} else {
-		am.logger.Warn("no public key provided, only signing is supported")
-	}
-
-	return &AuthManager{
-		privateKey: privateKey,
-		publicKey:  ecdsaPublicKey,
-		issuer:     am.issuer,
-		audiences:  am.audiences,
-	}, nil
+	return am
 }
 
-// GenerateToken creates a new JWT token for the given user ID
-func (am *AuthManager) GenerateToken(
-	userID string,
-	permissions []Permission,
-	expiration time.Duration) (string, error) {
-	if am.privateKey == nil {
-		return "", fmt.Errorf("no private key provided, only validation is supported")
-	}
-
-	now := time.Now()
-	claims := &Claims{
-		UserID:      userID,
-		Permissions: permissions,
-		RegisteredClaims: jwt.RegisteredClaims{
-			Issuer:    am.issuer,
-			Audience:  am.audiences,
-			IssuedAt:  jwt.NewNumericDate(now),
-			ExpiresAt: jwt.NewNumericDate(now.Add(expiration)),
-			NotBefore: jwt.NewNumericDate(now),
-		},
-	}
-
-	token := jwt.NewWithClaims(jwt.SigningMethodES256, claims)
-	return token.SignedString(am.privateKey)
-}
-
-// HasPermission checks if the token has the given permission
-func (am *AuthManager) HasPermission(tokenString string, permission Permission) (bool, error) {
-	claims, err := am.ValidateToken(tokenString)
-	if err != nil {
-		return false, fmt.Errorf("failed to validate token: %w", err)
-	}
-
-	for _, perm := range claims.Permissions {
-		if perm == permission {
-			return true, nil
-		}
-	}
-
-	return false, nil
-}
-
-// ValidateToken validates and parses a JWT token
-func (am *AuthManager) ValidateToken(tokenString string) (*Claims, error) {
-	if am.publicKey == nil {
-		return nil, fmt.Errorf("no public key provided, only signing is supported")
-	}
-
-	token, err := jwt.ParseWithClaims(tokenString, &Claims{}, func(token *jwt.Token) (any, error) {
-		if _, ok := token.Method.(*jwt.SigningMethodECDSA); !ok {
-			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
-		}
-		return am.publicKey, nil
-	})
-
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse token: %w", err)
-	}
-
-	if claims, ok := token.Claims.(*Claims); ok && token.Valid {
-		return claims, nil
-	}
-
-	return nil, fmt.Errorf("invalid token")
-}
-
-// loadPrivateKey loads a ECDSA private key from a PEM file
-func (am *AuthManager) loadPrivateKey(path string) ([]byte, error) {
-	block, err := am.loadPEMFile(path)
-	if err != nil {
-		return nil, fmt.Errorf("failed to load PEM file: %w", err)
-	}
-
-	if block.Type != "EC PRIVATE KEY" {
-		return nil, fmt.Errorf("unexpected PEM block type: %s", block.Type)
-	}
-
-	return block.Bytes, nil
-}
-
-// loadPublicKey loads a public key from a PEM file
-func (am *AuthManager) loadPublicKey(path string) ([]byte, error) {
-	block, err := am.loadPEMFile(path)
-	if err != nil {
-		return nil, fmt.Errorf("failed to load PEM file: %w", err)
-	}
-
-	if block.Type != "PUBLIC KEY" {
-		return nil, fmt.Errorf("unexpected PEM block type: %s", block.Type)
-	}
-
-	return block.Bytes, nil
-}
-
-// loadPEMFile loads a PEM file from disk
-func (am *AuthManager) loadPEMFile(path string) (*pem.Block, error) {
-	data, err := am.fs.ReadFile(path)
+// GenerateKey creates a new Ed25519 key pair.
+func (a *AuthManager) GenerateKeypair() (*KeyPair, error) {
+	pub, priv, err := ed25519.GenerateKey(rand.Reader)
 	if err != nil {
 		return nil, err
 	}
 
-	block, _ := pem.Decode(data)
-	if block == nil {
-		return nil, fmt.Errorf("failed to decode PEM block")
-	}
-
-	return block, nil
+	return &KeyPair{
+		fs:         a.fs,
+		PublicKey:  pub,
+		PrivateKey: priv,
+	}, nil
 }
 
-// GenerateES256Keys generates a pair of ES256 keys and returns them
-func GenerateES256Keys() (*ES256KeyPair, error) {
-	privateKey, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+// LoadKeyPair loads a KeyPair from the given path.
+func (a *AuthManager) LoadKeyPair(path string) (*KeyPair, error) {
+	publicKeyPath := filepath.Join(path, "public.pem")
+	privateKeyPath := filepath.Join(path, "private.pem")
+
+	publicKeyBytes, err := a.fs.ReadFile(publicKeyPath)
 	if err != nil {
-		return nil, fmt.Errorf("failed to generate private key: %w", err)
+		return nil, fmt.Errorf("failed to read public key file: %w", err)
 	}
 
-	privateKeyBytes, err := x509.MarshalECPrivateKey(privateKey)
+	privateKeyBytes, err := a.fs.ReadFile(privateKeyPath)
 	if err != nil {
-		return nil, fmt.Errorf("failed to marshal private key: %w", err)
+		return nil, fmt.Errorf("failed to read private key file: %w", err)
 	}
 
-	privateKeyPEM := &pem.Block{
-		Type:  "EC PRIVATE KEY",
-		Bytes: privateKeyBytes,
+	publicKeyBlock, _ := pem.Decode(publicKeyBytes)
+	if publicKeyBlock == nil {
+		return nil, fmt.Errorf("failed to decode public key PEM")
 	}
 
-	privateKeyPEMBytes := pem.EncodeToMemory(privateKeyPEM)
-
-	publicKey := &privateKey.PublicKey
-
-	publicKeyBytes, err := x509.MarshalPKIXPublicKey(publicKey)
+	publicKey, err := x509.ParsePKIXPublicKey(publicKeyBlock.Bytes)
 	if err != nil {
-		return nil, fmt.Errorf("failed to marshal public key: %w", err)
+		return nil, fmt.Errorf("failed to parse public key: %w", err)
 	}
 
-	publicKeyPEM := &pem.Block{
-		Type:  "PUBLIC KEY",
-		Bytes: publicKeyBytes,
+	ed25519PublicKey, ok := publicKey.(ed25519.PublicKey)
+	if !ok {
+		return nil, fmt.Errorf("public key is not an Ed25519 key")
 	}
 
-	publicKeyPEMBytes := pem.EncodeToMemory(publicKeyPEM)
+	privateKeyBlock, _ := pem.Decode(privateKeyBytes)
+	if privateKeyBlock == nil {
+		return nil, fmt.Errorf("failed to decode private key PEM")
+	}
 
-	return &ES256KeyPair{
-		PrivateKeyPEM: privateKeyPEMBytes,
-		PublicKeyPEM:  publicKeyPEMBytes,
+	privateKey, err := x509.ParsePKCS8PrivateKey(privateKeyBlock.Bytes)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse private key: %w", err)
+	}
+
+	ed25519PrivateKey, ok := privateKey.(ed25519.PrivateKey)
+	if !ok {
+		return nil, fmt.Errorf("private key is not an Ed25519 key")
+	}
+
+	return &KeyPair{
+		fs:         a.fs,
+		PublicKey:  ed25519PublicKey,
+		PrivateKey: ed25519PrivateKey,
 	}, nil
+}
+
+// LookupChallenge retrieves a KeyPairChallenge from Redis cache by challenge ID.
+// It decodes the stored JSON string and returns the challenge if found.
+func (a *AuthManager) LookupChallenge(challengeID string) (*KeyPairChallenge, error) {
+	ctx := context.Background()
+
+	// Retrieve from Redis
+	encoded, err := a.rdb.Get(ctx, challengeID).Result()
+	if err != nil {
+		if err == redis.Nil {
+			return nil, fmt.Errorf("challenge not found")
+		}
+		return nil, fmt.Errorf("failed to retrieve challenge from Redis: %w", err)
+	}
+
+	// Decode JSON
+	var challenge KeyPairChallenge
+	err = json.Unmarshal([]byte(encoded), &challenge)
+	if err != nil {
+		return nil, fmt.Errorf("failed to unmarshal challenge: %w", err)
+	}
+
+	return &challenge, nil
+}
+
+// SaveChallenge stores a KeyPairChallenge in Redis cache.
+// It generates a unique challenge ID by hashing the challenge phrase
+// and uses that as the key for storing the JSON-encoded challenge.
+func (a *AuthManager) SaveChallenge(challenge *KeyPairChallenge) (string, error) {
+	// JSON encode the challenge
+	encoded, err := json.Marshal(challenge)
+	if err != nil {
+		return "", fmt.Errorf("failed to marshal challenge: %w", err)
+	}
+
+	// Generate unique challenge ID by hashing the challenge phrase
+	hash := sha256.Sum256([]byte(challenge.Challenge))
+	challengeID := base64.RawURLEncoding.EncodeToString(hash[:])
+
+	// Store in Redis with expiration based on challenge expiry
+	ctx := context.Background()
+	expiration := time.Until(challenge.Expires)
+	if expiration <= 0 {
+		return "", fmt.Errorf("challenge has already expired")
+	}
+
+	err = a.rdb.Set(ctx, challengeID, string(encoded), expiration).Err()
+	if err != nil {
+		return "", fmt.Errorf("failed to store challenge in Redis: %w", err)
+	}
+
+	return challengeID, nil
+}
+
+// RemoveChallenge removes a challenge from Redis cache by challenge ID.
+func (a *AuthManager) RemoveChallenge(challengeID string) error {
+	ctx := context.Background()
+
+	err := a.rdb.Del(ctx, challengeID).Err()
+	if err != nil {
+		return fmt.Errorf("failed to remove challenge from Redis: %w", err)
+	}
+
+	return nil
 }

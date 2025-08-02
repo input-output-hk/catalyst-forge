@@ -4,48 +4,88 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
 	"time"
+
+	"github.com/input-output-hk/catalyst-forge/foundry/api/client/auth"
+	"github.com/input-output-hk/catalyst-forge/foundry/api/client/deployments"
+	"github.com/input-output-hk/catalyst-forge/foundry/api/client/github"
+	"github.com/input-output-hk/catalyst-forge/foundry/api/client/releases"
+	"github.com/input-output-hk/catalyst-forge/foundry/api/client/users"
 )
 
 //go:generate go run github.com/matryer/moq@latest --pkg mocks --out ./mocks/client.go . Client
 
+// APIError represents an error returned by the API server
+type APIError struct {
+	StatusCode    int    `json:"status_code"`
+	StatusText    string `json:"status_text"`
+	ErrorMessage  string `json:"error"`
+	Message       string `json:"message,omitempty"`
+	RequestID     string `json:"request_id,omitempty"`
+	CorrelationID string `json:"correlation_id,omitempty"`
+	Path          string `json:"path,omitempty"`
+	Method        string `json:"method,omitempty"`
+}
+
+// Error implements the error interface
+func (e *APIError) Error() string {
+	if e.Message != "" {
+		return fmt.Sprintf("API error %d (%s): %s - %s", e.StatusCode, e.StatusText, e.ErrorMessage, e.Message)
+	}
+	return fmt.Sprintf("API error %d (%s): %s", e.StatusCode, e.StatusText, e.ErrorMessage)
+}
+
+// Unwrap returns the underlying error message
+func (e *APIError) Unwrap() error {
+	return errors.New(e.ErrorMessage)
+}
+
+// IsConflict returns true if the error is a 409 Conflict
+func (e *APIError) IsConflict() bool {
+	return e.StatusCode == http.StatusConflict
+}
+
+// IsNotFound returns true if the error is a 404 Not Found
+func (e *APIError) IsNotFound() bool {
+	return e.StatusCode == http.StatusNotFound
+}
+
+// IsUnauthorized returns true if the error is a 401 Unauthorized
+func (e *APIError) IsUnauthorized() bool {
+	return e.StatusCode == http.StatusUnauthorized
+}
+
+// IsForbidden returns true if the error is a 403 Forbidden
+func (e *APIError) IsForbidden() bool {
+	return e.StatusCode == http.StatusForbidden
+}
+
+// IsBadRequest returns true if the error is a 400 Bad Request
+func (e *APIError) IsBadRequest() bool {
+	return e.StatusCode == http.StatusBadRequest
+}
+
+// IsServerError returns true if the error is a 5xx server error
+func (e *APIError) IsServerError() bool {
+	return e.StatusCode >= 500 && e.StatusCode < 600
+}
+
 // Client interface defines the operations that can be performed against the API
 type Client interface {
-	// GHA operations
-	ValidateToken(ctx context.Context, req *ValidateTokenRequest) (*ValidateTokenResponse, error)
-	CreateAuth(ctx context.Context, req *CreateAuthRequest) (*GHARepositoryAuth, error)
-	GetAuth(ctx context.Context, id uint) (*GHARepositoryAuth, error)
-	GetAuthByRepository(ctx context.Context, repository string) (*GHARepositoryAuth, error)
-	UpdateAuth(ctx context.Context, id uint, req *UpdateAuthRequest) (*GHARepositoryAuth, error)
-	DeleteAuth(ctx context.Context, id uint) error
-	ListAuths(ctx context.Context) ([]GHARepositoryAuth, error)
-
-	// Release operations
-	CreateRelease(ctx context.Context, release *Release, deploy bool) (*Release, error)
-	GetRelease(ctx context.Context, id string) (*Release, error)
-	UpdateRelease(ctx context.Context, release *Release) (*Release, error)
-	ListReleases(ctx context.Context, projectName string) ([]Release, error)
-	GetReleaseByAlias(ctx context.Context, aliasName string) (*Release, error)
-
-	// Release alias operations
-	CreateAlias(ctx context.Context, aliasName string, releaseID string) error
-	DeleteAlias(ctx context.Context, aliasName string) error
-	ListAliases(ctx context.Context, releaseID string) ([]ReleaseAlias, error)
-
-	// Deployment operations
-	CreateDeployment(ctx context.Context, releaseID string) (*ReleaseDeployment, error)
-	GetDeployment(ctx context.Context, releaseID string, deployID string) (*ReleaseDeployment, error)
-	UpdateDeployment(ctx context.Context, releaseID string, deployment *ReleaseDeployment) (*ReleaseDeployment, error)
-	IncrementDeploymentAttempts(ctx context.Context, releaseID string, deployID string) (*ReleaseDeployment, error)
-	ListDeployments(ctx context.Context, releaseID string) ([]ReleaseDeployment, error)
-	GetLatestDeployment(ctx context.Context, releaseID string) (*ReleaseDeployment, error)
-
-	// Deployment event operations
-	AddDeploymentEvent(ctx context.Context, releaseID string, deployID string, name string, message string) (*ReleaseDeployment, error)
-	GetDeploymentEvents(ctx context.Context, releaseID string, deployID string) ([]DeploymentEvent, error)
+	// Category accessors
+	Users() users.UsersClientInterface
+	Roles() users.RolesClientInterface
+	Keys() users.KeysClientInterface
+	Auth() auth.AuthClientInterface
+	Github() github.GithubClientInterface
+	Releases() releases.ReleasesClientInterface
+	Aliases() releases.AliasesClientInterface
+	Deployments() deployments.DeploymentsClientInterface
+	Events() deployments.EventsClientInterface
 }
 
 // HTTPClient is an implementation of the Client interface that uses HTTP
@@ -53,6 +93,17 @@ type HTTPClient struct {
 	baseURL    string
 	httpClient *http.Client
 	token      string
+
+	// Category clients
+	users       users.UsersClientInterface
+	roles       users.RolesClientInterface
+	keys        users.KeysClientInterface
+	auth        auth.AuthClientInterface
+	github      github.GithubClientInterface
+	releases    releases.ReleasesClientInterface
+	aliases     releases.AliasesClientInterface
+	deployments deployments.DeploymentsClientInterface
+	events      deployments.EventsClientInterface
 }
 
 // ClientOption is a function type for client configuration
@@ -91,6 +142,17 @@ func NewClient(baseURL string, options ...ClientOption) Client {
 	for _, option := range options {
 		option(client)
 	}
+
+	// Initialize category clients
+	client.users = users.NewUsersClient(client.do)
+	client.roles = users.NewRolesClient(client.do)
+	client.keys = users.NewKeysClient(client.do)
+	client.auth = auth.NewAuthClient(client.do)
+	client.github = github.NewGithubClient(client.do)
+	client.releases = releases.NewReleasesClient(client.do)
+	client.aliases = releases.NewAliasesClient(client.do)
+	client.deployments = deployments.NewDeploymentsClient(client.do)
+	client.events = deployments.NewEventsClient(client.do)
 
 	return client
 }
@@ -135,13 +197,29 @@ func (c *HTTPClient) do(ctx context.Context, method, path string, reqBody, respB
 	}
 
 	if resp.StatusCode >= 400 {
+		// Parse the simple error response format from the server
 		var errResp struct {
 			Error string `json:"error"`
 		}
 		if err := json.Unmarshal(respBodyBytes, &errResp); err != nil {
-			return fmt.Errorf("HTTP error: %d - %s", resp.StatusCode, string(respBodyBytes))
+			// If we can't parse JSON at all, create a basic error
+			apiErr := APIError{
+				StatusCode:   resp.StatusCode,
+				StatusText:   resp.Status,
+				ErrorMessage: "Unknown error",
+				Message:      string(respBodyBytes),
+			}
+			return &apiErr
+		} else {
+			apiErr := APIError{
+				StatusCode:   resp.StatusCode,
+				StatusText:   resp.Status,
+				ErrorMessage: errResp.Error,
+				Path:         path,
+				Method:       method,
+			}
+			return &apiErr
 		}
-		return fmt.Errorf("API error: %d - %s", resp.StatusCode, errResp.Error)
 	}
 
 	if respBody != nil && resp.StatusCode != http.StatusNoContent {
@@ -151,4 +229,41 @@ func (c *HTTPClient) do(ctx context.Context, method, path string, reqBody, respB
 	}
 
 	return nil
+}
+
+// Category accessors
+func (c *HTTPClient) Users() users.UsersClientInterface {
+	return c.users
+}
+
+func (c *HTTPClient) Roles() users.RolesClientInterface {
+	return c.roles
+}
+
+func (c *HTTPClient) Keys() users.KeysClientInterface {
+	return c.keys
+}
+
+func (c *HTTPClient) Auth() auth.AuthClientInterface {
+	return c.auth
+}
+
+func (c *HTTPClient) Github() github.GithubClientInterface {
+	return c.github
+}
+
+func (c *HTTPClient) Releases() releases.ReleasesClientInterface {
+	return c.releases
+}
+
+func (c *HTTPClient) Aliases() releases.AliasesClientInterface {
+	return c.aliases
+}
+
+func (c *HTTPClient) Deployments() deployments.DeploymentsClientInterface {
+	return c.deployments
+}
+
+func (c *HTTPClient) Events() deployments.EventsClientInterface {
+	return c.events
 }
