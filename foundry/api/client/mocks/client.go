@@ -6,6 +6,7 @@ package mocks
 import (
 	"context"
 	"github.com/input-output-hk/catalyst-forge/foundry/api/client"
+	"github.com/input-output-hk/catalyst-forge/foundry/api/pkg/auth"
 	"sync"
 )
 
@@ -19,8 +20,14 @@ var _ client.Client = &ClientMock{}
 //
 //		// make and configure a mocked client.Client
 //		mockedClient := &ClientMock{
+//			ActivateUserFunc: func(ctx context.Context, id uint) (*client.User, error) {
+//				panic("mock out the ActivateUser method")
+//			},
 //			AddDeploymentEventFunc: func(ctx context.Context, releaseID string, deployID string, name string, message string) (*client.ReleaseDeployment, error) {
 //				panic("mock out the AddDeploymentEvent method")
+//			},
+//			AssignUserToRoleFunc: func(ctx context.Context, userID uint, roleID uint) error {
+//				panic("mock out the AssignUserToRole method")
 //			},
 //			CreateAliasFunc: func(ctx context.Context, aliasName string, releaseID string) error {
 //				panic("mock out the CreateAlias method")
@@ -28,17 +35,47 @@ var _ client.Client = &ClientMock{}
 //			CreateAuthFunc: func(ctx context.Context, req *client.CreateAuthRequest) (*client.GHARepositoryAuth, error) {
 //				panic("mock out the CreateAuth method")
 //			},
+//			CreateChallengeFunc: func(ctx context.Context, req *client.ChallengeRequest) (*auth.KeyPairChallenge, error) {
+//				panic("mock out the CreateChallenge method")
+//			},
 //			CreateDeploymentFunc: func(ctx context.Context, releaseID string) (*client.ReleaseDeployment, error) {
 //				panic("mock out the CreateDeployment method")
 //			},
 //			CreateReleaseFunc: func(ctx context.Context, release *client.Release, deploy bool) (*client.Release, error) {
 //				panic("mock out the CreateRelease method")
 //			},
+//			CreateRoleFunc: func(ctx context.Context, req *client.CreateRoleRequest) (*client.Role, error) {
+//				panic("mock out the CreateRole method")
+//			},
+//			CreateRoleWithAdminFunc: func(ctx context.Context, req *client.CreateRoleRequest) (*client.Role, error) {
+//				panic("mock out the CreateRoleWithAdmin method")
+//			},
+//			CreateUserFunc: func(ctx context.Context, req *client.CreateUserRequest) (*client.User, error) {
+//				panic("mock out the CreateUser method")
+//			},
+//			CreateUserKeyFunc: func(ctx context.Context, req *client.CreateUserKeyRequest) (*client.UserKey, error) {
+//				panic("mock out the CreateUserKey method")
+//			},
+//			DeactivateUserFunc: func(ctx context.Context, id uint) (*client.User, error) {
+//				panic("mock out the DeactivateUser method")
+//			},
 //			DeleteAliasFunc: func(ctx context.Context, aliasName string) error {
 //				panic("mock out the DeleteAlias method")
 //			},
 //			DeleteAuthFunc: func(ctx context.Context, id uint) error {
 //				panic("mock out the DeleteAuth method")
+//			},
+//			DeleteRoleFunc: func(ctx context.Context, id uint) error {
+//				panic("mock out the DeleteRole method")
+//			},
+//			DeleteUserFunc: func(ctx context.Context, id uint) error {
+//				panic("mock out the DeleteUser method")
+//			},
+//			DeleteUserKeyFunc: func(ctx context.Context, id uint) error {
+//				panic("mock out the DeleteUserKey method")
+//			},
+//			GetActiveUserKeysByUserIDFunc: func(ctx context.Context, userID uint) ([]client.UserKey, error) {
+//				panic("mock out the GetActiveUserKeysByUserID method")
 //			},
 //			GetAuthFunc: func(ctx context.Context, id uint) (*client.GHARepositoryAuth, error) {
 //				panic("mock out the GetAuth method")
@@ -52,14 +89,50 @@ var _ client.Client = &ClientMock{}
 //			GetDeploymentEventsFunc: func(ctx context.Context, releaseID string, deployID string) ([]client.DeploymentEvent, error) {
 //				panic("mock out the GetDeploymentEvents method")
 //			},
+//			GetInactiveUserKeysFunc: func(ctx context.Context) ([]client.UserKey, error) {
+//				panic("mock out the GetInactiveUserKeys method")
+//			},
+//			GetInactiveUserKeysByUserIDFunc: func(ctx context.Context, userID uint) ([]client.UserKey, error) {
+//				panic("mock out the GetInactiveUserKeysByUserID method")
+//			},
 //			GetLatestDeploymentFunc: func(ctx context.Context, releaseID string) (*client.ReleaseDeployment, error) {
 //				panic("mock out the GetLatestDeployment method")
+//			},
+//			GetPendingUsersFunc: func(ctx context.Context) ([]client.User, error) {
+//				panic("mock out the GetPendingUsers method")
 //			},
 //			GetReleaseFunc: func(ctx context.Context, id string) (*client.Release, error) {
 //				panic("mock out the GetRelease method")
 //			},
 //			GetReleaseByAliasFunc: func(ctx context.Context, aliasName string) (*client.Release, error) {
 //				panic("mock out the GetReleaseByAlias method")
+//			},
+//			GetRoleFunc: func(ctx context.Context, id uint) (*client.Role, error) {
+//				panic("mock out the GetRole method")
+//			},
+//			GetRoleByNameFunc: func(ctx context.Context, name string) (*client.Role, error) {
+//				panic("mock out the GetRoleByName method")
+//			},
+//			GetRoleUsersFunc: func(ctx context.Context, roleID uint) ([]client.UserRole, error) {
+//				panic("mock out the GetRoleUsers method")
+//			},
+//			GetUserFunc: func(ctx context.Context, id uint) (*client.User, error) {
+//				panic("mock out the GetUser method")
+//			},
+//			GetUserByEmailFunc: func(ctx context.Context, email string) (*client.User, error) {
+//				panic("mock out the GetUserByEmail method")
+//			},
+//			GetUserKeyFunc: func(ctx context.Context, id uint) (*client.UserKey, error) {
+//				panic("mock out the GetUserKey method")
+//			},
+//			GetUserKeyByKidFunc: func(ctx context.Context, kid string) (*client.UserKey, error) {
+//				panic("mock out the GetUserKeyByKid method")
+//			},
+//			GetUserKeysByUserIDFunc: func(ctx context.Context, userID uint) ([]client.UserKey, error) {
+//				panic("mock out the GetUserKeysByUserID method")
+//			},
+//			GetUserRolesFunc: func(ctx context.Context, userID uint) ([]client.UserRole, error) {
+//				panic("mock out the GetUserRoles method")
 //			},
 //			IncrementDeploymentAttemptsFunc: func(ctx context.Context, releaseID string, deployID string) (*client.ReleaseDeployment, error) {
 //				panic("mock out the IncrementDeploymentAttempts method")
@@ -76,6 +149,30 @@ var _ client.Client = &ClientMock{}
 //			ListReleasesFunc: func(ctx context.Context, projectName string) ([]client.Release, error) {
 //				panic("mock out the ListReleases method")
 //			},
+//			ListRolesFunc: func(ctx context.Context) ([]client.Role, error) {
+//				panic("mock out the ListRoles method")
+//			},
+//			ListUserKeysFunc: func(ctx context.Context) ([]client.UserKey, error) {
+//				panic("mock out the ListUserKeys method")
+//			},
+//			ListUsersFunc: func(ctx context.Context) ([]client.User, error) {
+//				panic("mock out the ListUsers method")
+//			},
+//			LoginFunc: func(ctx context.Context, req *auth.KeyPairChallengeResponse) (*client.LoginResponse, error) {
+//				panic("mock out the Login method")
+//			},
+//			RegisterUserFunc: func(ctx context.Context, req *client.RegisterUserRequest) (*client.User, error) {
+//				panic("mock out the RegisterUser method")
+//			},
+//			RegisterUserKeyFunc: func(ctx context.Context, req *client.RegisterUserKeyRequest) (*client.UserKey, error) {
+//				panic("mock out the RegisterUserKey method")
+//			},
+//			RemoveUserFromRoleFunc: func(ctx context.Context, userID uint, roleID uint) error {
+//				panic("mock out the RemoveUserFromRole method")
+//			},
+//			RevokeUserKeyFunc: func(ctx context.Context, id uint) (*client.UserKey, error) {
+//				panic("mock out the RevokeUserKey method")
+//			},
 //			UpdateAuthFunc: func(ctx context.Context, id uint, req *client.UpdateAuthRequest) (*client.GHARepositoryAuth, error) {
 //				panic("mock out the UpdateAuth method")
 //			},
@@ -84,6 +181,15 @@ var _ client.Client = &ClientMock{}
 //			},
 //			UpdateReleaseFunc: func(ctx context.Context, release *client.Release) (*client.Release, error) {
 //				panic("mock out the UpdateRelease method")
+//			},
+//			UpdateRoleFunc: func(ctx context.Context, id uint, req *client.UpdateRoleRequest) (*client.Role, error) {
+//				panic("mock out the UpdateRole method")
+//			},
+//			UpdateUserFunc: func(ctx context.Context, id uint, req *client.UpdateUserRequest) (*client.User, error) {
+//				panic("mock out the UpdateUser method")
+//			},
+//			UpdateUserKeyFunc: func(ctx context.Context, id uint, req *client.UpdateUserKeyRequest) (*client.UserKey, error) {
+//				panic("mock out the UpdateUserKey method")
 //			},
 //			ValidateTokenFunc: func(ctx context.Context, req *client.ValidateTokenRequest) (*client.ValidateTokenResponse, error) {
 //				panic("mock out the ValidateToken method")
@@ -95,8 +201,14 @@ var _ client.Client = &ClientMock{}
 //
 //	}
 type ClientMock struct {
+	// ActivateUserFunc mocks the ActivateUser method.
+	ActivateUserFunc func(ctx context.Context, id uint) (*client.User, error)
+
 	// AddDeploymentEventFunc mocks the AddDeploymentEvent method.
 	AddDeploymentEventFunc func(ctx context.Context, releaseID string, deployID string, name string, message string) (*client.ReleaseDeployment, error)
+
+	// AssignUserToRoleFunc mocks the AssignUserToRole method.
+	AssignUserToRoleFunc func(ctx context.Context, userID uint, roleID uint) error
 
 	// CreateAliasFunc mocks the CreateAlias method.
 	CreateAliasFunc func(ctx context.Context, aliasName string, releaseID string) error
@@ -104,17 +216,47 @@ type ClientMock struct {
 	// CreateAuthFunc mocks the CreateAuth method.
 	CreateAuthFunc func(ctx context.Context, req *client.CreateAuthRequest) (*client.GHARepositoryAuth, error)
 
+	// CreateChallengeFunc mocks the CreateChallenge method.
+	CreateChallengeFunc func(ctx context.Context, req *client.ChallengeRequest) (*auth.KeyPairChallenge, error)
+
 	// CreateDeploymentFunc mocks the CreateDeployment method.
 	CreateDeploymentFunc func(ctx context.Context, releaseID string) (*client.ReleaseDeployment, error)
 
 	// CreateReleaseFunc mocks the CreateRelease method.
 	CreateReleaseFunc func(ctx context.Context, release *client.Release, deploy bool) (*client.Release, error)
 
+	// CreateRoleFunc mocks the CreateRole method.
+	CreateRoleFunc func(ctx context.Context, req *client.CreateRoleRequest) (*client.Role, error)
+
+	// CreateRoleWithAdminFunc mocks the CreateRoleWithAdmin method.
+	CreateRoleWithAdminFunc func(ctx context.Context, req *client.CreateRoleRequest) (*client.Role, error)
+
+	// CreateUserFunc mocks the CreateUser method.
+	CreateUserFunc func(ctx context.Context, req *client.CreateUserRequest) (*client.User, error)
+
+	// CreateUserKeyFunc mocks the CreateUserKey method.
+	CreateUserKeyFunc func(ctx context.Context, req *client.CreateUserKeyRequest) (*client.UserKey, error)
+
+	// DeactivateUserFunc mocks the DeactivateUser method.
+	DeactivateUserFunc func(ctx context.Context, id uint) (*client.User, error)
+
 	// DeleteAliasFunc mocks the DeleteAlias method.
 	DeleteAliasFunc func(ctx context.Context, aliasName string) error
 
 	// DeleteAuthFunc mocks the DeleteAuth method.
 	DeleteAuthFunc func(ctx context.Context, id uint) error
+
+	// DeleteRoleFunc mocks the DeleteRole method.
+	DeleteRoleFunc func(ctx context.Context, id uint) error
+
+	// DeleteUserFunc mocks the DeleteUser method.
+	DeleteUserFunc func(ctx context.Context, id uint) error
+
+	// DeleteUserKeyFunc mocks the DeleteUserKey method.
+	DeleteUserKeyFunc func(ctx context.Context, id uint) error
+
+	// GetActiveUserKeysByUserIDFunc mocks the GetActiveUserKeysByUserID method.
+	GetActiveUserKeysByUserIDFunc func(ctx context.Context, userID uint) ([]client.UserKey, error)
 
 	// GetAuthFunc mocks the GetAuth method.
 	GetAuthFunc func(ctx context.Context, id uint) (*client.GHARepositoryAuth, error)
@@ -128,14 +270,50 @@ type ClientMock struct {
 	// GetDeploymentEventsFunc mocks the GetDeploymentEvents method.
 	GetDeploymentEventsFunc func(ctx context.Context, releaseID string, deployID string) ([]client.DeploymentEvent, error)
 
+	// GetInactiveUserKeysFunc mocks the GetInactiveUserKeys method.
+	GetInactiveUserKeysFunc func(ctx context.Context) ([]client.UserKey, error)
+
+	// GetInactiveUserKeysByUserIDFunc mocks the GetInactiveUserKeysByUserID method.
+	GetInactiveUserKeysByUserIDFunc func(ctx context.Context, userID uint) ([]client.UserKey, error)
+
 	// GetLatestDeploymentFunc mocks the GetLatestDeployment method.
 	GetLatestDeploymentFunc func(ctx context.Context, releaseID string) (*client.ReleaseDeployment, error)
+
+	// GetPendingUsersFunc mocks the GetPendingUsers method.
+	GetPendingUsersFunc func(ctx context.Context) ([]client.User, error)
 
 	// GetReleaseFunc mocks the GetRelease method.
 	GetReleaseFunc func(ctx context.Context, id string) (*client.Release, error)
 
 	// GetReleaseByAliasFunc mocks the GetReleaseByAlias method.
 	GetReleaseByAliasFunc func(ctx context.Context, aliasName string) (*client.Release, error)
+
+	// GetRoleFunc mocks the GetRole method.
+	GetRoleFunc func(ctx context.Context, id uint) (*client.Role, error)
+
+	// GetRoleByNameFunc mocks the GetRoleByName method.
+	GetRoleByNameFunc func(ctx context.Context, name string) (*client.Role, error)
+
+	// GetRoleUsersFunc mocks the GetRoleUsers method.
+	GetRoleUsersFunc func(ctx context.Context, roleID uint) ([]client.UserRole, error)
+
+	// GetUserFunc mocks the GetUser method.
+	GetUserFunc func(ctx context.Context, id uint) (*client.User, error)
+
+	// GetUserByEmailFunc mocks the GetUserByEmail method.
+	GetUserByEmailFunc func(ctx context.Context, email string) (*client.User, error)
+
+	// GetUserKeyFunc mocks the GetUserKey method.
+	GetUserKeyFunc func(ctx context.Context, id uint) (*client.UserKey, error)
+
+	// GetUserKeyByKidFunc mocks the GetUserKeyByKid method.
+	GetUserKeyByKidFunc func(ctx context.Context, kid string) (*client.UserKey, error)
+
+	// GetUserKeysByUserIDFunc mocks the GetUserKeysByUserID method.
+	GetUserKeysByUserIDFunc func(ctx context.Context, userID uint) ([]client.UserKey, error)
+
+	// GetUserRolesFunc mocks the GetUserRoles method.
+	GetUserRolesFunc func(ctx context.Context, userID uint) ([]client.UserRole, error)
 
 	// IncrementDeploymentAttemptsFunc mocks the IncrementDeploymentAttempts method.
 	IncrementDeploymentAttemptsFunc func(ctx context.Context, releaseID string, deployID string) (*client.ReleaseDeployment, error)
@@ -152,6 +330,30 @@ type ClientMock struct {
 	// ListReleasesFunc mocks the ListReleases method.
 	ListReleasesFunc func(ctx context.Context, projectName string) ([]client.Release, error)
 
+	// ListRolesFunc mocks the ListRoles method.
+	ListRolesFunc func(ctx context.Context) ([]client.Role, error)
+
+	// ListUserKeysFunc mocks the ListUserKeys method.
+	ListUserKeysFunc func(ctx context.Context) ([]client.UserKey, error)
+
+	// ListUsersFunc mocks the ListUsers method.
+	ListUsersFunc func(ctx context.Context) ([]client.User, error)
+
+	// LoginFunc mocks the Login method.
+	LoginFunc func(ctx context.Context, req *auth.KeyPairChallengeResponse) (*client.LoginResponse, error)
+
+	// RegisterUserFunc mocks the RegisterUser method.
+	RegisterUserFunc func(ctx context.Context, req *client.RegisterUserRequest) (*client.User, error)
+
+	// RegisterUserKeyFunc mocks the RegisterUserKey method.
+	RegisterUserKeyFunc func(ctx context.Context, req *client.RegisterUserKeyRequest) (*client.UserKey, error)
+
+	// RemoveUserFromRoleFunc mocks the RemoveUserFromRole method.
+	RemoveUserFromRoleFunc func(ctx context.Context, userID uint, roleID uint) error
+
+	// RevokeUserKeyFunc mocks the RevokeUserKey method.
+	RevokeUserKeyFunc func(ctx context.Context, id uint) (*client.UserKey, error)
+
 	// UpdateAuthFunc mocks the UpdateAuth method.
 	UpdateAuthFunc func(ctx context.Context, id uint, req *client.UpdateAuthRequest) (*client.GHARepositoryAuth, error)
 
@@ -161,11 +363,27 @@ type ClientMock struct {
 	// UpdateReleaseFunc mocks the UpdateRelease method.
 	UpdateReleaseFunc func(ctx context.Context, release *client.Release) (*client.Release, error)
 
+	// UpdateRoleFunc mocks the UpdateRole method.
+	UpdateRoleFunc func(ctx context.Context, id uint, req *client.UpdateRoleRequest) (*client.Role, error)
+
+	// UpdateUserFunc mocks the UpdateUser method.
+	UpdateUserFunc func(ctx context.Context, id uint, req *client.UpdateUserRequest) (*client.User, error)
+
+	// UpdateUserKeyFunc mocks the UpdateUserKey method.
+	UpdateUserKeyFunc func(ctx context.Context, id uint, req *client.UpdateUserKeyRequest) (*client.UserKey, error)
+
 	// ValidateTokenFunc mocks the ValidateToken method.
 	ValidateTokenFunc func(ctx context.Context, req *client.ValidateTokenRequest) (*client.ValidateTokenResponse, error)
 
 	// calls tracks calls to the methods.
 	calls struct {
+		// ActivateUser holds details about calls to the ActivateUser method.
+		ActivateUser []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// ID is the id argument value.
+			ID uint
+		}
 		// AddDeploymentEvent holds details about calls to the AddDeploymentEvent method.
 		AddDeploymentEvent []struct {
 			// Ctx is the ctx argument value.
@@ -178,6 +396,15 @@ type ClientMock struct {
 			Name string
 			// Message is the message argument value.
 			Message string
+		}
+		// AssignUserToRole holds details about calls to the AssignUserToRole method.
+		AssignUserToRole []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// UserID is the userID argument value.
+			UserID uint
+			// RoleID is the roleID argument value.
+			RoleID uint
 		}
 		// CreateAlias holds details about calls to the CreateAlias method.
 		CreateAlias []struct {
@@ -195,6 +422,13 @@ type ClientMock struct {
 			// Req is the req argument value.
 			Req *client.CreateAuthRequest
 		}
+		// CreateChallenge holds details about calls to the CreateChallenge method.
+		CreateChallenge []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// Req is the req argument value.
+			Req *client.ChallengeRequest
+		}
 		// CreateDeployment holds details about calls to the CreateDeployment method.
 		CreateDeployment []struct {
 			// Ctx is the ctx argument value.
@@ -211,6 +445,41 @@ type ClientMock struct {
 			// Deploy is the deploy argument value.
 			Deploy bool
 		}
+		// CreateRole holds details about calls to the CreateRole method.
+		CreateRole []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// Req is the req argument value.
+			Req *client.CreateRoleRequest
+		}
+		// CreateRoleWithAdmin holds details about calls to the CreateRoleWithAdmin method.
+		CreateRoleWithAdmin []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// Req is the req argument value.
+			Req *client.CreateRoleRequest
+		}
+		// CreateUser holds details about calls to the CreateUser method.
+		CreateUser []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// Req is the req argument value.
+			Req *client.CreateUserRequest
+		}
+		// CreateUserKey holds details about calls to the CreateUserKey method.
+		CreateUserKey []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// Req is the req argument value.
+			Req *client.CreateUserKeyRequest
+		}
+		// DeactivateUser holds details about calls to the DeactivateUser method.
+		DeactivateUser []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// ID is the id argument value.
+			ID uint
+		}
 		// DeleteAlias holds details about calls to the DeleteAlias method.
 		DeleteAlias []struct {
 			// Ctx is the ctx argument value.
@@ -224,6 +493,34 @@ type ClientMock struct {
 			Ctx context.Context
 			// ID is the id argument value.
 			ID uint
+		}
+		// DeleteRole holds details about calls to the DeleteRole method.
+		DeleteRole []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// ID is the id argument value.
+			ID uint
+		}
+		// DeleteUser holds details about calls to the DeleteUser method.
+		DeleteUser []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// ID is the id argument value.
+			ID uint
+		}
+		// DeleteUserKey holds details about calls to the DeleteUserKey method.
+		DeleteUserKey []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// ID is the id argument value.
+			ID uint
+		}
+		// GetActiveUserKeysByUserID holds details about calls to the GetActiveUserKeysByUserID method.
+		GetActiveUserKeysByUserID []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// UserID is the userID argument value.
+			UserID uint
 		}
 		// GetAuth holds details about calls to the GetAuth method.
 		GetAuth []struct {
@@ -257,12 +554,29 @@ type ClientMock struct {
 			// DeployID is the deployID argument value.
 			DeployID string
 		}
+		// GetInactiveUserKeys holds details about calls to the GetInactiveUserKeys method.
+		GetInactiveUserKeys []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+		}
+		// GetInactiveUserKeysByUserID holds details about calls to the GetInactiveUserKeysByUserID method.
+		GetInactiveUserKeysByUserID []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// UserID is the userID argument value.
+			UserID uint
+		}
 		// GetLatestDeployment holds details about calls to the GetLatestDeployment method.
 		GetLatestDeployment []struct {
 			// Ctx is the ctx argument value.
 			Ctx context.Context
 			// ReleaseID is the releaseID argument value.
 			ReleaseID string
+		}
+		// GetPendingUsers holds details about calls to the GetPendingUsers method.
+		GetPendingUsers []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
 		}
 		// GetRelease holds details about calls to the GetRelease method.
 		GetRelease []struct {
@@ -277,6 +591,69 @@ type ClientMock struct {
 			Ctx context.Context
 			// AliasName is the aliasName argument value.
 			AliasName string
+		}
+		// GetRole holds details about calls to the GetRole method.
+		GetRole []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// ID is the id argument value.
+			ID uint
+		}
+		// GetRoleByName holds details about calls to the GetRoleByName method.
+		GetRoleByName []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// Name is the name argument value.
+			Name string
+		}
+		// GetRoleUsers holds details about calls to the GetRoleUsers method.
+		GetRoleUsers []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// RoleID is the roleID argument value.
+			RoleID uint
+		}
+		// GetUser holds details about calls to the GetUser method.
+		GetUser []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// ID is the id argument value.
+			ID uint
+		}
+		// GetUserByEmail holds details about calls to the GetUserByEmail method.
+		GetUserByEmail []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// Email is the email argument value.
+			Email string
+		}
+		// GetUserKey holds details about calls to the GetUserKey method.
+		GetUserKey []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// ID is the id argument value.
+			ID uint
+		}
+		// GetUserKeyByKid holds details about calls to the GetUserKeyByKid method.
+		GetUserKeyByKid []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// Kid is the kid argument value.
+			Kid string
+		}
+		// GetUserKeysByUserID holds details about calls to the GetUserKeysByUserID method.
+		GetUserKeysByUserID []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// UserID is the userID argument value.
+			UserID uint
+		}
+		// GetUserRoles holds details about calls to the GetUserRoles method.
+		GetUserRoles []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// UserID is the userID argument value.
+			UserID uint
 		}
 		// IncrementDeploymentAttempts holds details about calls to the IncrementDeploymentAttempts method.
 		IncrementDeploymentAttempts []struct {
@@ -313,6 +690,58 @@ type ClientMock struct {
 			// ProjectName is the projectName argument value.
 			ProjectName string
 		}
+		// ListRoles holds details about calls to the ListRoles method.
+		ListRoles []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+		}
+		// ListUserKeys holds details about calls to the ListUserKeys method.
+		ListUserKeys []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+		}
+		// ListUsers holds details about calls to the ListUsers method.
+		ListUsers []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+		}
+		// Login holds details about calls to the Login method.
+		Login []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// Req is the req argument value.
+			Req *auth.KeyPairChallengeResponse
+		}
+		// RegisterUser holds details about calls to the RegisterUser method.
+		RegisterUser []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// Req is the req argument value.
+			Req *client.RegisterUserRequest
+		}
+		// RegisterUserKey holds details about calls to the RegisterUserKey method.
+		RegisterUserKey []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// Req is the req argument value.
+			Req *client.RegisterUserKeyRequest
+		}
+		// RemoveUserFromRole holds details about calls to the RemoveUserFromRole method.
+		RemoveUserFromRole []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// UserID is the userID argument value.
+			UserID uint
+			// RoleID is the roleID argument value.
+			RoleID uint
+		}
+		// RevokeUserKey holds details about calls to the RevokeUserKey method.
+		RevokeUserKey []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// ID is the id argument value.
+			ID uint
+		}
 		// UpdateAuth holds details about calls to the UpdateAuth method.
 		UpdateAuth []struct {
 			// Ctx is the ctx argument value.
@@ -338,6 +767,33 @@ type ClientMock struct {
 			// Release is the release argument value.
 			Release *client.Release
 		}
+		// UpdateRole holds details about calls to the UpdateRole method.
+		UpdateRole []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// ID is the id argument value.
+			ID uint
+			// Req is the req argument value.
+			Req *client.UpdateRoleRequest
+		}
+		// UpdateUser holds details about calls to the UpdateUser method.
+		UpdateUser []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// ID is the id argument value.
+			ID uint
+			// Req is the req argument value.
+			Req *client.UpdateUserRequest
+		}
+		// UpdateUserKey holds details about calls to the UpdateUserKey method.
+		UpdateUserKey []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// ID is the id argument value.
+			ID uint
+			// Req is the req argument value.
+			Req *client.UpdateUserKeyRequest
+		}
 		// ValidateToken holds details about calls to the ValidateToken method.
 		ValidateToken []struct {
 			// Ctx is the ctx argument value.
@@ -346,29 +802,100 @@ type ClientMock struct {
 			Req *client.ValidateTokenRequest
 		}
 	}
+	lockActivateUser                sync.RWMutex
 	lockAddDeploymentEvent          sync.RWMutex
+	lockAssignUserToRole            sync.RWMutex
 	lockCreateAlias                 sync.RWMutex
 	lockCreateAuth                  sync.RWMutex
+	lockCreateChallenge             sync.RWMutex
 	lockCreateDeployment            sync.RWMutex
 	lockCreateRelease               sync.RWMutex
+	lockCreateRole                  sync.RWMutex
+	lockCreateRoleWithAdmin         sync.RWMutex
+	lockCreateUser                  sync.RWMutex
+	lockCreateUserKey               sync.RWMutex
+	lockDeactivateUser              sync.RWMutex
 	lockDeleteAlias                 sync.RWMutex
 	lockDeleteAuth                  sync.RWMutex
+	lockDeleteRole                  sync.RWMutex
+	lockDeleteUser                  sync.RWMutex
+	lockDeleteUserKey               sync.RWMutex
+	lockGetActiveUserKeysByUserID   sync.RWMutex
 	lockGetAuth                     sync.RWMutex
 	lockGetAuthByRepository         sync.RWMutex
 	lockGetDeployment               sync.RWMutex
 	lockGetDeploymentEvents         sync.RWMutex
+	lockGetInactiveUserKeys         sync.RWMutex
+	lockGetInactiveUserKeysByUserID sync.RWMutex
 	lockGetLatestDeployment         sync.RWMutex
+	lockGetPendingUsers             sync.RWMutex
 	lockGetRelease                  sync.RWMutex
 	lockGetReleaseByAlias           sync.RWMutex
+	lockGetRole                     sync.RWMutex
+	lockGetRoleByName               sync.RWMutex
+	lockGetRoleUsers                sync.RWMutex
+	lockGetUser                     sync.RWMutex
+	lockGetUserByEmail              sync.RWMutex
+	lockGetUserKey                  sync.RWMutex
+	lockGetUserKeyByKid             sync.RWMutex
+	lockGetUserKeysByUserID         sync.RWMutex
+	lockGetUserRoles                sync.RWMutex
 	lockIncrementDeploymentAttempts sync.RWMutex
 	lockListAliases                 sync.RWMutex
 	lockListAuths                   sync.RWMutex
 	lockListDeployments             sync.RWMutex
 	lockListReleases                sync.RWMutex
+	lockListRoles                   sync.RWMutex
+	lockListUserKeys                sync.RWMutex
+	lockListUsers                   sync.RWMutex
+	lockLogin                       sync.RWMutex
+	lockRegisterUser                sync.RWMutex
+	lockRegisterUserKey             sync.RWMutex
+	lockRemoveUserFromRole          sync.RWMutex
+	lockRevokeUserKey               sync.RWMutex
 	lockUpdateAuth                  sync.RWMutex
 	lockUpdateDeployment            sync.RWMutex
 	lockUpdateRelease               sync.RWMutex
+	lockUpdateRole                  sync.RWMutex
+	lockUpdateUser                  sync.RWMutex
+	lockUpdateUserKey               sync.RWMutex
 	lockValidateToken               sync.RWMutex
+}
+
+// ActivateUser calls ActivateUserFunc.
+func (mock *ClientMock) ActivateUser(ctx context.Context, id uint) (*client.User, error) {
+	if mock.ActivateUserFunc == nil {
+		panic("ClientMock.ActivateUserFunc: method is nil but Client.ActivateUser was just called")
+	}
+	callInfo := struct {
+		Ctx context.Context
+		ID  uint
+	}{
+		Ctx: ctx,
+		ID:  id,
+	}
+	mock.lockActivateUser.Lock()
+	mock.calls.ActivateUser = append(mock.calls.ActivateUser, callInfo)
+	mock.lockActivateUser.Unlock()
+	return mock.ActivateUserFunc(ctx, id)
+}
+
+// ActivateUserCalls gets all the calls that were made to ActivateUser.
+// Check the length with:
+//
+//	len(mockedClient.ActivateUserCalls())
+func (mock *ClientMock) ActivateUserCalls() []struct {
+	Ctx context.Context
+	ID  uint
+} {
+	var calls []struct {
+		Ctx context.Context
+		ID  uint
+	}
+	mock.lockActivateUser.RLock()
+	calls = mock.calls.ActivateUser
+	mock.lockActivateUser.RUnlock()
+	return calls
 }
 
 // AddDeploymentEvent calls AddDeploymentEventFunc.
@@ -416,6 +943,46 @@ func (mock *ClientMock) AddDeploymentEventCalls() []struct {
 	mock.lockAddDeploymentEvent.RLock()
 	calls = mock.calls.AddDeploymentEvent
 	mock.lockAddDeploymentEvent.RUnlock()
+	return calls
+}
+
+// AssignUserToRole calls AssignUserToRoleFunc.
+func (mock *ClientMock) AssignUserToRole(ctx context.Context, userID uint, roleID uint) error {
+	if mock.AssignUserToRoleFunc == nil {
+		panic("ClientMock.AssignUserToRoleFunc: method is nil but Client.AssignUserToRole was just called")
+	}
+	callInfo := struct {
+		Ctx    context.Context
+		UserID uint
+		RoleID uint
+	}{
+		Ctx:    ctx,
+		UserID: userID,
+		RoleID: roleID,
+	}
+	mock.lockAssignUserToRole.Lock()
+	mock.calls.AssignUserToRole = append(mock.calls.AssignUserToRole, callInfo)
+	mock.lockAssignUserToRole.Unlock()
+	return mock.AssignUserToRoleFunc(ctx, userID, roleID)
+}
+
+// AssignUserToRoleCalls gets all the calls that were made to AssignUserToRole.
+// Check the length with:
+//
+//	len(mockedClient.AssignUserToRoleCalls())
+func (mock *ClientMock) AssignUserToRoleCalls() []struct {
+	Ctx    context.Context
+	UserID uint
+	RoleID uint
+} {
+	var calls []struct {
+		Ctx    context.Context
+		UserID uint
+		RoleID uint
+	}
+	mock.lockAssignUserToRole.RLock()
+	calls = mock.calls.AssignUserToRole
+	mock.lockAssignUserToRole.RUnlock()
 	return calls
 }
 
@@ -495,6 +1062,42 @@ func (mock *ClientMock) CreateAuthCalls() []struct {
 	return calls
 }
 
+// CreateChallenge calls CreateChallengeFunc.
+func (mock *ClientMock) CreateChallenge(ctx context.Context, req *client.ChallengeRequest) (*auth.KeyPairChallenge, error) {
+	if mock.CreateChallengeFunc == nil {
+		panic("ClientMock.CreateChallengeFunc: method is nil but Client.CreateChallenge was just called")
+	}
+	callInfo := struct {
+		Ctx context.Context
+		Req *client.ChallengeRequest
+	}{
+		Ctx: ctx,
+		Req: req,
+	}
+	mock.lockCreateChallenge.Lock()
+	mock.calls.CreateChallenge = append(mock.calls.CreateChallenge, callInfo)
+	mock.lockCreateChallenge.Unlock()
+	return mock.CreateChallengeFunc(ctx, req)
+}
+
+// CreateChallengeCalls gets all the calls that were made to CreateChallenge.
+// Check the length with:
+//
+//	len(mockedClient.CreateChallengeCalls())
+func (mock *ClientMock) CreateChallengeCalls() []struct {
+	Ctx context.Context
+	Req *client.ChallengeRequest
+} {
+	var calls []struct {
+		Ctx context.Context
+		Req *client.ChallengeRequest
+	}
+	mock.lockCreateChallenge.RLock()
+	calls = mock.calls.CreateChallenge
+	mock.lockCreateChallenge.RUnlock()
+	return calls
+}
+
 // CreateDeployment calls CreateDeploymentFunc.
 func (mock *ClientMock) CreateDeployment(ctx context.Context, releaseID string) (*client.ReleaseDeployment, error) {
 	if mock.CreateDeploymentFunc == nil {
@@ -571,6 +1174,186 @@ func (mock *ClientMock) CreateReleaseCalls() []struct {
 	return calls
 }
 
+// CreateRole calls CreateRoleFunc.
+func (mock *ClientMock) CreateRole(ctx context.Context, req *client.CreateRoleRequest) (*client.Role, error) {
+	if mock.CreateRoleFunc == nil {
+		panic("ClientMock.CreateRoleFunc: method is nil but Client.CreateRole was just called")
+	}
+	callInfo := struct {
+		Ctx context.Context
+		Req *client.CreateRoleRequest
+	}{
+		Ctx: ctx,
+		Req: req,
+	}
+	mock.lockCreateRole.Lock()
+	mock.calls.CreateRole = append(mock.calls.CreateRole, callInfo)
+	mock.lockCreateRole.Unlock()
+	return mock.CreateRoleFunc(ctx, req)
+}
+
+// CreateRoleCalls gets all the calls that were made to CreateRole.
+// Check the length with:
+//
+//	len(mockedClient.CreateRoleCalls())
+func (mock *ClientMock) CreateRoleCalls() []struct {
+	Ctx context.Context
+	Req *client.CreateRoleRequest
+} {
+	var calls []struct {
+		Ctx context.Context
+		Req *client.CreateRoleRequest
+	}
+	mock.lockCreateRole.RLock()
+	calls = mock.calls.CreateRole
+	mock.lockCreateRole.RUnlock()
+	return calls
+}
+
+// CreateRoleWithAdmin calls CreateRoleWithAdminFunc.
+func (mock *ClientMock) CreateRoleWithAdmin(ctx context.Context, req *client.CreateRoleRequest) (*client.Role, error) {
+	if mock.CreateRoleWithAdminFunc == nil {
+		panic("ClientMock.CreateRoleWithAdminFunc: method is nil but Client.CreateRoleWithAdmin was just called")
+	}
+	callInfo := struct {
+		Ctx context.Context
+		Req *client.CreateRoleRequest
+	}{
+		Ctx: ctx,
+		Req: req,
+	}
+	mock.lockCreateRoleWithAdmin.Lock()
+	mock.calls.CreateRoleWithAdmin = append(mock.calls.CreateRoleWithAdmin, callInfo)
+	mock.lockCreateRoleWithAdmin.Unlock()
+	return mock.CreateRoleWithAdminFunc(ctx, req)
+}
+
+// CreateRoleWithAdminCalls gets all the calls that were made to CreateRoleWithAdmin.
+// Check the length with:
+//
+//	len(mockedClient.CreateRoleWithAdminCalls())
+func (mock *ClientMock) CreateRoleWithAdminCalls() []struct {
+	Ctx context.Context
+	Req *client.CreateRoleRequest
+} {
+	var calls []struct {
+		Ctx context.Context
+		Req *client.CreateRoleRequest
+	}
+	mock.lockCreateRoleWithAdmin.RLock()
+	calls = mock.calls.CreateRoleWithAdmin
+	mock.lockCreateRoleWithAdmin.RUnlock()
+	return calls
+}
+
+// CreateUser calls CreateUserFunc.
+func (mock *ClientMock) CreateUser(ctx context.Context, req *client.CreateUserRequest) (*client.User, error) {
+	if mock.CreateUserFunc == nil {
+		panic("ClientMock.CreateUserFunc: method is nil but Client.CreateUser was just called")
+	}
+	callInfo := struct {
+		Ctx context.Context
+		Req *client.CreateUserRequest
+	}{
+		Ctx: ctx,
+		Req: req,
+	}
+	mock.lockCreateUser.Lock()
+	mock.calls.CreateUser = append(mock.calls.CreateUser, callInfo)
+	mock.lockCreateUser.Unlock()
+	return mock.CreateUserFunc(ctx, req)
+}
+
+// CreateUserCalls gets all the calls that were made to CreateUser.
+// Check the length with:
+//
+//	len(mockedClient.CreateUserCalls())
+func (mock *ClientMock) CreateUserCalls() []struct {
+	Ctx context.Context
+	Req *client.CreateUserRequest
+} {
+	var calls []struct {
+		Ctx context.Context
+		Req *client.CreateUserRequest
+	}
+	mock.lockCreateUser.RLock()
+	calls = mock.calls.CreateUser
+	mock.lockCreateUser.RUnlock()
+	return calls
+}
+
+// CreateUserKey calls CreateUserKeyFunc.
+func (mock *ClientMock) CreateUserKey(ctx context.Context, req *client.CreateUserKeyRequest) (*client.UserKey, error) {
+	if mock.CreateUserKeyFunc == nil {
+		panic("ClientMock.CreateUserKeyFunc: method is nil but Client.CreateUserKey was just called")
+	}
+	callInfo := struct {
+		Ctx context.Context
+		Req *client.CreateUserKeyRequest
+	}{
+		Ctx: ctx,
+		Req: req,
+	}
+	mock.lockCreateUserKey.Lock()
+	mock.calls.CreateUserKey = append(mock.calls.CreateUserKey, callInfo)
+	mock.lockCreateUserKey.Unlock()
+	return mock.CreateUserKeyFunc(ctx, req)
+}
+
+// CreateUserKeyCalls gets all the calls that were made to CreateUserKey.
+// Check the length with:
+//
+//	len(mockedClient.CreateUserKeyCalls())
+func (mock *ClientMock) CreateUserKeyCalls() []struct {
+	Ctx context.Context
+	Req *client.CreateUserKeyRequest
+} {
+	var calls []struct {
+		Ctx context.Context
+		Req *client.CreateUserKeyRequest
+	}
+	mock.lockCreateUserKey.RLock()
+	calls = mock.calls.CreateUserKey
+	mock.lockCreateUserKey.RUnlock()
+	return calls
+}
+
+// DeactivateUser calls DeactivateUserFunc.
+func (mock *ClientMock) DeactivateUser(ctx context.Context, id uint) (*client.User, error) {
+	if mock.DeactivateUserFunc == nil {
+		panic("ClientMock.DeactivateUserFunc: method is nil but Client.DeactivateUser was just called")
+	}
+	callInfo := struct {
+		Ctx context.Context
+		ID  uint
+	}{
+		Ctx: ctx,
+		ID:  id,
+	}
+	mock.lockDeactivateUser.Lock()
+	mock.calls.DeactivateUser = append(mock.calls.DeactivateUser, callInfo)
+	mock.lockDeactivateUser.Unlock()
+	return mock.DeactivateUserFunc(ctx, id)
+}
+
+// DeactivateUserCalls gets all the calls that were made to DeactivateUser.
+// Check the length with:
+//
+//	len(mockedClient.DeactivateUserCalls())
+func (mock *ClientMock) DeactivateUserCalls() []struct {
+	Ctx context.Context
+	ID  uint
+} {
+	var calls []struct {
+		Ctx context.Context
+		ID  uint
+	}
+	mock.lockDeactivateUser.RLock()
+	calls = mock.calls.DeactivateUser
+	mock.lockDeactivateUser.RUnlock()
+	return calls
+}
+
 // DeleteAlias calls DeleteAliasFunc.
 func (mock *ClientMock) DeleteAlias(ctx context.Context, aliasName string) error {
 	if mock.DeleteAliasFunc == nil {
@@ -640,6 +1423,150 @@ func (mock *ClientMock) DeleteAuthCalls() []struct {
 	mock.lockDeleteAuth.RLock()
 	calls = mock.calls.DeleteAuth
 	mock.lockDeleteAuth.RUnlock()
+	return calls
+}
+
+// DeleteRole calls DeleteRoleFunc.
+func (mock *ClientMock) DeleteRole(ctx context.Context, id uint) error {
+	if mock.DeleteRoleFunc == nil {
+		panic("ClientMock.DeleteRoleFunc: method is nil but Client.DeleteRole was just called")
+	}
+	callInfo := struct {
+		Ctx context.Context
+		ID  uint
+	}{
+		Ctx: ctx,
+		ID:  id,
+	}
+	mock.lockDeleteRole.Lock()
+	mock.calls.DeleteRole = append(mock.calls.DeleteRole, callInfo)
+	mock.lockDeleteRole.Unlock()
+	return mock.DeleteRoleFunc(ctx, id)
+}
+
+// DeleteRoleCalls gets all the calls that were made to DeleteRole.
+// Check the length with:
+//
+//	len(mockedClient.DeleteRoleCalls())
+func (mock *ClientMock) DeleteRoleCalls() []struct {
+	Ctx context.Context
+	ID  uint
+} {
+	var calls []struct {
+		Ctx context.Context
+		ID  uint
+	}
+	mock.lockDeleteRole.RLock()
+	calls = mock.calls.DeleteRole
+	mock.lockDeleteRole.RUnlock()
+	return calls
+}
+
+// DeleteUser calls DeleteUserFunc.
+func (mock *ClientMock) DeleteUser(ctx context.Context, id uint) error {
+	if mock.DeleteUserFunc == nil {
+		panic("ClientMock.DeleteUserFunc: method is nil but Client.DeleteUser was just called")
+	}
+	callInfo := struct {
+		Ctx context.Context
+		ID  uint
+	}{
+		Ctx: ctx,
+		ID:  id,
+	}
+	mock.lockDeleteUser.Lock()
+	mock.calls.DeleteUser = append(mock.calls.DeleteUser, callInfo)
+	mock.lockDeleteUser.Unlock()
+	return mock.DeleteUserFunc(ctx, id)
+}
+
+// DeleteUserCalls gets all the calls that were made to DeleteUser.
+// Check the length with:
+//
+//	len(mockedClient.DeleteUserCalls())
+func (mock *ClientMock) DeleteUserCalls() []struct {
+	Ctx context.Context
+	ID  uint
+} {
+	var calls []struct {
+		Ctx context.Context
+		ID  uint
+	}
+	mock.lockDeleteUser.RLock()
+	calls = mock.calls.DeleteUser
+	mock.lockDeleteUser.RUnlock()
+	return calls
+}
+
+// DeleteUserKey calls DeleteUserKeyFunc.
+func (mock *ClientMock) DeleteUserKey(ctx context.Context, id uint) error {
+	if mock.DeleteUserKeyFunc == nil {
+		panic("ClientMock.DeleteUserKeyFunc: method is nil but Client.DeleteUserKey was just called")
+	}
+	callInfo := struct {
+		Ctx context.Context
+		ID  uint
+	}{
+		Ctx: ctx,
+		ID:  id,
+	}
+	mock.lockDeleteUserKey.Lock()
+	mock.calls.DeleteUserKey = append(mock.calls.DeleteUserKey, callInfo)
+	mock.lockDeleteUserKey.Unlock()
+	return mock.DeleteUserKeyFunc(ctx, id)
+}
+
+// DeleteUserKeyCalls gets all the calls that were made to DeleteUserKey.
+// Check the length with:
+//
+//	len(mockedClient.DeleteUserKeyCalls())
+func (mock *ClientMock) DeleteUserKeyCalls() []struct {
+	Ctx context.Context
+	ID  uint
+} {
+	var calls []struct {
+		Ctx context.Context
+		ID  uint
+	}
+	mock.lockDeleteUserKey.RLock()
+	calls = mock.calls.DeleteUserKey
+	mock.lockDeleteUserKey.RUnlock()
+	return calls
+}
+
+// GetActiveUserKeysByUserID calls GetActiveUserKeysByUserIDFunc.
+func (mock *ClientMock) GetActiveUserKeysByUserID(ctx context.Context, userID uint) ([]client.UserKey, error) {
+	if mock.GetActiveUserKeysByUserIDFunc == nil {
+		panic("ClientMock.GetActiveUserKeysByUserIDFunc: method is nil but Client.GetActiveUserKeysByUserID was just called")
+	}
+	callInfo := struct {
+		Ctx    context.Context
+		UserID uint
+	}{
+		Ctx:    ctx,
+		UserID: userID,
+	}
+	mock.lockGetActiveUserKeysByUserID.Lock()
+	mock.calls.GetActiveUserKeysByUserID = append(mock.calls.GetActiveUserKeysByUserID, callInfo)
+	mock.lockGetActiveUserKeysByUserID.Unlock()
+	return mock.GetActiveUserKeysByUserIDFunc(ctx, userID)
+}
+
+// GetActiveUserKeysByUserIDCalls gets all the calls that were made to GetActiveUserKeysByUserID.
+// Check the length with:
+//
+//	len(mockedClient.GetActiveUserKeysByUserIDCalls())
+func (mock *ClientMock) GetActiveUserKeysByUserIDCalls() []struct {
+	Ctx    context.Context
+	UserID uint
+} {
+	var calls []struct {
+		Ctx    context.Context
+		UserID uint
+	}
+	mock.lockGetActiveUserKeysByUserID.RLock()
+	calls = mock.calls.GetActiveUserKeysByUserID
+	mock.lockGetActiveUserKeysByUserID.RUnlock()
 	return calls
 }
 
@@ -795,6 +1722,74 @@ func (mock *ClientMock) GetDeploymentEventsCalls() []struct {
 	return calls
 }
 
+// GetInactiveUserKeys calls GetInactiveUserKeysFunc.
+func (mock *ClientMock) GetInactiveUserKeys(ctx context.Context) ([]client.UserKey, error) {
+	if mock.GetInactiveUserKeysFunc == nil {
+		panic("ClientMock.GetInactiveUserKeysFunc: method is nil but Client.GetInactiveUserKeys was just called")
+	}
+	callInfo := struct {
+		Ctx context.Context
+	}{
+		Ctx: ctx,
+	}
+	mock.lockGetInactiveUserKeys.Lock()
+	mock.calls.GetInactiveUserKeys = append(mock.calls.GetInactiveUserKeys, callInfo)
+	mock.lockGetInactiveUserKeys.Unlock()
+	return mock.GetInactiveUserKeysFunc(ctx)
+}
+
+// GetInactiveUserKeysCalls gets all the calls that were made to GetInactiveUserKeys.
+// Check the length with:
+//
+//	len(mockedClient.GetInactiveUserKeysCalls())
+func (mock *ClientMock) GetInactiveUserKeysCalls() []struct {
+	Ctx context.Context
+} {
+	var calls []struct {
+		Ctx context.Context
+	}
+	mock.lockGetInactiveUserKeys.RLock()
+	calls = mock.calls.GetInactiveUserKeys
+	mock.lockGetInactiveUserKeys.RUnlock()
+	return calls
+}
+
+// GetInactiveUserKeysByUserID calls GetInactiveUserKeysByUserIDFunc.
+func (mock *ClientMock) GetInactiveUserKeysByUserID(ctx context.Context, userID uint) ([]client.UserKey, error) {
+	if mock.GetInactiveUserKeysByUserIDFunc == nil {
+		panic("ClientMock.GetInactiveUserKeysByUserIDFunc: method is nil but Client.GetInactiveUserKeysByUserID was just called")
+	}
+	callInfo := struct {
+		Ctx    context.Context
+		UserID uint
+	}{
+		Ctx:    ctx,
+		UserID: userID,
+	}
+	mock.lockGetInactiveUserKeysByUserID.Lock()
+	mock.calls.GetInactiveUserKeysByUserID = append(mock.calls.GetInactiveUserKeysByUserID, callInfo)
+	mock.lockGetInactiveUserKeysByUserID.Unlock()
+	return mock.GetInactiveUserKeysByUserIDFunc(ctx, userID)
+}
+
+// GetInactiveUserKeysByUserIDCalls gets all the calls that were made to GetInactiveUserKeysByUserID.
+// Check the length with:
+//
+//	len(mockedClient.GetInactiveUserKeysByUserIDCalls())
+func (mock *ClientMock) GetInactiveUserKeysByUserIDCalls() []struct {
+	Ctx    context.Context
+	UserID uint
+} {
+	var calls []struct {
+		Ctx    context.Context
+		UserID uint
+	}
+	mock.lockGetInactiveUserKeysByUserID.RLock()
+	calls = mock.calls.GetInactiveUserKeysByUserID
+	mock.lockGetInactiveUserKeysByUserID.RUnlock()
+	return calls
+}
+
 // GetLatestDeployment calls GetLatestDeploymentFunc.
 func (mock *ClientMock) GetLatestDeployment(ctx context.Context, releaseID string) (*client.ReleaseDeployment, error) {
 	if mock.GetLatestDeploymentFunc == nil {
@@ -828,6 +1823,38 @@ func (mock *ClientMock) GetLatestDeploymentCalls() []struct {
 	mock.lockGetLatestDeployment.RLock()
 	calls = mock.calls.GetLatestDeployment
 	mock.lockGetLatestDeployment.RUnlock()
+	return calls
+}
+
+// GetPendingUsers calls GetPendingUsersFunc.
+func (mock *ClientMock) GetPendingUsers(ctx context.Context) ([]client.User, error) {
+	if mock.GetPendingUsersFunc == nil {
+		panic("ClientMock.GetPendingUsersFunc: method is nil but Client.GetPendingUsers was just called")
+	}
+	callInfo := struct {
+		Ctx context.Context
+	}{
+		Ctx: ctx,
+	}
+	mock.lockGetPendingUsers.Lock()
+	mock.calls.GetPendingUsers = append(mock.calls.GetPendingUsers, callInfo)
+	mock.lockGetPendingUsers.Unlock()
+	return mock.GetPendingUsersFunc(ctx)
+}
+
+// GetPendingUsersCalls gets all the calls that were made to GetPendingUsers.
+// Check the length with:
+//
+//	len(mockedClient.GetPendingUsersCalls())
+func (mock *ClientMock) GetPendingUsersCalls() []struct {
+	Ctx context.Context
+} {
+	var calls []struct {
+		Ctx context.Context
+	}
+	mock.lockGetPendingUsers.RLock()
+	calls = mock.calls.GetPendingUsers
+	mock.lockGetPendingUsers.RUnlock()
 	return calls
 }
 
@@ -900,6 +1927,330 @@ func (mock *ClientMock) GetReleaseByAliasCalls() []struct {
 	mock.lockGetReleaseByAlias.RLock()
 	calls = mock.calls.GetReleaseByAlias
 	mock.lockGetReleaseByAlias.RUnlock()
+	return calls
+}
+
+// GetRole calls GetRoleFunc.
+func (mock *ClientMock) GetRole(ctx context.Context, id uint) (*client.Role, error) {
+	if mock.GetRoleFunc == nil {
+		panic("ClientMock.GetRoleFunc: method is nil but Client.GetRole was just called")
+	}
+	callInfo := struct {
+		Ctx context.Context
+		ID  uint
+	}{
+		Ctx: ctx,
+		ID:  id,
+	}
+	mock.lockGetRole.Lock()
+	mock.calls.GetRole = append(mock.calls.GetRole, callInfo)
+	mock.lockGetRole.Unlock()
+	return mock.GetRoleFunc(ctx, id)
+}
+
+// GetRoleCalls gets all the calls that were made to GetRole.
+// Check the length with:
+//
+//	len(mockedClient.GetRoleCalls())
+func (mock *ClientMock) GetRoleCalls() []struct {
+	Ctx context.Context
+	ID  uint
+} {
+	var calls []struct {
+		Ctx context.Context
+		ID  uint
+	}
+	mock.lockGetRole.RLock()
+	calls = mock.calls.GetRole
+	mock.lockGetRole.RUnlock()
+	return calls
+}
+
+// GetRoleByName calls GetRoleByNameFunc.
+func (mock *ClientMock) GetRoleByName(ctx context.Context, name string) (*client.Role, error) {
+	if mock.GetRoleByNameFunc == nil {
+		panic("ClientMock.GetRoleByNameFunc: method is nil but Client.GetRoleByName was just called")
+	}
+	callInfo := struct {
+		Ctx  context.Context
+		Name string
+	}{
+		Ctx:  ctx,
+		Name: name,
+	}
+	mock.lockGetRoleByName.Lock()
+	mock.calls.GetRoleByName = append(mock.calls.GetRoleByName, callInfo)
+	mock.lockGetRoleByName.Unlock()
+	return mock.GetRoleByNameFunc(ctx, name)
+}
+
+// GetRoleByNameCalls gets all the calls that were made to GetRoleByName.
+// Check the length with:
+//
+//	len(mockedClient.GetRoleByNameCalls())
+func (mock *ClientMock) GetRoleByNameCalls() []struct {
+	Ctx  context.Context
+	Name string
+} {
+	var calls []struct {
+		Ctx  context.Context
+		Name string
+	}
+	mock.lockGetRoleByName.RLock()
+	calls = mock.calls.GetRoleByName
+	mock.lockGetRoleByName.RUnlock()
+	return calls
+}
+
+// GetRoleUsers calls GetRoleUsersFunc.
+func (mock *ClientMock) GetRoleUsers(ctx context.Context, roleID uint) ([]client.UserRole, error) {
+	if mock.GetRoleUsersFunc == nil {
+		panic("ClientMock.GetRoleUsersFunc: method is nil but Client.GetRoleUsers was just called")
+	}
+	callInfo := struct {
+		Ctx    context.Context
+		RoleID uint
+	}{
+		Ctx:    ctx,
+		RoleID: roleID,
+	}
+	mock.lockGetRoleUsers.Lock()
+	mock.calls.GetRoleUsers = append(mock.calls.GetRoleUsers, callInfo)
+	mock.lockGetRoleUsers.Unlock()
+	return mock.GetRoleUsersFunc(ctx, roleID)
+}
+
+// GetRoleUsersCalls gets all the calls that were made to GetRoleUsers.
+// Check the length with:
+//
+//	len(mockedClient.GetRoleUsersCalls())
+func (mock *ClientMock) GetRoleUsersCalls() []struct {
+	Ctx    context.Context
+	RoleID uint
+} {
+	var calls []struct {
+		Ctx    context.Context
+		RoleID uint
+	}
+	mock.lockGetRoleUsers.RLock()
+	calls = mock.calls.GetRoleUsers
+	mock.lockGetRoleUsers.RUnlock()
+	return calls
+}
+
+// GetUser calls GetUserFunc.
+func (mock *ClientMock) GetUser(ctx context.Context, id uint) (*client.User, error) {
+	if mock.GetUserFunc == nil {
+		panic("ClientMock.GetUserFunc: method is nil but Client.GetUser was just called")
+	}
+	callInfo := struct {
+		Ctx context.Context
+		ID  uint
+	}{
+		Ctx: ctx,
+		ID:  id,
+	}
+	mock.lockGetUser.Lock()
+	mock.calls.GetUser = append(mock.calls.GetUser, callInfo)
+	mock.lockGetUser.Unlock()
+	return mock.GetUserFunc(ctx, id)
+}
+
+// GetUserCalls gets all the calls that were made to GetUser.
+// Check the length with:
+//
+//	len(mockedClient.GetUserCalls())
+func (mock *ClientMock) GetUserCalls() []struct {
+	Ctx context.Context
+	ID  uint
+} {
+	var calls []struct {
+		Ctx context.Context
+		ID  uint
+	}
+	mock.lockGetUser.RLock()
+	calls = mock.calls.GetUser
+	mock.lockGetUser.RUnlock()
+	return calls
+}
+
+// GetUserByEmail calls GetUserByEmailFunc.
+func (mock *ClientMock) GetUserByEmail(ctx context.Context, email string) (*client.User, error) {
+	if mock.GetUserByEmailFunc == nil {
+		panic("ClientMock.GetUserByEmailFunc: method is nil but Client.GetUserByEmail was just called")
+	}
+	callInfo := struct {
+		Ctx   context.Context
+		Email string
+	}{
+		Ctx:   ctx,
+		Email: email,
+	}
+	mock.lockGetUserByEmail.Lock()
+	mock.calls.GetUserByEmail = append(mock.calls.GetUserByEmail, callInfo)
+	mock.lockGetUserByEmail.Unlock()
+	return mock.GetUserByEmailFunc(ctx, email)
+}
+
+// GetUserByEmailCalls gets all the calls that were made to GetUserByEmail.
+// Check the length with:
+//
+//	len(mockedClient.GetUserByEmailCalls())
+func (mock *ClientMock) GetUserByEmailCalls() []struct {
+	Ctx   context.Context
+	Email string
+} {
+	var calls []struct {
+		Ctx   context.Context
+		Email string
+	}
+	mock.lockGetUserByEmail.RLock()
+	calls = mock.calls.GetUserByEmail
+	mock.lockGetUserByEmail.RUnlock()
+	return calls
+}
+
+// GetUserKey calls GetUserKeyFunc.
+func (mock *ClientMock) GetUserKey(ctx context.Context, id uint) (*client.UserKey, error) {
+	if mock.GetUserKeyFunc == nil {
+		panic("ClientMock.GetUserKeyFunc: method is nil but Client.GetUserKey was just called")
+	}
+	callInfo := struct {
+		Ctx context.Context
+		ID  uint
+	}{
+		Ctx: ctx,
+		ID:  id,
+	}
+	mock.lockGetUserKey.Lock()
+	mock.calls.GetUserKey = append(mock.calls.GetUserKey, callInfo)
+	mock.lockGetUserKey.Unlock()
+	return mock.GetUserKeyFunc(ctx, id)
+}
+
+// GetUserKeyCalls gets all the calls that were made to GetUserKey.
+// Check the length with:
+//
+//	len(mockedClient.GetUserKeyCalls())
+func (mock *ClientMock) GetUserKeyCalls() []struct {
+	Ctx context.Context
+	ID  uint
+} {
+	var calls []struct {
+		Ctx context.Context
+		ID  uint
+	}
+	mock.lockGetUserKey.RLock()
+	calls = mock.calls.GetUserKey
+	mock.lockGetUserKey.RUnlock()
+	return calls
+}
+
+// GetUserKeyByKid calls GetUserKeyByKidFunc.
+func (mock *ClientMock) GetUserKeyByKid(ctx context.Context, kid string) (*client.UserKey, error) {
+	if mock.GetUserKeyByKidFunc == nil {
+		panic("ClientMock.GetUserKeyByKidFunc: method is nil but Client.GetUserKeyByKid was just called")
+	}
+	callInfo := struct {
+		Ctx context.Context
+		Kid string
+	}{
+		Ctx: ctx,
+		Kid: kid,
+	}
+	mock.lockGetUserKeyByKid.Lock()
+	mock.calls.GetUserKeyByKid = append(mock.calls.GetUserKeyByKid, callInfo)
+	mock.lockGetUserKeyByKid.Unlock()
+	return mock.GetUserKeyByKidFunc(ctx, kid)
+}
+
+// GetUserKeyByKidCalls gets all the calls that were made to GetUserKeyByKid.
+// Check the length with:
+//
+//	len(mockedClient.GetUserKeyByKidCalls())
+func (mock *ClientMock) GetUserKeyByKidCalls() []struct {
+	Ctx context.Context
+	Kid string
+} {
+	var calls []struct {
+		Ctx context.Context
+		Kid string
+	}
+	mock.lockGetUserKeyByKid.RLock()
+	calls = mock.calls.GetUserKeyByKid
+	mock.lockGetUserKeyByKid.RUnlock()
+	return calls
+}
+
+// GetUserKeysByUserID calls GetUserKeysByUserIDFunc.
+func (mock *ClientMock) GetUserKeysByUserID(ctx context.Context, userID uint) ([]client.UserKey, error) {
+	if mock.GetUserKeysByUserIDFunc == nil {
+		panic("ClientMock.GetUserKeysByUserIDFunc: method is nil but Client.GetUserKeysByUserID was just called")
+	}
+	callInfo := struct {
+		Ctx    context.Context
+		UserID uint
+	}{
+		Ctx:    ctx,
+		UserID: userID,
+	}
+	mock.lockGetUserKeysByUserID.Lock()
+	mock.calls.GetUserKeysByUserID = append(mock.calls.GetUserKeysByUserID, callInfo)
+	mock.lockGetUserKeysByUserID.Unlock()
+	return mock.GetUserKeysByUserIDFunc(ctx, userID)
+}
+
+// GetUserKeysByUserIDCalls gets all the calls that were made to GetUserKeysByUserID.
+// Check the length with:
+//
+//	len(mockedClient.GetUserKeysByUserIDCalls())
+func (mock *ClientMock) GetUserKeysByUserIDCalls() []struct {
+	Ctx    context.Context
+	UserID uint
+} {
+	var calls []struct {
+		Ctx    context.Context
+		UserID uint
+	}
+	mock.lockGetUserKeysByUserID.RLock()
+	calls = mock.calls.GetUserKeysByUserID
+	mock.lockGetUserKeysByUserID.RUnlock()
+	return calls
+}
+
+// GetUserRoles calls GetUserRolesFunc.
+func (mock *ClientMock) GetUserRoles(ctx context.Context, userID uint) ([]client.UserRole, error) {
+	if mock.GetUserRolesFunc == nil {
+		panic("ClientMock.GetUserRolesFunc: method is nil but Client.GetUserRoles was just called")
+	}
+	callInfo := struct {
+		Ctx    context.Context
+		UserID uint
+	}{
+		Ctx:    ctx,
+		UserID: userID,
+	}
+	mock.lockGetUserRoles.Lock()
+	mock.calls.GetUserRoles = append(mock.calls.GetUserRoles, callInfo)
+	mock.lockGetUserRoles.Unlock()
+	return mock.GetUserRolesFunc(ctx, userID)
+}
+
+// GetUserRolesCalls gets all the calls that were made to GetUserRoles.
+// Check the length with:
+//
+//	len(mockedClient.GetUserRolesCalls())
+func (mock *ClientMock) GetUserRolesCalls() []struct {
+	Ctx    context.Context
+	UserID uint
+} {
+	var calls []struct {
+		Ctx    context.Context
+		UserID uint
+	}
+	mock.lockGetUserRoles.RLock()
+	calls = mock.calls.GetUserRoles
+	mock.lockGetUserRoles.RUnlock()
 	return calls
 }
 
@@ -1083,6 +2434,286 @@ func (mock *ClientMock) ListReleasesCalls() []struct {
 	return calls
 }
 
+// ListRoles calls ListRolesFunc.
+func (mock *ClientMock) ListRoles(ctx context.Context) ([]client.Role, error) {
+	if mock.ListRolesFunc == nil {
+		panic("ClientMock.ListRolesFunc: method is nil but Client.ListRoles was just called")
+	}
+	callInfo := struct {
+		Ctx context.Context
+	}{
+		Ctx: ctx,
+	}
+	mock.lockListRoles.Lock()
+	mock.calls.ListRoles = append(mock.calls.ListRoles, callInfo)
+	mock.lockListRoles.Unlock()
+	return mock.ListRolesFunc(ctx)
+}
+
+// ListRolesCalls gets all the calls that were made to ListRoles.
+// Check the length with:
+//
+//	len(mockedClient.ListRolesCalls())
+func (mock *ClientMock) ListRolesCalls() []struct {
+	Ctx context.Context
+} {
+	var calls []struct {
+		Ctx context.Context
+	}
+	mock.lockListRoles.RLock()
+	calls = mock.calls.ListRoles
+	mock.lockListRoles.RUnlock()
+	return calls
+}
+
+// ListUserKeys calls ListUserKeysFunc.
+func (mock *ClientMock) ListUserKeys(ctx context.Context) ([]client.UserKey, error) {
+	if mock.ListUserKeysFunc == nil {
+		panic("ClientMock.ListUserKeysFunc: method is nil but Client.ListUserKeys was just called")
+	}
+	callInfo := struct {
+		Ctx context.Context
+	}{
+		Ctx: ctx,
+	}
+	mock.lockListUserKeys.Lock()
+	mock.calls.ListUserKeys = append(mock.calls.ListUserKeys, callInfo)
+	mock.lockListUserKeys.Unlock()
+	return mock.ListUserKeysFunc(ctx)
+}
+
+// ListUserKeysCalls gets all the calls that were made to ListUserKeys.
+// Check the length with:
+//
+//	len(mockedClient.ListUserKeysCalls())
+func (mock *ClientMock) ListUserKeysCalls() []struct {
+	Ctx context.Context
+} {
+	var calls []struct {
+		Ctx context.Context
+	}
+	mock.lockListUserKeys.RLock()
+	calls = mock.calls.ListUserKeys
+	mock.lockListUserKeys.RUnlock()
+	return calls
+}
+
+// ListUsers calls ListUsersFunc.
+func (mock *ClientMock) ListUsers(ctx context.Context) ([]client.User, error) {
+	if mock.ListUsersFunc == nil {
+		panic("ClientMock.ListUsersFunc: method is nil but Client.ListUsers was just called")
+	}
+	callInfo := struct {
+		Ctx context.Context
+	}{
+		Ctx: ctx,
+	}
+	mock.lockListUsers.Lock()
+	mock.calls.ListUsers = append(mock.calls.ListUsers, callInfo)
+	mock.lockListUsers.Unlock()
+	return mock.ListUsersFunc(ctx)
+}
+
+// ListUsersCalls gets all the calls that were made to ListUsers.
+// Check the length with:
+//
+//	len(mockedClient.ListUsersCalls())
+func (mock *ClientMock) ListUsersCalls() []struct {
+	Ctx context.Context
+} {
+	var calls []struct {
+		Ctx context.Context
+	}
+	mock.lockListUsers.RLock()
+	calls = mock.calls.ListUsers
+	mock.lockListUsers.RUnlock()
+	return calls
+}
+
+// Login calls LoginFunc.
+func (mock *ClientMock) Login(ctx context.Context, req *auth.KeyPairChallengeResponse) (*client.LoginResponse, error) {
+	if mock.LoginFunc == nil {
+		panic("ClientMock.LoginFunc: method is nil but Client.Login was just called")
+	}
+	callInfo := struct {
+		Ctx context.Context
+		Req *auth.KeyPairChallengeResponse
+	}{
+		Ctx: ctx,
+		Req: req,
+	}
+	mock.lockLogin.Lock()
+	mock.calls.Login = append(mock.calls.Login, callInfo)
+	mock.lockLogin.Unlock()
+	return mock.LoginFunc(ctx, req)
+}
+
+// LoginCalls gets all the calls that were made to Login.
+// Check the length with:
+//
+//	len(mockedClient.LoginCalls())
+func (mock *ClientMock) LoginCalls() []struct {
+	Ctx context.Context
+	Req *auth.KeyPairChallengeResponse
+} {
+	var calls []struct {
+		Ctx context.Context
+		Req *auth.KeyPairChallengeResponse
+	}
+	mock.lockLogin.RLock()
+	calls = mock.calls.Login
+	mock.lockLogin.RUnlock()
+	return calls
+}
+
+// RegisterUser calls RegisterUserFunc.
+func (mock *ClientMock) RegisterUser(ctx context.Context, req *client.RegisterUserRequest) (*client.User, error) {
+	if mock.RegisterUserFunc == nil {
+		panic("ClientMock.RegisterUserFunc: method is nil but Client.RegisterUser was just called")
+	}
+	callInfo := struct {
+		Ctx context.Context
+		Req *client.RegisterUserRequest
+	}{
+		Ctx: ctx,
+		Req: req,
+	}
+	mock.lockRegisterUser.Lock()
+	mock.calls.RegisterUser = append(mock.calls.RegisterUser, callInfo)
+	mock.lockRegisterUser.Unlock()
+	return mock.RegisterUserFunc(ctx, req)
+}
+
+// RegisterUserCalls gets all the calls that were made to RegisterUser.
+// Check the length with:
+//
+//	len(mockedClient.RegisterUserCalls())
+func (mock *ClientMock) RegisterUserCalls() []struct {
+	Ctx context.Context
+	Req *client.RegisterUserRequest
+} {
+	var calls []struct {
+		Ctx context.Context
+		Req *client.RegisterUserRequest
+	}
+	mock.lockRegisterUser.RLock()
+	calls = mock.calls.RegisterUser
+	mock.lockRegisterUser.RUnlock()
+	return calls
+}
+
+// RegisterUserKey calls RegisterUserKeyFunc.
+func (mock *ClientMock) RegisterUserKey(ctx context.Context, req *client.RegisterUserKeyRequest) (*client.UserKey, error) {
+	if mock.RegisterUserKeyFunc == nil {
+		panic("ClientMock.RegisterUserKeyFunc: method is nil but Client.RegisterUserKey was just called")
+	}
+	callInfo := struct {
+		Ctx context.Context
+		Req *client.RegisterUserKeyRequest
+	}{
+		Ctx: ctx,
+		Req: req,
+	}
+	mock.lockRegisterUserKey.Lock()
+	mock.calls.RegisterUserKey = append(mock.calls.RegisterUserKey, callInfo)
+	mock.lockRegisterUserKey.Unlock()
+	return mock.RegisterUserKeyFunc(ctx, req)
+}
+
+// RegisterUserKeyCalls gets all the calls that were made to RegisterUserKey.
+// Check the length with:
+//
+//	len(mockedClient.RegisterUserKeyCalls())
+func (mock *ClientMock) RegisterUserKeyCalls() []struct {
+	Ctx context.Context
+	Req *client.RegisterUserKeyRequest
+} {
+	var calls []struct {
+		Ctx context.Context
+		Req *client.RegisterUserKeyRequest
+	}
+	mock.lockRegisterUserKey.RLock()
+	calls = mock.calls.RegisterUserKey
+	mock.lockRegisterUserKey.RUnlock()
+	return calls
+}
+
+// RemoveUserFromRole calls RemoveUserFromRoleFunc.
+func (mock *ClientMock) RemoveUserFromRole(ctx context.Context, userID uint, roleID uint) error {
+	if mock.RemoveUserFromRoleFunc == nil {
+		panic("ClientMock.RemoveUserFromRoleFunc: method is nil but Client.RemoveUserFromRole was just called")
+	}
+	callInfo := struct {
+		Ctx    context.Context
+		UserID uint
+		RoleID uint
+	}{
+		Ctx:    ctx,
+		UserID: userID,
+		RoleID: roleID,
+	}
+	mock.lockRemoveUserFromRole.Lock()
+	mock.calls.RemoveUserFromRole = append(mock.calls.RemoveUserFromRole, callInfo)
+	mock.lockRemoveUserFromRole.Unlock()
+	return mock.RemoveUserFromRoleFunc(ctx, userID, roleID)
+}
+
+// RemoveUserFromRoleCalls gets all the calls that were made to RemoveUserFromRole.
+// Check the length with:
+//
+//	len(mockedClient.RemoveUserFromRoleCalls())
+func (mock *ClientMock) RemoveUserFromRoleCalls() []struct {
+	Ctx    context.Context
+	UserID uint
+	RoleID uint
+} {
+	var calls []struct {
+		Ctx    context.Context
+		UserID uint
+		RoleID uint
+	}
+	mock.lockRemoveUserFromRole.RLock()
+	calls = mock.calls.RemoveUserFromRole
+	mock.lockRemoveUserFromRole.RUnlock()
+	return calls
+}
+
+// RevokeUserKey calls RevokeUserKeyFunc.
+func (mock *ClientMock) RevokeUserKey(ctx context.Context, id uint) (*client.UserKey, error) {
+	if mock.RevokeUserKeyFunc == nil {
+		panic("ClientMock.RevokeUserKeyFunc: method is nil but Client.RevokeUserKey was just called")
+	}
+	callInfo := struct {
+		Ctx context.Context
+		ID  uint
+	}{
+		Ctx: ctx,
+		ID:  id,
+	}
+	mock.lockRevokeUserKey.Lock()
+	mock.calls.RevokeUserKey = append(mock.calls.RevokeUserKey, callInfo)
+	mock.lockRevokeUserKey.Unlock()
+	return mock.RevokeUserKeyFunc(ctx, id)
+}
+
+// RevokeUserKeyCalls gets all the calls that were made to RevokeUserKey.
+// Check the length with:
+//
+//	len(mockedClient.RevokeUserKeyCalls())
+func (mock *ClientMock) RevokeUserKeyCalls() []struct {
+	Ctx context.Context
+	ID  uint
+} {
+	var calls []struct {
+		Ctx context.Context
+		ID  uint
+	}
+	mock.lockRevokeUserKey.RLock()
+	calls = mock.calls.RevokeUserKey
+	mock.lockRevokeUserKey.RUnlock()
+	return calls
+}
+
 // UpdateAuth calls UpdateAuthFunc.
 func (mock *ClientMock) UpdateAuth(ctx context.Context, id uint, req *client.UpdateAuthRequest) (*client.GHARepositoryAuth, error) {
 	if mock.UpdateAuthFunc == nil {
@@ -1196,6 +2827,126 @@ func (mock *ClientMock) UpdateReleaseCalls() []struct {
 	mock.lockUpdateRelease.RLock()
 	calls = mock.calls.UpdateRelease
 	mock.lockUpdateRelease.RUnlock()
+	return calls
+}
+
+// UpdateRole calls UpdateRoleFunc.
+func (mock *ClientMock) UpdateRole(ctx context.Context, id uint, req *client.UpdateRoleRequest) (*client.Role, error) {
+	if mock.UpdateRoleFunc == nil {
+		panic("ClientMock.UpdateRoleFunc: method is nil but Client.UpdateRole was just called")
+	}
+	callInfo := struct {
+		Ctx context.Context
+		ID  uint
+		Req *client.UpdateRoleRequest
+	}{
+		Ctx: ctx,
+		ID:  id,
+		Req: req,
+	}
+	mock.lockUpdateRole.Lock()
+	mock.calls.UpdateRole = append(mock.calls.UpdateRole, callInfo)
+	mock.lockUpdateRole.Unlock()
+	return mock.UpdateRoleFunc(ctx, id, req)
+}
+
+// UpdateRoleCalls gets all the calls that were made to UpdateRole.
+// Check the length with:
+//
+//	len(mockedClient.UpdateRoleCalls())
+func (mock *ClientMock) UpdateRoleCalls() []struct {
+	Ctx context.Context
+	ID  uint
+	Req *client.UpdateRoleRequest
+} {
+	var calls []struct {
+		Ctx context.Context
+		ID  uint
+		Req *client.UpdateRoleRequest
+	}
+	mock.lockUpdateRole.RLock()
+	calls = mock.calls.UpdateRole
+	mock.lockUpdateRole.RUnlock()
+	return calls
+}
+
+// UpdateUser calls UpdateUserFunc.
+func (mock *ClientMock) UpdateUser(ctx context.Context, id uint, req *client.UpdateUserRequest) (*client.User, error) {
+	if mock.UpdateUserFunc == nil {
+		panic("ClientMock.UpdateUserFunc: method is nil but Client.UpdateUser was just called")
+	}
+	callInfo := struct {
+		Ctx context.Context
+		ID  uint
+		Req *client.UpdateUserRequest
+	}{
+		Ctx: ctx,
+		ID:  id,
+		Req: req,
+	}
+	mock.lockUpdateUser.Lock()
+	mock.calls.UpdateUser = append(mock.calls.UpdateUser, callInfo)
+	mock.lockUpdateUser.Unlock()
+	return mock.UpdateUserFunc(ctx, id, req)
+}
+
+// UpdateUserCalls gets all the calls that were made to UpdateUser.
+// Check the length with:
+//
+//	len(mockedClient.UpdateUserCalls())
+func (mock *ClientMock) UpdateUserCalls() []struct {
+	Ctx context.Context
+	ID  uint
+	Req *client.UpdateUserRequest
+} {
+	var calls []struct {
+		Ctx context.Context
+		ID  uint
+		Req *client.UpdateUserRequest
+	}
+	mock.lockUpdateUser.RLock()
+	calls = mock.calls.UpdateUser
+	mock.lockUpdateUser.RUnlock()
+	return calls
+}
+
+// UpdateUserKey calls UpdateUserKeyFunc.
+func (mock *ClientMock) UpdateUserKey(ctx context.Context, id uint, req *client.UpdateUserKeyRequest) (*client.UserKey, error) {
+	if mock.UpdateUserKeyFunc == nil {
+		panic("ClientMock.UpdateUserKeyFunc: method is nil but Client.UpdateUserKey was just called")
+	}
+	callInfo := struct {
+		Ctx context.Context
+		ID  uint
+		Req *client.UpdateUserKeyRequest
+	}{
+		Ctx: ctx,
+		ID:  id,
+		Req: req,
+	}
+	mock.lockUpdateUserKey.Lock()
+	mock.calls.UpdateUserKey = append(mock.calls.UpdateUserKey, callInfo)
+	mock.lockUpdateUserKey.Unlock()
+	return mock.UpdateUserKeyFunc(ctx, id, req)
+}
+
+// UpdateUserKeyCalls gets all the calls that were made to UpdateUserKey.
+// Check the length with:
+//
+//	len(mockedClient.UpdateUserKeyCalls())
+func (mock *ClientMock) UpdateUserKeyCalls() []struct {
+	Ctx context.Context
+	ID  uint
+	Req *client.UpdateUserKeyRequest
+} {
+	var calls []struct {
+		Ctx context.Context
+		ID  uint
+		Req *client.UpdateUserKeyRequest
+	}
+	mock.lockUpdateUserKey.RLock()
+	calls = mock.calls.UpdateUserKey
+	mock.lockUpdateUserKey.RUnlock()
 	return calls
 }
 

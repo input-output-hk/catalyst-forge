@@ -1,0 +1,22 @@
+{
+    "Servers": {
+        "1": {
+            "Name": "Foundry Database",
+            "Group": "Servers",
+            "Host": "postgres",
+            "Port": 5432,
+            "MaintenanceDB": "releases",
+            "Username": "postgres",
+            "SSLMode": "disable",
+            "SSLCert": "",
+            "SSLKey": "",
+            "SSLCompression": 0,
+            "Timeout": 10,
+            "UseSSHTunnel": 0,
+            "TunnelHost": "",
+            "TunnelPort": "22",
+            "TunnelUsername": "",
+            "TunnelAuthentication": 0
+        }
+    }
+}

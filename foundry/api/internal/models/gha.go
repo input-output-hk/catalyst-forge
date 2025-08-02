@@ -11,7 +11,7 @@ import (
 type GHARepositoryAuth struct {
 	ID          uint           `gorm:"primaryKey"          json:"id"`
 	Repository  string         `gorm:"not null;uniqueIndex" json:"repository"`
-	Permissions pq.StringArray `gorm:"type:text[];not null" json:"permissions"` // ← changed
+	Permissions pq.StringArray `gorm:"type:text[];not null" json:"permissions"`
 	Enabled     bool           `gorm:"not null;default:true" json:"enabled"`
 	Description string         `json:"description,omitempty"`
 	CreatedBy   string         `gorm:"not null" json:"created_by"`

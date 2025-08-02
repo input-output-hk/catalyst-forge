@@ -13,15 +13,18 @@ import (
 	"github.com/alecthomas/kong"
 	"github.com/input-output-hk/catalyst-forge/foundry/api/cmd/api/auth"
 	"github.com/input-output-hk/catalyst-forge/foundry/api/internal/api"
-	"github.com/input-output-hk/catalyst-forge/foundry/api/internal/api/handlers"
 	"github.com/input-output-hk/catalyst-forge/foundry/api/internal/api/middleware"
 	"github.com/input-output-hk/catalyst-forge/foundry/api/internal/config"
 	"github.com/input-output-hk/catalyst-forge/foundry/api/internal/models"
+	"github.com/input-output-hk/catalyst-forge/foundry/api/internal/models/user"
 	"github.com/input-output-hk/catalyst-forge/foundry/api/internal/repository"
+	userrepo "github.com/input-output-hk/catalyst-forge/foundry/api/internal/repository/user"
 	"github.com/input-output-hk/catalyst-forge/foundry/api/internal/service"
+	userservice "github.com/input-output-hk/catalyst-forge/foundry/api/internal/service/user"
 	ghauth "github.com/input-output-hk/catalyst-forge/foundry/api/pkg/auth/github"
 	"github.com/input-output-hk/catalyst-forge/foundry/api/pkg/k8s"
 	"github.com/input-output-hk/catalyst-forge/foundry/api/pkg/k8s/mocks"
+	"github.com/redis/go-redis/v9"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 
@@ -107,11 +110,33 @@ func (r *RunCmd) Run() error {
 		&models.ReleaseAlias{},
 		&models.DeploymentEvent{},
 		&models.GHARepositoryAuth{},
+		&user.User{},
+		&user.Role{},
+		&user.UserRole{},
+		&user.UserKey{},
 	)
 	if err != nil {
 		logger.Error("Failed to run migrations", "error", err)
 		return err
 	}
+
+	// Initialize Redis client
+	logger.Info("Initializing Redis client", "addr", r.GetRedisAddr())
+	redisClient := redis.NewClient(&redis.Options{
+		Addr:     r.GetRedisAddr(),
+		Password: r.Redis.RedisPassword,
+		DB:       r.Redis.RedisDB,
+	})
+
+	// Test Redis connection
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	if err := redisClient.Ping(ctx).Err(); err != nil {
+		logger.Error("Failed to connect to Redis", "error", err)
+		return err
+	}
+	logger.Info("Successfully connected to Redis")
 
 	// Initialize Kubernetes client if enabled
 	var k8sClient k8s.Client
@@ -135,10 +160,22 @@ func (r *RunCmd) Run() error {
 	eventRepo := repository.NewEventRepository(db)
 	ghaAuthRepo := repository.NewGHAAuthRepository(db)
 
+	// Initialize user repositories
+	userRepo := userrepo.NewUserRepository(db)
+	roleRepo := userrepo.NewRoleRepository(db)
+	userRoleRepo := userrepo.NewUserRoleRepository(db)
+	userKeyRepo := userrepo.NewUserKeyRepository(db)
+
 	// Initialize services
 	releaseService := service.NewReleaseService(releaseRepo, aliasRepo, counterRepo, deploymentRepo)
 	deploymentService := service.NewDeploymentService(deploymentRepo, releaseRepo, eventRepo, k8sClient, db, logger)
 	ghaAuthService := service.NewGHAAuthService(ghaAuthRepo, logger)
+
+	// Initialize user services
+	userService := userservice.NewUserService(userRepo, logger)
+	roleService := userservice.NewRoleService(roleRepo, logger)
+	userRoleService := userservice.NewUserRoleService(userRoleRepo, logger)
+	userKeyService := userservice.NewUserKeyService(userKeyRepo, logger)
 
 	// Initialize middleware
 	jwtManager, err := jwt.NewJWTManager(r.Auth.PrivateKey, r.Auth.PublicKey, jwt.WithLogger(logger))
@@ -162,11 +199,22 @@ func (r *RunCmd) Run() error {
 	}
 	defer ghaOIDCClient.StopCache()
 
-	// Initialize GHA handler
-	ghaHandler := handlers.NewGHAHandler(jwtManager, ghaOIDCClient, ghaAuthService, logger)
-
 	// Setup router
-	router := api.SetupRouter(releaseService, deploymentService, authMiddleware, db, logger, ghaHandler)
+	router := api.SetupRouter(
+		releaseService,
+		deploymentService,
+		userService,
+		roleService,
+		userRoleService,
+		userKeyService,
+		authMiddleware,
+		db,
+		logger,
+		jwtManager,
+		ghaOIDCClient,
+		ghaAuthService,
+		redisClient,
+	)
 
 	// Initialize server
 	server := api.NewServer(r.GetServerAddr(), router, logger)
@@ -190,12 +238,19 @@ func (r *RunCmd) Run() error {
 	logger.Info("Shutting down server...")
 
 	// Create a deadline for graceful shutdown
-	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	ctx, cancel = context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
 
 	// Shutdown the server
 	if err := server.Shutdown(ctx); err != nil {
 		logger.Error("Server forced to shutdown", "error", err)
+	}
+
+	// Close Redis connection if it was initialized
+	if redisClient != nil {
+		if err := redisClient.Close(); err != nil {
+			logger.Error("Failed to close Redis connection", "error", err)
+		}
 	}
 
 	logger.Info("Server exiting")
