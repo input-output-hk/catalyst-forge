@@ -17,7 +17,7 @@ import (
 	"github.com/input-output-hk/catalyst-forge/foundry/api/client/auth"
 	"github.com/input-output-hk/catalyst-forge/foundry/api/client/deployments"
 	"github.com/input-output-hk/catalyst-forge/foundry/api/client/deployments/mocks"
-	"github.com/input-output-hk/catalyst-forge/foundry/api/client/gha"
+	"github.com/input-output-hk/catalyst-forge/foundry/api/client/github"
 	"github.com/input-output-hk/catalyst-forge/foundry/api/client/releases"
 	"github.com/input-output-hk/catalyst-forge/foundry/api/client/users"
 	foundryv1alpha1 "github.com/input-output-hk/catalyst-forge/foundry/operator/api/v1alpha1"
@@ -181,7 +181,7 @@ func (m *mockClient) Auth() auth.AuthClientInterface {
 	return nil
 }
 
-func (m *mockClient) GHA() gha.GithubClientInterface {
+func (m *mockClient) Github() github.GithubClientInterface {
 	return nil
 }
 

@@ -24,10 +24,7 @@ type RegisterForm struct {
 	Email    string `form:"email"`
 }
 
-func (c *RegisterCmd) Run(ctx run.RunContext, cl interface {
-	Users() *users.UsersClient
-	Keys() *users.KeysClient
-}) error {
+func (c *RegisterCmd) Run(ctx run.RunContext, cl client.Client) error {
 	var form RegisterForm
 
 	manager := auth.NewAuthManager(auth.WithFilesystem(ctx.FS))

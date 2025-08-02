@@ -6,6 +6,7 @@ import (
 
 	"github.com/charmbracelet/huh"
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/run"
+	"github.com/input-output-hk/catalyst-forge/foundry/api/client"
 	"github.com/input-output-hk/catalyst-forge/foundry/api/client/auth"
 	"github.com/input-output-hk/catalyst-forge/foundry/api/client/github"
 	authpkg "github.com/input-output-hk/catalyst-forge/foundry/api/pkg/auth"
@@ -21,10 +22,7 @@ type EmailForm struct {
 	Email string `form:"email"`
 }
 
-func (c *LoginCmd) Run(ctx run.RunContext, cl interface {
-	Github() *github.GithubClient
-	Auth() *auth.AuthClient
-}) error {
+func (c *LoginCmd) Run(ctx run.RunContext, cl client.Client) error {
 	var jwt string
 	var form EmailForm
 

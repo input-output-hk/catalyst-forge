@@ -73,6 +73,409 @@
                 }
             }
         },
+        "/auth/github": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Get all GitHub Actions authentication configurations",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "gha"
+                ],
+                "summary": "List GHA authentication configurations",
+                "responses": {
+                    "200": {
+                        "description": "List of authentication configurations",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/handlers.GithubRepositoryAuthResponse"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Authentication required",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Create a new GitHub Actions authentication configuration for a repository",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "gha"
+                ],
+                "summary": "Create GHA authentication configuration",
+                "parameters": [
+                    {
+                        "description": "GHA authentication configuration",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/handlers.CreateAuthRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Authentication configuration created",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.GithubRepositoryAuthResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "401": {
+                        "description": "Authentication required",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/github/login": {
+            "post": {
+                "description": "Validate a GitHub Actions OIDC token and return a JWT token",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "gha"
+                ],
+                "summary": "Validate GitHub Actions token",
+                "parameters": [
+                    {
+                        "description": "Token validation request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/handlers.ValidateTokenRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Token validated successfully",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.ValidateTokenResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "401": {
+                        "description": "Invalid token",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "403": {
+                        "description": "Repository not authorized",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/github/repository/{repository}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Get a GitHub Actions authentication configuration by repository name",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "gha"
+                ],
+                "summary": "Get GHA authentication configuration by repository",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Repository name",
+                        "name": "repository",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Authentication configuration",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.GithubRepositoryAuthResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Authentication required",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "404": {
+                        "description": "Authentication configuration not found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/github/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Get a specific GitHub Actions authentication configuration by its ID",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "gha"
+                ],
+                "summary": "Get GHA authentication configuration by ID",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Authentication configuration ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Authentication configuration",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.GithubRepositoryAuthResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid ID parameter",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "401": {
+                        "description": "Authentication required",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "404": {
+                        "description": "Authentication configuration not found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            },
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Update an existing GitHub Actions authentication configuration",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "gha"
+                ],
+                "summary": "Update GHA authentication configuration",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Authentication configuration ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Updated GHA authentication configuration",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/handlers.UpdateAuthRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Authentication configuration updated",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.GithubRepositoryAuthResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "401": {
+                        "description": "Authentication required",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "404": {
+                        "description": "Authentication configuration not found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Delete a GitHub Actions authentication configuration",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "gha"
+                ],
+                "summary": "Delete GHA authentication configuration",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Authentication configuration ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Authentication configuration deleted",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid ID parameter",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "401": {
+                        "description": "Authentication required",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
         "/auth/keys": {
             "get": {
                 "description": "Retrieve a list of all user keys",
@@ -1560,409 +1963,6 @@
                 }
             }
         },
-        "/gha/auth": {
-            "get": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Get all GitHub Actions authentication configurations",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "gha"
-                ],
-                "summary": "List GHA authentication configurations",
-                "responses": {
-                    "200": {
-                        "description": "List of authentication configurations",
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/handlers.GHARepositoryAuthResponse"
-                            }
-                        }
-                    },
-                    "401": {
-                        "description": "Authentication required",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    }
-                }
-            },
-            "post": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Create a new GitHub Actions authentication configuration for a repository",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "gha"
-                ],
-                "summary": "Create GHA authentication configuration",
-                "parameters": [
-                    {
-                        "description": "GHA authentication configuration",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/handlers.CreateAuthRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "201": {
-                        "description": "Authentication configuration created",
-                        "schema": {
-                            "$ref": "#/definitions/handlers.GHARepositoryAuthResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Invalid request",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "401": {
-                        "description": "Authentication required",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    }
-                }
-            }
-        },
-        "/gha/auth/repository/{repository}": {
-            "get": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Get a GitHub Actions authentication configuration by repository name",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "gha"
-                ],
-                "summary": "Get GHA authentication configuration by repository",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Repository name",
-                        "name": "repository",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Authentication configuration",
-                        "schema": {
-                            "$ref": "#/definitions/handlers.GHARepositoryAuthResponse"
-                        }
-                    },
-                    "401": {
-                        "description": "Authentication required",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "404": {
-                        "description": "Authentication configuration not found",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    }
-                }
-            }
-        },
-        "/gha/auth/{id}": {
-            "get": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Get a specific GitHub Actions authentication configuration by its ID",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "gha"
-                ],
-                "summary": "Get GHA authentication configuration by ID",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "Authentication configuration ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Authentication configuration",
-                        "schema": {
-                            "$ref": "#/definitions/handlers.GHARepositoryAuthResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Invalid ID parameter",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "401": {
-                        "description": "Authentication required",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "404": {
-                        "description": "Authentication configuration not found",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    }
-                }
-            },
-            "put": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Update an existing GitHub Actions authentication configuration",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "gha"
-                ],
-                "summary": "Update GHA authentication configuration",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "Authentication configuration ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "Updated GHA authentication configuration",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/handlers.UpdateAuthRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Authentication configuration updated",
-                        "schema": {
-                            "$ref": "#/definitions/handlers.GHARepositoryAuthResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Invalid request",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "401": {
-                        "description": "Authentication required",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "404": {
-                        "description": "Authentication configuration not found",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    }
-                }
-            },
-            "delete": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Delete a GitHub Actions authentication configuration",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "gha"
-                ],
-                "summary": "Delete GHA authentication configuration",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "Authentication configuration ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Authentication configuration deleted",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "400": {
-                        "description": "Invalid ID parameter",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "401": {
-                        "description": "Authentication required",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    }
-                }
-            }
-        },
-        "/gha/validate": {
-            "post": {
-                "description": "Validate a GitHub Actions OIDC token and return a JWT token",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "gha"
-                ],
-                "summary": "Validate GitHub Actions token",
-                "parameters": [
-                    {
-                        "description": "Token validation request",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/handlers.ValidateTokenRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Token validated successfully",
-                        "schema": {
-                            "$ref": "#/definitions/handlers.ValidateTokenResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Invalid request",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "401": {
-                        "description": "Invalid token",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "403": {
-                        "description": "Repository not authorized",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    }
-                }
-            }
-        },
         "/healthz": {
             "get": {
                 "description": "Check the health status of the API service",
@@ -3055,7 +3055,7 @@
                 }
             }
         },
-        "handlers.GHARepositoryAuthResponse": {
+        "handlers.GithubRepositoryAuthResponse": {
             "type": "object",
             "properties": {
                 "created_at": {
@@ -3537,11 +3537,6 @@
         },
         "user.UpdateUserKeyRequest": {
             "type": "object",
-            "required": [
-                "kid",
-                "pubkey_b64",
-                "user_id"
-            ],
             "properties": {
                 "kid": {
                     "type": "string"

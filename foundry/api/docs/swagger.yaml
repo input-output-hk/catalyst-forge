@@ -124,7 +124,7 @@ definitions:
     - source_commit
     - source_repo
     type: object
-  handlers.GHARepositoryAuthResponse:
+  handlers.GithubRepositoryAuthResponse:
     properties:
       created_at:
         type: string
@@ -457,10 +457,6 @@ definitions:
         type: string
       user_id:
         type: integer
-    required:
-    - kid
-    - pubkey_b64
-    - user_id
     type: object
   user.UpdateUserRequest:
     properties:
@@ -564,6 +560,275 @@ paths:
       summary: Create a new authentication challenge
       tags:
       - auth
+  /auth/github:
+    get:
+      consumes:
+      - application/json
+      description: Get all GitHub Actions authentication configurations
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of authentication configurations
+          schema:
+            items:
+              $ref: '#/definitions/handlers.GithubRepositoryAuthResponse'
+            type: array
+        "401":
+          description: Authentication required
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: List GHA authentication configurations
+      tags:
+      - gha
+    post:
+      consumes:
+      - application/json
+      description: Create a new GitHub Actions authentication configuration for a
+        repository
+      parameters:
+      - description: GHA authentication configuration
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.CreateAuthRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Authentication configuration created
+          schema:
+            $ref: '#/definitions/handlers.GithubRepositoryAuthResponse'
+        "400":
+          description: Invalid request
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Authentication required
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Create GHA authentication configuration
+      tags:
+      - gha
+  /auth/github/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Delete a GitHub Actions authentication configuration
+      parameters:
+      - description: Authentication configuration ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Authentication configuration deleted
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Invalid ID parameter
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Authentication required
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Delete GHA authentication configuration
+      tags:
+      - gha
+    get:
+      consumes:
+      - application/json
+      description: Get a specific GitHub Actions authentication configuration by its
+        ID
+      parameters:
+      - description: Authentication configuration ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Authentication configuration
+          schema:
+            $ref: '#/definitions/handlers.GithubRepositoryAuthResponse'
+        "400":
+          description: Invalid ID parameter
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Authentication required
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Authentication configuration not found
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get GHA authentication configuration by ID
+      tags:
+      - gha
+    put:
+      consumes:
+      - application/json
+      description: Update an existing GitHub Actions authentication configuration
+      parameters:
+      - description: Authentication configuration ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Updated GHA authentication configuration
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.UpdateAuthRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Authentication configuration updated
+          schema:
+            $ref: '#/definitions/handlers.GithubRepositoryAuthResponse'
+        "400":
+          description: Invalid request
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Authentication required
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Authentication configuration not found
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Update GHA authentication configuration
+      tags:
+      - gha
+  /auth/github/login:
+    post:
+      consumes:
+      - application/json
+      description: Validate a GitHub Actions OIDC token and return a JWT token
+      parameters:
+      - description: Token validation request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.ValidateTokenRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Token validated successfully
+          schema:
+            $ref: '#/definitions/handlers.ValidateTokenResponse'
+        "400":
+          description: Invalid request
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Invalid token
+          schema:
+            additionalProperties: true
+            type: object
+        "403":
+          description: Repository not authorized
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Validate GitHub Actions token
+      tags:
+      - gha
+  /auth/github/repository/{repository}:
+    get:
+      consumes:
+      - application/json
+      description: Get a GitHub Actions authentication configuration by repository
+        name
+      parameters:
+      - description: Repository name
+        in: path
+        name: repository
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Authentication configuration
+          schema:
+            $ref: '#/definitions/handlers.GithubRepositoryAuthResponse'
+        "401":
+          description: Authentication required
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Authentication configuration not found
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get GHA authentication configuration by repository
+      tags:
+      - gha
   /auth/keys:
     get:
       description: Retrieve a list of all user keys
@@ -1571,275 +1836,6 @@ paths:
       summary: Register a new user
       tags:
       - users
-  /gha/auth:
-    get:
-      consumes:
-      - application/json
-      description: Get all GitHub Actions authentication configurations
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: List of authentication configurations
-          schema:
-            items:
-              $ref: '#/definitions/handlers.GHARepositoryAuthResponse'
-            type: array
-        "401":
-          description: Authentication required
-          schema:
-            additionalProperties: true
-            type: object
-        "500":
-          description: Internal server error
-          schema:
-            additionalProperties: true
-            type: object
-      security:
-      - BearerAuth: []
-      summary: List GHA authentication configurations
-      tags:
-      - gha
-    post:
-      consumes:
-      - application/json
-      description: Create a new GitHub Actions authentication configuration for a
-        repository
-      parameters:
-      - description: GHA authentication configuration
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/handlers.CreateAuthRequest'
-      produces:
-      - application/json
-      responses:
-        "201":
-          description: Authentication configuration created
-          schema:
-            $ref: '#/definitions/handlers.GHARepositoryAuthResponse'
-        "400":
-          description: Invalid request
-          schema:
-            additionalProperties: true
-            type: object
-        "401":
-          description: Authentication required
-          schema:
-            additionalProperties: true
-            type: object
-        "500":
-          description: Internal server error
-          schema:
-            additionalProperties: true
-            type: object
-      security:
-      - BearerAuth: []
-      summary: Create GHA authentication configuration
-      tags:
-      - gha
-  /gha/auth/{id}:
-    delete:
-      consumes:
-      - application/json
-      description: Delete a GitHub Actions authentication configuration
-      parameters:
-      - description: Authentication configuration ID
-        in: path
-        name: id
-        required: true
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Authentication configuration deleted
-          schema:
-            additionalProperties: true
-            type: object
-        "400":
-          description: Invalid ID parameter
-          schema:
-            additionalProperties: true
-            type: object
-        "401":
-          description: Authentication required
-          schema:
-            additionalProperties: true
-            type: object
-        "500":
-          description: Internal server error
-          schema:
-            additionalProperties: true
-            type: object
-      security:
-      - BearerAuth: []
-      summary: Delete GHA authentication configuration
-      tags:
-      - gha
-    get:
-      consumes:
-      - application/json
-      description: Get a specific GitHub Actions authentication configuration by its
-        ID
-      parameters:
-      - description: Authentication configuration ID
-        in: path
-        name: id
-        required: true
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Authentication configuration
-          schema:
-            $ref: '#/definitions/handlers.GHARepositoryAuthResponse'
-        "400":
-          description: Invalid ID parameter
-          schema:
-            additionalProperties: true
-            type: object
-        "401":
-          description: Authentication required
-          schema:
-            additionalProperties: true
-            type: object
-        "404":
-          description: Authentication configuration not found
-          schema:
-            additionalProperties: true
-            type: object
-      security:
-      - BearerAuth: []
-      summary: Get GHA authentication configuration by ID
-      tags:
-      - gha
-    put:
-      consumes:
-      - application/json
-      description: Update an existing GitHub Actions authentication configuration
-      parameters:
-      - description: Authentication configuration ID
-        in: path
-        name: id
-        required: true
-        type: integer
-      - description: Updated GHA authentication configuration
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/handlers.UpdateAuthRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Authentication configuration updated
-          schema:
-            $ref: '#/definitions/handlers.GHARepositoryAuthResponse'
-        "400":
-          description: Invalid request
-          schema:
-            additionalProperties: true
-            type: object
-        "401":
-          description: Authentication required
-          schema:
-            additionalProperties: true
-            type: object
-        "404":
-          description: Authentication configuration not found
-          schema:
-            additionalProperties: true
-            type: object
-        "500":
-          description: Internal server error
-          schema:
-            additionalProperties: true
-            type: object
-      security:
-      - BearerAuth: []
-      summary: Update GHA authentication configuration
-      tags:
-      - gha
-  /gha/auth/repository/{repository}:
-    get:
-      consumes:
-      - application/json
-      description: Get a GitHub Actions authentication configuration by repository
-        name
-      parameters:
-      - description: Repository name
-        in: path
-        name: repository
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Authentication configuration
-          schema:
-            $ref: '#/definitions/handlers.GHARepositoryAuthResponse'
-        "401":
-          description: Authentication required
-          schema:
-            additionalProperties: true
-            type: object
-        "404":
-          description: Authentication configuration not found
-          schema:
-            additionalProperties: true
-            type: object
-      security:
-      - BearerAuth: []
-      summary: Get GHA authentication configuration by repository
-      tags:
-      - gha
-  /gha/validate:
-    post:
-      consumes:
-      - application/json
-      description: Validate a GitHub Actions OIDC token and return a JWT token
-      parameters:
-      - description: Token validation request
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/handlers.ValidateTokenRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Token validated successfully
-          schema:
-            $ref: '#/definitions/handlers.ValidateTokenResponse'
-        "400":
-          description: Invalid request
-          schema:
-            additionalProperties: true
-            type: object
-        "401":
-          description: Invalid token
-          schema:
-            additionalProperties: true
-            type: object
-        "403":
-          description: Repository not authorized
-          schema:
-            additionalProperties: true
-            type: object
-        "500":
-          description: Internal server error
-          schema:
-            additionalProperties: true
-            type: object
-      summary: Validate GitHub Actions token
-      tags:
-      - gha
   /healthz:
     get:
       consumes:
