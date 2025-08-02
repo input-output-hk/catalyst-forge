@@ -11,20 +11,23 @@ import (
 )
 
 type RevokeCmd struct {
-	ID   string `arg:"" help:"The ID of the user key to revoke."`
-	JSON bool   `short:"j" help:"Output as prettified JSON instead of table."`
+	ID   *string `short:"i" help:"The numeric ID of the user key to revoke (mutually exclusive with --kid)."`
+	Kid  *string `short:"k" help:"The key ID (KID) of the user key to revoke (mutually exclusive with --id)."`
+	JSON bool    `short:"j" help:"Output as prettified JSON instead of table."`
 }
 
 func (c *RevokeCmd) Run(ctx run.RunContext, cl client.Client) error {
-	// Convert string ID to uint
-	id, err := strconv.ParseUint(c.ID, 10, 32)
-	if err != nil {
-		return fmt.Errorf("invalid ID format: %w", err)
+	if c.ID == nil && c.Kid == nil {
+		return fmt.Errorf("either --id or --kid must be specified")
 	}
 
-	userKey, err := cl.RevokeUserKey(context.Background(), uint(id))
+	if c.ID != nil && c.Kid != nil {
+		return fmt.Errorf("only one of --id or --kid can be specified")
+	}
+
+	userKey, err := c.revokeUserKey(cl)
 	if err != nil {
-		return fmt.Errorf("failed to revoke user key: %w", err)
+		return err
 	}
 
 	if c.JSON {
@@ -32,4 +35,30 @@ func (c *RevokeCmd) Run(ctx run.RunContext, cl client.Client) error {
 	}
 
 	return common.OutputUserKeyTable(userKey)
+}
+
+// revokeUserKey revokes a user key by ID or KID.
+func (c *RevokeCmd) revokeUserKey(cl client.Client) (*client.UserKey, error) {
+	var keyID uint
+
+	if c.Kid != nil {
+		userKey, err := cl.GetUserKeyByKid(context.Background(), *c.Kid)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get user key by KID: %w", err)
+		}
+		keyID = userKey.ID
+	} else if c.ID != nil {
+		parsedID, err := strconv.ParseUint(*c.ID, 10, 32)
+		if err != nil {
+			return nil, fmt.Errorf("invalid ID format: %w", err)
+		}
+		keyID = uint(parsedID)
+	}
+
+	userKey, err := cl.RevokeUserKey(context.Background(), keyID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to revoke user key: %w", err)
+	}
+
+	return userKey, nil
 }

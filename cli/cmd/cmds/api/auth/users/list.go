@@ -14,9 +14,9 @@ type ListCmd struct {
 }
 
 func (c *ListCmd) Run(ctx run.RunContext, cl client.Client) error {
-	users, err := cl.ListUsers(context.Background())
+	users, err := c.listUsers(cl)
 	if err != nil {
-		return fmt.Errorf("failed to list users: %w", err)
+		return err
 	}
 
 	if c.JSON {
@@ -24,4 +24,14 @@ func (c *ListCmd) Run(ctx run.RunContext, cl client.Client) error {
 	}
 
 	return common.OutputUsersTable(users)
+}
+
+// listUsers retrieves all users.
+func (c *ListCmd) listUsers(cl client.Client) ([]client.User, error) {
+	users, err := cl.ListUsers(context.Background())
+	if err != nil {
+		return nil, fmt.Errorf("failed to list users: %w", err)
+	}
+
+	return users, nil
 }

@@ -11,20 +11,18 @@ import (
 )
 
 type GetCmd struct {
-	ID     *string `short:"i" help:"The ID of the user key to retrieve."`
-	Kid    *string `short:"k" help:"The KID of the user key to retrieve."`
-	UserID *string `short:"u" help:"The user ID to get keys for."`
+	ID     *string `short:"i" help:"The ID of the user key to retrieve (mutually exclusive with --kid and --user-id)."`
+	Kid    *string `short:"k" help:"The KID of the user key to retrieve (mutually exclusive with --id and --user-id)."`
+	UserID *string `short:"u" help:"The user ID to get keys for (mutually exclusive with --id and --kid)."`
 	Active bool    `short:"a" help:"Only show active keys when getting by user ID."`
 	JSON   bool    `short:"j" help:"Output as prettified JSON instead of table."`
 }
 
 func (c *GetCmd) Run(ctx run.RunContext, cl client.Client) error {
-	// Check if we're getting by user ID
 	if c.UserID != nil {
 		return c.getByUser(cl)
 	}
 
-	// Check if we're getting individual key
 	if c.ID == nil && c.Kid == nil {
 		return fmt.Errorf("either --id, --kid, or --user-id must be specified")
 	}
@@ -45,9 +43,9 @@ func (c *GetCmd) Run(ctx run.RunContext, cl client.Client) error {
 	return common.OutputUserKeyTable(userKey)
 }
 
+// retrieveUserKey retrieves a user key by ID or KID.
 func (c *GetCmd) retrieveUserKey(cl client.Client) (*client.UserKey, error) {
 	if c.ID != nil {
-		// Convert string ID to uint
 		id, err := strconv.ParseUint(*c.ID, 10, 32)
 		if err != nil {
 			return nil, fmt.Errorf("invalid ID format: %w", err)
@@ -66,8 +64,8 @@ func (c *GetCmd) retrieveUserKey(cl client.Client) (*client.UserKey, error) {
 	return userKey, nil
 }
 
+// getByUser retrieves all user keys for a given user ID.
 func (c *GetCmd) getByUser(cl client.Client) error {
-	// Convert string UserID to uint
 	userID, err := strconv.ParseUint(*c.UserID, 10, 32)
 	if err != nil {
 		return fmt.Errorf("invalid user ID format: %w", err)

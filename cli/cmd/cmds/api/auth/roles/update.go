@@ -11,32 +11,25 @@ import (
 )
 
 type UpdateCmd struct {
-	ID          string   `arg:"" help:"The ID of the role to update."`
-	Name        string   `short:"n" help:"The new name for the role."`
+	ID          *string  `short:"i" help:"The numeric ID of the role to update (mutually exclusive with --name)."`
+	Name        *string  `short:"n" help:"The name of the role to update (mutually exclusive with --id)."`
+	NewName     *string  `short:"r" help:"The new name for the role."`
 	Permissions []string `short:"p" help:"The new permissions for the role."`
 	JSON        bool     `short:"j" help:"Output as prettified JSON instead of table."`
 }
 
 func (c *UpdateCmd) Run(ctx run.RunContext, cl client.Client) error {
-	// Convert string ID to uint
-	id, err := strconv.ParseUint(c.ID, 10, 32)
+	if c.ID == nil && c.Name == nil {
+		return fmt.Errorf("either --id or --name must be specified")
+	}
+
+	if c.ID != nil && c.Name != nil {
+		return fmt.Errorf("only one of --id or --name can be specified")
+	}
+
+	role, err := c.updateRole(cl)
 	if err != nil {
-		return fmt.Errorf("invalid ID format: %w", err)
-	}
-
-	req := &client.UpdateRoleRequest{}
-
-	if c.Name != "" {
-		req.Name = c.Name
-	}
-
-	if len(c.Permissions) > 0 {
-		req.Permissions = c.Permissions
-	}
-
-	role, err := cl.UpdateRole(context.Background(), uint(id), req)
-	if err != nil {
-		return fmt.Errorf("failed to update role: %w", err)
+		return err
 	}
 
 	if c.JSON {
@@ -44,4 +37,40 @@ func (c *UpdateCmd) Run(ctx run.RunContext, cl client.Client) error {
 	}
 
 	return common.OutputRoleTable(role)
+}
+
+// updateRole updates a role by ID or name.
+func (c *UpdateCmd) updateRole(cl client.Client) (*client.Role, error) {
+	var roleID uint
+
+	if c.Name != nil {
+		role, err := cl.GetRoleByName(context.Background(), *c.Name)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get role by name: %w", err)
+		}
+		roleID = role.ID
+	} else if c.ID != nil {
+		parsedID, err := strconv.ParseUint(*c.ID, 10, 32)
+		if err != nil {
+			return nil, fmt.Errorf("invalid ID format: %w", err)
+		}
+		roleID = uint(parsedID)
+	}
+
+	req := &client.UpdateRoleRequest{}
+
+	if c.NewName != nil {
+		req.Name = *c.NewName
+	}
+
+	if len(c.Permissions) > 0 {
+		req.Permissions = c.Permissions
+	}
+
+	role, err := cl.UpdateRole(context.Background(), roleID, req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to update role: %w", err)
+	}
+
+	return role, nil
 }

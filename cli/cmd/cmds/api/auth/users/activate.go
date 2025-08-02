@@ -11,8 +11,8 @@ import (
 )
 
 type ActivateCmd struct {
-	ID    *string `short:"i" help:"The ID of the user to activate."`
-	Email *string `short:"e" help:"The email of the user to activate."`
+	ID    *string `short:"i" help:"The ID of the user to activate (mutually exclusive with --email)."`
+	Email *string `short:"e" help:"The email of the user to activate (mutually exclusive with --id)."`
 	JSON  bool    `short:"j" help:"Output as prettified JSON instead of table."`
 }
 
@@ -37,9 +37,9 @@ func (c *ActivateCmd) Run(ctx run.RunContext, cl client.Client) error {
 	return common.OutputUserTable(user)
 }
 
+// activateUser activates a user by ID or email.
 func (c *ActivateCmd) activateUser(cl client.Client) (*client.User, error) {
 	if c.ID != nil {
-		// Convert string ID to uint
 		id, err := strconv.ParseUint(*c.ID, 10, 32)
 		if err != nil {
 			return nil, fmt.Errorf("invalid ID format: %w", err)
@@ -51,7 +51,6 @@ func (c *ActivateCmd) activateUser(cl client.Client) (*client.User, error) {
 		return user, nil
 	}
 
-	// Get user by email first, then activate by ID
 	user, err := cl.GetUserByEmail(context.Background(), *c.Email)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get user by email: %w", err)

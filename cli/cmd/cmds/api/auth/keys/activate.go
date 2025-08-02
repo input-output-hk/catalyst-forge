@@ -12,8 +12,8 @@ import (
 
 type ActivateCmd struct {
 	Kid    string  `arg:"" help:"The KID of the user key to activate."`
-	UserID *string `short:"u" help:"The user ID that owns the key."`
-	Email  *string `short:"e" help:"The email of the user that owns the key."`
+	UserID *string `short:"u" help:"The user ID that owns the key (mutually exclusive with --email)."`
+	Email  *string `short:"e" help:"The email of the user that owns the key (mutually exclusive with --user-id)."`
 	JSON   bool    `short:"j" help:"Output as prettified JSON instead of table."`
 }
 
@@ -38,14 +38,13 @@ func (c *ActivateCmd) Run(ctx run.RunContext, cl client.Client) error {
 	return common.OutputUserKeyTable(userKey)
 }
 
+// activateUserKey activates a user key by KID.
 func (c *ActivateCmd) activateUserKey(cl client.Client) (*client.UserKey, error) {
-	// Get the user key by KID first
 	userKey, err := cl.GetUserKeyByKid(context.Background(), c.Kid)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get user key by KID: %w", err)
 	}
 
-	// If email is provided, we need to get the user first to validate ownership
 	if c.Email != nil {
 		user, err := cl.GetUserByEmail(context.Background(), *c.Email)
 		if err != nil {
@@ -56,7 +55,6 @@ func (c *ActivateCmd) activateUserKey(cl client.Client) (*client.UserKey, error)
 			return nil, fmt.Errorf("user key does not belong to the specified user")
 		}
 	} else if c.UserID != nil {
-		// Convert string UserID to uint
 		userID, err := strconv.ParseUint(*c.UserID, 10, 32)
 		if err != nil {
 			return nil, fmt.Errorf("invalid user ID format: %w", err)
@@ -67,7 +65,6 @@ func (c *ActivateCmd) activateUserKey(cl client.Client) (*client.UserKey, error)
 		}
 	}
 
-	// Create update request with all required fields from the existing key
 	req := &client.UpdateUserKeyRequest{
 		UserID:    userKey.UserID,
 		Kid:       userKey.Kid,
@@ -75,7 +72,6 @@ func (c *ActivateCmd) activateUserKey(cl client.Client) (*client.UserKey, error)
 		Status:    "active",
 	}
 
-	// Update the key to active status using the key's ID
 	updatedUserKey, err := cl.UpdateUserKey(context.Background(), userKey.ID, req)
 	if err != nil {
 		return nil, fmt.Errorf("failed to activate user key: %w", err)

@@ -14,9 +14,9 @@ type ListCmd struct {
 }
 
 func (c *ListCmd) Run(ctx run.RunContext, cl client.Client) error {
-	roles, err := cl.ListRoles(context.Background())
+	roles, err := c.listRoles(cl)
 	if err != nil {
-		return fmt.Errorf("failed to list roles: %w", err)
+		return err
 	}
 
 	if c.JSON {
@@ -24,4 +24,14 @@ func (c *ListCmd) Run(ctx run.RunContext, cl client.Client) error {
 	}
 
 	return common.OutputRolesTable(roles)
+}
+
+// listRoles retrieves all roles.
+func (c *ListCmd) listRoles(cl client.Client) ([]client.Role, error) {
+	roles, err := cl.ListRoles(context.Background())
+	if err != nil {
+		return nil, fmt.Errorf("failed to list roles: %w", err)
+	}
+
+	return roles, nil
 }

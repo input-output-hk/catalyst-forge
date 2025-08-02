@@ -10,21 +10,57 @@ import (
 )
 
 type DeleteCmd struct {
-	ID string `arg:"" help:"The ID of the user to delete."`
+	ID    *string `short:"i" help:"The numeric ID of the user to delete (mutually exclusive with --email)."`
+	Email *string `short:"e" help:"The email of the user to delete (mutually exclusive with --id)."`
 }
 
 func (c *DeleteCmd) Run(ctx run.RunContext, cl client.Client) error {
-	// Convert string ID to uint
-	id, err := strconv.ParseUint(c.ID, 10, 32)
-	if err != nil {
-		return fmt.Errorf("invalid ID format: %w", err)
+	if c.ID == nil && c.Email == nil {
+		return fmt.Errorf("either --id or --email must be specified")
 	}
 
-	err = cl.DeleteUser(context.Background(), uint(id))
+	if c.ID != nil && c.Email != nil {
+		return fmt.Errorf("only one of --id or --email can be specified")
+	}
+
+	err := c.deleteUser(cl)
+	if err != nil {
+		return err
+	}
+
+	identifier := ""
+	if c.ID != nil {
+		identifier = *c.ID
+	} else {
+		identifier = *c.Email
+	}
+
+	fmt.Printf("User %s deleted successfully.\n", identifier)
+	return nil
+}
+
+// deleteUser deletes a user by ID or email.
+func (c *DeleteCmd) deleteUser(cl client.Client) error {
+	var userID uint
+
+	if c.Email != nil {
+		user, err := cl.GetUserByEmail(context.Background(), *c.Email)
+		if err != nil {
+			return fmt.Errorf("failed to get user by email: %w", err)
+		}
+		userID = user.ID
+	} else if c.ID != nil {
+		parsedID, err := strconv.ParseUint(*c.ID, 10, 32)
+		if err != nil {
+			return fmt.Errorf("invalid ID format: %w", err)
+		}
+		userID = uint(parsedID)
+	}
+
+	err := cl.DeleteUser(context.Background(), userID)
 	if err != nil {
 		return fmt.Errorf("failed to delete user: %w", err)
 	}
 
-	fmt.Printf("User %s deleted successfully.\n", c.ID)
 	return nil
 }

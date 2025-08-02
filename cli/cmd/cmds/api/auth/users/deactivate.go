@@ -11,20 +11,23 @@ import (
 )
 
 type DeactivateCmd struct {
-	ID   string `arg:"" help:"The ID of the user to deactivate."`
-	JSON bool   `short:"j" help:"Output as prettified JSON instead of table."`
+	ID    *string `short:"i" help:"The numeric ID of the user to deactivate (mutually exclusive with --email)."`
+	Email *string `short:"e" help:"The email of the user to deactivate (mutually exclusive with --id)."`
+	JSON  bool    `short:"j" help:"Output as prettified JSON instead of table."`
 }
 
 func (c *DeactivateCmd) Run(ctx run.RunContext, cl client.Client) error {
-	// Convert string ID to uint
-	id, err := strconv.ParseUint(c.ID, 10, 32)
-	if err != nil {
-		return fmt.Errorf("invalid ID format: %w", err)
+	if c.ID == nil && c.Email == nil {
+		return fmt.Errorf("either --id or --email must be specified")
 	}
 
-	user, err := cl.DeactivateUser(context.Background(), uint(id))
+	if c.ID != nil && c.Email != nil {
+		return fmt.Errorf("only one of --id or --email can be specified")
+	}
+
+	user, err := c.deactivateUser(cl)
 	if err != nil {
-		return fmt.Errorf("failed to deactivate user: %w", err)
+		return err
 	}
 
 	if c.JSON {
@@ -32,4 +35,30 @@ func (c *DeactivateCmd) Run(ctx run.RunContext, cl client.Client) error {
 	}
 
 	return common.OutputUserTable(user)
+}
+
+// deactivateUser deactivates a user by ID or email.
+func (c *DeactivateCmd) deactivateUser(cl client.Client) (*client.User, error) {
+	var userID uint
+
+	if c.Email != nil {
+		user, err := cl.GetUserByEmail(context.Background(), *c.Email)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get user by email: %w", err)
+		}
+		userID = user.ID
+	} else if c.ID != nil {
+		parsedID, err := strconv.ParseUint(*c.ID, 10, 32)
+		if err != nil {
+			return nil, fmt.Errorf("invalid ID format: %w", err)
+		}
+		userID = uint(parsedID)
+	}
+
+	user, err := cl.DeactivateUser(context.Background(), userID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to deactivate user: %w", err)
+	}
+
+	return user, nil
 }

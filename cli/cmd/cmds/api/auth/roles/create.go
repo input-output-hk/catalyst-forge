@@ -10,20 +10,38 @@ import (
 )
 
 type CreateCmd struct {
-	Name        string   `arg:"" help:"The name of the role to create."`
-	Permissions []string `short:"p" help:"The permissions to grant to the role."`
-	Admin       bool     `short:"a" help:"Create role with admin privileges (all permissions)."`
+	Name        string   `short:"n" help:"The name of the role to create." required:"true"`
+	Permissions []string `short:"p" help:"The permissions to grant to the role (mutually exclusive with --admin)."`
+	Admin       bool     `short:"a" help:"Create role with admin privileges (all permissions) (mutually exclusive with --permissions)."`
 	JSON        bool     `short:"j" help:"Output as prettified JSON instead of table."`
 }
 
 func (c *CreateCmd) Run(ctx run.RunContext, cl client.Client) error {
+	if c.Admin && len(c.Permissions) > 0 {
+		return fmt.Errorf("only one of --admin or --permissions can be specified")
+	}
+
+	role, err := c.createRole(cl)
+	if err != nil {
+		return err
+	}
+
+	if c.JSON {
+		return common.OutputRoleJSON(role)
+	}
+
+	return common.OutputRoleTable(role)
+}
+
+// createRole creates a new role with the specified parameters.
+func (c *CreateCmd) createRole(cl client.Client) (*client.Role, error) {
 	var role *client.Role
 	var err error
 
 	if c.Admin {
 		role, err = cl.CreateRoleWithAdmin(context.Background(), &client.CreateRoleRequest{
 			Name:        c.Name,
-			Permissions: c.Permissions, // This will be ignored when admin=true
+			Permissions: c.Permissions,
 		})
 	} else {
 		role, err = cl.CreateRole(context.Background(), &client.CreateRoleRequest{
@@ -33,12 +51,8 @@ func (c *CreateCmd) Run(ctx run.RunContext, cl client.Client) error {
 	}
 
 	if err != nil {
-		return fmt.Errorf("failed to create role: %w", err)
+		return nil, fmt.Errorf("failed to create role: %w", err)
 	}
 
-	if c.JSON {
-		return common.OutputRoleJSON(role)
-	}
-
-	return common.OutputRoleTable(role)
+	return role, nil
 }

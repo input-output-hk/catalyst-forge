@@ -11,8 +11,8 @@ import (
 )
 
 type GetCmd struct {
-	ID   *string `short:"i" help:"The ID of the role to retrieve."`
-	Name *string `short:"n" help:"The name of the role to retrieve."`
+	ID   *string `short:"i" help:"The ID of the role to retrieve (mutually exclusive with --name)."`
+	Name *string `short:"n" help:"The name of the role to retrieve (mutually exclusive with --id)."`
 	JSON bool    `short:"j" help:"Output as prettified JSON instead of table."`
 }
 
@@ -37,9 +37,9 @@ func (c *GetCmd) Run(ctx run.RunContext, cl client.Client) error {
 	return common.OutputRoleTable(role)
 }
 
+// retrieveRole retrieves a role by ID or name.
 func (c *GetCmd) retrieveRole(cl client.Client) (*client.Role, error) {
 	if c.ID != nil {
-		// Convert string ID to uint
 		id, err := strconv.ParseUint(*c.ID, 10, 32)
 		if err != nil {
 			return nil, fmt.Errorf("invalid ID format: %w", err)

@@ -11,32 +11,25 @@ import (
 )
 
 type UpdateCmd struct {
-	ID     string `arg:"" help:"The ID of the user to update."`
-	Email  string `short:"e" help:"The new email address for the user."`
-	Status string `short:"s" help:"The new status for the user (active, inactive)."`
-	JSON   bool   `short:"j" help:"Output as prettified JSON instead of table."`
+	ID       *string `short:"i" help:"The numeric ID of the user to update (mutually exclusive with --email)."`
+	Email    *string `short:"e" help:"The email of the user to update (mutually exclusive with --id)."`
+	NewEmail *string `short:"n" help:"The new email address for the user."`
+	Status   *string `short:"s" help:"The new status for the user (active, inactive)."`
+	JSON     bool    `short:"j" help:"Output as prettified JSON instead of table."`
 }
 
 func (c *UpdateCmd) Run(ctx run.RunContext, cl client.Client) error {
-	// Convert string ID to uint
-	id, err := strconv.ParseUint(c.ID, 10, 32)
+	if c.ID == nil && c.Email == nil {
+		return fmt.Errorf("either --id or --email must be specified")
+	}
+
+	if c.ID != nil && c.Email != nil {
+		return fmt.Errorf("only one of --id or --email can be specified")
+	}
+
+	user, err := c.updateUser(cl)
 	if err != nil {
-		return fmt.Errorf("invalid ID format: %w", err)
-	}
-
-	req := &client.UpdateUserRequest{}
-
-	if c.Email != "" {
-		req.Email = c.Email
-	}
-
-	if c.Status != "" {
-		req.Status = c.Status
-	}
-
-	user, err := cl.UpdateUser(context.Background(), uint(id), req)
-	if err != nil {
-		return fmt.Errorf("failed to update user: %w", err)
+		return err
 	}
 
 	if c.JSON {
@@ -44,4 +37,40 @@ func (c *UpdateCmd) Run(ctx run.RunContext, cl client.Client) error {
 	}
 
 	return common.OutputUserTable(user)
+}
+
+// updateUser updates a user by ID or email.
+func (c *UpdateCmd) updateUser(cl client.Client) (*client.User, error) {
+	var userID uint
+
+	if c.Email != nil {
+		user, err := cl.GetUserByEmail(context.Background(), *c.Email)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get user by email: %w", err)
+		}
+		userID = user.ID
+	} else if c.ID != nil {
+		parsedID, err := strconv.ParseUint(*c.ID, 10, 32)
+		if err != nil {
+			return nil, fmt.Errorf("invalid ID format: %w", err)
+		}
+		userID = uint(parsedID)
+	}
+
+	req := &client.UpdateUserRequest{}
+
+	if c.NewEmail != nil {
+		req.Email = *c.NewEmail
+	}
+
+	if c.Status != nil {
+		req.Status = *c.Status
+	}
+
+	user, err := cl.UpdateUser(context.Background(), userID, req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to update user: %w", err)
+	}
+
+	return user, nil
 }

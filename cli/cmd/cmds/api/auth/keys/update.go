@@ -11,47 +11,27 @@ import (
 )
 
 type UpdateCmd struct {
-	ID        string `arg:"" help:"The ID of the user key to update."`
-	UserID    string `short:"u" help:"The new user ID for the key."`
-	Kid       string `short:"k" help:"The new KID for the key."`
-	PubKeyB64 string `short:"p" help:"The new base64-encoded public key."`
-	Status    string `short:"s" help:"The new status for the key (active, inactive)."`
-	JSON      bool   `short:"j" help:"Output as prettified JSON instead of table."`
+	ID        *string `short:"i" help:"The numeric ID of the user key to update (mutually exclusive with --kid)."`
+	Kid       *string `short:"k" help:"The key ID (KID) of the user key to update (mutually exclusive with --id)."`
+	UserID    *string `short:"u" help:"The new user ID for the key."`
+	NewKid    *string `short:"n" help:"The new KID for the key."`
+	PubKeyB64 *string `short:"p" help:"The new base64-encoded public key."`
+	Status    *string `short:"s" help:"The new status for the key (active, inactive)."`
+	JSON      bool    `short:"j" help:"Output as prettified JSON instead of table."`
 }
 
 func (c *UpdateCmd) Run(ctx run.RunContext, cl client.Client) error {
-	// Convert string ID to uint
-	id, err := strconv.ParseUint(c.ID, 10, 32)
+	if c.ID == nil && c.Kid == nil {
+		return fmt.Errorf("either --id or --kid must be specified")
+	}
+
+	if c.ID != nil && c.Kid != nil {
+		return fmt.Errorf("only one of --id or --kid can be specified")
+	}
+
+	userKey, err := c.updateUserKey(cl)
 	if err != nil {
-		return fmt.Errorf("invalid ID format: %w", err)
-	}
-
-	req := &client.UpdateUserKeyRequest{}
-
-	if c.UserID != "" {
-		// Convert string UserID to uint
-		userID, err := strconv.ParseUint(c.UserID, 10, 32)
-		if err != nil {
-			return fmt.Errorf("invalid user ID format: %w", err)
-		}
-		req.UserID = uint(userID)
-	}
-
-	if c.Kid != "" {
-		req.Kid = c.Kid
-	}
-
-	if c.PubKeyB64 != "" {
-		req.PubKeyB64 = c.PubKeyB64
-	}
-
-	if c.Status != "" {
-		req.Status = c.Status
-	}
-
-	userKey, err := cl.UpdateUserKey(context.Background(), uint(id), req)
-	if err != nil {
-		return fmt.Errorf("failed to update user key: %w", err)
+		return err
 	}
 
 	if c.JSON {
@@ -59,4 +39,52 @@ func (c *UpdateCmd) Run(ctx run.RunContext, cl client.Client) error {
 	}
 
 	return common.OutputUserKeyTable(userKey)
+}
+
+// updateUserKey updates a user key by ID or KID.
+func (c *UpdateCmd) updateUserKey(cl client.Client) (*client.UserKey, error) {
+	var keyID uint
+
+	if c.Kid != nil {
+		userKey, err := cl.GetUserKeyByKid(context.Background(), *c.Kid)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get user key by KID: %w", err)
+		}
+		keyID = userKey.ID
+	} else if c.ID != nil {
+		parsedID, err := strconv.ParseUint(*c.ID, 10, 32)
+		if err != nil {
+			return nil, fmt.Errorf("invalid ID format: %w", err)
+		}
+		keyID = uint(parsedID)
+	}
+
+	req := &client.UpdateUserKeyRequest{}
+
+	if c.UserID != nil {
+		userID, err := strconv.ParseUint(*c.UserID, 10, 32)
+		if err != nil {
+			return nil, fmt.Errorf("invalid user ID format: %w", err)
+		}
+		req.UserID = uint(userID)
+	}
+
+	if c.NewKid != nil {
+		req.Kid = *c.NewKid
+	}
+
+	if c.PubKeyB64 != nil {
+		req.PubKeyB64 = *c.PubKeyB64
+	}
+
+	if c.Status != nil {
+		req.Status = *c.Status
+	}
+
+	userKey, err := cl.UpdateUserKey(context.Background(), keyID, req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to update user key: %w", err)
+	}
+
+	return userKey, nil
 }

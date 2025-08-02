@@ -11,8 +11,8 @@ import (
 )
 
 type GetCmd struct {
-	ID    *string `short:"i" help:"The ID of the user to retrieve."`
-	Email *string `short:"e" help:"The email of the user to retrieve."`
+	ID    *string `short:"i" help:"The ID of the user to retrieve (mutually exclusive with --email)."`
+	Email *string `short:"e" help:"The email of the user to retrieve (mutually exclusive with --id)."`
 	JSON  bool    `short:"j" help:"Output as prettified JSON instead of table."`
 }
 
@@ -37,9 +37,9 @@ func (c *GetCmd) Run(ctx run.RunContext, cl client.Client) error {
 	return common.OutputUserTable(user)
 }
 
+// retrieveUser retrieves a user by ID or email.
 func (c *GetCmd) retrieveUser(cl client.Client) (*client.User, error) {
 	if c.ID != nil {
-		// Convert string ID to uint
 		id, err := strconv.ParseUint(*c.ID, 10, 32)
 		if err != nil {
 			return nil, fmt.Errorf("invalid ID format: %w", err)
