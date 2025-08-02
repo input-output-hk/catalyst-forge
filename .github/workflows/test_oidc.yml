@@ -65,7 +65,7 @@ jobs:
         id: call-api
         shell: bash
         run: |
-          forge -vvv --api-url "http://localhost:5050" api login -t "github" "${{ steps.oidc.outputs.token }}"
+          forge -vvv --api-url "http://localhost:5050" api login -t "github" --token "${{ steps.oidc.outputs.token }}"
 
       - name: Verify returned JWT token
         shell: bash
