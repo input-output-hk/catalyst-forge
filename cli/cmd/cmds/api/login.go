@@ -5,6 +5,9 @@ import (
 	"fmt"
 
 	"github.com/charmbracelet/huh"
+	"github.com/input-output-hk/catalyst-forge/cli/internal/state"
+	"github.com/input-output-hk/catalyst-forge/cli/internal/ux"
+	"github.com/input-output-hk/catalyst-forge/cli/internal/validator"
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/run"
 	"github.com/input-output-hk/catalyst-forge/foundry/api/client"
 	"github.com/input-output-hk/catalyst-forge/foundry/api/client/auth"
@@ -24,103 +27,132 @@ type EmailForm struct {
 
 func (c *LoginCmd) Run(ctx run.RunContext, cl client.Client) error {
 	var jwt string
-	var form EmailForm
-
-	manager := authpkg.NewAuthManager(authpkg.WithFilesystem(ctx.FS))
-
-	emailFlow := huh.NewForm(
-		huh.NewGroup(
-			huh.NewInput().
-				Title("Work email").
-				Description("Enter your work email address").
-				Placeholder("user@company.com").
-				Value(&form.Email).
-				Validate(func(s string) error {
-					if s == "" {
-						return fmt.Errorf("email is required")
-					}
-					// Basic email validation
-					if len(s) < 5 || !contains(s, "@") {
-						return fmt.Errorf("please enter a valid email address")
-					}
-					return nil
-				}),
-		),
-	)
+	var err error
 
 	switch c.Type {
 	case "github":
-		resp, err := cl.Github().ValidateToken(context.Background(), &github.ValidateTokenRequest{
-			Token: c.Token,
-		})
+		var resp *github.ValidateTokenResponse
+		err = ux.NewSpinner().
+			Title("Validating GitHub token...").
+			Action(func() {
+				resp, err = cl.Github().ValidateToken(context.Background(), &github.ValidateTokenRequest{
+					Token: c.Token,
+				})
+			}).Run()
 		if err != nil {
-			return fmt.Errorf("failed to login: %w", err)
+			return fmt.Errorf("failed to login with github: %w", err)
 		}
-
 		jwt = resp.Token
+
 	case "foundry":
 		if c.Token != "" {
 			jwt = c.Token
 		} else {
-			var email string
-			if ctx.Config.Email == "" {
-				if err := emailFlow.Run(); err != nil {
-					return fmt.Errorf("failed to run email form: %w", err)
-				}
-
-				ctx.Config.Email = form.Email
-				if err := ctx.Config.Save(); err != nil {
-					return fmt.Errorf("failed to save config: %w", err)
-				}
-				email = form.Email
-			} else {
-				email = ctx.Config.Email
-			}
-
-			stateDir, err := getStateDir(ctx)
+			jwt, err = c.interactiveFoundryLogin(ctx, cl)
 			if err != nil {
-				return fmt.Errorf("failed to get state directory: %w", err)
+				return err
 			}
-
-			ctx.Logger.Debug("Loading key pair", "stateDir", stateDir)
-			kp, err := manager.LoadKeyPair(stateDir)
-			if err != nil {
-				return fmt.Errorf("failed to load key pair: %w", err)
-			}
-
-			ctx.Logger.Debug("Creating challenge", "email", email, "kid", kp.Kid())
-			challenge, err := cl.Auth().CreateChallenge(context.Background(), &auth.ChallengeRequest{
-				Email: email,
-				Kid:   kp.Kid(),
-			})
-			if err != nil {
-				return fmt.Errorf("failed to create challenge: %w", err)
-			}
-
-			ctx.Logger.Debug("Signing challenge", "challenge", challenge)
-			challengeResponse, err := kp.SignChallenge(challenge)
-			if err != nil {
-				return fmt.Errorf("failed to sign challenge: %w", err)
-			}
-
-			ctx.Logger.Debug("Logging in", "challengeResponse", challengeResponse)
-			resp, err := cl.Auth().Login(context.Background(), challengeResponse)
-			if err != nil {
-				return fmt.Errorf("failed to login: %w", err)
-			}
-
-			jwt = resp.Token
 		}
 	default:
 		return fmt.Errorf("invalid login type: %s", c.Type)
 	}
 
-	ctx.Logger.Info("Login successful, saving token")
-	ctx.Config.Token = jwt
-	if err := ctx.Config.Save(); err != nil {
+	err = ux.NewSpinner().
+		Title("Saving token...").
+		Action(func() {
+			ctx.Config.Token = jwt
+			err = ctx.Config.Save()
+		}).Run()
+	if err != nil {
 		return fmt.Errorf("failed to save config: %w", err)
 	}
 
-	ctx.Logger.Info("Token saved")
+	ux.Success("Login successful!")
 	return nil
+}
+
+func (c *LoginCmd) interactiveFoundryLogin(ctx run.RunContext, cl client.Client) (string, error) {
+	var form EmailForm
+	var email string
+	var err error
+
+	if ctx.Config.Email == "" {
+		emailForm := ux.NewForm(
+			huh.NewGroup(
+				huh.NewInput().
+					Title("Work email").
+					Description("Enter your work email address").
+					Placeholder("user@company.com").
+					Value(&form.Email).
+					Validate(validator.Email),
+			),
+		)
+		if err = emailForm.Run(); err != nil {
+			return "", fmt.Errorf("failed to run email form: %w", err)
+		}
+		email = form.Email
+		// Save email to config for future use
+		err = ux.NewSpinner().
+			Title("Saving email to config...").
+			Action(func() {
+				ctx.Config.Email = email
+				err = ctx.Config.Save()
+			}).Run()
+		if err != nil {
+			return "", fmt.Errorf("failed to save config: %w", err)
+		}
+	} else {
+		email = ctx.Config.Email
+	}
+
+	manager := authpkg.NewAuthManager(authpkg.WithFilesystem(ctx.FS))
+	stateDir, err := state.GetDir(ctx)
+	if err != nil {
+		return "", err
+	}
+
+	var kp *authpkg.KeyPair
+	err = ux.NewSpinner().
+		Title("Loading key pair...").
+		Action(func() {
+			kp, err = manager.LoadKeyPair(stateDir)
+		}).Run()
+	if err != nil {
+		return "", fmt.Errorf("failed to load key pair: %w", err)
+	}
+
+	var challenge *authpkg.KeyPairChallenge
+	err = ux.NewSpinner().
+		Title("Requesting login challenge...").
+		Action(func() {
+			challenge, err = cl.Auth().CreateChallenge(context.Background(), &auth.ChallengeRequest{
+				Email: email,
+				Kid:   kp.Kid(),
+			})
+		}).Run()
+	if err != nil {
+		return "", fmt.Errorf("failed to create challenge: %w", err)
+	}
+
+	var challengeResponse *authpkg.KeyPairChallengeResponse
+	err = ux.NewSpinner().
+		Title("Signing login challenge...").
+		Action(func() {
+			challengeResponse, err = kp.SignChallenge(challenge)
+		}).Run()
+	if err != nil {
+		return "", fmt.Errorf("failed to sign challenge: %w", err)
+	}
+
+	var resp *auth.LoginResponse
+	err = ux.NewSpinner().
+		Title("Logging in...").
+		Action(func() {
+			resp, err = cl.Auth().Login(context.Background(), challengeResponse)
+		}).Run()
+	if err != nil {
+		return "", fmt.Errorf("failed to login: %w", err)
+	}
+
+	return resp.Token, nil
 }
