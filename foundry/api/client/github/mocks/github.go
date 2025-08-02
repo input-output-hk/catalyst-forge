@@ -5,68 +5,68 @@ package mocks
 
 import (
 	"context"
-	"github.com/input-output-hk/catalyst-forge/foundry/api/client/gha"
+	"github.com/input-output-hk/catalyst-forge/foundry/api/client/github"
 	"sync"
 )
 
-// Ensure, that GithubClientInterfaceMock does implement gha.GithubClientInterface.
+// Ensure, that GithubClientInterfaceMock does implement github.GithubClientInterface.
 // If this is not the case, regenerate this file with moq.
-var _ gha.GithubClientInterface = &GithubClientInterfaceMock{}
+var _ github.GithubClientInterface = &GithubClientInterfaceMock{}
 
-// GithubClientInterfaceMock is a mock implementation of gha.GithubClientInterface.
+// GithubClientInterfaceMock is a mock implementation of github.GithubClientInterface.
 //
 //	func TestSomethingThatUsesGithubClientInterface(t *testing.T) {
 //
-//		// make and configure a mocked gha.GithubClientInterface
+//		// make and configure a mocked github.GithubClientInterface
 //		mockedGithubClientInterface := &GithubClientInterfaceMock{
-//			CreateAuthFunc: func(ctx context.Context, req *gha.CreateAuthRequest) (*gha.GithubRepositoryAuth, error) {
+//			CreateAuthFunc: func(ctx context.Context, req *github.CreateAuthRequest) (*github.GithubRepositoryAuth, error) {
 //				panic("mock out the CreateAuth method")
 //			},
 //			DeleteAuthFunc: func(ctx context.Context, id uint) error {
 //				panic("mock out the DeleteAuth method")
 //			},
-//			GetAuthFunc: func(ctx context.Context, id uint) (*gha.GithubRepositoryAuth, error) {
+//			GetAuthFunc: func(ctx context.Context, id uint) (*github.GithubRepositoryAuth, error) {
 //				panic("mock out the GetAuth method")
 //			},
-//			GetAuthByRepositoryFunc: func(ctx context.Context, repository string) (*gha.GithubRepositoryAuth, error) {
+//			GetAuthByRepositoryFunc: func(ctx context.Context, repository string) (*github.GithubRepositoryAuth, error) {
 //				panic("mock out the GetAuthByRepository method")
 //			},
-//			ListAuthsFunc: func(ctx context.Context) ([]gha.GithubRepositoryAuth, error) {
+//			ListAuthsFunc: func(ctx context.Context) ([]github.GithubRepositoryAuth, error) {
 //				panic("mock out the ListAuths method")
 //			},
-//			UpdateAuthFunc: func(ctx context.Context, id uint, req *gha.UpdateAuthRequest) (*gha.GithubRepositoryAuth, error) {
+//			UpdateAuthFunc: func(ctx context.Context, id uint, req *github.UpdateAuthRequest) (*github.GithubRepositoryAuth, error) {
 //				panic("mock out the UpdateAuth method")
 //			},
-//			ValidateTokenFunc: func(ctx context.Context, req *gha.ValidateTokenRequest) (*gha.ValidateTokenResponse, error) {
+//			ValidateTokenFunc: func(ctx context.Context, req *github.ValidateTokenRequest) (*github.ValidateTokenResponse, error) {
 //				panic("mock out the ValidateToken method")
 //			},
 //		}
 //
-//		// use mockedGithubClientInterface in code that requires gha.GithubClientInterface
+//		// use mockedGithubClientInterface in code that requires github.GithubClientInterface
 //		// and then make assertions.
 //
 //	}
 type GithubClientInterfaceMock struct {
 	// CreateAuthFunc mocks the CreateAuth method.
-	CreateAuthFunc func(ctx context.Context, req *gha.CreateAuthRequest) (*gha.GithubRepositoryAuth, error)
+	CreateAuthFunc func(ctx context.Context, req *github.CreateAuthRequest) (*github.GithubRepositoryAuth, error)
 
 	// DeleteAuthFunc mocks the DeleteAuth method.
 	DeleteAuthFunc func(ctx context.Context, id uint) error
 
 	// GetAuthFunc mocks the GetAuth method.
-	GetAuthFunc func(ctx context.Context, id uint) (*gha.GithubRepositoryAuth, error)
+	GetAuthFunc func(ctx context.Context, id uint) (*github.GithubRepositoryAuth, error)
 
 	// GetAuthByRepositoryFunc mocks the GetAuthByRepository method.
-	GetAuthByRepositoryFunc func(ctx context.Context, repository string) (*gha.GithubRepositoryAuth, error)
+	GetAuthByRepositoryFunc func(ctx context.Context, repository string) (*github.GithubRepositoryAuth, error)
 
 	// ListAuthsFunc mocks the ListAuths method.
-	ListAuthsFunc func(ctx context.Context) ([]gha.GithubRepositoryAuth, error)
+	ListAuthsFunc func(ctx context.Context) ([]github.GithubRepositoryAuth, error)
 
 	// UpdateAuthFunc mocks the UpdateAuth method.
-	UpdateAuthFunc func(ctx context.Context, id uint, req *gha.UpdateAuthRequest) (*gha.GithubRepositoryAuth, error)
+	UpdateAuthFunc func(ctx context.Context, id uint, req *github.UpdateAuthRequest) (*github.GithubRepositoryAuth, error)
 
 	// ValidateTokenFunc mocks the ValidateToken method.
-	ValidateTokenFunc func(ctx context.Context, req *gha.ValidateTokenRequest) (*gha.ValidateTokenResponse, error)
+	ValidateTokenFunc func(ctx context.Context, req *github.ValidateTokenRequest) (*github.ValidateTokenResponse, error)
 
 	// calls tracks calls to the methods.
 	calls struct {
@@ -75,7 +75,7 @@ type GithubClientInterfaceMock struct {
 			// Ctx is the ctx argument value.
 			Ctx context.Context
 			// Req is the req argument value.
-			Req *gha.CreateAuthRequest
+			Req *github.CreateAuthRequest
 		}
 		// DeleteAuth holds details about calls to the DeleteAuth method.
 		DeleteAuth []struct {
@@ -110,14 +110,14 @@ type GithubClientInterfaceMock struct {
 			// ID is the id argument value.
 			ID uint
 			// Req is the req argument value.
-			Req *gha.UpdateAuthRequest
+			Req *github.UpdateAuthRequest
 		}
 		// ValidateToken holds details about calls to the ValidateToken method.
 		ValidateToken []struct {
 			// Ctx is the ctx argument value.
 			Ctx context.Context
 			// Req is the req argument value.
-			Req *gha.ValidateTokenRequest
+			Req *github.ValidateTokenRequest
 		}
 	}
 	lockCreateAuth          sync.RWMutex
@@ -130,13 +130,13 @@ type GithubClientInterfaceMock struct {
 }
 
 // CreateAuth calls CreateAuthFunc.
-func (mock *GithubClientInterfaceMock) CreateAuth(ctx context.Context, req *gha.CreateAuthRequest) (*gha.GithubRepositoryAuth, error) {
+func (mock *GithubClientInterfaceMock) CreateAuth(ctx context.Context, req *github.CreateAuthRequest) (*github.GithubRepositoryAuth, error) {
 	if mock.CreateAuthFunc == nil {
 		panic("GithubClientInterfaceMock.CreateAuthFunc: method is nil but GithubClientInterface.CreateAuth was just called")
 	}
 	callInfo := struct {
 		Ctx context.Context
-		Req *gha.CreateAuthRequest
+		Req *github.CreateAuthRequest
 	}{
 		Ctx: ctx,
 		Req: req,
@@ -153,11 +153,11 @@ func (mock *GithubClientInterfaceMock) CreateAuth(ctx context.Context, req *gha.
 //	len(mockedGithubClientInterface.CreateAuthCalls())
 func (mock *GithubClientInterfaceMock) CreateAuthCalls() []struct {
 	Ctx context.Context
-	Req *gha.CreateAuthRequest
+	Req *github.CreateAuthRequest
 } {
 	var calls []struct {
 		Ctx context.Context
-		Req *gha.CreateAuthRequest
+		Req *github.CreateAuthRequest
 	}
 	mock.lockCreateAuth.RLock()
 	calls = mock.calls.CreateAuth
@@ -202,7 +202,7 @@ func (mock *GithubClientInterfaceMock) DeleteAuthCalls() []struct {
 }
 
 // GetAuth calls GetAuthFunc.
-func (mock *GithubClientInterfaceMock) GetAuth(ctx context.Context, id uint) (*gha.GithubRepositoryAuth, error) {
+func (mock *GithubClientInterfaceMock) GetAuth(ctx context.Context, id uint) (*github.GithubRepositoryAuth, error) {
 	if mock.GetAuthFunc == nil {
 		panic("GithubClientInterfaceMock.GetAuthFunc: method is nil but GithubClientInterface.GetAuth was just called")
 	}
@@ -238,7 +238,7 @@ func (mock *GithubClientInterfaceMock) GetAuthCalls() []struct {
 }
 
 // GetAuthByRepository calls GetAuthByRepositoryFunc.
-func (mock *GithubClientInterfaceMock) GetAuthByRepository(ctx context.Context, repository string) (*gha.GithubRepositoryAuth, error) {
+func (mock *GithubClientInterfaceMock) GetAuthByRepository(ctx context.Context, repository string) (*github.GithubRepositoryAuth, error) {
 	if mock.GetAuthByRepositoryFunc == nil {
 		panic("GithubClientInterfaceMock.GetAuthByRepositoryFunc: method is nil but GithubClientInterface.GetAuthByRepository was just called")
 	}
@@ -274,7 +274,7 @@ func (mock *GithubClientInterfaceMock) GetAuthByRepositoryCalls() []struct {
 }
 
 // ListAuths calls ListAuthsFunc.
-func (mock *GithubClientInterfaceMock) ListAuths(ctx context.Context) ([]gha.GithubRepositoryAuth, error) {
+func (mock *GithubClientInterfaceMock) ListAuths(ctx context.Context) ([]github.GithubRepositoryAuth, error) {
 	if mock.ListAuthsFunc == nil {
 		panic("GithubClientInterfaceMock.ListAuthsFunc: method is nil but GithubClientInterface.ListAuths was just called")
 	}
@@ -306,14 +306,14 @@ func (mock *GithubClientInterfaceMock) ListAuthsCalls() []struct {
 }
 
 // UpdateAuth calls UpdateAuthFunc.
-func (mock *GithubClientInterfaceMock) UpdateAuth(ctx context.Context, id uint, req *gha.UpdateAuthRequest) (*gha.GithubRepositoryAuth, error) {
+func (mock *GithubClientInterfaceMock) UpdateAuth(ctx context.Context, id uint, req *github.UpdateAuthRequest) (*github.GithubRepositoryAuth, error) {
 	if mock.UpdateAuthFunc == nil {
 		panic("GithubClientInterfaceMock.UpdateAuthFunc: method is nil but GithubClientInterface.UpdateAuth was just called")
 	}
 	callInfo := struct {
 		Ctx context.Context
 		ID  uint
-		Req *gha.UpdateAuthRequest
+		Req *github.UpdateAuthRequest
 	}{
 		Ctx: ctx,
 		ID:  id,
@@ -332,12 +332,12 @@ func (mock *GithubClientInterfaceMock) UpdateAuth(ctx context.Context, id uint, 
 func (mock *GithubClientInterfaceMock) UpdateAuthCalls() []struct {
 	Ctx context.Context
 	ID  uint
-	Req *gha.UpdateAuthRequest
+	Req *github.UpdateAuthRequest
 } {
 	var calls []struct {
 		Ctx context.Context
 		ID  uint
-		Req *gha.UpdateAuthRequest
+		Req *github.UpdateAuthRequest
 	}
 	mock.lockUpdateAuth.RLock()
 	calls = mock.calls.UpdateAuth
@@ -346,13 +346,13 @@ func (mock *GithubClientInterfaceMock) UpdateAuthCalls() []struct {
 }
 
 // ValidateToken calls ValidateTokenFunc.
-func (mock *GithubClientInterfaceMock) ValidateToken(ctx context.Context, req *gha.ValidateTokenRequest) (*gha.ValidateTokenResponse, error) {
+func (mock *GithubClientInterfaceMock) ValidateToken(ctx context.Context, req *github.ValidateTokenRequest) (*github.ValidateTokenResponse, error) {
 	if mock.ValidateTokenFunc == nil {
 		panic("GithubClientInterfaceMock.ValidateTokenFunc: method is nil but GithubClientInterface.ValidateToken was just called")
 	}
 	callInfo := struct {
 		Ctx context.Context
-		Req *gha.ValidateTokenRequest
+		Req *github.ValidateTokenRequest
 	}{
 		Ctx: ctx,
 		Req: req,
@@ -369,11 +369,11 @@ func (mock *GithubClientInterfaceMock) ValidateToken(ctx context.Context, req *g
 //	len(mockedGithubClientInterface.ValidateTokenCalls())
 func (mock *GithubClientInterfaceMock) ValidateTokenCalls() []struct {
 	Ctx context.Context
-	Req *gha.ValidateTokenRequest
+	Req *github.ValidateTokenRequest
 } {
 	var calls []struct {
 		Ctx context.Context
-		Req *gha.ValidateTokenRequest
+		Req *github.ValidateTokenRequest
 	}
 	mock.lockValidateToken.RLock()
 	calls = mock.calls.ValidateToken

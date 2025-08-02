@@ -73,6 +73,14 @@ func (h *AuthHandler) CreateChallenge(c *gin.Context) {
 		return
 	}
 
+	// Verify that the user key belongs to the user
+	user, err := h.userService.GetUserByID(userKey.UserID)
+	if err != nil || user.Email != req.Email {
+		h.logger.Warn("kid/email mismatch", "kid", req.Kid, "email", req.Email)
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid credentials"})
+		return
+	}
+
 	// Convert user key to KeyPair
 	keyPair, err := userKey.ToKeyPair()
 	if err != nil {
@@ -211,6 +219,14 @@ func (h *AuthHandler) Login(c *gin.Context) {
 		})
 		// Clean up challenge regardless of failure
 		h.authManager.RemoveChallenge(challengeID)
+		return
+	}
+
+	// Verify that the user key belongs to the user
+	if userKey.UserID != user.ID {
+		h.logger.Warn("kid does not belong to user", "kid", req.KeyID, "user_id", user.ID)
+		h.authManager.RemoveChallenge(challengeID)
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid credentials"})
 		return
 	}
 

@@ -6,7 +6,7 @@ import (
 	"net/http"
 )
 
-//go:generate go run github.com/matryer/moq@latest --pkg mocks --out ./mocks/gha.go . GithubClientInterface
+//go:generate go run github.com/matryer/moq@latest --pkg mocks --out ./mocks/github.go . GithubClientInterface
 
 // GithubClientInterface defines the interface for GitHub Actions operations
 type GithubClientInterface interface {
