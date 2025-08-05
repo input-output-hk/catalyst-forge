@@ -508,3 +508,48 @@ func NewGitRepo(
 
 	return r, nil
 }
+
+// Patch generates a patch between two commits.
+func (g *GitRepo) Patch(fromHash, toHash plumbing.Hash) (*object.Patch, error) {
+	fromCommit, err := g.raw.CommitObject(fromHash)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get from commit %s: %w", fromHash.String(), err)
+	}
+
+	toCommit, err := g.raw.CommitObject(toHash)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get to commit %s: %w", toHash.String(), err)
+	}
+
+	patch, err := fromCommit.Patch(toCommit)
+	if err != nil {
+		return nil, fmt.Errorf("failed to generate patch: %w", err)
+	}
+
+	return patch, nil
+}
+
+// PatchHead generates a patch between a given commit and the current HEAD.
+func (g *GitRepo) PatchHead(fromHash plumbing.Hash) (*object.Patch, error) {
+	head, err := g.raw.Head()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get HEAD reference: %w", err)
+	}
+
+	return g.Patch(fromHash, head.Hash())
+}
+
+// GetBranchReference returns the reference for a given branch name.
+func (g *GitRepo) GetBranchReference(branchName string) (*plumbing.Reference, error) {
+	ref, err := g.raw.Reference(plumbing.NewBranchReferenceName(branchName), true)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get branch reference for %s: %w", branchName, err)
+	}
+
+	return ref, nil
+}
+
+// PatchToString converts a patch to a unified diff string.
+func (g *GitRepo) PatchToString(patch *object.Patch) string {
+	return patch.String()
+}

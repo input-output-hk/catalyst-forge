@@ -479,3 +479,164 @@ func newGitRepo(t *testing.T) GitRepo {
 		worktree: repo.worktree,
 	}
 }
+
+func TestGitRepoPatch(t *testing.T) {
+	t.Run("successful patch between two commits", func(t *testing.T) {
+		repo := newGitRepo(t)
+
+		// Get initial commit
+		head, err := repo.raw.Head()
+		require.NoError(t, err)
+		initialCommit := head.Hash()
+
+		// Create a second commit
+		require.NoError(t, repo.wfs.WriteFile("patch-test.txt", []byte("new content"), 0644))
+		require.NoError(t, repo.StageFile("patch-test.txt"))
+		secondCommit, err := repo.Commit("add patch-test.txt")
+		require.NoError(t, err)
+
+		// Generate patch between the two commits
+		patch, err := repo.Patch(initialCommit, secondCommit)
+		require.NoError(t, err)
+		assert.NotNil(t, patch)
+
+		// Verify patch contains expected content
+		patchString := patch.String()
+		assert.Contains(t, patchString, "patch-test.txt")
+		assert.Contains(t, patchString, "new content")
+		assert.Contains(t, patchString, "diff --git")
+	})
+
+	t.Run("error on invalid from commit", func(t *testing.T) {
+		repo := newGitRepo(t)
+		head, err := repo.raw.Head()
+		require.NoError(t, err)
+
+		invalidHash := head.Hash()
+		invalidHash[0] = ^invalidHash[0] // Flip bits to make invalid
+
+		patch, err := repo.Patch(invalidHash, head.Hash())
+		assert.Error(t, err)
+		assert.Nil(t, patch)
+		assert.Contains(t, err.Error(), "failed to get from commit")
+	})
+
+	t.Run("error on invalid to commit", func(t *testing.T) {
+		repo := newGitRepo(t)
+		head, err := repo.raw.Head()
+		require.NoError(t, err)
+
+		invalidHash := head.Hash()
+		invalidHash[0] = ^invalidHash[0] // Flip bits to make invalid
+
+		patch, err := repo.Patch(head.Hash(), invalidHash)
+		assert.Error(t, err)
+		assert.Nil(t, patch)
+		assert.Contains(t, err.Error(), "failed to get to commit")
+	})
+}
+
+func TestGitRepoPatchHead(t *testing.T) {
+	t.Run("successful patch against HEAD", func(t *testing.T) {
+		repo := newGitRepo(t)
+
+		// Get initial commit
+		head, err := repo.raw.Head()
+		require.NoError(t, err)
+		initialCommit := head.Hash()
+
+		// Create a new commit (this becomes new HEAD)
+		require.NoError(t, repo.wfs.WriteFile("head-test.txt", []byte("head content"), 0644))
+		require.NoError(t, repo.StageFile("head-test.txt"))
+		_, err = repo.Commit("add head-test.txt")
+		require.NoError(t, err)
+
+		// Generate patch from initial commit to current HEAD
+		patch, err := repo.PatchHead(initialCommit)
+		require.NoError(t, err)
+		assert.NotNil(t, patch)
+
+		// Verify patch contains expected content
+		patchString := patch.String()
+		assert.Contains(t, patchString, "head-test.txt")
+		assert.Contains(t, patchString, "head content")
+	})
+
+	t.Run("error on invalid commit", func(t *testing.T) {
+		repo := newGitRepo(t)
+		head, err := repo.raw.Head()
+		require.NoError(t, err)
+
+		invalidHash := head.Hash()
+		invalidHash[0] = ^invalidHash[0] // Flip bits to make invalid
+
+		patch, err := repo.PatchHead(invalidHash)
+		assert.Error(t, err)
+		assert.Nil(t, patch)
+		assert.Contains(t, err.Error(), "failed to get from commit")
+	})
+}
+
+func TestGitRepoGetBranchReference(t *testing.T) {
+	t.Run("get master branch reference", func(t *testing.T) {
+		repo := newGitRepo(t)
+
+		ref, err := repo.GetBranchReference("master")
+		require.NoError(t, err)
+		assert.NotNil(t, ref)
+		assert.Equal(t, "refs/heads/master", ref.Name().String())
+	})
+
+	t.Run("get nonexistent branch reference", func(t *testing.T) {
+		repo := newGitRepo(t)
+
+		ref, err := repo.GetBranchReference("nonexistent")
+		assert.Error(t, err)
+		assert.Nil(t, ref)
+		assert.Contains(t, err.Error(), "failed to get branch reference for nonexistent")
+	})
+
+	t.Run("get reference for created branch", func(t *testing.T) {
+		repo := newGitRepo(t)
+
+		// Create a new branch
+		require.NoError(t, repo.NewBranch("test-branch"))
+
+		// Get reference for the new branch
+		ref, err := repo.GetBranchReference("test-branch")
+		require.NoError(t, err)
+		assert.NotNil(t, ref)
+		assert.Equal(t, "refs/heads/test-branch", ref.Name().String())
+	})
+}
+
+func TestGitRepoPatchToString(t *testing.T) {
+	t.Run("convert patch to string", func(t *testing.T) {
+		repo := newGitRepo(t)
+
+		// Get initial commit
+		head, err := repo.raw.Head()
+		require.NoError(t, err)
+		initialCommit := head.Hash()
+
+		// Create a second commit
+		require.NoError(t, repo.wfs.WriteFile("string-test.txt", []byte("string content"), 0644))
+		require.NoError(t, repo.StageFile("string-test.txt"))
+		secondCommit, err := repo.Commit("add string-test.txt")
+		require.NoError(t, err)
+
+		// Generate patch
+		patch, err := repo.Patch(initialCommit, secondCommit)
+		require.NoError(t, err)
+
+		// Convert to string
+		patchString := repo.PatchToString(patch)
+		assert.NotEmpty(t, patchString)
+		assert.Contains(t, patchString, "string-test.txt")
+		assert.Contains(t, patchString, "string content")
+		assert.Contains(t, patchString, "diff --git")
+
+		// Verify it's the same as calling patch.String() directly
+		assert.Equal(t, patch.String(), patchString)
+	})
+}
