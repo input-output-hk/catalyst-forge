@@ -13,11 +13,11 @@ import (
 )
 
 type AllCmd struct {
-	Absolute        bool     `short:"a" help:"Output absolute paths."`
-	FilePattern     []string `short:"f" help:"Regular expression patterns to filter filenames."`
-	ContentPattern  []string `short:"c" help:"Regular expression patterns to filter file contents."`
-	Pretty          bool     `short:"p" help:"Pretty print JSON output."`
-	RootPath        string   `kong:"arg,predictor=path" help:"Root path to scan for files."`
+	Absolute       bool     `short:"a" help:"Output absolute paths."`
+	FilePattern    []string `short:"f" help:"Regular expression patterns to filter filenames."`
+	ContentPattern []string `short:"c" help:"Regular expression patterns to filter file contents."`
+	Pretty         bool     `short:"p" help:"Pretty print JSON output."`
+	RootPath       string   `kong:"arg,predictor=path" help:"Root path to scan for files."`
 }
 
 func (c *AllCmd) Run(ctx run.RunContext) error {
