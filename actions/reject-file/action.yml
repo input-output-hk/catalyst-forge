@@ -19,6 +19,10 @@ inputs:
       content:console\.error
       description:Debug console statements
     required: true
+  max-paths:
+    description: The maximum number of paths to print for each rule (prevents truncating).
+    required: false
+    default: "15"
   root-path:
     description: Root path to scan for files (defaults to repository root)
     required: false

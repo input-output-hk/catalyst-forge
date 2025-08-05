@@ -25652,6 +25652,7 @@ const exec = __nccwpck_require__(5236);
 async function run() {
   try {
     const filters = core.getInput("filters", { required: true });
+    const maxPaths = core.getInput("max-paths", { required: false }) || "15";
     const rootPath =
       core.getInput("root-path", { required: false }) ||
       process.env.GITHUB_WORKSPACE ||
@@ -25773,13 +25774,14 @@ async function run() {
         forgeArgs.push("-c", pattern);
       }
 
-      forgeArgs.push("--pretty", rootPath);
+      forgeArgs.push("--pretty", ".");
 
-      core.info(`Running: forge ${forgeArgs.join(" ")}`);
+      core.info(`Running: forge ${forgeArgs.join(" ")} (from ${rootPath})`);
 
       try {
         const result = await exec.getExecOutput("forge", forgeArgs, {
           silent: true,
+          cwd: rootPath,
         });
 
         let jsonResult;
@@ -25794,7 +25796,7 @@ async function run() {
           hasRejections = true;
 
           const sortedPaths = jsonResult.sort();
-          const maxPathsToShow = 20; // Limit output to prevent truncation
+          const maxPathsToShow = parseInt(maxPaths); // Limit output to prevent truncation
 
           rejectionOutput += `❌ ${message}:\n`;
           for (
@@ -25821,7 +25823,6 @@ async function run() {
       }
     }
 
-    // Fail if any rejections were found
     if (hasRejections) {
       core.setFailed(rejectionOutput);
     } else {
