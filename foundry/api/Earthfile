@@ -23,7 +23,7 @@ src:
 
     CACHE --persist --sharing shared /go
 
-    COPY --dir client cmd docs internal pkg .
+    COPY --dir cmd docs internal pkg .
     RUN go generate ./...
 
     SAVE ARTIFACT . src
