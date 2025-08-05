@@ -83,8 +83,8 @@ func WithRemoteName(name string) FetchOption {
 }
 
 // WithRefSpec sets the reference specification for the fetch.
-func WithRefSpec(spec string) FetchOption {
-	return func(o *gg.FetchOptions) {
-		o.RefSpecs = append(o.RefSpecs, config.RefSpec(spec))
+func WithRefSpec(refSpec string) FetchOption {
+	return func(fo *gg.FetchOptions) {
+		fo.RefSpecs = []config.RefSpec{config.RefSpec(refSpec)}
 	}
 }
