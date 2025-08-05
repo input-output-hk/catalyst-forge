@@ -1,0 +1,33 @@
+name: Reject File
+description: Reject files that match certain filename or content filter expressions
+inputs:
+  filters:
+    description: |
+      Filter rules separated by double newlines. Each rule can contain:
+      - One or more "file:" lines with filename patterns (regex)
+      - One or more "content:" lines with content patterns (regex)
+      - Exactly one "description:" line describing what this rule rejects
+
+      Multiple patterns within a rule are ANDed together (all must match).
+      At least one pattern (file or content) must be specified per rule.
+
+      Example:
+      file:\.key$
+      description:Private key files should not be committed
+
+      content:console\.log
+      content:console\.error
+      description:Debug console statements
+    required: true
+  root-path:
+    description: Root path to scan for files
+    required: false
+    default: "."
+  verbosity:
+    description: The verbosity level to use
+    required: false
+    default: "info"
+
+runs:
+  using: node20
+  main: dist/index.js
