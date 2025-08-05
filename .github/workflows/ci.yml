@@ -69,7 +69,7 @@ jobs:
           version: ${{ inputs.forge_version }}
       - name: Install Local Forge
         id: install-local
-        uses: input-output-hk/catalyst-forge/actions/install-local@master
+        uses: input-output-hk/catalyst-forge/actions/install-local@cli-api-improvements
         if: ${{ inputs.forge_version == 'local' }}
       - name: Check forge version
         id: local

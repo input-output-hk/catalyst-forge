@@ -107,7 +107,7 @@ runs:
       if: steps.cache-binary.outputs.cache-hit == false
       shell: bash
       run: |
-        earthly --artifact ./cli+build/forge /usr/local/bin/forge
+        earthly --no-cache --artifact ./cli+build/forge /usr/local/bin/forge
     - name: Set output cache-hit
       shell: bash
       run: echo "cache-hit=${{ steps.cache-binary.outputs.cache-hit }}" >> $GITHUB_OUTPUT

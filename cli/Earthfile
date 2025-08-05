@@ -7,8 +7,6 @@ deps:
 
     RUN apt-get update && apt-get install -y file
 
-    # Clear any existing Go cache to ensure fresh dependencies
-    RUN rm -rf /go/cache /go/modcache || true
     RUN mkdir -p /go/cache && mkdir -p /go/modcache
     ENV GOCACHE=/go/cache
     ENV GOMODCACHE=/go/modcache
