@@ -11,7 +11,6 @@ require (
 	github.com/go-git/go-git/v5 v5.12.0
 	github.com/input-output-hk/catalyst-forge/lib/deployment v0.0.0
 	github.com/input-output-hk/catalyst-forge/lib/foundry/client v0.0.0
-	github.com/input-output-hk/catalyst-forge/lib/project v0.0.0
 	github.com/input-output-hk/catalyst-forge/lib/providers v0.0.0
 	github.com/input-output-hk/catalyst-forge/lib/schema v0.0.0
 	github.com/input-output-hk/catalyst-forge/lib/tools v0.0.0
@@ -149,6 +148,7 @@ require (
 	github.com/huandu/xstrings v1.5.0 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/input-output-hk/catalyst-forge/lib/foundry/auth v0.0.0-00010101000000-000000000000 // indirect
+	github.com/input-output-hk/catalyst-forge/lib/project v0.0.0 // indirect
 	github.com/jbenet/go-context v0.0.0-20150711004518-d14ea06fba99 // indirect
 	github.com/jinzhu/copier v0.4.0 // indirect
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
@@ -248,7 +248,7 @@ require (
 	google.golang.org/genproto/googleapis/api v0.0.0-20241015192408-796eee8c2d53 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20241015192408-796eee8c2d53 // indirect
 	google.golang.org/grpc v1.69.0 // indirect
-	google.golang.org/protobuf v1.35.2 // indirect
+	google.golang.org/protobuf v1.36.6 // indirect
 	gopkg.in/evanphx/json-patch.v4 v4.12.0 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect
