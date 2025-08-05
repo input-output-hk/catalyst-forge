@@ -1,0 +1,28 @@
+{
+  "name": "reject-file",
+  "version": "1.0.0",
+  "description": "GitHub Action to reject files matching certain patterns",
+  "main": "src/index.js",
+  "scripts": {
+    "bundle": "npm run format:write && npm run package",
+    "ci-test": "npx jest",
+    "coverage": "npx make-coverage-badge --output-path ./badges/coverage.svg",
+    "format:write": "npx prettier --write .",
+    "format:check": "npx prettier --check .",
+    "lint": "NODE_PATH=./node_modules npx eslint .",
+    "package": "npx ncc build src/index.js -o dist --source-map --license licenses.txt",
+    "package:watch": "npm run package -- --watch",
+    "test": "npx jest",
+    "all": "npm run format:write && npm run lint && npm run test && npm run coverage && npm run package"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@actions/core": "^1.10.1",
+    "@actions/exec": "^1.1.1"
+  },
+  "devDependencies": {
+    "@vercel/ncc": "^0.38.1"
+  }
+}

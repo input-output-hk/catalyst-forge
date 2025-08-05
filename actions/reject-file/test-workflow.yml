@@ -1,0 +1,45 @@
+name: Test Reject File Action
+
+on:
+  push:
+    branches: [test-reject-file]
+  workflow_dispatch:
+
+jobs:
+  test-reject-file:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Test filename filters
+        uses: ./actions/reject-file
+        with:
+          filters: |
+            file:\.key$
+            description:Private key files
+
+            file:secret
+            description:Files with "secret" in the name
+
+      - name: Test content filters
+        uses: ./actions/reject-file
+        with:
+          filters: |
+            content:TODO|FIXME
+            description:Unresolved TODO or FIXME comments
+
+            content:console\.log
+            description:Console log statements
+
+      - name: Test combined filters
+        uses: ./actions/reject-file
+        with:
+          filters: |
+            file:\.env$
+            description:Environment files
+
+            file:_test\.js$
+            content:console\.log
+            description:Test files with console logs
+          root-path: "./test-files" # Custom path example
