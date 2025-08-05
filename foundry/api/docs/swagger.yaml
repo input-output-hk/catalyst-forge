@@ -1,65 +1,5 @@
 basePath: /
 definitions:
-  auth.KeyPairChallenge:
-    properties:
-      challenge:
-        type: string
-      email:
-        type: string
-      expires:
-        type: string
-      kid:
-        type: string
-    type: object
-  auth.KeyPairChallengeResponse:
-    properties:
-      challenge:
-        type: string
-      email:
-        type: string
-      expires:
-        type: string
-      kid:
-        type: string
-      signature:
-        type: string
-    type: object
-  auth.Permission:
-    enum:
-    - alias:read
-    - alias:write
-    - deployment:read
-    - deployment:write
-    - deployment:event:read
-    - deployment:event:write
-    - release:read
-    - release:write
-    - gha:auth:read
-    - gha:auth:write
-    - user:read
-    - user:write
-    - role:read
-    - role:write
-    - user:key:read
-    - user:key:write
-    type: string
-    x-enum-varnames:
-    - PermAliasRead
-    - PermAliasWrite
-    - PermDeploymentRead
-    - PermDeploymentWrite
-    - PermDeploymentEventRead
-    - PermDeploymentEventWrite
-    - PermReleaseRead
-    - PermReleaseWrite
-    - PermGHAAuthRead
-    - PermGHAAuthWrite
-    - PermUserRead
-    - PermUserWrite
-    - PermRoleRead
-    - PermRoleWrite
-    - PermUserKeyRead
-    - PermUserKeyWrite
   handlers.AddEventRequest:
     properties:
       message:
@@ -80,6 +20,11 @@ definitions:
     - email
     - kid
     type: object
+  handlers.ChallengeResponse:
+    properties:
+      token:
+        type: string
+    type: object
   handlers.CreateAliasRequest:
     properties:
       release_id:
@@ -88,20 +33,6 @@ definitions:
     - release_id
     type: object
   handlers.CreateAuthRequest:
-    properties:
-      description:
-        type: string
-      enabled:
-        type: boolean
-      permissions:
-        items:
-          $ref: '#/definitions/auth.Permission'
-        type: array
-      repository:
-        type: string
-    required:
-    - permissions
-    - repository
     type: object
   handlers.CreateReleaseRequest:
     properties:
@@ -147,26 +78,19 @@ definitions:
       updated_by:
         type: string
     type: object
+  handlers.LoginRequest:
+    properties:
+      signature:
+        type: string
+      token:
+        type: string
+    type: object
   handlers.LoginResponse:
     properties:
       token:
         type: string
     type: object
   handlers.UpdateAuthRequest:
-    properties:
-      description:
-        type: string
-      enabled:
-        type: boolean
-      permissions:
-        items:
-          $ref: '#/definitions/auth.Permission'
-        type: array
-      repository:
-        type: string
-    required:
-    - permissions
-    - repository
     type: object
   handlers.UpdateReleaseRequest:
     properties:
@@ -541,7 +465,7 @@ paths:
         "200":
           description: Challenge created successfully
           schema:
-            $ref: '#/definitions/auth.KeyPairChallenge'
+            $ref: '#/definitions/handlers.ChallengeResponse'
         "400":
           description: Invalid request
           schema:
@@ -841,11 +765,18 @@ paths:
             items:
               $ref: '#/definitions/user.UserKey'
             type: array
+        "401":
+          description: Authentication required
+          schema:
+            additionalProperties: true
+            type: object
         "500":
           description: Internal server error
           schema:
             additionalProperties: true
             type: object
+      security:
+      - BearerAuth: []
       summary: List all user keys
       tags:
       - user-keys
@@ -882,6 +813,8 @@ paths:
           schema:
             additionalProperties: true
             type: object
+      security:
+      - BearerAuth: []
       summary: Create a new user key
       tags:
       - user-keys
@@ -897,6 +830,11 @@ paths:
       responses:
         "204":
           description: User key deleted successfully
+        "401":
+          description: Authentication required
+          schema:
+            additionalProperties: true
+            type: object
         "404":
           description: User key not found
           schema:
@@ -907,6 +845,8 @@ paths:
           schema:
             additionalProperties: true
             type: object
+      security:
+      - BearerAuth: []
       summary: Delete a user key
       tags:
       - user-keys
@@ -925,6 +865,11 @@ paths:
           description: User key found
           schema:
             $ref: '#/definitions/user.UserKey'
+        "401":
+          description: Authentication required
+          schema:
+            additionalProperties: true
+            type: object
         "404":
           description: User key not found
           schema:
@@ -935,6 +880,8 @@ paths:
           schema:
             additionalProperties: true
             type: object
+      security:
+      - BearerAuth: []
       summary: Get a user key by ID
       tags:
       - user-keys
@@ -966,6 +913,11 @@ paths:
           schema:
             additionalProperties: true
             type: object
+        "401":
+          description: Authentication required
+          schema:
+            additionalProperties: true
+            type: object
         "404":
           description: User key not found
           schema:
@@ -976,6 +928,8 @@ paths:
           schema:
             additionalProperties: true
             type: object
+      security:
+      - BearerAuth: []
       summary: Update a user key
       tags:
       - user-keys
@@ -993,6 +947,11 @@ paths:
           description: User key revoked successfully
           schema:
             $ref: '#/definitions/user.UserKey'
+        "401":
+          description: Authentication required
+          schema:
+            additionalProperties: true
+            type: object
         "404":
           description: User key not found
           schema:
@@ -1003,6 +962,8 @@ paths:
           schema:
             additionalProperties: true
             type: object
+      security:
+      - BearerAuth: []
       summary: Revoke a user key
       tags:
       - user-keys
@@ -1022,6 +983,11 @@ paths:
           description: User key found
           schema:
             $ref: '#/definitions/user.UserKey'
+        "401":
+          description: Authentication required
+          schema:
+            additionalProperties: true
+            type: object
         "404":
           description: User key not found
           schema:
@@ -1032,6 +998,8 @@ paths:
           schema:
             additionalProperties: true
             type: object
+      security:
+      - BearerAuth: []
       summary: Get a user key by kid
       tags:
       - user-keys
@@ -1095,11 +1063,18 @@ paths:
             items:
               $ref: '#/definitions/user.UserKey'
             type: array
+        "401":
+          description: Authentication required
+          schema:
+            additionalProperties: true
+            type: object
         "500":
           description: Internal server error
           schema:
             additionalProperties: true
             type: object
+      security:
+      - BearerAuth: []
       summary: Get user keys by user ID
       tags:
       - user-keys
@@ -1126,11 +1101,18 @@ paths:
           schema:
             additionalProperties: true
             type: object
+        "401":
+          description: Authentication required
+          schema:
+            additionalProperties: true
+            type: object
         "500":
           description: Internal server error
           schema:
             additionalProperties: true
             type: object
+      security:
+      - BearerAuth: []
       summary: Get active user keys by user ID
       tags:
       - user-keys
@@ -1157,11 +1139,18 @@ paths:
           schema:
             additionalProperties: true
             type: object
+        "401":
+          description: Authentication required
+          schema:
+            additionalProperties: true
+            type: object
         "500":
           description: Internal server error
           schema:
             additionalProperties: true
             type: object
+      security:
+      - BearerAuth: []
       summary: Get inactive user keys by user ID
       tags:
       - user-keys
@@ -1176,7 +1165,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/auth.KeyPairChallengeResponse'
+          $ref: '#/definitions/handlers.LoginRequest'
       produces:
       - application/json
       responses:
@@ -1219,11 +1208,18 @@ paths:
             items:
               $ref: '#/definitions/user.UserKey'
             type: array
+        "401":
+          description: Authentication required
+          schema:
+            additionalProperties: true
+            type: object
         "500":
           description: Internal server error
           schema:
             additionalProperties: true
             type: object
+      security:
+      - BearerAuth: []
       summary: Get all inactive user keys
       tags:
       - user-keys
@@ -1244,6 +1240,8 @@ paths:
           schema:
             additionalProperties: true
             type: object
+      security:
+      - BearerAuth: []
       summary: List pending users
       tags:
       - users
@@ -1265,6 +1263,11 @@ paths:
             items:
               $ref: '#/definitions/internal_api_handlers_user.UserRole'
             type: array
+        "401":
+          description: Authentication required
+          schema:
+            additionalProperties: true
+            type: object
         "404":
           description: Role not found
           schema:
@@ -1275,6 +1278,8 @@ paths:
           schema:
             additionalProperties: true
             type: object
+      security:
+      - BearerAuth: []
       summary: Get all users for a role
       tags:
       - user-roles
@@ -1295,6 +1300,8 @@ paths:
           schema:
             additionalProperties: true
             type: object
+      security:
+      - BearerAuth: []
       summary: List all roles
       tags:
       - roles
@@ -1335,6 +1342,8 @@ paths:
           schema:
             additionalProperties: true
             type: object
+      security:
+      - BearerAuth: []
       summary: Create a new role
       tags:
       - roles
@@ -1360,6 +1369,8 @@ paths:
           schema:
             additionalProperties: true
             type: object
+      security:
+      - BearerAuth: []
       summary: Delete a role
       tags:
       - roles
@@ -1388,6 +1399,8 @@ paths:
           schema:
             additionalProperties: true
             type: object
+      security:
+      - BearerAuth: []
       summary: Get a role by ID
       tags:
       - roles
@@ -1429,6 +1442,8 @@ paths:
           schema:
             additionalProperties: true
             type: object
+      security:
+      - BearerAuth: []
       summary: Update a role
       tags:
       - roles
@@ -1458,6 +1473,8 @@ paths:
           schema:
             additionalProperties: true
             type: object
+      security:
+      - BearerAuth: []
       summary: Get a role by name
       tags:
       - roles
@@ -1478,6 +1495,11 @@ paths:
       responses:
         "204":
           description: User removed from role successfully
+        "401":
+          description: Authentication required
+          schema:
+            additionalProperties: true
+            type: object
         "404":
           description: User or role not found
           schema:
@@ -1488,6 +1510,8 @@ paths:
           schema:
             additionalProperties: true
             type: object
+      security:
+      - BearerAuth: []
       summary: Remove a user from a role
       tags:
       - user-roles
@@ -1508,6 +1532,11 @@ paths:
             items:
               $ref: '#/definitions/internal_api_handlers_user.UserRole'
             type: array
+        "401":
+          description: Authentication required
+          schema:
+            additionalProperties: true
+            type: object
         "404":
           description: User not found
           schema:
@@ -1518,6 +1547,8 @@ paths:
           schema:
             additionalProperties: true
             type: object
+      security:
+      - BearerAuth: []
       summary: Get all roles for a user
       tags:
       - user-roles
@@ -1563,6 +1594,8 @@ paths:
           schema:
             additionalProperties: true
             type: object
+      security:
+      - BearerAuth: []
       summary: Assign a user to a role
       tags:
       - user-roles
@@ -1583,6 +1616,8 @@ paths:
           schema:
             additionalProperties: true
             type: object
+      security:
+      - BearerAuth: []
       summary: List all users
       tags:
       - users
@@ -1619,6 +1654,8 @@ paths:
           schema:
             additionalProperties: true
             type: object
+      security:
+      - BearerAuth: []
       summary: Create a new user
       tags:
       - users
@@ -1644,6 +1681,8 @@ paths:
           schema:
             additionalProperties: true
             type: object
+      security:
+      - BearerAuth: []
       summary: Delete a user
       tags:
       - users
@@ -1672,6 +1711,8 @@ paths:
           schema:
             additionalProperties: true
             type: object
+      security:
+      - BearerAuth: []
       summary: Get a user by ID
       tags:
       - users
@@ -1713,6 +1754,8 @@ paths:
           schema:
             additionalProperties: true
             type: object
+      security:
+      - BearerAuth: []
       summary: Update a user
       tags:
       - users
@@ -1740,6 +1783,8 @@ paths:
           schema:
             additionalProperties: true
             type: object
+      security:
+      - BearerAuth: []
       summary: Activate a user
       tags:
       - users
@@ -1767,6 +1812,8 @@ paths:
           schema:
             additionalProperties: true
             type: object
+      security:
+      - BearerAuth: []
       summary: Deactivate a user
       tags:
       - users
@@ -1796,6 +1843,8 @@ paths:
           schema:
             additionalProperties: true
             type: object
+      security:
+      - BearerAuth: []
       summary: Get a user by email
       tags:
       - users
@@ -1870,12 +1919,7 @@ paths:
         required: true
         schema:
           $ref: '#/definitions/handlers.CreateReleaseRequest'
-      - description: Deploy the release immediately
-        enum:
-        - "true"
-        - "false"
-        - "1"
-        - "0"
+      - description: Deploy the release immediately (true/false)
         in: query
         name: deploy
         type: string

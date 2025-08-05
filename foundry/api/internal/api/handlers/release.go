@@ -41,7 +41,7 @@ type CreateReleaseRequest struct {
 // @Produce json
 // @Security BearerAuth
 // @Param request body CreateReleaseRequest true "Release creation request"
-// @Param deploy query string false "Deploy the release immediately" Enums(true, false, 1, 0)
+// @Param deploy query string false "Deploy the release immediately (true/false)"
 // @Success 201 {object} models.Release "Release created successfully"
 // @Failure 400 {object} map[string]interface{} "Invalid request"
 // @Failure 401 {object} map[string]interface{} "Authentication required"

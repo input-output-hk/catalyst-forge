@@ -46,7 +46,7 @@
                     "200": {
                         "description": "Challenge created successfully",
                         "schema": {
-                            "$ref": "#/definitions/auth.KeyPairChallenge"
+                            "$ref": "#/definitions/handlers.ChallengeResponse"
                         }
                     },
                     "400": {
@@ -478,6 +478,11 @@
         },
         "/auth/keys": {
             "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Retrieve a list of all user keys",
                 "produces": [
                     "application/json"
@@ -496,6 +501,13 @@
                             }
                         }
                     },
+                    "401": {
+                        "description": "Authentication required",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
@@ -506,6 +518,11 @@
                 }
             },
             "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Create a new Ed25519 key for a user",
                 "consumes": [
                     "application/json"
@@ -561,6 +578,11 @@
         },
         "/auth/keys/kid/{kid}": {
             "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Retrieve a user key by their kid (key ID)",
                 "produces": [
                     "application/json"
@@ -583,6 +605,13 @@
                         "description": "User key found",
                         "schema": {
                             "$ref": "#/definitions/user.UserKey"
+                        }
+                    },
+                    "401": {
+                        "description": "Authentication required",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
                         }
                     },
                     "404": {
@@ -666,6 +695,11 @@
         },
         "/auth/keys/user/{user_id}": {
             "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Retrieve all keys for a specific user",
                 "produces": [
                     "application/json"
@@ -693,6 +727,13 @@
                             }
                         }
                     },
+                    "401": {
+                        "description": "Authentication required",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
@@ -705,6 +746,11 @@
         },
         "/auth/keys/user/{user_id}/active": {
             "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Get all active user keys for a specific user",
                 "produces": [
                     "application/json"
@@ -739,6 +785,13 @@
                             "additionalProperties": true
                         }
                     },
+                    "401": {
+                        "description": "Authentication required",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
@@ -751,6 +804,11 @@
         },
         "/auth/keys/user/{user_id}/inactive": {
             "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Get all inactive user keys for a specific user",
                 "produces": [
                     "application/json"
@@ -785,6 +843,13 @@
                             "additionalProperties": true
                         }
                     },
+                    "401": {
+                        "description": "Authentication required",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
@@ -797,6 +862,11 @@
         },
         "/auth/keys/{id}": {
             "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Retrieve a user key by their ID",
                 "produces": [
                     "application/json"
@@ -821,6 +891,13 @@
                             "$ref": "#/definitions/user.UserKey"
                         }
                     },
+                    "401": {
+                        "description": "Authentication required",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
                     "404": {
                         "description": "User key not found",
                         "schema": {
@@ -838,6 +915,11 @@
                 }
             },
             "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Update an existing user key's information",
                 "consumes": [
                     "application/json"
@@ -881,6 +963,13 @@
                             "additionalProperties": true
                         }
                     },
+                    "401": {
+                        "description": "Authentication required",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
                     "404": {
                         "description": "User key not found",
                         "schema": {
@@ -898,6 +987,11 @@
                 }
             },
             "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Delete a user key by their ID",
                 "tags": [
                     "user-keys"
@@ -915,6 +1009,13 @@
                 "responses": {
                     "204": {
                         "description": "User key deleted successfully"
+                    },
+                    "401": {
+                        "description": "Authentication required",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
                     },
                     "404": {
                         "description": "User key not found",
@@ -935,6 +1036,11 @@
         },
         "/auth/keys/{id}/revoke": {
             "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Revoke a user key by setting its status to revoked",
                 "tags": [
                     "user-keys"
@@ -954,6 +1060,13 @@
                         "description": "User key revoked successfully",
                         "schema": {
                             "$ref": "#/definitions/user.UserKey"
+                        }
+                    },
+                    "401": {
+                        "description": "Authentication required",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
                         }
                     },
                     "404": {
@@ -993,7 +1106,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/auth.KeyPairChallengeResponse"
+                            "$ref": "#/definitions/handlers.LoginRequest"
                         }
                     }
                 ],
@@ -1037,6 +1150,11 @@
         },
         "/auth/pending/keys": {
             "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Get all user keys with inactive status",
                 "produces": [
                     "application/json"
@@ -1055,6 +1173,13 @@
                             }
                         }
                     },
+                    "401": {
+                        "description": "Authentication required",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
@@ -1067,6 +1192,11 @@
         },
         "/auth/pending/users": {
             "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Get a list of all users with pending status",
                 "produces": [
                     "application/json"
@@ -1097,6 +1227,11 @@
         },
         "/auth/role-users": {
             "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Retrieve all users assigned to a specific role",
                 "produces": [
                     "application/json"
@@ -1124,6 +1259,13 @@
                             }
                         }
                     },
+                    "401": {
+                        "description": "Authentication required",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
                     "404": {
                         "description": "Role not found",
                         "schema": {
@@ -1143,6 +1285,11 @@
         },
         "/auth/roles": {
             "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Retrieve a list of all roles",
                 "produces": [
                     "application/json"
@@ -1171,6 +1318,11 @@
                 }
             },
             "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Create a new role with the provided information",
                 "consumes": [
                     "application/json"
@@ -1232,6 +1384,11 @@
         },
         "/auth/roles/name/{name}": {
             "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Retrieve a role by their name",
                 "produces": [
                     "application/json"
@@ -1275,6 +1432,11 @@
         },
         "/auth/roles/{id}": {
             "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Retrieve a role by their ID",
                 "produces": [
                     "application/json"
@@ -1316,6 +1478,11 @@
                 }
             },
             "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Update an existing role's information",
                 "consumes": [
                     "application/json"
@@ -1376,6 +1543,11 @@
                 }
             },
             "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Delete a role by their ID",
                 "tags": [
                     "roles"
@@ -1413,6 +1585,11 @@
         },
         "/auth/user-roles": {
             "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Retrieve all roles assigned to a specific user",
                 "produces": [
                     "application/json"
@@ -1440,6 +1617,13 @@
                             }
                         }
                     },
+                    "401": {
+                        "description": "Authentication required",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
                     "404": {
                         "description": "User not found",
                         "schema": {
@@ -1457,6 +1641,11 @@
                 }
             },
             "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Assign a user to a specific role",
                 "consumes": [
                     "application/json"
@@ -1522,6 +1711,11 @@
                 }
             },
             "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Remove a user from a specific role",
                 "tags": [
                     "user-roles"
@@ -1547,6 +1741,13 @@
                     "204": {
                         "description": "User removed from role successfully"
                     },
+                    "401": {
+                        "description": "Authentication required",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
                     "404": {
                         "description": "User or role not found",
                         "schema": {
@@ -1566,6 +1767,11 @@
         },
         "/auth/users": {
             "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Get a list of all users in the system",
                 "produces": [
                     "application/json"
@@ -1594,6 +1800,11 @@
                 }
             },
             "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Create a new user with the provided information",
                 "consumes": [
                     "application/json"
@@ -1649,6 +1860,11 @@
         },
         "/auth/users/email/{email}": {
             "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Retrieve a user by their email address",
                 "produces": [
                     "application/json"
@@ -1747,6 +1963,11 @@
         },
         "/auth/users/{id}": {
             "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Retrieve a user by their ID",
                 "produces": [
                     "application/json"
@@ -1788,6 +2009,11 @@
                 }
             },
             "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Update an existing user's information",
                 "consumes": [
                     "application/json"
@@ -1848,6 +2074,11 @@
                 }
             },
             "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Delete a user by their ID",
                 "tags": [
                     "users"
@@ -1885,6 +2116,11 @@
         },
         "/auth/users/{id}/activate": {
             "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Activate a user by setting their status to active",
                 "tags": [
                     "users"
@@ -1925,6 +2161,11 @@
         },
         "/auth/users/{id}/deactivate": {
             "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Deactivate a user by setting their status to inactive",
                 "tags": [
                     "users"
@@ -2023,14 +2264,8 @@
                         }
                     },
                     {
-                        "enum": [
-                            "true",
-                            "false",
-                            "1",
-                            "0"
-                        ],
                         "type": "string",
-                        "description": "Deploy the release immediately",
+                        "description": "Deploy the release immediately (true/false)",
                         "name": "deploy",
                         "in": "query"
                     }
@@ -2884,82 +3119,6 @@
         }
     },
     "definitions": {
-        "auth.KeyPairChallenge": {
-            "type": "object",
-            "properties": {
-                "challenge": {
-                    "type": "string"
-                },
-                "email": {
-                    "type": "string"
-                },
-                "expires": {
-                    "type": "string"
-                },
-                "kid": {
-                    "type": "string"
-                }
-            }
-        },
-        "auth.KeyPairChallengeResponse": {
-            "type": "object",
-            "properties": {
-                "challenge": {
-                    "type": "string"
-                },
-                "email": {
-                    "type": "string"
-                },
-                "expires": {
-                    "type": "string"
-                },
-                "kid": {
-                    "type": "string"
-                },
-                "signature": {
-                    "type": "string"
-                }
-            }
-        },
-        "auth.Permission": {
-            "type": "string",
-            "enum": [
-                "alias:read",
-                "alias:write",
-                "deployment:read",
-                "deployment:write",
-                "deployment:event:read",
-                "deployment:event:write",
-                "release:read",
-                "release:write",
-                "gha:auth:read",
-                "gha:auth:write",
-                "user:read",
-                "user:write",
-                "role:read",
-                "role:write",
-                "user:key:read",
-                "user:key:write"
-            ],
-            "x-enum-varnames": [
-                "PermAliasRead",
-                "PermAliasWrite",
-                "PermDeploymentRead",
-                "PermDeploymentWrite",
-                "PermDeploymentEventRead",
-                "PermDeploymentEventWrite",
-                "PermReleaseRead",
-                "PermReleaseWrite",
-                "PermGHAAuthRead",
-                "PermGHAAuthWrite",
-                "PermUserRead",
-                "PermUserWrite",
-                "PermRoleRead",
-                "PermRoleWrite",
-                "PermUserKeyRead",
-                "PermUserKeyWrite"
-            ]
-        },
         "handlers.AddEventRequest": {
             "type": "object",
             "required": [
@@ -2990,6 +3149,14 @@
                 }
             }
         },
+        "handlers.ChallengeResponse": {
+            "type": "object",
+            "properties": {
+                "token": {
+                    "type": "string"
+                }
+            }
+        },
         "handlers.CreateAliasRequest": {
             "type": "object",
             "required": [
@@ -3002,28 +3169,7 @@
             }
         },
         "handlers.CreateAuthRequest": {
-            "type": "object",
-            "required": [
-                "permissions",
-                "repository"
-            ],
-            "properties": {
-                "description": {
-                    "type": "string"
-                },
-                "enabled": {
-                    "type": "boolean"
-                },
-                "permissions": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/auth.Permission"
-                    }
-                },
-                "repository": {
-                    "type": "string"
-                }
-            }
+            "type": "object"
         },
         "handlers.CreateReleaseRequest": {
             "type": "object",
@@ -3090,6 +3236,17 @@
                 }
             }
         },
+        "handlers.LoginRequest": {
+            "type": "object",
+            "properties": {
+                "signature": {
+                    "type": "string"
+                },
+                "token": {
+                    "type": "string"
+                }
+            }
+        },
         "handlers.LoginResponse": {
             "type": "object",
             "properties": {
@@ -3099,28 +3256,7 @@
             }
         },
         "handlers.UpdateAuthRequest": {
-            "type": "object",
-            "required": [
-                "permissions",
-                "repository"
-            ],
-            "properties": {
-                "description": {
-                    "type": "string"
-                },
-                "enabled": {
-                    "type": "boolean"
-                },
-                "permissions": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/auth.Permission"
-                    }
-                },
-                "repository": {
-                    "type": "string"
-                }
-            }
+            "type": "object"
         },
         "handlers.UpdateReleaseRequest": {
             "type": "object",

@@ -54,6 +54,7 @@ type UpdateRoleRequest struct {
 // @Tags roles
 // @Accept json
 // @Produce json
+// @Security BearerAuth
 // @Param request body CreateRoleRequest true "Role creation request"
 // @Param admin query bool false "If true, ignore permissions and add all permissions"
 // @Success 201 {object} Role "Role created successfully"
@@ -105,6 +106,7 @@ func (h *RoleHandler) CreateRole(c *gin.Context) {
 // @Description Retrieve a role by their ID
 // @Tags roles
 // @Produce json
+// @Security BearerAuth
 // @Param id path string true "Role ID"
 // @Success 200 {object} Role "Role found"
 // @Failure 404 {object} map[string]interface{} "Role not found"
@@ -138,6 +140,7 @@ func (h *RoleHandler) GetRole(c *gin.Context) {
 // @Description Retrieve a role by their name
 // @Tags roles
 // @Produce json
+// @Security BearerAuth
 // @Param name path string true "Role name"
 // @Success 200 {object} Role "Role found"
 // @Failure 404 {object} map[string]interface{} "Role not found"
@@ -164,6 +167,7 @@ func (h *RoleHandler) GetRoleByName(c *gin.Context) {
 // @Tags roles
 // @Accept json
 // @Produce json
+// @Security BearerAuth
 // @Param id path string true "Role ID"
 // @Param request body UpdateRoleRequest true "Role update request"
 // @Success 200 {object} Role "Role updated successfully"
@@ -219,6 +223,7 @@ func (h *RoleHandler) UpdateRole(c *gin.Context) {
 // @Summary Delete a role
 // @Description Delete a role by their ID
 // @Tags roles
+// @Security BearerAuth
 // @Param id path string true "Role ID"
 // @Success 204 "Role deleted successfully"
 // @Failure 404 {object} map[string]interface{} "Role not found"
@@ -251,6 +256,7 @@ func (h *RoleHandler) DeleteRole(c *gin.Context) {
 // @Description Retrieve a list of all roles
 // @Tags roles
 // @Produce json
+// @Security BearerAuth
 // @Success 200 {array} Role "List of roles"
 // @Failure 500 {object} map[string]interface{} "Internal server error"
 // @Router /auth/roles [get]

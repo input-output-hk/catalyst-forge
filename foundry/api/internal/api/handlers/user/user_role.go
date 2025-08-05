@@ -58,6 +58,7 @@ type AssignUserToRoleRequest struct {
 // @Tags user-roles
 // @Accept json
 // @Produce json
+// @Security BearerAuth
 // @Param user_id query string true "User ID"
 // @Param role_id query string true "Role ID"
 // @Success 201 {object} UserRole "User assigned to role successfully"
@@ -108,9 +109,11 @@ func (h *UserRoleHandler) AssignUserToRole(c *gin.Context) {
 // @Summary Remove a user from a role
 // @Description Remove a user from a specific role
 // @Tags user-roles
+// @Security BearerAuth
 // @Param user_id query string true "User ID"
 // @Param role_id query string true "Role ID"
 // @Success 204 "User removed from role successfully"
+// @Failure 401 {object} map[string]interface{} "Authentication required"
 // @Failure 404 {object} map[string]interface{} "User or role not found"
 // @Failure 500 {object} map[string]interface{} "Internal server error"
 // @Router /auth/user-roles [delete]
@@ -157,8 +160,10 @@ func (h *UserRoleHandler) RemoveUserFromRole(c *gin.Context) {
 // @Description Retrieve all roles assigned to a specific user
 // @Tags user-roles
 // @Produce json
+// @Security BearerAuth
 // @Param user_id query string true "User ID"
 // @Success 200 {array} UserRole "List of user roles"
+// @Failure 401 {object} map[string]interface{} "Authentication required"
 // @Failure 404 {object} map[string]interface{} "User not found"
 // @Failure 500 {object} map[string]interface{} "Internal server error"
 // @Router /auth/user-roles [get]
@@ -197,8 +202,10 @@ func (h *UserRoleHandler) GetUserRoles(c *gin.Context) {
 // @Description Retrieve all users assigned to a specific role
 // @Tags user-roles
 // @Produce json
+// @Security BearerAuth
 // @Param role_id query string true "Role ID"
 // @Success 200 {array} UserRole "List of role users"
+// @Failure 401 {object} map[string]interface{} "Authentication required"
 // @Failure 404 {object} map[string]interface{} "Role not found"
 // @Failure 500 {object} map[string]interface{} "Internal server error"
 // @Router /auth/role-users [get]

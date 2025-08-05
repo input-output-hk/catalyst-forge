@@ -53,6 +53,7 @@ type RegisterUserKeyRequest struct {
 // @Tags user-keys
 // @Accept json
 // @Produce json
+// @Security BearerAuth
 // @Param request body CreateUserKeyRequest true "User key creation request"
 // @Success 201 {object} user.UserKey "User key created successfully"
 // @Failure 400 {object} map[string]interface{} "Invalid request"
@@ -161,8 +162,10 @@ func (h *UserKeyHandler) RegisterUserKey(c *gin.Context) {
 // @Description Retrieve a user key by their ID
 // @Tags user-keys
 // @Produce json
+// @Security BearerAuth
 // @Param id path string true "User Key ID"
 // @Success 200 {object} user.UserKey "User key found"
+// @Failure 401 {object} map[string]interface{} "Authentication required"
 // @Failure 404 {object} map[string]interface{} "User key not found"
 // @Failure 500 {object} map[string]interface{} "Internal server error"
 // @Router /auth/keys/{id} [get]
@@ -196,8 +199,10 @@ func (h *UserKeyHandler) GetUserKey(c *gin.Context) {
 // @Description Retrieve a user key by their kid (key ID)
 // @Tags user-keys
 // @Produce json
+// @Security BearerAuth
 // @Param kid path string true "Key ID"
 // @Success 200 {object} user.UserKey "User key found"
+// @Failure 401 {object} map[string]interface{} "Authentication required"
 // @Failure 404 {object} map[string]interface{} "User key not found"
 // @Failure 500 {object} map[string]interface{} "Internal server error"
 // @Router /auth/keys/kid/{kid} [get]
@@ -221,8 +226,10 @@ func (h *UserKeyHandler) GetUserKeyByKid(c *gin.Context) {
 // @Description Retrieve all keys for a specific user
 // @Tags user-keys
 // @Produce json
+// @Security BearerAuth
 // @Param user_id path string true "User ID"
 // @Success 200 {array} user.UserKey "List of user keys"
+// @Failure 401 {object} map[string]interface{} "Authentication required"
 // @Failure 500 {object} map[string]interface{} "Internal server error"
 // @Router /auth/keys/user/{user_id} [get]
 func (h *UserKeyHandler) GetUserKeysByUserID(c *gin.Context) {
@@ -255,9 +262,11 @@ func (h *UserKeyHandler) GetUserKeysByUserID(c *gin.Context) {
 // @Description Get all active user keys for a specific user
 // @Tags user-keys
 // @Produce json
+// @Security BearerAuth
 // @Param user_id path string true "User ID"
 // @Success 200 {array} user.UserKey "List of active user keys"
 // @Failure 400 {object} map[string]interface{} "Invalid user ID"
+// @Failure 401 {object} map[string]interface{} "Authentication required"
 // @Failure 500 {object} map[string]interface{} "Internal server error"
 // @Router /auth/keys/user/{user_id}/active [get]
 func (h *UserKeyHandler) GetActiveUserKeysByUserID(c *gin.Context) {
@@ -288,9 +297,11 @@ func (h *UserKeyHandler) GetActiveUserKeysByUserID(c *gin.Context) {
 // @Description Get all inactive user keys for a specific user
 // @Tags user-keys
 // @Produce json
+// @Security BearerAuth
 // @Param user_id path string true "User ID"
 // @Success 200 {array} user.UserKey "List of inactive user keys"
 // @Failure 400 {object} map[string]interface{} "Invalid user ID"
+// @Failure 401 {object} map[string]interface{} "Authentication required"
 // @Failure 500 {object} map[string]interface{} "Internal server error"
 // @Router /auth/keys/user/{user_id}/inactive [get]
 func (h *UserKeyHandler) GetInactiveUserKeysByUserID(c *gin.Context) {
@@ -321,7 +332,9 @@ func (h *UserKeyHandler) GetInactiveUserKeysByUserID(c *gin.Context) {
 // @Description Get all user keys with inactive status
 // @Tags user-keys
 // @Produce json
+// @Security BearerAuth
 // @Success 200 {array} user.UserKey "List of inactive user keys"
+// @Failure 401 {object} map[string]interface{} "Authentication required"
 // @Failure 500 {object} map[string]interface{} "Internal server error"
 // @Router /auth/pending/keys [get]
 func (h *UserKeyHandler) GetInactiveUserKeys(c *gin.Context) {
@@ -343,10 +356,12 @@ func (h *UserKeyHandler) GetInactiveUserKeys(c *gin.Context) {
 // @Tags user-keys
 // @Accept json
 // @Produce json
+// @Security BearerAuth
 // @Param id path string true "User Key ID"
 // @Param request body UpdateUserKeyRequest true "User key update request"
 // @Success 200 {object} user.UserKey "User key updated successfully"
 // @Failure 400 {object} map[string]interface{} "Invalid request"
+// @Failure 401 {object} map[string]interface{} "Authentication required"
 // @Failure 404 {object} map[string]interface{} "User key not found"
 // @Failure 500 {object} map[string]interface{} "Internal server error"
 // @Router /auth/keys/{id} [put]
@@ -411,8 +426,10 @@ func (h *UserKeyHandler) UpdateUserKey(c *gin.Context) {
 // @Summary Delete a user key
 // @Description Delete a user key by their ID
 // @Tags user-keys
+// @Security BearerAuth
 // @Param id path string true "User Key ID"
 // @Success 204 "User key deleted successfully"
+// @Failure 401 {object} map[string]interface{} "Authentication required"
 // @Failure 404 {object} map[string]interface{} "User key not found"
 // @Failure 500 {object} map[string]interface{} "Internal server error"
 // @Router /auth/keys/{id} [delete]
@@ -444,8 +461,10 @@ func (h *UserKeyHandler) DeleteUserKey(c *gin.Context) {
 // @Summary Revoke a user key
 // @Description Revoke a user key by setting its status to revoked
 // @Tags user-keys
+// @Security BearerAuth
 // @Param id path string true "User Key ID"
 // @Success 200 {object} user.UserKey "User key revoked successfully"
+// @Failure 401 {object} map[string]interface{} "Authentication required"
 // @Failure 404 {object} map[string]interface{} "User key not found"
 // @Failure 500 {object} map[string]interface{} "Internal server error"
 // @Router /auth/keys/{id}/revoke [post]
@@ -487,7 +506,9 @@ func (h *UserKeyHandler) RevokeUserKey(c *gin.Context) {
 // @Description Retrieve a list of all user keys
 // @Tags user-keys
 // @Produce json
+// @Security BearerAuth
 // @Success 200 {array} user.UserKey "List of user keys"
+// @Failure 401 {object} map[string]interface{} "Authentication required"
 // @Failure 500 {object} map[string]interface{} "Internal server error"
 // @Router /auth/keys [get]
 func (h *UserKeyHandler) ListUserKeys(c *gin.Context) {
