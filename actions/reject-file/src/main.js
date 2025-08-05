@@ -4,7 +4,7 @@ const exec = require("@actions/exec");
 async function run() {
   try {
     const filters = core.getInput("filters", { required: true });
-    const rootPath = core.getInput("root-path", { required: false }) || ".";
+    const rootPath = core.getInput("root-path", { required: false }) || process.env.GITHUB_WORKSPACE || ".";
     const verbosity = core.getInput("verbosity", { required: false }) || "info";
 
     // Split rules by double newline
@@ -143,11 +143,22 @@ async function run() {
           hasRejections = true;
 
           const sortedPaths = jsonResult.sort();
+          const maxPathsToShow = 20; // Limit output to prevent truncation
 
           rejectionOutput += `❌ ${message}:\n`;
-          for (const path of sortedPaths) {
-            rejectionOutput += `  - ${path}\n`;
+          for (let i = 0; i < Math.min(sortedPaths.length, maxPathsToShow); i++) {
+            // Clean up path by removing leading ./
+            let cleanPath = sortedPaths[i];
+            if (cleanPath.startsWith("./")) {
+              cleanPath = cleanPath.substring(2);
+            }
+            rejectionOutput += `  - ${cleanPath}\n`;
           }
+          
+          if (sortedPaths.length > maxPathsToShow) {
+            rejectionOutput += `  ... and ${sortedPaths.length - maxPathsToShow} more files\n`;
+          }
+          
           rejectionOutput += "\n";
         }
       } catch (execError) {

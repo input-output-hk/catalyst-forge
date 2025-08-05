@@ -20,9 +20,9 @@ inputs:
       description:Debug console statements
     required: true
   root-path:
-    description: Root path to scan for files
+    description: Root path to scan for files (defaults to repository root)
     required: false
-    default: "."
+    default: "${{ github.workspace }}"
   verbosity:
     description: The verbosity level to use
     required: false

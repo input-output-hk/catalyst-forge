@@ -42,7 +42,7 @@ description:Debug console statements
 
 ### `root-path` (optional)
 
-The root path to scan for files. Defaults to the current directory (`.`).
+The root path to scan for files. Defaults to the repository root (`${{ github.workspace }}`).
 
 ### `verbosity` (optional)
 
@@ -127,7 +127,7 @@ The verbosity level for the forge command. Can be `"error"`, `"info"`, or `"debu
     filters: |
       content:console\.log
       description:Console log statements in production code
-    root-path: "./src"
+    root-path: "./src"  # Scan only the src directory instead of entire repo
 ```
 
 ## Output Format
