@@ -30,6 +30,9 @@ deps:
 
     # Copy local deps
     COPY ../api+src/src /work/api
+    COPY ../../lib/foundry/auth+src/src /lib/foundry/auth
+    COPY ../../lib/foundry/client+src/src /lib/foundry/client
+    COPY ../../lib/deployment+src/src /lib/deployment
     COPY ../../lib/project+src/src /lib/project
     COPY ../../lib/providers+src/src /lib/providers
     COPY ../../lib/schema+src/src /lib/schema

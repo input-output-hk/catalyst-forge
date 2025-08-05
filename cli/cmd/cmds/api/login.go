@@ -9,10 +9,10 @@ import (
 	"github.com/input-output-hk/catalyst-forge/cli/internal/ux"
 	"github.com/input-output-hk/catalyst-forge/cli/internal/validator"
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/run"
+	authpkg "github.com/input-output-hk/catalyst-forge/lib/foundry/auth"
 	"github.com/input-output-hk/catalyst-forge/lib/foundry/client"
 	"github.com/input-output-hk/catalyst-forge/lib/foundry/client/auth"
 	"github.com/input-output-hk/catalyst-forge/lib/foundry/client/github"
-	authpkg "github.com/input-output-hk/catalyst-forge/lib/foundry/auth"
 )
 
 type LoginCmd struct {
