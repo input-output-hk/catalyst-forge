@@ -12,7 +12,6 @@ import (
 	"github.com/input-output-hk/catalyst-forge/lib/foundry/auth"
 	ghauth "github.com/input-output-hk/catalyst-forge/lib/foundry/auth/github"
 	"github.com/input-output-hk/catalyst-forge/lib/foundry/auth/jwt"
-	"github.com/redis/go-redis/v9"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
 	"gorm.io/gorm"
@@ -32,7 +31,6 @@ func SetupRouter(
 	jwtManager *jwt.JWTManager,
 	ghaOIDCClient ghauth.GithubActionsOIDCClient,
 	ghaAuthService service.GithubAuthService,
-	redisClient *redis.Client,
 ) *gin.Engine {
 	r := gin.New()
 
@@ -44,7 +42,6 @@ func SetupRouter(
 		c.Set("releaseService", releaseService)
 		c.Set("deploymentService", deploymentService)
 		c.Set("userService", userService)
-		c.Set("redisClient", redisClient)
 		c.Next()
 	})
 
@@ -59,7 +56,7 @@ func SetupRouter(
 	userKeyHandler := user.NewUserKeyHandler(userKeyService, logger)
 
 	// Auth handler
-	authManager := auth.NewAuthManager(auth.WithRedis(redisClient))
+	authManager := auth.NewAuthManager()
 	authHandler := handlers.NewAuthHandler(userKeyService, userService, userRoleService, roleService, authManager, jwtManager, logger)
 
 	// GitHub handler
