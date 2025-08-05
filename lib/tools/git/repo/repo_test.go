@@ -11,6 +11,7 @@ import (
 	"github.com/go-git/go-billy/v5/memfs"
 	"github.com/go-git/go-git/v5"
 	gg "github.com/go-git/go-git/v5"
+	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/cache"
 	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/go-git/go-git/v5/plumbing/transport/http"
@@ -228,6 +229,154 @@ func TestGitRepoGetCurrentTag(t *testing.T) {
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "tag not found")
 		assert.Equal(t, tag, "")
+	})
+}
+
+func TestGitRepoListTags(t *testing.T) {
+	t.Run("list annotated tags without fetch", func(t *testing.T) {
+		repo := newGitRepo(t)
+
+		head, err := repo.raw.Head()
+		require.NoError(t, err)
+
+		_, err = repo.NewTag(head.Hash(), "v1.0.0", "version 1.0.0")
+		require.NoError(t, err)
+
+		_, err = repo.NewTag(head.Hash(), "v1.1.0", "version 1.1.0")
+		require.NoError(t, err)
+
+		tagRefName := plumbing.NewTagReferenceName("lightweight-tag")
+		err = repo.raw.Storer.SetReference(plumbing.NewHashReference(tagRefName, head.Hash()))
+		require.NoError(t, err)
+
+		tags, err := repo.ListTags(false)
+		require.NoError(t, err)
+		assert.Len(t, tags, 2)
+
+		tagNames := make([]string, len(tags))
+		for i, tag := range tags {
+			tagNames[i] = tag.Name
+		}
+		assert.Contains(t, tagNames, "v1.0.0")
+		assert.Contains(t, tagNames, "v1.1.0")
+		assert.NotContains(t, tagNames, "lightweight-tag")
+	})
+
+	t.Run("list tags with fetch", func(t *testing.T) {
+		repo := newGitRepo(t)
+
+		var fetchCalled bool
+		repo.remote = &mocks.GitRemoteInteractorMock{
+			FetchFunc: func(repo *git.Repository, o *git.FetchOptions) error {
+				fetchCalled = true
+				assert.Contains(t, o.RefSpecs[0].String(), "refs/tags/*")
+				return nil
+			},
+		}
+
+		head, err := repo.raw.Head()
+		require.NoError(t, err)
+
+		_, err = repo.NewTag(head.Hash(), "v2.0.0", "version 2.0.0")
+		require.NoError(t, err)
+
+		tags, err := repo.ListTags(true)
+		require.NoError(t, err)
+		assert.Len(t, tags, 1)
+		assert.Equal(t, "v2.0.0", tags[0].Name)
+		assert.True(t, fetchCalled, "Fetch should have been called")
+	})
+
+	t.Run("list tags when no annotated tags exist", func(t *testing.T) {
+		repo := newGitRepo(t)
+
+		head, err := repo.raw.Head()
+		require.NoError(t, err)
+
+		tagRefName := plumbing.NewTagReferenceName("lightweight-only")
+		err = repo.raw.Storer.SetReference(plumbing.NewHashReference(tagRefName, head.Hash()))
+		require.NoError(t, err)
+
+		tags, err := repo.ListTags(false)
+		require.NoError(t, err)
+		assert.Len(t, tags, 0, "Should return no tags when only lightweight tags exist")
+	})
+
+	t.Run("fetch error", func(t *testing.T) {
+		repo := newGitRepo(t)
+
+		repo.remote = &mocks.GitRemoteInteractorMock{
+			FetchFunc: func(repo *git.Repository, o *git.FetchOptions) error {
+				return fmt.Errorf("fetch failed")
+			},
+		}
+
+		tags, err := repo.ListTags(true)
+		assert.Error(t, err)
+		assert.Nil(t, tags)
+		assert.Contains(t, err.Error(), "failed to fetch tags")
+	})
+}
+
+func TestGitRepoGetTagCommit(t *testing.T) {
+	t.Run("get commit for annotated tag", func(t *testing.T) {
+		repo := newGitRepo(t)
+
+		head, err := repo.raw.Head()
+		require.NoError(t, err)
+		initialCommit, err := repo.GetCommit(head.Hash())
+		require.NoError(t, err)
+
+		_, err = repo.NewTag(head.Hash(), "v1.0.0", "version 1.0.0")
+		require.NoError(t, err)
+
+		commit, err := repo.GetTagCommit("v1.0.0")
+		require.NoError(t, err)
+		assert.NotNil(t, commit)
+		assert.Equal(t, initialCommit.Hash.String(), commit.Hash.String())
+		assert.Equal(t, initialCommit.Message, commit.Message)
+	})
+
+	t.Run("get commit for lightweight tag", func(t *testing.T) {
+		repo := newGitRepo(t)
+
+		head, err := repo.raw.Head()
+		require.NoError(t, err)
+		initialCommit, err := repo.GetCommit(head.Hash())
+		require.NoError(t, err)
+
+		tagRefName := plumbing.NewTagReferenceName("v1.1.0")
+		err = repo.raw.Storer.SetReference(plumbing.NewHashReference(tagRefName, head.Hash()))
+		require.NoError(t, err)
+
+		commit, err := repo.GetTagCommit("v1.1.0")
+		require.NoError(t, err)
+		assert.NotNil(t, commit)
+		assert.Equal(t, initialCommit.Hash.String(), commit.Hash.String())
+		assert.Equal(t, initialCommit.Message, commit.Message)
+	})
+
+	t.Run("tag does not exist", func(t *testing.T) {
+		repo := newGitRepo(t)
+
+		commit, err := repo.GetTagCommit("nonexistent-tag")
+		assert.Error(t, err)
+		assert.Nil(t, commit)
+		assert.Contains(t, err.Error(), "failed to get tag reference for nonexistent-tag")
+	})
+
+	t.Run("tag exists but points to invalid commit", func(t *testing.T) {
+		repo := newGitRepo(t)
+
+		invalidHash := plumbing.NewHash("0000000000000000000000000000000000000000")
+		tagRefName := plumbing.NewTagReferenceName("invalid-tag")
+		err := repo.raw.Storer.SetReference(plumbing.NewHashReference(tagRefName, invalidHash))
+		require.NoError(t, err)
+
+		commit, err := repo.GetTagCommit("invalid-tag")
+		assert.Error(t, err)
+		assert.Nil(t, commit)
+		assert.Contains(t, err.Error(), "invalid-tag")
 	})
 }
 
@@ -638,5 +787,173 @@ func TestGitRepoPatchToString(t *testing.T) {
 
 		// Verify it's the same as calling patch.String() directly
 		assert.Equal(t, patch.String(), patchString)
+	})
+}
+
+func TestGitRepoWalkTags(t *testing.T) {
+	t.Run("walk commits between two tags", func(t *testing.T) {
+		repo := newGitRepo(t)
+
+		head, err := repo.raw.Head()
+		require.NoError(t, err)
+		initialCommit := head.Hash()
+
+		startTagRef, err := repo.NewTag(initialCommit, "v1.0.0", "version 1.0.0")
+		require.NoError(t, err)
+		startTag, err := repo.raw.TagObject(startTagRef.Hash())
+		require.NoError(t, err)
+
+		require.NoError(t, repo.wfs.WriteFile("commit1.txt", []byte("commit 1"), 0644))
+		require.NoError(t, repo.StageFile("commit1.txt"))
+		commit1, err := repo.Commit("feat: add first feature")
+		require.NoError(t, err)
+
+		require.NoError(t, repo.wfs.WriteFile("commit2.txt", []byte("commit 2"), 0644))
+		require.NoError(t, repo.StageFile("commit2.txt"))
+		commit2, err := repo.Commit("fix: resolve issue")
+		require.NoError(t, err)
+
+		require.NoError(t, repo.wfs.WriteFile("commit3.txt", []byte("commit 3"), 0644))
+		require.NoError(t, repo.StageFile("commit3.txt"))
+		commit3, err := repo.Commit("docs: update documentation")
+		require.NoError(t, err)
+
+		endTagRef, err := repo.NewTag(commit3, "v1.1.0", "version 1.1.0")
+		require.NoError(t, err)
+		endTag, err := repo.raw.TagObject(endTagRef.Hash())
+		require.NoError(t, err)
+
+		commitSeq := repo.WalkTags(startTag, endTag)
+		var commits []*object.Commit
+		var errors []error
+
+		for commit, err := range commitSeq {
+			if err != nil {
+				errors = append(errors, err)
+				break
+			}
+			commits = append(commits, commit)
+		}
+
+		assert.Empty(t, errors)
+		assert.Len(t, commits, 3)
+
+		expectedHashes := []string{commit3.String(), commit2.String(), commit1.String()}
+		for i, commit := range commits {
+			assert.Equal(t, expectedHashes[i], commit.Hash.String())
+		}
+	})
+
+	t.Run("walk commits when start tag is not ancestor of end tag", func(t *testing.T) {
+		repo := newGitRepo(t)
+
+		head, err := repo.raw.Head()
+		require.NoError(t, err)
+		initialCommit := head.Hash()
+
+		startTagRef, err := repo.NewTag(initialCommit, "v1.0.0", "version 1.0.0")
+		require.NoError(t, err)
+		startTag, err := repo.raw.TagObject(startTagRef.Hash())
+		require.NoError(t, err)
+
+		require.NoError(t, repo.NewBranch("feature"))
+		require.NoError(t, repo.wfs.WriteFile("feature.txt", []byte("feature"), 0644))
+		require.NoError(t, repo.StageFile("feature.txt"))
+		featureCommit, err := repo.Commit("feat: add feature")
+		require.NoError(t, err)
+
+		endTagRef, err := repo.NewTag(featureCommit, "v1.1.0", "version 1.1.0")
+		require.NoError(t, err)
+		endTag, err := repo.raw.TagObject(endTagRef.Hash())
+		require.NoError(t, err)
+
+		commitSeq := repo.WalkTags(startTag, endTag)
+		var commits []*object.Commit
+		var errors []error
+
+		for commit, err := range commitSeq {
+			if err != nil {
+				errors = append(errors, err)
+				break
+			}
+			commits = append(commits, commit)
+		}
+
+		if len(errors) > 0 {
+			assert.Contains(t, errors[0].Error(), "is not an ancestor of")
+			assert.Empty(t, commits)
+		} else {
+			assert.NotEmpty(t, commits)
+		}
+	})
+
+	t.Run("walk commits with same start and end tag", func(t *testing.T) {
+		repo := newGitRepo(t)
+
+		head, err := repo.raw.Head()
+		require.NoError(t, err)
+		initialCommit := head.Hash()
+
+		tagRef, err := repo.NewTag(initialCommit, "v1.0.0", "version 1.0.0")
+		require.NoError(t, err)
+		tag, err := repo.raw.TagObject(tagRef.Hash())
+		require.NoError(t, err)
+
+		commitSeq := repo.WalkTags(tag, tag)
+		var commits []*object.Commit
+		var errors []error
+
+		for commit, err := range commitSeq {
+			if err != nil {
+				errors = append(errors, err)
+				break
+			}
+			commits = append(commits, commit)
+		}
+
+		assert.Empty(t, errors)
+		assert.Empty(t, commits)
+	})
+
+	t.Run("walk commits with invalid tag", func(t *testing.T) {
+		repo := newGitRepo(t)
+
+		head, err := repo.raw.Head()
+		require.NoError(t, err)
+		initialCommit := head.Hash()
+
+		startTagRef, err := repo.NewTag(initialCommit, "v1.0.0", "version 1.0.0")
+		require.NoError(t, err)
+		startTag, err := repo.raw.TagObject(startTagRef.Hash())
+		require.NoError(t, err)
+
+		invalidHash := plumbing.NewHash("0000000000000000000000000000000000000000")
+		invalidTagRef := plumbing.NewHashReference(plumbing.NewTagReferenceName("invalid"), invalidHash)
+		err = repo.raw.Storer.SetReference(invalidTagRef)
+		require.NoError(t, err)
+
+		invalidTag, err := repo.raw.TagObject(invalidHash)
+		if err != nil {
+			invalidTag = &object.Tag{
+				Name:   "invalid",
+				Target: invalidHash,
+			}
+		}
+
+		commitSeq := repo.WalkTags(startTag, invalidTag)
+		var commits []*object.Commit
+		var errors []error
+
+		for commit, err := range commitSeq {
+			if err != nil {
+				errors = append(errors, err)
+				break
+			}
+			commits = append(commits, commit)
+		}
+
+		assert.Len(t, errors, 1)
+		assert.Contains(t, errors[0].Error(), "failed to get commit for end tag")
+		assert.Empty(t, commits)
 	})
 }
