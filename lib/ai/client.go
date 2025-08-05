@@ -23,18 +23,18 @@ type ClientConfig struct {
 // NewClient creates a new AI client with the given configuration
 func NewClient(config ClientConfig) *Client {
 	openaiConfig := openai.DefaultConfig(config.APIKey)
-	
+
 	if config.BaseURL != "" {
 		openaiConfig.BaseURL = config.BaseURL
 	}
-	
+
 	model := config.Model
 	if model == "" {
 		model = "gpt-3.5-turbo" // Default model
 	}
-	
+
 	client := openai.NewClientWithConfig(openaiConfig)
-	
+
 	return &Client{
 		client: client,
 		model:  model,
@@ -55,15 +55,15 @@ func (c *Client) ChatCompletion(ctx context.Context, message string) (string, er
 			},
 		},
 	)
-	
+
 	if err != nil {
 		return "", fmt.Errorf("chat completion error: %w", err)
 	}
-	
+
 	if len(resp.Choices) == 0 {
 		return "", fmt.Errorf("no response choices returned")
 	}
-	
+
 	return resp.Choices[0].Message.Content, nil
 }
 
