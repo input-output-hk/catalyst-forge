@@ -6,7 +6,7 @@ import (
 	"log/slog"
 
 	"cuelang.org/go/cue"
-	"github.com/input-output-hk/catalyst-forge/lib/project/deployment"
+	"github.com/input-output-hk/catalyst-forge/lib/deployment"
 	sp "github.com/input-output-hk/catalyst-forge/lib/schema/blueprint/project"
 )
 

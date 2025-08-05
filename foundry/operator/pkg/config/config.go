@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/input-output-hk/catalyst-forge/lib/project/deployment/deployer"
+	"github.com/input-output-hk/catalyst-forge/lib/deployment/deployer"
 )
 
 // OperatorConfig is the configuration for the operator.

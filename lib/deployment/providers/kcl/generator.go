@@ -9,7 +9,7 @@ import (
 
 	"cuelang.org/go/cue"
 	"github.com/BurntSushi/toml"
-	"github.com/input-output-hk/catalyst-forge/lib/project/deployment/providers/kcl/client"
+	"github.com/input-output-hk/catalyst-forge/lib/deployment/providers/kcl/client"
 	sp "github.com/input-output-hk/catalyst-forge/lib/schema/blueprint/project"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/fs"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/fs/billy"

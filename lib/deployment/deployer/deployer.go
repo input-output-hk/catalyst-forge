@@ -7,8 +7,8 @@ import (
 	"path/filepath"
 
 	"cuelang.org/go/cue"
-	"github.com/input-output-hk/catalyst-forge/lib/project/deployment"
-	"github.com/input-output-hk/catalyst-forge/lib/project/deployment/generator"
+	"github.com/input-output-hk/catalyst-forge/lib/deployment"
+	"github.com/input-output-hk/catalyst-forge/lib/deployment/generator"
 	"github.com/input-output-hk/catalyst-forge/lib/project/project"
 	"github.com/input-output-hk/catalyst-forge/lib/providers/git"
 	"github.com/input-output-hk/catalyst-forge/lib/providers/secrets"

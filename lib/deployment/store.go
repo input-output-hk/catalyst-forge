@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"log/slog"
 
-	"github.com/input-output-hk/catalyst-forge/lib/project/deployment/providers/git"
-	"github.com/input-output-hk/catalyst-forge/lib/project/deployment/providers/helm"
-	"github.com/input-output-hk/catalyst-forge/lib/project/deployment/providers/kcl"
+	"github.com/input-output-hk/catalyst-forge/lib/deployment/providers/git"
+	"github.com/input-output-hk/catalyst-forge/lib/deployment/providers/helm"
+	"github.com/input-output-hk/catalyst-forge/lib/deployment/providers/kcl"
 )
 
 // Provider represents a manifest generator provider.

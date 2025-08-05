@@ -8,7 +8,7 @@ import (
 	"cuelang.org/go/cue/cuecontext"
 	gg "github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing/transport/http"
-	"github.com/input-output-hk/catalyst-forge/lib/project/deployment"
+	"github.com/input-output-hk/catalyst-forge/lib/deployment"
 	tu "github.com/input-output-hk/catalyst-forge/lib/project/utils/test"
 	sc "github.com/input-output-hk/catalyst-forge/lib/schema/blueprint/common"
 	sp "github.com/input-output-hk/catalyst-forge/lib/schema/blueprint/project"

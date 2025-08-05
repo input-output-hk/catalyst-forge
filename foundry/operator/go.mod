@@ -9,6 +9,7 @@ require (
 	github.com/adrg/xdg v0.5.3
 	github.com/go-git/go-billy/v5 v5.5.0
 	github.com/go-git/go-git/v5 v5.12.0
+	github.com/input-output-hk/catalyst-forge/lib/deployment v0.0.0
 	github.com/input-output-hk/catalyst-forge/lib/foundry/client v0.0.0
 	github.com/input-output-hk/catalyst-forge/lib/project v0.0.0
 	github.com/input-output-hk/catalyst-forge/lib/providers v0.0.0
@@ -274,6 +275,8 @@ require (
 	sigs.k8s.io/structured-merge-diff/v4 v4.4.2 // indirect
 	sigs.k8s.io/yaml v1.4.0 // indirect
 )
+
+replace github.com/input-output-hk/catalyst-forge/lib/deployment => ../../lib/deployment
 
 replace github.com/input-output-hk/catalyst-forge/lib/project => ../../lib/project
 
