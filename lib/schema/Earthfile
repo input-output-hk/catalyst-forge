@@ -41,3 +41,47 @@ check-gen:
     RUN cp -r ./blueprint /tmp/blueprint
     RUN go generate ./...
     RUN diff -r ./blueprint /tmp/blueprint
+
+proto:
+    FROM golang:1.24.2-bookworm
+
+    WORKDIR /work
+
+    RUN apt-get update && apt-get install -y protobuf-compiler
+    RUN go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
+    RUN go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
+
+    ENV PATH=$PATH:/go/bin
+
+proto-gen:
+    FROM +proto
+
+    WORKDIR /work
+
+    COPY . .
+    RUN mkdir -p generated
+
+    # Generate Go code - process all files together to resolve dependencies
+    RUN protoc \
+        --go_out=generated \
+        --go_opt=paths=source_relative \
+        --proto_path=proto \
+        proto/common/*.proto proto/global/providers/*.proto proto/global/*.proto proto/project/*.proto proto/blueprint.proto
+
+    # Generate gRPC code (future)
+    # RUN protoc \
+    #     --go-grpc_out=generated \
+    #     --go-grpc_opt=paths=source_relative \
+    #     --proto_path=proto \
+    #     proto/common/*.proto proto/global/providers/*.proto proto/global/*.proto proto/project/*.proto proto/blueprint.proto
+
+    SAVE ARTIFACT generated generated AS LOCAL proto/generated
+
+check-proto:
+    FROM +proto-gen
+
+    WORKDIR /work
+
+    COPY proto/generated/ generated-local/
+
+    RUN diff -r generated generated-local || (echo "Generated code differs from local proto/generated folder. Please run 'earthly +proto-gen' to update." && exit 1)

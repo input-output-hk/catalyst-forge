@@ -1,0 +1,20 @@
+syntax = "proto3";
+
+package providers;
+
+option go_package = "github.com/input-output-hk/catalyst-forge/lib/schema/proto/generated/global/providers";
+
+import "common/secret.proto";
+
+// Tailscale contains the configuration for the Tailscale provider.
+message Tailscale {
+  // Credentials contains the OAuth2 credentials for authenticating to the
+  // Tailscale network.
+  common.Secret credentials = 1;
+
+  // Tags is a comma-separated list of tags to impersonate.
+  string tags = 2;
+
+  // Version contains the version of Tailscale to install.
+  string version = 3;
+}

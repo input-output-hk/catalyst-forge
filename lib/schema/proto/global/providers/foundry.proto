@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+package providers;
+
+option go_package = "github.com/input-output-hk/catalyst-forge/lib/schema/proto/generated/global/providers";
+
+// Foundry contains the configuration for Catalyst Foundry.
+message Foundry {
+  // URL of the Foundry API.
+  string url = 1;
+}

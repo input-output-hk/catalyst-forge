@@ -1,0 +1,26 @@
+syntax = "proto3";
+
+package providers;
+
+option go_package = "github.com/input-output-hk/catalyst-forge/lib/schema/proto/generated/global/providers";
+
+// AWS contains the configuration for the AWS provider.
+message AWS {
+  // ECR contains the configuration for AWS ECR.
+  AWSECR ecr = 1;
+
+  // Role contains the role to assume.
+  string role = 2;
+
+  // Region contains the region to use.
+  string region = 3;
+}
+
+// AWSECR contains the configuration for AWS ECR.
+message AWSECR {
+  // AutoCreate contains whether to automatically create ECR repositories.
+  bool autoCreate = 1;
+
+  // Registry is the ECR registry to login to during CI operations.
+  string registry = 2;
+}
