@@ -79,10 +79,6 @@ jobs:
         uses: input-output-hk/catalyst-forge/actions/reject-file@feat/scan-all-command
         with:
           filters: |
-            file:\.go$
-            content:package
-            description:Go files with package declarations (should catch most Go files)
-
             file:\.md$
             description:Markdown documentation files
 
@@ -92,10 +88,6 @@ jobs:
 
             file:package\.json$
             description:Node.js package files
-
-            content:import
-            description:Files containing import statements
-          root-path: "../.."
       - name: Setup CI
         uses: input-output-hk/catalyst-forge/actions/setup@master
         with:
