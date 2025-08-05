@@ -127,7 +127,7 @@ The verbosity level for the forge command. Can be `"error"`, `"info"`, or `"debu
     filters: |
       content:console\.log
       description:Console log statements in production code
-    root-path: "./src"  # Scan only the src directory instead of entire repo
+    root-path: "./src" # Scan only the src directory instead of entire repo
 ```
 
 ## Output Format

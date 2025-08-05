@@ -42,4 +42,4 @@ jobs:
             file:_test\.js$
             content:console\.log
             description:Test files with console logs
-          root-path: "./test-files"  # Custom path example
+          root-path: "./test-files" # Custom path example
