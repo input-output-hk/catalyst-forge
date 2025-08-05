@@ -75,19 +75,6 @@ jobs:
         id: local
         run: |
           forge version
-      - name: Enforce repository standards (SHOULD FAIL)
-        uses: input-output-hk/catalyst-forge/actions/reject-file@feat/scan-all-command
-        with:
-          filters: |
-            file:\.md$
-            description:Markdown documentation files
-
-            file:\.json$
-            content:\{
-            description:JSON files with opening braces
-
-            file:package\.json$
-            description:Node.js package files
       - name: Setup CI
         uses: input-output-hk/catalyst-forge/actions/setup@master
         with:
