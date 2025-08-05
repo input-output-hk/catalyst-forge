@@ -7,7 +7,8 @@ import (
 
 	"github.com/input-output-hk/catalyst-forge/cli/cmd/cmds/api/auth/common"
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/run"
-	"github.com/input-output-hk/catalyst-forge/foundry/api/client/users"
+	"github.com/input-output-hk/catalyst-forge/lib/foundry/client"
+	"github.com/input-output-hk/catalyst-forge/lib/foundry/client/users"
 )
 
 type DeactivateCmd struct {
@@ -16,7 +17,7 @@ type DeactivateCmd struct {
 	JSON  bool    `short:"j" help:"Output as prettified JSON instead of table."`
 }
 
-func (c *DeactivateCmd) Run(ctx run.RunContext, cl interface{ Users() *users.UsersClient }) error {
+func (c *DeactivateCmd) Run(ctx run.RunContext, cl client.Client) error {
 	if c.ID == nil && c.Email == nil {
 		return fmt.Errorf("either --id or --email must be specified")
 	}
@@ -38,7 +39,7 @@ func (c *DeactivateCmd) Run(ctx run.RunContext, cl interface{ Users() *users.Use
 }
 
 // deactivateUser deactivates a user by ID or email.
-func (c *DeactivateCmd) deactivateUser(cl interface{ Users() *users.UsersClient }) (*users.User, error) {
+func (c *DeactivateCmd) deactivateUser(cl client.Client) (*users.User, error) {
 	var userID uint
 
 	if c.Email != nil {

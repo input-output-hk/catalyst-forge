@@ -13,7 +13,6 @@ type Config struct {
 	Server     ServerConfig     `kong:"embed"`
 	Auth       AuthConfig       `kong:"embed"`
 	Database   DatabaseConfig   `kong:"embed"`
-	Redis      RedisConfig      `kong:"embed"`
 	Logging    LoggingConfig    `kong:"embed"`
 	Kubernetes KubernetesConfig `kong:"embed"`
 }
@@ -38,14 +37,6 @@ type DatabaseConfig struct {
 	Password string `kong:"help='Database password',env='DB_PASSWORD'"`
 	Name     string `kong:"help='Database name',default='releases',env='DB_NAME'"`
 	SSLMode  string `kong:"help='Database SSL mode',default='disable',env='DB_SSLMODE'"`
-}
-
-// RedisConfig represents Redis-specific configuration
-type RedisConfig struct {
-	RedisHost     string `kong:"help='Redis host',default='localhost',env='REDIS_HOST'"`
-	RedisPort     int    `kong:"help='Redis port',default=6379,env='REDIS_PORT'"`
-	RedisPassword string `kong:"help='Redis password',env='REDIS_PASSWORD'"`
-	RedisDB       int    `kong:"help='Redis database number',default=0,env='REDIS_DB'"`
 }
 
 // LoggingConfig represents logging-specific configuration
@@ -80,11 +71,6 @@ func (c *Config) GetDSN() string {
 		c.Database.Name,
 		c.Database.SSLMode,
 	)
-}
-
-// GetRedisAddr returns the Redis address string
-func (c *Config) GetRedisAddr() string {
-	return fmt.Sprintf("%s:%d", c.Redis.RedisHost, c.Redis.RedisPort)
 }
 
 // GetServerAddr returns the server address string

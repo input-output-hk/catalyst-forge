@@ -15,7 +15,7 @@ import (
 	"github.com/input-output-hk/catalyst-forge/cli/cmd/cmds/scan"
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/config"
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/run"
-	"github.com/input-output-hk/catalyst-forge/lib/project/deployment"
+	"github.com/input-output-hk/catalyst-forge/lib/deployment"
 	"github.com/input-output-hk/catalyst-forge/lib/project/project"
 	"github.com/input-output-hk/catalyst-forge/lib/providers/git"
 	"github.com/input-output-hk/catalyst-forge/lib/providers/secrets"

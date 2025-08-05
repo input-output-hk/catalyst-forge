@@ -11,5 +11,9 @@ node_modules
 !/.vscode/settings.recommended.json
 !/.vscode/tasks.recommended.json
 
-.env
 .auth
+.env
+.ai/
+.claude/
+.cursor/
+CLAUDE.md

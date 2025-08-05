@@ -26,8 +26,8 @@ import (
 	. "github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/api/errors"
 
-	"github.com/input-output-hk/catalyst-forge/foundry/api/client/deployments"
 	foundryv1alpha1 "github.com/input-output-hk/catalyst-forge/foundry/operator/api/v1alpha1"
+	"github.com/input-output-hk/catalyst-forge/lib/foundry/client/deployments"
 )
 
 var _ = Describe("ReleaseDeployment Controller", func() {

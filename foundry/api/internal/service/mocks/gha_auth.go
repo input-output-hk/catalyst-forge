@@ -5,7 +5,7 @@ package mocks
 
 import (
 	"github.com/input-output-hk/catalyst-forge/foundry/api/internal/models"
-	"github.com/input-output-hk/catalyst-forge/foundry/api/pkg/auth"
+	"github.com/input-output-hk/catalyst-forge/lib/foundry/auth"
 	"sync"
 )
 

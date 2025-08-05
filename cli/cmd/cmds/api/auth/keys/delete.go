@@ -6,7 +6,7 @@ import (
 	"strconv"
 
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/run"
-	"github.com/input-output-hk/catalyst-forge/foundry/api/client"
+	"github.com/input-output-hk/catalyst-forge/lib/foundry/client"
 )
 
 type DeleteCmd struct {

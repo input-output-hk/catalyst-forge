@@ -13,6 +13,8 @@ deps:
     CACHE --persist --sharing shared /go
 
     # Copy local deps
+    COPY ../../lib/foundry/auth+src/src /lib/foundry/auth
+    COPY ../../lib/foundry/client+src/src /lib/foundry/client
     COPY ../../lib/tools+src/src /lib/tools
 
     COPY go.mod go.sum .
@@ -23,7 +25,7 @@ src:
 
     CACHE --persist --sharing shared /go
 
-    COPY --dir client cmd docs internal pkg .
+    COPY --dir cmd docs internal pkg .
     RUN go generate ./...
 
     SAVE ARTIFACT . src

@@ -7,7 +7,8 @@ import (
 
 	"github.com/input-output-hk/catalyst-forge/cli/cmd/cmds/api/auth/common"
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/run"
-	"github.com/input-output-hk/catalyst-forge/foundry/api/client/users"
+	"github.com/input-output-hk/catalyst-forge/lib/foundry/client"
+	"github.com/input-output-hk/catalyst-forge/lib/foundry/client/users"
 )
 
 type ActivateCmd struct {
@@ -17,10 +18,7 @@ type ActivateCmd struct {
 	JSON   bool    `short:"j" help:"Output as prettified JSON instead of table."`
 }
 
-func (c *ActivateCmd) Run(ctx run.RunContext, cl interface {
-	Keys() *users.KeysClient
-	Users() *users.UsersClient
-}) error {
+func (c *ActivateCmd) Run(ctx run.RunContext, cl client.Client) error {
 	if c.UserID == nil && c.Email == nil {
 		return fmt.Errorf("either --user-id or --email must be specified")
 	}
@@ -42,10 +40,7 @@ func (c *ActivateCmd) Run(ctx run.RunContext, cl interface {
 }
 
 // activateUserKey activates a user key by KID.
-func (c *ActivateCmd) activateUserKey(cl interface {
-	Keys() *users.KeysClient
-	Users() *users.UsersClient
-}) (*users.UserKey, error) {
+func (c *ActivateCmd) activateUserKey(cl client.Client) (*users.UserKey, error) {
 	userKey, err := cl.Keys().GetByKid(context.Background(), c.Kid)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get user key by KID: %w", err)

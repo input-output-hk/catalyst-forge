@@ -6,7 +6,7 @@ import (
 	"strconv"
 
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/run"
-	"github.com/input-output-hk/catalyst-forge/foundry/api/client/users"
+	"github.com/input-output-hk/catalyst-forge/lib/foundry/client"
 )
 
 type ListCmd struct {
@@ -17,10 +17,7 @@ type ListCmd struct {
 	JSON      bool    `short:"j" help:"Output as prettified JSON instead of table."`
 }
 
-func (c *ListCmd) Run(ctx run.RunContext, cl interface {
-	Users() *users.UsersClient
-	Roles() *users.RolesClient
-}) error {
+func (c *ListCmd) Run(ctx run.RunContext, cl client.Client) error {
 	userSpecified := c.UserID != nil || c.UserEmail != nil
 	roleSpecified := c.RoleID != nil || c.RoleName != nil
 
@@ -40,10 +37,7 @@ func (c *ListCmd) Run(ctx run.RunContext, cl interface {
 }
 
 // listUserRoles lists roles for a specific user.
-func (c *ListCmd) listUserRoles(cl interface {
-	Users() *users.UsersClient
-	Roles() *users.RolesClient
-}) error {
+func (c *ListCmd) listUserRoles(cl client.Client) error {
 	var userID uint
 
 	if c.UserEmail != nil {
@@ -79,10 +73,7 @@ func (c *ListCmd) listUserRoles(cl interface {
 }
 
 // listRoleUsers lists users for a specific role.
-func (c *ListCmd) listRoleUsers(cl interface {
-	Users() *users.UsersClient
-	Roles() *users.RolesClient
-}) error {
+func (c *ListCmd) listRoleUsers(cl client.Client) error {
 	var roleID uint
 
 	if c.RoleName != nil {

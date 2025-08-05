@@ -6,7 +6,8 @@ import (
 
 	"github.com/input-output-hk/catalyst-forge/cli/cmd/cmds/api/auth/common"
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/run"
-	"github.com/input-output-hk/catalyst-forge/foundry/api/client/users"
+	"github.com/input-output-hk/catalyst-forge/lib/foundry/client"
+	"github.com/input-output-hk/catalyst-forge/lib/foundry/client/users"
 )
 
 type CreateCmd struct {
@@ -16,7 +17,7 @@ type CreateCmd struct {
 	JSON        bool     `short:"j" help:"Output as prettified JSON instead of table."`
 }
 
-func (c *CreateCmd) Run(ctx run.RunContext, cl interface{ Roles() *users.RolesClient }) error {
+func (c *CreateCmd) Run(ctx run.RunContext, cl client.Client) error {
 	if c.Admin && len(c.Permissions) > 0 {
 		return fmt.Errorf("only one of --admin or --permissions can be specified")
 	}
@@ -34,7 +35,7 @@ func (c *CreateCmd) Run(ctx run.RunContext, cl interface{ Roles() *users.RolesCl
 }
 
 // createRole creates a new role with the specified parameters.
-func (c *CreateCmd) createRole(cl interface{ Roles() *users.RolesClient }) (*users.Role, error) {
+func (c *CreateCmd) createRole(cl client.Client) (*users.Role, error) {
 	var role *users.Role
 	var err error
 

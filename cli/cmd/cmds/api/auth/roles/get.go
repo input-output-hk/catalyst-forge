@@ -7,7 +7,8 @@ import (
 
 	"github.com/input-output-hk/catalyst-forge/cli/cmd/cmds/api/auth/common"
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/run"
-	"github.com/input-output-hk/catalyst-forge/foundry/api/client/users"
+	"github.com/input-output-hk/catalyst-forge/lib/foundry/client"
+	"github.com/input-output-hk/catalyst-forge/lib/foundry/client/users"
 )
 
 type GetCmd struct {
@@ -16,7 +17,7 @@ type GetCmd struct {
 	JSON bool    `short:"j" help:"Output as prettified JSON instead of table."`
 }
 
-func (c *GetCmd) Run(ctx run.RunContext, cl interface{ Roles() *users.RolesClient }) error {
+func (c *GetCmd) Run(ctx run.RunContext, cl client.Client) error {
 	if c.ID == nil && c.Name == nil {
 		return fmt.Errorf("either --id or --name must be specified")
 	}
@@ -38,7 +39,7 @@ func (c *GetCmd) Run(ctx run.RunContext, cl interface{ Roles() *users.RolesClien
 }
 
 // retrieveRole retrieves a role by ID or name.
-func (c *GetCmd) retrieveRole(cl interface{ Roles() *users.RolesClient }) (*users.Role, error) {
+func (c *GetCmd) retrieveRole(cl client.Client) (*users.Role, error) {
 	if c.ID != nil {
 		id, err := strconv.ParseUint(*c.ID, 10, 32)
 		if err != nil {

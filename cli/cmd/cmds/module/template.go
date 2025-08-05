@@ -9,9 +9,9 @@ import (
 
 	"cuelang.org/go/cue"
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/run"
-	"github.com/input-output-hk/catalyst-forge/lib/project/deployment"
-	"github.com/input-output-hk/catalyst-forge/lib/project/deployment/deployer"
-	"github.com/input-output-hk/catalyst-forge/lib/project/deployment/generator"
+	"github.com/input-output-hk/catalyst-forge/lib/deployment"
+	"github.com/input-output-hk/catalyst-forge/lib/deployment/deployer"
+	"github.com/input-output-hk/catalyst-forge/lib/deployment/generator"
 )
 
 type TemplateCmd struct {

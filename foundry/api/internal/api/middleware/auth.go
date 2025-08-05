@@ -8,8 +8,8 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
-	"github.com/input-output-hk/catalyst-forge/foundry/api/pkg/auth"
-	"github.com/input-output-hk/catalyst-forge/foundry/api/pkg/auth/jwt"
+	"github.com/input-output-hk/catalyst-forge/lib/foundry/auth"
+	"github.com/input-output-hk/catalyst-forge/lib/foundry/auth/jwt"
 )
 
 // AuthenticatedUser is a struct that contains the user information from the

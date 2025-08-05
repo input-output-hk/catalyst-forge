@@ -1,0 +1,38 @@
+VERSION 0.8
+
+deps:
+    FROM golang:1.24.2-bookworm
+
+    WORKDIR /work
+
+    RUN mkdir -p /go/cache && mkdir -p /go/modcache
+    ENV GOCACHE=/go/cache
+    ENV GOMODCACHE=/go/modcache
+    CACHE --persist --sharing shared /go
+
+    COPY ../../tools+src/src /tools
+
+    COPY go.mod go.sum .
+    RUN go mod download
+
+src:
+    FROM +deps
+
+    CACHE --persist --sharing shared /go
+
+    COPY . .
+
+    RUN go generate ./...
+
+    SAVE ARTIFACT . src
+
+check:
+    FROM +src
+
+    RUN gofmt -l . | grep . && exit 1 || exit 0
+    RUN go vet ./...
+
+test:
+    FROM +src
+
+    RUN go test ./...

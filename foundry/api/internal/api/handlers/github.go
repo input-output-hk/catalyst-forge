@@ -10,9 +10,9 @@ import (
 	"github.com/input-output-hk/catalyst-forge/foundry/api/internal/api/middleware"
 	"github.com/input-output-hk/catalyst-forge/foundry/api/internal/models"
 	"github.com/input-output-hk/catalyst-forge/foundry/api/internal/service"
-	auth "github.com/input-output-hk/catalyst-forge/foundry/api/pkg/auth"
-	ghauth "github.com/input-output-hk/catalyst-forge/foundry/api/pkg/auth/github"
-	"github.com/input-output-hk/catalyst-forge/foundry/api/pkg/auth/jwt"
+	auth "github.com/input-output-hk/catalyst-forge/lib/foundry/auth"
+	ghauth "github.com/input-output-hk/catalyst-forge/lib/foundry/auth/github"
+	"github.com/input-output-hk/catalyst-forge/lib/foundry/auth/jwt"
 )
 
 // GithubRepositoryAuthResponse represents the response structure for GHA authentication

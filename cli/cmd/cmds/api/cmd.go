@@ -7,7 +7,7 @@ import (
 	"github.com/input-output-hk/catalyst-forge/cli/cmd/cmds/api/auth"
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/run"
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/utils"
-	"github.com/input-output-hk/catalyst-forge/foundry/api/client"
+	"github.com/input-output-hk/catalyst-forge/lib/foundry/client"
 )
 
 type ApiCmd struct {

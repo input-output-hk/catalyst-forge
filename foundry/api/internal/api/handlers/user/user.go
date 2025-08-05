@@ -47,6 +47,7 @@ type RegisterUserRequest struct {
 // @Tags users
 // @Accept json
 // @Produce json
+// @Security BearerAuth
 // @Param request body CreateUserRequest true "User creation request"
 // @Success 201 {object} user.User "User created successfully"
 // @Failure 400 {object} map[string]interface{} "Invalid request"
@@ -134,6 +135,7 @@ func (h *UserHandler) RegisterUser(c *gin.Context) {
 // @Description Retrieve a user by their ID
 // @Tags users
 // @Produce json
+// @Security BearerAuth
 // @Param id path string true "User ID"
 // @Success 200 {object} user.User "User found"
 // @Failure 404 {object} map[string]interface{} "User not found"
@@ -169,6 +171,7 @@ func (h *UserHandler) GetUser(c *gin.Context) {
 // @Description Retrieve a user by their email address
 // @Tags users
 // @Produce json
+// @Security BearerAuth
 // @Param email path string true "User email"
 // @Success 200 {object} user.User "User found"
 // @Failure 404 {object} map[string]interface{} "User not found"
@@ -195,6 +198,7 @@ func (h *UserHandler) GetUserByEmail(c *gin.Context) {
 // @Tags users
 // @Accept json
 // @Produce json
+// @Security BearerAuth
 // @Param id path string true "User ID"
 // @Param request body UpdateUserRequest true "User update request"
 // @Success 200 {object} user.User "User updated successfully"
@@ -255,6 +259,7 @@ func (h *UserHandler) UpdateUser(c *gin.Context) {
 // @Summary Delete a user
 // @Description Delete a user by their ID
 // @Tags users
+// @Security BearerAuth
 // @Param id path string true "User ID"
 // @Success 204 "User deleted successfully"
 // @Failure 404 {object} map[string]interface{} "User not found"
@@ -289,6 +294,7 @@ func (h *UserHandler) DeleteUser(c *gin.Context) {
 // @Description Get a list of all users in the system
 // @Tags users
 // @Produce json
+// @Security BearerAuth
 // @Success 200 {array} user.User "List of users"
 // @Failure 500 {object} map[string]interface{} "Internal server error"
 // @Router /auth/users [get]
@@ -310,6 +316,7 @@ func (h *UserHandler) ListUsers(c *gin.Context) {
 // @Description Get a list of all users with pending status
 // @Tags users
 // @Produce json
+// @Security BearerAuth
 // @Success 200 {array} user.User "List of pending users"
 // @Failure 500 {object} map[string]interface{} "Internal server error"
 // @Router /auth/pending/users [get]
@@ -330,6 +337,7 @@ func (h *UserHandler) GetPendingUsers(c *gin.Context) {
 // @Summary Activate a user
 // @Description Activate a user by setting their status to active
 // @Tags users
+// @Security BearerAuth
 // @Param id path string true "User ID"
 // @Success 200 {object} user.User "User activated successfully"
 // @Failure 404 {object} map[string]interface{} "User not found"
@@ -372,6 +380,7 @@ func (h *UserHandler) ActivateUser(c *gin.Context) {
 // @Summary Deactivate a user
 // @Description Deactivate a user by setting their status to inactive
 // @Tags users
+// @Security BearerAuth
 // @Param id path string true "User ID"
 // @Success 200 {object} user.User "User deactivated successfully"
 // @Failure 404 {object} map[string]interface{} "User not found"

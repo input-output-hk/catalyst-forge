@@ -7,8 +7,8 @@ import (
 
 	"github.com/input-output-hk/catalyst-forge/cli/cmd/cmds/api/auth/common"
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/run"
-	"github.com/input-output-hk/catalyst-forge/foundry/api/client"
-	"github.com/input-output-hk/catalyst-forge/foundry/api/client/users"
+	"github.com/input-output-hk/catalyst-forge/lib/foundry/client"
+	"github.com/input-output-hk/catalyst-forge/lib/foundry/client/users"
 )
 
 type UpdateCmd struct {

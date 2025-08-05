@@ -21,15 +21,14 @@ import (
 	userrepo "github.com/input-output-hk/catalyst-forge/foundry/api/internal/repository/user"
 	"github.com/input-output-hk/catalyst-forge/foundry/api/internal/service"
 	userservice "github.com/input-output-hk/catalyst-forge/foundry/api/internal/service/user"
-	ghauth "github.com/input-output-hk/catalyst-forge/foundry/api/pkg/auth/github"
 	"github.com/input-output-hk/catalyst-forge/foundry/api/pkg/k8s"
 	"github.com/input-output-hk/catalyst-forge/foundry/api/pkg/k8s/mocks"
-	"github.com/redis/go-redis/v9"
+	ghauth "github.com/input-output-hk/catalyst-forge/lib/foundry/auth/github"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 
 	_ "github.com/input-output-hk/catalyst-forge/foundry/api/docs"
-	"github.com/input-output-hk/catalyst-forge/foundry/api/pkg/auth/jwt"
+	"github.com/input-output-hk/catalyst-forge/lib/foundry/auth/jwt"
 )
 
 var version = "dev"
@@ -120,23 +119,9 @@ func (r *RunCmd) Run() error {
 		return err
 	}
 
-	// Initialize Redis client
-	logger.Info("Initializing Redis client", "addr", r.GetRedisAddr())
-	redisClient := redis.NewClient(&redis.Options{
-		Addr:     r.GetRedisAddr(),
-		Password: r.Redis.RedisPassword,
-		DB:       r.Redis.RedisDB,
-	})
-
 	// Test Redis connection
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-
-	if err := redisClient.Ping(ctx).Err(); err != nil {
-		logger.Error("Failed to connect to Redis", "error", err)
-		return err
-	}
-	logger.Info("Successfully connected to Redis")
 
 	// Initialize Kubernetes client if enabled
 	var k8sClient k8s.Client
@@ -213,7 +198,6 @@ func (r *RunCmd) Run() error {
 		jwtManager,
 		ghaOIDCClient,
 		ghaAuthService,
-		redisClient,
 	)
 
 	// Initialize server
@@ -244,13 +228,6 @@ func (r *RunCmd) Run() error {
 	// Shutdown the server
 	if err := server.Shutdown(ctx); err != nil {
 		logger.Error("Server forced to shutdown", "error", err)
-	}
-
-	// Close Redis connection if it was initialized
-	if redisClient != nil {
-		if err := redisClient.Close(); err != nil {
-			logger.Error("Failed to close Redis connection", "error", err)
-		}
 	}
 
 	logger.Info("Server exiting")

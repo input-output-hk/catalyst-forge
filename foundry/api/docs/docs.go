@@ -52,7 +52,7 @@ const docTemplate = `{
                     "200": {
                         "description": "Challenge created successfully",
                         "schema": {
-                            "$ref": "#/definitions/auth.KeyPairChallenge"
+                            "$ref": "#/definitions/handlers.ChallengeResponse"
                         }
                     },
                     "400": {
@@ -484,6 +484,11 @@ const docTemplate = `{
         },
         "/auth/keys": {
             "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Retrieve a list of all user keys",
                 "produces": [
                     "application/json"
@@ -502,6 +507,13 @@ const docTemplate = `{
                             }
                         }
                     },
+                    "401": {
+                        "description": "Authentication required",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
@@ -512,6 +524,11 @@ const docTemplate = `{
                 }
             },
             "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Create a new Ed25519 key for a user",
                 "consumes": [
                     "application/json"
@@ -567,6 +584,11 @@ const docTemplate = `{
         },
         "/auth/keys/kid/{kid}": {
             "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Retrieve a user key by their kid (key ID)",
                 "produces": [
                     "application/json"
@@ -589,6 +611,13 @@ const docTemplate = `{
                         "description": "User key found",
                         "schema": {
                             "$ref": "#/definitions/user.UserKey"
+                        }
+                    },
+                    "401": {
+                        "description": "Authentication required",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
                         }
                     },
                     "404": {
@@ -672,6 +701,11 @@ const docTemplate = `{
         },
         "/auth/keys/user/{user_id}": {
             "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Retrieve all keys for a specific user",
                 "produces": [
                     "application/json"
@@ -699,6 +733,13 @@ const docTemplate = `{
                             }
                         }
                     },
+                    "401": {
+                        "description": "Authentication required",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
@@ -711,6 +752,11 @@ const docTemplate = `{
         },
         "/auth/keys/user/{user_id}/active": {
             "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Get all active user keys for a specific user",
                 "produces": [
                     "application/json"
@@ -745,6 +791,13 @@ const docTemplate = `{
                             "additionalProperties": true
                         }
                     },
+                    "401": {
+                        "description": "Authentication required",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
@@ -757,6 +810,11 @@ const docTemplate = `{
         },
         "/auth/keys/user/{user_id}/inactive": {
             "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Get all inactive user keys for a specific user",
                 "produces": [
                     "application/json"
@@ -791,6 +849,13 @@ const docTemplate = `{
                             "additionalProperties": true
                         }
                     },
+                    "401": {
+                        "description": "Authentication required",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
@@ -803,6 +868,11 @@ const docTemplate = `{
         },
         "/auth/keys/{id}": {
             "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Retrieve a user key by their ID",
                 "produces": [
                     "application/json"
@@ -827,6 +897,13 @@ const docTemplate = `{
                             "$ref": "#/definitions/user.UserKey"
                         }
                     },
+                    "401": {
+                        "description": "Authentication required",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
                     "404": {
                         "description": "User key not found",
                         "schema": {
@@ -844,6 +921,11 @@ const docTemplate = `{
                 }
             },
             "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Update an existing user key's information",
                 "consumes": [
                     "application/json"
@@ -887,6 +969,13 @@ const docTemplate = `{
                             "additionalProperties": true
                         }
                     },
+                    "401": {
+                        "description": "Authentication required",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
                     "404": {
                         "description": "User key not found",
                         "schema": {
@@ -904,6 +993,11 @@ const docTemplate = `{
                 }
             },
             "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Delete a user key by their ID",
                 "tags": [
                     "user-keys"
@@ -921,6 +1015,13 @@ const docTemplate = `{
                 "responses": {
                     "204": {
                         "description": "User key deleted successfully"
+                    },
+                    "401": {
+                        "description": "Authentication required",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
                     },
                     "404": {
                         "description": "User key not found",
@@ -941,6 +1042,11 @@ const docTemplate = `{
         },
         "/auth/keys/{id}/revoke": {
             "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Revoke a user key by setting its status to revoked",
                 "tags": [
                     "user-keys"
@@ -960,6 +1066,13 @@ const docTemplate = `{
                         "description": "User key revoked successfully",
                         "schema": {
                             "$ref": "#/definitions/user.UserKey"
+                        }
+                    },
+                    "401": {
+                        "description": "Authentication required",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
                         }
                     },
                     "404": {
@@ -999,7 +1112,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/auth.KeyPairChallengeResponse"
+                            "$ref": "#/definitions/handlers.LoginRequest"
                         }
                     }
                 ],
@@ -1043,6 +1156,11 @@ const docTemplate = `{
         },
         "/auth/pending/keys": {
             "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Get all user keys with inactive status",
                 "produces": [
                     "application/json"
@@ -1061,6 +1179,13 @@ const docTemplate = `{
                             }
                         }
                     },
+                    "401": {
+                        "description": "Authentication required",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
@@ -1073,6 +1198,11 @@ const docTemplate = `{
         },
         "/auth/pending/users": {
             "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Get a list of all users with pending status",
                 "produces": [
                     "application/json"
@@ -1103,6 +1233,11 @@ const docTemplate = `{
         },
         "/auth/role-users": {
             "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Retrieve all users assigned to a specific role",
                 "produces": [
                     "application/json"
@@ -1130,6 +1265,13 @@ const docTemplate = `{
                             }
                         }
                     },
+                    "401": {
+                        "description": "Authentication required",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
                     "404": {
                         "description": "Role not found",
                         "schema": {
@@ -1149,6 +1291,11 @@ const docTemplate = `{
         },
         "/auth/roles": {
             "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Retrieve a list of all roles",
                 "produces": [
                     "application/json"
@@ -1177,6 +1324,11 @@ const docTemplate = `{
                 }
             },
             "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Create a new role with the provided information",
                 "consumes": [
                     "application/json"
@@ -1238,6 +1390,11 @@ const docTemplate = `{
         },
         "/auth/roles/name/{name}": {
             "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Retrieve a role by their name",
                 "produces": [
                     "application/json"
@@ -1281,6 +1438,11 @@ const docTemplate = `{
         },
         "/auth/roles/{id}": {
             "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Retrieve a role by their ID",
                 "produces": [
                     "application/json"
@@ -1322,6 +1484,11 @@ const docTemplate = `{
                 }
             },
             "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Update an existing role's information",
                 "consumes": [
                     "application/json"
@@ -1382,6 +1549,11 @@ const docTemplate = `{
                 }
             },
             "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Delete a role by their ID",
                 "tags": [
                     "roles"
@@ -1419,6 +1591,11 @@ const docTemplate = `{
         },
         "/auth/user-roles": {
             "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Retrieve all roles assigned to a specific user",
                 "produces": [
                     "application/json"
@@ -1446,6 +1623,13 @@ const docTemplate = `{
                             }
                         }
                     },
+                    "401": {
+                        "description": "Authentication required",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
                     "404": {
                         "description": "User not found",
                         "schema": {
@@ -1463,6 +1647,11 @@ const docTemplate = `{
                 }
             },
             "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Assign a user to a specific role",
                 "consumes": [
                     "application/json"
@@ -1528,6 +1717,11 @@ const docTemplate = `{
                 }
             },
             "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Remove a user from a specific role",
                 "tags": [
                     "user-roles"
@@ -1553,6 +1747,13 @@ const docTemplate = `{
                     "204": {
                         "description": "User removed from role successfully"
                     },
+                    "401": {
+                        "description": "Authentication required",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
                     "404": {
                         "description": "User or role not found",
                         "schema": {
@@ -1572,6 +1773,11 @@ const docTemplate = `{
         },
         "/auth/users": {
             "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Get a list of all users in the system",
                 "produces": [
                     "application/json"
@@ -1600,6 +1806,11 @@ const docTemplate = `{
                 }
             },
             "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Create a new user with the provided information",
                 "consumes": [
                     "application/json"
@@ -1655,6 +1866,11 @@ const docTemplate = `{
         },
         "/auth/users/email/{email}": {
             "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Retrieve a user by their email address",
                 "produces": [
                     "application/json"
@@ -1753,6 +1969,11 @@ const docTemplate = `{
         },
         "/auth/users/{id}": {
             "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Retrieve a user by their ID",
                 "produces": [
                     "application/json"
@@ -1794,6 +2015,11 @@ const docTemplate = `{
                 }
             },
             "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Update an existing user's information",
                 "consumes": [
                     "application/json"
@@ -1854,6 +2080,11 @@ const docTemplate = `{
                 }
             },
             "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Delete a user by their ID",
                 "tags": [
                     "users"
@@ -1891,6 +2122,11 @@ const docTemplate = `{
         },
         "/auth/users/{id}/activate": {
             "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Activate a user by setting their status to active",
                 "tags": [
                     "users"
@@ -1931,6 +2167,11 @@ const docTemplate = `{
         },
         "/auth/users/{id}/deactivate": {
             "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Deactivate a user by setting their status to inactive",
                 "tags": [
                     "users"
@@ -2029,14 +2270,8 @@ const docTemplate = `{
                         }
                     },
                     {
-                        "enum": [
-                            "true",
-                            "false",
-                            "1",
-                            "0"
-                        ],
                         "type": "string",
-                        "description": "Deploy the release immediately",
+                        "description": "Deploy the release immediately (true/false)",
                         "name": "deploy",
                         "in": "query"
                     }
@@ -2890,82 +3125,6 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "auth.KeyPairChallenge": {
-            "type": "object",
-            "properties": {
-                "challenge": {
-                    "type": "string"
-                },
-                "email": {
-                    "type": "string"
-                },
-                "expires": {
-                    "type": "string"
-                },
-                "kid": {
-                    "type": "string"
-                }
-            }
-        },
-        "auth.KeyPairChallengeResponse": {
-            "type": "object",
-            "properties": {
-                "challenge": {
-                    "type": "string"
-                },
-                "email": {
-                    "type": "string"
-                },
-                "expires": {
-                    "type": "string"
-                },
-                "kid": {
-                    "type": "string"
-                },
-                "signature": {
-                    "type": "string"
-                }
-            }
-        },
-        "auth.Permission": {
-            "type": "string",
-            "enum": [
-                "alias:read",
-                "alias:write",
-                "deployment:read",
-                "deployment:write",
-                "deployment:event:read",
-                "deployment:event:write",
-                "release:read",
-                "release:write",
-                "gha:auth:read",
-                "gha:auth:write",
-                "user:read",
-                "user:write",
-                "role:read",
-                "role:write",
-                "user:key:read",
-                "user:key:write"
-            ],
-            "x-enum-varnames": [
-                "PermAliasRead",
-                "PermAliasWrite",
-                "PermDeploymentRead",
-                "PermDeploymentWrite",
-                "PermDeploymentEventRead",
-                "PermDeploymentEventWrite",
-                "PermReleaseRead",
-                "PermReleaseWrite",
-                "PermGHAAuthRead",
-                "PermGHAAuthWrite",
-                "PermUserRead",
-                "PermUserWrite",
-                "PermRoleRead",
-                "PermRoleWrite",
-                "PermUserKeyRead",
-                "PermUserKeyWrite"
-            ]
-        },
         "handlers.AddEventRequest": {
             "type": "object",
             "required": [
@@ -2996,6 +3155,14 @@ const docTemplate = `{
                 }
             }
         },
+        "handlers.ChallengeResponse": {
+            "type": "object",
+            "properties": {
+                "token": {
+                    "type": "string"
+                }
+            }
+        },
         "handlers.CreateAliasRequest": {
             "type": "object",
             "required": [
@@ -3008,28 +3175,7 @@ const docTemplate = `{
             }
         },
         "handlers.CreateAuthRequest": {
-            "type": "object",
-            "required": [
-                "permissions",
-                "repository"
-            ],
-            "properties": {
-                "description": {
-                    "type": "string"
-                },
-                "enabled": {
-                    "type": "boolean"
-                },
-                "permissions": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/auth.Permission"
-                    }
-                },
-                "repository": {
-                    "type": "string"
-                }
-            }
+            "type": "object"
         },
         "handlers.CreateReleaseRequest": {
             "type": "object",
@@ -3096,6 +3242,17 @@ const docTemplate = `{
                 }
             }
         },
+        "handlers.LoginRequest": {
+            "type": "object",
+            "properties": {
+                "signature": {
+                    "type": "string"
+                },
+                "token": {
+                    "type": "string"
+                }
+            }
+        },
         "handlers.LoginResponse": {
             "type": "object",
             "properties": {
@@ -3105,28 +3262,7 @@ const docTemplate = `{
             }
         },
         "handlers.UpdateAuthRequest": {
-            "type": "object",
-            "required": [
-                "permissions",
-                "repository"
-            ],
-            "properties": {
-                "description": {
-                    "type": "string"
-                },
-                "enabled": {
-                    "type": "boolean"
-                },
-                "permissions": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/auth.Permission"
-                    }
-                },
-                "repository": {
-                    "type": "string"
-                }
-            }
+            "type": "object"
         },
         "handlers.UpdateReleaseRequest": {
             "type": "object",
