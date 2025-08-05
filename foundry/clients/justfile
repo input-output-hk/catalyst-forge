@@ -1,0 +1,35 @@
+# Generate all clients
+generate: go-client
+
+# Generate Go client
+go-client:
+    @echo "Generating Go client..."
+    docker run --rm \
+        -v "{{justfile_directory()}}/../api/docs:/api:ro" \
+        -v "{{justfile_directory()}}/go:/out" \
+        openapitools/openapi-generator-cli:v7.10.0 \
+        generate \
+        -i /api/swagger.yaml \
+        -g go \
+        -o /out \
+        --config /out/go-config.yaml \
+        --git-user-id input-output-hk \
+        --git-repo-id catalyst-forge/foundry/clients/go
+    @echo "Go client generation complete"
+
+# Clean generated files
+clean:
+    @echo "Cleaning generated files..."
+    @rm -rf go/api go/models go/docs go/.openapi-generator
+    @echo "Clean complete"
+
+# Test the generated client compiles
+test: go-client
+    @echo "Testing Go client compilation..."
+    @cd go && go mod tidy && go build ./...
+    @echo "Go client compilation successful"
+
+# Check if generated files are up-to-date (for CI)
+check: clean go-client
+    @echo "Checking if generated files are up-to-date..."
+    @cd go && git diff --exit-code || (echo "Generated files are not up-to-date. Run 'just generate' and commit the changes." && exit 1)

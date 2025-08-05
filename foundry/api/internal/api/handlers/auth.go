@@ -7,8 +7,8 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/input-output-hk/catalyst-forge/foundry/api/internal/service/user"
-	"github.com/input-output-hk/catalyst-forge/foundry/api/pkg/auth"
-	"github.com/input-output-hk/catalyst-forge/foundry/api/pkg/auth/jwt"
+	"github.com/input-output-hk/catalyst-forge/lib/foundry/auth"
+	"github.com/input-output-hk/catalyst-forge/lib/foundry/auth/jwt"
 )
 
 // AuthHandler handles authentication endpoints
@@ -41,6 +41,11 @@ type ChallengeRequest struct {
 	Kid   string `json:"kid" binding:"required"`
 }
 
+// ChallengeResponse represents the response body for a challenge request
+type ChallengeResponse struct {
+	Token string `json:"token"`
+}
+
 // CreateChallenge handles the POST /auth/challenge endpoint
 // @Summary Create a new authentication challenge
 // @Description Create a new challenge for user authentication using Ed25519 keys
@@ -48,7 +53,7 @@ type ChallengeRequest struct {
 // @Accept json
 // @Produce json
 // @Param request body ChallengeRequest true "Challenge creation request"
-// @Success 200 {object} auth.KeyPairChallenge "Challenge created successfully"
+// @Success 200 {object} ChallengeResponse "Challenge created successfully"
 // @Failure 400 {object} map[string]interface{} "Invalid request"
 // @Failure 404 {object} map[string]interface{} "User key not found"
 // @Failure 500 {object} map[string]interface{} "Internal server error"
@@ -81,18 +86,8 @@ func (h *AuthHandler) CreateChallenge(c *gin.Context) {
 		return
 	}
 
-	// Convert user key to KeyPair
-	keyPair, err := userKey.ToKeyPair()
-	if err != nil {
-		h.logger.Error("Failed to convert user key to key pair", "error", err, "kid", req.Kid)
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": "Failed to process user key",
-		})
-		return
-	}
-
-	// Generate challenge with 60 second duration
-	challenge, err := keyPair.GenerateChallenge(req.Email, 60*time.Second)
+	// Generate challenge JWT with 60 second duration
+	challenge, _, err := h.jwtManager.GenerateChallengeJWT(req.Email, req.Kid, 60*time.Second)
 	if err != nil {
 		h.logger.Error("Failed to generate challenge", "error", err, "kid", req.Kid)
 		c.JSON(http.StatusInternalServerError, gin.H{
@@ -101,28 +96,25 @@ func (h *AuthHandler) CreateChallenge(c *gin.Context) {
 		return
 	}
 
-	// Store challenge in Redis cache
-	challengeID, err := h.authManager.SaveChallenge(challenge)
-	if err != nil {
-		h.logger.Error("Failed to save challenge", "error", err, "kid", req.Kid)
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": "Failed to save challenge",
-		})
-		return
-	}
-
 	h.logger.Info("Challenge created successfully",
-		"challenge_id", challengeID,
 		"kid", req.Kid,
 		"email", req.Email)
 
-	// Return the challenge to the user
-	c.JSON(http.StatusOK, challenge)
+	// Return the challenge token to the user
+	c.JSON(http.StatusOK, ChallengeResponse{
+		Token: challenge,
+	})
 }
 
 // LoginResponse represents the response body for authentication
 type LoginResponse struct {
 	Token string `json:"token"`
+}
+
+// LoginRequest represents the request body for authentication
+type LoginRequest struct {
+	Token     string `json:"token"`
+	Signature string `json:"signature"`
 }
 
 // Login handles the POST /auth/login endpoint
@@ -131,7 +123,7 @@ type LoginResponse struct {
 // @Tags auth
 // @Accept json
 // @Produce json
-// @Param request body auth.KeyPairChallengeResponse true "Login request"
+// @Param request body LoginRequest true "Login request"
 // @Success 200 {object} LoginResponse "Authentication successful"
 // @Failure 400 {object} map[string]interface{} "Invalid request"
 // @Failure 401 {object} map[string]interface{} "Authentication failed"
@@ -139,7 +131,7 @@ type LoginResponse struct {
 // @Failure 500 {object} map[string]interface{} "Internal server error"
 // @Router /auth/login [post]
 func (h *AuthHandler) Login(c *gin.Context) {
-	var req auth.KeyPairChallengeResponse
+	var req LoginRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		h.logger.Warn("Invalid request body", "error", err)
 		c.JSON(http.StatusBadRequest, gin.H{
@@ -148,84 +140,58 @@ func (h *AuthHandler) Login(c *gin.Context) {
 		return
 	}
 
-	// Get challenge ID and lookup the original challenge
-	challengeID := req.ID()
-	originalChallenge, err := h.authManager.LookupChallenge(challengeID)
+	// Validate the challenge token
+	claims, err := h.jwtManager.ValidateChallengeJWT(req.Token)
 	if err != nil {
-		h.logger.Error("Failed to lookup challenge", "error", err, "challenge_id", challengeID)
-		c.JSON(http.StatusNotFound, gin.H{
-			"error": "Challenge not found or expired",
-		})
-		return
-	}
-
-	// Validate that the challenge response fields match the original challenge
-	if req.Challenge != originalChallenge.Challenge ||
-		req.Email != originalChallenge.Email ||
-		req.KeyID != originalChallenge.KeyID {
-		h.logger.Error("Challenge response fields do not match original challenge",
-			"challenge_id", challengeID,
-			"original_challenge", originalChallenge.Challenge,
-			"response_challenge", req.Challenge)
+		h.logger.Error("Failed to validate challenge token", "error", err)
 		c.JSON(http.StatusUnauthorized, gin.H{
-			"error": "Challenge response validation failed",
+			"error": "Challenge validation failed",
 		})
-		// Clean up challenge regardless of failure
-		h.authManager.RemoveChallenge(challengeID)
 		return
 	}
 
 	// Lookup the user key using the kid
-	userKey, err := h.userKeyService.GetUserKeyByKid(req.KeyID)
+	userKey, err := h.userKeyService.GetUserKeyByKid(claims.Kid)
 	if err != nil {
-		h.logger.Error("Failed to get user key by kid", "error", err, "kid", req.KeyID)
+		h.logger.Error("Failed to get user key by kid", "error", err, "kid", claims.Kid)
 		c.JSON(http.StatusNotFound, gin.H{
 			"error": "User key not found",
 		})
-		// Clean up challenge regardless of failure
-		h.authManager.RemoveChallenge(challengeID)
 		return
 	}
 
 	// Convert user key to KeyPair
 	keyPair, err := userKey.ToKeyPair()
 	if err != nil {
-		h.logger.Error("Failed to convert user key to key pair", "error", err, "kid", req.KeyID)
+		h.logger.Error("Failed to convert user key to key pair", "error", err, "kid", claims.Kid)
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": "Failed to process user key",
 		})
-		// Clean up challenge regardless of failure
-		h.authManager.RemoveChallenge(challengeID)
 		return
 	}
 
 	// Verify the challenge response
-	if err := keyPair.VerifyChallenge(&req); err != nil {
-		h.logger.Error("Challenge verification failed", "error", err, "kid", req.KeyID)
+	if err := keyPair.VerifySignature(claims.Nonce, req.Signature); err != nil {
+		h.logger.Error("Challenge verification failed", "error", err, "kid", claims.Kid)
 		c.JSON(http.StatusUnauthorized, gin.H{
 			"error": "Challenge verification failed",
 		})
-		// Clean up challenge regardless of failure
-		h.authManager.RemoveChallenge(challengeID)
 		return
 	}
 
 	// Lookup the user from the challenge response
-	user, err := h.userService.GetUserByEmail(req.Email)
+	user, err := h.userService.GetUserByEmail(claims.Email)
 	if err != nil {
-		h.logger.Error("Failed to get user by email", "error", err, "email", req.Email)
+		h.logger.Error("Failed to get user by email", "error", err, "email", claims.Email)
 		c.JSON(http.StatusNotFound, gin.H{
 			"error": "User not found",
 		})
-		// Clean up challenge regardless of failure
-		h.authManager.RemoveChallenge(challengeID)
 		return
 	}
 
 	// Verify that the user key belongs to the user
 	if userKey.UserID != user.ID {
-		h.logger.Warn("kid does not belong to user", "kid", req.KeyID, "user_id", user.ID)
-		h.authManager.RemoveChallenge(challengeID)
+		h.logger.Warn("kid does not belong to user", "kid", claims.Kid, "user_id", user.ID)
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid credentials"})
 		return
 	}
@@ -241,8 +207,6 @@ func (h *AuthHandler) Login(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": "Failed to retrieve user permissions",
 		})
-		// Clean up challenge regardless of failure
-		h.authManager.RemoveChallenge(challengeID)
 		return
 	}
 
@@ -284,18 +248,12 @@ func (h *AuthHandler) Login(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": "Failed to generate authentication token",
 		})
-		// Clean up challenge regardless of failure
-		h.authManager.RemoveChallenge(challengeID)
 		return
 	}
 
 	h.logger.Info("User authenticated successfully",
 		"user_id", user.ID,
-		"email", user.Email,
-		"challenge_id", challengeID)
-
-	// Clean up challenge after successful authentication
-	h.authManager.RemoveChallenge(challengeID)
+		"email", user.Email)
 
 	// Return the JWT token
 	c.JSON(http.StatusOK, LoginResponse{

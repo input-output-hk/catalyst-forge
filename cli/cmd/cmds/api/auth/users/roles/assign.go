@@ -6,7 +6,7 @@ import (
 	"strconv"
 
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/run"
-	"github.com/input-output-hk/catalyst-forge/foundry/api/client/users"
+	"github.com/input-output-hk/catalyst-forge/lib/foundry/client"
 )
 
 type AssignCmd struct {
@@ -16,10 +16,7 @@ type AssignCmd struct {
 	RoleName  *string `short:"n" help:"The name of the role to assign (mutually exclusive with --role-id)."`
 }
 
-func (c *AssignCmd) Run(ctx run.RunContext, cl interface {
-	Users() *users.UsersClient
-	Roles() *users.RolesClient
-}) error {
+func (c *AssignCmd) Run(ctx run.RunContext, cl client.Client) error {
 	if c.UserID == nil && c.UserEmail == nil {
 		return fmt.Errorf("either --user-id or --user-email must be specified")
 	}
@@ -40,10 +37,7 @@ func (c *AssignCmd) Run(ctx run.RunContext, cl interface {
 }
 
 // assignUserToRole assigns a user to a role.
-func (c *AssignCmd) assignUserToRole(cl interface {
-	Users() *users.UsersClient
-	Roles() *users.RolesClient
-}) error {
+func (c *AssignCmd) assignUserToRole(cl client.Client) error {
 	var userID uint
 
 	if c.UserEmail != nil {

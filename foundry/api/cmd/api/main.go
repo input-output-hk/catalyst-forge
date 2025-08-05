@@ -21,7 +21,7 @@ import (
 	userrepo "github.com/input-output-hk/catalyst-forge/foundry/api/internal/repository/user"
 	"github.com/input-output-hk/catalyst-forge/foundry/api/internal/service"
 	userservice "github.com/input-output-hk/catalyst-forge/foundry/api/internal/service/user"
-	ghauth "github.com/input-output-hk/catalyst-forge/foundry/api/pkg/auth/github"
+	ghauth "github.com/input-output-hk/catalyst-forge/lib/foundry/auth/github"
 	"github.com/input-output-hk/catalyst-forge/foundry/api/pkg/k8s"
 	"github.com/input-output-hk/catalyst-forge/foundry/api/pkg/k8s/mocks"
 	"github.com/redis/go-redis/v9"
@@ -29,7 +29,7 @@ import (
 	"gorm.io/gorm"
 
 	_ "github.com/input-output-hk/catalyst-forge/foundry/api/docs"
-	"github.com/input-output-hk/catalyst-forge/foundry/api/pkg/auth/jwt"
+	"github.com/input-output-hk/catalyst-forge/lib/foundry/auth/jwt"
 )
 
 var version = "dev"

@@ -9,7 +9,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/input-output-hk/catalyst-forge/foundry/api/internal/models/user"
 	userservice "github.com/input-output-hk/catalyst-forge/foundry/api/internal/service/user"
-	"github.com/input-output-hk/catalyst-forge/foundry/api/pkg/auth"
+	"github.com/input-output-hk/catalyst-forge/lib/foundry/auth"
 )
 
 // RoleHandler handles role endpoints

@@ -9,8 +9,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/input-output-hk/catalyst-forge/foundry/api/client/deployments"
-	"github.com/input-output-hk/catalyst-forge/foundry/api/client/releases"
+	"github.com/input-output-hk/catalyst-forge/lib/foundry/client/deployments"
+	"github.com/input-output-hk/catalyst-forge/lib/foundry/client/releases"
 )
 
 func TestDeploymentAPI(t *testing.T) {

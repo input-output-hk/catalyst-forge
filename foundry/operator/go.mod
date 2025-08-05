@@ -9,7 +9,7 @@ require (
 	github.com/adrg/xdg v0.5.3
 	github.com/go-git/go-billy/v5 v5.5.0
 	github.com/go-git/go-git/v5 v5.12.0
-	github.com/input-output-hk/catalyst-forge/foundry/api v0.0.0
+	github.com/input-output-hk/catalyst-forge/lib/foundry/client v0.0.0
 	github.com/input-output-hk/catalyst-forge/lib/project v0.0.0
 	github.com/input-output-hk/catalyst-forge/lib/providers v0.0.0
 	github.com/input-output-hk/catalyst-forge/lib/schema v0.0.0
@@ -117,6 +117,7 @@ require (
 	github.com/gofrs/flock v0.12.1 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang-collections/collections v0.0.0-20130729185459-604e922904d3 // indirect
+	github.com/golang-jwt/jwt/v5 v5.2.3 // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/golang/protobuf v1.5.4 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
@@ -146,6 +147,7 @@ require (
 	github.com/hashicorp/go-version v1.7.0 // indirect
 	github.com/huandu/xstrings v1.5.0 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
+	github.com/input-output-hk/catalyst-forge/lib/foundry/auth v0.0.0-00010101000000-000000000000 // indirect
 	github.com/jbenet/go-context v0.0.0-20150711004518-d14ea06fba99 // indirect
 	github.com/jinzhu/copier v0.4.0 // indirect
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
@@ -282,3 +284,7 @@ replace github.com/input-output-hk/catalyst-forge/lib/schema => ../../lib/schema
 replace github.com/input-output-hk/catalyst-forge/lib/tools => ../../lib/tools
 
 replace github.com/input-output-hk/catalyst-forge/foundry/api => ../api
+
+replace github.com/input-output-hk/catalyst-forge/lib/foundry/client => ../../lib/foundry/client
+
+replace github.com/input-output-hk/catalyst-forge/lib/foundry/auth => ../../lib/foundry/auth

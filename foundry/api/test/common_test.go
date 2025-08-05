@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/input-output-hk/catalyst-forge/foundry/api/client"
+	"github.com/input-output-hk/catalyst-forge/lib/foundry/client"
 )
 
 // newTestClient creates a new client for testing with default configuration

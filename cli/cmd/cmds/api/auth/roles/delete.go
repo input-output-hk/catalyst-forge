@@ -6,7 +6,7 @@ import (
 	"strconv"
 
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/run"
-	"github.com/input-output-hk/catalyst-forge/foundry/api/client/users"
+	"github.com/input-output-hk/catalyst-forge/lib/foundry/client"
 )
 
 type DeleteCmd struct {
@@ -14,7 +14,7 @@ type DeleteCmd struct {
 	Name *string `short:"n" help:"The name of the role to delete (mutually exclusive with --id)."`
 }
 
-func (c *DeleteCmd) Run(ctx run.RunContext, cl interface{ Roles() *users.RolesClient }) error {
+func (c *DeleteCmd) Run(ctx run.RunContext, cl client.Client) error {
 	if c.ID == nil && c.Name == nil {
 		return fmt.Errorf("either --id or --name must be specified")
 	}
@@ -40,7 +40,7 @@ func (c *DeleteCmd) Run(ctx run.RunContext, cl interface{ Roles() *users.RolesCl
 }
 
 // deleteRole deletes a role by ID or name.
-func (c *DeleteCmd) deleteRole(cl interface{ Roles() *users.RolesClient }) error {
+func (c *DeleteCmd) deleteRole(cl client.Client) error {
 	var roleID uint
 
 	if c.Name != nil {

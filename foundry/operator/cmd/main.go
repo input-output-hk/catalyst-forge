@@ -42,7 +42,7 @@ import (
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 
-	api "github.com/input-output-hk/catalyst-forge/foundry/api/client"
+	api "github.com/input-output-hk/catalyst-forge/lib/foundry/client"
 	foundryv1alpha1 "github.com/input-output-hk/catalyst-forge/foundry/operator/api/v1alpha1"
 	"github.com/input-output-hk/catalyst-forge/foundry/operator/internal/controller"
 	"github.com/input-output-hk/catalyst-forge/foundry/operator/pkg/config"

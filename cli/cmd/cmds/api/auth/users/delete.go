@@ -6,7 +6,7 @@ import (
 	"strconv"
 
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/run"
-	"github.com/input-output-hk/catalyst-forge/foundry/api/client/users"
+	"github.com/input-output-hk/catalyst-forge/lib/foundry/client"
 )
 
 type DeleteCmd struct {
@@ -14,7 +14,7 @@ type DeleteCmd struct {
 	Email *string `short:"e" help:"The email of the user to delete (mutually exclusive with --id)."`
 }
 
-func (c *DeleteCmd) Run(ctx run.RunContext, cl interface{ Users() *users.UsersClient }) error {
+func (c *DeleteCmd) Run(ctx run.RunContext, cl client.Client) error {
 	if c.ID == nil && c.Email == nil {
 		return fmt.Errorf("either --id or --email must be specified")
 	}
@@ -40,7 +40,7 @@ func (c *DeleteCmd) Run(ctx run.RunContext, cl interface{ Users() *users.UsersCl
 }
 
 // deleteUser deletes a user by ID or email.
-func (c *DeleteCmd) deleteUser(cl interface{ Users() *users.UsersClient }) error {
+func (c *DeleteCmd) deleteUser(cl client.Client) error {
 	var userID uint
 
 	if c.Email != nil {

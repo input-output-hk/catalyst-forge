@@ -7,7 +7,8 @@ import (
 
 	"github.com/input-output-hk/catalyst-forge/cli/cmd/cmds/api/auth/common"
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/run"
-	"github.com/input-output-hk/catalyst-forge/foundry/api/client/users"
+	"github.com/input-output-hk/catalyst-forge/lib/foundry/client"
+	"github.com/input-output-hk/catalyst-forge/lib/foundry/client/users"
 )
 
 type UpdateCmd struct {
@@ -18,7 +19,7 @@ type UpdateCmd struct {
 	JSON        bool     `short:"j" help:"Output as prettified JSON instead of table."`
 }
 
-func (c *UpdateCmd) Run(ctx run.RunContext, cl interface{ Roles() *users.RolesClient }) error {
+func (c *UpdateCmd) Run(ctx run.RunContext, cl client.Client) error {
 	if c.ID == nil && c.Name == nil {
 		return fmt.Errorf("either --id or --name must be specified")
 	}
@@ -40,7 +41,7 @@ func (c *UpdateCmd) Run(ctx run.RunContext, cl interface{ Roles() *users.RolesCl
 }
 
 // updateRole updates a role by ID or name.
-func (c *UpdateCmd) updateRole(cl interface{ Roles() *users.RolesClient }) (*users.Role, error) {
+func (c *UpdateCmd) updateRole(cl client.Client) (*users.Role, error) {
 	var roleID uint
 
 	if c.Name != nil {

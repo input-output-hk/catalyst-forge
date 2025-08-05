@@ -9,7 +9,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/input-output-hk/catalyst-forge/foundry/api/client/releases"
+	"github.com/input-output-hk/catalyst-forge/lib/foundry/client/releases"
 )
 
 func TestAliasAPI(t *testing.T) {

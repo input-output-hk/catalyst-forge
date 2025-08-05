@@ -3,7 +3,7 @@ package user
 import (
 	"time"
 
-	"github.com/input-output-hk/catalyst-forge/foundry/api/pkg/auth"
+	"github.com/input-output-hk/catalyst-forge/lib/foundry/auth"
 	"github.com/lib/pq"
 	"gorm.io/gorm"
 )

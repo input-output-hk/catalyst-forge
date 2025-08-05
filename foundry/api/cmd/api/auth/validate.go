@@ -3,7 +3,7 @@ package auth
 import (
 	"fmt"
 
-	"github.com/input-output-hk/catalyst-forge/foundry/api/pkg/auth/jwt"
+	"github.com/input-output-hk/catalyst-forge/lib/foundry/auth/jwt"
 )
 
 type ValidateCmd struct {

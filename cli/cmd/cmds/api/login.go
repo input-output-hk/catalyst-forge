@@ -9,10 +9,10 @@ import (
 	"github.com/input-output-hk/catalyst-forge/cli/internal/ux"
 	"github.com/input-output-hk/catalyst-forge/cli/internal/validator"
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/run"
-	"github.com/input-output-hk/catalyst-forge/foundry/api/client"
-	"github.com/input-output-hk/catalyst-forge/foundry/api/client/auth"
-	"github.com/input-output-hk/catalyst-forge/foundry/api/client/github"
-	authpkg "github.com/input-output-hk/catalyst-forge/foundry/api/pkg/auth"
+	"github.com/input-output-hk/catalyst-forge/lib/foundry/client"
+	"github.com/input-output-hk/catalyst-forge/lib/foundry/client/auth"
+	"github.com/input-output-hk/catalyst-forge/lib/foundry/client/github"
+	authpkg "github.com/input-output-hk/catalyst-forge/lib/foundry/auth"
 )
 
 type LoginCmd struct {
@@ -121,7 +121,7 @@ func (c *LoginCmd) interactiveFoundryLogin(ctx run.RunContext, cl client.Client)
 		return "", fmt.Errorf("failed to load key pair: %w", err)
 	}
 
-	var challenge *authpkg.KeyPairChallenge
+	var challenge *auth.ChallengeResponse
 	err = ux.NewSpinner().
 		Title("Requesting login challenge...").
 		Action(func() {
@@ -134,11 +134,11 @@ func (c *LoginCmd) interactiveFoundryLogin(ctx run.RunContext, cl client.Client)
 		return "", fmt.Errorf("failed to create challenge: %w", err)
 	}
 
-	var challengeResponse *authpkg.KeyPairChallengeResponse
+	var loginRequest *authpkg.LoginRequest
 	err = ux.NewSpinner().
 		Title("Signing login challenge...").
 		Action(func() {
-			challengeResponse, err = kp.SignChallenge(challenge)
+			loginRequest, err = kp.SignChallenge(challenge.Token)
 		}).Run()
 	if err != nil {
 		return "", fmt.Errorf("failed to sign challenge: %w", err)
@@ -148,7 +148,10 @@ func (c *LoginCmd) interactiveFoundryLogin(ctx run.RunContext, cl client.Client)
 	err = ux.NewSpinner().
 		Title("Logging in...").
 		Action(func() {
-			resp, err = cl.Auth().Login(context.Background(), challengeResponse)
+			resp, err = cl.Auth().Login(context.Background(), &auth.LoginRequest{
+				Token:     loginRequest.Challenge,
+				Signature: loginRequest.Signature,
+			})
 		}).Run()
 	if err != nil {
 		return "", fmt.Errorf("failed to login: %w", err)

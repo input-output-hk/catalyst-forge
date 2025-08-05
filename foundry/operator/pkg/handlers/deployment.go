@@ -7,9 +7,9 @@ import (
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/input-output-hk/catalyst-forge/foundry/api/client"
-	"github.com/input-output-hk/catalyst-forge/foundry/api/client/deployments"
-	"github.com/input-output-hk/catalyst-forge/foundry/api/client/releases"
+	"github.com/input-output-hk/catalyst-forge/lib/foundry/client"
+	"github.com/input-output-hk/catalyst-forge/lib/foundry/client/deployments"
+	"github.com/input-output-hk/catalyst-forge/lib/foundry/client/releases"
 	foundryv1alpha1 "github.com/input-output-hk/catalyst-forge/foundry/operator/api/v1alpha1"
 	"github.com/input-output-hk/catalyst-forge/foundry/operator/pkg/util"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
