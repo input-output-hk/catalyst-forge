@@ -148,14 +148,16 @@ async function run() {
           hasRejections = true;
 
           const sortedPaths = jsonResult.sort();
-          const maxPathsToShow = parseInt(maxPaths); // Limit output to prevent truncation
+          const maxPathsToShow = parseInt(maxPaths, 10); // Limit output to prevent truncation
+
+          core.info(
+            `Found ${sortedPaths.length} matches, showing up to ${maxPathsToShow}`,
+          );
 
           rejectionOutput += `❌ ${message}:\n`;
-          for (
-            let i = 0;
-            i < Math.min(sortedPaths.length, maxPathsToShow);
-            i++
-          ) {
+          const pathsToShow = Math.min(sortedPaths.length, maxPathsToShow);
+
+          for (let i = 0; i < pathsToShow; i++) {
             // Clean up path by removing leading ./
             let cleanPath = sortedPaths[i];
             if (cleanPath.startsWith("./")) {
