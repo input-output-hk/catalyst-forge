@@ -25,20 +25,20 @@ const (
 
 // ManifestGeneratorStore is a store of manifest generator providers.
 type ManifestGeneratorStore struct {
-	store map[Provider]func(*slog.Logger) ManifestGenerator
+	store map[Provider]func(*slog.Logger) (ManifestGenerator, error)
 }
 
 // NewDefaultManifestGeneratorStore returns a new ManifestGeneratorStore with the default providers.
 func NewDefaultManifestGeneratorStore() ManifestGeneratorStore {
 	return ManifestGeneratorStore{
-		store: map[Provider]func(*slog.Logger) ManifestGenerator{
-			ProviderGit: func(logger *slog.Logger) ManifestGenerator {
-				return git.NewGitManifestGenerator(logger)
+		store: map[Provider]func(*slog.Logger) (ManifestGenerator, error){
+			ProviderGit: func(logger *slog.Logger) (ManifestGenerator, error) {
+				return git.NewGitManifestGenerator(logger), nil
 			},
-			ProviderHelm: func(logger *slog.Logger) ManifestGenerator {
+			ProviderHelm: func(logger *slog.Logger) (ManifestGenerator, error) {
 				return helm.NewHelmManifestGenerator(logger)
 			},
-			ProviderKCL: func(logger *slog.Logger) ManifestGenerator {
+			ProviderKCL: func(logger *slog.Logger) (ManifestGenerator, error) {
 				return kcl.NewKCLManifestGenerator(logger)
 			},
 		},
@@ -46,14 +46,14 @@ func NewDefaultManifestGeneratorStore() ManifestGeneratorStore {
 }
 
 // NewManifestGeneratorStore returns a new ManifestGeneratorStore with the given providers.
-func NewManifestGeneratorStore(store map[Provider]func(*slog.Logger) ManifestGenerator) ManifestGeneratorStore {
+func NewManifestGeneratorStore(store map[Provider]func(*slog.Logger) (ManifestGenerator, error)) ManifestGeneratorStore {
 	return ManifestGeneratorStore{store: store}
 }
 
 // NewGenerator returns a new ManifestGenerator client for the given provider.
 func (s ManifestGeneratorStore) NewGenerator(logger *slog.Logger, p Provider) (ManifestGenerator, error) {
 	if f, ok := s.store[p]; ok {
-		return f(logger), nil
+		return f(logger)
 	}
 
 	return nil, fmt.Errorf("unknown deployment module type: %s", p)

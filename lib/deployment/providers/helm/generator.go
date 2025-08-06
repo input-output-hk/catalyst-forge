@@ -5,54 +5,52 @@ import (
 	"log/slog"
 
 	"cuelang.org/go/cue"
-	"github.com/input-output-hk/catalyst-forge/lib/deployment/providers/helm/downloader"
+	"github.com/input-output-hk/catalyst-forge/lib/external/helm"
 	sp "github.com/input-output-hk/catalyst-forge/lib/schema/blueprint/project"
-	"helm.sh/helm/v3/pkg/action"
-	"helm.sh/helm/v3/pkg/chart/loader"
+	"github.com/input-output-hk/catalyst-forge/lib/tools/executor"
 )
 
 type HelmManifestGenerator struct {
-	downloader downloader.ChartDownloader
-	logger     *slog.Logger
+	client helm.Client
+	logger *slog.Logger
 }
 
 func (h *HelmManifestGenerator) Generate(mod sp.Module, raw cue.Value, env string) ([]byte, error) {
-	client := action.NewInstall(&action.Configuration{})
-
-	client.ReleaseName = mod.Instance
-	client.Namespace = mod.Namespace
-
-	client.ClientOnly = true
-	client.DisableHooks = true
-	client.DryRun = true
-	client.IncludeCRDs = true
-
-	data, err := h.downloader.Download(mod.Registry, mod.Name, mod.Version)
-	if err != nil {
-		return nil, fmt.Errorf("failed to download chart: %w", err)
-	}
-
-	chart, err := loader.LoadArchive(data)
-	if err != nil {
-		return nil, fmt.Errorf("failed to load chart archive: %w", err)
-	}
-
 	values, ok := mod.Values.(map[string]interface{})
 	if !ok {
 		return nil, fmt.Errorf("failed to assert mod.Values to map[string]interface{}")
 	}
 
-	rel, err := client.Run(chart, values)
-	if err != nil {
-		return nil, fmt.Errorf("failed to run client: %w", err)
+	config := helm.TemplateConfig{
+		ReleaseName: mod.Instance,
+		Namespace:   mod.Namespace,
+		ChartURL:    mod.Registry,
+		ChartName:   mod.Name,
+		Version:     mod.Version,
+		Values:      values,
 	}
 
-	return []byte(rel.Manifest), nil
+	manifest, err := h.client.Template(config)
+	if err != nil {
+		return nil, fmt.Errorf("failed to template chart: %w", err)
+	}
+
+	return []byte(manifest), nil
 }
 
-func NewHelmManifestGenerator(logger *slog.Logger) *HelmManifestGenerator {
-	return &HelmManifestGenerator{
-		downloader: downloader.NewDefaultChartDownloader(logger),
-		logger:     logger,
+func NewHelmManifestGenerator(logger *slog.Logger) (*HelmManifestGenerator, error) {
+	if logger == nil {
+		logger = slog.Default()
 	}
+
+	exec := executor.NewLocalExecutor(logger)
+	client, err := helm.NewBinaryClient(exec, logger)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create Helm client: %w", err)
+	}
+
+	return &HelmManifestGenerator{
+		client: client,
+		logger: logger,
+	}, nil
 }

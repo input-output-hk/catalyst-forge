@@ -1,4 +1,4 @@
-package client
+package kcl
 
 import (
 	"fmt"
@@ -6,8 +6,8 @@ import (
 	"cuelang.org/go/cue/cuecontext"
 )
 
-// KCLModuleConfig contains the configuration given to a KCL module.
-type KCLModuleConfig struct {
+// ModuleConfig contains the configuration given to a KCL module.
+type ModuleConfig struct {
 	Env       string `json:"env"`
 	Instance  string `json:"instance"`
 	Name      string `json:"name"`
@@ -16,7 +16,8 @@ type KCLModuleConfig struct {
 	Version   string `json:"version"`
 }
 
-func (k *KCLModuleConfig) ToArgs() ([]string, error) {
+// ToArgs converts the module configuration to KCL command line arguments.
+func (k *ModuleConfig) ToArgs() ([]string, error) {
 	ctx := cuecontext.New()
 	v := ctx.Encode(k)
 	if v.Err() != nil {

@@ -9,8 +9,9 @@ import (
 
 	"cuelang.org/go/cue"
 	"github.com/BurntSushi/toml"
-	"github.com/input-output-hk/catalyst-forge/lib/deployment/providers/kcl/client"
+	"github.com/input-output-hk/catalyst-forge/lib/external/kcl"
 	sp "github.com/input-output-hk/catalyst-forge/lib/schema/blueprint/project"
+	"github.com/input-output-hk/catalyst-forge/lib/tools/executor"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/fs"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/fs/billy"
 )
@@ -29,13 +30,13 @@ type KCLModulePackage struct {
 
 // KCLManifestGenerator is a ManifestGenerator that uses KCL.
 type KCLManifestGenerator struct {
-	client client.KCLClient
+	client kcl.Client
 	fs     fs.Filesystem
 	logger *slog.Logger
 }
 
 func (g *KCLManifestGenerator) Generate(mod sp.Module, raw cue.Value, env string) ([]byte, error) {
-	var conf client.KCLModuleConfig
+	var conf kcl.ModuleConfig
 	var path string
 	if mod.Path != "" {
 		g.logger.Info("Parsing local KCL module", "path", mod.Path)
@@ -45,7 +46,7 @@ func (g *KCLManifestGenerator) Generate(mod sp.Module, raw cue.Value, env string
 		}
 
 		path = mod.Path
-		conf = client.KCLModuleConfig{
+		conf = kcl.ModuleConfig{
 			Env:       env,
 			Instance:  mod.Instance,
 			Name:      kmod.Package.Name,
@@ -55,7 +56,7 @@ func (g *KCLManifestGenerator) Generate(mod sp.Module, raw cue.Value, env string
 		}
 	} else {
 		path = fmt.Sprintf("oci://%s/%s?tag=%s", strings.TrimSuffix(mod.Registry, "/"), mod.Name, mod.Version)
-		conf = client.KCLModuleConfig{
+		conf = kcl.ModuleConfig{
 			Env:       env,
 			Instance:  mod.Instance,
 			Name:      mod.Name,
@@ -98,14 +99,20 @@ func (g *KCLManifestGenerator) parseModule(path string) (KCLModule, error) {
 }
 
 // NewKCLManifestGenerator creates a new KCL manifest generator.
-func NewKCLManifestGenerator(logger *slog.Logger) *KCLManifestGenerator {
+func NewKCLManifestGenerator(logger *slog.Logger) (*KCLManifestGenerator, error) {
 	if logger == nil {
 		logger = slog.New(slog.NewTextHandler(io.Discard, nil))
 	}
 
+	exec := executor.NewLocalExecutor(logger)
+	client, err := kcl.NewBinaryClient(exec, logger)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create KCL client: %w", err)
+	}
+
 	return &KCLManifestGenerator{
-		client: client.KPMClient{},
+		client: client,
 		fs:     billy.NewBaseOsFS(),
 		logger: logger,
-	}
+	}, nil
 }
