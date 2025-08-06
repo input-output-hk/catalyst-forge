@@ -17,7 +17,7 @@ import (
 	"oras.land/oras-go/v2/registry/remote"
 )
 
-//go:generate go run github.com/matryer/moq@latest -skip-ensure -pkg mocks -out mocks/client.go . OrasClient
+//go:generate go run github.com/matryer/moq@latest -skip-ensure -pkg mocks -out mocks/client.go . Client
 
 // Client is the interface for the OCI client
 type Client interface {
