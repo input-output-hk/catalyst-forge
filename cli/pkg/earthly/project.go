@@ -7,12 +7,12 @@ import (
 
 	"cuelang.org/go/cue"
 	"cuelang.org/go/cue/cuecontext"
-	"github.com/input-output-hk/catalyst-forge/cli/pkg/executor"
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/run"
 	"github.com/input-output-hk/catalyst-forge/lib/project/project"
 	"github.com/input-output-hk/catalyst-forge/lib/providers/secrets"
 	"github.com/input-output-hk/catalyst-forge/lib/schema"
 	sp "github.com/input-output-hk/catalyst-forge/lib/schema/blueprint/project"
+	"github.com/input-output-hk/catalyst-forge/lib/tools/executor"
 )
 
 var (
@@ -162,6 +162,7 @@ func NewDefaultProjectRunner(
 	e := executor.NewLocalExecutor(
 		ctx.Logger,
 		executor.WithRedirect(),
+		executor.WithColors(),
 	)
 
 	return DefaultProjectRunner{

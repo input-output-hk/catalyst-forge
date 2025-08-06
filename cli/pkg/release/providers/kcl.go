@@ -5,11 +5,11 @@ import (
 	"log/slog"
 
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/events"
-	"github.com/input-output-hk/catalyst-forge/cli/pkg/executor"
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/run"
 	"github.com/input-output-hk/catalyst-forge/lib/project/project"
 	"github.com/input-output-hk/catalyst-forge/lib/providers/aws"
 	sp "github.com/input-output-hk/catalyst-forge/lib/schema/blueprint/project"
+	"github.com/input-output-hk/catalyst-forge/lib/tools/executor"
 )
 
 const (
@@ -95,7 +95,7 @@ func NewKCLReleaser(ctx run.RunContext,
 		return nil, fmt.Errorf("failed to create ECR client: %w", err)
 	}
 
-	kcl := executor.NewLocalWrappedExecutor(exec, "kcl")
+	kcl := executor.NewWrappedLocalExecutor(exec, "kcl")
 	handler := events.NewDefaultEventHandler(ctx.Logger)
 	return &KCLReleaser{
 		config:      config,

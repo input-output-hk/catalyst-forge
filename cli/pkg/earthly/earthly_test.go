@@ -5,10 +5,10 @@ import (
 	"log/slog"
 	"testing"
 
-	emocks "github.com/input-output-hk/catalyst-forge/cli/pkg/executor/mocks"
 	"github.com/input-output-hk/catalyst-forge/lib/providers/secrets"
 	smocks "github.com/input-output-hk/catalyst-forge/lib/providers/secrets/mocks"
 	sc "github.com/input-output-hk/catalyst-forge/lib/schema/blueprint/common"
+	emocks "github.com/input-output-hk/catalyst-forge/lib/tools/executor/mocks"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/testutils"
 	"github.com/stretchr/testify/assert"
 )

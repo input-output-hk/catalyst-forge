@@ -7,11 +7,11 @@ import (
 
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/earthly"
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/events"
-	"github.com/input-output-hk/catalyst-forge/cli/pkg/executor"
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/run"
 	"github.com/input-output-hk/catalyst-forge/lib/project/project"
 	"github.com/input-output-hk/catalyst-forge/lib/providers/aws"
 	sp "github.com/input-output-hk/catalyst-forge/lib/schema/blueprint/project"
+	"github.com/input-output-hk/catalyst-forge/lib/tools/executor"
 )
 
 const (
@@ -236,7 +236,7 @@ func NewDockerReleaser(
 		return nil, fmt.Errorf("failed to create ECR client: %w", err)
 	}
 
-	docker := executor.NewLocalWrappedExecutor(exec, "docker")
+	docker := executor.NewWrappedLocalExecutor(exec, "docker")
 	handler := events.NewDefaultEventHandler(ctx.Logger)
 	runner := earthly.NewDefaultProjectRunner(ctx, &project)
 	return &DockerReleaser{
