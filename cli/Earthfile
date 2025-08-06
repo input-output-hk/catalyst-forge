@@ -1,7 +1,7 @@
 VERSION 0.8
 
 deps:
-    FROM golang:1.24.2-bookworm
+    FROM golang:1.24.5-bookworm
 
     WORKDIR /work
 
@@ -13,9 +13,10 @@ deps:
     CACHE --persist --sharing shared /go
 
     COPY ../foundry/api+src/src /foundry/api
+    COPY ../lib/deployment+src/src /lib/deployment
     COPY ../lib/external/helm+src/src /lib/external/helm
     COPY ../lib/external/kcl+src/src /lib/external/kcl
-    COPY ../lib/deployment+src/src /lib/deployment
+    COPY ../lib/oci+src/src /lib/oci
     COPY ../lib/foundry/auth+src/src /lib/foundry/auth
     COPY ../lib/foundry/client+src/src /lib/foundry/client
     COPY ../lib/project+src/src /lib/project

@@ -245,12 +245,19 @@ func main() {
 
 	jwtTokenStr := strings.TrimSpace(string(jwtToken))
 	apiClient := api.NewClient(cfg.Api.Url, api.WithTimeout(10*time.Second), api.WithToken(jwtTokenStr))
+
+	manifestStore, err := deployment.NewDefaultManifestGeneratorStore()
+	if err != nil {
+		setupLog.Error(err, "unable to create manifest store")
+		os.Exit(1)
+	}
+
 	if err = (&controller.ReleaseDeploymentReconciler{
 		Client:            mgr.GetClient(),
 		Config:            cfg,
 		DeploymentHandler: handlers.NewReleaseDeploymentHandler(context.Background(), apiClient, mgr.GetClient()),
 		Logger:            logger,
-		ManifestStore:     deployment.NewDefaultManifestGeneratorStore(),
+		ManifestStore:     manifestStore,
 		Remote:            remote.GoGitRemoteInteractor{},
 		RepoHandler: handlers.NewRepoHandler(
 			billy.NewBaseOsFS(),

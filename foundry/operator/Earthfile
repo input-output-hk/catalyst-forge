@@ -1,7 +1,7 @@
 VERSION 0.8
 
 deps:
-    FROM golang:1.24.2-bookworm
+    FROM golang:1.24.5-bookworm
     WORKDIR /work/operator
 
     ARG CONTROLLER_GEN_VERSION=v0.17.2
@@ -30,11 +30,12 @@ deps:
 
     # Copy local deps
     COPY ../api+src/src /work/api
+    COPY ../../lib/deployment+src/src /lib/deployment
     COPY ../../lib/external/helm+src/src /lib/external/helm
     COPY ../../lib/external/kcl+src/src /lib/external/kcl
     COPY ../../lib/foundry/auth+src/src /lib/foundry/auth
     COPY ../../lib/foundry/client+src/src /lib/foundry/client
-    COPY ../../lib/deployment+src/src /lib/deployment
+    COPY ../../lib/oci+src/src /lib/oci
     COPY ../../lib/project+src/src /lib/project
     COPY ../../lib/providers+src/src /lib/providers
     COPY ../../lib/schema+src/src /lib/schema

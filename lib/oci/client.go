@@ -15,6 +15,9 @@ import (
 	ocispec "github.com/opencontainers/image-spec/specs-go/v1"
 	"oras.land/oras-go/v2"
 	"oras.land/oras-go/v2/registry/remote"
+	"oras.land/oras-go/v2/registry/remote/auth"
+	"oras.land/oras-go/v2/registry/remote/credentials"
+	"oras.land/oras-go/v2/registry/remote/retry"
 )
 
 //go:generate go run github.com/matryer/moq@latest -skip-ensure -pkg mocks -out mocks/client.go . Client
@@ -207,6 +210,19 @@ func (c *OrasClient) Pull(imageURL, destPath string) error {
 	repo, err := remote.NewRepository(imageURL)
 	if err != nil {
 		return fmt.Errorf("failed to create repository for %s: %w", imageURL, err)
+	}
+
+	// Configure Docker credential helpers
+	storeOpts := credentials.StoreOptions{}
+	credStore, err := credentials.NewStoreFromDocker(storeOpts)
+	if err != nil {
+		return fmt.Errorf("failed to create credential store: %w", err)
+	}
+	
+	repo.Client = &auth.Client{
+		Client:     retry.DefaultClient,
+		Cache:      auth.NewCache(),
+		Credential: credentials.Credential(credStore),
 	}
 
 	manifestDesc, err := oras.Copy(c.ctx, repo, imageURL, c.store, imageURL, oras.DefaultCopyOptions)

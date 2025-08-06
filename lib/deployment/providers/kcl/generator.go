@@ -99,13 +99,13 @@ func (g *KCLManifestGenerator) parseModule(path string) (KCLModule, error) {
 }
 
 // NewKCLManifestGenerator creates a new KCL manifest generator.
-func NewKCLManifestGenerator(logger *slog.Logger) (*KCLManifestGenerator, error) {
+func NewKCLManifestGenerator(logger *slog.Logger, kclOpts ...kcl.Option) (*KCLManifestGenerator, error) {
 	if logger == nil {
 		logger = slog.New(slog.NewTextHandler(io.Discard, nil))
 	}
 
 	exec := executor.NewLocalExecutor(logger)
-	client, err := kcl.NewBinaryClient(exec, logger)
+	client, err := kcl.NewBinaryClient(exec, logger, kclOpts...)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create KCL client: %w", err)
 	}
