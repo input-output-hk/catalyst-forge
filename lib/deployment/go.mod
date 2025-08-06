@@ -1,8 +1,6 @@
 module github.com/input-output-hk/catalyst-forge/lib/deployment
 
-go 1.24.3
-
-toolchain go1.24.5
+go 1.24.5
 
 require (
 	cuelang.org/go v0.12.1

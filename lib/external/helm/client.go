@@ -80,21 +80,21 @@ func (c *BinaryClient) Template(config TemplateConfig) (string, error) {
 // pullChart downloads the Helm chart to the specified path.
 func (c *BinaryClient) pullChart(config TemplateConfig, chartPath string) error {
 	args := []string{"pull"}
-	
+
 	// Add repository URL and chart name
 	chartRef := fmt.Sprintf("%s/%s", strings.TrimSuffix(config.ChartURL, "/"), config.ChartName)
 	args = append(args, chartRef)
-	
+
 	// Add version if specified
 	if config.Version != "" {
 		args = append(args, "--version", config.Version)
 	}
-	
+
 	// Extract to the temp directory
 	args = append(args, "--untar", "--untardir", filepath.Dir(chartPath))
 
 	c.logger.Debug("Pulling Helm chart", "chartRef", chartRef, "version", config.Version)
-	
+
 	output, err := c.executor.Execute(args...)
 	if err != nil {
 		c.logger.Error("Helm pull command failed", "args", args, "output", string(output), "error", err)
@@ -119,13 +119,13 @@ func (c *BinaryClient) templateChart(config TemplateConfig, chartPath string) (s
 	}
 
 	// Additional template options to match the original behavior
-	args = append(args, 
+	args = append(args,
 		"--include-crds",
 		"--skip-tests",
 	)
 
 	c.logger.Debug("Templating Helm chart", "releaseName", config.ReleaseName, "chartPath", chartPath)
-	
+
 	output, err := c.executor.Execute(args...)
 	if err != nil {
 		c.logger.Error("Helm template command failed", "args", args, "output", string(output), "error", err)

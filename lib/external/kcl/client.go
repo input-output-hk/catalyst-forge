@@ -171,21 +171,21 @@ func (c *BinaryClient) cacheOCIModule(ociPath string) (string, error) {
 func (c *BinaryClient) parseOCIURL(ociPath string) (string, error) {
 	// Strip the "oci://" prefix
 	urlStr := strings.TrimPrefix(ociPath, "oci://")
-	
+
 	// Parse the URL to handle query parameters
 	parsedURL, err := url.Parse("https://" + urlStr)
 	if err != nil {
 		return "", fmt.Errorf("failed to parse URL: %w", err)
 	}
-	
+
 	// Get the base registry and repository path
 	baseURL := parsedURL.Host + parsedURL.Path
-	
+
 	// Check for tag in query parameters
 	if tag := parsedURL.Query().Get("tag"); tag != "" {
 		return baseURL + ":" + tag, nil
 	}
-	
+
 	// If no tag in query params, return as-is (may have tag in path already)
 	return baseURL, nil
 }
