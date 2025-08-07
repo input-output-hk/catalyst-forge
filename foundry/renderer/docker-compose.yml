@@ -1,13 +1,24 @@
 services:
+  certs:
+    image: certs:latest
+    volumes:
+      - certs:/certs:rw
+
   registry:
     image: registry:2
     environment:
       REGISTRY_STORAGE_FILESYSTEM_ROOTDIRECTORY: /data
       REGISTRY_HTTP_ADDR: 0.0.0.0:5000
+      REGISTRY_HTTP_TLS_CERTIFICATE: /certs/registry.crt
+      REGISTRY_HTTP_TLS_KEY: /certs/registry.key
     volumes:
       - registry-data:/data
+      - certs:/certs:ro
+    depends_on:
+      certs:
+        condition: service_completed_successfully
     healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:5000/v2/"]
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "--no-check-certificate", "https://localhost:5000/v2/"]
       interval: 5s
       timeout: 3s
       retries: 10
@@ -19,6 +30,8 @@ services:
       REGISTRY_URL: registry:5000
       MODULE_NAME: example-app
       MODULE_VERSION: v1.0.0
+    volumes:
+      - certs:/certs:ro
     depends_on:
       registry:
         condition: service_healthy
@@ -26,12 +39,19 @@ services:
 
   renderer:
     image: renderer:latest
-    command: ["serve", "--port", "8080", "--debug", "--cache-path", "/tmp/kcl-cache"]
+    entrypoint: ["/usr/local/bin/renderer"]
     environment:
+      CACHE_PATH: /tmp/kcl-cache
+      DEBUG: "true"
       GRPC_GO_LOG_VERBOSITY_LEVEL: 99
       GRPC_GO_LOG_SEVERITY_LEVEL: info
+      PORT: 8080
+    ports:
+      - 8080:8080
     volumes:
       - renderer-cache:/tmp/kcl-cache
+      - certs:/certs:ro
+      - ./test/scripts/renderer.sh:/usr/local/bin/renderer:ro
     depends_on:
       kcl-publisher:
         condition: service_completed_successfully
@@ -43,17 +63,17 @@ services:
       retries: 3
       start_period: 10s
 
-  integration-test:
-    image: integration-test:latest
+  renderer-test:
+    image: renderer-test:latest
     environment:
       RENDERER_URL: renderer:8080
       REGISTRY_URL: registry:5000
       MODULE_NAME: example-app
       MODULE_VERSION: v1.0.0
-    depends_on:
-      renderer:
-        condition: service_healthy
+    volumes:
+      - certs:/certs:ro
 
 volumes:
+  certs:
   registry-data:
   renderer-cache:

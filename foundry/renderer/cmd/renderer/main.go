@@ -22,10 +22,10 @@ type CLI struct {
 }
 
 type ServeCmd struct {
-	Port      int    `short:"p" help:"gRPC server port" default:"8080"`
-	LogJSON   bool   `help:"Enable JSON logging"`
-	Debug     bool   `short:"d" help:"Enable debug logging"`
-	CachePath string `short:"c" help:"Path to cache directory for KCL OCI modules" default:"/tmp/renderer-cache"`
+	Port      int    `short:"p" help:"gRPC server port" default:"8080" env:"PORT"`
+	LogJSON   bool   `help:"Enable JSON logging" env:"LOG_JSON"`
+	Debug     bool   `short:"d" help:"Enable debug logging" env:"DEBUG"`
+	CachePath string `short:"c" help:"Path to cache directory for KCL OCI modules" default:"/tmp/renderer-cache" env:"CACHE_PATH"`
 }
 
 type VersionCmd struct{}
