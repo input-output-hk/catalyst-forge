@@ -1,4 +1,4 @@
-package providers
+package common
 
 import (
 	"context"
@@ -82,7 +82,7 @@ func Test_createECRRepoIfNotExists(t *testing.T) {
 				Path: "path",
 			}
 
-			err := createECRRepoIfNotExists(client, &project, tt.registry, testutils.NewNoopLogger())
+			err := CreateECRRepoIfNotExists(client, &project, tt.registry, testutils.NewNoopLogger())
 			tt.validate(t, testResults{
 				err:            err,
 				createParams:   createParams,

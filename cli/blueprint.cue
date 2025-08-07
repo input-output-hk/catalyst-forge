@@ -17,10 +17,24 @@ project: {
 	}
 	release: {
 		github: {
+			target: "github"
 			on: tag: {}
 			config: {
 				name:   string | *"dev" @forge(name="GIT_TAG")
 				prefix: project.name
+				brew: {
+					template: "go-v1"
+					description: "Catalyst Forge CLI - A tool for building and deploying Catalyst projects"
+					binary_name: "forge"
+					templates: {
+						repository: "https://github.com/input-output-hk/catalyst-forge.git"
+						branch: "master"
+					}
+					tap: {
+						repository: "https://github.com/input-output-hk/catalyst-brew.git"
+						branch: "main"
+					}
+				}
 			}
 		}
 	}
