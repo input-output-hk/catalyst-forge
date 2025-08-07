@@ -66,10 +66,10 @@ github:
 
     ARG TARGETOS
     ARG TARGETARCH
-    ARG TARGETPLATFORM
+    ARG USERPLATFORM
 
     COPY \
-        --platform=$TARGETPLATFORM \
+        --platform=$USERPLATFORM \
         (+build/forge \
         --GOOS=$TARGETOS \
         --GOARCH=$TARGETARCH \
