@@ -1,0 +1,47 @@
+# Catalyst Forge Documentation Commands
+# Requires: uv, just
+
+# Show available commands
+default:
+    @just --list
+
+# Install dependencies
+install:
+    uv sync
+
+# Serve documentation locally with live reload
+serve port="8000":
+    uv run mkdocs serve --dev-addr=127.0.0.1:{{port}}
+
+# Build documentation for production
+build:
+    uv run mkdocs build
+
+# Clean build artifacts
+clean:
+    rm -rf site/
+    uv cache clean
+
+# Validate configuration and links
+test:
+    uv run mkdocs build --strict
+    @echo "✅ Configuration validated successfully"
+
+# Check for broken links in built site
+check-links: build
+    @echo "🔍 Checking for broken links..."
+    # Add link checker command when needed
+
+# Format configuration files
+fmt:
+    @echo "📝 Formatting configuration files..."
+    # Add formatting commands when needed
+
+# Update dependencies
+update:
+    uv lock --upgrade
+    @echo "📦 Dependencies updated. Review uv.lock changes."
+
+# Serve with specific configuration for CI/testing
+serve-ci:
+    uv run mkdocs serve --dev-addr=0.0.0.0:8000 --no-livereload

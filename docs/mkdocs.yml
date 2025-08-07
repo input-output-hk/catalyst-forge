@@ -6,22 +6,34 @@ copyright: © 2024 Input Output Global Ltd.
 docs_dir: src
 
 nav:
-  - Overview: index.md
-  - News: blog/index.md
-  - Installation: installation.md
-  - Tutorials:
-    - Getting Started: tutorials/getting_started.md
-  - Concepts:
-    - Projects: concepts/projects.md
-    - CI: concepts/ci.md
+  - Introduction: index.md
+  - Getting Started:
+      - getting-started/index.md
+      - Installation: getting-started/installation.md
+      - Your First Project: getting-started/first-project.md
+  - How-to Guides:
+      - how-to/index.md
+      - Building Projects: how-to/building.md
+      - Managing Secrets: how-to/secrets.md
+      - Deploying Applications: how-to/deploying.md
+      - Setting up CI/CD: how-to/ci-cd.md
   - Reference:
-    - Blueprints: reference/blueprint.md
-    - Deployments: reference/deployments.md
-    - Releases:
-      - Overview: reference/releases/index.md
-      - Docker: reference/releases/docker.md
-      - GitHub: reference/releases/github.md
-    - Targets: reference/targets.md
+      - reference/index.md
+      - CLI Commands: reference/cli.md
+      - API Endpoints: reference/api.md
+      - Blueprint Schema: reference/blueprints.md
+      - Configuration Options: reference/config.md
+  - Concepts:
+      - concepts/index.md
+      - Project System: concepts/projects.md
+      - Blueprint System: concepts/blueprints.md
+      - Deployment Flow: concepts/deployments.md
+      - Authentication: concepts/authentication.md
+  - Advanced:
+      - advanced/index.md
+      - Kubernetes Integration: advanced/kubernetes.md
+      - Certificate Management: advanced/certificates.md
+      - Troubleshooting: advanced/troubleshooting.md
 
 theme:
   name: material
@@ -29,34 +41,100 @@ theme:
     logo: material/anvil
   palette:
     - scheme: default
-      media: "(prefers-color-scheme: light)"
-      primary: deep orange
+      primary: deep purple
+      accent: purple
       toggle:
         icon: material/brightness-7
         name: Switch to dark mode
     - scheme: slate
-      media: "(prefers-color-scheme: dark)"
-      primary: blue grey
+      primary: deep purple
+      accent: purple
       toggle:
         icon: material/brightness-4
         name: Switch to light mode
   features:
-    - content.tooltips
+    # Navigation
+    - navigation.tabs
+    - navigation.tabs.sticky
+    - navigation.sections
+    - navigation.path
+    - navigation.indexes
     - navigation.instant
     - navigation.instant.prefetch
     - navigation.instant.progress
+    - navigation.top
+    - navigation.footer
     - navigation.tracking
+
+    # Content
+    - content.code.copy
+    - content.code.annotate
+    - content.tooltips
+    - content.action.edit
+
+    # Search
+    - search.highlight
+    - search.share
+    - search.suggest
 
 markdown_extensions:
   - abbr
-  - attr_list
   - admonition
+  - attr_list
+  - def_list
+  - footnotes
+  - md_in_html
+  - toc:
+      permalink: true
+  - pymdownx.arithmatex:
+      generic: true
+  - pymdownx.betterem:
+      smart_enable: all
+  - pymdownx.caret
   - pymdownx.details
+  - pymdownx.emoji:
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.keys
+  - pymdownx.magiclink:
+      normalize_issue_symbols: true
+      repo_url_shorthand: true
+      user: input-output-hk
+      repo: catalyst-forge
+  - pymdownx.mark
+  - pymdownx.smartsymbols
   - pymdownx.snippets
-  - pymdownx.superfences
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.tabbed:
+      alternate_style: true
+      combine_header_slug: true
+      slugify: !!python/object/apply:pymdownx.slugs.slugify
+        kwds:
+          case: lower
+  - pymdownx.tasklist:
+      custom_checkbox: true
+  - pymdownx.tilde
+
+extra_css:
+  - assets/stylesheets/extra.css
 
 plugins:
-  - blog:
-      archive: false
-      categories: false
+  - search
   - tags
+  - panzoom
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/input-output-hk/catalyst-forge
+      name: GitHub Repository
+  generator: false

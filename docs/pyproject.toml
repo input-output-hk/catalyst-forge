@@ -5,7 +5,8 @@ description = "Catalyst Forge documentation"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
-    "mkdocs-material>=9.5.34",
+    "mkdocs-material[imaging]>=9.5.34",
+    "mkdocs-panzoom-plugin>=0.3.0",
 ]
 
 [tool.uv]

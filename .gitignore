@@ -4,6 +4,10 @@ debug.log
 # Node
 node_modules
 
+# MkDocs
+docs/site/
+docs/.venv/
+
 # .vscode ignore local changes to config, but not the recommended settings/launch/extensions
 /.vscode/*
 !/.vscode/extensions.json
@@ -16,4 +20,5 @@ node_modules
 .ai/
 .claude/
 .cursor/
+.claudeignore
 CLAUDE.md
