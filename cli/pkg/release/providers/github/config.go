@@ -3,6 +3,7 @@ package github
 type GitRepoConfig struct {
 	Repository string `json:"repository"`
 	Branch     string `json:"branch"`
+	Path       string `json:"path,omitempty"`
 }
 
 type BrewConfig struct {

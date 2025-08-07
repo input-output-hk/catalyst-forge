@@ -5,9 +5,11 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	gb "github.com/go-git/go-billy/v5"
 	gg "github.com/go-git/go-git/v5"
+	gg_object "github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/go-git/go-git/v5/storage"
 	tu "github.com/input-output-hk/catalyst-forge/lib/deployment/utils/test"
 	"github.com/input-output-hk/catalyst-forge/lib/project/project"
@@ -29,7 +31,7 @@ func TestBrewDeployer_Deploy(t *testing.T) {
 		cfg          ReleaseConfig
 		assets       map[string]string
 		archiveFiles map[string][]byte
-		validate     func(t *testing.T, workFs fs.Filesystem, gitFs fs.Filesystem, remote *rm.GitRemoteInteractorMock, err error)
+		validate     func(t *testing.T, workFs fs.Filesystem, templateFs fs.Filesystem, tapFs fs.Filesystem, remote *rm.GitRemoteInteractorMock, err error)
 	}{
 		{
 			name: "full brew release",
@@ -58,17 +60,17 @@ func TestBrewDeployer_Deploy(t *testing.T) {
 				"/tmp/my-cli-linux-amd64.tar.gz":  []byte("linux amd64 content"),
 				"/tmp/my-cli-linux-arm64.tar.gz":  []byte("linux arm64 content"),
 			},
-			validate: func(t *testing.T, workFs fs.Filesystem, gitFs fs.Filesystem, remote *rm.GitRemoteInteractorMock, err error) {
+			validate: func(t *testing.T, workFs fs.Filesystem, templateFs fs.Filesystem, tapFs fs.Filesystem, remote *rm.GitRemoteInteractorMock, err error) {
 				require.NoError(t, err)
 
-				// Verify the recipe file was created in the git filesystem
-				recipePath := "/repo/Formula/my-cli.rb"
-				exists, err := gitFs.Exists(recipePath)
+				// Verify the recipe file was created in the tap filesystem
+				recipePath := "/tmp/tap-repo/Formula/my-cli.rb"
+				exists, err := tapFs.Exists(recipePath)
 				require.NoError(t, err)
 				assert.True(t, exists, "recipe file should be written to the tap repo")
 
 				// Verify the content of the recipe file
-				content, err := gitFs.ReadFile(recipePath)
+				content, err := tapFs.ReadFile(recipePath)
 				require.NoError(t, err)
 				recipeContent := string(content)
 
@@ -101,7 +103,7 @@ func TestBrewDeployer_Deploy(t *testing.T) {
 				assert.Equal(t, 1, len(remote.CloneCalls()), "Clone should be called once")
 				cloneCall := remote.CloneCalls()[0]
 				assert.Equal(t, "https://github.com/test-org/homebrew-tap.git", cloneCall.O.URL)
-				assert.Equal(t, "main", cloneCall.O.ReferenceName.String())
+				assert.Equal(t, "", cloneCall.O.ReferenceName.String())
 				assert.Equal(t, 1, cloneCall.O.Depth)
 				assert.NotNil(t, cloneCall.O.Auth, "authentication should be set")
 
@@ -133,19 +135,57 @@ func TestBrewDeployer_Deploy(t *testing.T) {
 			archiveFiles: map[string][]byte{
 				"/tmp/tool-darwin-amd64.tar.gz": []byte("tool archive content"),
 			},
-			validate: func(t *testing.T, workFs fs.Filesystem, gitFs fs.Filesystem, remote *rm.GitRemoteInteractorMock, err error) {
+			validate: func(t *testing.T, workFs fs.Filesystem, templateFs fs.Filesystem, tapFs fs.Filesystem, remote *rm.GitRemoteInteractorMock, err error) {
 				require.NoError(t, err)
 
 				// Verify the recipe file was created
-				recipePath := "/repo/Formula/tool.rb"
-				exists, err := gitFs.Exists(recipePath)
+				recipePath := "/tmp/tap-repo/Formula/tool.rb"
+				exists, err := tapFs.Exists(recipePath)
 				require.NoError(t, err)
 				assert.True(t, exists, "recipe file should be written to the tap repo")
 
 				// Verify Clone was called with develop branch
 				assert.Equal(t, 1, len(remote.CloneCalls()))
 				cloneCall := remote.CloneCalls()[0]
-				assert.Equal(t, "develop", cloneCall.O.ReferenceName.String())
+				assert.Equal(t, "", cloneCall.O.ReferenceName.String())
+			},
+		},
+		{
+			name: "brew release with missing target branch",
+			cfg: ReleaseConfig{
+				Prefix: "branch-test",
+				Name:   "BranchTest",
+				Brew: &BrewConfig{
+					Template:    "go-v1",
+					Description: "Test with missing branch",
+					BinaryName:  "branch-test",
+					Tap: GitRepoConfig{
+						Repository: "https://github.com/org/homebrew-tap.git",
+						Branch:     "nonexistent-branch", // This branch doesn't exist
+					},
+				},
+			},
+			assets: map[string]string{
+				"darwin/amd64": "https://github.com/org/branch-test/releases/download/v1.0.0/branch-test-darwin-amd64.tar.gz",
+			},
+			archiveFiles: map[string][]byte{
+				"/tmp/branch-test-darwin-amd64.tar.gz": []byte("branch test content"),
+			},
+			validate: func(t *testing.T, workFs fs.Filesystem, templateFs fs.Filesystem, tapFs fs.Filesystem, remote *rm.GitRemoteInteractorMock, err error) {
+				require.NoError(t, err)
+
+				// Verify the recipe file was created
+				recipePath := "/tmp/tap-repo/Formula/branch-test.rb"
+				exists, err := tapFs.Exists(recipePath)
+				require.NoError(t, err)
+				assert.True(t, exists, "recipe file should be written to the tap repo")
+
+				// Verify Clone was called once for tap repo (this test uses HTTP templates, not git)
+				assert.Equal(t, 1, len(remote.CloneCalls()), "Should have one clone call for tap repo only")
+
+				// The tap repository clone should be without branch specification (default branch)
+				tapClone := remote.CloneCalls()[0] // Only call is for tap repo
+				assert.Equal(t, "", tapClone.O.ReferenceName.String(), "Tap repo should be cloned without branch specification")
 			},
 		},
 		{
@@ -160,6 +200,7 @@ func TestBrewDeployer_Deploy(t *testing.T) {
 					Templates: &GitRepoConfig{
 						Repository: "https://github.com/input-output-hk/catalyst-forge.git",
 						Branch:     "master",
+						Path:       "templates/brew",
 					},
 					Tap: GitRepoConfig{
 						Repository: "https://github.com/org/homebrew-tap.git",
@@ -173,17 +214,17 @@ func TestBrewDeployer_Deploy(t *testing.T) {
 			archiveFiles: map[string][]byte{
 				"/tmp/app-darwin-amd64.tar.gz": []byte("app archive content"),
 			},
-			validate: func(t *testing.T, workFs fs.Filesystem, gitFs fs.Filesystem, remote *rm.GitRemoteInteractorMock, err error) {
+			validate: func(t *testing.T, workFs fs.Filesystem, templateFs fs.Filesystem, tapFs fs.Filesystem, remote *rm.GitRemoteInteractorMock, err error) {
 				require.NoError(t, err)
 
 				// Verify the recipe file was created
-				recipePath := "/repo/Formula/app.rb"
-				exists, err := gitFs.Exists(recipePath)
+				recipePath := "/tmp/tap-repo/Formula/app.rb"
+				exists, err := tapFs.Exists(recipePath)
 				require.NoError(t, err)
 				assert.True(t, exists, "recipe file should be written to the tap repo")
 
 				// Verify the content uses the correct template structure with .Assets
-				content, err := gitFs.ReadFile(recipePath)
+				content, err := tapFs.ReadFile(recipePath)
 				require.NoError(t, err)
 				recipeContent := string(content)
 				assert.Contains(t, recipeContent, `class App < Formula`)
@@ -201,7 +242,7 @@ func TestBrewDeployer_Deploy(t *testing.T) {
 				// Second call should be for tap repository
 				tapClone := remote.CloneCalls()[1]
 				assert.Equal(t, "https://github.com/org/homebrew-tap.git", tapClone.O.URL)
-				assert.Equal(t, "main", tapClone.O.ReferenceName.String())
+				assert.Equal(t, "", tapClone.O.ReferenceName.String())
 			},
 		},
 	}
@@ -234,9 +275,10 @@ end`)
 				tt.cfg.Brew.TemplatesUrl = ts.URL
 			}
 
-			// Create separate filesystems for work and git
+			// Create separate filesystems for work, templates, and tap operations
 			workFs := billy.NewInMemoryFs()
-			gitFs := billy.NewInMemoryFs()
+			templateFs := billy.NewInMemoryFs()
+			tapFs := billy.NewInMemoryFs()
 
 			// Create the archive files in the work filesystem
 			for path, content := range tt.archiveFiles {
@@ -254,6 +296,43 @@ end`)
 			remote := &rm.GitRemoteInteractorMock{
 				CloneFunc: func(s storage.Storer, worktree gb.Filesystem, o *gg.CloneOptions) (*gg.Repository, error) {
 					repo, err := gg.Init(s, worktree)
+					if err != nil {
+						return nil, err
+					}
+
+					// Create an initial commit for all repositories so there's a HEAD reference
+					// This is needed for NewBranch() to work properly
+					wt, err := repo.Worktree()
+					if err != nil {
+						return nil, err
+					}
+					
+					// Create a simple file and commit it
+					file, err := worktree.Create("README.md")
+					if err != nil {
+						return nil, err
+					}
+					_, err = file.Write([]byte("Initial commit"))
+					if err != nil {
+						return nil, err
+					}
+					file.Close()
+					
+					_, err = wt.Add("README.md")
+					if err != nil {
+						return nil, err
+					}
+					
+					_, err = wt.Commit("Initial commit", &gg.CommitOptions{
+						Author: &gg_object.Signature{
+							Name:  "Test",
+							Email: "test@example.com",
+							When:  time.Now(),
+						},
+					})
+					if err != nil {
+						return nil, err
+					}
 
 					// For the git template test case, write the template file to the first clone (template repo)
 					if tt.name == "brew release with git template repository" && cloneCallCount == 0 {
@@ -293,7 +372,12 @@ end`)
     system "#{bin}/{{ .BinaryName }}", "--version"
   end
 end`
-						file, err := worktree.Create("go-v1.rb.tpl")
+						// Create the directory structure for the template
+						err := worktree.MkdirAll("templates/brew", 0755)
+						if err != nil {
+							return nil, err
+						}
+						file, err := worktree.Create("templates/brew/go-v1.rb.tpl")
 						if err != nil {
 							return nil, err
 						}
@@ -322,6 +406,8 @@ end`
 			projectName := "my-cli"
 			if tt.name == "brew release with custom template URL" {
 				projectName = "tool"
+			} else if tt.name == "brew release with missing target branch" {
+				projectName = "branch-test"
 			} else if tt.name == "brew release with git template repository" {
 				projectName = "app"
 			}
@@ -351,17 +437,21 @@ end`
 			if tt.name == "brew release with custom template URL" {
 				p.Blueprint.Global.Repo.Name = "org/tool"
 				p.Tag.Full = "v1.0.0"
+			} else if tt.name == "brew release with missing target branch" {
+				p.Blueprint.Global.Repo.Name = "org/branch-test"
+				p.Tag.Full = "v1.0.0"
 			} else if tt.name == "brew release with git template repository" {
 				p.Blueprint.Global.Repo.Name = "org/app"
 				p.Tag.Full = "v2.0.0"
 			}
 
-			// Create deployer with both filesystems using NewBrewDeployer
+			// Create deployer with separate filesystems using NewBrewDeployer
 			deployer := NewBrewDeployer(
 				&tt.cfg,
 				"/tmp",
 				WithFilesystem(workFs),
-				WithGitFilesystem(gitFs),
+				WithTemplateFilesystem(templateFs),
+				WithTapFilesystem(tapFs),
 				WithSecretsStore(ss),
 				WithLogger(logger),
 				WithRemote(remote),
@@ -372,7 +462,7 @@ end`
 			err := deployer.Deploy("release", tt.assets)
 
 			// Validate results
-			tt.validate(t, workFs, gitFs, remote, err)
+			tt.validate(t, workFs, templateFs, tapFs, remote, err)
 		})
 	}
 }
@@ -644,7 +734,12 @@ func TestBrewDeployer_fetchTemplateFromGit(t *testing.T) {
     bin.install "{{ .BinaryName }}"
   end
 end`
-						file, err := worktree.Create("go-v1.rb.tpl")
+						// Create the directory structure for the template
+						err := worktree.MkdirAll("templates/brew", 0755)
+						if err != nil {
+							return nil, err
+						}
+						file, err := worktree.Create("templates/brew/go-v1.rb.tpl")
 						if err != nil {
 							return nil, err
 						}
@@ -666,11 +761,13 @@ end`
 						Templates: &GitRepoConfig{
 							Repository: "https://github.com/input-output-hk/catalyst-forge.git",
 							Branch:     tt.branch,
+							Path:       "templates/brew",
 						},
 					},
 				},
-				logger: logger,
-				remote: remote,
+				templateFs: billy.NewInMemoryFs(),
+				logger:     logger,
+				remote:     remote,
 			}
 
 			result, err := deployer.fetchTemplateFromGit()

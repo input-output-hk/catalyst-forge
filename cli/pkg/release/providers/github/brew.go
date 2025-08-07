@@ -47,7 +47,8 @@ type BrewAsset struct {
 type BrewDeployer struct {
 	cfg          *ReleaseConfig
 	fs           fs.Filesystem
-	gitFs        fs.Filesystem
+	templateFs   fs.Filesystem
+	tapFs        fs.Filesystem
 	logger       *slog.Logger
 	project      project.Project
 	remote       remote.GitRemoteInteractor
@@ -73,7 +74,7 @@ func (d *BrewDeployer) Deploy(releaseName string, assets map[string]string) erro
 		return fmt.Errorf("failed to publish to tap: %w", err)
 	}
 
-	d.logger.Info("Homebrew deployment successfully mocked.", "assets", fmt.Sprintf("%v", assets))
+	d.logger.Info("Homebrew deployment completed successfully.", "assets", fmt.Sprintf("%v", assets))
 	return nil
 }
 
@@ -86,7 +87,11 @@ func (d *BrewDeployer) publishToTap(content string) error {
 		return fmt.Errorf("failed to clone tap repository: %w", err)
 	}
 
-	recipePath := fmt.Sprintf("Formula/%s.rb", d.project.Name)
+	basePath := d.cfg.Brew.Tap.Path
+	if basePath == "" {
+		basePath = "Formula" // Default path for Homebrew tap recipes
+	}
+	recipePath := fmt.Sprintf("%s/%s.rb", basePath, d.project.Name)
 	if err := r.WriteFile(recipePath, []byte(content)); err != nil {
 		return fmt.Errorf("failed to write recipe file: %w", err)
 	}
@@ -110,20 +115,44 @@ func (d *BrewDeployer) cloneTapRepo() (*repo.GitRepo, error) {
 	}
 
 	opts := []repo.GitRepoOption{
-		repo.WithFS(d.gitFs),
+		repo.WithFS(d.tapFs),
 		repo.WithGitRemoteInteractor(d.remote),
 	}
 	if creds.Token != "" {
 		opts = append(opts, repo.WithAuth("forge", creds.Token))
 	}
 
-	r, err := repo.NewGitRepo("/repo", d.logger, opts...)
+	tapRepoPath := filepath.Join(d.workdir, "tap-repo")
+	r, err := repo.NewGitRepo(tapRepoPath, d.logger, opts...)
 	if err != nil {
 		return nil, fmt.Errorf("could not create git repository: %w", err)
 	}
 
-	if err := r.Clone(d.cfg.Brew.Tap.Repository, repo.WithRef(d.cfg.Brew.Tap.Branch), repo.WithCloneDepth(1)); err != nil {
+	// Always clone without specifying branch to get the default branch
+	// This is simpler and more reliable than trying specific branch first
+	if err := r.Clone(d.cfg.Brew.Tap.Repository, repo.WithCloneDepth(1)); err != nil {
 		return nil, fmt.Errorf("could not clone repository: %w", err)
+	}
+
+	// If a specific branch is requested and it's different from the current branch, switch to it
+	if d.cfg.Brew.Tap.Branch != "" {
+		currentBranch, err := r.GetCurrentBranch()
+		if err != nil {
+			d.logger.Warn("Could not determine current branch, will attempt to create/checkout target branch", "error", err)
+		}
+		
+		if currentBranch != d.cfg.Brew.Tap.Branch {
+			d.logger.Info("Switching to target branch", "current_branch", currentBranch, "target_branch", d.cfg.Brew.Tap.Branch)
+			
+			// Try to checkout existing branch first
+			if err := r.CheckoutBranch(d.cfg.Brew.Tap.Branch); err != nil {
+				// If checkout fails, the branch likely doesn't exist, so create it
+				d.logger.Info("Target branch does not exist, creating new branch", "target_branch", d.cfg.Brew.Tap.Branch)
+				if err := r.NewBranch(d.cfg.Brew.Tap.Branch); err != nil {
+					return nil, fmt.Errorf("could not create and checkout target branch %s: %w", d.cfg.Brew.Tap.Branch, err)
+				}
+			}
+		}
 	}
 
 	return &r, nil
@@ -161,8 +190,8 @@ func (d *BrewDeployer) getTemplateData(assets map[string]string) (*BrewTemplateD
 
 // fetchTemplateFromGit fetches a template from a git repository.
 func (d *BrewDeployer) fetchTemplateFromGit() ([]byte, error) {
-	// Create a temporary filesystem for the template repo
-	tempFs := billy.NewInMemoryFs()
+	// Use the dedicated template filesystem
+	tempFs := d.templateFs
 
 	// Create a git repo with temporary filesystem
 	templateRepo, err := repo.NewGitRepo(
@@ -188,7 +217,12 @@ func (d *BrewDeployer) fetchTemplateFromGit() ([]byte, error) {
 	}
 
 	// Read the template file
-	templatePath := fmt.Sprintf("/template-repo/%s.rb.tpl", d.cfg.Brew.Template)
+	var templatePath string
+	if d.cfg.Brew.Templates.Path != "" {
+		templatePath = fmt.Sprintf("/template-repo/%s/%s.rb.tpl", d.cfg.Brew.Templates.Path, d.cfg.Brew.Template)
+	} else {
+		templatePath = fmt.Sprintf("/template-repo/%s.rb.tpl", d.cfg.Brew.Template)
+	}
 	templateContent, err := tempFs.ReadFile(templatePath)
 	if err != nil {
 		return nil, fmt.Errorf("could not read template file %s: %w", templatePath, err)
@@ -281,10 +315,17 @@ func (d *BrewDeployer) platformToAssetKey(platform string) string {
 // BrewDeployerOption is a function that can be used to configure the brew deployer.
 type BrewDeployerOption func(*BrewDeployer)
 
-// WithGitFilesystem sets the filesystem to use for the git repository.
-func WithGitFilesystem(gitFs fs.Filesystem) BrewDeployerOption {
+// WithTemplateFilesystem sets the filesystem to use for template repository operations.
+func WithTemplateFilesystem(templateFs fs.Filesystem) BrewDeployerOption {
 	return func(d *BrewDeployer) {
-		d.gitFs = gitFs
+		d.templateFs = templateFs
+	}
+}
+
+// WithTapFilesystem sets the filesystem to use for tap repository operations.
+func WithTapFilesystem(tapFs fs.Filesystem) BrewDeployerOption {
+	return func(d *BrewDeployer) {
+		d.tapFs = tapFs
 	}
 }
 
@@ -330,7 +371,8 @@ func NewBrewDeployer(cfg *ReleaseConfig, workdir string, opts ...BrewDeployerOpt
 		fs:           billy.NewBaseOsFS(),
 		secretsStore: secrets.NewDefaultSecretStore(),
 		workdir:      workdir,
-		gitFs:        billy.NewBaseOsFS(), // Use OS filesystem for git operations in production
+		templateFs:   billy.NewInMemoryFs(), // Use in-memory filesystem for template operations
+		tapFs:        billy.NewInMemoryFs(), // Use in-memory filesystem for tap operations
 		remote:       remote.GoGitRemoteInteractor{},
 	}
 

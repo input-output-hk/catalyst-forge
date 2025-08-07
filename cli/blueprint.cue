@@ -9,8 +9,8 @@ project: {
 			platforms: [
 				"linux/amd64",
 				"linux/arm64",
-				"darwin/amd64",
-				"darwin/arm64",
+				// "darwin/amd64",
+				// "darwin/arm64",
 			]
 		}
 		test: retries: attempts: 3
@@ -28,11 +28,12 @@ project: {
 					binary_name: "forge"
 					templates: {
 						repository: "https://github.com/input-output-hk/catalyst-forge.git"
-						branch: "master"
+						branch: "brew-release"
+						path: "templates/brew"
 					}
 					tap: {
 						repository: "https://github.com/input-output-hk/catalyst-brew.git"
-						branch: "main"
+						branch: "testing"
 					}
 				}
 			}
