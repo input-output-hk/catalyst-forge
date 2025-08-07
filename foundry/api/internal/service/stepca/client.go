@@ -15,6 +15,7 @@ import (
 type StepCAClient interface {
 	SignCertificate(token string, csr []byte, ttl time.Duration) (*SignResponse, error)
 	GetRootCertificate() ([]byte, error)
+	GetSignEndpointURL() string
 }
 
 // Client implements the StepCAClient interface for interacting with step-ca
@@ -191,6 +192,11 @@ func (c *Client) GetRootCertificate() ([]byte, error) {
 	c.rootCA = rootCA
 
 	return rootCA, nil
+}
+
+// GetSignEndpointURL returns the full URL for the step-ca sign endpoint
+func (c *Client) GetSignEndpointURL() string {
+	return fmt.Sprintf("%s/1.0/sign", c.baseURL)
 }
 
 // HealthCheck checks if step-ca is healthy

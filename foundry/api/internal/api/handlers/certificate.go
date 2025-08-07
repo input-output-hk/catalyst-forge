@@ -184,9 +184,11 @@ func (h *CertificateHandler) SignCertificate(c *gin.Context) {
 	}
 
 	// Generate JWT token for step-ca
+	audience := h.stepCAClient.GetSignEndpointURL()
 	certToken, err := tokens.GenerateCertificateSigningToken(
 		h.jwtManager,
 		subject,
+		audience,
 		sans,
 		csrPEM,
 		tokens.WithTTL(ttl),

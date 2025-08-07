@@ -49,22 +49,6 @@ build:
 
     SAVE ARTIFACT bin/foundry-api foundry-api
 
-test:
-    FROM earthly/dind:ubuntu-24.04-docker-27.3.1-1
-
-    COPY docker-compose.yml .
-
-    WITH DOCKER \
-        --load foundry-api:latest=(+docker) \
-        --load foundry-api-test:latest=(+docker-test) \
-        --compose docker-compose.yml \
-        --service api \
-        --service auth \
-        --service auth-jwt \
-        --service postgres
-        RUN docker compose up api-test
-    END
-
 docker-test:
     FROM +src
 

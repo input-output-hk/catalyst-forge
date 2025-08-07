@@ -27,6 +27,7 @@ type CertificateSigningOptions struct {
 func GenerateCertificateSigningToken(
 	signer foundryJWT.JWTSigner,
 	subject string,
+	audience string,
 	sans []string,
 	csrPEM []byte,
 	opts ...CertificateSigningOption,
@@ -37,6 +38,10 @@ func GenerateCertificateSigningToken(
 
 	if subject == "" {
 		return "", fmt.Errorf("subject cannot be empty")
+	}
+
+	if audience == "" {
+		return "", fmt.Errorf("audience cannot be empty")
 	}
 
 	// Apply certificate options with defaults
@@ -70,7 +75,7 @@ func GenerateCertificateSigningToken(
 		RegisteredClaims: jwt.RegisteredClaims{
 			Subject:   subject,
 			Issuer:    signer.Issuer(),
-			Audience:  jwt.ClaimStrings{"https://step-ca:9000/1.0/sign"},
+			Audience:  jwt.ClaimStrings{audience},
 			IssuedAt:  jwt.NewNumericDate(now),
 			ExpiresAt: jwt.NewNumericDate(now.Add(options.TTL)),
 			NotBefore: jwt.NewNumericDate(now),
@@ -96,6 +101,7 @@ func GenerateCertificateSigningToken(
 func GenerateCertificateSigningTokenWithTTL(
 	signer foundryJWT.JWTSigner,
 	subject string,
+	audience string,
 	sans []string,
 	csrPEM []byte,
 	ttl time.Duration,
@@ -105,7 +111,7 @@ func GenerateCertificateSigningTokenWithTTL(
 	allOpts := append([]CertificateSigningOption{WithTTL(ttl)}, opts...)
 
 	// Use the main function with the TTL option
-	return GenerateCertificateSigningToken(signer, subject, sans, csrPEM, allOpts...)
+	return GenerateCertificateSigningToken(signer, subject, audience, sans, csrPEM, allOpts...)
 }
 
 // VerifyCertificateSigningToken validates a certificate signing token
