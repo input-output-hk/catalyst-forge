@@ -99,6 +99,7 @@ docker:
         --version=$version) foundry-api
     COPY --dir sql .
     COPY entrypoint.sh .
+    RUN chmod +x entrypoint.sh
 
     ENTRYPOINT [ "/bin/bash", "/app/entrypoint.sh" ]
     SAVE IMAGE ${container}:${tag}

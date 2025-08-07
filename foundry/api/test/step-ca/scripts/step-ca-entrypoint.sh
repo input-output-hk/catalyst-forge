@@ -56,10 +56,6 @@ fi
 
 echo "Provisioner config: $(cat $CA_CONFIG)"
 
-# 5. Copy the root CA to the /foundry-keys directory
-echo "Copying root CA to /foundry-keys directory..."
-cp "$STEP_PATH/certs/root_ca.crt" /data/root_ca.crt
-
-# 6. Start the Step CA server
+# 5. Start the Step CA server
 echo "Starting Step CA server..."
 exec step-ca "$CA_CONFIG" --password-file <(echo "$DOCKER_STEPCA_INIT_PASSWORD")

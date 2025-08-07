@@ -46,7 +46,6 @@ services:
       - "8080:8080"
     volumes:
       - ./.auth:/data
-      - step-ca-ca:/ca
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:5050/healthz"]
       interval: 10s
@@ -125,7 +124,6 @@ services:
       - step-ca-data:/home/step
       - ./.auth:/foundry-keys:rw
       - ./test/step-ca/scripts/step-ca-entrypoint.sh:/usr/local/bin/entrypoint.sh:ro
-      - step-ca-ca:/data
     ports:
       - "9000:9000"
     entrypoint: ["/usr/local/bin/entrypoint.sh"]
@@ -144,4 +142,3 @@ volumes:
   postgres-data:
   pgadmin-data:
   step-ca-data:
-  step-ca-ca:
