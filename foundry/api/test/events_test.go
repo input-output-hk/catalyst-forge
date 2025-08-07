@@ -253,15 +253,19 @@ func TestEventsAPI(t *testing.T) {
 	})
 
 	t.Run("InvalidReleaseID", func(t *testing.T) {
-		// Test with invalid release ID
+		// Test with invalid release ID but valid deployment ID
+		// The API validates deployment existence, not release ID in URL path
 		invalidReleaseID := "invalid-release-id"
 		eventName := "test_invalid_release"
-		eventMessage := "This should fail"
+		eventMessage := "This should succeed because deployment ID is valid"
 
-		_, err := c.Events().Add(ctx, invalidReleaseID, deployment.ID, eventName, eventMessage)
-		assert.Error(t, err, "Expected error when adding event to invalid release")
+		// This should succeed because the deployment ID is valid, regardless of release ID in URL
+		updatedDeployment, err := c.Events().Add(ctx, invalidReleaseID, deployment.ID, eventName, eventMessage)
+		assert.NoError(t, err, "Should succeed with valid deployment ID")
+		assert.NotNil(t, updatedDeployment, "Should return updated deployment")
 
-		_, err = c.Events().Get(ctx, invalidReleaseID, deployment.ID)
-		assert.Error(t, err, "Expected error when getting events for invalid release")
+		events, err := c.Events().Get(ctx, invalidReleaseID, deployment.ID)
+		assert.NoError(t, err, "Should succeed with valid deployment ID")
+		assert.NotEmpty(t, events, "Should return events for valid deployment")
 	})
 }

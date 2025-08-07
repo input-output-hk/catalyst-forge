@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/input-output-hk/catalyst-forge/lib/foundry/client/auth"
+	"github.com/input-output-hk/catalyst-forge/lib/foundry/client/certificates"
 	"github.com/input-output-hk/catalyst-forge/lib/foundry/client/deployments"
 	"github.com/input-output-hk/catalyst-forge/lib/foundry/client/github"
 	"github.com/input-output-hk/catalyst-forge/lib/foundry/client/releases"
@@ -86,6 +87,7 @@ type Client interface {
 	Aliases() releases.AliasesClientInterface
 	Deployments() deployments.DeploymentsClientInterface
 	Events() deployments.EventsClientInterface
+	Certificates() certificates.CertificatesClientInterface
 }
 
 // HTTPClient is an implementation of the Client interface that uses HTTP
@@ -95,15 +97,16 @@ type HTTPClient struct {
 	token      string
 
 	// Category clients
-	users       users.UsersClientInterface
-	roles       users.RolesClientInterface
-	keys        users.KeysClientInterface
-	auth        auth.AuthClientInterface
-	github      github.GithubClientInterface
-	releases    releases.ReleasesClientInterface
-	aliases     releases.AliasesClientInterface
-	deployments deployments.DeploymentsClientInterface
-	events      deployments.EventsClientInterface
+	users        users.UsersClientInterface
+	roles        users.RolesClientInterface
+	keys         users.KeysClientInterface
+	auth         auth.AuthClientInterface
+	github       github.GithubClientInterface
+	releases     releases.ReleasesClientInterface
+	aliases      releases.AliasesClientInterface
+	deployments  deployments.DeploymentsClientInterface
+	events       deployments.EventsClientInterface
+	certificates certificates.CertificatesClientInterface
 }
 
 // ClientOption is a function type for client configuration
@@ -153,6 +156,7 @@ func NewClient(baseURL string, options ...ClientOption) Client {
 	client.aliases = releases.NewAliasesClient(client.do)
 	client.deployments = deployments.NewDeploymentsClient(client.do)
 	client.events = deployments.NewEventsClient(client.do)
+	client.certificates = certificates.NewCertificatesClient(client.do, client.doRaw)
 
 	return client
 }
@@ -231,6 +235,75 @@ func (c *HTTPClient) do(ctx context.Context, method, path string, reqBody, respB
 	return nil
 }
 
+// doRaw performs an HTTP request and returns the raw response body as bytes
+// This is useful for endpoints that return non-JSON content (like PEM files)
+func (c *HTTPClient) doRaw(ctx context.Context, method, path string, reqBody interface{}) ([]byte, error) {
+	url := fmt.Sprintf("%s%s", c.baseURL, path)
+
+	var reqBodyReader io.Reader
+	if reqBody != nil {
+		reqBodyBytes, err := json.Marshal(reqBody)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling request body: %w", err)
+		}
+		reqBodyReader = bytes.NewReader(reqBodyBytes)
+	}
+
+	req, err := http.NewRequestWithContext(ctx, method, url, reqBodyReader)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	if reqBody != nil {
+		req.Header.Set("Content-Type", "application/json")
+	}
+	// Don't set Accept header for raw requests to allow any content type
+
+	// Add JWT token to Authorization header if present
+	if c.token != "" {
+		req.Header.Set("Authorization", "Bearer "+c.token)
+	}
+
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("error performing request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	respBodyBytes, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("error reading response body: %w", err)
+	}
+
+	if resp.StatusCode >= 400 {
+		// For error responses, try to parse as JSON first
+		var errResp struct {
+			Error string `json:"error"`
+		}
+		if err := json.Unmarshal(respBodyBytes, &errResp); err != nil {
+			// If we can't parse JSON, create a basic error
+			apiErr := APIError{
+				StatusCode:   resp.StatusCode,
+				StatusText:   resp.Status,
+				ErrorMessage: "Unknown error",
+				Message:      string(respBodyBytes),
+			}
+			return nil, &apiErr
+		} else {
+			apiErr := APIError{
+				StatusCode:   resp.StatusCode,
+				StatusText:   resp.Status,
+				ErrorMessage: errResp.Error,
+				Path:         path,
+				Method:       method,
+			}
+			return nil, &apiErr
+		}
+	}
+
+	return respBodyBytes, nil
+}
+
 // Category accessors
 func (c *HTTPClient) Users() users.UsersClientInterface {
 	return c.users
@@ -266,4 +339,8 @@ func (c *HTTPClient) Deployments() deployments.DeploymentsClientInterface {
 
 func (c *HTTPClient) Events() deployments.EventsClientInterface {
 	return c.events
+}
+
+func (c *HTTPClient) Certificates() certificates.CertificatesClientInterface {
+	return c.certificates
 }

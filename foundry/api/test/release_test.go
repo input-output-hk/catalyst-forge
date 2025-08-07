@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"regexp"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -18,7 +17,7 @@ func TestReleaseAPI(t *testing.T) {
 	ctx, cancel := newTestContext()
 	defer cancel()
 
-	projectName := fmt.Sprintf("test-project-%d", time.Now().Unix())
+	projectName := generateTestName("test-project")
 
 	t.Run("CreateRelease", func(t *testing.T) {
 		bundleStr := base64.StdEncoding.EncodeToString([]byte("test bundle data"))
@@ -119,7 +118,7 @@ func TestReleaseWithDefaultBranch(t *testing.T) {
 	ctx, cancel := newTestContext()
 	defer cancel()
 
-	projectName := fmt.Sprintf("test-project-default-branch-%d", time.Now().Unix())
+	projectName := generateTestName("test-project-default-branch")
 	bundleStr := base64.StdEncoding.EncodeToString([]byte("test bundle data"))
 
 	defaultBranchRelease := &releases.Release{
@@ -147,10 +146,10 @@ func TestReleaseWithDefaultBranch(t *testing.T) {
 	assert.Contains(t, release1.ID, projectName)
 	assert.Contains(t, release2.ID, projectName)
 
-	// Verify the ID format follows the expected pattern
-	idPattern := regexp.MustCompile(fmt.Sprintf(`^%s-\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$`, projectName))
-	assert.True(t, idPattern.MatchString(release1.ID), "Release ID format is incorrect")
-	assert.True(t, idPattern.MatchString(release2.ID), "Release ID format is incorrect")
+	// Verify the ID format follows the expected pattern: {projectName}-{counter} (when no branch specified)
+	idPattern := regexp.MustCompile(fmt.Sprintf(`^%s-\d+$`, regexp.QuoteMeta(projectName)))
+	assert.True(t, idPattern.MatchString(release1.ID), "Release ID format is incorrect: %s", release1.ID)
+	assert.True(t, idPattern.MatchString(release2.ID), "Release ID format is incorrect: %s", release2.ID)
 }
 
 func TestReleaseWithBranch(t *testing.T) {
@@ -158,7 +157,7 @@ func TestReleaseWithBranch(t *testing.T) {
 	ctx, cancel := newTestContext()
 	defer cancel()
 
-	projectName := fmt.Sprintf("test-project-branch-%d", time.Now().Unix())
+	projectName := generateTestName("test-project-branch")
 	bundleStr := base64.StdEncoding.EncodeToString([]byte("test bundle data"))
 
 	branchRelease := &releases.Release{
@@ -187,8 +186,8 @@ func TestReleaseWithBranch(t *testing.T) {
 	assert.Contains(t, branchRelease1.ID, projectName)
 	assert.Contains(t, branchRelease2.ID, projectName)
 
-	// Verify the ID format follows the expected pattern
-	idPattern := regexp.MustCompile(fmt.Sprintf(`^%s-\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$`, projectName))
-	assert.True(t, idPattern.MatchString(branchRelease1.ID), "Release ID format is incorrect")
-	assert.True(t, idPattern.MatchString(branchRelease2.ID), "Release ID format is incorrect")
+	// Verify the ID format follows the expected pattern: {projectName}-{branch}-{counter}
+	idPattern := regexp.MustCompile(fmt.Sprintf(`^%s-%s-\d+$`, regexp.QuoteMeta(projectName), regexp.QuoteMeta("feature-branch")))
+	assert.True(t, idPattern.MatchString(branchRelease1.ID), "Release ID format is incorrect: %s", branchRelease1.ID)
+	assert.True(t, idPattern.MatchString(branchRelease2.ID), "Release ID format is incorrect: %s", branchRelease2.ID)
 }

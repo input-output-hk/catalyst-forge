@@ -1,0 +1,59 @@
+services:
+  registry:
+    image: registry:2
+    environment:
+      REGISTRY_STORAGE_FILESYSTEM_ROOTDIRECTORY: /data
+      REGISTRY_HTTP_ADDR: 0.0.0.0:5000
+    volumes:
+      - registry-data:/data
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:5000/v2/"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 3s
+
+  kcl-publisher:
+    image: kcl-publisher:latest
+    environment:
+      REGISTRY_URL: registry:5000
+      MODULE_NAME: example-app
+      MODULE_VERSION: v1.0.0
+    depends_on:
+      registry:
+        condition: service_healthy
+    restart: on-failure
+
+  renderer:
+    image: renderer:latest
+    command: ["serve", "--port", "8080", "--debug", "--cache-path", "/tmp/kcl-cache"]
+    environment:
+      GRPC_GO_LOG_VERBOSITY_LEVEL: 99
+      GRPC_GO_LOG_SEVERITY_LEVEL: info
+    volumes:
+      - renderer-cache:/tmp/kcl-cache
+    depends_on:
+      kcl-publisher:
+        condition: service_completed_successfully
+    restart: on-failure
+    healthcheck:
+      test: ["CMD", "/usr/local/bin/renderer", "version"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+  integration-test:
+    image: integration-test:latest
+    environment:
+      RENDERER_URL: renderer:8080
+      REGISTRY_URL: registry:5000
+      MODULE_NAME: example-app
+      MODULE_VERSION: v1.0.0
+    depends_on:
+      renderer:
+        condition: service_healthy
+
+volumes:
+  registry-data:
+  renderer-cache:

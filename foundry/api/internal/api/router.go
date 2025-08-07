@@ -8,6 +8,7 @@ import (
 	"github.com/input-output-hk/catalyst-forge/foundry/api/internal/api/handlers/user"
 	"github.com/input-output-hk/catalyst-forge/foundry/api/internal/api/middleware"
 	"github.com/input-output-hk/catalyst-forge/foundry/api/internal/service"
+	"github.com/input-output-hk/catalyst-forge/foundry/api/internal/service/stepca"
 	userservice "github.com/input-output-hk/catalyst-forge/foundry/api/internal/service/user"
 	"github.com/input-output-hk/catalyst-forge/lib/foundry/auth"
 	ghauth "github.com/input-output-hk/catalyst-forge/lib/foundry/auth/github"
@@ -28,9 +29,10 @@ func SetupRouter(
 	am *middleware.AuthMiddleware,
 	db *gorm.DB,
 	logger *slog.Logger,
-	jwtManager *jwt.JWTManager,
+	jwtManager jwt.JWTManager,
 	ghaOIDCClient ghauth.GithubActionsOIDCClient,
 	ghaAuthService service.GithubAuthService,
+	stepCAClient *stepca.Client,
 ) *gin.Engine {
 	r := gin.New()
 
@@ -61,6 +63,9 @@ func SetupRouter(
 
 	// GitHub handler
 	githubHandler := handlers.NewGithubHandler(jwtManager, ghaOIDCClient, ghaAuthService, logger)
+
+	// Certificate handler
+	certificateHandler := handlers.NewCertificateHandler(jwtManager, stepCAClient)
 
 	// Health check endpoint
 	r.GET("/healthz", healthHandler.CheckHealth)
@@ -149,6 +154,10 @@ func SetupRouter(
 	r.DELETE("/auth/user-roles", am.ValidatePermissions([]auth.Permission{auth.PermUserWrite, auth.PermRoleWrite}), userRoleHandler.RemoveUserFromRole)
 	r.GET("/auth/user-roles", am.ValidatePermissions([]auth.Permission{auth.PermUserRead, auth.PermRoleRead}), userRoleHandler.GetUserRoles)
 	r.GET("/auth/role-users", am.ValidatePermissions([]auth.Permission{auth.PermUserRead, auth.PermRoleRead}), userRoleHandler.GetRoleUsers)
+
+	// Certificate endpoints
+	r.POST("/certificates/sign", am.ValidateAnyCertificatePermission(), certificateHandler.SignCertificate)
+	r.GET("/certificates/root", certificateHandler.GetRootCertificate)
 
 	return r
 }

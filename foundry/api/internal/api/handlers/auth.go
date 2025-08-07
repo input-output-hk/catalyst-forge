@@ -9,6 +9,7 @@ import (
 	"github.com/input-output-hk/catalyst-forge/foundry/api/internal/service/user"
 	"github.com/input-output-hk/catalyst-forge/lib/foundry/auth"
 	"github.com/input-output-hk/catalyst-forge/lib/foundry/auth/jwt"
+	"github.com/input-output-hk/catalyst-forge/lib/foundry/auth/jwt/tokens"
 )
 
 // AuthHandler handles authentication endpoints
@@ -18,12 +19,12 @@ type AuthHandler struct {
 	userRoleService user.UserRoleService
 	roleService     user.RoleService
 	authManager     *auth.AuthManager
-	jwtManager      *jwt.JWTManager
+	jwtManager      jwt.JWTManager
 	logger          *slog.Logger
 }
 
 // NewAuthHandler creates a new auth handler
-func NewAuthHandler(userKeyService user.UserKeyService, userService user.UserService, userRoleService user.UserRoleService, roleService user.RoleService, authManager *auth.AuthManager, jwtManager *jwt.JWTManager, logger *slog.Logger) *AuthHandler {
+func NewAuthHandler(userKeyService user.UserKeyService, userService user.UserService, userRoleService user.UserRoleService, roleService user.RoleService, authManager *auth.AuthManager, jwtManager jwt.JWTManager, logger *slog.Logger) *AuthHandler {
 	return &AuthHandler{
 		userKeyService:  userKeyService,
 		userService:     userService,
@@ -87,7 +88,7 @@ func (h *AuthHandler) CreateChallenge(c *gin.Context) {
 	}
 
 	// Generate challenge JWT with 60 second duration
-	challenge, _, err := h.jwtManager.GenerateChallengeJWT(req.Email, req.Kid, 60*time.Second)
+	challenge, _, err := tokens.GenerateChallengeJWT(h.jwtManager, req.Email, req.Kid, 60*time.Second)
 	if err != nil {
 		h.logger.Error("Failed to generate challenge", "error", err, "kid", req.Kid)
 		c.JSON(http.StatusInternalServerError, gin.H{
@@ -141,7 +142,7 @@ func (h *AuthHandler) Login(c *gin.Context) {
 	}
 
 	// Validate the challenge token
-	claims, err := h.jwtManager.ValidateChallengeJWT(req.Token)
+	claims, err := tokens.VerifyChallengeJWT(h.jwtManager, req.Token)
 	if err != nil {
 		h.logger.Error("Failed to validate challenge token", "error", err)
 		c.JSON(http.StatusUnauthorized, gin.H{
@@ -242,7 +243,7 @@ func (h *AuthHandler) Login(c *gin.Context) {
 		"roles_count", len(userRoles))
 
 	// Generate JWT with 8 hour expiration
-	token, err := h.jwtManager.GenerateToken(user.Email, permissions, 8*time.Hour)
+	token, err := tokens.GenerateAuthToken(h.jwtManager, user.Email, permissions, 8*time.Hour)
 	if err != nil {
 		h.logger.Error("Failed to generate JWT token", "error", err, "user_id", user.ID)
 		c.JSON(http.StatusInternalServerError, gin.H{

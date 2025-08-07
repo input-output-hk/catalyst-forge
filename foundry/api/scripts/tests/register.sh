@@ -17,7 +17,7 @@ run_cli api auth users activate --email test@test.com
 run_cli api auth keys activate --email test@test.com "${KID}"
 
 echo '>>> Creating admin role'
-run_cli api auth roles create --admin --name admin
+run_cli api auth roles create --name admin --permissions certificate:sign:*
 
 echo '>>> Assigning user to admin role'
 run_cli api auth users roles assign test@test.com admin

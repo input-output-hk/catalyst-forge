@@ -20,6 +20,7 @@ import (
 	"github.com/input-output-hk/catalyst-forge/foundry/api/internal/repository"
 	userrepo "github.com/input-output-hk/catalyst-forge/foundry/api/internal/repository/user"
 	"github.com/input-output-hk/catalyst-forge/foundry/api/internal/service"
+	"github.com/input-output-hk/catalyst-forge/foundry/api/internal/service/stepca"
 	userservice "github.com/input-output-hk/catalyst-forge/foundry/api/internal/service/user"
 	"github.com/input-output-hk/catalyst-forge/foundry/api/pkg/k8s"
 	"github.com/input-output-hk/catalyst-forge/foundry/api/pkg/k8s/mocks"
@@ -163,12 +164,35 @@ func (r *RunCmd) Run() error {
 	userKeyService := userservice.NewUserKeyService(userKeyRepo, logger)
 
 	// Initialize middleware
-	jwtManager, err := jwt.NewJWTManager(r.Auth.PrivateKey, r.Auth.PublicKey, jwt.WithLogger(logger))
+	jwtManagerImpl, err := jwt.NewES256Manager(r.Auth.PrivateKey, r.Auth.PublicKey, jwt.WithManagerLogger(logger))
 	if err != nil {
 		logger.Error("Failed to initialize JWT manager", "error", err)
 		return err
 	}
+	var jwtManager jwt.JWTManager = jwtManagerImpl
 	authMiddleware := middleware.NewAuthMiddleware(jwtManager, logger)
+
+	// Initialize step-ca client (for certificate signing)
+	var rootCA []byte
+	if r.StepCA.RootCA != "" {
+		rootCA, err = os.ReadFile(r.StepCA.RootCA)
+		if err != nil {
+			logger.Error("Failed to read step-ca root certificate", "error", err, "path", r.StepCA.RootCA)
+			return err
+		}
+	}
+
+	fmt.Printf("Root CA: %s\n", rootCA)
+	stepCAClient, err := stepca.NewClient(stepca.Config{
+		BaseURL:            r.StepCA.BaseURL,
+		InsecureSkipVerify: r.StepCA.InsecureSkipVerify,
+		Timeout:            r.StepCA.ClientTimeout,
+		RootCA:             rootCA,
+	})
+	if err != nil {
+		logger.Error("Failed to initialize step-ca client", "error", err)
+		return err
+	}
 
 	// Initialize GitHub Actions OIDC client
 	ghaOIDCClient, err := ghauth.NewDefaultGithubActionsOIDCClient(context.Background(), "/tmp/gha-jwks-cache")
@@ -198,6 +222,7 @@ func (r *RunCmd) Run() error {
 		jwtManager,
 		ghaOIDCClient,
 		ghaAuthService,
+		stepCAClient,
 	)
 
 	// Initialize server

@@ -1,0 +1,229 @@
+VERSION 0.8
+
+deps:
+    FROM golang:1.24.5-bookworm
+
+    WORKDIR /work
+
+    RUN mkdir -p /go/cache && mkdir -p /go/modcache
+    ENV GOCACHE=/go/cache
+    ENV GOMODCACHE=/go/modcache
+    CACHE --persist --sharing shared /go
+
+    # Copy local dependencies
+    COPY ../../lib/deployment+src/src/ lib/deployment/
+    COPY ../../lib/schema+src/src/ lib/schema/
+    COPY ../../lib/providers+src/src/ lib/providers/
+    COPY ../../lib/project+src/src/ lib/project/
+    COPY ../../lib/tools+src/src/ lib/tools/
+    COPY ../../lib/external/kcl+src/src/ lib/external/kcl/
+    COPY ../../lib/external/helm+src/src/ lib/external/helm/
+    COPY ../../lib/oci+src/src/ lib/oci/
+
+    COPY go.mod go.sum .
+    
+    # Update go.mod replace paths for containerized build
+    RUN sed -i 's|../../lib/|./lib/|g' go.mod
+    
+    RUN go mod download
+
+proto:
+    FROM golang:1.24.5-bookworm
+
+    WORKDIR /work
+
+    RUN apt-get update && apt-get install -y protobuf-compiler
+    RUN go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
+    RUN go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
+
+    ENV PATH=$PATH:/go/bin
+
+proto-gen:
+    FROM +proto
+
+    WORKDIR /work
+
+    COPY proto/ proto/
+    COPY ../../lib/schema+src/src/proto/ lib/schema/proto/
+    RUN mkdir -p pkg/proto
+
+    # Generate Go and gRPC code
+    RUN protoc \
+        --go_out=pkg/proto \
+        --go_opt=paths=source_relative \
+        --go-grpc_out=pkg/proto \
+        --go-grpc_opt=paths=source_relative \
+        --proto_path=proto \
+        --proto_path=lib/schema/proto \
+        proto/renderer.proto
+
+    SAVE ARTIFACT pkg/proto pkg/proto AS LOCAL pkg/proto
+
+src:
+    FROM +deps
+
+    CACHE --persist --sharing shared /go
+
+    COPY . .
+    
+    # Update go.mod replace paths for containerized build
+    RUN sed -i 's|../../lib/|./lib/|g' go.mod
+    
+    RUN go build ./...
+
+    SAVE ARTIFACT . src
+
+check:
+    FROM +src
+
+    RUN gofmt -l . | grep . && exit 1 || exit 0
+    RUN go vet ./...
+
+build:
+    FROM +deps
+
+    CACHE --persist --sharing shared /go
+
+    COPY . .
+    
+    # Update go.mod replace paths for containerized build
+    RUN sed -i 's|../../lib/|./lib/|g' go.mod
+    
+    RUN CGO_ENABLED=0 go build -o renderer ./cmd/renderer
+
+    SAVE ARTIFACT renderer
+
+docker:
+    FROM debian:latest
+    WORKDIR /app
+
+    ARG container="renderer"
+    ARG tag="latest"
+    ARG version="dev"
+
+    ARG TARGETOS
+    ARG TARGETARCH
+    ARG TARGETPLATFORM
+
+    # Install dependencies including KCL and Helm clients
+    RUN apt-get update && apt-get install -y curl wget tar
+
+    # Install KCL CLI v0.11.0
+    RUN if [ "$TARGETARCH" = "amd64" ]; then \
+        wget -q https://github.com/kcl-lang/cli/releases/download/v0.11.0/kcl-v0.11.0-linux-amd64.tar.gz && \
+        tar -xzf kcl-v0.11.0-linux-amd64.tar.gz -C /usr/local && \
+        rm kcl-v0.11.0-linux-amd64.tar.gz; \
+    elif [ "$TARGETARCH" = "arm64" ]; then \
+        wget -q https://github.com/kcl-lang/cli/releases/download/v0.11.0/kcl-v0.11.0-linux-arm64.tar.gz && \
+        tar -xzf kcl-v0.11.0-linux-arm64.tar.gz -C /usr/local && \
+        rm kcl-v0.11.0-linux-arm64.tar.gz; \
+    fi && \
+    chmod +x /usr/local/kcl
+
+    # Install Helm client
+    RUN curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 && \
+        chmod 700 get_helm.sh && \
+        ./get_helm.sh && \
+        rm get_helm.sh
+
+    # Ensure both are in PATH
+    ENV PATH="/usr/local:$PATH"
+
+    COPY \
+        --platform=$TARGETPLATFORM \
+        (+build/renderer \
+        --GOOS=$TARGETOS \
+        --GOARCH=$TARGETARCH \
+        --version=$version) renderer
+
+    ENTRYPOINT ["/app/renderer"]
+    SAVE IMAGE ${container}:${tag}
+
+# Integration test targets
+cert-generator:
+    FROM alpine:3.19
+    
+    RUN apk add --no-cache openssl bash
+    
+    WORKDIR /workspace
+    COPY test/certs/generate-certs.sh ./
+    RUN chmod +x generate-certs.sh
+    
+    ENTRYPOINT ["./generate-certs.sh"]
+    SAVE IMAGE cert-generator:latest
+
+kcl-module:
+    FROM scratch
+    
+    # Use the real example app module instead of test fixture
+    COPY ../../modules/examples/app+src/module /kcl-module/
+    
+    SAVE ARTIFACT /kcl-module kcl-module
+
+kcl-publisher:
+    FROM debian:bookworm-slim
+
+    # Install KCL CLI and dependencies
+    RUN apt-get update && apt-get install -y curl tar bash wget jq ca-certificates && \
+        rm -rf /var/lib/apt/lists/*
+    
+    # Install KCL
+    RUN ARCH=$(uname -m) && \
+        if [ "$ARCH" = "x86_64" ]; then ARCH="amd64"; fi && \
+        if [ "$ARCH" = "aarch64" ]; then ARCH="arm64"; fi && \
+        wget -q https://github.com/kcl-lang/cli/releases/download/v0.11.0/kcl-v0.11.0-linux-$ARCH.tar.gz && \
+        tar -xzf kcl-v0.11.0-linux-$ARCH.tar.gz -C /usr/local && \
+        rm kcl-v0.11.0-linux-$ARCH.tar.gz && \
+        chmod +x /usr/local/kcl && \
+        /usr/local/kcl version
+
+    # Create script to trust CA certificate at runtime
+    RUN echo '#!/bin/bash' > /usr/local/bin/trust-ca.sh && \
+        echo 'if [ -f "/certs/ca.crt" ]; then' >> /usr/local/bin/trust-ca.sh && \
+        echo '  echo "Installing CA certificate..."' >> /usr/local/bin/trust-ca.sh && \
+        echo '  cp /certs/ca.crt /usr/local/share/ca-certificates/registry-ca.crt' >> /usr/local/bin/trust-ca.sh && \
+        echo '  update-ca-certificates' >> /usr/local/bin/trust-ca.sh && \
+        echo 'fi' >> /usr/local/bin/trust-ca.sh && \
+        chmod +x /usr/local/bin/trust-ca.sh
+
+    ENV PATH="/usr/local:$PATH"
+
+    WORKDIR /workspace
+    
+    # Copy KCL module and publisher script
+    COPY +kcl-module/kcl-module ./kcl-module/
+    COPY test/kcl-publisher/publish.sh ./
+    RUN chmod +x publish.sh
+
+    ENTRYPOINT ["./publish.sh"]
+    SAVE IMAGE kcl-publisher:latest
+
+integration-test-client:
+    FROM +src
+
+    CACHE --persist --sharing shared /go
+
+    # Update go.mod replace paths for containerized build  
+    RUN sed -i 's|../../lib/|./lib/|g' go.mod
+    
+    # Build test binary from integration test directory
+    RUN go build -o integration-test ./test/integration/
+    
+    ENTRYPOINT ["./integration-test"]
+    SAVE IMAGE integration-test:latest
+
+test:
+    FROM earthly/dind:alpine-3.19-docker-25.0.5-r0
+    
+    RUN apk add --no-cache curl wget
+    
+    # Copy docker-compose configuration
+    COPY docker-compose.yml ./
+    
+    WITH DOCKER \
+        --load renderer:latest=+docker \
+        --load kcl-publisher:latest=+kcl-publisher \
+        --load integration-test:latest=+integration-test-client \
+        --compose docker-compose.yml
+        RUN docker compose up integration-test --abort-on-container-exit --exit-code-from integration-test
+    END
