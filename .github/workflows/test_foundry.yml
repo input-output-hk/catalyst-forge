@@ -1,17 +1,10 @@
-name: Validate GHA OIDC
+name: Test Foundry API
 
 on:
   push:
     branches: [master]
   pull_request:
 
-permissions:
-  id-token: write
-  contents: read
-
-env:
-  API_URL: "http://localhost:5000"
-  OIDC_AUDIENCE: "forge"
 
 jobs:
   test-auth-endpoint:
