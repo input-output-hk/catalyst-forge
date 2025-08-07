@@ -48,4 +48,4 @@ jobs:
 
       - name: Run test
         run: |
-            docker compose -f ./foundry/api/docker-compose.yml up --abort-on-container-exit --exit-code-from api-test
+            docker compose -f ./foundry/api/docker-compose.yml up --abort-on-container-exit --exit-code-from api-test || docker compose -f ./foundry/api/docker-compose.yml logs step-ca

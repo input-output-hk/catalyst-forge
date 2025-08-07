@@ -18,8 +18,6 @@ type CertificateSigningOptions struct {
 	Email string
 	// TTL overrides the default token lifetime (default: 5 minutes)
 	TTL time.Duration
-	// AdditionalClaims for custom CA requirements
-	AdditionalClaims map[string]interface{}
 }
 
 // GenerateCertificateSigningToken creates a JWT token for certificate signing with a CA like step-ca
@@ -84,12 +82,6 @@ func GenerateCertificateSigningToken(
 		SHA:        csrSHA,
 		Email:      options.Email,
 		CommonName: getOrDefault(options.CommonName, subject),
-	}
-
-	// Add any additional claims
-	if len(options.AdditionalClaims) > 0 {
-		// Note: In a real implementation, we'd merge these into the token
-		// For now, they're stored in the options but not used
 	}
 
 	// Sign the token
@@ -185,13 +177,6 @@ func ValidateCSRFingerprint(claims *CertificateClaims, csrPEM []byte) error {
 
 // CertificateSigningOption allows customization of certificate signing tokens
 type CertificateSigningOption func(*CertificateSigningOptions)
-
-// WithCertificateClaims adds additional claims to the certificate token
-func WithCertificateClaims(claims map[string]interface{}) CertificateSigningOption {
-	return func(opts *CertificateSigningOptions) {
-		opts.AdditionalClaims = claims
-	}
-}
 
 // WithCommonName sets a custom common name for the certificate
 func WithCommonName(cn string) CertificateSigningOption {
