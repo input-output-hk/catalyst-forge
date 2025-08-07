@@ -98,21 +98,22 @@ func NewBinaryClient(exec executor.Executor, logger *slog.Logger, opts ...Option
 func (c *BinaryClient) Run(path string, conf ModuleConfig) (string, error) {
 	var actualPath string
 
-	// Check if this is an OCI path and handle accordingly
-	if strings.HasPrefix(path, "oci://") {
-		if c.ociClient == nil {
-			return "", fmt.Errorf("OCI path provided (%s) but no OCI client configured", path)
-		}
-		if c.cachePath == "" {
-			return "", fmt.Errorf("OCI path provided (%s) but no cache path configured", path)
-		}
+	if c.cachePath != "" {
+		// Check if this is an OCI path and handle accordingly
+		if strings.HasPrefix(path, "oci://") {
+			if c.ociClient == nil {
+				return "", fmt.Errorf("Cache path provided (%s) but no OCI client configured", path)
+			}
 
-		cachedPath, err := c.cacheOCIModule(path)
-		if err != nil {
-			return "", fmt.Errorf("failed to cache OCI module: %w", err)
+			cachedPath, err := c.cacheOCIModule(path)
+			if err != nil {
+				return "", fmt.Errorf("failed to cache OCI module: %w", err)
+			}
+			actualPath = cachedPath
+			c.logger.Debug("Using cached OCI module", "original", path, "cached", actualPath)
+		} else {
+			actualPath = path
 		}
-		actualPath = cachedPath
-		c.logger.Debug("Using cached OCI module", "original", path, "cached", actualPath)
 	} else {
 		actualPath = path
 	}
