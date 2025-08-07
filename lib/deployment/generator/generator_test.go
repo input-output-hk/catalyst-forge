@@ -108,9 +108,9 @@ func TestGeneratorGenerateBundle(t *testing.T) {
 			}
 
 			store := deployment.NewManifestGeneratorStore(
-				map[deployment.Provider]func(*slog.Logger) deployment.ManifestGenerator{
-					deployment.ProviderKCL: func(logger *slog.Logger) deployment.ManifestGenerator {
-						return mg
+				map[deployment.Provider]func(*slog.Logger) (deployment.ManifestGenerator, error){
+					deployment.ProviderKCL: func(logger *slog.Logger) (deployment.ManifestGenerator, error) {
+						return mg, nil
 					},
 				},
 			)
@@ -187,9 +187,9 @@ func TestGeneratorGenerate(t *testing.T) {
 			}
 
 			store := deployment.NewManifestGeneratorStore(
-				map[deployment.Provider]func(*slog.Logger) deployment.ManifestGenerator{
-					deployment.ProviderKCL: func(logger *slog.Logger) deployment.ManifestGenerator {
-						return mg
+				map[deployment.Provider]func(*slog.Logger) (deployment.ManifestGenerator, error){
+					deployment.ProviderKCL: func(logger *slog.Logger) (deployment.ManifestGenerator, error) {
+						return mg, nil
 					},
 				},
 			)

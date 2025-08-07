@@ -1,38 +1,13 @@
 package test
 
 import (
-	"crypto/rand"
-	"encoding/base64"
-	"fmt"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/input-output-hk/catalyst-forge/lib/foundry/client/users"
 )
-
-// generateTestEmail generates a unique test email
-func generateTestEmail() string {
-	bytes := make([]byte, 8)
-	rand.Read(bytes)
-	return fmt.Sprintf("test-user-%x@example.com", bytes)
-}
-
-// generateTestKid generates a unique test key ID
-func generateTestKid() string {
-	bytes := make([]byte, 16)
-	rand.Read(bytes)
-	return fmt.Sprintf("test-key-%x", bytes)
-}
-
-// generateTestPubKey generates a test public key
-func generateTestPubKey() string {
-	bytes := make([]byte, 32)
-	rand.Read(bytes)
-	return base64.StdEncoding.EncodeToString(bytes)
-}
 
 func TestUsersAPI(t *testing.T) {
 	c := newTestClient()
@@ -217,7 +192,7 @@ func TestUsersAPI(t *testing.T) {
 
 	t.Run("RoleManagement", func(t *testing.T) {
 		t.Run("CreateRole", func(t *testing.T) {
-			roleName := fmt.Sprintf("test-role-%d", time.Now().Unix())
+			roleName := generateTestName("test-role")
 			req := &users.CreateRoleRequest{
 				Name:        roleName,
 				Permissions: []string{"read", "write"},
@@ -298,7 +273,7 @@ func TestUsersAPI(t *testing.T) {
 		})
 
 		t.Run("CreateRoleWithAdmin", func(t *testing.T) {
-			roleName := fmt.Sprintf("admin-role-%d", time.Now().Unix())
+			roleName := generateTestName("admin-role")
 			req := &users.CreateRoleRequest{
 				Name:        roleName,
 				Permissions: []string{"read"},
@@ -323,7 +298,7 @@ func TestUsersAPI(t *testing.T) {
 			require.NoError(t, err)
 
 			role := &users.CreateRoleRequest{
-				Name:        fmt.Sprintf("assignment-role-%d", time.Now().Unix()),
+				Name:        generateTestName("assignment-role"),
 				Permissions: []string{"read"},
 			}
 			createdRole, err := c.Roles().Create(ctx, role)
@@ -501,7 +476,7 @@ func TestUsersAPI(t *testing.T) {
 			assert.Equal(t, createdUser.ID, registeredKey.UserID)
 			assert.Equal(t, kid, registeredKey.Kid)
 			assert.Equal(t, pubKey, registeredKey.PubKeyB64)
-			assert.Equal(t, "active", registeredKey.Status)
+			assert.Equal(t, "inactive", registeredKey.Status)
 
 			// Clean up
 			c.Keys().Delete(ctx, registeredKey.ID)
@@ -625,9 +600,4 @@ func TestUsersAPI(t *testing.T) {
 		// Clean up user
 		c.Users().Delete(ctx, createdUser.ID)
 	})
-}
-
-// stringPtr returns a pointer to a string
-func stringPtr(s string) *string {
-	return &s
 }

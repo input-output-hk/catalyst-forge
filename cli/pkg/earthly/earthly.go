@@ -10,9 +10,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/input-output-hk/catalyst-forge/cli/pkg/executor"
 	secretstore "github.com/input-output-hk/catalyst-forge/lib/providers/secrets"
 	sc "github.com/input-output-hk/catalyst-forge/lib/schema/blueprint/common"
+	"github.com/input-output-hk/catalyst-forge/lib/tools/executor"
 )
 
 // EarthlyExecutorOption is an option for configuring an EarthlyExecutor.
@@ -98,7 +98,12 @@ func (e EarthlyExecutor) Run() error {
 				"platform", platform,
 			)
 			output, err = e.executor.Execute("earthly", arguments...)
-			if err == nil {
+			e.logger.Debug("Earthly output size", "output", len(output))
+			if len(output) <= 0 {
+				e.logger.Error("Earthly output is empty", "error", err)
+				return fmt.Errorf("earthly output is empty")
+
+			} else if err == nil {
 				break
 			}
 
@@ -106,14 +111,14 @@ func (e EarthlyExecutor) Run() error {
 				found := false
 				for _, filter := range e.opts.retries.Filters {
 					if strings.Contains(string(output), filter) {
-						e.logger.Info("Found filter", "filter", filter)
+						e.logger.Debug("Found filter", "filter", filter)
 						found = true
 						break
 					}
 				}
 
 				if !found {
-					e.logger.Info("No filter found", "filters", e.opts.retries.Filters)
+					e.logger.Debug("No filter found", "filters", e.opts.retries.Filters)
 					break
 				}
 			}

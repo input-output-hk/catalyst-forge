@@ -4,7 +4,6 @@ import (
 	"encoding/base64"
 	"fmt"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -17,21 +16,13 @@ func TestAliasAPI(t *testing.T) {
 	ctx, cancel := newTestContext()
 	defer cancel()
 
-	projectName := fmt.Sprintf("test-project-alias-%d", time.Now().Unix())
+	projectName := generateTestName("test-project-alias")
 
-	bundleStr := base64.StdEncoding.EncodeToString([]byte("sample code for alias testing"))
-	release := &releases.Release{
-		SourceRepo:   "github.com/example/repo",
-		SourceCommit: "abcdef123456",
-		Project:      projectName,
-		ProjectPath:  "services/api",
-		Bundle:       bundleStr,
-	}
-
-	createdRelease, err := c.Releases().Create(ctx, release, false)
+	createdRelease, err := createTestRelease(c, ctx, projectName)
 	require.NoError(t, err)
 	require.NotEmpty(t, createdRelease.ID)
 
+	bundleStr := base64.StdEncoding.EncodeToString([]byte("test bundle data"))
 	release2 := &releases.Release{
 		SourceRepo:   "github.com/example/repo",
 		SourceCommit: "xyz789",

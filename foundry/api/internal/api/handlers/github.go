@@ -13,6 +13,7 @@ import (
 	auth "github.com/input-output-hk/catalyst-forge/lib/foundry/auth"
 	ghauth "github.com/input-output-hk/catalyst-forge/lib/foundry/auth/github"
 	"github.com/input-output-hk/catalyst-forge/lib/foundry/auth/jwt"
+	"github.com/input-output-hk/catalyst-forge/lib/foundry/auth/jwt/tokens"
 )
 
 // GithubRepositoryAuthResponse represents the response structure for GHA authentication
@@ -31,14 +32,14 @@ type GithubRepositoryAuthResponse struct {
 
 // GithubHandler handles GitHub Actions authentication endpoints
 type GithubHandler struct {
-	jwtManager  *jwt.JWTManager
+	jwtManager  jwt.JWTManager
 	oidcClient  ghauth.GithubActionsOIDCClient
 	authService service.GithubAuthService
 	logger      *slog.Logger
 }
 
 // NewGithubHandler creates a new GitHub authentication handler
-func NewGithubHandler(jwtManager *jwt.JWTManager, oidcClient ghauth.GithubActionsOIDCClient, authService service.GithubAuthService, logger *slog.Logger) *GithubHandler {
+func NewGithubHandler(jwtManager jwt.JWTManager, oidcClient ghauth.GithubActionsOIDCClient, authService service.GithubAuthService, logger *slog.Logger) *GithubHandler {
 	return &GithubHandler{
 		jwtManager:  jwtManager,
 		oidcClient:  oidcClient,
@@ -122,7 +123,7 @@ func (h *GithubHandler) ValidateToken(c *gin.Context) {
 
 	// Generate a new JWT token
 	expiration := 1 * time.Hour // 1 hour expiration
-	token, err := h.jwtManager.GenerateToken(tokenInfo.Repository, permissions, expiration)
+	token, err := tokens.GenerateAuthToken(h.jwtManager, tokenInfo.Repository, permissions, expiration)
 	if err != nil {
 		h.logger.Error("Failed to generate JWT token", "error", err)
 		c.JSON(http.StatusInternalServerError, gin.H{

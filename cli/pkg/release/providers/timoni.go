@@ -6,10 +6,10 @@ import (
 	"strings"
 
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/events"
-	"github.com/input-output-hk/catalyst-forge/cli/pkg/executor"
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/run"
 	"github.com/input-output-hk/catalyst-forge/lib/project/project"
 	sp "github.com/input-output-hk/catalyst-forge/lib/schema/blueprint/project"
+	"github.com/input-output-hk/catalyst-forge/lib/tools/executor"
 )
 
 const (
@@ -93,7 +93,7 @@ func NewTimoniReleaser(ctx run.RunContext,
 		return nil, fmt.Errorf("failed to parse release config: %w", err)
 	}
 
-	timoni := executor.NewLocalWrappedExecutor(exec, "timoni")
+	timoni := executor.NewWrappedLocalExecutor(exec, "timoni")
 	handler := events.NewDefaultEventHandler(ctx.Logger)
 	return &TimoniReleaser{
 		config:      config,

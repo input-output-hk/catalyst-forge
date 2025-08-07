@@ -1,0 +1,17 @@
+syntax = "proto3";
+
+package providers;
+
+option go_package = "github.com/input-output-hk/catalyst-forge/lib/schema/proto/generated/global/providers";
+
+// Timoni contains the configuration for the Timoni provider.
+message Timoni {
+  // Install contains whether to install Timoni in the CI environment.
+  bool install = 1;
+
+  // Registries contains the registries to use for publishing Timoni modules
+  repeated string registries = 2;
+
+  // Version contains the version of Timoni to install in CI.
+  string version = 3;
+}

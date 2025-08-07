@@ -103,6 +103,11 @@ func (c *CLI) AfterApply(kctx *kong.Context) error {
 		return fmt.Errorf("failed to load root blueprint: %w", err)
 	}
 
+	manifestStore, err := deployment.NewDefaultManifestGeneratorStore(deployment.WithKCLOpts())
+	if err != nil {
+		return fmt.Errorf("failed to create manifest store: %w", err)
+	}
+
 	runctx := run.RunContext{
 		ApiURL:                 cli.GlobalArgs.ApiURL,
 		CI:                     cli.GlobalArgs.CI,
@@ -113,7 +118,7 @@ func (c *CLI) AfterApply(kctx *kong.Context) error {
 		FSReverseWalker:        revWlk,
 		Local:                  cli.GlobalArgs.Local,
 		Logger:                 logger,
-		ManifestGeneratorStore: deployment.NewDefaultManifestGeneratorStore(),
+		ManifestGeneratorStore: manifestStore,
 		ProjectLoader:          &loader,
 		RootProject:            rootProject,
 		SecretStore:            store,

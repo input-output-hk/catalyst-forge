@@ -6,8 +6,8 @@ import (
 
 	"cuelang.org/go/cue"
 	"cuelang.org/go/cue/cuecontext"
-	"github.com/input-output-hk/catalyst-forge/lib/deployment/providers/kcl/client"
-	"github.com/input-output-hk/catalyst-forge/lib/deployment/providers/kcl/client/mocks"
+	"github.com/input-output-hk/catalyst-forge/lib/external/kcl"
+	"github.com/input-output-hk/catalyst-forge/lib/external/kcl/mocks"
 	sp "github.com/input-output-hk/catalyst-forge/lib/schema/blueprint/project"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/fs/billy"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/testutils"
@@ -17,7 +17,7 @@ import (
 
 func TestKCLManifestGeneratorGenerate(t *testing.T) {
 	type testResult struct {
-		conf client.KCLModuleConfig
+		conf kcl.ModuleConfig
 		err  error
 		out  []byte
 		path string
@@ -47,7 +47,7 @@ func TestKCLManifestGeneratorGenerate(t *testing.T) {
 			err: false,
 			validate: func(t *testing.T, result testResult) {
 				require.NoError(t, result.err)
-				assert.Equal(t, client.KCLModuleConfig{
+				assert.Equal(t, kcl.ModuleConfig{
 					Env:       "test",
 					Instance:  "instance",
 					Namespace: "default",
@@ -80,7 +80,7 @@ version = "1.0.0"
 			err: false,
 			validate: func(t *testing.T, result testResult) {
 				require.NoError(t, result.err)
-				assert.Equal(t, client.KCLModuleConfig{
+				assert.Equal(t, kcl.ModuleConfig{
 					Env:       "test",
 					Instance:  "instance",
 					Name:      "module",
@@ -114,9 +114,9 @@ version = "1.0.0"
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			var p string
-			var c client.KCLModuleConfig
-			m := &mocks.KCLClientMock{
-				RunFunc: func(path string, conf client.KCLModuleConfig) (string, error) {
+			var c kcl.ModuleConfig
+			m := &mocks.ClientMock{
+				RunFunc: func(path string, conf kcl.ModuleConfig) (string, error) {
 					p = path
 					c = conf
 

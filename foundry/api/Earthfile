@@ -52,7 +52,10 @@ build:
 test:
     FROM earthly/dind:ubuntu-24.04-docker-27.3.1-1
 
+    WORKDIR /work
+
     COPY docker-compose.yml .
+    COPY --dir test .
 
     WITH DOCKER \
         --load foundry-api:latest=(+docker) \
@@ -61,7 +64,8 @@ test:
         --service api \
         --service auth \
         --service auth-jwt \
-        --service postgres
+        --service postgres \
+        --service step-ca
         RUN docker compose up api-test
     END
 
@@ -95,6 +99,7 @@ docker:
         --version=$version) foundry-api
     COPY --dir sql .
     COPY entrypoint.sh .
+    RUN chmod +x entrypoint.sh
 
     ENTRYPOINT [ "/bin/bash", "/app/entrypoint.sh" ]
     SAVE IMAGE ${container}:${tag}

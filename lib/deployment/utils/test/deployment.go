@@ -33,13 +33,13 @@ func NewMockGenerator(manifest string) generator.Generator {
 
 func NewMockManifestStore(manifest string) deployment.ManifestGeneratorStore {
 	return deployment.NewManifestGeneratorStore(
-		map[deployment.Provider]func(*slog.Logger) deployment.ManifestGenerator{
-			deployment.ProviderKCL: func(logger *slog.Logger) deployment.ManifestGenerator {
+		map[deployment.Provider]func(*slog.Logger) (deployment.ManifestGenerator, error){
+			deployment.ProviderKCL: func(logger *slog.Logger) (deployment.ManifestGenerator, error) {
 				return &dm.ManifestGeneratorMock{
 					GenerateFunc: func(mod sp.Module, raw cue.Value, env string) ([]byte, error) {
 						return []byte(manifest), nil
 					},
-				}
+				}, nil
 			},
 		},
 	)

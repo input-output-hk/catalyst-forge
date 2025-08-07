@@ -1,5 +1,5 @@
 up:
-    earthly --config "" +docker && docker compose up -d auth auth-jwt api postgres pgadmin
+    earthly --config "" +docker && docker compose up -d auth auth-jwt api postgres pgadmin step-ca
 
 down:
     rm -rf .auth && docker compose down -v
@@ -9,6 +9,9 @@ update:
 
 docker:
     earthly --config "" +docker
+
+docker-test:
+    earthly --config "" +docker-test
 
 register:
     ./scripts/tests/register.sh
@@ -21,6 +24,9 @@ login-admin:
 
 logs:
     docker compose logs api
+
+test:
+    docker compose up api-test
 
 swagger:
     earthly --config "" +swagger

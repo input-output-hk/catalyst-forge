@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/input-output-hk/catalyst-forge/lib/foundry/auth/jwt"
+	"github.com/input-output-hk/catalyst-forge/lib/foundry/auth/jwt/tokens"
 )
 
 type ValidateCmd struct {
@@ -12,16 +13,16 @@ type ValidateCmd struct {
 }
 
 func (g *ValidateCmd) Run() error {
-	am, err := jwt.NewJWTManager("", g.PublicKey)
+	am, err := jwt.NewES256Manager("", g.PublicKey)
 	if err != nil {
 		return err
 	}
 
-	claims, err := am.ValidateToken(g.Token)
+	claims, err := tokens.VerifyAuthToken(am, g.Token)
 	if err != nil {
 		return err
 	}
-	fmt.Println(claims)
+	fmt.Printf("Token valid! User: %s, Permissions: %v\n", claims.UserID, claims.Permissions)
 
 	return nil
 }

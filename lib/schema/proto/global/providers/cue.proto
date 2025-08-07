@@ -1,0 +1,20 @@
+syntax = "proto3";
+
+package providers;
+
+option go_package = "github.com/input-output-hk/catalyst-forge/lib/schema/proto/generated/global/providers";
+
+// CUE contains the configuration for the CUE provider.
+message CUE {
+  // Install contains whether to install CUE in the CI environment.
+  bool install = 1;
+
+  // Registry contains the CUE registry to use for publishing CUE modules.
+  string registry = 2;
+
+  // RegistryPrefix contains the prefix to use for CUE registries.
+  string registryPrefix = 3;
+
+  // The version of CUE to use in CI.
+  string version = 4;
+}

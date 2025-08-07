@@ -1,0 +1,17 @@
+syntax = "proto3";
+
+package common;
+
+option go_package = "github.com/input-output-hk/catalyst-forge/lib/schema/proto/generated/common";
+
+// CIRetries contains the configuration for the retries of an Earthly target.
+message CIRetries {
+  // Attempts contains the number of attempts to retry the target.
+  int32 attempts = 1;
+
+  // Delay contains the delay between retries.
+  string delay = 2;
+
+  // Filters filters retries based on the log lines from the Earthly run.
+  repeated string filters = 3;
+}

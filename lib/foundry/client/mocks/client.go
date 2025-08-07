@@ -6,6 +6,7 @@ package mocks
 import (
 	"github.com/input-output-hk/catalyst-forge/lib/foundry/client"
 	"github.com/input-output-hk/catalyst-forge/lib/foundry/client/auth"
+	"github.com/input-output-hk/catalyst-forge/lib/foundry/client/certificates"
 	"github.com/input-output-hk/catalyst-forge/lib/foundry/client/deployments"
 	"github.com/input-output-hk/catalyst-forge/lib/foundry/client/github"
 	"github.com/input-output-hk/catalyst-forge/lib/foundry/client/releases"
@@ -28,6 +29,9 @@ var _ client.Client = &ClientMock{}
 //			},
 //			AuthFunc: func() auth.AuthClientInterface {
 //				panic("mock out the Auth method")
+//			},
+//			CertificatesFunc: func() certificates.CertificatesClientInterface {
+//				panic("mock out the Certificates method")
 //			},
 //			DeploymentsFunc: func() deployments.DeploymentsClientInterface {
 //				panic("mock out the Deployments method")
@@ -63,6 +67,9 @@ type ClientMock struct {
 	// AuthFunc mocks the Auth method.
 	AuthFunc func() auth.AuthClientInterface
 
+	// CertificatesFunc mocks the Certificates method.
+	CertificatesFunc func() certificates.CertificatesClientInterface
+
 	// DeploymentsFunc mocks the Deployments method.
 	DeploymentsFunc func() deployments.DeploymentsClientInterface
 
@@ -92,6 +99,9 @@ type ClientMock struct {
 		// Auth holds details about calls to the Auth method.
 		Auth []struct {
 		}
+		// Certificates holds details about calls to the Certificates method.
+		Certificates []struct {
+		}
 		// Deployments holds details about calls to the Deployments method.
 		Deployments []struct {
 		}
@@ -114,15 +124,16 @@ type ClientMock struct {
 		Users []struct {
 		}
 	}
-	lockAliases     sync.RWMutex
-	lockAuth        sync.RWMutex
-	lockDeployments sync.RWMutex
-	lockEvents      sync.RWMutex
-	lockGithub      sync.RWMutex
-	lockKeys        sync.RWMutex
-	lockReleases    sync.RWMutex
-	lockRoles       sync.RWMutex
-	lockUsers       sync.RWMutex
+	lockAliases      sync.RWMutex
+	lockAuth         sync.RWMutex
+	lockCertificates sync.RWMutex
+	lockDeployments  sync.RWMutex
+	lockEvents       sync.RWMutex
+	lockGithub       sync.RWMutex
+	lockKeys         sync.RWMutex
+	lockReleases     sync.RWMutex
+	lockRoles        sync.RWMutex
+	lockUsers        sync.RWMutex
 }
 
 // Aliases calls AliasesFunc.
@@ -176,6 +187,33 @@ func (mock *ClientMock) AuthCalls() []struct {
 	mock.lockAuth.RLock()
 	calls = mock.calls.Auth
 	mock.lockAuth.RUnlock()
+	return calls
+}
+
+// Certificates calls CertificatesFunc.
+func (mock *ClientMock) Certificates() certificates.CertificatesClientInterface {
+	if mock.CertificatesFunc == nil {
+		panic("ClientMock.CertificatesFunc: method is nil but Client.Certificates was just called")
+	}
+	callInfo := struct {
+	}{}
+	mock.lockCertificates.Lock()
+	mock.calls.Certificates = append(mock.calls.Certificates, callInfo)
+	mock.lockCertificates.Unlock()
+	return mock.CertificatesFunc()
+}
+
+// CertificatesCalls gets all the calls that were made to Certificates.
+// Check the length with:
+//
+//	len(mockedClient.CertificatesCalls())
+func (mock *ClientMock) CertificatesCalls() []struct {
+} {
+	var calls []struct {
+	}
+	mock.lockCertificates.RLock()
+	calls = mock.calls.Certificates
+	mock.lockCertificates.RUnlock()
 	return calls
 }
 

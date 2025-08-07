@@ -15,6 +15,7 @@ type Config struct {
 	Database   DatabaseConfig   `kong:"embed"`
 	Logging    LoggingConfig    `kong:"embed"`
 	Kubernetes KubernetesConfig `kong:"embed"`
+	StepCA     StepCAConfig     `kong:"embed"`
 }
 
 // ServerConfig represents server-specific configuration
@@ -49,6 +50,14 @@ type LoggingConfig struct {
 type KubernetesConfig struct {
 	Namespace string `kong:"help='Kubernetes namespace to use',default='default',env='K8S_NAMESPACE'"`
 	Enabled   bool   `kong:"help='Enable Kubernetes integration',default=false,env='K8S_ENABLED'"`
+}
+
+// StepCAConfig represents step-ca certificate authority configuration
+type StepCAConfig struct {
+	BaseURL            string        `kong:"help='step-ca server URL',default='https://step-ca:9000',env='STEPCA_BASE_URL'"`
+	InsecureSkipVerify bool          `kong:"help='Skip TLS certificate verification (only for testing!)',default=false,env='STEPCA_INSECURE_SKIP_VERIFY'"`
+	ClientTimeout      time.Duration `kong:"help='Request timeout for step-ca client',default=30s,env='STEPCA_TIMEOUT',name='stepca-timeout'"`
+	RootCA             string        `kong:"help='Path to step-ca root certificate for TLS verification',env='STEPCA_ROOT_CA'"`
 }
 
 // Validate validates the configuration

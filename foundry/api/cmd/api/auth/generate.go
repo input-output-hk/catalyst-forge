@@ -6,6 +6,7 @@ import (
 
 	"github.com/input-output-hk/catalyst-forge/lib/foundry/auth"
 	"github.com/input-output-hk/catalyst-forge/lib/foundry/auth/jwt"
+	"github.com/input-output-hk/catalyst-forge/lib/foundry/auth/jwt/tokens"
 )
 
 type GenerateCmd struct {
@@ -16,25 +17,26 @@ type GenerateCmd struct {
 }
 
 func (g *GenerateCmd) Run() error {
-	am, err := jwt.NewJWTManager(g.PrivateKey, "")
+	// Use the new ES256Manager
+	manager, err := jwt.NewES256Manager(g.PrivateKey, "")
 	if err != nil {
 		return err
 	}
 
+	// Determine user ID and permissions
+	userID := "user"
+	permissions := g.Permissions
 	if g.Admin {
-		token, err := am.GenerateToken("admin", auth.AllPermissions, g.Expiration)
-		if err != nil {
-			return err
-		}
-		fmt.Println(token)
-		return nil
+		userID = "admin"
+		permissions = auth.AllPermissions
 	}
 
-	token, err := am.GenerateToken("user", g.Permissions, g.Expiration)
+	// Generate token using the new tokens package
+	token, err := tokens.GenerateAuthToken(manager, userID, permissions, g.Expiration)
 	if err != nil {
 		return err
 	}
-	fmt.Println(token)
 
+	fmt.Println(token)
 	return nil
 }

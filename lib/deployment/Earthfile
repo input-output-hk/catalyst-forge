@@ -1,7 +1,7 @@
 VERSION 0.8
 
 deps:
-    FROM golang:1.24.2-bookworm
+    FROM golang:1.24.5-bookworm
 
     WORKDIR /work
 
@@ -10,6 +10,9 @@ deps:
     ENV GOMODCACHE=/go/modcache
     CACHE --persist --sharing shared /go
 
+    COPY ../external/helm+src/src /external/helm
+    COPY ../external/kcl+src/src /external/kcl
+    COPY ../oci+src/src /oci
     COPY ../project+src/src /project
     COPY ../providers+src/src /providers
     COPY ../schema+src/src /schema

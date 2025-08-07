@@ -1,0 +1,18 @@
+syntax = "proto3";
+
+package project;
+
+option go_package = "github.com/input-output-hk/catalyst-forge/lib/schema/proto/generated/project";
+
+// Release contains the configuration for the release of the project.
+message Release {
+  // Config contains the configuration to pass to the release.
+  bytes config = 1;
+
+  // On contains the events that trigger the release.
+  map<string, bytes> on = 2;
+
+  // Target is the Earthly target to run for this release.
+  // Defaults to release name.
+  string target = 3;
+}

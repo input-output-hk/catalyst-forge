@@ -1,0 +1,27 @@
+syntax = "proto3";
+
+package blueprint;
+
+option go_package = "github.com/input-output-hk/catalyst-forge/lib/schema/proto/generated";
+
+import "global/main.proto";
+import "project/main.proto";
+
+// Blueprint contains the schema for blueprint files.
+message Blueprint {
+  // Data contains arbitrary configuration data that can be re-used throughout the blueprint.
+  // This is useful for loading attribute values, for example:
+  //   data: foo: _ @env(name="FOO", type="string")
+  // This is a necessary workaround as attribute values cannot be arbitrarily referenced in CUE.
+  // This field is otherwise unused.
+  bytes data = 1;
+
+  // Global contains the global configuration for the repository.
+  global.Global global = 2;
+
+  // Project contains the configuration for the project.
+  project.Project project = 3;
+
+  // DEPRECATED: This field is deprecated and will be removed in a future version.
+  string version = 4;
+}

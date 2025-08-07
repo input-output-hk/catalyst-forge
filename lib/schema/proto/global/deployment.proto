@@ -1,0 +1,38 @@
+syntax = "proto3";
+
+package global;
+
+option go_package = "github.com/input-output-hk/catalyst-forge/lib/schema/proto/generated/global";
+
+// Deployment contains the configuration for global deployment settings.
+message Deployment {
+  // Environment contains the default environment to deploy projects to.
+  string environment = 1;
+
+  // Registries contains the configuration for the global deployment registries.
+  DeploymentRegistries registries = 2;
+
+  // Repo contains the configuration for the global deployment repository.
+  DeploymentRepo repo = 3;
+
+  // Root contains the root deployment directory in the deployment repository.
+  string root = 4;
+}
+
+// DeploymentRegistries contains the configuration for the global deployment registries.
+message DeploymentRegistries {
+  // Containers contains the default container registry to use for deploying containers.
+  string containers = 1;
+
+  // Modules contains the container registry that holds deployment modules.
+  string modules = 2;
+}
+
+// DeploymentRepo contains the configuration for the global deployment repository.
+message DeploymentRepo {
+  // Ref contains the ref to use for the deployment repository.
+  string ref = 1;
+
+  // URL contains the URL of the deployment repository.
+  string url = 2;
+}

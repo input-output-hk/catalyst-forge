@@ -10,6 +10,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/input-output-hk/catalyst-forge/lib/foundry/auth"
 	"github.com/input-output-hk/catalyst-forge/lib/foundry/auth/jwt"
+	"github.com/input-output-hk/catalyst-forge/lib/foundry/auth/jwt/tokens"
 )
 
 // AuthenticatedUser is a struct that contains the user information from the
@@ -17,7 +18,7 @@ import (
 type AuthenticatedUser struct {
 	ID          string
 	Permissions []auth.Permission
-	Claims      *jwt.Claims
+	Claims      *tokens.AuthClaims
 }
 
 // hasPermissions checks if the user has the required permissions
@@ -32,7 +33,7 @@ func (u *AuthenticatedUser) hasPermissions(permissions []auth.Permission) bool {
 
 // AuthMiddleware provides a middleware that validates a user's permissions
 type AuthMiddleware struct {
-	jwtManager *jwt.JWTManager
+	jwtManager jwt.JWTManager
 	logger     *slog.Logger
 }
 
@@ -46,6 +47,7 @@ func (h *AuthMiddleware) ValidatePermissions(permissions []auth.Permission) gin.
 				"error": "Invalid token",
 			})
 			c.Abort()
+			return
 		}
 
 		user, err := h.getUser(token)
@@ -55,6 +57,7 @@ func (h *AuthMiddleware) ValidatePermissions(permissions []auth.Permission) gin.
 				"error": "Invalid token",
 			})
 			c.Abort()
+			return
 		}
 
 		if !user.hasPermissions(permissions) {
@@ -63,6 +66,44 @@ func (h *AuthMiddleware) ValidatePermissions(permissions []auth.Permission) gin.
 				"error": "Permission denied",
 			})
 			c.Abort()
+			return
+		}
+
+		c.Set("user", user)
+		c.Next()
+	}
+}
+
+// ValidateAnyCertificatePermission returns a middleware that validates the user has any certificate signing permission
+func (h *AuthMiddleware) ValidateAnyCertificatePermission() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		token, err := h.getToken(c)
+		if err != nil {
+			h.logger.Warn("Invalid token", "error", err)
+			c.JSON(http.StatusUnauthorized, gin.H{
+				"error": "Invalid token",
+			})
+			c.Abort()
+			return
+		}
+
+		user, err := h.getUser(token)
+		if err != nil {
+			h.logger.Warn("Invalid token", "error", err)
+			c.JSON(http.StatusUnauthorized, gin.H{
+				"error": "Invalid token",
+			})
+			c.Abort()
+			return
+		}
+
+		if !tokens.HasAnyCertificateSignPermission(user.Claims) {
+			h.logger.Warn("Permission denied", "user_id", user.ID, "reason", "no certificate signing permissions")
+			c.JSON(http.StatusForbidden, gin.H{
+				"error": "Permission denied: no certificate signing permissions",
+			})
+			c.Abort()
+			return
 		}
 
 		c.Set("user", user)
@@ -86,7 +127,7 @@ func (h *AuthMiddleware) getToken(c *gin.Context) (string, error) {
 
 // getUser validates the token and returns the authenticated user
 func (h *AuthMiddleware) getUser(token string) (*AuthenticatedUser, error) {
-	claims, err := h.jwtManager.ValidateToken(token)
+	claims, err := tokens.VerifyAuthToken(h.jwtManager, token)
 	if err != nil {
 		return nil, err
 	}
@@ -99,7 +140,7 @@ func (h *AuthMiddleware) getUser(token string) (*AuthenticatedUser, error) {
 }
 
 // NewAuthMiddleware creates a new AuthMiddlewareHandler
-func NewAuthMiddleware(jwtManager *jwt.JWTManager, logger *slog.Logger) *AuthMiddleware {
+func NewAuthMiddleware(jwtManager jwt.JWTManager, logger *slog.Logger) *AuthMiddleware {
 	return &AuthMiddleware{
 		jwtManager: jwtManager,
 		logger:     logger,

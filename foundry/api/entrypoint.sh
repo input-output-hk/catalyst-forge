@@ -41,5 +41,32 @@ if [[ -n "${DB_INIT:-}" ]]; then
     echo "Database initialization complete."
 fi
 
+# Fetch root CA from Step CA server if STEPCA_ROOT_CA is set
+if [[ -n "${STEPCA_ROOT_CA:-}" ]]; then
+    echo "Fetching root CA from Step CA server..."
+
+    # Wait for Step CA server to be ready
+    echo "Waiting for Step CA server to be available..."
+    until curl -f -k "${STEPCA_BASE_URL}/health" >/dev/null 2>&1; do
+        echo "Step CA server not ready, waiting..."
+        sleep 2
+    done
+    echo "Step CA server is ready."
+
+    # Create the directory if it doesn't exist
+    mkdir -p "$(dirname "${STEPCA_ROOT_CA}")"
+
+    # Fetch the root CA
+    echo "Downloading root CA from ${STEPCA_BASE_URL}/roots.pem..."
+    if curl -f -k "${STEPCA_BASE_URL}/roots.pem" > "${STEPCA_ROOT_CA}"; then
+        echo "Root CA downloaded successfully to ${STEPCA_ROOT_CA}"
+        echo "Root CA contents (first 3 lines):"
+        head -3 "${STEPCA_ROOT_CA}"
+    else
+        echo "ERROR: Failed to download root CA from Step CA server"
+        exit 1
+    fi
+fi
+
 echo "Starting Foundry API server..."
 exec /app/foundry-api run

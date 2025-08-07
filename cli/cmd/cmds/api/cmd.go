@@ -5,15 +5,17 @@ import (
 
 	"github.com/alecthomas/kong"
 	"github.com/input-output-hk/catalyst-forge/cli/cmd/cmds/api/auth"
+	"github.com/input-output-hk/catalyst-forge/cli/cmd/cmds/api/certificates"
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/run"
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/utils"
 	"github.com/input-output-hk/catalyst-forge/lib/foundry/client"
 )
 
 type ApiCmd struct {
-	Auth     auth.AuthCmd `cmd:"" help:"Manage API authentication."`
-	Login    LoginCmd     `cmd:"" help:"Login to the Foundry API."`
-	Register RegisterCmd  `cmd:"" help:"Register a new user with the Foundry API."`
+	Auth         auth.AuthCmd                 `cmd:"" help:"Manage API authentication."`
+	Certificates certificates.CertificatesCmd `cmd:"" help:"Manage certificates."`
+	Login        LoginCmd                     `cmd:"" help:"Login to the Foundry API."`
+	Register     RegisterCmd                  `cmd:"" help:"Register a new user with the Foundry API."`
 }
 
 func (c *ApiCmd) AfterApply(kctx *kong.Context, ctx run.RunContext) error {

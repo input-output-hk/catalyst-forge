@@ -8,7 +8,6 @@ import (
 	"testing"
 
 	"github.com/aws/aws-sdk-go-v2/service/ecr"
-	exmocks "github.com/input-output-hk/catalyst-forge/cli/pkg/executor/mocks"
 	"github.com/input-output-hk/catalyst-forge/lib/project/project"
 	"github.com/input-output-hk/catalyst-forge/lib/providers/aws"
 	"github.com/input-output-hk/catalyst-forge/lib/providers/aws/mocks"
@@ -16,6 +15,7 @@ import (
 	sg "github.com/input-output-hk/catalyst-forge/lib/schema/blueprint/global"
 	spr "github.com/input-output-hk/catalyst-forge/lib/schema/blueprint/global/providers"
 	sp "github.com/input-output-hk/catalyst-forge/lib/schema/blueprint/project"
+	exmocks "github.com/input-output-hk/catalyst-forge/lib/tools/executor/mocks"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/fs/billy"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/testutils"
 	"github.com/stretchr/testify/assert"

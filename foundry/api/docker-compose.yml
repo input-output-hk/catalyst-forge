@@ -2,10 +2,10 @@ services:
   auth:
     image: foundry-api:latest
     container_name: auth
-    entrypoint: ["/bin/sh", "-c", "/app/foundry-api auth init --output-dir /data"]
+    entrypoint: ["/usr/local/bin/entrypoint.sh"]
     volumes:
       - ./.auth:/data
-    restart: on-failure
+      - ./test/step-ca/scripts/auth.sh:/usr/local/bin/entrypoint.sh:ro
 
   auth-jwt:
     image: foundry-api:latest
@@ -13,7 +13,6 @@ services:
     entrypoint: ["/bin/sh", "-c", "/app/foundry-api auth generate -a -k /data/private.pem >/data/jwt.txt"]
     volumes:
       - ./.auth:/data
-    restart: on-failure
     depends_on:
       auth:
         condition: service_started
@@ -38,6 +37,10 @@ services:
       K8S_ENABLED: "false"
       LOG_LEVEL: debug
       LOG_FORMAT: text
+      STEPCA_BASE_URL: https://step-ca:9000
+      STEPCA_INSECURE_SKIP_VERIFY: "true"
+      STEPCA_TIMEOUT: 30s
+      STEPCA_ROOT_CA: /ca/root_ca.crt
     ports:
       - "5050:5050"
       - "8080:8080"
@@ -53,6 +56,8 @@ services:
       auth:
         condition: service_started
       postgres:
+        condition: service_healthy
+      step-ca:
         condition: service_healthy
     restart: on-failure
 
@@ -104,6 +109,36 @@ services:
         condition: service_healthy
     restart: on-failure
 
+  step-ca:
+    image: smallstep/step-ca:0.26.1
+    container_name: step-ca
+    environment:
+      STEP_PATH: /home/step
+      DOCKER_STEPCA_INIT_NAME: "Foundry Test CA"
+      DOCKER_STEPCA_INIT_DNS_NAMES: "step-ca,localhost"
+      DOCKER_STEPCA_INIT_REMOTE_MANAGEMENT: "false"
+      DOCKER_STEPCA_INIT_ACME: "false"
+      DOCKER_STEPCA_INIT_PASSWORD: "password123"
+      STEPDEBUG: "1"
+    volumes:
+      - step-ca-data:/home/step
+      - ./.auth:/foundry-keys:rw
+      - ./test/step-ca/scripts/step-ca-entrypoint.sh:/usr/local/bin/entrypoint.sh:ro
+    ports:
+      - "9000:9000"
+    entrypoint: ["/usr/local/bin/entrypoint.sh"]
+    healthcheck:
+      test: ["CMD", "step", "ca", "health", "--ca-url", "https://localhost:9000", "--root", "/home/step/certs/root_ca.crt"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+    depends_on:
+      auth:
+        condition: service_completed_successfully
+    restart: on-failure
+
 volumes:
   postgres-data:
   pgadmin-data:
+  step-ca-data:

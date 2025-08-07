@@ -1,0 +1,27 @@
+syntax = "proto3";
+
+package project;
+
+option go_package = "github.com/input-output-hk/catalyst-forge/lib/schema/proto/generated/project";
+
+import "project/ci.proto";
+import "project/deployment.proto";
+import "project/release.proto";
+
+// Project contains the configuration for a project.
+message Project {
+  // Name contains the name of the project.
+  string name = 1;
+
+  // Container is the name that the container will be built as.
+  string container = 2;
+
+  // CI contains the configuration for the CI system.
+  CI ci = 3;
+
+  // Deployment contains the configuration for the deployment of the project.
+  Deployment deployment = 4;
+
+  // Release contains the configuration for the release of the project.
+  map<string, Release> release = 5;
+}
