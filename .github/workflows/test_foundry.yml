@@ -34,13 +34,13 @@ jobs:
         run: |
             forge run ./foundry/api+docker
 
-      - name: Build test image
-        run: |
-            forge run ./foundry/api+docker-test
+      # - name: Build test image
+      #   run: |
+      #       forge run ./foundry/api+docker-test
 
       - name: Start API
         run: |
-          docker compose -f ./foundry/api/docker-compose.yml up -d auth auth-jwt api postgres step-ca
+          docker compose -f ./foundry/api/docker-compose.yml up -d auth auth-jwt api postgres step-ca || docker compose -f ./foundry/api/docker-compose.yml logs step-ca
 
       - name: Wait for API to be ready
         run: |
@@ -48,4 +48,4 @@ jobs:
 
       - name: Run test
         run: |
-            docker compose -f ./foundry/api/docker-compose.yml up --abort-on-container-exit --exit-code-from api-test || docker compose -f ./foundry/api/docker-compose.yml logs step-ca
+            docker compose -f ./foundry/api/docker-compose.yml up --abort-on-container-exit --exit-code-from api-test
