@@ -34,9 +34,9 @@ jobs:
         run: |
             forge run ./foundry/api+docker
 
-      # - name: Build test image
-      #   run: |
-      #       forge run ./foundry/api+docker-test
+      - name: Build test image
+        run: |
+            forge run ./foundry/api+docker-test
 
       - name: Start API
         run: |
