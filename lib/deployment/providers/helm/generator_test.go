@@ -47,7 +47,6 @@ func TestHelmManifestGenerator(t *testing.T) {
 	require.Equal(t, string(golden), string(result))
 }
 
-
 func getRaw(m sp.Module) cue.Value {
 	ctx := cuecontext.New()
 	return ctx.Encode(m)

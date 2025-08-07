@@ -10,6 +10,67 @@ definitions:
     - message
     - name
     type: object
+  handlers.CertificateSigningRequest:
+    properties:
+      common_name:
+        description: CommonName can override the CN in the CSR
+        example: user.example.com
+        type: string
+      csr:
+        description: CSR is the PEM-encoded Certificate Signing Request
+        example: |-
+          -----BEGIN CERTIFICATE REQUEST-----
+          ...
+        type: string
+      sans:
+        description: |-
+          SANs are additional Subject Alternative Names to include
+          These will be validated against user permissions
+        example:
+        - example.com
+        - '*.example.com'
+        items:
+          type: string
+        type: array
+      ttl:
+        description: |-
+          TTL is the requested certificate lifetime
+          Will be capped by server policy
+        example: 24h
+        type: string
+    required:
+    - csr
+    type: object
+  handlers.CertificateSigningResponse:
+    properties:
+      certificate:
+        description: Certificate is the PEM-encoded signed certificate
+        example: |-
+          -----BEGIN CERTIFICATE-----
+          ...
+        type: string
+      certificate_chain:
+        description: CertificateChain includes intermediate certificates if available
+        items:
+          type: string
+        type: array
+      fingerprint:
+        description: Fingerprint is the SHA256 fingerprint of the certificate
+        example: sha256:abcdef...
+        type: string
+      not_after:
+        description: NotAfter is when the certificate expires
+        example: "2024-01-02T00:00:00Z"
+        type: string
+      not_before:
+        description: NotBefore is when the certificate becomes valid
+        example: "2024-01-01T00:00:00Z"
+        type: string
+      serial_number:
+        description: SerialNumber is the certificate's serial number
+        example: "123456789"
+        type: string
+    type: object
   handlers.ChallengeRequest:
     properties:
       email:
@@ -1885,6 +1946,68 @@ paths:
       summary: Register a new user
       tags:
       - users
+  /certificates/root:
+    get:
+      description: Returns the Certificate Authority's root certificate
+      produces:
+      - text/plain
+      responses:
+        "200":
+          description: PEM-encoded root certificate
+          schema:
+            type: string
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Get root certificate
+      tags:
+      - certificates
+  /certificates/sign:
+    post:
+      consumes:
+      - application/json
+      description: Signs a Certificate Signing Request (CSR) using step-ca
+      parameters:
+      - description: Certificate signing request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.CertificateSigningRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.CertificateSigningResponse'
+        "400":
+          description: Invalid request
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+        "403":
+          description: Forbidden - insufficient permissions
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Sign a certificate
+      tags:
+      - certificates
   /healthz:
     get:
       consumes:

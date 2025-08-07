@@ -2210,6 +2210,100 @@ const docTemplate = `{
                 }
             }
         },
+        "/certificates/root": {
+            "get": {
+                "description": "Returns the Certificate Authority's root certificate",
+                "produces": [
+                    "text/plain"
+                ],
+                "tags": [
+                    "certificates"
+                ],
+                "summary": "Get root certificate",
+                "responses": {
+                    "200": {
+                        "description": "PEM-encoded root certificate",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/certificates/sign": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Signs a Certificate Signing Request (CSR) using step-ca",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "certificates"
+                ],
+                "summary": "Sign a certificate",
+                "parameters": [
+                    {
+                        "description": "Certificate signing request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/handlers.CertificateSigningRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.CertificateSigningResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden - insufficient permissions",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
         "/healthz": {
             "get": {
                 "description": "Check the health status of the API service",
@@ -3137,6 +3231,77 @@ const docTemplate = `{
                 },
                 "name": {
                     "type": "string"
+                }
+            }
+        },
+        "handlers.CertificateSigningRequest": {
+            "type": "object",
+            "required": [
+                "csr"
+            ],
+            "properties": {
+                "common_name": {
+                    "description": "CommonName can override the CN in the CSR",
+                    "type": "string",
+                    "example": "user.example.com"
+                },
+                "csr": {
+                    "description": "CSR is the PEM-encoded Certificate Signing Request",
+                    "type": "string",
+                    "example": "-----BEGIN CERTIFICATE REQUEST-----\n..."
+                },
+                "sans": {
+                    "description": "SANs are additional Subject Alternative Names to include\nThese will be validated against user permissions",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "example": [
+                        "example.com",
+                        "*.example.com"
+                    ]
+                },
+                "ttl": {
+                    "description": "TTL is the requested certificate lifetime\nWill be capped by server policy",
+                    "type": "string",
+                    "example": "24h"
+                }
+            }
+        },
+        "handlers.CertificateSigningResponse": {
+            "type": "object",
+            "properties": {
+                "certificate": {
+                    "description": "Certificate is the PEM-encoded signed certificate",
+                    "type": "string",
+                    "example": "-----BEGIN CERTIFICATE-----\n..."
+                },
+                "certificate_chain": {
+                    "description": "CertificateChain includes intermediate certificates if available",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "fingerprint": {
+                    "description": "Fingerprint is the SHA256 fingerprint of the certificate",
+                    "type": "string",
+                    "example": "sha256:abcdef..."
+                },
+                "not_after": {
+                    "description": "NotAfter is when the certificate expires",
+                    "type": "string",
+                    "example": "2024-01-02T00:00:00Z"
+                },
+                "not_before": {
+                    "description": "NotBefore is when the certificate becomes valid",
+                    "type": "string",
+                    "example": "2024-01-01T00:00:00Z"
+                },
+                "serial_number": {
+                    "description": "SerialNumber is the certificate's serial number",
+                    "type": "string",
+                    "example": "123456789"
                 }
             }
         },

@@ -218,7 +218,7 @@ func (c *OrasClient) Pull(imageURL, destPath string) error {
 	if err != nil {
 		return fmt.Errorf("failed to create credential store: %w", err)
 	}
-	
+
 	repo.Client = &auth.Client{
 		Client:     retry.DefaultClient,
 		Cache:      auth.NewCache(),

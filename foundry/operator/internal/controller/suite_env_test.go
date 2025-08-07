@@ -21,6 +21,7 @@ import (
 	tu "github.com/input-output-hk/catalyst-forge/lib/deployment/utils/test"
 	"github.com/input-output-hk/catalyst-forge/lib/foundry/client"
 	"github.com/input-output-hk/catalyst-forge/lib/foundry/client/auth"
+	"github.com/input-output-hk/catalyst-forge/lib/foundry/client/certificates"
 	"github.com/input-output-hk/catalyst-forge/lib/foundry/client/deployments"
 	"github.com/input-output-hk/catalyst-forge/lib/foundry/client/deployments/mocks"
 	"github.com/input-output-hk/catalyst-forge/lib/foundry/client/github"
@@ -199,6 +200,10 @@ func (m *mockClient) Deployments() deployments.DeploymentsClientInterface {
 
 func (m *mockClient) Events() deployments.EventsClientInterface {
 	return m.events
+}
+
+func (m *mockClient) Certificates() certificates.CertificatesClientInterface {
+	return nil
 }
 
 func (m *mockEnv) ConfigureController(ctrl *ReleaseDeploymentReconciler) {
