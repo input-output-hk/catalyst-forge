@@ -140,10 +140,10 @@ func (d *BrewDeployer) cloneTapRepo() (*repo.GitRepo, error) {
 		if err != nil {
 			d.logger.Warn("Could not determine current branch, will attempt to create/checkout target branch", "error", err)
 		}
-		
+
 		if currentBranch != d.cfg.Brew.Tap.Branch {
 			d.logger.Info("Switching to target branch", "current_branch", currentBranch, "target_branch", d.cfg.Brew.Tap.Branch)
-			
+
 			// Try to checkout existing branch first
 			if err := r.CheckoutBranch(d.cfg.Brew.Tap.Branch); err != nil {
 				// If checkout fails, the branch likely doesn't exist, so create it

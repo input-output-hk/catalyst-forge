@@ -306,7 +306,7 @@ end`)
 					if err != nil {
 						return nil, err
 					}
-					
+
 					// Create a simple file and commit it
 					file, err := worktree.Create("README.md")
 					if err != nil {
@@ -317,12 +317,12 @@ end`)
 						return nil, err
 					}
 					file.Close()
-					
+
 					_, err = wt.Add("README.md")
 					if err != nil {
 						return nil, err
 					}
-					
+
 					_, err = wt.Commit("Initial commit", &gg.CommitOptions{
 						Author: &gg_object.Signature{
 							Name:  "Test",
