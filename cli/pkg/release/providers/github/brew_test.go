@@ -71,29 +71,29 @@ func TestBrewDeployer_Deploy(t *testing.T) {
 				content, err := gitFs.ReadFile(recipePath)
 				require.NoError(t, err)
 				recipeContent := string(content)
-				
+
 				// Check basic structure
 				assert.Contains(t, recipeContent, `class My-Cli < Formula`) // Title case with hyphen preserved
 				assert.Contains(t, recipeContent, `desc "A test CLI"`)
 				assert.Contains(t, recipeContent, `homepage "https://github.com/test-org/my-cli"`)
 				assert.Contains(t, recipeContent, `version "v0.1.0"`)
-				
+
 				// Check all assets are present
 				assert.Contains(t, recipeContent, `"DarwinAMD64"`)
 				assert.Contains(t, recipeContent, `url "https://github.com/test-org/my-cli/releases/download/v0.1.0/my-cli-darwin-amd64.tar.gz"`)
-				
+
 				assert.Contains(t, recipeContent, `"DarwinARM64"`)
 				assert.Contains(t, recipeContent, `url "https://github.com/test-org/my-cli/releases/download/v0.1.0/my-cli-darwin-arm64.tar.gz"`)
-				
+
 				assert.Contains(t, recipeContent, `"LinuxAMD64"`)
 				assert.Contains(t, recipeContent, `url "https://github.com/test-org/my-cli/releases/download/v0.1.0/my-cli-linux-amd64.tar.gz"`)
-				
+
 				assert.Contains(t, recipeContent, `"LinuxARM64"`)
 				assert.Contains(t, recipeContent, `url "https://github.com/test-org/my-cli/releases/download/v0.1.0/my-cli-linux-arm64.tar.gz"`)
 
 				// Check that sha256 hashes are present (they will be calculated from actual file content)
 				assert.Contains(t, recipeContent, `sha256 "`)
-				
+
 				// Check install section
 				assert.Contains(t, recipeContent, `bin.install "my-cli"`)
 
@@ -192,12 +192,12 @@ func TestBrewDeployer_Deploy(t *testing.T) {
 
 				// Verify that Clone was called twice (once for template repo, once for tap repo)
 				assert.Equal(t, 2, len(remote.CloneCalls()), "Clone should be called twice")
-				
+
 				// First call should be for template repository
 				templateClone := remote.CloneCalls()[0]
 				assert.Equal(t, "https://github.com/input-output-hk/catalyst-forge.git", templateClone.O.URL)
 				assert.Equal(t, "master", templateClone.O.ReferenceName.String())
-				
+
 				// Second call should be for tap repository
 				tapClone := remote.CloneCalls()[1]
 				assert.Equal(t, "https://github.com/org/homebrew-tap.git", tapClone.O.URL)
@@ -237,7 +237,7 @@ end`)
 			// Create separate filesystems for work and git
 			workFs := billy.NewInMemoryFs()
 			gitFs := billy.NewInMemoryFs()
-			
+
 			// Create the archive files in the work filesystem
 			for path, content := range tt.archiveFiles {
 				err := workFs.WriteFile(path, content, 0644)
@@ -254,7 +254,7 @@ end`)
 			remote := &rm.GitRemoteInteractorMock{
 				CloneFunc: func(s storage.Storer, worktree gb.Filesystem, o *gg.CloneOptions) (*gg.Repository, error) {
 					repo, err := gg.Init(s, worktree)
-					
+
 					// For the git template test case, write the template file to the first clone (template repo)
 					if tt.name == "brew release with git template repository" && cloneCallCount == 0 {
 						// This is the template repository clone
@@ -305,7 +305,7 @@ end`
 					} else {
 						capturedRepo = repo
 					}
-					
+
 					cloneCallCount++
 					return repo, err
 				},
@@ -370,7 +370,7 @@ end`
 
 			// Execute deployment
 			err := deployer.Deploy("release", tt.assets)
-			
+
 			// Validate results
 			tt.validate(t, workFs, gitFs, remote, err)
 		})
@@ -545,7 +545,7 @@ func TestBrewDeployer_getTemplateData(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			fs := billy.NewInMemoryFs()
-			
+
 			// Create test files
 			for path, content := range tt.files {
 				err := fs.WriteFile(path, content, 0644)
@@ -624,7 +624,7 @@ func TestBrewDeployer_fetchTemplateFromGit(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			logger := testutils.NewNoopLogger()
-			
+
 			// Create mock remote that simulates cloning a template repository
 			remote := &rm.GitRemoteInteractorMock{
 				CloneFunc: func(s storage.Storer, worktree gb.Filesystem, o *gg.CloneOptions) (*gg.Repository, error) {
@@ -632,7 +632,7 @@ func TestBrewDeployer_fetchTemplateFromGit(t *testing.T) {
 					if err != nil {
 						return nil, err
 					}
-					
+
 					// Only create the template file if it's the expected name
 					if tt.templateName == "go-v1" {
 						templateContent := `class {{ .Name | title }} < Formula
@@ -654,7 +654,7 @@ end`
 						}
 						file.Close()
 					}
-					
+
 					return repo, nil
 				},
 			}

@@ -163,7 +163,7 @@ func (d *BrewDeployer) getTemplateData(assets map[string]string) (*BrewTemplateD
 func (d *BrewDeployer) fetchTemplateFromGit() ([]byte, error) {
 	// Create a temporary filesystem for the template repo
 	tempFs := billy.NewInMemoryFs()
-	
+
 	// Create a git repo with temporary filesystem
 	templateRepo, err := repo.NewGitRepo(
 		"/template-repo",
@@ -182,7 +182,7 @@ func (d *BrewDeployer) fetchTemplateFromGit() ([]byte, error) {
 	if d.cfg.Brew.Templates.Branch != "" {
 		cloneOpts = append(cloneOpts, repo.WithRef(d.cfg.Brew.Templates.Branch))
 	}
-	
+
 	if err := templateRepo.Clone(d.cfg.Brew.Templates.Repository, cloneOpts...); err != nil {
 		return nil, fmt.Errorf("could not clone template repository: %w", err)
 	}
