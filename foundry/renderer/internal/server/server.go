@@ -9,7 +9,7 @@ import (
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/health/grpc_health_v1"
-	
+
 	"github.com/input-output-hk/catalyst-forge/foundry/renderer/internal/service"
 	"github.com/input-output-hk/catalyst-forge/foundry/renderer/pkg/proto"
 	"github.com/input-output-hk/catalyst-forge/lib/deployment"
@@ -25,9 +25,9 @@ type Config struct {
 
 // Server represents the gRPC server
 type Server struct {
-	config  Config
-	server  *grpc.Server
-	logger  *slog.Logger
+	config Config
+	server *grpc.Server
+	logger *slog.Logger
 }
 
 // NewServer creates a new gRPC server instance
@@ -81,7 +81,7 @@ func (s *Server) Start() error {
 	}
 
 	s.logger.Info("Starting gRPC server", "address", address)
-	
+
 	if err := s.server.Serve(listener); err != nil {
 		return fmt.Errorf("failed to serve: %w", err)
 	}
@@ -114,12 +114,12 @@ func initializeCacheDirectory(cachePath string, logger *slog.Logger) error {
 			return fmt.Errorf("cache path %s exists but is not a directory", cachePath)
 		}
 		logger.Debug("Cache directory already exists", "path", cachePath)
-		
+
 		// Test write permissions by creating a temporary file
 		if err := testWritePermissions(cachePath); err != nil {
 			return fmt.Errorf("cache directory %s is not writable: %w", cachePath, err)
 		}
-		
+
 		return nil
 	}
 
@@ -143,19 +143,19 @@ func initializeCacheDirectory(cachePath string, logger *slog.Logger) error {
 // testWritePermissions tests if we can write to the cache directory
 func testWritePermissions(cachePath string) error {
 	testFile := filepath.Join(cachePath, ".renderer-test")
-	
+
 	// Try to create a test file
 	f, err := os.Create(testFile)
 	if err != nil {
 		return fmt.Errorf("cannot create test file: %w", err)
 	}
 	f.Close()
-	
+
 	// Clean up the test file
 	if err := os.Remove(testFile); err != nil {
 		// Log the error but don't fail - the main functionality works
 		return fmt.Errorf("created test file but cannot remove it: %w", err)
 	}
-	
+
 	return nil
 }

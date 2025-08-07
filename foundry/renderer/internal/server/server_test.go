@@ -62,13 +62,13 @@ func TestNewServer(t *testing.T) {
 				tmpDir, err := os.MkdirTemp("", "renderer-cache-test")
 				require.NoError(t, err)
 				t.Cleanup(func() { os.RemoveAll(tmpDir) })
-				
+
 				// Create a file instead of directory
 				filePath := filepath.Join(tmpDir, "not-a-directory")
 				f, err := os.Create(filePath)
 				require.NoError(t, err)
 				f.Close()
-				
+
 				return filePath
 			},
 			validate: func(t *testing.T, server *Server, err error) {
@@ -83,7 +83,7 @@ func TestNewServer(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			config := tt.config
 			config.Logger = testutils.NewNoopLogger()
-			
+
 			if tt.setupFunc != nil {
 				config.CachePath = tt.setupFunc(t)
 			}
@@ -110,7 +110,7 @@ func TestInitializeCacheDirectory(t *testing.T) {
 			},
 			validate: func(t *testing.T, cachePath string, err error) {
 				require.NoError(t, err)
-				
+
 				// Verify directory was created
 				info, statErr := os.Stat(cachePath)
 				require.NoError(t, statErr)
@@ -127,7 +127,7 @@ func TestInitializeCacheDirectory(t *testing.T) {
 			},
 			validate: func(t *testing.T, cachePath string, err error) {
 				require.NoError(t, err)
-				
+
 				// Verify directory still exists
 				info, statErr := os.Stat(cachePath)
 				require.NoError(t, statErr)
@@ -140,13 +140,13 @@ func TestInitializeCacheDirectory(t *testing.T) {
 				tmpDir, err := os.MkdirTemp("", "renderer-cache-test")
 				require.NoError(t, err)
 				t.Cleanup(func() { os.RemoveAll(tmpDir) })
-				
+
 				// Create a file instead of directory
 				filePath := filepath.Join(tmpDir, "not-a-directory")
 				f, err := os.Create(filePath)
 				require.NoError(t, err)
 				f.Close()
-				
+
 				return filePath
 			},
 			validate: func(t *testing.T, cachePath string, err error) {
@@ -160,7 +160,7 @@ func TestInitializeCacheDirectory(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			cachePath := tt.setupFunc(t)
 			logger := testutils.NewNoopLogger()
-			
+
 			err := initializeCacheDirectory(cachePath, logger)
 			tt.validate(t, cachePath, err)
 		})

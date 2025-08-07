@@ -79,9 +79,9 @@ func NewClient(config Config) (*Client, error) {
 
 // SignRequest represents the request to sign a certificate
 type SignRequest struct {
-	CSR      string `json:"csr"`
-	OTT      string `json:"ott"` // One-time token (JWT)
-	NotAfter string `json:"notAfter,omitempty"` // Certificate expiry time/duration
+	CSR       string `json:"csr"`
+	OTT       string `json:"ott"`                 // One-time token (JWT)
+	NotAfter  string `json:"notAfter,omitempty"`  // Certificate expiry time/duration
 	NotBefore string `json:"notBefore,omitempty"` // Certificate validity start time/duration
 }
 
@@ -103,7 +103,7 @@ func (c *Client) SignCertificate(token string, csr []byte, ttl time.Duration) (*
 		CSR: csrPEM,
 		OTT: token,
 	}
-	
+
 	// If TTL is specified, set notAfter to control certificate validity
 	if ttl > 0 {
 		// step-ca accepts duration strings like "5m", "24h", etc.

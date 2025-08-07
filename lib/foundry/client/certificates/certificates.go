@@ -38,11 +38,11 @@ func (c *CertificatesClient) SignCertificate(ctx context.Context, req *Certifica
 	if req == nil {
 		return nil, fmt.Errorf("request cannot be nil")
 	}
-	
+
 	if req.CSR == "" {
 		return nil, fmt.Errorf("CSR cannot be empty")
 	}
-	
+
 	var response CertificateSigningResponse
 	err := c.do(ctx, "POST", "/certificates/sign", req, &response)
 	if err != nil {

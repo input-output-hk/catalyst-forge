@@ -10,13 +10,13 @@ import (
 
 	"github.com/input-output-hk/catalyst-forge/foundry/renderer/pkg/proto"
 	"github.com/input-output-hk/catalyst-forge/lib/deployment"
-	"github.com/input-output-hk/catalyst-forge/lib/tools/testutils"
 	sp "github.com/input-output-hk/catalyst-forge/lib/schema/proto/generated/project"
+	"github.com/input-output-hk/catalyst-forge/lib/tools/testutils"
 )
 
 func TestRendererService_HealthCheck(t *testing.T) {
 	tests := []struct {
-		name string
+		name     string
 		validate func(*testing.T, *proto.HealthCheckResponse, error)
 	}{
 		{
@@ -33,11 +33,11 @@ func TestRendererService_HealthCheck(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			// Create a mock manifest generator store
 			store := deployment.NewManifestGeneratorStore(map[deployment.Provider]func(*slog.Logger) (deployment.ManifestGenerator, error){})
-			
+
 			// Create service with noop logger for tests
 			logger := testutils.NewNoopLogger()
 			service := NewRendererService(store, logger)
-			
+
 			// Execute test
 			req := &proto.HealthCheckRequest{}
 			resp, err := service.HealthCheck(context.Background(), req)
@@ -48,9 +48,9 @@ func TestRendererService_HealthCheck(t *testing.T) {
 
 func TestRendererService_RenderManifests(t *testing.T) {
 	tests := []struct {
-		name   string
-		bundle *sp.ModuleBundle
-		envData []byte
+		name     string
+		bundle   *sp.ModuleBundle
+		envData  []byte
 		validate func(*testing.T, *proto.RenderManifestsResponse, error)
 	}{
 		{
@@ -132,11 +132,11 @@ func TestRendererService_RenderManifests(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			// Create a mock manifest generator store
 			store := deployment.NewManifestGeneratorStore(map[deployment.Provider]func(*slog.Logger) (deployment.ManifestGenerator, error){})
-			
+
 			// Create service with noop logger for tests
 			logger := testutils.NewNoopLogger()
 			service := NewRendererService(store, logger)
-			
+
 			// Execute test
 			req := &proto.RenderManifeststRequest{
 				Bundle:  tt.bundle,
