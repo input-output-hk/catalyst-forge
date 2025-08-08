@@ -24,6 +24,30 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
+        "/.well-known/jwks.json": {
+            "get": {
+                "description": "Returns the public JSON Web Key Set used to verify access tokens",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Get JWKS",
+                "responses": {
+                    "200": {
+                        "description": "JWKS",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
         "/auth/challenge": {
             "post": {
                 "description": "Create a new challenge for user authentication using Ed25519 keys",
@@ -474,6 +498,66 @@ const docTemplate = `{
                     },
                     "500": {
                         "description": "Internal server error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/invites": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Create an invite for a user with one or more roles; optionally emails a verification link",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Create invite",
+                "parameters": [
+                    {
+                        "description": "Invite creation request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/handlers.CreateInviteRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.CreateInviteResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Server error",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
@@ -2304,6 +2388,160 @@ const docTemplate = `{
                 }
             }
         },
+        "/device/approve": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Approve a pending device session identified by user_code",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "device"
+                ],
+                "summary": "Approve device session",
+                "parameters": [
+                    {
+                        "description": "Approval request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/handlers.DeviceApproveRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "approved",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "404": {
+                        "description": "Not found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/device/init": {
+            "post": {
+                "description": "Initialize a device authorization session and return device_code and user_code",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "device"
+                ],
+                "summary": "Start device authorization",
+                "parameters": [
+                    {
+                        "description": "Optional device metadata",
+                        "name": "request",
+                        "in": "body",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.DeviceInitRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.DeviceInitResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Server error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/device/token": {
+            "post": {
+                "description": "Poll the device authorization session for completion and receive tokens when approved",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "device"
+                ],
+                "summary": "Poll device token",
+                "parameters": [
+                    {
+                        "description": "Device token request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/handlers.DeviceTokenRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.DeviceTokenResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "401": {
+                        "description": "authorization_pending | expired_token | access_denied",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.DeviceTokenResponse"
+                        }
+                    },
+                    "429": {
+                        "description": "slow_down",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.DeviceTokenResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/healthz": {
             "get": {
                 "description": "Check the health status of the API service",
@@ -3216,6 +3454,143 @@ const docTemplate = `{
                     }
                 }
             }
+        },
+        "/tokens/refresh": {
+            "post": {
+                "description": "Rotate the refresh token and return a new access token and refresh token",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Refresh tokens",
+                "parameters": [
+                    {
+                        "description": "Refresh request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/handlers.TokenRefreshRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.TokenRefreshResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "401": {
+                        "description": "Invalid token",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Server error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/tokens/revoke": {
+            "post": {
+                "description": "Revoke a refresh token and any linked chain",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Revoke token",
+                "parameters": [
+                    {
+                        "description": "Revoke request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/handlers.TokenRevokeRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "status",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/verify": {
+            "get": {
+                "description": "Verify an invite token and activate the user; assigns roles from the invite",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Verify invite",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Invite token",
+                        "name": "token",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "verified",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Missing token",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "401": {
+                        "description": "Invalid or expired",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {
@@ -3342,6 +3717,35 @@ const docTemplate = `{
         "handlers.CreateAuthRequest": {
             "type": "object"
         },
+        "handlers.CreateInviteRequest": {
+            "type": "object",
+            "properties": {
+                "email": {
+                    "type": "string"
+                },
+                "roles": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "ttl": {
+                    "description": "e.g., \"72h\"",
+                    "type": "string"
+                }
+            }
+        },
+        "handlers.CreateInviteResponse": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "integer"
+                },
+                "token": {
+                    "type": "string"
+                }
+            }
+        },
         "handlers.CreateReleaseRequest": {
             "type": "object",
             "required": [
@@ -3368,6 +3772,71 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "source_repo": {
+                    "type": "string"
+                }
+            }
+        },
+        "handlers.DeviceApproveRequest": {
+            "type": "object",
+            "properties": {
+                "user_code": {
+                    "type": "string"
+                }
+            }
+        },
+        "handlers.DeviceInitRequest": {
+            "type": "object",
+            "properties": {
+                "fingerprint": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "platform": {
+                    "type": "string"
+                }
+            }
+        },
+        "handlers.DeviceInitResponse": {
+            "type": "object",
+            "properties": {
+                "device_code": {
+                    "type": "string"
+                },
+                "expires_in": {
+                    "type": "integer"
+                },
+                "interval": {
+                    "type": "integer"
+                },
+                "user_code": {
+                    "type": "string"
+                },
+                "verification_uri": {
+                    "type": "string"
+                }
+            }
+        },
+        "handlers.DeviceTokenRequest": {
+            "type": "object",
+            "properties": {
+                "device_code": {
+                    "type": "string"
+                }
+            }
+        },
+        "handlers.DeviceTokenResponse": {
+            "type": "object",
+            "properties": {
+                "access": {
+                    "type": "string"
+                },
+                "error": {
+                    "description": "authorization_pending | slow_down | expired_token | access_denied",
+                    "type": "string"
+                },
+                "refresh": {
                     "type": "string"
                 }
             }
@@ -3422,6 +3891,33 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "token": {
+                    "type": "string"
+                }
+            }
+        },
+        "handlers.TokenRefreshRequest": {
+            "type": "object",
+            "properties": {
+                "refresh": {
+                    "type": "string"
+                }
+            }
+        },
+        "handlers.TokenRefreshResponse": {
+            "type": "object",
+            "properties": {
+                "access": {
+                    "type": "string"
+                },
+                "refresh": {
+                    "type": "string"
+                }
+            }
+        },
+        "handlers.TokenRevokeRequest": {
+            "type": "object",
+            "properties": {
+                "refresh": {
                     "type": "string"
                 }
             }
@@ -3577,6 +4073,9 @@ const docTemplate = `{
                 "email": {
                     "type": "string"
                 },
+                "email_verified_at": {
+                    "type": "string"
+                },
                 "id": {
                     "type": "integer"
                 },
@@ -3585,6 +4084,9 @@ const docTemplate = `{
                 },
                 "updated_at": {
                     "type": "string"
+                },
+                "user_ver": {
+                    "type": "integer"
                 }
             }
         },
@@ -3879,6 +4381,10 @@ const docTemplate = `{
                 "created_at": {
                     "description": "Timestamps",
                     "type": "string"
+                },
+                "device_id": {
+                    "description": "Device association (optional)",
+                    "type": "integer"
                 },
                 "id": {
                     "type": "integer"
