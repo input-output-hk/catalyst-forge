@@ -28,6 +28,9 @@ type UserKey struct {
 	PubKeyB64 string        `gorm:"not null" json:"pubkey_b64"`
 	Status    UserKeyStatus `gorm:"not null;type:string;default:'active'" json:"status"`
 
+    // Device association (optional)
+    DeviceID  *uint `gorm:"index" json:"device_id,omitempty"`
+
 	// Relationships
 	User *User `gorm:"foreignKey:UserID" json:"user,omitempty"`
 

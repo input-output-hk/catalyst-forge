@@ -114,6 +114,9 @@ func (r *RunCmd) Run() error {
 		&user.Role{},
 		&user.UserRole{},
 		&user.UserKey{},
+		&user.Device{},
+		&user.RefreshToken{},
+		&user.RevokedJTI{},
 	)
 	if err != nil {
 		logger.Error("Failed to run migrations", "error", err)
