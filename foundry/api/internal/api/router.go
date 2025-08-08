@@ -7,8 +7,8 @@ import (
 	"github.com/input-output-hk/catalyst-forge/foundry/api/internal/api/handlers"
 	"github.com/input-output-hk/catalyst-forge/foundry/api/internal/api/handlers/user"
 	"github.com/input-output-hk/catalyst-forge/foundry/api/internal/api/middleware"
-    "github.com/input-output-hk/catalyst-forge/foundry/api/internal/service"
-    userrepo "github.com/input-output-hk/catalyst-forge/foundry/api/internal/repository/user"
+	userrepo "github.com/input-output-hk/catalyst-forge/foundry/api/internal/repository/user"
+	"github.com/input-output-hk/catalyst-forge/foundry/api/internal/service"
 	"github.com/input-output-hk/catalyst-forge/foundry/api/internal/service/stepca"
 	userservice "github.com/input-output-hk/catalyst-forge/foundry/api/internal/service/user"
 	"github.com/input-output-hk/catalyst-forge/lib/foundry/auth"
@@ -62,14 +62,18 @@ func SetupRouter(
 	authManager := auth.NewAuthManager()
 	authHandler := handlers.NewAuthHandler(userKeyService, userService, userRoleService, roleService, authManager, jwtManager, logger)
 
+	// Invite handler
+	inviteRepo := userrepo.NewInviteRepository(db)
+	inviteHandler := handlers.NewInviteHandler(inviteRepo, userService, roleService, userRoleService)
+
 	// GitHub handler
 	githubHandler := handlers.NewGithubHandler(jwtManager, ghaOIDCClient, ghaAuthService, logger)
 
 	// Certificate handler
 	certificateHandler := handlers.NewCertificateHandler(jwtManager, stepCAClient)
-    // Token handler
-    refreshRepo := userrepo.NewRefreshTokenRepository(db)
-    tokenHandler := handlers.NewTokenHandler(refreshRepo, userService, roleService, userRoleService, jwtManager)
+	// Token handler
+	refreshRepo := userrepo.NewRefreshTokenRepository(db)
+	tokenHandler := handlers.NewTokenHandler(refreshRepo, userService, roleService, userRoleService, jwtManager)
 
 	// Health check endpoint
 	r.GET("/healthz", healthHandler.CheckHealth)
@@ -116,7 +120,11 @@ func SetupRouter(
 	r.POST("/auth/challenge", authHandler.CreateChallenge)
 	r.POST("/auth/login", authHandler.Login)
 	r.POST("/auth/github/login", githubHandler.ValidateToken)
-    r.POST("/tokens/refresh", tokenHandler.Refresh)
+	r.POST("/tokens/refresh", tokenHandler.Refresh)
+
+	// Invite endpoints
+	r.POST("/auth/invites", am.ValidatePermissions([]auth.Permission{auth.PermUserWrite}), inviteHandler.CreateInvite)
+	r.GET("/verify", inviteHandler.Verify)
 
 	// Pending endpoints
 	r.GET("/auth/pending/users", am.ValidatePermissions([]auth.Permission{auth.PermUserRead}), userHandler.GetPendingUsers)
