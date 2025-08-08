@@ -1,4 +1,4 @@
-package providers
+package github
 
 import (
 	"errors"
@@ -10,6 +10,7 @@ import (
 	"github.com/google/go-github/v66/github"
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/earthly"
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/events"
+	"github.com/input-output-hk/catalyst-forge/cli/pkg/release/providers/common"
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/run"
 	"github.com/input-output-hk/catalyst-forge/lib/project/project"
 	gh "github.com/input-output-hk/catalyst-forge/lib/providers/github"
@@ -19,26 +20,22 @@ import (
 	"github.com/input-output-hk/catalyst-forge/lib/tools/fs/billy"
 )
 
-type GithubReleaserConfig struct {
-	Prefix string `json:"prefix"`
-	Name   string `json:"name"`
+type Releaser struct {
+	brewDeployer *BrewDeployer
+	client       gh.GithubClient
+	config       ReleaseConfig
+	force        bool
+	fs           fs.Filesystem
+	handler      events.EventHandler
+	logger       *slog.Logger
+	project      project.Project
+	release      sp.Release
+	releaseName  string
+	runner       earthly.ProjectRunner
+	workdir      string
 }
 
-type GithubReleaser struct {
-	client      gh.GithubClient
-	config      GithubReleaserConfig
-	force       bool
-	fs          fs.Filesystem
-	handler     events.EventHandler
-	logger      *slog.Logger
-	project     project.Project
-	release     sp.Release
-	releaseName string
-	runner      earthly.ProjectRunner
-	workdir     string
-}
-
-func (r *GithubReleaser) Release() error {
+func (r *Releaser) Release() error {
 	r.logger.Info("Running release target", "project", r.project.Name, "target", r.release.Target, "dir", r.workdir)
 	if err := r.run(r.workdir); err != nil {
 		return fmt.Errorf("failed to run release target: %w", err)
@@ -90,7 +87,7 @@ func (r *GithubReleaser) Release() error {
 	}
 
 	for _, asset := range assets {
-		if assetExists(*release, asset) {
+		if assetExists(release, asset) {
 			r.logger.Warn("Asset already exists", "asset", asset)
 			continue
 		}
@@ -101,13 +98,29 @@ func (r *GithubReleaser) Release() error {
 		}
 	}
 
+	if r.config.Brew != nil {
+		releaseAssets := make(map[string]string)
+		for _, platform := range r.getPlatforms() {
+			filename := fmt.Sprintf("%s-%s.tar.gz", r.config.Prefix, strings.Replace(platform, "/", "-", -1))
+			assetURL := fmt.Sprintf("https://github.com/%s/releases/download/%s/%s",
+				r.project.Blueprint.Global.Repo.Name,
+				r.project.Tag.Full,
+				filename,
+			)
+			releaseAssets[platform] = assetURL
+		}
+		if err := r.brewDeployer.Deploy(r.releaseName, releaseAssets); err != nil {
+			return fmt.Errorf("failed to complete brew release: %w", err)
+		}
+	}
+
 	return nil
 }
 
 // getPlatforms returns the current platforms.
-func (r *GithubReleaser) getPlatforms() []string {
+func (r *Releaser) getPlatforms() []string {
 	var platforms []string
-	platforms = getPlatforms(&r.project, r.release.Target)
+	platforms = common.GetPlatforms(&r.project, r.release.Target)
 
 	if platforms == nil {
 		platforms = []string{earthly.GetBuildPlatform()}
@@ -117,14 +130,14 @@ func (r *GithubReleaser) getPlatforms() []string {
 }
 
 // run runs the release target.
-func (r *GithubReleaser) run(path string) error {
+func (r *Releaser) run(path string) error {
 	return r.runner.RunTarget(
 		r.release.Target,
 		earthly.WithArtifact(path),
 	)
 }
 
-func (r *GithubReleaser) validateArtifacts(path string) error {
+func (r *Releaser) validateArtifacts(path string) error {
 	for _, platform := range r.getPlatforms() {
 		r.logger.Info("Validating artifacts", "platform", platform)
 		path := filepath.Join(path, platform)
@@ -149,7 +162,7 @@ func (r *GithubReleaser) validateArtifacts(path string) error {
 }
 
 // assetExists checks if an asset exists in a release.
-func assetExists(release github.RepositoryRelease, name string) bool {
+func assetExists(release *github.RepositoryRelease, name string) bool {
 	for _, asset := range release.Assets {
 		if *asset.Name == name {
 			return true
@@ -159,19 +172,19 @@ func assetExists(release github.RepositoryRelease, name string) bool {
 	return false
 }
 
-func NewGithubReleaser(
+func NewReleaser(
 	ctx run.RunContext,
 	project project.Project,
 	name string,
 	force bool,
-) (*GithubReleaser, error) {
+) (*Releaser, error) {
 	release, ok := project.Blueprint.Project.Release[name]
 	if !ok {
 		return nil, fmt.Errorf("unknown release: %s", name)
 	}
 
-	var config GithubReleaserConfig
-	if err := parseConfig(&project, name, &config); err != nil {
+	var config ReleaseConfig
+	if err := common.ParseConfig(&project, name, &config); err != nil {
 		return nil, fmt.Errorf("failed to parse release config: %w", err)
 	}
 
@@ -195,17 +208,31 @@ func NewGithubReleaser(
 
 	handler := events.NewDefaultEventHandler(ctx.Logger)
 	runner := earthly.NewDefaultProjectRunner(ctx, &project)
-	return &GithubReleaser{
-		config:      config,
-		client:      client,
-		force:       force,
-		fs:          fs,
-		handler:     &handler,
-		logger:      ctx.Logger,
-		project:     project,
-		release:     release,
-		releaseName: name,
-		runner:      &runner,
-		workdir:     workdir,
+
+	var brewDeployer *BrewDeployer
+	if config.Brew != nil {
+		brewDeployer = NewBrewDeployer(
+			&config,
+			workdir,
+			WithFilesystem(fs),
+			WithLogger(ctx.Logger),
+			WithSecretsStore(ctx.SecretStore),
+			WithProject(project),
+		)
+	}
+
+	return &Releaser{
+		brewDeployer: brewDeployer,
+		config:       config,
+		client:       client,
+		force:        force,
+		fs:           fs,
+		handler:      &handler,
+		logger:       ctx.Logger,
+		project:      project,
+		release:      release,
+		releaseName:  name,
+		runner:       &runner,
+		workdir:      workdir,
 	}, nil
 }

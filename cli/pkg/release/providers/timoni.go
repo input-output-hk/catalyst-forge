@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/events"
+	"github.com/input-output-hk/catalyst-forge/cli/pkg/release/providers/common"
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/run"
 	"github.com/input-output-hk/catalyst-forge/lib/project/project"
 	sp "github.com/input-output-hk/catalyst-forge/lib/schema/blueprint/project"
@@ -89,7 +90,7 @@ func NewTimoniReleaser(ctx run.RunContext,
 	}
 
 	var config TimoniReleaserConfig
-	if err := parseConfig(&project, name, &config); err != nil {
+	if err := common.ParseConfig(&project, name, &config); err != nil {
 		return nil, fmt.Errorf("failed to parse release config: %w", err)
 	}
 

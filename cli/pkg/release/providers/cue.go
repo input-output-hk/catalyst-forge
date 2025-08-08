@@ -10,6 +10,7 @@ import (
 	"cuelang.org/go/cue"
 	"cuelang.org/go/cue/cuecontext"
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/events"
+	"github.com/input-output-hk/catalyst-forge/cli/pkg/release/providers/common"
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/run"
 	"github.com/input-output-hk/catalyst-forge/lib/project/project"
 	"github.com/input-output-hk/catalyst-forge/lib/providers/aws"
@@ -71,7 +72,7 @@ func (r *CueReleaser) Release() error {
 	fullRepoName := fmt.Sprintf("%s/%s", registry, module)
 	if aws.IsECRRegistry(fullRepoName) && schema.HasAWSProviderDefined(r.project.Blueprint) {
 		r.logger.Info("Detected ECR registry, checking if repository exists", "registry", fullRepoName)
-		if err := createECRRepoIfNotExists(r.ecr, &r.project, fullRepoName, r.logger); err != nil {
+		if err := common.CreateECRRepoIfNotExists(r.ecr, &r.project, fullRepoName, r.logger); err != nil {
 			return fmt.Errorf("failed to create ECR repository: %w", err)
 		}
 	}
@@ -143,7 +144,7 @@ func NewCueReleaser(ctx run.RunContext,
 	}
 
 	var config CueReleaserConfig
-	if err := parseConfig(&project, name, &config); err != nil {
+	if err := common.ParseConfig(&project, name, &config); err != nil {
 		return nil, fmt.Errorf("failed to parse release config: %w", err)
 	}
 

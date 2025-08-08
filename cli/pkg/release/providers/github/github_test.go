@@ -1,4 +1,4 @@
-package providers
+package github
 
 import (
 	"archive/tar"
@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/google/go-github/v66/github"
+	"github.com/input-output-hk/catalyst-forge/cli/pkg/release/providers/common"
 	"github.com/input-output-hk/catalyst-forge/lib/project/project"
 	gh "github.com/input-output-hk/catalyst-forge/lib/providers/github"
 	gm "github.com/input-output-hk/catalyst-forge/lib/providers/github/mocks"
@@ -23,7 +24,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestGithubReleaserRelease(t *testing.T) {
+func TestReleaserRelease(t *testing.T) {
 	newProject := func(name, repoOwner, repoName, tag string, platforms []string) project.Project {
 		return project.Project{
 			Name: name,
@@ -67,7 +68,7 @@ func TestGithubReleaserRelease(t *testing.T) {
 		project    project.Project
 		release    sp.Release
 		ghRelease  github.RepositoryRelease
-		config     GithubReleaserConfig
+		config     ReleaseConfig
 		files      map[string]string
 		firing     bool
 		force      bool
@@ -87,7 +88,7 @@ func TestGithubReleaserRelease(t *testing.T) {
 			),
 			release:   newRelease(),
 			ghRelease: github.RepositoryRelease{},
-			config: GithubReleaserConfig{
+			config: ReleaseConfig{
 				Prefix: "project",
 				Name:   "project/v1.0.0",
 			},
@@ -142,7 +143,7 @@ func TestGithubReleaserRelease(t *testing.T) {
 			),
 			release:   newRelease(),
 			ghRelease: github.RepositoryRelease{},
-			config: GithubReleaserConfig{
+			config: ReleaseConfig{
 				Prefix: "project",
 				Name:   "project/v1.0.0",
 			},
@@ -198,7 +199,7 @@ func TestGithubReleaserRelease(t *testing.T) {
 			),
 			release:   newRelease(),
 			ghRelease: github.RepositoryRelease{},
-			config:    GithubReleaserConfig{},
+			config:    ReleaseConfig{},
 			files: map[string]string{
 				"linux/amd64/test": "test",
 			},
@@ -219,7 +220,7 @@ func TestGithubReleaserRelease(t *testing.T) {
 			),
 			release:   newRelease(),
 			ghRelease: github.RepositoryRelease{},
-			config:    GithubReleaserConfig{},
+			config:    ReleaseConfig{},
 			files:     map[string]string{},
 			firing:    true,
 			validate: func(t *testing.T, fs fs.Filesystem, uploads map[string][]byte, created bool, err error) {
@@ -240,7 +241,7 @@ func TestGithubReleaserRelease(t *testing.T) {
 			ghRelease: github.RepositoryRelease{
 				ID: github.Int64(123456),
 			},
-			config: GithubReleaserConfig{
+			config: ReleaseConfig{
 				Prefix: "project",
 				Name:   "name",
 			},
@@ -264,7 +265,7 @@ func TestGithubReleaserRelease(t *testing.T) {
 			),
 			release:   newRelease(),
 			ghRelease: github.RepositoryRelease{},
-			config: GithubReleaserConfig{
+			config: ReleaseConfig{
 				Prefix: "project",
 				Name:   "project/v1.0.0",
 			},
@@ -289,7 +290,7 @@ func TestGithubReleaserRelease(t *testing.T) {
 			),
 			release:   newRelease(),
 			ghRelease: github.RepositoryRelease{},
-			config: GithubReleaserConfig{
+			config: ReleaseConfig{
 				Prefix: "project",
 				Name:   "project/v1.0.0",
 			},
@@ -319,7 +320,7 @@ func TestGithubReleaserRelease(t *testing.T) {
 					newAsset("project-linux-amd64.tar.gz"),
 				},
 			},
-			config: GithubReleaserConfig{
+			config: ReleaseConfig{
 				Prefix: "project",
 				Name:   "project/v1.0.0",
 			},
@@ -374,16 +375,16 @@ func TestGithubReleaserRelease(t *testing.T) {
 				},
 			}
 
-			releaser := GithubReleaser{
+			releaser := Releaser{
 				client:  &client,
 				config:  tt.config,
 				force:   tt.force,
 				fs:      fs,
-				handler: newReleaseEventHandlerMock(tt.firing),
+				handler: common.NewReleaseEventHandlerMock(tt.firing),
 				logger:  testutils.NewNoopLogger(),
 				project: tt.project,
 				release: tt.release,
-				runner:  newProjectRunnerMock(tt.runFail),
+				runner:  common.NewProjectRunnerMock(tt.runFail),
 				workdir: workdir,
 			}
 

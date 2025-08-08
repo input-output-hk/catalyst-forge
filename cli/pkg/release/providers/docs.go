@@ -10,6 +10,7 @@ import (
 
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/earthly"
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/events"
+	"github.com/input-output-hk/catalyst-forge/cli/pkg/release/providers/common"
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/run"
 	"github.com/input-output-hk/catalyst-forge/lib/project/project"
 	"github.com/input-output-hk/catalyst-forge/lib/providers/aws"
@@ -267,7 +268,7 @@ func NewDocsReleaser(
 	}
 
 	var config DocsReleaserConfig
-	if err := parseConfig(&project, name, &config); err != nil {
+	if err := common.ParseConfig(&project, name, &config); err != nil {
 		return nil, fmt.Errorf("failed to parse release config: %w", err)
 	}
 
