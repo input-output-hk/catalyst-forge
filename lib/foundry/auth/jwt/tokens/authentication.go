@@ -13,7 +13,7 @@ import (
 // The expiration is capped by the signer's MaxAuthTokenTTL
 func GenerateAuthToken(
 	signer foundryJWT.JWTSigner,
-	userID string,
+	subject string,
 	permissions []auth.Permission,
 	expiration time.Duration,
 	opts ...foundryJWT.TokenOption,
@@ -22,8 +22,8 @@ func GenerateAuthToken(
 		return "", fmt.Errorf("signer cannot be nil")
 	}
 
-	if userID == "" {
-		return "", fmt.Errorf("userID cannot be empty")
+	if subject == "" {
+		return "", fmt.Errorf("subject cannot be empty")
 	}
 
 	if expiration <= 0 {
@@ -45,19 +45,36 @@ func GenerateAuthToken(
 
 	// Build claims
 	now := time.Now()
-	claims := &AuthClaims{
-		UserID:      userID,
-		Permissions: permissions,
-		RegisteredClaims: jwt.RegisteredClaims{
-			Subject:   userID, // Also set standard subject claim
-			Issuer:    getOrDefault(options.Issuer, signer.Issuer()),
-			Audience:  getOrDefaultSlice(options.Audiences, signer.DefaultAudiences()),
-			IssuedAt:  jwt.NewNumericDate(now),
-			ExpiresAt: jwt.NewNumericDate(now.Add(expiration)),
-			NotBefore: jwt.NewNumericDate(now),
-			ID:        options.ID,
-		},
-	}
+    claims := &AuthClaims{
+        Permissions: permissions,
+        RegisteredClaims: jwt.RegisteredClaims{
+            Subject:   subject,
+            Issuer:    getOrDefault(options.Issuer, signer.Issuer()),
+            Audience:  getOrDefaultSlice(options.Audiences, signer.DefaultAudiences()),
+            IssuedAt:  jwt.NewNumericDate(now),
+            ExpiresAt: jwt.NewNumericDate(now.Add(expiration)),
+            NotBefore: jwt.NewNumericDate(now),
+            ID:        options.ID,
+        },
+    }
+
+    if options.AdditionalClaims != nil {
+        if v, ok := options.AdditionalClaims["akid"]; ok {
+            if s, ok2 := v.(string); ok2 {
+                claims.AKID = s
+            }
+        }
+        if v, ok := options.AdditionalClaims["user_ver"]; ok {
+            switch t := v.(type) {
+            case int:
+                claims.UserVer = t
+            case int32:
+                claims.UserVer = int(t)
+            case int64:
+                claims.UserVer = int(t)
+            }
+        }
+    }
 
 	// Sign the token
 	token := jwt.NewWithClaims(signer.SigningMethod(), claims)
@@ -85,8 +102,8 @@ func VerifyAuthToken(
 	}
 
 	// Additional validation
-	if claims.UserID == "" {
-		return nil, fmt.Errorf("token missing user_id claim")
+	if claims.Subject == "" {
+		return nil, fmt.Errorf("token missing sub claim")
 	}
 
 	// Check expiration

@@ -11,6 +11,8 @@ import (
 	"github.com/input-output-hk/catalyst-forge/lib/foundry/auth"
 	"github.com/input-output-hk/catalyst-forge/lib/foundry/auth/jwt"
 	"github.com/input-output-hk/catalyst-forge/lib/foundry/auth/jwt/tokens"
+    userservice "github.com/input-output-hk/catalyst-forge/foundry/api/internal/service/user"
+    userrepo "github.com/input-output-hk/catalyst-forge/foundry/api/internal/repository/user"
 )
 
 // AuthenticatedUser is a struct that contains the user information from the
@@ -44,6 +46,8 @@ func (u *AuthenticatedUser) hasAnyPermissions(permissions []auth.Permission) boo
 type AuthMiddleware struct {
 	jwtManager jwt.JWTManager
 	logger     *slog.Logger
+    userService userservice.UserService
+    revokedRepo userrepo.RevokedJTIRepository
 }
 
 // ValidatePermissions returns a middleware that validates a user's permissions
@@ -60,8 +64,14 @@ func (h *AuthMiddleware) ValidatePermissions(permissions []auth.Permission) gin.
 			return
 		}
 
-		user, err := h.getUser(token)
+        user, err := h.getUser(token)
 		if err != nil {
+        if err := h.validateClaims(user); err != nil {
+            h.logger.Warn("Token rejected", "error", err)
+            c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid token"})
+            c.Abort()
+            return
+        }
 			h.logger.Warn("Invalid token", "error", err)
 			c.JSON(http.StatusUnauthorized, gin.H{
 				"error": "Invalid token",
@@ -95,8 +105,14 @@ func (h *AuthMiddleware) RequireAny(permissions []auth.Permission) gin.HandlerFu
 			return
 		}
 
-		user, err := h.getUser(token)
+        user, err := h.getUser(token)
 		if err != nil {
+        if err := h.validateClaims(user); err != nil {
+            h.logger.Warn("Token rejected", "error", err)
+            c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid token"})
+            c.Abort()
+            return
+        }
 			h.logger.Warn("Invalid token", "error", err)
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid token"})
 			c.Abort()
@@ -128,8 +144,14 @@ func (h *AuthMiddleware) ValidateAnyCertificatePermission() gin.HandlerFunc {
 			return
 		}
 
-		user, err := h.getUser(token)
+        user, err := h.getUser(token)
 		if err != nil {
+        if err := h.validateClaims(user); err != nil {
+            h.logger.Warn("Token rejected", "error", err)
+            c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid token"})
+            c.Abort()
+            return
+        }
 			h.logger.Warn("Invalid token", "error", err)
 			c.JSON(http.StatusUnauthorized, gin.H{
 				"error": "Invalid token",
@@ -180,10 +202,56 @@ func (h *AuthMiddleware) getUser(token string) (*AuthenticatedUser, error) {
 	}, nil
 }
 
+func (h *AuthMiddleware) validateClaims(user *AuthenticatedUser) error {
+    claims := user.Claims
+    // Issuer check
+    if claims.Issuer != h.jwtManager.Issuer() {
+        return fmt.Errorf("issuer mismatch")
+    }
+    // Audience check (at least one match)
+    want := h.jwtManager.DefaultAudiences()
+    matched := false
+    for _, a := range claims.Audience {
+        for _, w := range want {
+            if a == w {
+                matched = true
+                break
+            }
+        }
+        if matched {
+            break
+        }
+    }
+    if !matched {
+        return fmt.Errorf("audience mismatch")
+    }
+    // JTI denylist
+    if claims.ID != "" {
+        revoked, err := h.revokedRepo.IsRevoked(claims.ID)
+        if err != nil {
+            return err
+        }
+        if revoked {
+            return fmt.Errorf("token revoked")
+        }
+    }
+    // user_ver freshness
+    u, err := h.userService.GetUserByEmail(claims.Subject)
+    if err != nil {
+        return fmt.Errorf("user lookup failed")
+    }
+    if u.UserVer > claims.UserVer {
+        return fmt.Errorf("stale token")
+    }
+    return nil
+}
+
 // NewAuthMiddleware creates a new AuthMiddlewareHandler
-func NewAuthMiddleware(jwtManager jwt.JWTManager, logger *slog.Logger) *AuthMiddleware {
+func NewAuthMiddleware(jwtManager jwt.JWTManager, logger *slog.Logger, userService userservice.UserService, revokedRepo userrepo.RevokedJTIRepository) *AuthMiddleware {
 	return &AuthMiddleware{
-		jwtManager: jwtManager,
-		logger:     logger,
+        jwtManager:  jwtManager,
+        logger:      logger,
+        userService: userService,
+        revokedRepo: revokedRepo,
 	}
 }
