@@ -7,7 +7,8 @@ import (
 	"github.com/input-output-hk/catalyst-forge/foundry/api/internal/api/handlers"
 	"github.com/input-output-hk/catalyst-forge/foundry/api/internal/api/handlers/user"
 	"github.com/input-output-hk/catalyst-forge/foundry/api/internal/api/middleware"
-	"github.com/input-output-hk/catalyst-forge/foundry/api/internal/service"
+    "github.com/input-output-hk/catalyst-forge/foundry/api/internal/service"
+    userrepo "github.com/input-output-hk/catalyst-forge/foundry/api/internal/repository/user"
 	"github.com/input-output-hk/catalyst-forge/foundry/api/internal/service/stepca"
 	userservice "github.com/input-output-hk/catalyst-forge/foundry/api/internal/service/user"
 	"github.com/input-output-hk/catalyst-forge/lib/foundry/auth"
@@ -66,6 +67,9 @@ func SetupRouter(
 
 	// Certificate handler
 	certificateHandler := handlers.NewCertificateHandler(jwtManager, stepCAClient)
+    // Token handler
+    refreshRepo := userrepo.NewRefreshTokenRepository(db)
+    tokenHandler := handlers.NewTokenHandler(refreshRepo, userService, roleService, userRoleService, jwtManager)
 
 	// Health check endpoint
 	r.GET("/healthz", healthHandler.CheckHealth)
@@ -112,6 +116,7 @@ func SetupRouter(
 	r.POST("/auth/challenge", authHandler.CreateChallenge)
 	r.POST("/auth/login", authHandler.Login)
 	r.POST("/auth/github/login", githubHandler.ValidateToken)
+    r.POST("/tokens/refresh", tokenHandler.Refresh)
 
 	// Pending endpoints
 	r.GET("/auth/pending/users", am.ValidatePermissions([]auth.Permission{auth.PermUserRead}), userHandler.GetPendingUsers)
