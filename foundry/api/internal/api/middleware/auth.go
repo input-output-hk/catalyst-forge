@@ -16,13 +16,22 @@ import (
 // AuthenticatedUser is a struct that contains the user information from the
 // authentication middleware
 type AuthenticatedUser struct {
-	ID          string
-	Permissions []auth.Permission
-	Claims      *tokens.AuthClaims
+    ID          string
+    Permissions []auth.Permission
+    Claims      *tokens.AuthClaims
 }
 
 // hasPermissions checks if the user has the required permissions
-func (u *AuthenticatedUser) hasPermissions(permissions []auth.Permission) bool {
+func (u *AuthenticatedUser) hasAllPermissions(permissions []auth.Permission) bool {
+	for _, required := range permissions {
+		if !slices.Contains(u.Permissions, required) {
+			return false
+		}
+	}
+	return true
+}
+
+func (u *AuthenticatedUser) hasAnyPermissions(permissions []auth.Permission) bool {
 	for _, required := range permissions {
 		if slices.Contains(u.Permissions, required) {
 			return true
@@ -38,6 +47,7 @@ type AuthMiddleware struct {
 }
 
 // ValidatePermissions returns a middleware that validates a user's permissions
+// ValidatePermissions enforces RequireAll (AND) by default
 func (h *AuthMiddleware) ValidatePermissions(permissions []auth.Permission) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		token, err := h.getToken(c)
@@ -60,11 +70,42 @@ func (h *AuthMiddleware) ValidatePermissions(permissions []auth.Permission) gin.
 			return
 		}
 
-		if !user.hasPermissions(permissions) {
+		if !user.hasAllPermissions(permissions) {
 			h.logger.Warn("Permission denied", "user_id", user.ID, "permissions", permissions)
 			c.JSON(http.StatusForbidden, gin.H{
 				"error": "Permission denied",
 			})
+			c.Abort()
+			return
+		}
+
+		c.Set("user", user)
+		c.Next()
+	}
+}
+
+// RequireAny returns a middleware that enforces OR semantics across provided permissions
+func (h *AuthMiddleware) RequireAny(permissions []auth.Permission) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		token, err := h.getToken(c)
+		if err != nil {
+			h.logger.Warn("Invalid token", "error", err)
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid token"})
+			c.Abort()
+			return
+		}
+
+		user, err := h.getUser(token)
+		if err != nil {
+			h.logger.Warn("Invalid token", "error", err)
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid token"})
+			c.Abort()
+			return
+		}
+
+		if !user.hasAnyPermissions(permissions) {
+			h.logger.Warn("Permission denied", "user_id", user.ID, "permissions", permissions)
+			c.JSON(http.StatusForbidden, gin.H{"error": "Permission denied"})
 			c.Abort()
 			return
 		}
@@ -133,7 +174,7 @@ func (h *AuthMiddleware) getUser(token string) (*AuthenticatedUser, error) {
 	}
 
 	return &AuthenticatedUser{
-		ID:          claims.UserID,
+		ID:          claims.Subject,
 		Permissions: claims.Permissions,
 		Claims:      claims,
 	}, nil
