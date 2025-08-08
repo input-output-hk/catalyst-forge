@@ -111,21 +111,7 @@ func TestUsersAPI(t *testing.T) {
 		})
 
 		t.Run("RegisterUser", func(t *testing.T) {
-			registerEmail := generateTestEmail()
-			req := &users.RegisterUserRequest{
-				Email: registerEmail,
-			}
-
-			registeredUser, err := c.Users().Register(ctx, req)
-			require.NoError(t, err)
-
-			assert.NotZero(t, registeredUser.ID)
-			assert.Equal(t, registerEmail, registeredUser.Email)
-			assert.Equal(t, "pending", registeredUser.Status)
-
-			// Clean up
-			err = c.Users().Delete(ctx, registeredUser.ID)
-			require.NoError(t, err)
+			t.Skip("Legacy public registration endpoint removed in invite model")
 		})
 
 		t.Run("ListUsers", func(t *testing.T) {
@@ -165,28 +151,7 @@ func TestUsersAPI(t *testing.T) {
 		})
 
 		t.Run("GetPendingUsers", func(t *testing.T) {
-			// Create a pending user
-			registerReq := &users.RegisterUserRequest{Email: generateTestEmail()}
-			pendingUser, err := c.Users().Register(ctx, registerReq)
-			require.NoError(t, err)
-
-			// Get pending users
-			pendingUsers, err := c.Users().GetPending(ctx)
-			require.NoError(t, err)
-
-			// Verify our pending user is in the list
-			found := false
-			for _, u := range pendingUsers {
-				if u.ID == pendingUser.ID {
-					found = true
-					assert.Equal(t, "pending", u.Status)
-				}
-			}
-
-			assert.True(t, found, "Pending user not found in pending users list")
-
-			// Clean up
-			c.Users().Delete(ctx, pendingUser.ID)
+			t.Skip("Legacy pending users endpoint removed in invite model")
 		})
 	})
 
@@ -461,25 +426,7 @@ func TestUsersAPI(t *testing.T) {
 		})
 
 		t.Run("RegisterUserKey", func(t *testing.T) {
-			kid := generateTestKid()
-			pubKey := generateTestPubKey()
-			req := &users.RegisterUserKeyRequest{
-				Email:     createdUser.Email,
-				Kid:       kid,
-				PubKeyB64: pubKey,
-			}
-
-			registeredKey, err := c.Keys().Register(ctx, req)
-			require.NoError(t, err)
-
-			assert.NotZero(t, registeredKey.ID)
-			assert.Equal(t, createdUser.ID, registeredKey.UserID)
-			assert.Equal(t, kid, registeredKey.Kid)
-			assert.Equal(t, pubKey, registeredKey.PubKeyB64)
-			assert.Equal(t, "inactive", registeredKey.Status)
-
-			// Clean up
-			c.Keys().Delete(ctx, registeredKey.ID)
+			t.Skip("Legacy direct key registration replaced by KET flow; covered by onboarding test")
 		})
 
 		t.Run("ListUserKeys", func(t *testing.T) {

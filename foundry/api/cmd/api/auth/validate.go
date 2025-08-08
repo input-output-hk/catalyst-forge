@@ -22,7 +22,7 @@ func (g *ValidateCmd) Run() error {
 	if err != nil {
 		return err
 	}
-	fmt.Printf("Token valid! User: %s, Permissions: %v\n", claims.UserID, claims.Permissions)
+	fmt.Printf("Token valid! User: %s, Permissions: %v\n", claims.Subject, claims.Permissions)
 
 	return nil
 }

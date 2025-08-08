@@ -10,7 +10,7 @@ services:
   auth-jwt:
     image: foundry-api:latest
     container_name: auth-jwt
-    entrypoint: ["/bin/sh", "-c", "/app/foundry-api auth generate -a -k /data/private.pem >/data/jwt.txt"]
+    entrypoint: ["/bin/sh", "-c", "/app/foundry-api auth generate -a -s admin@foundry.dev -k /data/private.pem >/data/jwt.txt"]
     volumes:
       - ./.auth:/data
     depends_on:
@@ -22,8 +22,23 @@ services:
     container_name: api
     environment:
       HTTP_PORT: 5050
+      # Public URL used for links (invites, device verification)
+      PUBLIC_BASE_URL: http://localhost:5050
       AUTH_PRIVATE_KEY: /data/private.pem
       AUTH_PUBLIC_KEY: /data/public.pem
+      # Auth TTLs
+      INVITE_TTL: 72h
+      AUTH_ACCESS_TTL: 30m
+      AUTH_REFRESH_TTL: 720h
+      KET_TTL: 10m
+      # Hash secrets for invite/refresh tokens (dev defaults)
+      INVITE_HASH_SECRET: dev-invite-secret
+      REFRESH_HASH_SECRET: dev-refresh-secret
+      # Email config (disabled by default for local compose)
+      EMAIL_ENABLED: "false"
+      EMAIL_PROVIDER: none
+      # EMAIL_SENDER: noreply@example.com
+      # SES_REGION: us-east-1
       DB_SUPER_USER: postgres
       DB_SUPER_PASSWORD: postgres
       DB_ROOT_NAME: postgres

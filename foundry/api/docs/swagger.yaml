@@ -95,6 +95,25 @@ definitions:
     type: object
   handlers.CreateAuthRequest:
     type: object
+  handlers.CreateInviteRequest:
+    properties:
+      email:
+        type: string
+      roles:
+        items:
+          type: string
+        type: array
+      ttl:
+        description: e.g., "72h"
+        type: string
+    type: object
+  handlers.CreateInviteResponse:
+    properties:
+      id:
+        type: integer
+      token:
+        type: string
+    type: object
   handlers.CreateReleaseRequest:
     properties:
       bundle:
@@ -115,6 +134,48 @@ definitions:
     - project_path
     - source_commit
     - source_repo
+    type: object
+  handlers.DeviceApproveRequest:
+    properties:
+      user_code:
+        type: string
+    type: object
+  handlers.DeviceInitRequest:
+    properties:
+      fingerprint:
+        type: string
+      name:
+        type: string
+      platform:
+        type: string
+    type: object
+  handlers.DeviceInitResponse:
+    properties:
+      device_code:
+        type: string
+      expires_in:
+        type: integer
+      interval:
+        type: integer
+      user_code:
+        type: string
+      verification_uri:
+        type: string
+    type: object
+  handlers.DeviceTokenRequest:
+    properties:
+      device_code:
+        type: string
+    type: object
+  handlers.DeviceTokenResponse:
+    properties:
+      access:
+        type: string
+      error:
+        description: authorization_pending | slow_down | expired_token | access_denied
+        type: string
+      refresh:
+        type: string
     type: object
   handlers.GithubRepositoryAuthResponse:
     properties:
@@ -149,6 +210,23 @@ definitions:
   handlers.LoginResponse:
     properties:
       token:
+        type: string
+    type: object
+  handlers.TokenRefreshRequest:
+    properties:
+      refresh:
+        type: string
+    type: object
+  handlers.TokenRefreshResponse:
+    properties:
+      access:
+        type: string
+      refresh:
+        type: string
+    type: object
+  handlers.TokenRevokeRequest:
+    properties:
+      refresh:
         type: string
     type: object
   handlers.UpdateAuthRequest:
@@ -257,12 +335,16 @@ definitions:
         type: string
       email:
         type: string
+      email_verified_at:
+        type: string
       id:
         type: integer
       status:
         $ref: '#/definitions/user.UserStatus'
       updated_at:
         type: string
+      user_ver:
+        type: integer
     type: object
   models.DeploymentEvent:
     properties:
@@ -457,6 +539,9 @@ definitions:
       created_at:
         description: Timestamps
         type: string
+      device_id:
+        description: Device association (optional)
+        type: integer
       id:
         type: integer
       kid:
@@ -508,6 +593,22 @@ info:
   title: Catalyst Foundry API
   version: "1.0"
 paths:
+  /.well-known/jwks.json:
+    get:
+      consumes:
+      - application/json
+      description: Returns the public JSON Web Key Set used to verify access tokens
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: JWKS
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Get JWKS
+      tags:
+      - auth
   /auth/challenge:
     post:
       consumes:
@@ -814,6 +915,46 @@ paths:
       summary: Get GHA authentication configuration by repository
       tags:
       - gha
+  /auth/invites:
+    post:
+      consumes:
+      - application/json
+      description: Create an invite for a user with one or more roles; optionally
+        emails a verification link
+      parameters:
+      - description: Invite creation request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.CreateInviteRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/handlers.CreateInviteResponse'
+        "400":
+          description: Invalid request
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Server error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Create invite
+      tags:
+      - auth
   /auth/keys:
     get:
       description: Retrieve a list of all user keys
@@ -2008,6 +2149,109 @@ paths:
       summary: Sign a certificate
       tags:
       - certificates
+  /device/approve:
+    post:
+      consumes:
+      - application/json
+      description: Approve a pending device session identified by user_code
+      parameters:
+      - description: Approval request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.DeviceApproveRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: approved
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Invalid request
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not found
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Approve device session
+      tags:
+      - device
+  /device/init:
+    post:
+      consumes:
+      - application/json
+      description: Initialize a device authorization session and return device_code
+        and user_code
+      parameters:
+      - description: Optional device metadata
+        in: body
+        name: request
+        schema:
+          $ref: '#/definitions/handlers.DeviceInitRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.DeviceInitResponse'
+        "500":
+          description: Server error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Start device authorization
+      tags:
+      - device
+  /device/token:
+    post:
+      consumes:
+      - application/json
+      description: Poll the device authorization session for completion and receive
+        tokens when approved
+      parameters:
+      - description: Device token request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.DeviceTokenRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.DeviceTokenResponse'
+        "400":
+          description: Invalid request
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: authorization_pending | expired_token | access_denied
+          schema:
+            $ref: '#/definitions/handlers.DeviceTokenResponse'
+        "429":
+          description: slow_down
+          schema:
+            $ref: '#/definitions/handlers.DeviceTokenResponse'
+      summary: Poll device token
+      tags:
+      - device
   /healthz:
     get:
       consumes:
@@ -2608,6 +2852,100 @@ paths:
       summary: List releases
       tags:
       - releases
+  /tokens/refresh:
+    post:
+      consumes:
+      - application/json
+      description: Rotate the refresh token and return a new access token and refresh
+        token
+      parameters:
+      - description: Refresh request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.TokenRefreshRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.TokenRefreshResponse'
+        "400":
+          description: Invalid request
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Invalid token
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Server error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Refresh tokens
+      tags:
+      - auth
+  /tokens/revoke:
+    post:
+      consumes:
+      - application/json
+      description: Revoke a refresh token and any linked chain
+      parameters:
+      - description: Revoke request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.TokenRevokeRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: status
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Revoke token
+      tags:
+      - auth
+  /verify:
+    get:
+      consumes:
+      - application/json
+      description: Verify an invite token and activate the user; assigns roles from
+        the invite
+      parameters:
+      - description: Invite token
+        in: query
+        name: token
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: verified
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Missing token
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Invalid or expired
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Verify invite
+      tags:
+      - auth
 securityDefinitions:
   BearerAuth:
     description: Type "Bearer" followed by a space and JWT token.

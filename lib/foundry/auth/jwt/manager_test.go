@@ -32,7 +32,7 @@ func TestES256Manager(t *testing.T) {
 
 				claims, err := tokens.VerifyAuthToken(am, token)
 				require.NoError(t, err)
-				assert.Equal(t, "user_id", claims.UserID)
+				assert.Equal(t, "user_id", claims.Subject)
 				assert.Equal(t, jwt.ISSUER, claims.Issuer)
 				assert.Equal(t, []string{jwt.AUDIENCE}, []string(claims.Audience))
 				assert.Equal(t, []auth.Permission{auth.PermAliasRead}, claims.Permissions)
@@ -55,7 +55,7 @@ func TestES256Manager(t *testing.T) {
 
 				claims, err := tokens.VerifyAuthToken(am, token)
 				require.NoError(t, err)
-				assert.Equal(t, "user_id", claims.UserID)
+				assert.Equal(t, "user_id", claims.Subject)
 				assert.Equal(t, jwt.ISSUER, claims.Issuer)
 				assert.Equal(t, []string{"custom-audience", "another-audience"}, []string(claims.Audience))
 				assert.Equal(t, []auth.Permission{auth.PermDeploymentRead, auth.PermDeploymentWrite}, claims.Permissions)
@@ -77,7 +77,7 @@ func TestES256Manager(t *testing.T) {
 
 				claims, err := tokens.VerifyAuthToken(am, token)
 				require.NoError(t, err)
-				assert.Equal(t, "user_id", claims.UserID)
+				assert.Equal(t, "user_id", claims.Subject)
 				assert.Equal(t, "custom-issuer.com", claims.Issuer)
 				assert.Equal(t, []string{jwt.AUDIENCE}, []string(claims.Audience))
 				assert.Empty(t, claims.Permissions)
@@ -97,7 +97,7 @@ func TestES256Manager(t *testing.T) {
 
 				claims, err := tokens.VerifyAuthToken(am, token)
 				require.NoError(t, err)
-				assert.Equal(t, "user_id", claims.UserID)
+				assert.Equal(t, "user_id", claims.Subject)
 				assert.Equal(t, "test-issuer.org", claims.Issuer)
 				assert.Equal(t, []string{"test-audience"}, []string(claims.Audience))
 				assert.Equal(t, []auth.Permission{auth.PermReleaseRead, auth.PermReleaseWrite, auth.PermDeploymentEventRead}, claims.Permissions)
@@ -118,7 +118,7 @@ func TestES256Manager(t *testing.T) {
 
 				claims, err := tokens.VerifyAuthToken(am, token)
 				require.NoError(t, err)
-				assert.Equal(t, "user_id", claims.UserID)
+				assert.Equal(t, "user_id", claims.Subject)
 				assert.Equal(t, jwt.ISSUER, claims.Issuer)
 				assert.Nil(t, claims.Audience)
 				assert.Equal(t, []auth.Permission{auth.PermAliasWrite}, claims.Permissions)

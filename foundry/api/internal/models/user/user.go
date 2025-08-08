@@ -22,6 +22,9 @@ type User struct {
 	Email  string     `gorm:"not null;uniqueIndex" json:"email"`
 	Status UserStatus `gorm:"not null;type:string;default:'pending'" json:"status"`
 
+	EmailVerifiedAt *time.Time `gorm:"index" json:"email_verified_at,omitempty"`
+	UserVer         int        `gorm:"not null;default:1" json:"user_ver"`
+
 	// Timestamps
 	CreatedAt time.Time      `gorm:"autoCreateTime" json:"created_at"`
 	UpdatedAt time.Time      `gorm:"autoUpdateTime" json:"updated_at"`

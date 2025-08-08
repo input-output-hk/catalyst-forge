@@ -24,8 +24,12 @@ import (
 	"github.com/input-output-hk/catalyst-forge/lib/foundry/client/certificates"
 	"github.com/input-output-hk/catalyst-forge/lib/foundry/client/deployments"
 	"github.com/input-output-hk/catalyst-forge/lib/foundry/client/deployments/mocks"
+	"github.com/input-output-hk/catalyst-forge/lib/foundry/client/device"
 	"github.com/input-output-hk/catalyst-forge/lib/foundry/client/github"
+	"github.com/input-output-hk/catalyst-forge/lib/foundry/client/invites"
+	"github.com/input-output-hk/catalyst-forge/lib/foundry/client/jwks"
 	"github.com/input-output-hk/catalyst-forge/lib/foundry/client/releases"
+	"github.com/input-output-hk/catalyst-forge/lib/foundry/client/tokens"
 	"github.com/input-output-hk/catalyst-forge/lib/foundry/client/users"
 	"github.com/input-output-hk/catalyst-forge/lib/providers/secrets"
 	sb "github.com/input-output-hk/catalyst-forge/lib/schema/blueprint"
@@ -205,6 +209,12 @@ func (m *mockClient) Events() deployments.EventsClientInterface {
 func (m *mockClient) Certificates() certificates.CertificatesClientInterface {
 	return nil
 }
+
+// Added to satisfy updated client.Client interface
+func (m *mockClient) Tokens() tokens.TokensClientInterface    { return nil }
+func (m *mockClient) Invites() invites.InvitesClientInterface { return nil }
+func (m *mockClient) Device() device.DeviceClientInterface    { return nil }
+func (m *mockClient) JWKS() jwks.JWKSClientInterface          { return nil }
 
 func (m *mockEnv) ConfigureController(ctrl *ReleaseDeploymentReconciler) {
 	ctrl.Config = m.config

@@ -14,6 +14,7 @@ type GenerateCmd struct {
 	Expiration  time.Duration     `kong:"short='e',help='Expiration time for the token',default='1h'"`
 	Permissions []auth.Permission `kong:"short='p',help='Permissions to generate'"`
 	PrivateKey  string            `kong:"short='k',help='Path to the private key to use for signing',type='existingfile'"`
+	Subject     string            `kong:"short='s',help='Subject (email) to use in sub claim'"`
 }
 
 func (g *GenerateCmd) Run() error {
@@ -23,11 +24,16 @@ func (g *GenerateCmd) Run() error {
 		return err
 	}
 
-	// Determine user ID and permissions
-	userID := "user"
+	// Determine user ID (subject) and permissions
+	userID := g.Subject
+	if userID == "" {
+		userID = "user@foundry.dev"
+	}
 	permissions := g.Permissions
 	if g.Admin {
-		userID = "admin"
+		if g.Subject == "" {
+			userID = "admin@foundry.dev"
+		}
 		permissions = auth.AllPermissions
 	}
 

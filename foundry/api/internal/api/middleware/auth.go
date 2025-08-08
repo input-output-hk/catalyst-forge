@@ -8,6 +8,8 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
+	userrepo "github.com/input-output-hk/catalyst-forge/foundry/api/internal/repository/user"
+	userservice "github.com/input-output-hk/catalyst-forge/foundry/api/internal/service/user"
 	"github.com/input-output-hk/catalyst-forge/lib/foundry/auth"
 	"github.com/input-output-hk/catalyst-forge/lib/foundry/auth/jwt"
 	"github.com/input-output-hk/catalyst-forge/lib/foundry/auth/jwt/tokens"
@@ -22,7 +24,16 @@ type AuthenticatedUser struct {
 }
 
 // hasPermissions checks if the user has the required permissions
-func (u *AuthenticatedUser) hasPermissions(permissions []auth.Permission) bool {
+func (u *AuthenticatedUser) hasAllPermissions(permissions []auth.Permission) bool {
+	for _, required := range permissions {
+		if !slices.Contains(u.Permissions, required) {
+			return false
+		}
+	}
+	return true
+}
+
+func (u *AuthenticatedUser) hasAnyPermissions(permissions []auth.Permission) bool {
 	for _, required := range permissions {
 		if slices.Contains(u.Permissions, required) {
 			return true
@@ -33,11 +44,44 @@ func (u *AuthenticatedUser) hasPermissions(permissions []auth.Permission) bool {
 
 // AuthMiddleware provides a middleware that validates a user's permissions
 type AuthMiddleware struct {
-	jwtManager jwt.JWTManager
-	logger     *slog.Logger
+	jwtManager  jwt.JWTManager
+	logger      *slog.Logger
+	userService userservice.UserService
+	revokedRepo userrepo.RevokedJTIRepository
+}
+
+// RequireAuth ensures the request has a valid access token; no specific perms required
+func (h *AuthMiddleware) RequireAuth() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		token, err := h.getToken(c)
+		if err != nil {
+			h.logger.Warn("Invalid token", "error", err)
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid token"})
+			c.Abort()
+			return
+		}
+
+		user, err := h.getUser(token)
+		if err != nil {
+			if err := h.validateClaims(user); err != nil {
+				h.logger.Warn("Token rejected", "error", err)
+				c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid token"})
+				c.Abort()
+				return
+			}
+			h.logger.Warn("Invalid token", "error", err)
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid token"})
+			c.Abort()
+			return
+		}
+
+		c.Set("user", user)
+		c.Next()
+	}
 }
 
 // ValidatePermissions returns a middleware that validates a user's permissions
+// ValidatePermissions enforces RequireAll (AND) by default
 func (h *AuthMiddleware) ValidatePermissions(permissions []auth.Permission) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		token, err := h.getToken(c)
@@ -52,6 +96,12 @@ func (h *AuthMiddleware) ValidatePermissions(permissions []auth.Permission) gin.
 
 		user, err := h.getUser(token)
 		if err != nil {
+			if err := h.validateClaims(user); err != nil {
+				h.logger.Warn("Token rejected", "error", err)
+				c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid token"})
+				c.Abort()
+				return
+			}
 			h.logger.Warn("Invalid token", "error", err)
 			c.JSON(http.StatusUnauthorized, gin.H{
 				"error": "Invalid token",
@@ -60,11 +110,48 @@ func (h *AuthMiddleware) ValidatePermissions(permissions []auth.Permission) gin.
 			return
 		}
 
-		if !user.hasPermissions(permissions) {
+		if !user.hasAllPermissions(permissions) {
 			h.logger.Warn("Permission denied", "user_id", user.ID, "permissions", permissions)
 			c.JSON(http.StatusForbidden, gin.H{
 				"error": "Permission denied",
 			})
+			c.Abort()
+			return
+		}
+
+		c.Set("user", user)
+		c.Next()
+	}
+}
+
+// RequireAny returns a middleware that enforces OR semantics across provided permissions
+func (h *AuthMiddleware) RequireAny(permissions []auth.Permission) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		token, err := h.getToken(c)
+		if err != nil {
+			h.logger.Warn("Invalid token", "error", err)
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid token"})
+			c.Abort()
+			return
+		}
+
+		user, err := h.getUser(token)
+		if err != nil {
+			if err := h.validateClaims(user); err != nil {
+				h.logger.Warn("Token rejected", "error", err)
+				c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid token"})
+				c.Abort()
+				return
+			}
+			h.logger.Warn("Invalid token", "error", err)
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid token"})
+			c.Abort()
+			return
+		}
+
+		if !user.hasAnyPermissions(permissions) {
+			h.logger.Warn("Permission denied", "user_id", user.ID, "permissions", permissions)
+			c.JSON(http.StatusForbidden, gin.H{"error": "Permission denied"})
 			c.Abort()
 			return
 		}
@@ -89,6 +176,12 @@ func (h *AuthMiddleware) ValidateAnyCertificatePermission() gin.HandlerFunc {
 
 		user, err := h.getUser(token)
 		if err != nil {
+			if err := h.validateClaims(user); err != nil {
+				h.logger.Warn("Token rejected", "error", err)
+				c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid token"})
+				c.Abort()
+				return
+			}
 			h.logger.Warn("Invalid token", "error", err)
 			c.JSON(http.StatusUnauthorized, gin.H{
 				"error": "Invalid token",
@@ -133,16 +226,62 @@ func (h *AuthMiddleware) getUser(token string) (*AuthenticatedUser, error) {
 	}
 
 	return &AuthenticatedUser{
-		ID:          claims.UserID,
+		ID:          claims.Subject,
 		Permissions: claims.Permissions,
 		Claims:      claims,
 	}, nil
 }
 
+func (h *AuthMiddleware) validateClaims(user *AuthenticatedUser) error {
+	claims := user.Claims
+	// Issuer check
+	if claims.Issuer != h.jwtManager.Issuer() {
+		return fmt.Errorf("issuer mismatch")
+	}
+	// Audience check (at least one match)
+	want := h.jwtManager.DefaultAudiences()
+	matched := false
+	for _, a := range claims.Audience {
+		for _, w := range want {
+			if a == w {
+				matched = true
+				break
+			}
+		}
+		if matched {
+			break
+		}
+	}
+	if !matched {
+		return fmt.Errorf("audience mismatch")
+	}
+	// JTI denylist
+	if claims.ID != "" {
+		revoked, err := h.revokedRepo.IsRevoked(claims.ID)
+		if err != nil {
+			return err
+		}
+		if revoked {
+			return fmt.Errorf("token revoked")
+		}
+	}
+	// user_ver freshness
+	u, err := h.userService.GetUserByEmail(claims.Subject)
+	if err != nil {
+		return fmt.Errorf("user lookup failed")
+	}
+	if u.UserVer > claims.UserVer {
+		return fmt.Errorf("stale token")
+	}
+	return nil
+}
+
 // NewAuthMiddleware creates a new AuthMiddlewareHandler
-func NewAuthMiddleware(jwtManager jwt.JWTManager, logger *slog.Logger) *AuthMiddleware {
+func NewAuthMiddleware(jwtManager jwt.JWTManager, logger *slog.Logger, userService userservice.UserService, revokedRepo userrepo.RevokedJTIRepository) *AuthMiddleware {
 	return &AuthMiddleware{
-		jwtManager: jwtManager,
-		logger:     logger,
+		jwtManager:  jwtManager,
+		logger:      logger,
+		userService: userService,
+		revokedRepo: revokedRepo,
 	}
 }

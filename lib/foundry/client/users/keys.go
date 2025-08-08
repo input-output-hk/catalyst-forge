@@ -19,6 +19,9 @@ type KeysClientInterface interface {
 	GetActiveByUserID(ctx context.Context, userID uint) ([]UserKey, error)
 	GetInactiveByUserID(ctx context.Context, userID uint) ([]UserKey, error)
 	GetInactive(ctx context.Context) ([]UserKey, error)
+	// KET flow
+	BootstrapKET(ctx context.Context, req *BootstrapKETRequest) (*BootstrapKETResponse, error)
+	RegisterWithKET(ctx context.Context, req *RegisterWithKETClientRequest) (*UserKey, error)
 }
 
 // KeysClient handles user key-related operations
@@ -147,4 +150,37 @@ func (c *KeysClient) GetInactive(ctx context.Context) ([]UserKey, error) {
 		return nil, err
 	}
 	return userKeys, nil
+}
+
+// BootstrapKET issues a short-lived KET and nonce
+type BootstrapKETRequest struct {
+	Email string `json:"email"`
+}
+type BootstrapKETResponse struct {
+	KET   string `json:"ket"`
+	Nonce string `json:"nonce"`
+}
+
+func (c *KeysClient) BootstrapKET(ctx context.Context, req *BootstrapKETRequest) (*BootstrapKETResponse, error) {
+	var out BootstrapKETResponse
+	if err := c.do(ctx, "POST", "/auth/keys/bootstrap", req, &out); err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+// RegisterWithKET verifies PoP and registers the key
+type RegisterWithKETClientRequest struct {
+	KET       string `json:"ket"`
+	Kid       string `json:"kid"`
+	PubKeyB64 string `json:"pubkey_b64"`
+	SigBase64 string `json:"sig_b64"`
+}
+
+func (c *KeysClient) RegisterWithKET(ctx context.Context, req *RegisterWithKETClientRequest) (*UserKey, error) {
+	var out UserKey
+	if err := c.do(ctx, "POST", "/auth/keys/register", req, &out); err != nil {
+		return nil, err
+	}
+	return &out, nil
 }
