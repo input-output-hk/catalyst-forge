@@ -117,6 +117,7 @@ func (r *RunCmd) Run() error {
 		&user.Device{},
 		&user.RefreshToken{},
 		&user.RevokedJTI{},
+		&user.Invite{},
 	)
 	if err != nil {
 		logger.Error("Failed to run migrations", "error", err)
@@ -173,7 +174,8 @@ func (r *RunCmd) Run() error {
 		return err
 	}
 	var jwtManager jwt.JWTManager = jwtManagerImpl
-	authMiddleware := middleware.NewAuthMiddleware(jwtManager, logger)
+	revokedRepo := userrepo.NewRevokedJTIRepository(db)
+	authMiddleware := middleware.NewAuthMiddleware(jwtManager, logger, userService, revokedRepo)
 
 	// Initialize step-ca client (for certificate signing)
 	var rootCA []byte
