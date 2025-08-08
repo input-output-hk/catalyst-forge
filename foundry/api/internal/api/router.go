@@ -106,9 +106,7 @@ func SetupRouter(
 	r.PUT("/auth/github/:id", am.ValidatePermissions([]auth.Permission{auth.PermGHAAuthWrite}), githubHandler.UpdateAuth)
 	r.DELETE("/auth/github/:id", am.ValidatePermissions([]auth.Permission{auth.PermGHAAuthWrite}), githubHandler.DeleteAuth)
 
-	// Registration endpoints
-	r.POST("/auth/users/register", userHandler.RegisterUser)
-	r.POST("/auth/keys/register", userKeyHandler.RegisterUserKey)
+	// Registration endpoints (legacy) removed in single-org invite model
 
 	// Authentication endpoints
 	r.POST("/auth/challenge", authHandler.CreateChallenge)
