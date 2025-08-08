@@ -14,20 +14,40 @@ type Config struct {
 	Auth       AuthConfig       `kong:"embed"`
 	Database   DatabaseConfig   `kong:"embed"`
 	Logging    LoggingConfig    `kong:"embed"`
-	Kubernetes KubernetesConfig `kong:"embed"`
+	Kubernetes KubernetesConfig `kong:"embed,prefix='k8s-'"`
 	StepCA     StepCAConfig     `kong:"embed"`
+	Email      EmailConfig      `kong:"embed,prefix='email-'"`
+	Security   SecurityConfig   `kong:"embed"`
 }
 
 // ServerConfig represents server-specific configuration
 type ServerConfig struct {
-	HttpPort int           `kong:"help='HTTP port to listen on',default=8080,name='http-port',env='HTTP_PORT'"`
-	Timeout  time.Duration `kong:"help='Server timeout',default=30s,env='SERVER_TIMEOUT'"`
+	HttpPort      int           `kong:"help='HTTP port to listen on',default=8080,name='http-port',env='HTTP_PORT'"`
+	Timeout       time.Duration `kong:"help='Server timeout',default=30s,env='SERVER_TIMEOUT'"`
+	PublicBaseURL string        `kong:"help='Public base URL for generating links (e.g., https://api.example.com)',env='PUBLIC_BASE_URL'"`
 }
 
 // AuthConfig represents authentication-specific configuration
 type AuthConfig struct {
-	PrivateKey string `kong:"help='Path to private key for JWT authentication',env='AUTH_PRIVATE_KEY'"`
-	PublicKey  string `kong:"help='Path to public key for JWT authentication',env='AUTH_PUBLIC_KEY'"`
+	PrivateKey string        `kong:"help='Path to private key for JWT authentication',env='AUTH_PRIVATE_KEY'"`
+	PublicKey  string        `kong:"help='Path to public key for JWT authentication',env='AUTH_PUBLIC_KEY'"`
+	InviteTTL  time.Duration `kong:"help='Default invite TTL (e.g., 72h)',default=72h,env='INVITE_TTL'"`
+	AccessTTL  time.Duration `kong:"help='Access token TTL (e.g., 30m)',default=30m,env='AUTH_ACCESS_TTL'"`
+	RefreshTTL time.Duration `kong:"help='Default refresh token TTL (CLI/browser; used as base for rotation)',default=720h,env='AUTH_REFRESH_TTL'"`
+	KETTTL     time.Duration `kong:"help='Key Enrollment Token TTL (e.g., 10m)',default=10m,env='KET_TTL'"`
+}
+
+// EmailConfig represents outbound email configuration
+type EmailConfig struct {
+	Enabled   bool   `kong:"help='Enable outbound emails',default=false,env='EMAIL_ENABLED'"`
+	Provider  string `kong:"help='Email provider (ses, none)',default='none',env='EMAIL_PROVIDER'"`
+	Sender    string `kong:"help='Sender email address',env='EMAIL_SENDER'"`
+	SESRegion string `kong:"help='AWS SES region (e.g., us-east-1)',env='SES_REGION'"`
+}
+
+// SecurityConfig toggles security-related features
+type SecurityConfig struct {
+	EnableNaivePerIPRateLimit bool `kong:"help='Enable in-process per-IP rate limiting (not suitable behind proxies that hide client IP)',default=false,env='ENABLE_PER_IP_RATELIMIT'"`
 }
 
 // DatabaseConfig represents database-specific configuration

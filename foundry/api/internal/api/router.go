@@ -7,8 +7,10 @@ import (
 	"github.com/input-output-hk/catalyst-forge/foundry/api/internal/api/handlers"
 	"github.com/input-output-hk/catalyst-forge/foundry/api/internal/api/handlers/user"
 	"github.com/input-output-hk/catalyst-forge/foundry/api/internal/api/middleware"
+	auditrepo "github.com/input-output-hk/catalyst-forge/foundry/api/internal/repository/audit"
 	userrepo "github.com/input-output-hk/catalyst-forge/foundry/api/internal/repository/user"
 	"github.com/input-output-hk/catalyst-forge/foundry/api/internal/service"
+	emailsvc "github.com/input-output-hk/catalyst-forge/foundry/api/internal/service/email"
 	"github.com/input-output-hk/catalyst-forge/foundry/api/internal/service/stepca"
 	userservice "github.com/input-output-hk/catalyst-forge/foundry/api/internal/service/user"
 	"github.com/input-output-hk/catalyst-forge/lib/foundry/auth"
@@ -34,6 +36,7 @@ func SetupRouter(
 	ghaOIDCClient ghauth.GithubActionsOIDCClient,
 	ghaAuthService service.GithubAuthService,
 	stepCAClient *stepca.Client,
+	emailService emailsvc.Service,
 ) *gin.Engine {
 	r := gin.New()
 
@@ -56,7 +59,7 @@ func SetupRouter(
 	userHandler := user.NewUserHandler(userService, logger)
 	roleHandler := user.NewRoleHandler(roleService, logger)
 	userRoleHandler := user.NewUserRoleHandler(userRoleService, logger)
-	userKeyHandler := user.NewUserKeyHandler(userKeyService, logger)
+	userKeyHandler := user.NewUserKeyHandler(userKeyService, logger, jwtManager)
 
 	// Auth handler
 	authManager := auth.NewAuthManager()
@@ -64,22 +67,36 @@ func SetupRouter(
 
 	// Invite handler
 	inviteRepo := userrepo.NewInviteRepository(db)
-	inviteHandler := handlers.NewInviteHandler(inviteRepo, userService, roleService, userRoleService)
+	// email service is optional and passed from server main
+	inviteHandler := handlers.NewInviteHandler(inviteRepo, userService, roleService, userRoleService, 72*60*60*1e9, emailService)
 
 	// GitHub handler
 	githubHandler := handlers.NewGithubHandler(jwtManager, ghaOIDCClient, ghaAuthService, logger)
 
 	// Certificate handler
 	certificateHandler := handlers.NewCertificateHandler(jwtManager, stepCAClient)
+	// JWKS handler (public)
+	jwksHandler := handlers.NewJWKSHandler(jwtManager)
+	// Device handler
+	deviceSessRepo := userrepo.NewDeviceSessionRepository(db)
+	deviceRepo := userrepo.NewDeviceRepository(db)
+	deviceRefreshRepo := userrepo.NewRefreshTokenRepository(db)
+	deviceHandler := handlers.NewDeviceHandler(deviceSessRepo, deviceRepo, deviceRefreshRepo, userService, roleService, userRoleService, jwtManager, logger)
 	// Token handler
 	refreshRepo := userrepo.NewRefreshTokenRepository(db)
 	tokenHandler := handlers.NewTokenHandler(refreshRepo, userService, roleService, userRoleService, jwtManager)
+	// Audit repo (set in context for handlers that choose to log)
+	auditRepo := auditrepo.NewLogRepository(db)
+	r.Use(func(c *gin.Context) { c.Set("auditRepo", auditRepo); c.Next() })
 
 	// Health check endpoint
 	r.GET("/healthz", healthHandler.CheckHealth)
 
 	// Swagger documentation
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
+
+	// Public JWKS endpoint for token verification
+	r.GET("/.well-known/jwks.json", jwksHandler.GetJWKS)
 
 	// Route Setup //
 
@@ -121,10 +138,16 @@ func SetupRouter(
 	r.POST("/auth/login", authHandler.Login)
 	r.POST("/auth/github/login", githubHandler.ValidateToken)
 	r.POST("/tokens/refresh", tokenHandler.Refresh)
+	r.POST("/tokens/revoke", tokenHandler.Revoke)
 
 	// Invite endpoints
 	r.POST("/auth/invites", am.ValidatePermissions([]auth.Permission{auth.PermUserWrite}), inviteHandler.CreateInvite)
 	r.GET("/verify", inviteHandler.Verify)
+
+	// Device flow endpoints
+	r.POST("/device/init", deviceHandler.Init)
+	r.POST("/device/token", deviceHandler.Token)
+	r.POST("/device/approve", am.ValidatePermissions([]auth.Permission{}), deviceHandler.Approve)
 
 	// Pending endpoints
 	r.GET("/auth/pending/users", am.ValidatePermissions([]auth.Permission{auth.PermUserRead}), userHandler.GetPendingUsers)
@@ -142,6 +165,8 @@ func SetupRouter(
 
 	// User key endpoints
 	r.POST("/auth/keys", am.ValidatePermissions([]auth.Permission{auth.PermUserKeyWrite}), userKeyHandler.CreateUserKey)
+	r.POST("/auth/keys/bootstrap", userKeyHandler.BootstrapKET)
+	r.POST("/auth/keys/register", userKeyHandler.RegisterWithKET)
 	r.GET("/auth/keys", am.ValidatePermissions([]auth.Permission{auth.PermUserKeyRead}), userKeyHandler.ListUserKeys)
 	r.GET("/auth/keys/:id", am.ValidatePermissions([]auth.Permission{auth.PermUserKeyRead}), userKeyHandler.GetUserKey)
 	r.GET("/auth/keys/kid/:kid", am.ValidatePermissions([]auth.Permission{auth.PermUserKeyRead}), userKeyHandler.GetUserKeyByKid)

@@ -19,6 +19,9 @@ var _ users.KeysClientInterface = &KeysClientInterfaceMock{}
 //
 //		// make and configure a mocked users.KeysClientInterface
 //		mockedKeysClientInterface := &KeysClientInterfaceMock{
+//			BootstrapKETFunc: func(ctx context.Context, req *users.BootstrapKETRequest) (*users.BootstrapKETResponse, error) {
+//				panic("mock out the BootstrapKET method")
+//			},
 //			CreateFunc: func(ctx context.Context, req *users.CreateUserKeyRequest) (*users.UserKey, error) {
 //				panic("mock out the Create method")
 //			},
@@ -49,6 +52,9 @@ var _ users.KeysClientInterface = &KeysClientInterfaceMock{}
 //			RegisterFunc: func(ctx context.Context, req *users.RegisterUserKeyRequest) (*users.UserKey, error) {
 //				panic("mock out the Register method")
 //			},
+//			RegisterWithKETFunc: func(ctx context.Context, req *users.RegisterWithKETClientRequest) (*users.UserKey, error) {
+//				panic("mock out the RegisterWithKET method")
+//			},
 //			RevokeFunc: func(ctx context.Context, id uint) (*users.UserKey, error) {
 //				panic("mock out the Revoke method")
 //			},
@@ -62,6 +68,9 @@ var _ users.KeysClientInterface = &KeysClientInterfaceMock{}
 //
 //	}
 type KeysClientInterfaceMock struct {
+	// BootstrapKETFunc mocks the BootstrapKET method.
+	BootstrapKETFunc func(ctx context.Context, req *users.BootstrapKETRequest) (*users.BootstrapKETResponse, error)
+
 	// CreateFunc mocks the Create method.
 	CreateFunc func(ctx context.Context, req *users.CreateUserKeyRequest) (*users.UserKey, error)
 
@@ -92,6 +101,9 @@ type KeysClientInterfaceMock struct {
 	// RegisterFunc mocks the Register method.
 	RegisterFunc func(ctx context.Context, req *users.RegisterUserKeyRequest) (*users.UserKey, error)
 
+	// RegisterWithKETFunc mocks the RegisterWithKET method.
+	RegisterWithKETFunc func(ctx context.Context, req *users.RegisterWithKETClientRequest) (*users.UserKey, error)
+
 	// RevokeFunc mocks the Revoke method.
 	RevokeFunc func(ctx context.Context, id uint) (*users.UserKey, error)
 
@@ -100,6 +112,13 @@ type KeysClientInterfaceMock struct {
 
 	// calls tracks calls to the methods.
 	calls struct {
+		// BootstrapKET holds details about calls to the BootstrapKET method.
+		BootstrapKET []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// Req is the req argument value.
+			Req *users.BootstrapKETRequest
+		}
 		// Create holds details about calls to the Create method.
 		Create []struct {
 			// Ctx is the ctx argument value.
@@ -166,6 +185,13 @@ type KeysClientInterfaceMock struct {
 			// Req is the req argument value.
 			Req *users.RegisterUserKeyRequest
 		}
+		// RegisterWithKET holds details about calls to the RegisterWithKET method.
+		RegisterWithKET []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// Req is the req argument value.
+			Req *users.RegisterWithKETClientRequest
+		}
 		// Revoke holds details about calls to the Revoke method.
 		Revoke []struct {
 			// Ctx is the ctx argument value.
@@ -183,6 +209,7 @@ type KeysClientInterfaceMock struct {
 			Req *users.UpdateUserKeyRequest
 		}
 	}
+	lockBootstrapKET        sync.RWMutex
 	lockCreate              sync.RWMutex
 	lockDelete              sync.RWMutex
 	lockGet                 sync.RWMutex
@@ -193,8 +220,45 @@ type KeysClientInterfaceMock struct {
 	lockGetInactiveByUserID sync.RWMutex
 	lockList                sync.RWMutex
 	lockRegister            sync.RWMutex
+	lockRegisterWithKET     sync.RWMutex
 	lockRevoke              sync.RWMutex
 	lockUpdate              sync.RWMutex
+}
+
+// BootstrapKET calls BootstrapKETFunc.
+func (mock *KeysClientInterfaceMock) BootstrapKET(ctx context.Context, req *users.BootstrapKETRequest) (*users.BootstrapKETResponse, error) {
+	if mock.BootstrapKETFunc == nil {
+		panic("KeysClientInterfaceMock.BootstrapKETFunc: method is nil but KeysClientInterface.BootstrapKET was just called")
+	}
+	callInfo := struct {
+		Ctx context.Context
+		Req *users.BootstrapKETRequest
+	}{
+		Ctx: ctx,
+		Req: req,
+	}
+	mock.lockBootstrapKET.Lock()
+	mock.calls.BootstrapKET = append(mock.calls.BootstrapKET, callInfo)
+	mock.lockBootstrapKET.Unlock()
+	return mock.BootstrapKETFunc(ctx, req)
+}
+
+// BootstrapKETCalls gets all the calls that were made to BootstrapKET.
+// Check the length with:
+//
+//	len(mockedKeysClientInterface.BootstrapKETCalls())
+func (mock *KeysClientInterfaceMock) BootstrapKETCalls() []struct {
+	Ctx context.Context
+	Req *users.BootstrapKETRequest
+} {
+	var calls []struct {
+		Ctx context.Context
+		Req *users.BootstrapKETRequest
+	}
+	mock.lockBootstrapKET.RLock()
+	calls = mock.calls.BootstrapKET
+	mock.lockBootstrapKET.RUnlock()
+	return calls
 }
 
 // Create calls CreateFunc.
@@ -546,6 +610,42 @@ func (mock *KeysClientInterfaceMock) RegisterCalls() []struct {
 	mock.lockRegister.RLock()
 	calls = mock.calls.Register
 	mock.lockRegister.RUnlock()
+	return calls
+}
+
+// RegisterWithKET calls RegisterWithKETFunc.
+func (mock *KeysClientInterfaceMock) RegisterWithKET(ctx context.Context, req *users.RegisterWithKETClientRequest) (*users.UserKey, error) {
+	if mock.RegisterWithKETFunc == nil {
+		panic("KeysClientInterfaceMock.RegisterWithKETFunc: method is nil but KeysClientInterface.RegisterWithKET was just called")
+	}
+	callInfo := struct {
+		Ctx context.Context
+		Req *users.RegisterWithKETClientRequest
+	}{
+		Ctx: ctx,
+		Req: req,
+	}
+	mock.lockRegisterWithKET.Lock()
+	mock.calls.RegisterWithKET = append(mock.calls.RegisterWithKET, callInfo)
+	mock.lockRegisterWithKET.Unlock()
+	return mock.RegisterWithKETFunc(ctx, req)
+}
+
+// RegisterWithKETCalls gets all the calls that were made to RegisterWithKET.
+// Check the length with:
+//
+//	len(mockedKeysClientInterface.RegisterWithKETCalls())
+func (mock *KeysClientInterfaceMock) RegisterWithKETCalls() []struct {
+	Ctx context.Context
+	Req *users.RegisterWithKETClientRequest
+} {
+	var calls []struct {
+		Ctx context.Context
+		Req *users.RegisterWithKETClientRequest
+	}
+	mock.lockRegisterWithKET.RLock()
+	calls = mock.calls.RegisterWithKET
+	mock.lockRegisterWithKET.RUnlock()
 	return calls
 }
 

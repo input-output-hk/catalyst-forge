@@ -6,11 +6,11 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"github.com/input-output-hk/catalyst-forge/foundry/api/internal/service/user"
 	"github.com/input-output-hk/catalyst-forge/lib/foundry/auth"
 	"github.com/input-output-hk/catalyst-forge/lib/foundry/auth/jwt"
 	"github.com/input-output-hk/catalyst-forge/lib/foundry/auth/jwt/tokens"
-    "github.com/google/uuid"
 )
 
 // AuthHandler handles authentication endpoints
@@ -243,18 +243,18 @@ func (h *AuthHandler) Login(c *gin.Context) {
 		"permissions", permissions,
 		"roles_count", len(userRoles))
 
-    // Generate JWT with 30 minute expiration and new claims (jti, akid, user_ver)
-    token, err := tokens.GenerateAuthToken(
-        h.jwtManager,
-        user.Email,
-        permissions,
-        30*time.Minute,
-        jwt.WithTokenID(uuid.NewString()),
-        jwt.WithAdditionalClaims(map[string]interface{}{
-            "akid":     userKey.Kid,
-            "user_ver": user.UserVer,
-        }),
-    )
+	// Generate JWT with 30 minute expiration and new claims (jti, akid, user_ver)
+	token, err := tokens.GenerateAuthToken(
+		h.jwtManager,
+		user.Email,
+		permissions,
+		30*time.Minute,
+		jwt.WithTokenID(uuid.NewString()),
+		jwt.WithAdditionalClaims(map[string]interface{}{
+			"akid":     userKey.Kid,
+			"user_ver": user.UserVer,
+		}),
+	)
 	if err != nil {
 		h.logger.Error("Failed to generate JWT token", "error", err, "user_id", user.ID)
 		c.JSON(http.StatusInternalServerError, gin.H{

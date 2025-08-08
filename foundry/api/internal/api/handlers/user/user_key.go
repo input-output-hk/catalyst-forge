@@ -1,26 +1,34 @@
 package user
 
 import (
+	"crypto/ed25519"
+	crand "crypto/rand"
+	"encoding/base64"
 	"fmt"
 	"log/slog"
 	"net/http"
+	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/input-output-hk/catalyst-forge/foundry/api/internal/models/user"
 	userservice "github.com/input-output-hk/catalyst-forge/foundry/api/internal/service/user"
+	foundryjwt "github.com/input-output-hk/catalyst-forge/lib/foundry/auth/jwt"
 )
 
 // UserKeyHandler handles user key endpoints
 type UserKeyHandler struct {
 	userKeyService userservice.UserKeyService
 	logger         *slog.Logger
+	jwtManager     foundryjwt.JWTManager
 }
 
 // NewUserKeyHandler creates a new user key handler
-func NewUserKeyHandler(userKeyService userservice.UserKeyService, logger *slog.Logger) *UserKeyHandler {
+func NewUserKeyHandler(userKeyService userservice.UserKeyService, logger *slog.Logger, jwtManager foundryjwt.JWTManager) *UserKeyHandler {
 	return &UserKeyHandler{
 		userKeyService: userKeyService,
 		logger:         logger,
+		jwtManager:     jwtManager,
 	}
 }
 
@@ -45,6 +53,151 @@ type RegisterUserKeyRequest struct {
 	Email     string `json:"email" binding:"required,email"`
 	Kid       string `json:"kid" binding:"required"`
 	PubKeyB64 string `json:"pubkey_b64" binding:"required"`
+}
+
+// KET structures
+type ketClaims struct {
+	Nonce string `json:"nonce"`
+	jwt.RegisteredClaims
+}
+
+type BootstrapKETRequest struct {
+	Email string `json:"email" binding:"required,email"`
+}
+
+type BootstrapKETResponse struct {
+	KET   string `json:"ket"`
+	Nonce string `json:"nonce"`
+}
+
+type RegisterWithKETRequest struct {
+	KET       string `json:"ket" binding:"required"`
+	Kid       string `json:"kid" binding:"required"`
+	PubKeyB64 string `json:"pubkey_b64" binding:"required"`
+	SigBase64 string `json:"sig_b64" binding:"required"`
+}
+
+// BootstrapKET issues a short-lived Key Enrollment Token and a nonce that must be signed by the client key
+func (h *UserKeyHandler) BootstrapKET(c *gin.Context) {
+	var req BootstrapKETRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request"})
+		return
+	}
+
+	// use handler's jwt manager
+	jwtManager := h.jwtManager
+	if jwtManager == nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "server misconfiguration"})
+		return
+	}
+	ttl := 10 * time.Minute
+	if v, ok := c.Get("ket_ttl"); ok {
+		if d, ok2 := v.(time.Duration); ok2 && d > 0 {
+			ttl = d
+		}
+	}
+
+	// create nonce
+	nonceBytes := make([]byte, 24)
+	if _, err := c.Writer.Write(nil); err != nil { /* no-op to silence linters */
+	}
+	if _, err := randRead(nonceBytes); err != nil {
+		// fallback
+		for i := range nonceBytes {
+			nonceBytes[i] = byte(time.Now().UnixNano() >> (i % 8))
+		}
+	}
+	nonce := base64.RawURLEncoding.EncodeToString(nonceBytes)
+
+	claims := &ketClaims{
+		Nonce: nonce,
+		RegisteredClaims: jwt.RegisteredClaims{
+			Subject:   req.Email,
+			Issuer:    jwtManager.Issuer(),
+			Audience:  jwt.ClaimStrings(jwtManager.DefaultAudiences()),
+			IssuedAt:  jwt.NewNumericDate(time.Now()),
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(ttl)),
+			NotBefore: jwt.NewNumericDate(time.Now()),
+		},
+	}
+	tokenStr, err := jwtManager.SignToken(claims)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to issue token"})
+		return
+	}
+	c.JSON(http.StatusOK, BootstrapKETResponse{KET: tokenStr, Nonce: nonce})
+}
+
+// helper to avoid importing crypto/rand everywhere
+func randRead(b []byte) (int, error) { return crand.Read(b) }
+
+// RegisterWithKET verifies KET and PoP, then registers the provided public key for the user
+func (h *UserKeyHandler) RegisterWithKET(c *gin.Context) {
+	var req RegisterWithKETRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request"})
+		return
+	}
+
+	jwtManager := h.jwtManager
+	if jwtManager == nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "server misconfiguration"})
+		return
+	}
+
+	// verify KET
+	var claims ketClaims
+	if err := jwtManager.VerifyToken(req.KET, &claims); err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid ket"})
+		return
+	}
+	if time.Now().After(claims.ExpiresAt.Time) {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "ket expired"})
+		return
+	}
+
+	// verify signature over nonce with provided public key
+	pubBytes, err := base64.StdEncoding.DecodeString(req.PubKeyB64)
+	if err != nil || len(pubBytes) != ed25519.PublicKeySize {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid public key"})
+		return
+	}
+	sigBytes, err := base64.StdEncoding.DecodeString(req.SigBase64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid signature"})
+		return
+	}
+	nonceBytes, err := base64.RawURLEncoding.DecodeString(claims.Nonce)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid nonce"})
+		return
+	}
+	if !ed25519.Verify(ed25519.PublicKey(pubBytes), nonceBytes, sigBytes) {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "proof failed"})
+		return
+	}
+
+	// look up user by email in KET subject
+	userService := c.MustGet("userService").(userservice.UserService)
+	usr, err := userService.GetUserByEmail(claims.Subject)
+	if err != nil || usr == nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "user not found"})
+		return
+	}
+
+	// create or update key
+	existing, _ := h.userKeyService.GetUserKeyByKid(req.Kid)
+	if existing != nil {
+		c.JSON(http.StatusConflict, gin.H{"error": "kid already exists"})
+		return
+	}
+	uk := &user.UserKey{UserID: usr.ID, Kid: req.Kid, PubKeyB64: req.PubKeyB64, Status: user.UserKeyStatusActive}
+	if err := h.userKeyService.CreateUserKey(uk); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to save key"})
+		return
+	}
+	c.JSON(http.StatusCreated, uk)
 }
 
 // CreateUserKey handles the POST /auth/keys endpoint

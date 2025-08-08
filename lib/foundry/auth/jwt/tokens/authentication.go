@@ -45,36 +45,36 @@ func GenerateAuthToken(
 
 	// Build claims
 	now := time.Now()
-    claims := &AuthClaims{
-        Permissions: permissions,
-        RegisteredClaims: jwt.RegisteredClaims{
-            Subject:   subject,
-            Issuer:    getOrDefault(options.Issuer, signer.Issuer()),
-            Audience:  getOrDefaultSlice(options.Audiences, signer.DefaultAudiences()),
-            IssuedAt:  jwt.NewNumericDate(now),
-            ExpiresAt: jwt.NewNumericDate(now.Add(expiration)),
-            NotBefore: jwt.NewNumericDate(now),
-            ID:        options.ID,
-        },
-    }
+	claims := &AuthClaims{
+		Permissions: permissions,
+		RegisteredClaims: jwt.RegisteredClaims{
+			Subject:   subject,
+			Issuer:    getOrDefault(options.Issuer, signer.Issuer()),
+			Audience:  getOrDefaultSlice(options.Audiences, signer.DefaultAudiences()),
+			IssuedAt:  jwt.NewNumericDate(now),
+			ExpiresAt: jwt.NewNumericDate(now.Add(expiration)),
+			NotBefore: jwt.NewNumericDate(now),
+			ID:        options.ID,
+		},
+	}
 
-    if options.AdditionalClaims != nil {
-        if v, ok := options.AdditionalClaims["akid"]; ok {
-            if s, ok2 := v.(string); ok2 {
-                claims.AKID = s
-            }
-        }
-        if v, ok := options.AdditionalClaims["user_ver"]; ok {
-            switch t := v.(type) {
-            case int:
-                claims.UserVer = t
-            case int32:
-                claims.UserVer = int(t)
-            case int64:
-                claims.UserVer = int(t)
-            }
-        }
-    }
+	if options.AdditionalClaims != nil {
+		if v, ok := options.AdditionalClaims["akid"]; ok {
+			if s, ok2 := v.(string); ok2 {
+				claims.AKID = s
+			}
+		}
+		if v, ok := options.AdditionalClaims["user_ver"]; ok {
+			switch t := v.(type) {
+			case int:
+				claims.UserVer = t
+			case int32:
+				claims.UserVer = int(t)
+			case int64:
+				claims.UserVer = int(t)
+			}
+		}
+	}
 
 	// Sign the token
 	token := jwt.NewWithClaims(signer.SigningMethod(), claims)

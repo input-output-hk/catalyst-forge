@@ -11,15 +11,18 @@ import (
 	"time"
 
 	"github.com/alecthomas/kong"
+	"github.com/gin-gonic/gin"
 	"github.com/input-output-hk/catalyst-forge/foundry/api/cmd/api/auth"
 	"github.com/input-output-hk/catalyst-forge/foundry/api/internal/api"
 	"github.com/input-output-hk/catalyst-forge/foundry/api/internal/api/middleware"
 	"github.com/input-output-hk/catalyst-forge/foundry/api/internal/config"
 	"github.com/input-output-hk/catalyst-forge/foundry/api/internal/models"
+	adm "github.com/input-output-hk/catalyst-forge/foundry/api/internal/models/audit"
 	"github.com/input-output-hk/catalyst-forge/foundry/api/internal/models/user"
 	"github.com/input-output-hk/catalyst-forge/foundry/api/internal/repository"
 	userrepo "github.com/input-output-hk/catalyst-forge/foundry/api/internal/repository/user"
 	"github.com/input-output-hk/catalyst-forge/foundry/api/internal/service"
+	emailsvc "github.com/input-output-hk/catalyst-forge/foundry/api/internal/service/email"
 	"github.com/input-output-hk/catalyst-forge/foundry/api/internal/service/stepca"
 	userservice "github.com/input-output-hk/catalyst-forge/foundry/api/internal/service/user"
 	"github.com/input-output-hk/catalyst-forge/foundry/api/pkg/k8s"
@@ -116,8 +119,10 @@ func (r *RunCmd) Run() error {
 		&user.UserKey{},
 		&user.Device{},
 		&user.RefreshToken{},
+		&user.DeviceSession{},
 		&user.RevokedJTI{},
 		&user.Invite{},
+		&adm.Log{},
 	)
 	if err != nil {
 		logger.Error("Failed to run migrations", "error", err)
@@ -168,7 +173,12 @@ func (r *RunCmd) Run() error {
 	userKeyService := userservice.NewUserKeyService(userKeyRepo, logger)
 
 	// Initialize middleware
-	jwtManagerImpl, err := jwt.NewES256Manager(r.Auth.PrivateKey, r.Auth.PublicKey, jwt.WithManagerLogger(logger))
+	jwtManagerImpl, err := jwt.NewES256Manager(
+		r.Auth.PrivateKey,
+		r.Auth.PublicKey,
+		jwt.WithManagerLogger(logger),
+		jwt.WithMaxAuthTokenTTL(r.Auth.AccessTTL),
+	)
 	if err != nil {
 		logger.Error("Failed to initialize JWT manager", "error", err)
 		return err
@@ -214,6 +224,21 @@ func (r *RunCmd) Run() error {
 	defer ghaOIDCClient.StopCache()
 
 	// Setup router
+	// Optionally construct SES email service
+	var emailService emailsvc.Service
+	if r.Email.Enabled && r.Email.Provider == "ses" {
+		ses, err := emailsvc.NewSES(context.Background(), emailsvc.SESOptions{
+			Region:  r.Email.SESRegion,
+			Sender:  r.Email.Sender,
+			BaseURL: r.Server.PublicBaseURL,
+		})
+		if err != nil {
+			logger.Error("Failed to initialize SES email service", "error", err)
+		} else {
+			emailService = ses
+		}
+	}
+
 	router := api.SetupRouter(
 		releaseService,
 		deploymentService,
@@ -228,7 +253,20 @@ func (r *RunCmd) Run() error {
 		ghaOIDCClient,
 		ghaAuthService,
 		stepCAClient,
+		emailService,
 	)
+	// Inject default invite TTL and optional email service into router context
+	router.Use(func(c *gin.Context) {
+		c.Set("invite_default_ttl", r.Auth.InviteTTL)
+		if r.Email.Enabled && r.Email.Provider == "ses" {
+			c.Set("email_provider", "ses")
+			c.Set("email_sender", r.Email.Sender)
+			c.Set("public_base_url", r.Server.PublicBaseURL)
+			c.Set("email_region", r.Email.SESRegion)
+		}
+		c.Set("enable_per_ip_ratelimit", r.Security.EnableNaivePerIPRateLimit)
+		c.Next()
+	})
 
 	// Initialize server
 	server := api.NewServer(r.GetServerAddr(), router, logger)

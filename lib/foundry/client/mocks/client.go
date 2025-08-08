@@ -8,8 +8,12 @@ import (
 	"github.com/input-output-hk/catalyst-forge/lib/foundry/client/auth"
 	"github.com/input-output-hk/catalyst-forge/lib/foundry/client/certificates"
 	"github.com/input-output-hk/catalyst-forge/lib/foundry/client/deployments"
+	"github.com/input-output-hk/catalyst-forge/lib/foundry/client/device"
 	"github.com/input-output-hk/catalyst-forge/lib/foundry/client/github"
+	"github.com/input-output-hk/catalyst-forge/lib/foundry/client/invites"
+	"github.com/input-output-hk/catalyst-forge/lib/foundry/client/jwks"
 	"github.com/input-output-hk/catalyst-forge/lib/foundry/client/releases"
+	"github.com/input-output-hk/catalyst-forge/lib/foundry/client/tokens"
 	"github.com/input-output-hk/catalyst-forge/lib/foundry/client/users"
 	"sync"
 )
@@ -36,11 +40,20 @@ var _ client.Client = &ClientMock{}
 //			DeploymentsFunc: func() deployments.DeploymentsClientInterface {
 //				panic("mock out the Deployments method")
 //			},
+//			DeviceFunc: func() device.DeviceClientInterface {
+//				panic("mock out the Device method")
+//			},
 //			EventsFunc: func() deployments.EventsClientInterface {
 //				panic("mock out the Events method")
 //			},
 //			GithubFunc: func() github.GithubClientInterface {
 //				panic("mock out the Github method")
+//			},
+//			InvitesFunc: func() invites.InvitesClientInterface {
+//				panic("mock out the Invites method")
+//			},
+//			JWKSFunc: func() jwks.JWKSClientInterface {
+//				panic("mock out the JWKS method")
 //			},
 //			KeysFunc: func() users.KeysClientInterface {
 //				panic("mock out the Keys method")
@@ -50,6 +63,9 @@ var _ client.Client = &ClientMock{}
 //			},
 //			RolesFunc: func() users.RolesClientInterface {
 //				panic("mock out the Roles method")
+//			},
+//			TokensFunc: func() tokens.TokensClientInterface {
+//				panic("mock out the Tokens method")
 //			},
 //			UsersFunc: func() users.UsersClientInterface {
 //				panic("mock out the Users method")
@@ -73,11 +89,20 @@ type ClientMock struct {
 	// DeploymentsFunc mocks the Deployments method.
 	DeploymentsFunc func() deployments.DeploymentsClientInterface
 
+	// DeviceFunc mocks the Device method.
+	DeviceFunc func() device.DeviceClientInterface
+
 	// EventsFunc mocks the Events method.
 	EventsFunc func() deployments.EventsClientInterface
 
 	// GithubFunc mocks the Github method.
 	GithubFunc func() github.GithubClientInterface
+
+	// InvitesFunc mocks the Invites method.
+	InvitesFunc func() invites.InvitesClientInterface
+
+	// JWKSFunc mocks the JWKS method.
+	JWKSFunc func() jwks.JWKSClientInterface
 
 	// KeysFunc mocks the Keys method.
 	KeysFunc func() users.KeysClientInterface
@@ -87,6 +112,9 @@ type ClientMock struct {
 
 	// RolesFunc mocks the Roles method.
 	RolesFunc func() users.RolesClientInterface
+
+	// TokensFunc mocks the Tokens method.
+	TokensFunc func() tokens.TokensClientInterface
 
 	// UsersFunc mocks the Users method.
 	UsersFunc func() users.UsersClientInterface
@@ -105,11 +133,20 @@ type ClientMock struct {
 		// Deployments holds details about calls to the Deployments method.
 		Deployments []struct {
 		}
+		// Device holds details about calls to the Device method.
+		Device []struct {
+		}
 		// Events holds details about calls to the Events method.
 		Events []struct {
 		}
 		// Github holds details about calls to the Github method.
 		Github []struct {
+		}
+		// Invites holds details about calls to the Invites method.
+		Invites []struct {
+		}
+		// JWKS holds details about calls to the JWKS method.
+		JWKS []struct {
 		}
 		// Keys holds details about calls to the Keys method.
 		Keys []struct {
@@ -120,6 +157,9 @@ type ClientMock struct {
 		// Roles holds details about calls to the Roles method.
 		Roles []struct {
 		}
+		// Tokens holds details about calls to the Tokens method.
+		Tokens []struct {
+		}
 		// Users holds details about calls to the Users method.
 		Users []struct {
 		}
@@ -128,11 +168,15 @@ type ClientMock struct {
 	lockAuth         sync.RWMutex
 	lockCertificates sync.RWMutex
 	lockDeployments  sync.RWMutex
+	lockDevice       sync.RWMutex
 	lockEvents       sync.RWMutex
 	lockGithub       sync.RWMutex
+	lockInvites      sync.RWMutex
+	lockJWKS         sync.RWMutex
 	lockKeys         sync.RWMutex
 	lockReleases     sync.RWMutex
 	lockRoles        sync.RWMutex
+	lockTokens       sync.RWMutex
 	lockUsers        sync.RWMutex
 }
 
@@ -244,6 +288,33 @@ func (mock *ClientMock) DeploymentsCalls() []struct {
 	return calls
 }
 
+// Device calls DeviceFunc.
+func (mock *ClientMock) Device() device.DeviceClientInterface {
+	if mock.DeviceFunc == nil {
+		panic("ClientMock.DeviceFunc: method is nil but Client.Device was just called")
+	}
+	callInfo := struct {
+	}{}
+	mock.lockDevice.Lock()
+	mock.calls.Device = append(mock.calls.Device, callInfo)
+	mock.lockDevice.Unlock()
+	return mock.DeviceFunc()
+}
+
+// DeviceCalls gets all the calls that were made to Device.
+// Check the length with:
+//
+//	len(mockedClient.DeviceCalls())
+func (mock *ClientMock) DeviceCalls() []struct {
+} {
+	var calls []struct {
+	}
+	mock.lockDevice.RLock()
+	calls = mock.calls.Device
+	mock.lockDevice.RUnlock()
+	return calls
+}
+
 // Events calls EventsFunc.
 func (mock *ClientMock) Events() deployments.EventsClientInterface {
 	if mock.EventsFunc == nil {
@@ -295,6 +366,60 @@ func (mock *ClientMock) GithubCalls() []struct {
 	mock.lockGithub.RLock()
 	calls = mock.calls.Github
 	mock.lockGithub.RUnlock()
+	return calls
+}
+
+// Invites calls InvitesFunc.
+func (mock *ClientMock) Invites() invites.InvitesClientInterface {
+	if mock.InvitesFunc == nil {
+		panic("ClientMock.InvitesFunc: method is nil but Client.Invites was just called")
+	}
+	callInfo := struct {
+	}{}
+	mock.lockInvites.Lock()
+	mock.calls.Invites = append(mock.calls.Invites, callInfo)
+	mock.lockInvites.Unlock()
+	return mock.InvitesFunc()
+}
+
+// InvitesCalls gets all the calls that were made to Invites.
+// Check the length with:
+//
+//	len(mockedClient.InvitesCalls())
+func (mock *ClientMock) InvitesCalls() []struct {
+} {
+	var calls []struct {
+	}
+	mock.lockInvites.RLock()
+	calls = mock.calls.Invites
+	mock.lockInvites.RUnlock()
+	return calls
+}
+
+// JWKS calls JWKSFunc.
+func (mock *ClientMock) JWKS() jwks.JWKSClientInterface {
+	if mock.JWKSFunc == nil {
+		panic("ClientMock.JWKSFunc: method is nil but Client.JWKS was just called")
+	}
+	callInfo := struct {
+	}{}
+	mock.lockJWKS.Lock()
+	mock.calls.JWKS = append(mock.calls.JWKS, callInfo)
+	mock.lockJWKS.Unlock()
+	return mock.JWKSFunc()
+}
+
+// JWKSCalls gets all the calls that were made to JWKS.
+// Check the length with:
+//
+//	len(mockedClient.JWKSCalls())
+func (mock *ClientMock) JWKSCalls() []struct {
+} {
+	var calls []struct {
+	}
+	mock.lockJWKS.RLock()
+	calls = mock.calls.JWKS
+	mock.lockJWKS.RUnlock()
 	return calls
 }
 
@@ -376,6 +501,33 @@ func (mock *ClientMock) RolesCalls() []struct {
 	mock.lockRoles.RLock()
 	calls = mock.calls.Roles
 	mock.lockRoles.RUnlock()
+	return calls
+}
+
+// Tokens calls TokensFunc.
+func (mock *ClientMock) Tokens() tokens.TokensClientInterface {
+	if mock.TokensFunc == nil {
+		panic("ClientMock.TokensFunc: method is nil but Client.Tokens was just called")
+	}
+	callInfo := struct {
+	}{}
+	mock.lockTokens.Lock()
+	mock.calls.Tokens = append(mock.calls.Tokens, callInfo)
+	mock.lockTokens.Unlock()
+	return mock.TokensFunc()
+}
+
+// TokensCalls gets all the calls that were made to Tokens.
+// Check the length with:
+//
+//	len(mockedClient.TokensCalls())
+func (mock *ClientMock) TokensCalls() []struct {
+} {
+	var calls []struct {
+	}
+	mock.lockTokens.RLock()
+	calls = mock.calls.Tokens
+	mock.lockTokens.RUnlock()
 	return calls
 }
 

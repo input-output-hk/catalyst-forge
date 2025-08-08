@@ -7,9 +7,9 @@ import (
 
 // AuthClaims represents the JWT claims structure for authentication tokens
 type AuthClaims struct {
-    Permissions []auth.Permission `json:"perms"`
-    AKID        string            `json:"akid,omitempty"`
-    UserVer     int               `json:"user_ver,omitempty"`
+	Permissions []auth.Permission `json:"perms"`
+	AKID        string            `json:"akid,omitempty"`
+	UserVer     int               `json:"user_ver,omitempty"`
 	jwt.RegisteredClaims
 }
 
