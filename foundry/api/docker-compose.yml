@@ -21,7 +21,6 @@ services:
     container_name: api
     environment:
       HTTP_PORT: 5050
-      # Public URL used for links (invites, device verification)
       PUBLIC_BASE_URL: http://localhost:5050
       AUTH_PRIVATE_KEY: /data/private.pem
       AUTH_PUBLIC_KEY: /data/public.pem
@@ -30,14 +29,18 @@ services:
       AUTH_ACCESS_TTL: 30m
       AUTH_REFRESH_TTL: 720h
       KET_TTL: 10m
+
       # Hash secrets for invite/refresh tokens (dev defaults)
       INVITE_HASH_SECRET: dev-invite-secret
       REFRESH_HASH_SECRET: dev-refresh-secret
+
       # Email config (disabled by default for local compose)
       EMAIL_ENABLED: "false"
       EMAIL_PROVIDER: none
       # EMAIL_SENDER: noreply@example.com
       # SES_REGION: us-east-1
+
+      # Database configuration
       DB_SUPER_USER: postgres
       DB_SUPER_PASSWORD: postgres
       DB_ROOT_NAME: postgres
@@ -52,6 +55,7 @@ services:
       LOG_LEVEL: debug
       LOG_FORMAT: text
       SEED_ADMIN: admin@foundry.dev
+
       # PCA configuration (dev defaults expect real ARNs in staging/e2e)
       PCA_CLIENT_CA_ARN: ""
       PCA_SERVER_CA_ARN: ""
@@ -76,7 +80,6 @@ services:
         condition: service_completed_successfully
       postgres:
         condition: service_healthy
-      # step-ca dependencies removed with PCA migration
     restart: on-failure
 
   api-test:
@@ -85,8 +88,6 @@ services:
     environment:
       API_URL: http://api:5050
       JWT_TOKEN_PATH: /data/jwt.txt
-      # ensure token and seeded admin align
-      # tests use Authorization from JWT_TOKEN_PATH
     volumes:
       - ./.auth:/data
     depends_on:

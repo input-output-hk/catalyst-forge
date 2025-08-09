@@ -2091,7 +2091,7 @@ paths:
     post:
       consumes:
       - application/json
-      description: Signs a server CSR using the Step-CA servers provisioner
+      description: Signs a server CSR
       parameters:
       - description: Server certificate signing request
         in: body
@@ -2153,7 +2153,7 @@ paths:
     post:
       consumes:
       - application/json
-      description: Signs a Certificate Signing Request (CSR) using step-ca
+      description: Signs a Certificate Signing Request (CSR)
       parameters:
       - description: Certificate signing request
         in: body

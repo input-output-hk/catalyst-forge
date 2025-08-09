@@ -116,5 +116,3 @@ github-jwks-cache-ttl = "10m"
 
 # Default TTL for minted job tokens from GHA exchange (clamped by OIDC token expiry)
 job-token-default-ttl = "60m"
-
-# Deprecated Step-CA settings removed. AWS PCA is the active CA integration.

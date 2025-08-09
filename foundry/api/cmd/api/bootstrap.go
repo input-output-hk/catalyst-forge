@@ -11,7 +11,7 @@ import (
 	"log/slog"
 
 	"github.com/gin-gonic/gin"
-	caapi "github.com/input-output-hk/catalyst-forge/foundry/api/internal/ca"
+
 	"github.com/input-output-hk/catalyst-forge/foundry/api/internal/config"
 	"github.com/input-output-hk/catalyst-forge/foundry/api/internal/models"
 	adm "github.com/input-output-hk/catalyst-forge/foundry/api/internal/models/audit"
@@ -19,7 +19,6 @@ import (
 	"github.com/input-output-hk/catalyst-forge/foundry/api/internal/models/user"
 	emailsvc "github.com/input-output-hk/catalyst-forge/foundry/api/internal/service/email"
 	pcaclient "github.com/input-output-hk/catalyst-forge/foundry/api/internal/service/pca"
-	"github.com/input-output-hk/catalyst-forge/foundry/api/internal/service/stepca"
 	"github.com/input-output-hk/catalyst-forge/foundry/api/pkg/k8s"
 	"github.com/input-output-hk/catalyst-forge/lib/foundry/auth/jwt"
 	"gorm.io/driver/postgres"
@@ -75,30 +74,6 @@ func initJWTManager(authCfg config.AuthConfig, logger *slog.Logger) (jwt.JWTMana
 	return manager, nil
 }
 
-// initStepCAClient retained for legacy reference; unused after PCA migration
-//
-//lint:ignore U1000 kept for potential future dev local testing
-func initStepCAClient(stepCfg config.StepCAConfig, logger *slog.Logger) (*stepca.Client, []byte, error) {
-	var rootCA []byte
-	var err error
-	if stepCfg.RootCA != "" {
-		rootCA, err = os.ReadFile(stepCfg.RootCA)
-		if err != nil {
-			return nil, nil, err
-		}
-	}
-	cli, err := stepca.NewClient(stepca.Config{
-		BaseURL:            stepCfg.BaseURL,
-		InsecureSkipVerify: stepCfg.InsecureSkipVerify,
-		Timeout:            stepCfg.ClientTimeout,
-		RootCA:             rootCA,
-	})
-	if err != nil {
-		return nil, nil, err
-	}
-	return cli, rootCA, nil
-}
-
 // initGHAClient reserved for future extraction if needed
 //
 //lint:ignore U1000 kept intentionally to preserve API surface
@@ -144,12 +119,7 @@ func parseProvisionerSigner(path string) *ecdsa.PrivateKey {
 	return nil
 }
 
-func buildProvisionerClients(cfg config.Config) (clientsCA, serversCA *caapi.StepCAClient) {
-	// Step-CA deprecated; return nil clients
-	return nil, nil
-}
-
-func injectDefaultContext(r *gin.Engine, cfg config.Config, emailSvc emailsvc.Service, clientsCA, serversCA *caapi.StepCAClient) {
+func injectDefaultContext(r *gin.Engine, cfg config.Config, emailSvc emailsvc.Service) {
 	r.Use(func(c *gin.Context) {
 		c.Set("invite_default_ttl", cfg.Auth.InviteTTL)
 		if emailSvc != nil && cfg.Email.Enabled && cfg.Email.Provider == "ses" {
@@ -166,9 +136,6 @@ func injectDefaultContext(r *gin.Engine, cfg config.Config, emailSvc emailsvc.Se
 		c.Set("github_allowed_repos", cfg.Certs.GhAllowedRepos)
 		c.Set("github_protected_refs", cfg.Certs.GhProtectedRefs)
 		c.Set("github_job_token_default_ttl", cfg.Certs.JobTokenDefaultTTL)
-		// Step-CA provisioners
-		c.Set("stepca_clients_ca", clientsCA)
-		c.Set("stepca_servers_ca", serversCA)
 		// PCA configuration keys for handlers
 		clientArn := cfg.Certs.PCAClientCAArn
 		serverArn := cfg.Certs.PCAServerCAArn

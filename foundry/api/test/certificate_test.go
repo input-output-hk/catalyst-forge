@@ -131,7 +131,7 @@ func TestCertificateAPI(t *testing.T) {
 			duration := response.NotAfter.Sub(response.NotBefore)
 			expectedDuration := 8 * time.Minute
 
-			// Allow some tolerance (±2 minutes) for processing time and step-ca policy
+			// Allow some tolerance (±2 minutes) for processing time
 			tolerance := 2 * time.Minute
 			assert.True(t,
 				duration >= expectedDuration-tolerance && duration <= expectedDuration+tolerance,
@@ -174,14 +174,14 @@ func TestCertificateAPI(t *testing.T) {
 
 			req := &certificates.CertificateSigningRequest{
 				CSR: csr,
-				TTL: "8760h", // 1 year - should be limited by step-ca policy
+				TTL: "8760h",
 			}
 
 			response, err := c.Certificates().SignCertificate(ctx, req)
 			if err == nil {
 				// If it succeeds, the TTL should be capped
 				duration := response.NotAfter.Sub(response.NotBefore)
-				maxAllowed := 10 * time.Minute // step-ca limits to 10m
+				maxAllowed := 10 * time.Minute
 
 				assert.True(t, duration <= maxAllowed,
 					"Certificate duration should be capped to %v, got %v", maxAllowed, duration)

@@ -36,16 +36,7 @@ func InitDefault() {
 		},
 		[]string{"reason"},
 	)
-	StepCASignLatencySeconds = prometheus.NewHistogramVec(
-		prometheus.HistogramOpts{
-			Namespace: "foundry",
-			Subsystem: "cert",
-			Name:      "stepca_sign_latency_seconds",
-			Help:      "Latency of step-ca sign requests.",
-			Buckets:   prometheus.DefBuckets,
-		},
-		[]string{"kind"},
-	)
+	// Removed StepCA latency metric after migration
 	PCAIssueLatencySeconds = prometheus.NewHistogramVec(
 		prometheus.HistogramOpts{
 			Namespace: "foundry",
@@ -56,13 +47,12 @@ func InitDefault() {
 		},
 		[]string{"kind"},
 	)
-	prometheus.MustRegister(BuildSessionCreated, CertIssuedTotal, CertIssueErrorsTotal, StepCASignLatencySeconds, PCAIssueLatencySeconds)
+	prometheus.MustRegister(BuildSessionCreated, CertIssuedTotal, CertIssueErrorsTotal, PCAIssueLatencySeconds)
 }
 
 // Certificate issuance metrics
 var (
-	CertIssuedTotal          *prometheus.CounterVec
-	CertIssueErrorsTotal     *prometheus.CounterVec
-	StepCASignLatencySeconds *prometheus.HistogramVec
-	PCAIssueLatencySeconds   *prometheus.HistogramVec
+	CertIssuedTotal        *prometheus.CounterVec
+	CertIssueErrorsTotal   *prometheus.CounterVec
+	PCAIssueLatencySeconds *prometheus.HistogramVec
 )

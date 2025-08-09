@@ -34,7 +34,7 @@ func NewCertificatesClient(
 	}
 }
 
-// SignCertificate signs a Certificate Signing Request (CSR) using step-ca
+// SignCertificate signs a Certificate Signing Request (CSR)
 func (c *CertificatesClient) SignCertificate(ctx context.Context, req *CertificateSigningRequest) (*CertificateSigningResponse, error) {
 	if req == nil {
 		return nil, fmt.Errorf("request cannot be nil")

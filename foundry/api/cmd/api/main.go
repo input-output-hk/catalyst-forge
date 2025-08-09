@@ -24,8 +24,6 @@ import (
 	"github.com/input-output-hk/catalyst-forge/foundry/api/internal/service"
 	emailsvc "github.com/input-output-hk/catalyst-forge/foundry/api/internal/service/email"
 
-	// step-ca (type reference only)
-	"github.com/input-output-hk/catalyst-forge/foundry/api/internal/service/stepca"
 	userservice "github.com/input-output-hk/catalyst-forge/foundry/api/internal/service/user"
 	"github.com/input-output-hk/catalyst-forge/foundry/api/pkg/k8s"
 	"github.com/input-output-hk/catalyst-forge/foundry/api/pkg/k8s/mocks"
@@ -170,9 +168,6 @@ func (r *RunCmd) Run() error {
 	revokedRepo := userrepo.NewRevokedJTIRepository(db)
 	authMiddleware := middleware.NewAuthMiddleware(jwtManager, logger, userService, revokedRepo)
 
-	// Step-CA removed with PCA migration; keep nil client for root endpoint fallback
-	var stepCAClient *stepca.Client = nil
-
 	// Initialize GitHub Actions OIDC client
 	ghaOIDCClient, err := ghauth.NewDefaultGithubActionsOIDCClient(context.Background(), "/tmp/gha-jwks-cache")
 	if err != nil {
@@ -194,7 +189,6 @@ func (r *RunCmd) Run() error {
 	// Initialize Prometheus metrics
 	metrics.InitDefault()
 
-	clientsCA2, serversCA2 := buildProvisionerClients(r.Config)
 	// Initialize PCA if configured
 	pcaCli, _ := initPCAClient(r.Certs)
 	router := api.SetupRouter(
@@ -210,16 +204,13 @@ func (r *RunCmd) Run() error {
 		jwtManager,
 		ghaOIDCClient,
 		ghaAuthService,
-		stepCAClient,
 		emailService,
 		r.Certs.SessionMaxActive,
 		r.Security.EnableNaivePerIPRateLimit,
-		clientsCA2,
-		serversCA2,
 		pcaCli,
 	)
 	// Inject defaults into request context (policy, email, github, etc.)
-	injectDefaultContext(router, r.Config, emailService, clientsCA2, serversCA2)
+	injectDefaultContext(router, r.Config, emailService)
 	// Attach PCA client to certificate handler if available
 	if pcaCli != nil {
 		// Router constructed the handler; re-create and replace with PCA attached requires refactor.
@@ -232,12 +223,6 @@ func (r *RunCmd) Run() error {
 		c.Set("certs_client_cert_ttl_dev", r.Certs.ClientCertTTLDev)
 		c.Set("certs_client_cert_ttl_ci_max", r.Certs.ClientCertTTLCIMax)
 		c.Set("certs_server_cert_ttl", r.Certs.ServerCertTTL)
-		c.Next()
-	})
-	// Ensure Step-CA provisioner clients are present on every request context
-	router.Use(func(c *gin.Context) {
-		c.Set("stepca_clients_ca", clientsCA2)
-		c.Set("stepca_servers_ca", serversCA2)
 		c.Next()
 	})
 

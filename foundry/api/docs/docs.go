@@ -2301,7 +2301,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Signs a server CSR using the Step-CA servers provisioner",
+                "description": "Signs a server CSR",
                 "consumes": [
                     "application/json"
                 ],
@@ -2395,7 +2395,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Signs a Certificate Signing Request (CSR) using step-ca",
+                "description": "Signs a Certificate Signing Request (CSR)",
                 "consumes": [
                     "application/json"
                 ],

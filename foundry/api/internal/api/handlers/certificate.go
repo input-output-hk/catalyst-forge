@@ -19,7 +19,6 @@ import (
 	"github.com/input-output-hk/catalyst-forge/foundry/api/internal/rate"
 	auditrepo "github.com/input-output-hk/catalyst-forge/foundry/api/internal/repository/audit"
 	pca "github.com/input-output-hk/catalyst-forge/foundry/api/internal/service/pca"
-	"github.com/input-output-hk/catalyst-forge/foundry/api/internal/service/stepca"
 	"github.com/input-output-hk/catalyst-forge/foundry/api/internal/utils"
 	"github.com/input-output-hk/catalyst-forge/lib/foundry/auth"
 	"github.com/input-output-hk/catalyst-forge/lib/foundry/auth/jwt"
@@ -67,22 +66,16 @@ type CertificateSigningResponse struct {
 
 // CertificateHandler handles certificate-related API endpoints
 type CertificateHandler struct {
-	jwtManager   jwt.JWTManager
-	stepCAClient stepca.StepCAClient
-	clientsProv  *ca.StepCAClient
-	serversProv  *ca.StepCAClient
-	pcaClient    pca.PCAClient
-	limiter      rate.Limiter
+	jwtManager jwt.JWTManager
+	pcaClient  pca.PCAClient
+	limiter    rate.Limiter
 }
 
 // NewCertificateHandler creates a new certificate handler
-func NewCertificateHandler(jwtManager jwt.JWTManager, stepCAClient stepca.StepCAClient, clientsProv *ca.StepCAClient, serversProv *ca.StepCAClient) *CertificateHandler {
+func NewCertificateHandler(jwtManager jwt.JWTManager) *CertificateHandler {
 	return &CertificateHandler{
-		jwtManager:   jwtManager,
-		stepCAClient: stepCAClient,
-		clientsProv:  clientsProv,
-		serversProv:  serversProv,
-		limiter:      rate.NewInMemoryLimiter(),
+		jwtManager: jwtManager,
+		limiter:    rate.NewInMemoryLimiter(),
 	}
 }
 
@@ -94,7 +87,7 @@ func (h *CertificateHandler) WithPCA(client pca.PCAClient) *CertificateHandler {
 
 // SignCertificate handles certificate signing requests
 // @Summary Sign a certificate
-// @Description Signs a Certificate Signing Request (CSR) using step-ca
+// @Description Signs a Certificate Signing Request (CSR)
 // @Tags certificates
 // @Accept json
 // @Produce json
@@ -272,116 +265,112 @@ func (h *CertificateHandler) SignCertificate(c *gin.Context) {
 		}
 	}
 
-	// Prefer PCA; Step-CA path removed in PCA migration
-	if h.pcaClient != nil {
-		// Build SANs for APIPassthrough
-		pcaSANs := pca.SANs{}
-		if isServer {
-			pcaSANs.DNS = append(pcaSANs.DNS, csr.DNSNames...)
-			pcaSANs.DNS = append(pcaSANs.DNS, sans...)
-		} else {
-			// client: use URI SANs from CSR only; enforce via validator already
-			for _, u := range csr.URIs {
-				if u != nil {
-					pcaSANs.URIs = append(pcaSANs.URIs, u.String())
-				}
+	// Build SANs for APIPassthrough
+	pcaSANs := pca.SANs{}
+	if isServer {
+		pcaSANs.DNS = append(pcaSANs.DNS, csr.DNSNames...)
+		pcaSANs.DNS = append(pcaSANs.DNS, sans...)
+	} else {
+		// client: use URI SANs from CSR only; enforce via validator already
+		for _, u := range csr.URIs {
+			if u != nil {
+				pcaSANs.URIs = append(pcaSANs.URIs, u.String())
 			}
 		}
-		start := time.Now()
-		// Choose CA/template/algo based on kind
-		caArnKey, tplArnKey, algoKey := "certs_pca_client_ca_arn", "certs_pca_client_template_arn", "certs_pca_signing_algo_client"
-		if isServer {
-			caArnKey, tplArnKey, algoKey = "certs_pca_server_ca_arn", "certs_pca_server_template_arn", "certs_pca_signing_algo_server"
+	}
+	start := time.Now()
+	// Choose CA/template/algo based on kind
+	caArnKey, tplArnKey, algoKey := "certs_pca_client_ca_arn", "certs_pca_client_template_arn", "certs_pca_signing_algo_client"
+	if isServer {
+		caArnKey, tplArnKey, algoKey = "certs_pca_server_ca_arn", "certs_pca_server_template_arn", "certs_pca_signing_algo_server"
+	}
+	caArn, _ := utils.GetString(c, caArnKey)
+	tplArn, _ := utils.GetString(c, tplArnKey)
+	algo, _ := utils.GetString(c, algoKey)
+	if caArn == "" {
+		caArn = "arn:mock:client"
+	}
+	if tplArn == "" {
+		tplArn = "arn:aws:acm-pca:::template/EndEntityClientAuthCertificate_APIPassthrough/V1"
+	}
+	if algo == "" {
+		algo = "SHA256WITHECDSA"
+	}
+	certArn, err := h.pcaClient.Issue(c, caArn, tplArn, algo, block.Bytes, ttl, pcaSANs)
+	if err != nil {
+		if metrics.CertIssueErrorsTotal != nil {
+			metrics.CertIssueErrorsTotal.WithLabelValues("pca_issue_error").Inc()
 		}
-		caArn, _ := utils.GetString(c, caArnKey)
-		tplArn, _ := utils.GetString(c, tplArnKey)
-		algo, _ := utils.GetString(c, algoKey)
-		if caArn == "" {
-			caArn = "arn:mock:client"
-		}
-		if tplArn == "" {
-			tplArn = "arn:aws:acm-pca:::template/EndEntityClientAuthCertificate_APIPassthrough/V1"
-		}
-		if algo == "" {
-			algo = "SHA256WITHECDSA"
-		}
-		certArn, err := h.pcaClient.Issue(c, caArn, tplArn, algo, block.Bytes, ttl, pcaSANs)
-		if err != nil {
-			if metrics.CertIssueErrorsTotal != nil {
-				metrics.CertIssueErrorsTotal.WithLabelValues("pca_issue_error").Inc()
-			}
-			c.JSON(http.StatusBadRequest, gin.H{"error": fmt.Sprintf("pca issue failed: %v", err)})
-			return
-		}
-		certPEM, chainPEM, err := h.pcaClient.Get(c, caArn, certArn)
-		if err != nil {
-			if metrics.CertIssueErrorsTotal != nil {
-				metrics.CertIssueErrorsTotal.WithLabelValues("pca_get_error").Inc()
-			}
-			c.JSON(http.StatusBadRequest, gin.H{"error": fmt.Sprintf("pca get failed: %v", err)})
-			return
-		}
-		if metrics.PCAIssueLatencySeconds != nil {
-			kind := "client"
-			if isServer {
-				kind = "server"
-			}
-			metrics.PCAIssueLatencySeconds.WithLabelValues(kind).Observe(time.Since(start).Seconds())
-		}
-		// Reuse existing parsing logic by fabricating a SignResponse-like struct
-		chain := splitPEMCerts(chainPEM)
-		signResp := struct {
-			Certificate string
-			Chain       []string
-		}{Certificate: certPEM, Chain: chain}
-		// Parse the signed certificate to extract metadata
-		certBlock, _ := pem.Decode([]byte(signResp.Certificate))
-		if certBlock == nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "invalid certificate returned from PCA"})
-			return
-		}
-		cert, err := x509.ParseCertificate(certBlock.Bytes)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("failed to parse certificate: %v", err)})
-			return
-		}
-		fingerprint := sha256.Sum256(cert.Raw)
-		fingerprintHex := hex.EncodeToString(fingerprint[:])
-		response := CertificateSigningResponse{
-			Certificate:      signResp.Certificate,
-			CertificateChain: signResp.Chain,
-			SerialNumber:     cert.SerialNumber.String(),
-			NotBefore:        cert.NotBefore,
-			NotAfter:         cert.NotAfter,
-			Fingerprint:      fmt.Sprintf("sha256:%s", fingerprintHex),
-		}
-		if metrics.CertIssuedTotal != nil {
-			kind := "client"
-			if isServer {
-				kind = "server"
-			}
-			metrics.CertIssuedTotal.WithLabelValues(kind).Inc()
-		}
-		if v, ok := c.Get("auditRepo"); ok {
-			if ar, ok2 := v.(auditrepo.LogRepository); ok2 {
-				_ = ar.Create(&adm.Log{
-					EventType: "cert.issued",
-					RequestIP: c.ClientIP(),
-					UserAgent: c.Request.UserAgent(),
-					Metadata:  buildAuditMetadata(subject, sans, ttl, map[string]any{"serial": cert.SerialNumber.String(), "not_after": cert.NotAfter, "ca_arn": caArn, "template_arn": tplArn, "signing_algo": algo}),
-				})
-			}
-		}
-		c.JSON(http.StatusOK, response)
+		c.JSON(http.StatusBadRequest, gin.H{"error": fmt.Sprintf("pca issue failed: %v", err)})
 		return
 	}
-	// PCA not available
-	c.JSON(http.StatusInternalServerError, gin.H{"error": "PCA not configured"})
+	certPEM, chainPEM, err := h.pcaClient.Get(c, caArn, certArn)
+	if err != nil {
+		if metrics.CertIssueErrorsTotal != nil {
+			metrics.CertIssueErrorsTotal.WithLabelValues("pca_get_error").Inc()
+		}
+		c.JSON(http.StatusBadRequest, gin.H{"error": fmt.Sprintf("pca get failed: %v", err)})
+		return
+	}
+	if metrics.PCAIssueLatencySeconds != nil {
+		kind := "client"
+		if isServer {
+			kind = "server"
+		}
+		metrics.PCAIssueLatencySeconds.WithLabelValues(kind).Observe(time.Since(start).Seconds())
+	}
+	// Reuse existing parsing logic by fabricating a SignResponse-like struct
+	chain := splitPEMCerts(chainPEM)
+	signResp := struct {
+		Certificate string
+		Chain       []string
+	}{Certificate: certPEM, Chain: chain}
+	// Parse the signed certificate to extract metadata
+	certBlock, _ := pem.Decode([]byte(signResp.Certificate))
+	if certBlock == nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "invalid certificate returned from PCA"})
+		return
+	}
+	cert, err := x509.ParseCertificate(certBlock.Bytes)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("failed to parse certificate: %v", err)})
+		return
+	}
+	fingerprint := sha256.Sum256(cert.Raw)
+	fingerprintHex := hex.EncodeToString(fingerprint[:])
+	response := CertificateSigningResponse{
+		Certificate:      signResp.Certificate,
+		CertificateChain: signResp.Chain,
+		SerialNumber:     cert.SerialNumber.String(),
+		NotBefore:        cert.NotBefore,
+		NotAfter:         cert.NotAfter,
+		Fingerprint:      fmt.Sprintf("sha256:%s", fingerprintHex),
+	}
+	if metrics.CertIssuedTotal != nil {
+		kind := "client"
+		if isServer {
+			kind = "server"
+		}
+		metrics.CertIssuedTotal.WithLabelValues(kind).Inc()
+	}
+	if v, ok := c.Get("auditRepo"); ok {
+		if ar, ok2 := v.(auditrepo.LogRepository); ok2 {
+			_ = ar.Create(&adm.Log{
+				EventType: "cert.issued",
+				RequestIP: c.ClientIP(),
+				UserAgent: c.Request.UserAgent(),
+				Metadata:  buildAuditMetadata(subject, sans, ttl, map[string]any{"serial": cert.SerialNumber.String(), "not_after": cert.NotAfter, "ca_arn": caArn, "template_arn": tplArn, "signing_algo": algo}),
+			})
+		}
+	}
+	c.JSON(http.StatusOK, response)
+	return
+
 }
 
 // SignServerCertificate handles BuildKit server certificate issuance via Step-CA servers provisioner
 // @Summary Sign a BuildKit server certificate
-// @Description Signs a server CSR using the Step-CA servers provisioner
+// @Description Signs a server CSR
 // @Tags certificates
 // @Accept json
 // @Produce json
@@ -433,85 +422,80 @@ func (h *CertificateHandler) SignServerCertificate(c *gin.Context) {
 		ttl = d
 	}
 
-	// Prefer PCA; Step-CA removed for issuance
-	if h.pcaClient != nil {
-		pcaSANs := pca.SANs{DNS: csr.DNSNames}
-		start := time.Now()
-		caArn, _ := utils.GetString(c, "certs_pca_server_ca_arn")
-		tplArn, _ := utils.GetString(c, "certs_pca_server_template_arn")
-		algo, _ := utils.GetString(c, "certs_pca_signing_algo_server")
-		if caArn == "" {
-			caArn = "arn:mock:server"
+	pcaSANs := pca.SANs{DNS: csr.DNSNames}
+	start := time.Now()
+	caArn, _ := utils.GetString(c, "certs_pca_server_ca_arn")
+	tplArn, _ := utils.GetString(c, "certs_pca_server_template_arn")
+	algo, _ := utils.GetString(c, "certs_pca_signing_algo_server")
+	if caArn == "" {
+		caArn = "arn:mock:server"
+	}
+	if tplArn == "" {
+		tplArn = "arn:aws:acm-pca:::template/EndEntityServerAuthCertificate_APIPassthrough/V1"
+	}
+	if algo == "" {
+		algo = "SHA256WITHECDSA"
+	}
+	certArn, err := h.pcaClient.Issue(c, caArn, tplArn, algo, block.Bytes, ttl, pcaSANs)
+	if err != nil {
+		if metrics.CertIssueErrorsTotal != nil {
+			metrics.CertIssueErrorsTotal.WithLabelValues("pca_issue_error").Inc()
 		}
-		if tplArn == "" {
-			tplArn = "arn:aws:acm-pca:::template/EndEntityServerAuthCertificate_APIPassthrough/V1"
-		}
-		if algo == "" {
-			algo = "SHA256WITHECDSA"
-		}
-		certArn, err := h.pcaClient.Issue(c, caArn, tplArn, algo, block.Bytes, ttl, pcaSANs)
-		if err != nil {
-			if metrics.CertIssueErrorsTotal != nil {
-				metrics.CertIssueErrorsTotal.WithLabelValues("pca_issue_error").Inc()
-			}
-			c.JSON(http.StatusBadRequest, gin.H{"error": fmt.Sprintf("pca issue failed: %v", err)})
-			return
-		}
-		certPEM, chainPEM, err := h.pcaClient.Get(c, caArn, certArn)
-		if err != nil {
-			if metrics.CertIssueErrorsTotal != nil {
-				metrics.CertIssueErrorsTotal.WithLabelValues("pca_get_error").Inc()
-			}
-			c.JSON(http.StatusBadRequest, gin.H{"error": fmt.Sprintf("pca get failed: %v", err)})
-			return
-		}
-		if metrics.PCAIssueLatencySeconds != nil {
-			metrics.PCAIssueLatencySeconds.WithLabelValues("server").Observe(time.Since(start).Seconds())
-		}
-		chain := splitPEMCerts(chainPEM)
-		signResp := struct {
-			Certificate string
-			Chain       []string
-		}{Certificate: certPEM, Chain: chain}
-		// Parse returned certificate for fingerprint
-		certBlock, _ := pem.Decode([]byte(signResp.Certificate))
-		if certBlock == nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "invalid certificate returned from PCA"})
-			return
-		}
-		cert, err := x509.ParseCertificate(certBlock.Bytes)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("failed to parse certificate: %v", err)})
-			return
-		}
-		fp := sha256.Sum256(cert.Raw)
-		fingerprintHex := hex.EncodeToString(fp[:])
-		resp := CertificateSigningResponse{
-			Certificate:      signResp.Certificate,
-			CertificateChain: signResp.Chain,
-			SerialNumber:     cert.SerialNumber.String(),
-			NotBefore:        cert.NotBefore,
-			NotAfter:         cert.NotAfter,
-			Fingerprint:      fmt.Sprintf("sha256:%s", fingerprintHex),
-		}
-		if metrics.CertIssuedTotal != nil {
-			metrics.CertIssuedTotal.WithLabelValues("server").Inc()
-		}
-		if v, ok := c.Get("auditRepo"); ok {
-			if ar, ok2 := v.(auditrepo.LogRepository); ok2 {
-				_ = ar.Create(&adm.Log{
-					EventType: "servercert.issued",
-					RequestIP: c.ClientIP(),
-					UserAgent: c.Request.UserAgent(),
-					Metadata:  buildAuditMetadata(csr.Subject.CommonName, csr.DNSNames, ttl, map[string]any{"serial": cert.SerialNumber.String(), "not_after": cert.NotAfter, "ca_arn": caArn, "template_arn": tplArn, "signing_algo": algo}),
-				})
-			}
-		}
-		c.JSON(http.StatusOK, resp)
+		c.JSON(http.StatusBadRequest, gin.H{"error": fmt.Sprintf("pca issue failed: %v", err)})
 		return
 	}
-	// PCA not available
-	c.JSON(http.StatusInternalServerError, gin.H{"error": "PCA not configured"})
+	certPEM, chainPEM, err := h.pcaClient.Get(c, caArn, certArn)
+	if err != nil {
+		if metrics.CertIssueErrorsTotal != nil {
+			metrics.CertIssueErrorsTotal.WithLabelValues("pca_get_error").Inc()
+		}
+		c.JSON(http.StatusBadRequest, gin.H{"error": fmt.Sprintf("pca get failed: %v", err)})
+		return
+	}
+	if metrics.PCAIssueLatencySeconds != nil {
+		metrics.PCAIssueLatencySeconds.WithLabelValues("server").Observe(time.Since(start).Seconds())
+	}
+	chain := splitPEMCerts(chainPEM)
+	signResp := struct {
+		Certificate string
+		Chain       []string
+	}{Certificate: certPEM, Chain: chain}
+	// Parse returned certificate for fingerprint
+	certBlock, _ := pem.Decode([]byte(signResp.Certificate))
+	if certBlock == nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "invalid certificate returned from PCA"})
+		return
+	}
+	cert, err := x509.ParseCertificate(certBlock.Bytes)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("failed to parse certificate: %v", err)})
+		return
+	}
+	fp := sha256.Sum256(cert.Raw)
+	fingerprintHex := hex.EncodeToString(fp[:])
+	resp := CertificateSigningResponse{
+		Certificate:      signResp.Certificate,
+		CertificateChain: signResp.Chain,
+		SerialNumber:     cert.SerialNumber.String(),
+		NotBefore:        cert.NotBefore,
+		NotAfter:         cert.NotAfter,
+		Fingerprint:      fmt.Sprintf("sha256:%s", fingerprintHex),
+	}
+	if metrics.CertIssuedTotal != nil {
+		metrics.CertIssuedTotal.WithLabelValues("server").Inc()
+	}
+	if v, ok := c.Get("auditRepo"); ok {
+		if ar, ok2 := v.(auditrepo.LogRepository); ok2 {
+			_ = ar.Create(&adm.Log{
+				EventType: "servercert.issued",
+				RequestIP: c.ClientIP(),
+				UserAgent: c.Request.UserAgent(),
+				Metadata:  buildAuditMetadata(csr.Subject.CommonName, csr.DNSNames, ttl, map[string]any{"serial": cert.SerialNumber.String(), "not_after": cert.NotAfter, "ca_arn": caArn, "template_arn": tplArn, "signing_algo": algo}),
+			})
+		}
+	}
+	c.JSON(http.StatusOK, resp)
+	return
 }
 
 // buildAuditMetadata constructs datatypes.JSON with core cert details and extras
