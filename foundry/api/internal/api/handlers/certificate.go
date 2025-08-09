@@ -364,7 +364,6 @@ func (h *CertificateHandler) SignCertificate(c *gin.Context) {
 		}
 	}
 	c.JSON(http.StatusOK, response)
-	return
 
 }
 
@@ -495,7 +494,6 @@ func (h *CertificateHandler) SignServerCertificate(c *gin.Context) {
 		}
 	}
 	c.JSON(http.StatusOK, resp)
-	return
 }
 
 // buildAuditMetadata constructs datatypes.JSON with core cert details and extras
