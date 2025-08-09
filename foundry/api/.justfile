@@ -30,3 +30,6 @@ test:
 
 swagger:
     earthly --config "" +swagger
+
+check:
+    go mod tidy && go fmt ./... && go vet ./... && golangci-lint run

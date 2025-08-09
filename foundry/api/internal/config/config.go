@@ -22,9 +22,10 @@ type Config struct {
 
 // ServerConfig represents server-specific configuration
 type ServerConfig struct {
-	HttpPort      int           `kong:"help='HTTP port to listen on',default=8080,name='http-port',env='HTTP_PORT'"`
-	Timeout       time.Duration `kong:"help='Server timeout',default=30s,env='SERVER_TIMEOUT'"`
-	PublicBaseURL string        `kong:"help='Public base URL for generating links (e.g., https://api.example.com)',env='PUBLIC_BASE_URL'"`
+	HttpPort       int           `kong:"help='HTTP port to listen on',default=8080,name='http-port',env='HTTP_PORT'"`
+	Timeout        time.Duration `kong:"help='Server timeout',default=30s,env='SERVER_TIMEOUT'"`
+	PublicBaseURL  string        `kong:"help='Public base URL for generating links (e.g., https://api.example.com)',env='PUBLIC_BASE_URL'"`
+	CookieSameSite string        `kong:"help='Cookie SameSite policy (Strict|Lax|None)',default='Strict',env='COOKIE_SAMESITE'"`
 }
 
 // AuthConfig represents authentication-specific configuration
@@ -116,7 +117,26 @@ func (c *Config) Validate() error {
 	if c.Database.Password == "" {
 		return errors.New("database password is required (use --password or DB_PASSWORD env var)")
 	}
+	// Enforce refresh hash secret outside development
+	// If PUBLIC_BASE_URL looks like localhost or 127.0.0.1, allow missing secret; else require
+	if c.Server.PublicBaseURL != "" {
+		base := os.Getenv("PUBLIC_BASE_URL")
+		if base != "" && !isLocalhost(base) {
+			if os.Getenv("REFRESH_HASH_SECRET") == "" {
+				return errors.New("REFRESH_HASH_SECRET is required in non-dev environments")
+			}
+		}
+	}
 	return nil
+}
+
+func isLocalhost(url string) bool {
+	// crude check for localhost or 127.*
+	return url == "http://localhost" || url == "https://localhost" ||
+		len(url) >= 16 && url[:16] == "http://localhost" ||
+		len(url) >= 17 && url[:17] == "https://localhost" ||
+		len(url) >= 11 && url[:11] == "http://127.0" ||
+		len(url) >= 12 && url[:12] == "https://127.0"
 }
 
 // GetDSN returns the database connection string

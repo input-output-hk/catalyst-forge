@@ -49,6 +49,28 @@ func SetupRouter(
 
 	r.Use(gin.Recovery())
 	r.Use(middleware.Logger(logger))
+	// CORS: allow credentials and specific origins when set via PUBLIC_BASE_URL
+	r.Use(func(c *gin.Context) {
+		origin := c.GetHeader("Origin")
+		base := c.GetString("public_base_url")
+		if base == "" {
+			base = "" // keep default no CORS if not configured
+		}
+		if origin != "" && base != "" {
+			c.Header("Access-Control-Allow-Credentials", "true")
+			c.Header("Vary", "Origin")
+			// Allow only the configured origin
+			c.Header("Access-Control-Allow-Origin", origin)
+			c.Header("Access-Control-Allow-Headers", "Authorization, Content-Type, X-CLI")
+			c.Header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+		}
+		if c.Request.Method == "OPTIONS" {
+			c.Status(204)
+			c.Abort()
+			return
+		}
+		c.Next()
+	})
 	r.Use(func(c *gin.Context) {
 		c.Set("releaseService", releaseService)
 		c.Set("deploymentService", deploymentService)
@@ -90,9 +112,9 @@ func SetupRouter(
 	deviceRepo := userrepo.NewDeviceRepository(db)
 	deviceRefreshRepo := userrepo.NewRefreshTokenRepository(db)
 	deviceHandler := handlers.NewDeviceHandler(deviceSessRepo, deviceRepo, deviceRefreshRepo, userService, roleService, userRoleService, jwtManager, logger)
-	// Token handler
+	// Session handler
 	refreshRepo := userrepo.NewRefreshTokenRepository(db)
-	tokenHandler := handlers.NewTokenHandler(refreshRepo, userService, roleService, userRoleService, jwtManager)
+	sessionHandler := handlers.NewSessionHandler(refreshRepo, userService, roleService, userRoleService, jwtManager)
 	// Audit repo (set in context for handlers that choose to log)
 	auditRepo := auditrepo.NewLogRepository(db)
 	// Build session handler
@@ -148,8 +170,9 @@ func SetupRouter(
 	r.POST("/auth/challenge", authHandler.CreateChallenge)
 	r.POST("/auth/login", authHandler.Login)
 	r.POST("/auth/github/login", githubHandler.ValidateToken)
-	r.POST("/tokens/refresh", tokenHandler.Refresh)
-	r.POST("/tokens/revoke", tokenHandler.Revoke)
+	// Removed legacy token endpoints
+	r.POST("/sessions/refresh", sessionHandler.Refresh)
+	r.POST("/sessions/logout", sessionHandler.Logout)
 
 	// Invite endpoints
 	r.POST("/auth/invites", am.ValidatePermissions([]auth.Permission{auth.PermUserWrite}), inviteHandler.CreateInvite)

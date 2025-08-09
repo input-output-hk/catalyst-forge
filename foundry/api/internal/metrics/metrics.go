@@ -47,7 +47,35 @@ func InitDefault() {
 		},
 		[]string{"kind"},
 	)
-	prometheus.MustRegister(BuildSessionCreated, CertIssuedTotal, CertIssueErrorsTotal, PCAIssueLatencySeconds)
+	// Cookie/session metrics
+	SessionRefreshTotal = prometheus.NewCounterVec(
+		prometheus.CounterOpts{
+			Namespace: "foundry",
+			Subsystem: "session",
+			Name:      "refresh_total",
+			Help:      "Total number of session refresh attempts.",
+		},
+		[]string{"result"}, // success|invalid|reused
+	)
+	DeviceTokenModeTotal = prometheus.NewCounterVec(
+		prometheus.CounterOpts{
+			Namespace: "foundry",
+			Subsystem: "device",
+			Name:      "token_mode_total",
+			Help:      "Total number of device token responses by mode.",
+		},
+		[]string{"mode"}, // cookies|cli_json
+	)
+	SessionLogoutTotal = prometheus.NewCounterVec(
+		prometheus.CounterOpts{
+			Namespace: "foundry",
+			Subsystem: "session",
+			Name:      "logout_total",
+			Help:      "Total number of session logout events.",
+		},
+		[]string{"result"}, // success
+	)
+	prometheus.MustRegister(BuildSessionCreated, CertIssuedTotal, CertIssueErrorsTotal, PCAIssueLatencySeconds, SessionRefreshTotal, SessionLogoutTotal, DeviceTokenModeTotal)
 }
 
 // Certificate issuance metrics
@@ -55,4 +83,7 @@ var (
 	CertIssuedTotal        *prometheus.CounterVec
 	CertIssueErrorsTotal   *prometheus.CounterVec
 	PCAIssueLatencySeconds *prometheus.HistogramVec
+	SessionRefreshTotal    *prometheus.CounterVec
+	SessionLogoutTotal     *prometheus.CounterVec
+	DeviceTokenModeTotal   *prometheus.CounterVec
 )

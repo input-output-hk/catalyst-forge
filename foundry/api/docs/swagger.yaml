@@ -212,23 +212,6 @@ definitions:
       token:
         type: string
     type: object
-  handlers.TokenRefreshRequest:
-    properties:
-      refresh:
-        type: string
-    type: object
-  handlers.TokenRefreshResponse:
-    properties:
-      access:
-        type: string
-      refresh:
-        type: string
-    type: object
-  handlers.TokenRevokeRequest:
-    properties:
-      refresh:
-        type: string
-    type: object
   handlers.UpdateAuthRequest:
     type: object
   handlers.UpdateReleaseRequest:
@@ -2896,67 +2879,6 @@ paths:
       summary: List releases
       tags:
       - releases
-  /tokens/refresh:
-    post:
-      consumes:
-      - application/json
-      description: Rotate the refresh token and return a new access token and refresh
-        token
-      parameters:
-      - description: Refresh request
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/handlers.TokenRefreshRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/handlers.TokenRefreshResponse'
-        "400":
-          description: Invalid request
-          schema:
-            additionalProperties: true
-            type: object
-        "401":
-          description: Invalid token
-          schema:
-            additionalProperties: true
-            type: object
-        "500":
-          description: Server error
-          schema:
-            additionalProperties: true
-            type: object
-      summary: Refresh tokens
-      tags:
-      - auth
-  /tokens/revoke:
-    post:
-      consumes:
-      - application/json
-      description: Revoke a refresh token and any linked chain
-      parameters:
-      - description: Revoke request
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/handlers.TokenRevokeRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: status
-          schema:
-            additionalProperties: true
-            type: object
-      summary: Revoke token
-      tags:
-      - auth
   /verify:
     get:
       consumes:

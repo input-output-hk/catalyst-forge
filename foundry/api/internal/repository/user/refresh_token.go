@@ -10,9 +10,12 @@ import (
 type RefreshTokenRepository interface {
 	Create(token *dbmodel.RefreshToken) error
 	GetByHash(hash string) (*dbmodel.RefreshToken, error)
+	GetByID(id uint) (*dbmodel.RefreshToken, error)
 	MarkReplaced(oldID uint, newID uint) error
 	RevokeChain(startID uint) error
 	TouchUsage(id uint, at time.Time) error
+	UpdateClaims(id uint, claimsJSON string, authzHash string) error
+	CopyClaimsForward(oldID uint, newID uint) error
 }
 
 type refreshTokenRepository struct {
@@ -36,6 +39,15 @@ func (r *refreshTokenRepository) GetByHash(hash string) (*dbmodel.RefreshToken, 
 	return &t, nil
 }
 
+func (r *refreshTokenRepository) GetByID(id uint) (*dbmodel.RefreshToken, error) {
+	var t dbmodel.RefreshToken
+	tx := r.db.First(&t, "id = ?", id)
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+	return &t, nil
+}
+
 func (r *refreshTokenRepository) MarkReplaced(oldID uint, newID uint) error {
 	return r.db.Model(&dbmodel.RefreshToken{}).Where("id = ?", oldID).Update("replaced_by", newID).Error
 }
@@ -49,4 +61,20 @@ func (r *refreshTokenRepository) RevokeChain(startID uint) error {
 
 func (r *refreshTokenRepository) TouchUsage(id uint, at time.Time) error {
 	return r.db.Model(&dbmodel.RefreshToken{}).Where("id = ?", id).Update("last_used_at", at).Error
+}
+
+func (r *refreshTokenRepository) UpdateClaims(id uint, claimsJSON string, authzHash string) error {
+	updates := map[string]interface{}{
+		"claims_json": claimsJSON,
+		"authz_hash":  authzHash,
+	}
+	return r.db.Model(&dbmodel.RefreshToken{}).Where("id = ?", id).Updates(updates).Error
+}
+
+func (r *refreshTokenRepository) CopyClaimsForward(oldID uint, newID uint) error {
+	old, err := r.GetByID(oldID)
+	if err != nil || old == nil {
+		return err
+	}
+	return r.UpdateClaims(newID, old.ClaimsJSON, old.AuthzHash)
 }

@@ -6,16 +6,20 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/hex"
+	"encoding/json"
 	"math/big"
 	"net/http"
 	"os"
+	"sort"
 	"strings"
 	"time"
 
 	"log/slog"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"github.com/input-output-hk/catalyst-forge/foundry/api/internal/api/middleware"
+	"github.com/input-output-hk/catalyst-forge/foundry/api/internal/metrics"
 	adm "github.com/input-output-hk/catalyst-forge/foundry/api/internal/models/audit"
 	dbmodel "github.com/input-output-hk/catalyst-forge/foundry/api/internal/models/user"
 	auditrepo "github.com/input-output-hk/catalyst-forge/foundry/api/internal/repository/audit"
@@ -24,6 +28,7 @@ import (
 	"github.com/input-output-hk/catalyst-forge/lib/foundry/auth"
 	"github.com/input-output-hk/catalyst-forge/lib/foundry/auth/jwt"
 	"github.com/input-output-hk/catalyst-forge/lib/foundry/auth/jwt/tokens"
+	"gorm.io/datatypes"
 )
 
 // DeviceInitRequest optionally carries client metadata for display
@@ -222,7 +227,7 @@ func (h *DeviceHandler) Token(c *gin.Context) {
 			c.JSON(http.StatusUnauthorized, DeviceTokenResponse{Error: "authorization_pending"})
 			return
 		}
-		// Aggregate permissions
+		// Aggregate permissions once
 		permSet := map[auth.Permission]bool{}
 		userRoles, err := h.userRoleSvc.GetUserRoles(*sess.ApprovedUserID)
 		if err == nil {
@@ -240,16 +245,11 @@ func (h *DeviceHandler) Token(c *gin.Context) {
 		for p := range permSet {
 			perms = append(perms, p)
 		}
+		sort.Slice(perms, func(i, j int) bool { return perms[i] < perms[j] })
 		// Lookup user for subject
 		u, err := h.userSvc.GetUserByID(*sess.ApprovedUserID)
 		if err != nil || u == nil {
 			c.JSON(http.StatusUnauthorized, DeviceTokenResponse{Error: "access_denied"})
-			return
-		}
-		// Issue access token (30m)
-		access, err := tokens.GenerateAuthToken(h.jwtManager, u.Email, perms, 30*time.Minute)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "server error"})
 			return
 		}
 		// Ensure device row exists
@@ -280,8 +280,17 @@ func (h *DeviceHandler) Token(c *gin.Context) {
 			sum := sha256.Sum256([]byte(opaque))
 			hashHex = hex.EncodeToString(sum[:])
 		}
+		// Build frozen claims snapshot and authz hash
+		permsStr := make([]string, len(perms))
+		for i, p := range perms {
+			permsStr[i] = string(p)
+		}
+		ah := sha256.Sum256([]byte(strings.Join(permsStr, ",")))
+		authzHash := hex.EncodeToString(ah[:])
+		snapshot := tokens.ClaimsSnapshot{Subject: u.Email, Email: u.Email, SessionID: uuid.NewString(), Permissions: perms, AuthzHash: authzHash}
+		b, _ := json.Marshal(snapshot)
 		ttl := 30 * 24 * time.Hour
-		rt := &dbmodel.RefreshToken{UserID: *sess.ApprovedUserID, DeviceID: deviceID, TokenHash: hashHex, ExpiresAt: time.Now().Add(ttl)}
+		rt := &dbmodel.RefreshToken{UserID: *sess.ApprovedUserID, DeviceID: deviceID, TokenHash: hashHex, ExpiresAt: time.Now().Add(ttl), ClaimsJSON: string(b), AuthzHash: authzHash}
 		if err := h.refreshRepo.Create(rt); err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "server error"})
 			return
@@ -293,10 +302,27 @@ func (h *DeviceHandler) Token(c *gin.Context) {
 		}
 		if v, ok := c.Get("auditRepo"); ok {
 			if ar, ok2 := v.(auditrepo.LogRepository); ok2 {
-				_ = ar.Create(&adm.Log{EventType: "device.tokens_issued", SubjectUserID: sess.ApprovedUserID, RequestIP: c.ClientIP(), UserAgent: c.Request.UserAgent()})
+				md, _ := json.Marshal(map[string]any{"sid": snapshot.SessionID})
+				_ = ar.Create(&adm.Log{EventType: "device.tokens_issued", SubjectUserID: sess.ApprovedUserID, RequestIP: c.ClientIP(), UserAgent: c.Request.UserAgent(), Metadata: datatypes.JSON(md)})
 			}
 		}
-		c.JSON(http.StatusOK, DeviceTokenResponse{Access: access, Refresh: opaque})
+		// Mint access from frozen claims (30m)
+		access, err := tokens.GenerateFromFrozen(h.jwtManager, snapshot, 30*time.Minute)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "server error"})
+			return
+		}
+		// Set cookies
+		setAccessCookie(c, access, 30*time.Minute)
+		setRefreshCookie(c, opaque, ttl)
+		// Optionally return JSON for CLI if signaled
+		if c.GetHeader("X-CLI") == "1" || strings.Contains(c.GetHeader("Accept"), "application/json") || c.Query("client") == "cli" {
+			metrics.DeviceTokenModeTotal.WithLabelValues("cli_json").Inc()
+			c.JSON(http.StatusOK, DeviceTokenResponse{Access: access, Refresh: opaque})
+			return
+		}
+		metrics.DeviceTokenModeTotal.WithLabelValues("cookies").Inc()
+		c.Status(http.StatusNoContent)
 		return
 	default:
 		c.JSON(http.StatusUnauthorized, DeviceTokenResponse{Error: "authorization_pending"})

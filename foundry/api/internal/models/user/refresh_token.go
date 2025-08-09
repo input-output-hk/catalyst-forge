@@ -12,12 +12,18 @@ type RefreshToken struct {
 	UserID     uint           `gorm:"not null;index" json:"user_id"`
 	DeviceID   *uint          `gorm:"index" json:"device_id,omitempty"`
 	TokenHash  string         `gorm:"not null;uniqueIndex" json:"-"`
+	ClaimsJSON string         `gorm:"type:text" json:"-"`
+	AuthzHash  string         `gorm:"size:64;index" json:"-"`
 	CreatedAt  time.Time      `gorm:"autoCreateTime" json:"created_at"`
 	LastUsedAt *time.Time     `json:"last_used_at,omitempty"`
 	ExpiresAt  time.Time      `gorm:"not null" json:"expires_at"`
 	ReplacedBy *uint          `gorm:"index" json:"replaced_by,omitempty"`
 	RevokedAt  *time.Time     `json:"revoked_at,omitempty"`
 	DeletedAt  gorm.DeletedAt `gorm:"index" json:"-"`
+
+	// Optional client metadata for anomaly detection
+	IPHash    *string `gorm:"size:64" json:"-"`
+	UserAgent *string `gorm:"size:255" json:"-"`
 }
 
 func (RefreshToken) TableName() string { return "refresh_tokens" }

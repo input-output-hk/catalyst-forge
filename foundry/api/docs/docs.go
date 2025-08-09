@@ -3522,96 +3522,6 @@ const docTemplate = `{
                 }
             }
         },
-        "/tokens/refresh": {
-            "post": {
-                "description": "Rotate the refresh token and return a new access token and refresh token",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "auth"
-                ],
-                "summary": "Refresh tokens",
-                "parameters": [
-                    {
-                        "description": "Refresh request",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/handlers.TokenRefreshRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/handlers.TokenRefreshResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Invalid request",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "401": {
-                        "description": "Invalid token",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "500": {
-                        "description": "Server error",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    }
-                }
-            }
-        },
-        "/tokens/revoke": {
-            "post": {
-                "description": "Revoke a refresh token and any linked chain",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "auth"
-                ],
-                "summary": "Revoke token",
-                "parameters": [
-                    {
-                        "description": "Revoke request",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/handlers.TokenRevokeRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "status",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    }
-                }
-            }
-        },
         "/verify": {
             "get": {
                 "description": "Verify an invite token and activate the user; assigns roles from the invite",
@@ -3958,33 +3868,6 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "token": {
-                    "type": "string"
-                }
-            }
-        },
-        "handlers.TokenRefreshRequest": {
-            "type": "object",
-            "properties": {
-                "refresh": {
-                    "type": "string"
-                }
-            }
-        },
-        "handlers.TokenRefreshResponse": {
-            "type": "object",
-            "properties": {
-                "access": {
-                    "type": "string"
-                },
-                "refresh": {
-                    "type": "string"
-                }
-            }
-        },
-        "handlers.TokenRevokeRequest": {
-            "type": "object",
-            "properties": {
-                "refresh": {
                     "type": "string"
                 }
             }

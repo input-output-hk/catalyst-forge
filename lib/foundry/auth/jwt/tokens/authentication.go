@@ -83,6 +83,68 @@ func GenerateAuthToken(
 	return signer.SignToken(claims)
 }
 
+// ClaimsSnapshot is a frozen authorization snapshot stored with a refresh token.
+// It is used to mint access JWTs without re-reading from the database.
+type ClaimsSnapshot struct {
+	Subject     string            `json:"sub"`
+	Email       string            `json:"email"`
+	SessionID   string            `json:"sid"`
+	Permissions []auth.Permission `json:"perms"`
+	AuthzHash   string            `json:"authz_hash"`
+	UserVer     int               `json:"user_ver,omitempty"`
+}
+
+// GenerateFromFrozen creates a new authentication JWT from a frozen claims snapshot.
+// The expiration is capped by the signer's MaxAuthTokenTTL.
+func GenerateFromFrozen(
+	signer foundryJWT.JWTSigner,
+	snapshot ClaimsSnapshot,
+	expiration time.Duration,
+	opts ...foundryJWT.TokenOption,
+) (string, error) {
+	if signer == nil {
+		return "", fmt.Errorf("signer cannot be nil")
+	}
+	if snapshot.Subject == "" {
+		return "", fmt.Errorf("snapshot subject cannot be empty")
+	}
+	if expiration <= 0 {
+		return "", fmt.Errorf("expiration must be positive")
+	}
+
+	maxTTL := signer.MaxAuthTokenTTL()
+	if maxTTL > 0 && expiration > maxTTL {
+		expiration = maxTTL
+	}
+
+	options := &foundryJWT.TokenOptions{}
+	for _, opt := range opts {
+		opt(options)
+	}
+
+	now := time.Now()
+	claims := &AuthClaims{
+		Permissions: snapshot.Permissions,
+		RegisteredClaims: jwt.RegisteredClaims{
+			Subject:   snapshot.Subject,
+			Issuer:    getOrDefault(options.Issuer, signer.Issuer()),
+			Audience:  getOrDefaultSlice(options.Audiences, signer.DefaultAudiences()),
+			IssuedAt:  jwt.NewNumericDate(now),
+			ExpiresAt: jwt.NewNumericDate(now.Add(expiration)),
+			NotBefore: jwt.NewNumericDate(now),
+		},
+	}
+	if snapshot.UserVer != 0 {
+		claims.UserVer = snapshot.UserVer
+	}
+	if snapshot.SessionID != "" {
+		claims.Sid = snapshot.SessionID
+	}
+	token := jwt.NewWithClaims(signer.SigningMethod(), claims)
+	token.Header["typ"] = TokenTypeAuth
+	return signer.SignToken(claims)
+}
+
 // VerifyAuthToken validates an authentication token and returns the claims
 func VerifyAuthToken(
 	verifier foundryJWT.JWTVerifier,

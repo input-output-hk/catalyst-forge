@@ -214,16 +214,21 @@ func (h *AuthMiddleware) ValidateAnyCertificatePermission() gin.HandlerFunc {
 
 // getToken extracts the token from the Authorization header
 func (h *AuthMiddleware) getToken(c *gin.Context) (string, error) {
+	// Prefer Authorization header for API-to-API
 	authHeader := c.GetHeader("Authorization")
-	if authHeader == "" {
-		return "", fmt.Errorf("authorization header is required")
+	if authHeader != "" {
+		if !strings.HasPrefix(authHeader, "Bearer ") {
+			return "", fmt.Errorf("authorization header must start with 'Bearer '")
+		}
+		return strings.TrimPrefix(authHeader, "Bearer "), nil
 	}
 
-	if !strings.HasPrefix(authHeader, "Bearer ") {
-		return "", fmt.Errorf("authorization header must start with 'Bearer '")
+	// Fallback to access cookie for web
+	if cookie, err := c.Cookie("cforge_at"); err == nil && cookie != "" {
+		return cookie, nil
 	}
 
-	return strings.TrimPrefix(authHeader, "Bearer "), nil
+	return "", fmt.Errorf("authorization header is required")
 }
 
 // getUser validates the token and returns the authenticated user
