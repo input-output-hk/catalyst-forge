@@ -11,25 +11,27 @@ import (
 	"time"
 
 	"github.com/alecthomas/kong"
+	kongtoml "github.com/alecthomas/kong-toml"
 	"github.com/gin-gonic/gin"
 	"github.com/input-output-hk/catalyst-forge/foundry/api/cmd/api/auth"
 	"github.com/input-output-hk/catalyst-forge/foundry/api/internal/api"
 	"github.com/input-output-hk/catalyst-forge/foundry/api/internal/api/middleware"
 	"github.com/input-output-hk/catalyst-forge/foundry/api/internal/config"
+	metrics "github.com/input-output-hk/catalyst-forge/foundry/api/internal/metrics"
 	"github.com/input-output-hk/catalyst-forge/foundry/api/internal/models"
-	adm "github.com/input-output-hk/catalyst-forge/foundry/api/internal/models/audit"
-	"github.com/input-output-hk/catalyst-forge/foundry/api/internal/models/user"
 	"github.com/input-output-hk/catalyst-forge/foundry/api/internal/repository"
 	userrepo "github.com/input-output-hk/catalyst-forge/foundry/api/internal/repository/user"
 	"github.com/input-output-hk/catalyst-forge/foundry/api/internal/service"
 	emailsvc "github.com/input-output-hk/catalyst-forge/foundry/api/internal/service/email"
+
+	// step-ca (type reference only)
 	"github.com/input-output-hk/catalyst-forge/foundry/api/internal/service/stepca"
 	userservice "github.com/input-output-hk/catalyst-forge/foundry/api/internal/service/user"
 	"github.com/input-output-hk/catalyst-forge/foundry/api/pkg/k8s"
 	"github.com/input-output-hk/catalyst-forge/foundry/api/pkg/k8s/mocks"
 	ghauth "github.com/input-output-hk/catalyst-forge/lib/foundry/auth/github"
-	"gorm.io/driver/postgres"
-	"gorm.io/gorm"
+
+	// gorm imported via helpers
 
 	_ "github.com/input-output-hk/catalyst-forge/foundry/api/docs"
 	"github.com/input-output-hk/catalyst-forge/lib/foundry/auth/jwt"
@@ -68,6 +70,8 @@ type CLI struct {
 	Run     RunCmd       `kong:"cmd,help='Start the API server'"`
 	Version VersionCmd   `kong:"cmd,help='Show version information'"`
 	Auth    auth.AuthCmd `kong:"cmd,help='Authentication management commands'"`
+	// --config=/path/to/config.toml support (TOML via kong-toml loader)
+	Config kong.ConfigFlag `kong:"help='Load configuration from a TOML file',name='config'"`
 }
 
 // RunCmd represents the run subcommand
@@ -98,7 +102,7 @@ func (r *RunCmd) Run() error {
 	}
 
 	// Connect to the database
-	db, err := gorm.Open(postgres.Open(r.GetDSN()), &gorm.Config{})
+	db, err := openDB(r.Config)
 	if err != nil {
 		logger.Error("Failed to connect to database", "error", err)
 		return err
@@ -106,24 +110,7 @@ func (r *RunCmd) Run() error {
 
 	// Run migrations
 	logger.Info("Running database migrations")
-	err = db.AutoMigrate(
-		&models.Release{},
-		&models.ReleaseDeployment{},
-		&models.IDCounter{},
-		&models.ReleaseAlias{},
-		&models.DeploymentEvent{},
-		&models.GithubRepositoryAuth{},
-		&user.User{},
-		&user.Role{},
-		&user.UserRole{},
-		&user.UserKey{},
-		&user.Device{},
-		&user.RefreshToken{},
-		&user.DeviceSession{},
-		&user.RevokedJTI{},
-		&user.Invite{},
-		&adm.Log{},
-	)
+	err = runMigrations(db)
 	if err != nil {
 		logger.Error("Failed to run migrations", "error", err)
 		return err
@@ -137,7 +124,7 @@ func (r *RunCmd) Run() error {
 	var k8sClient k8s.Client
 	if r.Kubernetes.Enabled {
 		logger.Info("Initializing Kubernetes client", "namespace", r.Kubernetes.Namespace)
-		k8sClient, err = k8s.New(r.Kubernetes.Namespace, logger)
+		k8sClient, err = initK8sClient(r.Kubernetes, logger)
 		if err != nil {
 			logger.Error("Failed to initialize Kubernetes client", "error", err)
 			return err
@@ -173,12 +160,7 @@ func (r *RunCmd) Run() error {
 	userKeyService := userservice.NewUserKeyService(userKeyRepo, logger)
 
 	// Initialize middleware
-	jwtManagerImpl, err := jwt.NewES256Manager(
-		r.Auth.PrivateKey,
-		r.Auth.PublicKey,
-		jwt.WithManagerLogger(logger),
-		jwt.WithMaxAuthTokenTTL(r.Auth.AccessTTL),
-	)
+	jwtManagerImpl, err := initJWTManager(r.Auth, logger)
 	if err != nil {
 		logger.Error("Failed to initialize JWT manager", "error", err)
 		return err
@@ -187,27 +169,8 @@ func (r *RunCmd) Run() error {
 	revokedRepo := userrepo.NewRevokedJTIRepository(db)
 	authMiddleware := middleware.NewAuthMiddleware(jwtManager, logger, userService, revokedRepo)
 
-	// Initialize step-ca client (for certificate signing)
-	var rootCA []byte
-	if r.StepCA.RootCA != "" {
-		rootCA, err = os.ReadFile(r.StepCA.RootCA)
-		if err != nil {
-			logger.Error("Failed to read step-ca root certificate", "error", err, "path", r.StepCA.RootCA)
-			return err
-		}
-	}
-
-	fmt.Printf("Root CA: %s\n", rootCA)
-	stepCAClient, err := stepca.NewClient(stepca.Config{
-		BaseURL:            r.StepCA.BaseURL,
-		InsecureSkipVerify: r.StepCA.InsecureSkipVerify,
-		Timeout:            r.StepCA.ClientTimeout,
-		RootCA:             rootCA,
-	})
-	if err != nil {
-		logger.Error("Failed to initialize step-ca client", "error", err)
-		return err
-	}
+	// Step-CA removed with PCA migration; keep nil client for root endpoint fallback
+	var stepCAClient *stepca.Client = nil
 
 	// Initialize GitHub Actions OIDC client
 	ghaOIDCClient, err := ghauth.NewDefaultGithubActionsOIDCClient(context.Background(), "/tmp/gha-jwks-cache")
@@ -226,19 +189,13 @@ func (r *RunCmd) Run() error {
 	// Setup router
 	// Optionally construct SES email service
 	var emailService emailsvc.Service
-	if r.Email.Enabled && r.Email.Provider == "ses" {
-		ses, err := emailsvc.NewSES(context.Background(), emailsvc.SESOptions{
-			Region:  r.Email.SESRegion,
-			Sender:  r.Email.Sender,
-			BaseURL: r.Server.PublicBaseURL,
-		})
-		if err != nil {
-			logger.Error("Failed to initialize SES email service", "error", err)
-		} else {
-			emailService = ses
-		}
-	}
+	emailService, _ = initEmailService(r.Email, r.Server.PublicBaseURL)
+	// Initialize Prometheus metrics
+	metrics.InitDefault()
 
+	clientsCA2, serversCA2 := buildProvisionerClients(r.Config)
+	// Initialize PCA if configured
+	pcaCli, _ := initPCAClient(r.Certs)
 	router := api.SetupRouter(
 		releaseService,
 		deploymentService,
@@ -254,17 +211,32 @@ func (r *RunCmd) Run() error {
 		ghaAuthService,
 		stepCAClient,
 		emailService,
+		r.Certs.SessionMaxActive,
+		r.Security.EnableNaivePerIPRateLimit,
+		clientsCA2,
+		serversCA2,
+		pcaCli,
 	)
-	// Inject default invite TTL and optional email service into router context
+	// Inject defaults into request context (policy, email, github, etc.)
+	injectDefaultContext(router, r.Config, emailService, clientsCA2, serversCA2)
+	// Attach PCA client to certificate handler if available
+	if pcaCli != nil {
+		// Router constructed the handler; re-create and replace with PCA attached requires refactor.
+		// Simpler: set PCA config in context and handlers already read it; PCA client stored globally here.
+		// For now, set a global in gin context via middleware
+		router.Use(func(c *gin.Context) { c.Set("pca_client_present", true); c.Next() })
+	}
+	// Expose cert TTL clamps
 	router.Use(func(c *gin.Context) {
-		c.Set("invite_default_ttl", r.Auth.InviteTTL)
-		if r.Email.Enabled && r.Email.Provider == "ses" {
-			c.Set("email_provider", "ses")
-			c.Set("email_sender", r.Email.Sender)
-			c.Set("public_base_url", r.Server.PublicBaseURL)
-			c.Set("email_region", r.Email.SESRegion)
-		}
-		c.Set("enable_per_ip_ratelimit", r.Security.EnableNaivePerIPRateLimit)
+		c.Set("certs_client_cert_ttl_dev", r.Certs.ClientCertTTLDev)
+		c.Set("certs_client_cert_ttl_ci_max", r.Certs.ClientCertTTLCIMax)
+		c.Set("certs_server_cert_ttl", r.Certs.ServerCertTTL)
+		c.Next()
+	})
+	// Ensure Step-CA provisioner clients are present on every request context
+	router.Use(func(c *gin.Context) {
+		c.Set("stepca_clients_ca", clientsCA2)
+		c.Set("stepca_servers_ca", serversCA2)
 		c.Next()
 	})
 
@@ -311,6 +283,13 @@ func main() {
 		kong.ConfigureHelp(kong.HelpOptions{
 			Compact: true,
 		}),
+		// Load configuration from TOML files if present; CLI flags override
+		kong.Configuration(kongtoml.Loader,
+			"/etc/foundry/foundry-api.toml",
+			"/etc/foundry-api.toml",
+			"~/.config/foundry/api.toml",
+			"./config.toml",
+		),
 	)
 
 	// Execute the selected subcommand

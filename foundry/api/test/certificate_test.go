@@ -59,7 +59,7 @@ func TestCertificateAPI(t *testing.T) {
 				TTL:        "5m",
 			}
 
-			response, err := c.Certificates().SignCertificate(ctx, req)
+			response, err := c.Certificates().SignServerCertificate(ctx, req)
 			require.NoError(t, err, "Failed to sign certificate")
 
 			// Validate the response structure
@@ -123,7 +123,7 @@ func TestCertificateAPI(t *testing.T) {
 				TTL: "8m", // 8 minutes - within 10m limit
 			}
 
-			response, err := c.Certificates().SignCertificate(ctx, req)
+			response, err := c.Certificates().SignServerCertificate(ctx, req)
 			require.NoError(t, err, "Failed to sign certificate with custom TTL")
 
 			// Check that the certificate has the requested lifetime (approximately)
@@ -202,7 +202,7 @@ func TestCertificateAPI(t *testing.T) {
 			TTL: "6m", // Ensure we stay within 10m limit
 		}
 
-		response, err := c.Certificates().SignCertificate(ctx, req)
+		response, err := c.Certificates().SignServerCertificate(ctx, req)
 		require.NoError(t, err, "Failed to sign certificate")
 
 		// If intermediate certificates are present, validate them

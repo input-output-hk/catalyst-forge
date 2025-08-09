@@ -5,8 +5,9 @@ package mocks
 
 import (
 	"context"
-	"github.com/input-output-hk/catalyst-forge/lib/foundry/client/certificates"
 	"sync"
+
+	"github.com/input-output-hk/catalyst-forge/lib/foundry/client/certificates"
 )
 
 // Ensure, that CertificatesClientInterfaceMock does implement certificates.CertificatesClientInterface.
@@ -38,6 +39,9 @@ type CertificatesClientInterfaceMock struct {
 	// SignCertificateFunc mocks the SignCertificate method.
 	SignCertificateFunc func(ctx context.Context, req *certificates.CertificateSigningRequest) (*certificates.CertificateSigningResponse, error)
 
+	// SignServerCertificateFunc mocks the SignServerCertificate method.
+	SignServerCertificateFunc func(ctx context.Context, req *certificates.CertificateSigningRequest) (*certificates.CertificateSigningResponse, error)
+
 	// calls tracks calls to the methods.
 	calls struct {
 		// GetRootCertificate holds details about calls to the GetRootCertificate method.
@@ -52,9 +56,15 @@ type CertificatesClientInterfaceMock struct {
 			// Req is the req argument value.
 			Req *certificates.CertificateSigningRequest
 		}
+		// SignServerCertificate holds details about calls to the SignServerCertificate method.
+		SignServerCertificate []struct {
+			Ctx context.Context
+			Req *certificates.CertificateSigningRequest
+		}
 	}
-	lockGetRootCertificate sync.RWMutex
-	lockSignCertificate    sync.RWMutex
+	lockGetRootCertificate    sync.RWMutex
+	lockSignCertificate       sync.RWMutex
+	lockSignServerCertificate sync.RWMutex
 }
 
 // GetRootCertificate calls GetRootCertificateFunc.
@@ -105,6 +115,39 @@ func (mock *CertificatesClientInterfaceMock) SignCertificate(ctx context.Context
 	mock.calls.SignCertificate = append(mock.calls.SignCertificate, callInfo)
 	mock.lockSignCertificate.Unlock()
 	return mock.SignCertificateFunc(ctx, req)
+}
+
+// SignServerCertificate calls SignServerCertificateFunc.
+func (mock *CertificatesClientInterfaceMock) SignServerCertificate(ctx context.Context, req *certificates.CertificateSigningRequest) (*certificates.CertificateSigningResponse, error) {
+	if mock.SignServerCertificateFunc == nil {
+		panic("CertificatesClientInterfaceMock.SignServerCertificateFunc: method is nil but CertificatesClientInterface.SignServerCertificate was just called")
+	}
+	callInfo := struct {
+		Ctx context.Context
+		Req *certificates.CertificateSigningRequest
+	}{
+		Ctx: ctx,
+		Req: req,
+	}
+	mock.lockSignServerCertificate.Lock()
+	mock.calls.SignServerCertificate = append(mock.calls.SignServerCertificate, callInfo)
+	mock.lockSignServerCertificate.Unlock()
+	return mock.SignServerCertificateFunc(ctx, req)
+}
+
+// SignServerCertificateCalls gets all the calls that were made to SignServerCertificate.
+func (mock *CertificatesClientInterfaceMock) SignServerCertificateCalls() []struct {
+	Ctx context.Context
+	Req *certificates.CertificateSigningRequest
+} {
+	var calls []struct {
+		Ctx context.Context
+		Req *certificates.CertificateSigningRequest
+	}
+	mock.lockSignServerCertificate.RLock()
+	calls = mock.calls.SignServerCertificate
+	mock.lockSignServerCertificate.RUnlock()
+	return calls
 }
 
 // SignCertificateCalls gets all the calls that were made to SignCertificate.

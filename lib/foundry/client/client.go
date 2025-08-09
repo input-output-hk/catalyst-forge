@@ -11,9 +11,11 @@ import (
 	"time"
 
 	"github.com/input-output-hk/catalyst-forge/lib/foundry/client/auth"
+	buildsessions "github.com/input-output-hk/catalyst-forge/lib/foundry/client/buildsessions"
 	"github.com/input-output-hk/catalyst-forge/lib/foundry/client/certificates"
 	"github.com/input-output-hk/catalyst-forge/lib/foundry/client/deployments"
 	"github.com/input-output-hk/catalyst-forge/lib/foundry/client/device"
+	extauthz "github.com/input-output-hk/catalyst-forge/lib/foundry/client/extauthz"
 	"github.com/input-output-hk/catalyst-forge/lib/foundry/client/github"
 	"github.com/input-output-hk/catalyst-forge/lib/foundry/client/invites"
 	"github.com/input-output-hk/catalyst-forge/lib/foundry/client/jwks"
@@ -91,11 +93,13 @@ type Client interface {
 	Aliases() releases.AliasesClientInterface
 	Deployments() deployments.DeploymentsClientInterface
 	Events() deployments.EventsClientInterface
+	BuildSessions() buildsessions.BuildSessionsClientInterface
 	Certificates() certificates.CertificatesClientInterface
 	Tokens() tokens.TokensClientInterface
 	Invites() invites.InvitesClientInterface
 	Device() device.DeviceClientInterface
 	JWKS() jwks.JWKSClientInterface
+	ExtAuthz() extauthz.ExtAuthzClientInterface
 }
 
 // HTTPClient is an implementation of the Client interface that uses HTTP
@@ -114,11 +118,13 @@ type HTTPClient struct {
 	aliases      releases.AliasesClientInterface
 	deployments  deployments.DeploymentsClientInterface
 	events       deployments.EventsClientInterface
+	builds       buildsessions.BuildSessionsClientInterface
 	certificates certificates.CertificatesClientInterface
 	tokens       tokens.TokensClientInterface
 	invites      invites.InvitesClientInterface
 	device       device.DeviceClientInterface
 	jwks         jwks.JWKSClientInterface
+	extauth      extauthz.ExtAuthzClientInterface
 }
 
 // ClientOption is a function type for client configuration
@@ -168,11 +174,13 @@ func NewClient(baseURL string, options ...ClientOption) Client {
 	client.aliases = releases.NewAliasesClient(client.do)
 	client.deployments = deployments.NewDeploymentsClient(client.do)
 	client.events = deployments.NewEventsClient(client.do)
+	client.builds = buildsessions.NewBuildSessionsClient(client.do)
 	client.certificates = certificates.NewCertificatesClient(client.do, client.doRaw)
 	client.tokens = tokens.NewTokensClient(client.do)
 	client.invites = invites.NewInvitesClient(client.do)
 	client.device = device.NewDeviceClient(client.do)
 	client.jwks = jwks.NewJWKSClient(client.doRaw)
+	client.extauth = extauthz.NewExtAuthzClient(client.do)
 
 	return client
 }
@@ -357,6 +365,8 @@ func (c *HTTPClient) Events() deployments.EventsClientInterface {
 	return c.events
 }
 
+func (c *HTTPClient) BuildSessions() buildsessions.BuildSessionsClientInterface { return c.builds }
+
 func (c *HTTPClient) Certificates() certificates.CertificatesClientInterface {
 	return c.certificates
 }
@@ -368,3 +378,5 @@ func (c *HTTPClient) Invites() invites.InvitesClientInterface { return c.invites
 func (c *HTTPClient) Device() device.DeviceClientInterface { return c.device }
 
 func (c *HTTPClient) JWKS() jwks.JWKSClientInterface { return c.jwks }
+
+func (c *HTTPClient) ExtAuthz() extauthz.ExtAuthzClientInterface { return c.extauth }

@@ -18,6 +18,7 @@ type Config struct {
 	StepCA     StepCAConfig     `kong:"embed"`
 	Email      EmailConfig      `kong:"embed,prefix='email-'"`
 	Security   SecurityConfig   `kong:"embed"`
+	Certs      CertsConfig      `kong:"embed,prefix='certs-'"`
 }
 
 // ServerConfig represents server-specific configuration
@@ -78,6 +79,44 @@ type StepCAConfig struct {
 	InsecureSkipVerify bool          `kong:"help='Skip TLS certificate verification (only for testing!)',default=false,env='STEPCA_INSECURE_SKIP_VERIFY'"`
 	ClientTimeout      time.Duration `kong:"help='Request timeout for step-ca client',default=30s,env='STEPCA_TIMEOUT',name='stepca-timeout'"`
 	RootCA             string        `kong:"help='Path to step-ca root certificate for TLS verification',env='STEPCA_ROOT_CA'"`
+}
+
+// CertsConfig represents configuration for certificate issuance feature
+type CertsConfig struct {
+	// ACM-PCA configuration
+	PCAClientCAArn       string        `kong:"help='ACM-PCA ARN for client certificates',env='PCA_CLIENT_CA_ARN'"`
+	PCAServerCAArn       string        `kong:"help='ACM-PCA ARN for server certificates',env='PCA_SERVER_CA_ARN'"`
+	PCAClientTemplateArn string        `kong:"help='ACM-PCA template ARN for client certs (APIPassthrough)',env='PCA_CLIENT_TEMPLATE_ARN'"`
+	PCAServerTemplateArn string        `kong:"help='ACM-PCA template ARN for server certs (APIPassthrough)',env='PCA_SERVER_TEMPLATE_ARN'"`
+	PCASigningAlgoClient string        `kong:"help='ACM-PCA SigningAlgorithm for client certs (e.g., SHA256WITHECDSA)',default='SHA256WITHECDSA',env='PCA_SIGNING_ALGO_CLIENT'"`
+	PCASigningAlgoServer string        `kong:"help='ACM-PCA SigningAlgorithm for server certs (e.g., SHA256WITHECDSA)',default='SHA256WITHECDSA',env='PCA_SIGNING_ALGO_SERVER'"`
+	PCATimeout           time.Duration `kong:"help='Timeout for ACM-PCA calls',default=10s,env='PCA_TIMEOUT'"`
+
+	// Policy
+	ClientCertTTLDev   time.Duration `kong:"help='Default TTL for developer client certs',default=90m,env='CLIENT_CERT_TTL_DEV'"`
+	ClientCertTTLCIMax time.Duration `kong:"help='Maximum TTL for CI client certs',default=120m,env='CLIENT_CERT_TTL_CI_MAX'"`
+	ServerCertTTL      time.Duration `kong:"help='TTL for server certificates',default=336h,env='SERVER_CERT_TTL'"`
+	IssuanceRateHourly int           `kong:"help='Max certificate issuances per hour per subject/repo',default=6,env='ISSUANCE_RATE_HOURLY'"`
+	SessionMaxActive   int           `kong:"help='Max concurrent build sessions per user',default=10,env='SESSION_MAX_ACTIVE'"`
+	RequirePermsAnd    bool          `kong:"help='RequireAll authorization semantics globally',default=true,env='REQUIRE_PERMS_AND'"`
+	// Feature flags
+	ExtAuthzEnabled bool `kong:"help='Enable optional external authorization endpoint for BuildKit gateway',default=false,env='EXT_AUTHZ_ENABLED'"`
+
+	// GitHub OIDC
+	GhOIDCIssuer    string        `kong:"help='GitHub OIDC issuer',default='https://token.actions.githubusercontent.com',env='GITHUB_OIDC_ISS'"`
+	GhOIDCAudience  string        `kong:"help='Expected audience for GitHub OIDC',default='forge',env='GITHUB_OIDC_AUD'"`
+	GhAllowedOrgs   string        `kong:"help='Comma-separated allowed GitHub orgs',env='GITHUB_ALLOWED_ORGS'"`
+	GhAllowedRepos  string        `kong:"help='Comma-separated allowed <org>/<repo> entries',env='GITHUB_ALLOWED_REPOS'"`
+	GhProtectedRefs string        `kong:"help='Comma-separated protected refs (e.g., refs/heads/main,refs/tags/*)',env='GITHUB_PROTECTED_REFS'"`
+	GhJWKSCacheTTL  time.Duration `kong:"help='JWKS cache TTL for GitHub OIDC',default=10m,env='GITHUB_JWKS_CACHE_TTL'"`
+
+	// Job token minted by the API for CI after OIDC verification (no refresh)
+	JobTokenDefaultTTL time.Duration `kong:"help='Default TTL for minted CI job tokens (clamped by OIDC token expiry)',default=60m,env='JOB_TOKEN_TTL'"`
+
+	// Optional CA register (S3 + DynamoDB)
+	CARegion   string `kong:"help='AWS region for CA register',env='CAREGION'"`
+	CADDBTable string `kong:"help='DynamoDB table for CA register pointers',env='CA_DDB_TABLE'"`
+	CAS3Bucket string `kong:"help='S3 bucket for CA register artifacts',env='CA_S3_BUCKET'"`
 }
 
 // Validate validates the configuration

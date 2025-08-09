@@ -233,6 +233,9 @@ func (h *AuthMiddleware) getUser(token string) (*AuthenticatedUser, error) {
 }
 
 func (h *AuthMiddleware) validateClaims(user *AuthenticatedUser) error {
+	if user == nil || user.Claims == nil {
+		return fmt.Errorf("invalid token")
+	}
 	claims := user.Claims
 	// Issuer check
 	if claims.Issuer != h.jwtManager.Issuer() {

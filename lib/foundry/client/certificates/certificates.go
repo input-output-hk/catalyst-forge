@@ -11,6 +11,7 @@ import (
 type CertificatesClientInterface interface {
 	SignCertificate(ctx context.Context, req *CertificateSigningRequest) (*CertificateSigningResponse, error)
 	GetRootCertificate(ctx context.Context) ([]byte, error)
+	SignServerCertificate(ctx context.Context, req *CertificateSigningRequest) (*CertificateSigningResponse, error)
 }
 
 // CertificatesClient handles certificate-related operations
@@ -45,6 +46,22 @@ func (c *CertificatesClient) SignCertificate(ctx context.Context, req *Certifica
 
 	var response CertificateSigningResponse
 	err := c.do(ctx, "POST", "/certificates/sign", req, &response)
+	if err != nil {
+		return nil, err
+	}
+	return &response, nil
+}
+
+// SignServerCertificate signs a server CSR via the BuildKit server endpoint
+func (c *CertificatesClient) SignServerCertificate(ctx context.Context, req *CertificateSigningRequest) (*CertificateSigningResponse, error) {
+	if req == nil {
+		return nil, fmt.Errorf("request cannot be nil")
+	}
+	if req.CSR == "" {
+		return nil, fmt.Errorf("CSR cannot be empty")
+	}
+	var response CertificateSigningResponse
+	err := c.do(ctx, "POST", "/ca/buildkit/server-certificates", req, &response)
 	if err != nil {
 		return nil, err
 	}

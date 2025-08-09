@@ -44,8 +44,8 @@ build:
     ARG version="0.0.0"
 
     ENV CGO_ENABLED=0
-    RUN go build -ldflags="-extldflags=-static -X main.version=$version" -o bin/foundry-api cmd/api/main.go
-    RUN file bin/foundry
+    RUN go build -ldflags="-extldflags=-static -X main.version=$version" -o bin/foundry-api ./cmd/api
+    RUN file bin/foundry-api
 
     SAVE ARTIFACT bin/foundry-api foundry-api
 
