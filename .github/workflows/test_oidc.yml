@@ -10,7 +10,7 @@ permissions:
   contents: read
 
 env:
-  API_URL: "http://localhost:5000"
+  API_URL: "http://localhost:5050"
   OIDC_AUDIENCE: "forge"
 
 jobs:
@@ -38,13 +38,16 @@ jobs:
         run: |
             forge run ./foundry/api+docker
 
-      - name: Start API
+      - name: Start API (postgres, auth seeds, api)
         run: |
-          docker compose -f ./foundry/api/docker-compose.yml up -d auth auth-jwt api postgres step-ca
+          docker compose -f ./foundry/api/docker-compose.yml up -d postgres auth auth-jwt api
 
       - name: Wait for API to be ready
+        shell: bash
         run: |
-          sleep 1
+          for i in {1..60}; do
+            if curl -fsS http://localhost:5050/healthz >/dev/null; then
+              echo "API is healthy"; exit 0; fi; sleep 2; done; echo "API did not become healthy in time"; docker compose -f ./foundry/api/docker-compose.yml ps; docker compose -f ./foundry/api/docker-compose.yml logs api | tail -n 200; exit 1
 
       - name: Create GHA auth
         run: |

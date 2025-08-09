@@ -25,7 +25,7 @@ definitions:
       sans:
         description: |-
           SANs are additional Subject Alternative Names to include
-          These will be validated against user permissions
+          These will be validated against user permissions. For client certs, use URI SANs.
         example:
         - example.com
         - '*.example.com'
@@ -2087,6 +2087,50 @@ paths:
       summary: Register a new user
       tags:
       - users
+  /ca/buildkit/server-certificates:
+    post:
+      consumes:
+      - application/json
+      description: Signs a server CSR using the Step-CA servers provisioner
+      parameters:
+      - description: Server certificate signing request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.CertificateSigningRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.CertificateSigningResponse'
+        "400":
+          description: Invalid request
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+        "403":
+          description: Forbidden - insufficient permissions
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Sign a BuildKit server certificate
+      tags:
+      - certificates
   /certificates/root:
     get:
       description: Returns the Certificate Authority's root certificate
