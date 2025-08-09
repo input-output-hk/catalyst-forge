@@ -2,7 +2,10 @@ services:
   auth:
     image: foundry-api:latest
     container_name: auth
-    entrypoint: ["/bin/sh", "-c", "cp /app/foundry-api /data/foundry-api && /app/foundry-api auth generate -a -s admin@foundry.dev -k /data/private.pem >/data/jwt.txt"]
+    entrypoint: ["/bin/sh", "-c", \
+      "/app/foundry-api auth init --output-dir /data && \
+       /app/foundry-api auth generate -a -s admin@foundry.dev -k /data/private.pem > /data/jwt.txt"\
+    ]
     volumes:
       - ./.auth:/data
 
@@ -14,7 +17,7 @@ services:
       - ./.auth:/data
     depends_on:
       auth:
-        condition: service_started
+        condition: service_completed_successfully
 
   api:
     image: foundry-api:latest

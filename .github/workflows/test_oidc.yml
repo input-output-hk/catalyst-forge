@@ -40,6 +40,7 @@ jobs:
 
       - name: Start API (postgres, auth seeds, api)
         run: |
+          rm -rf ./foundry/api/.auth && mkdir -p ./foundry/api/.auth
           docker compose -f ./foundry/api/docker-compose.yml up -d postgres auth auth-jwt api
 
       - name: Wait for API to be ready
