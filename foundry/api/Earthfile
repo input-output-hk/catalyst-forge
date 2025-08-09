@@ -65,7 +65,7 @@ test:
         --service auth \
         --service auth-jwt \
         --service postgres \
-        --service step-ca
+
         RUN docker compose up api-test
     END
 
