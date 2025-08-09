@@ -100,8 +100,7 @@ func (h *UserKeyHandler) BootstrapKET(c *gin.Context) {
 
 	// create nonce
 	nonceBytes := make([]byte, 24)
-	if _, err := c.Writer.Write(nil); err != nil { /* no-op to silence linters */
-	}
+	// no-op write removed to satisfy linters; nonce randomness ensured below
 	if _, err := randRead(nonceBytes); err != nil {
 		// fallback
 		for i := range nonceBytes {

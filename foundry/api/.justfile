@@ -1,5 +1,5 @@
 up:
-    earthly --config "" +docker && docker compose up -d auth auth-jwt api postgres pgadmin step-ca
+    earthly --config "" +docker && docker compose up -d auth auth-jwt api postgres pgadmin
 
 down:
     rm -rf .auth && docker compose down -v

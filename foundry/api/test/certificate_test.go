@@ -1,6 +1,7 @@
 package test
 
 import (
+	"bytes"
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/x509"
@@ -59,7 +60,7 @@ func TestCertificateAPI(t *testing.T) {
 				TTL:        "5m",
 			}
 
-			response, err := c.Certificates().SignCertificate(ctx, req)
+			response, err := c.Certificates().SignServerCertificate(ctx, req)
 			require.NoError(t, err, "Failed to sign certificate")
 
 			// Validate the response structure
@@ -123,14 +124,14 @@ func TestCertificateAPI(t *testing.T) {
 				TTL: "8m", // 8 minutes - within 10m limit
 			}
 
-			response, err := c.Certificates().SignCertificate(ctx, req)
+			response, err := c.Certificates().SignServerCertificate(ctx, req)
 			require.NoError(t, err, "Failed to sign certificate with custom TTL")
 
 			// Check that the certificate has the requested lifetime (approximately)
 			duration := response.NotAfter.Sub(response.NotBefore)
 			expectedDuration := 8 * time.Minute
 
-			// Allow some tolerance (±2 minutes) for processing time and step-ca policy
+			// Allow some tolerance (±2 minutes) for processing time
 			tolerance := 2 * time.Minute
 			assert.True(t,
 				duration >= expectedDuration-tolerance && duration <= expectedDuration+tolerance,
@@ -173,14 +174,14 @@ func TestCertificateAPI(t *testing.T) {
 
 			req := &certificates.CertificateSigningRequest{
 				CSR: csr,
-				TTL: "8760h", // 1 year - should be limited by step-ca policy
+				TTL: "8760h",
 			}
 
 			response, err := c.Certificates().SignCertificate(ctx, req)
 			if err == nil {
 				// If it succeeds, the TTL should be capped
 				duration := response.NotAfter.Sub(response.NotBefore)
-				maxAllowed := 10 * time.Minute // step-ca limits to 10m
+				maxAllowed := 10 * time.Minute
 
 				assert.True(t, duration <= maxAllowed,
 					"Certificate duration should be capped to %v, got %v", maxAllowed, duration)
@@ -202,7 +203,7 @@ func TestCertificateAPI(t *testing.T) {
 			TTL: "6m", // Ensure we stay within 10m limit
 		}
 
-		response, err := c.Certificates().SignCertificate(ctx, req)
+		response, err := c.Certificates().SignServerCertificate(ctx, req)
 		require.NoError(t, err, "Failed to sign certificate")
 
 		// If intermediate certificates are present, validate them
@@ -266,8 +267,10 @@ func validateCertificateKeyPair(cert *x509.Certificate, privateKey *rsa.PrivateK
 		return assert.AnError // Certificate doesn't contain RSA public key
 	}
 
-	// Compare public keys
-	if certPubKey.N.Cmp(privateKey.PublicKey.N) != 0 || certPubKey.E != privateKey.PublicKey.E {
+	// Compare public keys by marshaling to DER
+	certDer := x509.MarshalPKCS1PublicKey(certPubKey)
+	keyDer := x509.MarshalPKCS1PublicKey(&privateKey.PublicKey)
+	if !bytes.Equal(certDer, keyDer) {
 		return assert.AnError // Public keys don't match
 	}
 

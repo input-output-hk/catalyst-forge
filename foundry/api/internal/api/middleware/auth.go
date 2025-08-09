@@ -63,6 +63,8 @@ func (h *AuthMiddleware) RequireAuth() gin.HandlerFunc {
 
 		user, err := h.getUser(token)
 		if err != nil {
+			// Log the underlying verification error to aid debugging
+			h.logger.Warn("Token verification failed", "error", err)
 			if err := h.validateClaims(user); err != nil {
 				h.logger.Warn("Token rejected", "error", err)
 				c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid token"})
@@ -96,6 +98,8 @@ func (h *AuthMiddleware) ValidatePermissions(permissions []auth.Permission) gin.
 
 		user, err := h.getUser(token)
 		if err != nil {
+			// Log the underlying verification error to aid debugging
+			h.logger.Warn("Token verification failed", "error", err)
 			if err := h.validateClaims(user); err != nil {
 				h.logger.Warn("Token rejected", "error", err)
 				c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid token"})
@@ -137,6 +141,8 @@ func (h *AuthMiddleware) RequireAny(permissions []auth.Permission) gin.HandlerFu
 
 		user, err := h.getUser(token)
 		if err != nil {
+			// Log the underlying verification error to aid debugging
+			h.logger.Warn("Token verification failed", "error", err)
 			if err := h.validateClaims(user); err != nil {
 				h.logger.Warn("Token rejected", "error", err)
 				c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid token"})
@@ -176,6 +182,8 @@ func (h *AuthMiddleware) ValidateAnyCertificatePermission() gin.HandlerFunc {
 
 		user, err := h.getUser(token)
 		if err != nil {
+			// Log the underlying verification error to aid debugging
+			h.logger.Warn("Token verification failed", "error", err)
 			if err := h.validateClaims(user); err != nil {
 				h.logger.Warn("Token rejected", "error", err)
 				c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid token"})
@@ -233,6 +241,9 @@ func (h *AuthMiddleware) getUser(token string) (*AuthenticatedUser, error) {
 }
 
 func (h *AuthMiddleware) validateClaims(user *AuthenticatedUser) error {
+	if user == nil || user.Claims == nil {
+		return fmt.Errorf("invalid token")
+	}
 	claims := user.Claims
 	// Issuer check
 	if claims.Issuer != h.jwtManager.Issuer() {

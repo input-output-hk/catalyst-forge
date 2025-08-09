@@ -2294,6 +2294,73 @@ const docTemplate = `{
                 }
             }
         },
+        "/ca/buildkit/server-certificates": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Signs a server CSR",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "certificates"
+                ],
+                "summary": "Sign a BuildKit server certificate",
+                "parameters": [
+                    {
+                        "description": "Server certificate signing request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/handlers.CertificateSigningRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.CertificateSigningResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden - insufficient permissions",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
         "/certificates/root": {
             "get": {
                 "description": "Returns the Certificate Authority's root certificate",
@@ -2328,7 +2395,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Signs a Certificate Signing Request (CSR) using step-ca",
+                "description": "Signs a Certificate Signing Request (CSR)",
                 "consumes": [
                     "application/json"
                 ],
@@ -3626,7 +3693,7 @@ const docTemplate = `{
                     "example": "-----BEGIN CERTIFICATE REQUEST-----\n..."
                 },
                 "sans": {
-                    "description": "SANs are additional Subject Alternative Names to include\nThese will be validated against user permissions",
+                    "description": "SANs are additional Subject Alternative Names to include\nThese will be validated against user permissions. For client certs, use URI SANs.",
                     "type": "array",
                     "items": {
                         "type": "string"

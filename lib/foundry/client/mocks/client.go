@@ -4,18 +4,21 @@
 package mocks
 
 import (
+	"sync"
+
 	"github.com/input-output-hk/catalyst-forge/lib/foundry/client"
 	"github.com/input-output-hk/catalyst-forge/lib/foundry/client/auth"
+	buildsessions "github.com/input-output-hk/catalyst-forge/lib/foundry/client/buildsessions"
 	"github.com/input-output-hk/catalyst-forge/lib/foundry/client/certificates"
 	"github.com/input-output-hk/catalyst-forge/lib/foundry/client/deployments"
 	"github.com/input-output-hk/catalyst-forge/lib/foundry/client/device"
+	extauthz "github.com/input-output-hk/catalyst-forge/lib/foundry/client/extauthz"
 	"github.com/input-output-hk/catalyst-forge/lib/foundry/client/github"
 	"github.com/input-output-hk/catalyst-forge/lib/foundry/client/invites"
 	"github.com/input-output-hk/catalyst-forge/lib/foundry/client/jwks"
 	"github.com/input-output-hk/catalyst-forge/lib/foundry/client/releases"
 	"github.com/input-output-hk/catalyst-forge/lib/foundry/client/tokens"
 	"github.com/input-output-hk/catalyst-forge/lib/foundry/client/users"
-	"sync"
 )
 
 // Ensure, that ClientMock does implement client.Client.
@@ -95,6 +98,9 @@ type ClientMock struct {
 	// EventsFunc mocks the Events method.
 	EventsFunc func() deployments.EventsClientInterface
 
+	// BuildSessionsFunc mocks the BuildSessions method.
+	BuildSessionsFunc func() buildsessions.BuildSessionsClientInterface
+
 	// GithubFunc mocks the Github method.
 	GithubFunc func() github.GithubClientInterface
 
@@ -103,6 +109,9 @@ type ClientMock struct {
 
 	// JWKSFunc mocks the JWKS method.
 	JWKSFunc func() jwks.JWKSClientInterface
+
+	// ExtAuthzFunc mocks the ExtAuthz method.
+	ExtAuthzFunc func() extauthz.ExtAuthzClientInterface
 
 	// KeysFunc mocks the Keys method.
 	KeysFunc func() users.KeysClientInterface
@@ -139,6 +148,8 @@ type ClientMock struct {
 		// Events holds details about calls to the Events method.
 		Events []struct {
 		}
+		// BuildSessions holds details about calls to the BuildSessions method.
+		BuildSessions []struct{}
 		// Github holds details about calls to the Github method.
 		Github []struct {
 		}
@@ -148,6 +159,8 @@ type ClientMock struct {
 		// JWKS holds details about calls to the JWKS method.
 		JWKS []struct {
 		}
+		// ExtAuthz holds details about calls to the ExtAuthz method.
+		ExtAuthz []struct{}
 		// Keys holds details about calls to the Keys method.
 		Keys []struct {
 		}
@@ -164,20 +177,22 @@ type ClientMock struct {
 		Users []struct {
 		}
 	}
-	lockAliases      sync.RWMutex
-	lockAuth         sync.RWMutex
-	lockCertificates sync.RWMutex
-	lockDeployments  sync.RWMutex
-	lockDevice       sync.RWMutex
-	lockEvents       sync.RWMutex
-	lockGithub       sync.RWMutex
-	lockInvites      sync.RWMutex
-	lockJWKS         sync.RWMutex
-	lockKeys         sync.RWMutex
-	lockReleases     sync.RWMutex
-	lockRoles        sync.RWMutex
-	lockTokens       sync.RWMutex
-	lockUsers        sync.RWMutex
+	lockAliases       sync.RWMutex
+	lockAuth          sync.RWMutex
+	lockCertificates  sync.RWMutex
+	lockDeployments   sync.RWMutex
+	lockDevice        sync.RWMutex
+	lockEvents        sync.RWMutex
+	lockBuildSessions sync.RWMutex
+	lockGithub        sync.RWMutex
+	lockInvites       sync.RWMutex
+	lockJWKS          sync.RWMutex
+	lockExtAuthz      sync.RWMutex
+	lockKeys          sync.RWMutex
+	lockReleases      sync.RWMutex
+	lockRoles         sync.RWMutex
+	lockTokens        sync.RWMutex
+	lockUsers         sync.RWMutex
 }
 
 // Aliases calls AliasesFunc.
@@ -328,6 +343,18 @@ func (mock *ClientMock) Events() deployments.EventsClientInterface {
 	return mock.EventsFunc()
 }
 
+// BuildSessions calls BuildSessionsFunc.
+func (mock *ClientMock) BuildSessions() buildsessions.BuildSessionsClientInterface {
+	if mock.BuildSessionsFunc == nil {
+		panic("ClientMock.BuildSessionsFunc: method is nil but Client.BuildSessions was just called")
+	}
+	callInfo := struct{}{}
+	mock.lockBuildSessions.Lock()
+	mock.calls.BuildSessions = append(mock.calls.BuildSessions, callInfo)
+	mock.lockBuildSessions.Unlock()
+	return mock.BuildSessionsFunc()
+}
+
 // EventsCalls gets all the calls that were made to Events.
 // Check the length with:
 //
@@ -407,6 +434,18 @@ func (mock *ClientMock) JWKS() jwks.JWKSClientInterface {
 	mock.calls.JWKS = append(mock.calls.JWKS, callInfo)
 	mock.lockJWKS.Unlock()
 	return mock.JWKSFunc()
+}
+
+// ExtAuthz calls ExtAuthzFunc.
+func (mock *ClientMock) ExtAuthz() extauthz.ExtAuthzClientInterface {
+	if mock.ExtAuthzFunc == nil {
+		panic("ClientMock.ExtAuthzFunc: method is nil but Client.ExtAuthz was just called")
+	}
+	callInfo := struct{}{}
+	mock.lockExtAuthz.Lock()
+	mock.calls.ExtAuthz = append(mock.calls.ExtAuthz, callInfo)
+	mock.lockExtAuthz.Unlock()
+	return mock.ExtAuthzFunc()
 }
 
 // JWKSCalls gets all the calls that were made to JWKS.

@@ -8,10 +8,12 @@ import (
 	"github.com/input-output-hk/catalyst-forge/foundry/api/internal/api/handlers/user"
 	"github.com/input-output-hk/catalyst-forge/foundry/api/internal/api/middleware"
 	auditrepo "github.com/input-output-hk/catalyst-forge/foundry/api/internal/repository/audit"
+	buildrepo "github.com/input-output-hk/catalyst-forge/foundry/api/internal/repository/build"
 	userrepo "github.com/input-output-hk/catalyst-forge/foundry/api/internal/repository/user"
 	"github.com/input-output-hk/catalyst-forge/foundry/api/internal/service"
 	emailsvc "github.com/input-output-hk/catalyst-forge/foundry/api/internal/service/email"
-	"github.com/input-output-hk/catalyst-forge/foundry/api/internal/service/stepca"
+	pca "github.com/input-output-hk/catalyst-forge/foundry/api/internal/service/pca"
+
 	userservice "github.com/input-output-hk/catalyst-forge/foundry/api/internal/service/user"
 	"github.com/input-output-hk/catalyst-forge/lib/foundry/auth"
 	ghauth "github.com/input-output-hk/catalyst-forge/lib/foundry/auth/github"
@@ -35,8 +37,11 @@ func SetupRouter(
 	jwtManager jwt.JWTManager,
 	ghaOIDCClient ghauth.GithubActionsOIDCClient,
 	ghaAuthService service.GithubAuthService,
-	stepCAClient *stepca.Client,
+
 	emailService emailsvc.Service,
+	sessionMaxActive int,
+	enablePerIPRateLimit bool,
+	pcaClient pca.PCAClient,
 ) *gin.Engine {
 	r := gin.New()
 
@@ -74,7 +79,10 @@ func SetupRouter(
 	githubHandler := handlers.NewGithubHandler(jwtManager, ghaOIDCClient, ghaAuthService, logger)
 
 	// Certificate handler
-	certificateHandler := handlers.NewCertificateHandler(jwtManager, stepCAClient)
+	certificateHandler := handlers.NewCertificateHandler(jwtManager)
+	if pcaClient != nil {
+		certificateHandler = certificateHandler.WithPCA(pcaClient)
+	}
 	// JWKS handler (public)
 	jwksHandler := handlers.NewJWKSHandler(jwtManager)
 	// Device handler
@@ -87,6 +95,9 @@ func SetupRouter(
 	tokenHandler := handlers.NewTokenHandler(refreshRepo, userService, roleService, userRoleService, jwtManager)
 	// Audit repo (set in context for handlers that choose to log)
 	auditRepo := auditrepo.NewLogRepository(db)
+	// Build session handler
+	buildSessRepo := buildrepo.NewBuildSessionRepository(db)
+	buildHandler := handlers.NewBuildHandler(buildSessRepo, sessionMaxActive, auditRepo)
 	r.Use(func(c *gin.Context) { c.Set("auditRepo", auditRepo); c.Next() })
 
 	// Health check endpoint
@@ -146,6 +157,8 @@ func SetupRouter(
 
 	// Device flow endpoints
 	r.POST("/device/init", deviceHandler.Init)
+	// Build sessions
+	r.POST("/build/sessions", am.ValidatePermissions([]auth.Permission{auth.PermDeploymentWrite}), buildHandler.CreateBuildSession)
 	r.POST("/device/token", deviceHandler.Token)
 	r.POST("/device/approve", am.ValidatePermissions([]auth.Permission{}), deviceHandler.Approve)
 
@@ -193,7 +206,11 @@ func SetupRouter(
 
 	// Certificate endpoints
 	r.POST("/certificates/sign", am.ValidateAnyCertificatePermission(), certificateHandler.SignCertificate)
+	r.POST("/ca/buildkit/server-certificates", am.ValidatePermissions([]auth.Permission{auth.PermCertificateSignAll}), certificateHandler.SignServerCertificate)
 	r.GET("/certificates/root", certificateHandler.GetRootCertificate)
+
+	// Optional ext_authz (feature-flagged)
+	r.POST("/build/gateway/authorize", certificateHandler.AuthorizeBuildGateway)
 
 	return r
 }

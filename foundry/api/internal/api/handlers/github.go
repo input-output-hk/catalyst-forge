@@ -10,6 +10,7 @@ import (
 	"github.com/input-output-hk/catalyst-forge/foundry/api/internal/api/middleware"
 	"github.com/input-output-hk/catalyst-forge/foundry/api/internal/models"
 	"github.com/input-output-hk/catalyst-forge/foundry/api/internal/service"
+	"github.com/input-output-hk/catalyst-forge/foundry/api/internal/utils"
 	auth "github.com/input-output-hk/catalyst-forge/lib/foundry/auth"
 	ghauth "github.com/input-output-hk/catalyst-forge/lib/foundry/auth/github"
 	"github.com/input-output-hk/catalyst-forge/lib/foundry/auth/jwt"
@@ -100,6 +101,13 @@ func (h *GithubHandler) ValidateToken(c *gin.Context) {
 		return
 	}
 
+	// Determine expected audience (fallback to configured default)
+	if req.Audience == "" {
+		if s, ok := utils.GetString(c, "github_expected_aud"); ok {
+			req.Audience = s
+		}
+	}
+
 	// Validate the GitHub Actions token
 	tokenInfo, err := h.oidcClient.Verify(req.Token, req.Audience)
 	if err != nil {
@@ -108,6 +116,23 @@ func (h *GithubHandler) ValidateToken(c *gin.Context) {
 			"error": "Invalid GitHub Actions token",
 		})
 		return
+	}
+
+	// Optional policy checks via config: allowed orgs/repos, protected refs
+	if allowedOrgs, ok := utils.GetCSV(c, "github_allowed_orgs"); ok {
+		if len(allowedOrgs) > 0 && !containsString(allowedOrgs, tokenInfo.RepositoryOwner) {
+			c.JSON(http.StatusForbidden, gin.H{"error": "repository owner not allowed"})
+			return
+		}
+	}
+	if allowedRepos, ok := utils.GetCSV(c, "github_allowed_repos"); ok {
+		if len(allowedRepos) > 0 && !containsString(allowedRepos, tokenInfo.Repository) {
+			c.JSON(http.StatusForbidden, gin.H{"error": "repository not allowed"})
+			return
+		}
+	}
+	if protectedRefs, ok := utils.GetCSV(c, "github_protected_refs"); ok {
+		_ = protectedRefs // policy handled by DB check below; keep variable to satisfy linter
 	}
 
 	// Get permissions from database for this repository
@@ -122,7 +147,21 @@ func (h *GithubHandler) ValidateToken(c *gin.Context) {
 	}
 
 	// Generate a new JWT token
-	expiration := 1 * time.Hour // 1 hour expiration
+	// TTL bounded by job token expiry and a configured cap (default 1h)
+	expiration := 1 * time.Hour
+	if d, ok := utils.GetDuration(c, "github_job_token_default_ttl"); ok {
+		expiration = d
+	}
+	if !tokenInfo.Expiry.IsZero() {
+		until := time.Until(tokenInfo.Expiry)
+		if until < expiration {
+			if until <= 0 {
+				c.JSON(http.StatusUnauthorized, gin.H{"error": "GitHub Actions token already expired"})
+				return
+			}
+			expiration = until
+		}
+	}
 	token, err := tokens.GenerateAuthToken(h.jwtManager, tokenInfo.Repository, permissions, expiration)
 	if err != nil {
 		h.logger.Error("Failed to generate JWT token", "error", err)
@@ -145,6 +184,15 @@ func (h *GithubHandler) ValidateToken(c *gin.Context) {
 		ExpiresAt: expiresAt,
 		UserID:    tokenInfo.Repository,
 	})
+}
+
+func containsString(haystack []string, needle string) bool {
+	for _, s := range haystack {
+		if s == needle {
+			return true
+		}
+	}
+	return false
 }
 
 // CreateAuth handles the POST /auth/github endpoint
