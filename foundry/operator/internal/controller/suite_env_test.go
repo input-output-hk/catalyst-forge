@@ -21,10 +21,12 @@ import (
 	tu "github.com/input-output-hk/catalyst-forge/lib/deployment/utils/test"
 	"github.com/input-output-hk/catalyst-forge/lib/foundry/client"
 	"github.com/input-output-hk/catalyst-forge/lib/foundry/client/auth"
+	buildsessions "github.com/input-output-hk/catalyst-forge/lib/foundry/client/buildsessions"
 	"github.com/input-output-hk/catalyst-forge/lib/foundry/client/certificates"
 	"github.com/input-output-hk/catalyst-forge/lib/foundry/client/deployments"
 	"github.com/input-output-hk/catalyst-forge/lib/foundry/client/deployments/mocks"
 	"github.com/input-output-hk/catalyst-forge/lib/foundry/client/device"
+	extauthz "github.com/input-output-hk/catalyst-forge/lib/foundry/client/extauthz"
 	"github.com/input-output-hk/catalyst-forge/lib/foundry/client/github"
 	"github.com/input-output-hk/catalyst-forge/lib/foundry/client/invites"
 	"github.com/input-output-hk/catalyst-forge/lib/foundry/client/jwks"
@@ -211,10 +213,12 @@ func (m *mockClient) Certificates() certificates.CertificatesClientInterface {
 }
 
 // Added to satisfy updated client.Client interface
-func (m *mockClient) Tokens() tokens.TokensClientInterface    { return nil }
-func (m *mockClient) Invites() invites.InvitesClientInterface { return nil }
-func (m *mockClient) Device() device.DeviceClientInterface    { return nil }
-func (m *mockClient) JWKS() jwks.JWKSClientInterface          { return nil }
+func (m *mockClient) Tokens() tokens.TokensClientInterface                      { return nil }
+func (m *mockClient) Invites() invites.InvitesClientInterface                   { return nil }
+func (m *mockClient) Device() device.DeviceClientInterface                      { return nil }
+func (m *mockClient) JWKS() jwks.JWKSClientInterface                            { return nil }
+func (m *mockClient) BuildSessions() buildsessions.BuildSessionsClientInterface { return nil }
+func (m *mockClient) ExtAuthz() extauthz.ExtAuthzClientInterface                { return nil }
 
 func (m *mockEnv) ConfigureController(ctrl *ReleaseDeploymentReconciler) {
 	ctrl.Config = m.config
