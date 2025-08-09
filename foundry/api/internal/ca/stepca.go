@@ -91,12 +91,8 @@ func (c *StepCAClient) Sign(ctx context.Context, req SignRequest) (*SignResponse
 	// Collect SANs from CSR and include CN if not present
 	var sans []string
 	if parsedCSR != nil {
-		for _, d := range parsedCSR.DNSNames {
-			sans = append(sans, d)
-		}
-		for _, e := range parsedCSR.EmailAddresses {
-			sans = append(sans, e)
-		}
+		sans = append(sans, parsedCSR.DNSNames...)
+		sans = append(sans, parsedCSR.EmailAddresses...)
 		for _, ip := range parsedCSR.IPAddresses {
 			sans = append(sans, ip.String())
 		}
@@ -192,7 +188,7 @@ func (c *StepCAClient) Sign(ctx context.Context, req SignRequest) (*SignResponse
 	if err != nil {
 		return nil, fmt.Errorf("step-ca request failed: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode >= 400 {
 		var e struct {

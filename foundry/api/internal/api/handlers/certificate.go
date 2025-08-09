@@ -132,13 +132,13 @@ func (h *CertificateHandler) SignCertificate(c *gin.Context) {
 	}
 	if ok, _ := h.limiter.Allow(c, "cert-issue:"+principalKey, rateLimit, time.Hour); !ok {
 		c.JSON(http.StatusTooManyRequests, gin.H{"error": "certificate issuance rate limit exceeded"})
+		return
 	}
 
 	user, ok := userData.(*middleware.AuthenticatedUser)
 	if !ok {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": "invalid user data",
-		})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "invalid user data"})
+		return
 	}
 
 	// Parse request
@@ -377,7 +377,6 @@ func (h *CertificateHandler) SignCertificate(c *gin.Context) {
 	}
 	// PCA not available
 	c.JSON(http.StatusInternalServerError, gin.H{"error": "PCA not configured"})
-	return
 }
 
 // SignServerCertificate handles BuildKit server certificate issuance via Step-CA servers provisioner
@@ -513,7 +512,6 @@ func (h *CertificateHandler) SignServerCertificate(c *gin.Context) {
 	}
 	// PCA not available
 	c.JSON(http.StatusInternalServerError, gin.H{"error": "PCA not configured"})
-	return
 }
 
 // buildAuditMetadata constructs datatypes.JSON with core cert details and extras
@@ -579,7 +577,6 @@ func (h *CertificateHandler) GetRootCertificate(c *gin.Context) {
 		}
 	}
 	c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to get root certificate: PCA not configured"})
-	return
 }
 
 // splitPEMCerts splits a PEM bundle into a slice of certificate PEMs

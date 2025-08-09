@@ -12,6 +12,8 @@ deps:
     ENV GOMODCACHE=/go/modcache
     CACHE --persist --sharing shared /go
 
+    RUN go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.3.1
+
     # Copy local deps
     COPY ../../lib/foundry/auth+src/src /lib/foundry/auth
     COPY ../../lib/foundry/client+src/src /lib/foundry/client
@@ -35,6 +37,7 @@ check:
 
     RUN gofmt -l . | grep . && exit 1 || exit 0
     RUN go vet ./...
+    RUN golangci-lint run
 
 build:
     FROM +src
@@ -64,7 +67,7 @@ test:
         --service api \
         --service auth \
         --service auth-jwt \
-        --service postgres \
+        --service postgres
 
         RUN docker compose up api-test
     END

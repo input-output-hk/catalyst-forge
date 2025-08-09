@@ -132,10 +132,7 @@ func (h *GithubHandler) ValidateToken(c *gin.Context) {
 		}
 	}
 	if protectedRefs, ok := utils.GetCSV(c, "github_protected_refs"); ok {
-		if len(protectedRefs) > 0 && containsString(protectedRefs, tokenInfo.Ref) {
-			// Require explicit DB allow if protected ref
-			// Fallthrough to DB check below; if none present, deny.
-		}
+		_ = protectedRefs // policy handled by DB check below; keep variable to satisfy linter
 	}
 
 	// Get permissions from database for this repository

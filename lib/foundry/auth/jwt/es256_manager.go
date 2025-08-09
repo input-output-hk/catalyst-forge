@@ -127,11 +127,13 @@ func (m *ES256Manager) VerifyToken(tokenString string, claims jwt.Claims) error 
 		return fmt.Errorf("no public key available for verification")
 	}
 
-	token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
-		// Verify the signing method
-		if _, ok := token.Method.(*jwt.SigningMethodECDSA); !ok {
-			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
-		}
+	// Allow small clock skew to avoid nbf/iat race between containers
+	parser := jwt.NewParser(
+		jwt.WithLeeway(30*time.Second),
+		jwt.WithValidMethods([]string{jwt.SigningMethodES256.Alg()}),
+	)
+
+	token, err := parser.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
 		return m.publicKey, nil
 	})
 

@@ -1,6 +1,7 @@
 package test
 
 import (
+	"bytes"
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/x509"
@@ -266,8 +267,10 @@ func validateCertificateKeyPair(cert *x509.Certificate, privateKey *rsa.PrivateK
 		return assert.AnError // Certificate doesn't contain RSA public key
 	}
 
-	// Compare public keys
-	if certPubKey.N.Cmp(privateKey.PublicKey.N) != 0 || certPubKey.E != privateKey.PublicKey.E {
+	// Compare public keys by marshaling to DER
+	certDer := x509.MarshalPKCS1PublicKey(certPubKey)
+	keyDer := x509.MarshalPKCS1PublicKey(&privateKey.PublicKey)
+	if !bytes.Equal(certDer, keyDer) {
 		return assert.AnError // Public keys don't match
 	}
 

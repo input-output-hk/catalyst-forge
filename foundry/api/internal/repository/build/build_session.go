@@ -9,7 +9,7 @@ import (
 
 type BuildSessionRepository interface {
 	Create(session *build.BuildSession) error
-	CountActive(ownerType string, ownerID uint) (int64, error)
+	CountActive(ownerType string, ownerID string) (int64, error)
 }
 
 type buildSessionRepository struct{ db *gorm.DB }
@@ -22,7 +22,7 @@ func (r *buildSessionRepository) Create(session *build.BuildSession) error {
 	return r.db.Create(session).Error
 }
 
-func (r *buildSessionRepository) CountActive(ownerType string, ownerID uint) (int64, error) {
+func (r *buildSessionRepository) CountActive(ownerType string, ownerID string) (int64, error) {
 	var n int64
 	now := time.Now()
 	err := r.db.Model(&build.BuildSession{}).

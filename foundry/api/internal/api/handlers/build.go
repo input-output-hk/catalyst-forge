@@ -28,7 +28,7 @@ func NewBuildHandler(repo buildrepo.BuildSessionRepository, sessionMaxActive int
 
 type CreateBuildSessionRequest struct {
 	OwnerType string         `json:"owner_type" binding:"required"` // "user" or "repo"
-	OwnerID   uint           `json:"owner_id" binding:"required"`
+	OwnerID   string         `json:"owner_id" binding:"required"`
 	TTL       string         `json:"ttl" binding:"required"` // eg. "90m"
 	Metadata  map[string]any `json:"metadata,omitempty"`
 }

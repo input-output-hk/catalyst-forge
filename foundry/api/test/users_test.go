@@ -146,8 +146,8 @@ func TestUsersAPI(t *testing.T) {
 			assert.True(t, found2, "Second test user not found in list")
 
 			// Clean up
-			c.Users().Delete(ctx, createdUser1.ID)
-			c.Users().Delete(ctx, createdUser2.ID)
+			_ = c.Users().Delete(ctx, createdUser1.ID)
+			_ = c.Users().Delete(ctx, createdUser2.ID)
 		})
 
 		t.Run("GetPendingUsers", func(t *testing.T) {
@@ -253,7 +253,7 @@ func TestUsersAPI(t *testing.T) {
 			assert.NotEmpty(t, createdRole.Permissions)
 
 			// Clean up
-			c.Roles().Delete(ctx, createdRole.ID)
+			_ = c.Roles().Delete(ctx, createdRole.ID)
 		})
 
 		t.Run("UserRoleAssignment", func(t *testing.T) {
@@ -323,8 +323,8 @@ func TestUsersAPI(t *testing.T) {
 			})
 
 			// Clean up
-			c.Users().Delete(ctx, createdUser.ID)
-			c.Roles().Delete(ctx, createdRole.ID)
+			_ = c.Users().Delete(ctx, createdUser.ID)
+			_ = c.Roles().Delete(ctx, createdRole.ID)
 		})
 	})
 
@@ -540,11 +540,11 @@ func TestUsersAPI(t *testing.T) {
 			})
 
 			// Clean up
-			c.Keys().Delete(ctx, createdKey1.ID)
-			c.Keys().Delete(ctx, createdKey2.ID)
+			_ = c.Keys().Delete(ctx, createdKey1.ID)
+			_ = c.Keys().Delete(ctx, createdKey2.ID)
 		})
 
 		// Clean up user
-		c.Users().Delete(ctx, createdUser.ID)
+		_ = c.Users().Delete(ctx, createdUser.ID)
 	})
 }

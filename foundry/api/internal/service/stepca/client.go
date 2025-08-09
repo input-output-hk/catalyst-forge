@@ -129,7 +129,7 @@ func (c *Client) SignCertificate(token string, csr []byte, ttl time.Duration) (*
 	if err != nil {
 		return nil, fmt.Errorf("failed to send request to step-ca: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
@@ -176,7 +176,7 @@ func (c *Client) GetRootCertificate() ([]byte, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch root certificate: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
@@ -211,7 +211,7 @@ func (c *Client) HealthCheck() error {
 	if err != nil {
 		return fmt.Errorf("step-ca health check failed: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)

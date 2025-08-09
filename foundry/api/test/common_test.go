@@ -58,21 +58,34 @@ func generateTestName(prefix string) string {
 // generateTestEmail generates a unique test email
 func generateTestEmail() string {
 	bytes := make([]byte, 8)
-	rand.Read(bytes)
+	if _, err := rand.Read(bytes); err != nil {
+		// fallback to time-based bytes to satisfy linter; acceptable for tests
+		for i := range bytes {
+			bytes[i] = byte(time.Now().UnixNano() >> (i % 8))
+		}
+	}
 	return fmt.Sprintf("test-user-%x@example.com", bytes)
 }
 
 // generateTestKid generates a unique test key ID
 func generateTestKid() string {
 	bytes := make([]byte, 16)
-	rand.Read(bytes)
+	if _, err := rand.Read(bytes); err != nil {
+		for i := range bytes {
+			bytes[i] = byte(time.Now().UnixNano() >> (i % 8))
+		}
+	}
 	return fmt.Sprintf("test-key-%x", bytes)
 }
 
 // generateTestPubKey generates a test public key
 func generateTestPubKey() string {
 	bytes := make([]byte, 32)
-	rand.Read(bytes)
+	if _, err := rand.Read(bytes); err != nil {
+		for i := range bytes {
+			bytes[i] = byte(time.Now().UnixNano() >> (i % 8))
+		}
+	}
 	return base64.StdEncoding.EncodeToString(bytes)
 }
 

@@ -68,5 +68,10 @@ if [[ -n "${STEPCA_ROOT_CA:-}" ]]; then
     fi
 fi
 
+if [[ -n "${SEED_ADMIN:-}" ]]; then
+    echo "Seeding admin user..."
+    /app/foundry-api seed --email "${SEED_ADMIN}"
+fi
+
 echo "Starting Foundry API server..."
 exec /app/foundry-api run

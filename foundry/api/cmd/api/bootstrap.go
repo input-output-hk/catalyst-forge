@@ -75,6 +75,9 @@ func initJWTManager(authCfg config.AuthConfig, logger *slog.Logger) (jwt.JWTMana
 	return manager, nil
 }
 
+// initStepCAClient retained for legacy reference; unused after PCA migration
+//
+//lint:ignore U1000 kept for potential future dev local testing
 func initStepCAClient(stepCfg config.StepCAConfig, logger *slog.Logger) (*stepca.Client, []byte, error) {
 	var rootCA []byte
 	var err error
@@ -96,6 +99,9 @@ func initStepCAClient(stepCfg config.StepCAConfig, logger *slog.Logger) (*stepca
 	return cli, rootCA, nil
 }
 
+// initGHAClient reserved for future extraction if needed
+//
+//lint:ignore U1000 kept intentionally to preserve API surface
 func initGHAClient() (Start func() error, Stop func(), clientCtx context.Context, err error) {
 	// Kept in main for logging; this wrapper reserved for future extraction if needed.
 	return nil, nil, nil, nil
@@ -112,6 +118,9 @@ func initEmailService(cfg config.EmailConfig, publicBaseURL string) (emailsvc.Se
 	return nil, nil
 }
 
+// parseProvisionerSigner retained for legacy dev paths
+//
+//lint:ignore U1000 unused after PCA migration
 func parseProvisionerSigner(path string) *ecdsa.PrivateKey {
 	if path == "" {
 		return nil
@@ -191,6 +200,9 @@ func initPCAClient(cfg config.CertsConfig) (pcaclient.PCAClient, error) {
 }
 
 // Utility: short timeout context
+// newTimeoutCtx helper (currently unused)
+//
+//lint:ignore U1000 reserved for future use
 func newTimeoutCtx(d time.Duration) (context.Context, context.CancelFunc) {
 	return context.WithTimeout(context.Background(), d)
 }

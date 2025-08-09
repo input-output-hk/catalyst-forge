@@ -37,8 +37,16 @@ func (g *GenerateCmd) Run() error {
 		permissions = auth.AllPermissions
 	}
 
-	// Generate token using the new tokens package
-	token, err := tokens.GenerateAuthToken(manager, userID, permissions, g.Expiration)
+	// Generate token using the new tokens package (include default user_ver=1 to satisfy freshness check)
+	token, err := tokens.GenerateAuthToken(
+		manager,
+		userID,
+		permissions,
+		g.Expiration,
+		jwt.WithAdditionalClaims(map[string]any{
+			"user_ver": 1,
+		}),
+	)
 	if err != nil {
 		return err
 	}

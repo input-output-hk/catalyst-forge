@@ -34,7 +34,6 @@ import (
 	// gorm imported via helpers
 
 	_ "github.com/input-output-hk/catalyst-forge/foundry/api/docs"
-	"github.com/input-output-hk/catalyst-forge/lib/foundry/auth/jwt"
 )
 
 var version = "dev"
@@ -70,6 +69,7 @@ type CLI struct {
 	Run     RunCmd       `kong:"cmd,help='Start the API server'"`
 	Version VersionCmd   `kong:"cmd,help='Show version information'"`
 	Auth    auth.AuthCmd `kong:"cmd,help='Authentication management commands'"`
+	Seed    SeedCmd      `kong:"cmd,help='Seed default data (admin user/role)'"`
 	// --config=/path/to/config.toml support (TOML via kong-toml loader)
 	Config kong.ConfigFlag `kong:"help='Load configuration from a TOML file',name='config'"`
 }
@@ -116,9 +116,10 @@ func (r *RunCmd) Run() error {
 		return err
 	}
 
-	// Test Redis connection
+	// Context reserved for future init steps (kept to match structure)
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
+	_ = ctx
+	cancel()
 
 	// Initialize Kubernetes client if enabled
 	var k8sClient k8s.Client
@@ -165,7 +166,7 @@ func (r *RunCmd) Run() error {
 		logger.Error("Failed to initialize JWT manager", "error", err)
 		return err
 	}
-	var jwtManager jwt.JWTManager = jwtManagerImpl
+	jwtManager := jwtManagerImpl
 	revokedRepo := userrepo.NewRevokedJTIRepository(db)
 	authMiddleware := middleware.NewAuthMiddleware(jwtManager, logger, userService, revokedRepo)
 
