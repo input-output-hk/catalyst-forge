@@ -10,7 +10,7 @@ import (
 
 //go:generate go run github.com/matryer/moq@latest -skip-ensure --pkg mocks --out ./mocks/role.go . RoleService
 
-// RoleService defines the interface for role service operations
+// RoleService defines the interface for role service operations.
 type RoleService interface {
 	CreateRole(role *user.Role) error
 	GetRoleByID(id uint) (*user.Role, error)
@@ -20,13 +20,13 @@ type RoleService interface {
 	ListRoles() ([]user.Role, error)
 }
 
-// DefaultRoleService is the default implementation of RoleService
+// DefaultRoleService is the default implementation of RoleService.
 type DefaultRoleService struct {
 	repo   userrepo.RoleRepository
 	logger *slog.Logger
 }
 
-// NewRoleService creates a new role service
+// NewRoleService creates a new role service.
 func NewRoleService(repo userrepo.RoleRepository, logger *slog.Logger) *DefaultRoleService {
 	return &DefaultRoleService{
 		repo:   repo,
@@ -34,7 +34,7 @@ func NewRoleService(repo userrepo.RoleRepository, logger *slog.Logger) *DefaultR
 	}
 }
 
-// CreateRole creates a new role
+// CreateRole creates a new role.
 func (s *DefaultRoleService) CreateRole(role *user.Role) error {
 	// Validate role name
 	if err := s.validateRoleName(role.Name); err != nil {
@@ -53,17 +53,17 @@ func (s *DefaultRoleService) CreateRole(role *user.Role) error {
 	return s.repo.Create(role)
 }
 
-// GetRoleByID retrieves a role by ID
+// GetRoleByID retrieves a role by ID.
 func (s *DefaultRoleService) GetRoleByID(id uint) (*user.Role, error) {
 	return s.repo.GetByID(fmt.Sprintf("%d", id))
 }
 
-// GetRoleByName retrieves a role by name
+// GetRoleByName retrieves a role by name.
 func (s *DefaultRoleService) GetRoleByName(name string) (*user.Role, error) {
 	return s.repo.GetByName(name)
 }
 
-// UpdateRole updates an existing role
+// UpdateRole updates an existing role.
 func (s *DefaultRoleService) UpdateRole(role *user.Role) error {
 	// Validate role name
 	if err := s.validateRoleName(role.Name); err != nil {
@@ -77,7 +77,7 @@ func (s *DefaultRoleService) UpdateRole(role *user.Role) error {
 	return s.repo.Update(role)
 }
 
-// DeleteRole deletes a role
+// DeleteRole deletes a role.
 func (s *DefaultRoleService) DeleteRole(id uint) error {
 	existing, err := s.repo.GetByID(fmt.Sprintf("%d", id))
 	if err != nil {
@@ -91,12 +91,12 @@ func (s *DefaultRoleService) DeleteRole(id uint) error {
 	return s.repo.Delete(fmt.Sprintf("%d", id))
 }
 
-// ListRoles retrieves all roles
+// ListRoles retrieves all roles.
 func (s *DefaultRoleService) ListRoles() ([]user.Role, error) {
 	return s.repo.List()
 }
 
-// validateRoleName validates role name format
+// validateRoleName validates role name format.
 func (s *DefaultRoleService) validateRoleName(name string) error {
 	if name == "" {
 		return fmt.Errorf("role name cannot be empty")

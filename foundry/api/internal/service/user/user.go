@@ -10,7 +10,7 @@ import (
 
 //go:generate go run github.com/matryer/moq@latest -skip-ensure --pkg mocks --out ./mocks/user.go . UserService
 
-// UserService defines the interface for user service operations
+// UserService defines the interface for user service operations.
 type UserService interface {
 	CreateUser(user *um.User) error
 	GetUserByID(id uint) (*um.User, error)
@@ -23,13 +23,13 @@ type UserService interface {
 	DeactivateUser(id uint) error
 }
 
-// DefaultUserService is the default implementation of UserService
+// DefaultUserService is the default implementation of UserService.
 type DefaultUserService struct {
 	repo   userrepo.UserRepository
 	logger *slog.Logger
 }
 
-// NewUserService creates a new user service
+// NewUserService creates a new user service.
 func NewUserService(repo userrepo.UserRepository, logger *slog.Logger) *DefaultUserService {
 	return &DefaultUserService{
 		repo:   repo,
@@ -37,7 +37,7 @@ func NewUserService(repo userrepo.UserRepository, logger *slog.Logger) *DefaultU
 	}
 }
 
-// CreateUser creates a new user
+// CreateUser creates a new user.
 func (s *DefaultUserService) CreateUser(user *um.User) error {
 	// Validate email format
 	if err := s.validateEmail(user.Email); err != nil {
@@ -62,17 +62,17 @@ func (s *DefaultUserService) CreateUser(user *um.User) error {
 	return s.repo.Create(user)
 }
 
-// GetUserByID retrieves a user by ID
+// GetUserByID retrieves a user by ID.
 func (s *DefaultUserService) GetUserByID(id uint) (*um.User, error) {
 	return s.repo.GetByID(id)
 }
 
-// GetUserByEmail retrieves a user by email
+// GetUserByEmail retrieves a user by email.
 func (s *DefaultUserService) GetUserByEmail(email string) (*um.User, error) {
 	return s.repo.GetByEmail(email)
 }
 
-// UpdateUser updates an existing user
+// UpdateUser updates an existing user.
 func (s *DefaultUserService) UpdateUser(user *um.User) error {
 	// Validate email format if changed
 	if err := s.validateEmail(user.Email); err != nil {
@@ -87,7 +87,7 @@ func (s *DefaultUserService) UpdateUser(user *um.User) error {
 	return s.repo.Update(user)
 }
 
-// DeleteUser deletes a user
+// DeleteUser deletes a user.
 func (s *DefaultUserService) DeleteUser(id uint) error {
 	existing, err := s.repo.GetByID(id)
 	if err != nil {
@@ -101,17 +101,17 @@ func (s *DefaultUserService) DeleteUser(id uint) error {
 	return s.repo.Delete(id)
 }
 
-// ListUsers retrieves all users
+// ListUsers retrieves all users.
 func (s *DefaultUserService) ListUsers() ([]um.User, error) {
 	return s.repo.List()
 }
 
-// GetPendingUsers retrieves all users with pending status
+// GetPendingUsers retrieves all users with pending status.
 func (s *DefaultUserService) GetPendingUsers() ([]um.User, error) {
 	return s.repo.GetByStatus(um.UserStatusPending)
 }
 
-// ActivateUser activates a user
+// ActivateUser activates a user.
 func (s *DefaultUserService) ActivateUser(id uint) error {
 	u, err := s.repo.GetByID(id)
 	if err != nil {
@@ -127,7 +127,7 @@ func (s *DefaultUserService) ActivateUser(id uint) error {
 	return s.repo.Update(u)
 }
 
-// DeactivateUser deactivates a user
+// DeactivateUser deactivates a user.
 func (s *DefaultUserService) DeactivateUser(id uint) error {
 	u, err := s.repo.GetByID(id)
 	if err != nil {
@@ -143,7 +143,7 @@ func (s *DefaultUserService) DeactivateUser(id uint) error {
 	return s.repo.Update(u)
 }
 
-// validateEmail validates email format
+// validateEmail validates email format.
 func (s *DefaultUserService) validateEmail(email string) error {
 	if email == "" {
 		return fmt.Errorf("email cannot be empty")

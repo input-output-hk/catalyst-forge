@@ -2,7 +2,7 @@ package build
 
 import "time"
 
-// ServiceAccount represents an automation identity used for server cert issuance and CI
+// ServiceAccount represents an automation identity used for server cert issuance and CI.
 type ServiceAccount struct {
 	ID        uint      `gorm:"primaryKey" json:"id"`
 	Name      string    `gorm:"uniqueIndex;size:255" json:"name"`

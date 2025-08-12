@@ -19,19 +19,19 @@ import (
 
 //go:generate go run github.com/matryer/moq@latest --pkg mocks --out ./mocks/client.go . Client
 
-// Client defines the interface for Kubernetes operations
+// Client defines the interface for Kubernetes operations.
 type Client interface {
 	CreateDeployment(ctx context.Context, deployment *models.ReleaseDeployment) error
 }
 
-// K8sClient implements the Client interface
+// K8sClient implements the Client interface.
 type K8sClient struct {
 	dynamicClient dynamic.Interface
 	namespace     string
 	logger        *slog.Logger
 }
 
-// New creates a new Kubernetes client
+// New creates a new Kubernetes client.
 func New(namespace string, logger *slog.Logger) (Client, error) {
 	config, err := rest.InClusterConfig()
 	if err != nil {
@@ -66,7 +66,7 @@ func New(namespace string, logger *slog.Logger) (Client, error) {
 	}, nil
 }
 
-// CreateDeployment creates a new Kubernetes custom resource for the deployment
+// CreateDeployment creates a new Kubernetes custom resource for the deployment.
 func (c *K8sClient) CreateDeployment(ctx context.Context, deployment *models.ReleaseDeployment) error {
 	c.logger.Info("Creating Kubernetes release deployment resource",
 		"deploymentID", deployment.ID,

@@ -1,3 +1,5 @@
+//go:build integration
+
 package test
 
 import (
@@ -12,7 +14,8 @@ import (
 )
 
 func TestAliasAPI(t *testing.T) {
-	c := newTestClient()
+    env := NewTestEnv(t)
+	c := env.AdminClient()
 	ctx, cancel := newTestContext()
 	defer cancel()
 

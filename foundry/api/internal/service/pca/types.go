@@ -5,7 +5,7 @@ import (
 	"time"
 )
 
-// PCAClient defines the minimal interface we need from ACM-PCA
+// PCAClient defines the minimal interface we need from ACM-PCA.
 type PCAClient interface {
 	Issue(ctx context.Context, caArn string, templateArn string, signingAlgorithm string, csrDER []byte, ttl time.Duration, apiPassthroughSANs SANs) (certArn string, err error)
 	Get(ctx context.Context, caArn string, certArn string) (certPEM string, chainPEM string, err error)
@@ -13,7 +13,7 @@ type PCAClient interface {
 	GetCA(ctx context.Context, caArn string) (caPEM string, chainPEM string, err error)
 }
 
-// SANs captures the APIPassthrough SAN parameters we care about
+// SANs captures the APIPassthrough SAN parameters we care about.
 type SANs struct {
 	URIs   []string
 	DNS    []string

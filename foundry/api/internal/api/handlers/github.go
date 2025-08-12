@@ -18,7 +18,7 @@ import (
 )
 
 // GithubRepositoryAuthResponse represents the response structure for GHA authentication
-// This is used to avoid the pq.StringArray issue in Swagger generation
+// This is used to avoid the pq.StringArray issue in Swagger generation.
 type GithubRepositoryAuthResponse struct {
 	ID          uint      `json:"id"`
 	Repository  string    `json:"repository"`
@@ -31,7 +31,7 @@ type GithubRepositoryAuthResponse struct {
 	UpdatedAt   time.Time `json:"updated_at"`
 }
 
-// GithubHandler handles GitHub Actions authentication endpoints
+// GithubHandler handles GitHub Actions authentication endpoints.
 type GithubHandler struct {
 	jwtManager  jwt.JWTManager
 	oidcClient  ghauth.GithubActionsOIDCClient
@@ -39,7 +39,7 @@ type GithubHandler struct {
 	logger      *slog.Logger
 }
 
-// NewGithubHandler creates a new GitHub authentication handler
+// NewGithubHandler creates a new GitHub authentication handler.
 func NewGithubHandler(jwtManager jwt.JWTManager, oidcClient ghauth.GithubActionsOIDCClient, authService service.GithubAuthService, logger *slog.Logger) *GithubHandler {
 	return &GithubHandler{
 		jwtManager:  jwtManager,
@@ -49,20 +49,20 @@ func NewGithubHandler(jwtManager jwt.JWTManager, oidcClient ghauth.GithubActions
 	}
 }
 
-// ValidateTokenRequest represents the request body for token validation
+// ValidateTokenRequest represents the request body for token validation.
 type ValidateTokenRequest struct {
 	Token    string `json:"token" binding:"required"`
 	Audience string `json:"audience,omitempty"`
 }
 
-// ValidateTokenResponse represents the response body for token validation
+// ValidateTokenResponse represents the response body for token validation.
 type ValidateTokenResponse struct {
 	Token     string    `json:"token"`
 	ExpiresAt time.Time `json:"expires_at"`
 	UserID    string    `json:"user_id"`
 }
 
-// CreateAuthRequest represents the request body for creating a GHA authentication configuration
+// CreateAuthRequest represents the request body for creating a GHA authentication configuration.
 type CreateAuthRequest struct {
 	Repository  string            `json:"repository" binding:"required"`
 	Permissions []auth.Permission `json:"permissions" binding:"required"`
@@ -70,7 +70,7 @@ type CreateAuthRequest struct {
 	Description string            `json:"description,omitempty"`
 }
 
-// UpdateAuthRequest represents the request body for updating a GHA authentication configuration
+// UpdateAuthRequest represents the request body for updating a GHA authentication configuration.
 type UpdateAuthRequest struct {
 	Repository  string            `json:"repository" binding:"required"`
 	Permissions []auth.Permission `json:"permissions" binding:"required"`
@@ -90,7 +90,7 @@ type UpdateAuthRequest struct {
 // @Failure 401 {object} map[string]interface{} "Invalid token"
 // @Failure 403 {object} map[string]interface{} "Repository not authorized"
 // @Failure 500 {object} map[string]interface{} "Internal server error"
-// @Router /auth/github/login [post]
+// @Router /auth/github/login [post].
 func (h *GithubHandler) ValidateToken(c *gin.Context) {
 	var req ValidateTokenRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -207,7 +207,7 @@ func containsString(haystack []string, needle string) bool {
 // @Failure 400 {object} map[string]interface{} "Invalid request"
 // @Failure 401 {object} map[string]interface{} "Authentication required"
 // @Failure 500 {object} map[string]interface{} "Internal server error"
-// @Router /auth/github [post]
+// @Router /auth/github [post].
 func (h *GithubHandler) CreateAuth(c *gin.Context) {
 	var req CreateAuthRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -267,7 +267,7 @@ func (h *GithubHandler) CreateAuth(c *gin.Context) {
 // @Failure 400 {object} map[string]interface{} "Invalid ID parameter"
 // @Failure 401 {object} map[string]interface{} "Authentication required"
 // @Failure 404 {object} map[string]interface{} "Authentication configuration not found"
-// @Router /auth/github/{id} [get]
+// @Router /auth/github/{id} [get].
 func (h *GithubHandler) GetAuth(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := strconv.ParseUint(idStr, 10, 32)
@@ -302,7 +302,7 @@ func (h *GithubHandler) GetAuth(c *gin.Context) {
 // @Success 200 {object} GithubRepositoryAuthResponse "Authentication configuration"
 // @Failure 401 {object} map[string]interface{} "Authentication required"
 // @Failure 404 {object} map[string]interface{} "Authentication configuration not found"
-// @Router /auth/github/repository/{repository} [get]
+// @Router /auth/github/repository/{repository} [get].
 func (h *GithubHandler) GetAuthByRepository(c *gin.Context) {
 	repository := c.Param("repository")
 
@@ -332,7 +332,7 @@ func (h *GithubHandler) GetAuthByRepository(c *gin.Context) {
 // @Failure 401 {object} map[string]interface{} "Authentication required"
 // @Failure 404 {object} map[string]interface{} "Authentication configuration not found"
 // @Failure 500 {object} map[string]interface{} "Internal server error"
-// @Router /auth/github/{id} [put]
+// @Router /auth/github/{id} [put].
 func (h *GithubHandler) UpdateAuth(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := strconv.ParseUint(idStr, 10, 32)
@@ -410,7 +410,7 @@ func (h *GithubHandler) UpdateAuth(c *gin.Context) {
 // @Failure 400 {object} map[string]interface{} "Invalid ID parameter"
 // @Failure 401 {object} map[string]interface{} "Authentication required"
 // @Failure 500 {object} map[string]interface{} "Internal server error"
-// @Router /auth/github/{id} [delete]
+// @Router /auth/github/{id} [delete].
 func (h *GithubHandler) DeleteAuth(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := strconv.ParseUint(idStr, 10, 32)
@@ -447,7 +447,7 @@ func (h *GithubHandler) DeleteAuth(c *gin.Context) {
 // @Success 200 {array} GithubRepositoryAuthResponse "List of authentication configurations"
 // @Failure 401 {object} map[string]interface{} "Authentication required"
 // @Failure 500 {object} map[string]interface{} "Internal server error"
-// @Router /auth/github [get]
+// @Router /auth/github [get].
 func (h *GithubHandler) ListAuths(c *gin.Context) {
 	auths, err := h.authService.ListAuths()
 	if err != nil {

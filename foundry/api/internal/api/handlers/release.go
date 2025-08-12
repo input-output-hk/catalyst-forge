@@ -9,13 +9,13 @@ import (
 	"github.com/input-output-hk/catalyst-forge/foundry/api/internal/service"
 )
 
-// ReleaseHandler handles HTTP requests related to releases
+// ReleaseHandler handles HTTP requests related to releases.
 type ReleaseHandler struct {
 	releaseService service.ReleaseService
 	logger         *slog.Logger
 }
 
-// NewReleaseHandler creates a new instance of ReleaseHandler
+// NewReleaseHandler creates a new instance of ReleaseHandler.
 func NewReleaseHandler(releaseService service.ReleaseService, logger *slog.Logger) *ReleaseHandler {
 	return &ReleaseHandler{
 		releaseService: releaseService,
@@ -23,7 +23,7 @@ func NewReleaseHandler(releaseService service.ReleaseService, logger *slog.Logge
 	}
 }
 
-// CreateReleaseRequest represents the request body for creating a release
+// CreateReleaseRequest represents the request body for creating a release.
 type CreateReleaseRequest struct {
 	SourceRepo   string `json:"source_repo" binding:"required"`
 	SourceCommit string `json:"source_commit" binding:"required"`
@@ -46,7 +46,7 @@ type CreateReleaseRequest struct {
 // @Failure 400 {object} map[string]interface{} "Invalid request"
 // @Failure 401 {object} map[string]interface{} "Authentication required"
 // @Failure 500 {object} map[string]interface{} "Internal server error"
-// @Router /release [post]
+// @Router /release [post].
 func (h *ReleaseHandler) CreateRelease(c *gin.Context) {
 	var req CreateReleaseRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -97,7 +97,7 @@ func (h *ReleaseHandler) CreateRelease(c *gin.Context) {
 // @Success 200 {object} models.Release "Release details"
 // @Failure 401 {object} map[string]interface{} "Authentication required"
 // @Failure 404 {object} map[string]interface{} "Release not found"
-// @Router /release/{id} [get]
+// @Router /release/{id} [get].
 func (h *ReleaseHandler) GetRelease(c *gin.Context) {
 	id := c.Param("id")
 
@@ -111,7 +111,7 @@ func (h *ReleaseHandler) GetRelease(c *gin.Context) {
 	c.JSON(http.StatusOK, release)
 }
 
-// UpdateReleaseRequest represents the request body for updating a release
+// UpdateReleaseRequest represents the request body for updating a release.
 type UpdateReleaseRequest struct {
 	SourceRepo   string `json:"source_repo"`
 	SourceCommit string `json:"source_commit"`
@@ -134,7 +134,7 @@ type UpdateReleaseRequest struct {
 // @Failure 401 {object} map[string]interface{} "Authentication required"
 // @Failure 404 {object} map[string]interface{} "Release not found"
 // @Failure 500 {object} map[string]interface{} "Internal server error"
-// @Router /release/{id} [put]
+// @Router /release/{id} [put].
 func (h *ReleaseHandler) UpdateRelease(c *gin.Context) {
 	id := c.Param("id")
 
@@ -192,7 +192,7 @@ func (h *ReleaseHandler) UpdateRelease(c *gin.Context) {
 // @Success 200 {array} models.Release "List of releases"
 // @Failure 401 {object} map[string]interface{} "Authentication required"
 // @Failure 500 {object} map[string]interface{} "Internal server error"
-// @Router /releases [get]
+// @Router /releases [get].
 func (h *ReleaseHandler) ListReleases(c *gin.Context) {
 	projectName := c.Query("project")
 
@@ -225,7 +225,7 @@ func (h *ReleaseHandler) ListReleases(c *gin.Context) {
 // @Success 200 {object} models.Release "Release details"
 // @Failure 401 {object} map[string]interface{} "Authentication required"
 // @Failure 404 {object} map[string]interface{} "Release alias not found"
-// @Router /release/alias/{name} [get]
+// @Router /release/alias/{name} [get].
 func (h *ReleaseHandler) GetReleaseByAlias(c *gin.Context) {
 	name := c.Param("name")
 
@@ -239,7 +239,7 @@ func (h *ReleaseHandler) GetReleaseByAlias(c *gin.Context) {
 	c.JSON(http.StatusOK, release)
 }
 
-// CreateAliasRequest represents the request body for creating an alias
+// CreateAliasRequest represents the request body for creating an alias.
 type CreateAliasRequest struct {
 	ReleaseID string `json:"release_id" binding:"required"`
 }
@@ -257,7 +257,7 @@ type CreateAliasRequest struct {
 // @Failure 400 {object} map[string]interface{} "Invalid request"
 // @Failure 401 {object} map[string]interface{} "Authentication required"
 // @Failure 500 {object} map[string]interface{} "Internal server error"
-// @Router /release/alias/{name} [post]
+// @Router /release/alias/{name} [post].
 func (h *ReleaseHandler) CreateAlias(c *gin.Context) {
 	name := c.Param("name")
 
@@ -288,7 +288,7 @@ func (h *ReleaseHandler) CreateAlias(c *gin.Context) {
 // @Success 200 {object} map[string]interface{} "Alias deleted successfully"
 // @Failure 401 {object} map[string]interface{} "Authentication required"
 // @Failure 500 {object} map[string]interface{} "Internal server error"
-// @Router /release/alias/{name} [delete]
+// @Router /release/alias/{name} [delete].
 func (h *ReleaseHandler) DeleteAlias(c *gin.Context) {
 	name := c.Param("name")
 
@@ -312,7 +312,7 @@ func (h *ReleaseHandler) DeleteAlias(c *gin.Context) {
 // @Success 200 {array} models.ReleaseAlias "List of aliases"
 // @Failure 401 {object} map[string]interface{} "Authentication required"
 // @Failure 500 {object} map[string]interface{} "Internal server error"
-// @Router /release/{id}/aliases [get]
+// @Router /release/{id}/aliases [get].
 func (h *ReleaseHandler) ListAliases(c *gin.Context) {
 	releaseID := c.Param("id")
 

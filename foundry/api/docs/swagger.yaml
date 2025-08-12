@@ -1,4 +1,3 @@
-basePath: /
 definitions:
   handlers.AddEventRequest:
     properties:
@@ -9,6 +8,16 @@ definitions:
     required:
     - message
     - name
+    type: object
+  handlers.BootstrapRequest:
+    properties:
+      bootstrap_token:
+        type: string
+      email:
+        type: string
+    required:
+    - bootstrap_token
+    - email
     type: object
   handlers.CertificateSigningRequest:
     properties:
@@ -71,21 +80,6 @@ definitions:
         example: "123456789"
         type: string
     type: object
-  handlers.ChallengeRequest:
-    properties:
-      email:
-        type: string
-      kid:
-        type: string
-    required:
-    - email
-    - kid
-    type: object
-  handlers.ChallengeResponse:
-    properties:
-      token:
-        type: string
-    type: object
   handlers.CreateAliasRequest:
     properties:
       release_id:
@@ -135,46 +129,110 @@ definitions:
     - source_commit
     - source_repo
     type: object
-  handlers.DeviceApproveRequest:
+  handlers.DeviceListResponse:
     properties:
-      user_code:
+      created_at:
         type: string
-    type: object
-  handlers.DeviceInitRequest:
-    properties:
-      fingerprint:
+      id:
+        type: string
+      last_used_at:
         type: string
       name:
         type: string
-      platform:
+      status:
         type: string
     type: object
-  handlers.DeviceInitResponse:
+  handlers.DeviceLoginInitRequest:
     properties:
-      device_code:
+      device_id:
+        type: string
+    required:
+    - device_id
+    type: object
+  handlers.DeviceLoginInitResponse:
+    properties:
+      alg:
+        type: string
+      challenge:
+        type: string
+      device_id:
+        type: string
+      expires_at:
+        type: string
+    type: object
+  handlers.DeviceLoginRequest:
+    properties:
+      device_id:
+        type: string
+      device_proof:
+        description: base64url(signature)
+        type: string
+      timestamp:
+        type: integer
+    required:
+    - device_id
+    - device_proof
+    - timestamp
+    type: object
+  handlers.DeviceLoginResponse:
+    properties:
+      access_token:
         type: string
       expires_in:
         type: integer
-      interval:
+      token_type:
+        type: string
+      user: {}
+    type: object
+  handlers.DeviceRegisterRequest:
+    properties:
+      device_id:
+        type: string
+      device_name:
+        type: string
+      device_proof:
+        type: string
+      public_key_jwk:
+        additionalProperties: true
+        type: object
+      timestamp:
         type: integer
-      user_code:
-        type: string
-      verification_uri:
-        type: string
+    required:
+    - device_id
+    - device_name
+    - device_proof
+    - public_key_jwk
+    - timestamp
     type: object
-  handlers.DeviceTokenRequest:
+  handlers.DeviceRegisterResponse:
     properties:
-      device_code:
+      access_token:
         type: string
+      expires_in:
+        type: integer
+      token_type:
+        type: string
+      user: {}
     type: object
-  handlers.DeviceTokenResponse:
+  handlers.DeviceRegistrationInitRequest:
     properties:
-      access:
+      invite_id:
+        type: integer
+      token:
         type: string
-      error:
-        description: authorization_pending | slow_down | expired_token | access_denied
+    required:
+    - invite_id
+    - token
+    type: object
+  handlers.DeviceRegistrationInitResponse:
+    properties:
+      alg:
         type: string
-      refresh:
+      challenge:
+        type: string
+      device_id:
+        type: string
+      expires_at:
         type: string
     type: object
   handlers.GithubRepositoryAuthResponse:
@@ -198,18 +256,6 @@ definitions:
       updated_at:
         type: string
       updated_by:
-        type: string
-    type: object
-  handlers.LoginRequest:
-    properties:
-      signature:
-        type: string
-      token:
-        type: string
-    type: object
-  handlers.LoginResponse:
-    properties:
-      token:
         type: string
     type: object
   handlers.UpdateAuthRequest:
@@ -562,19 +608,8 @@ definitions:
     - UserStatusPending
     - UserStatusActive
     - UserStatusInactive
-host: localhost:5050
 info:
-  contact:
-    email: support@swagger.io
-    name: API Support
-    url: http://www.swagger.io/support
-  description: API for managing releases and deployments in the Catalyst Foundry system.
-  license:
-    name: Apache 2.0
-    url: http://www.apache.org/licenses/LICENSE-2.0.html
-  termsOfService: http://swagger.io/terms/
-  title: Catalyst Foundry API
-  version: "1.0"
+  contact: {}
 paths:
   /.well-known/jwks.json:
     get:
@@ -592,41 +627,264 @@ paths:
       summary: Get JWKS
       tags:
       - auth
-  /auth/challenge:
+  /auth/bootstrap:
     post:
       consumes:
       - application/json
-      description: Create a new challenge for user authentication using Ed25519 keys
+      description: Create an admin invite using the bootstrap token (one-time use)
       parameters:
-      - description: Challenge creation request
+      - description: Bootstrap request
         in: body
         name: request
         required: true
         schema:
-          $ref: '#/definitions/handlers.ChallengeRequest'
+          $ref: '#/definitions/handlers.BootstrapRequest'
       produces:
       - application/json
       responses:
-        "200":
-          description: Challenge created successfully
+        "201":
+          description: Created
           schema:
-            $ref: '#/definitions/handlers.ChallengeResponse'
+            $ref: '#/definitions/handlers.CreateInviteResponse'
         "400":
           description: Invalid request
           schema:
             additionalProperties: true
             type: object
-        "404":
-          description: User key not found
+        "401":
+          description: Invalid or used token
           schema:
             additionalProperties: true
             type: object
         "500":
-          description: Internal server error
+          description: Server error
           schema:
             additionalProperties: true
             type: object
-      summary: Create a new authentication challenge
+      summary: Bootstrap admin account
+      tags:
+      - auth
+  /auth/devices:
+    get:
+      consumes:
+      - application/json
+      description: Get list of all devices registered to the authenticated user
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of user's devices
+          schema:
+            items:
+              $ref: '#/definitions/handlers.DeviceListResponse'
+            type: array
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Server error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: List user's devices
+      tags:
+      - auth
+      - devices
+  /auth/devices/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Revoke a specific device and invalidate all its refresh tokens
+      parameters:
+      - description: Device ID (UUID)
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content - device revoked successfully
+        "400":
+          description: Invalid device ID
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Device not found
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Server error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Delete/revoke a device
+      tags:
+      - auth
+      - devices
+  /auth/devices/init:
+    post:
+      consumes:
+      - application/json
+      description: Initialize device registration flow for invited users, requires
+        valid invite token
+      parameters:
+      - description: Device registration initialization request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.DeviceRegistrationInitRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.DeviceRegistrationInitResponse'
+        "400":
+          description: Invalid request
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Invalid or expired invite
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Server error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Initialize device registration
+      tags:
+      - auth
+  /auth/devices/login:
+    post:
+      consumes:
+      - application/json
+      description: Verify signed challenge with stored device key, mint new refresh
+        family and access token
+      parameters:
+      - description: Login request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.DeviceLoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.DeviceLoginResponse'
+        "400":
+          description: Invalid request
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Invalid or expired challenge or proof
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Server error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Complete returning-device login
+      tags:
+      - auth
+  /auth/devices/login/init:
+    post:
+      consumes:
+      - application/json
+      description: Start sign-in for a device that still holds its device key; issues
+        short-lived challenge
+      parameters:
+      - description: Login init request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.DeviceLoginInitRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.DeviceLoginInitResponse'
+        "400":
+          description: Invalid request
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Device not found or inactive
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Server error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Initialize returning-device login
+      tags:
+      - auth
+  /auth/devices/register:
+    post:
+      consumes:
+      - application/json
+      description: Complete device registration by providing device proof over challenge
+      parameters:
+      - description: Device registration request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.DeviceRegisterRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.DeviceRegisterResponse'
+        "400":
+          description: Invalid request
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Invalid proof or expired challenge
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Server error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Complete device registration
       tags:
       - auth
   /auth/github:
@@ -1339,46 +1597,32 @@ paths:
       summary: Get inactive user keys by user ID
       tags:
       - user-keys
-  /auth/login:
+  /auth/logout:
     post:
       consumes:
       - application/json
-      description: Authenticate a user using their signed challenge response
-      parameters:
-      - description: Login request
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/handlers.LoginRequest'
+      description: Logout user and revoke the current refresh token using device proof
       produces:
       - application/json
       responses:
-        "200":
-          description: Authentication successful
-          schema:
-            $ref: '#/definitions/handlers.LoginResponse'
+        "204":
+          description: No Content - logout successful
         "400":
           description: Invalid request
           schema:
             additionalProperties: true
             type: object
         "401":
-          description: Authentication failed
-          schema:
-            additionalProperties: true
-            type: object
-        "404":
-          description: Challenge or user not found
+          description: Invalid token or proof
           schema:
             additionalProperties: true
             type: object
         "500":
-          description: Internal server error
+          description: Server error
           schema:
             additionalProperties: true
             type: object
-      summary: Authenticate user with challenge response
+      summary: Logout and revoke refresh token
       tags:
       - auth
   /auth/pending/keys:
@@ -1430,6 +1674,38 @@ paths:
       summary: List pending users
       tags:
       - users
+  /auth/refresh:
+    post:
+      consumes:
+      - application/json
+      description: Refresh access token using device proof and cookie-bound refresh
+        token
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: New access token
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Invalid request
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Invalid token or proof
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Server error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Refresh access token
+      tags:
+      - auth
   /auth/role-users:
     get:
       description: Retrieve all users assigned to a specific role
@@ -2176,109 +2452,6 @@ paths:
       summary: Sign a certificate
       tags:
       - certificates
-  /device/approve:
-    post:
-      consumes:
-      - application/json
-      description: Approve a pending device session identified by user_code
-      parameters:
-      - description: Approval request
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/handlers.DeviceApproveRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: approved
-          schema:
-            additionalProperties: true
-            type: object
-        "400":
-          description: Invalid request
-          schema:
-            additionalProperties: true
-            type: object
-        "401":
-          description: Unauthorized
-          schema:
-            additionalProperties: true
-            type: object
-        "404":
-          description: Not found
-          schema:
-            additionalProperties: true
-            type: object
-      security:
-      - BearerAuth: []
-      summary: Approve device session
-      tags:
-      - device
-  /device/init:
-    post:
-      consumes:
-      - application/json
-      description: Initialize a device authorization session and return device_code
-        and user_code
-      parameters:
-      - description: Optional device metadata
-        in: body
-        name: request
-        schema:
-          $ref: '#/definitions/handlers.DeviceInitRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/handlers.DeviceInitResponse'
-        "500":
-          description: Server error
-          schema:
-            additionalProperties: true
-            type: object
-      summary: Start device authorization
-      tags:
-      - device
-  /device/token:
-    post:
-      consumes:
-      - application/json
-      description: Poll the device authorization session for completion and receive
-        tokens when approved
-      parameters:
-      - description: Device token request
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/handlers.DeviceTokenRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/handlers.DeviceTokenResponse'
-        "400":
-          description: Invalid request
-          schema:
-            additionalProperties: true
-            type: object
-        "401":
-          description: authorization_pending | expired_token | access_denied
-          schema:
-            $ref: '#/definitions/handlers.DeviceTokenResponse'
-        "429":
-          description: slow_down
-          schema:
-            $ref: '#/definitions/handlers.DeviceTokenResponse'
-      summary: Poll device token
-      tags:
-      - device
   /healthz:
     get:
       consumes:
@@ -2912,10 +3085,4 @@ paths:
       summary: Verify invite
       tags:
       - auth
-securityDefinitions:
-  BearerAuth:
-    description: Type "Bearer" followed by a space and JWT token.
-    in: header
-    name: Authorization
-    type: apiKey
 swagger: "2.0"

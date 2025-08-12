@@ -6,7 +6,7 @@ import (
 	"gorm.io/gorm"
 )
 
-// DeploymentEvent represents an event that occurred during a deployment
+// DeploymentEvent represents an event that occurred during a deployment.
 type DeploymentEvent struct {
 	ID           uint           `gorm:"primaryKey;autoIncrement" json:"id"`
 	DeploymentID string         `gorm:"not null;index" json:"deployment_id"`
@@ -21,7 +21,7 @@ type DeploymentEvent struct {
 	Deployment *ReleaseDeployment `gorm:"foreignKey:DeploymentID" json:"-"`
 }
 
-// TableName specifies the table name for the DeploymentEvent model
+// TableName specifies the table name for the DeploymentEvent model.
 func (DeploymentEvent) TableName() string {
-	return "deployment_events"
+    return "deployment_events"
 }

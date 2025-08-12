@@ -16,14 +16,14 @@ import (
 )
 
 // AuthenticatedUser is a struct that contains the user information from the
-// authentication middleware
+// authentication middleware.
 type AuthenticatedUser struct {
 	ID          string
 	Permissions []auth.Permission
 	Claims      *tokens.AuthClaims
 }
 
-// hasPermissions checks if the user has the required permissions
+// hasPermissions checks if the user has the required permissions.
 func (u *AuthenticatedUser) hasAllPermissions(permissions []auth.Permission) bool {
 	for _, required := range permissions {
 		if !slices.Contains(u.Permissions, required) {
@@ -42,7 +42,7 @@ func (u *AuthenticatedUser) hasAnyPermissions(permissions []auth.Permission) boo
 	return false
 }
 
-// AuthMiddleware provides a middleware that validates a user's permissions
+// AuthMiddleware provides a middleware that validates a user's permissions.
 type AuthMiddleware struct {
 	jwtManager  jwt.JWTManager
 	logger      *slog.Logger
@@ -50,7 +50,7 @@ type AuthMiddleware struct {
 	revokedRepo userrepo.RevokedJTIRepository
 }
 
-// RequireAuth ensures the request has a valid access token; no specific perms required
+// RequireAuth ensures the request has a valid access token; no specific perms required.
 func (h *AuthMiddleware) RequireAuth() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		token, err := h.getToken(c)
@@ -83,7 +83,7 @@ func (h *AuthMiddleware) RequireAuth() gin.HandlerFunc {
 }
 
 // ValidatePermissions returns a middleware that validates a user's permissions
-// ValidatePermissions enforces RequireAll (AND) by default
+// ValidatePermissions enforces RequireAll (AND) by default.
 func (h *AuthMiddleware) ValidatePermissions(permissions []auth.Permission) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		token, err := h.getToken(c)
@@ -128,7 +128,7 @@ func (h *AuthMiddleware) ValidatePermissions(permissions []auth.Permission) gin.
 	}
 }
 
-// RequireAny returns a middleware that enforces OR semantics across provided permissions
+// RequireAny returns a middleware that enforces OR semantics across provided permissions.
 func (h *AuthMiddleware) RequireAny(permissions []auth.Permission) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		token, err := h.getToken(c)
@@ -167,7 +167,7 @@ func (h *AuthMiddleware) RequireAny(permissions []auth.Permission) gin.HandlerFu
 	}
 }
 
-// ValidateAnyCertificatePermission returns a middleware that validates the user has any certificate signing permission
+// ValidateAnyCertificatePermission returns a middleware that validates the user has any certificate signing permission.
 func (h *AuthMiddleware) ValidateAnyCertificatePermission() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		token, err := h.getToken(c)
@@ -212,7 +212,7 @@ func (h *AuthMiddleware) ValidateAnyCertificatePermission() gin.HandlerFunc {
 	}
 }
 
-// getToken extracts the token from the Authorization header
+// getToken extracts the token from the Authorization header.
 func (h *AuthMiddleware) getToken(c *gin.Context) (string, error) {
 	// Prefer Authorization header for API-to-API
 	authHeader := c.GetHeader("Authorization")
@@ -231,7 +231,7 @@ func (h *AuthMiddleware) getToken(c *gin.Context) (string, error) {
 	return "", fmt.Errorf("authorization header is required")
 }
 
-// getUser validates the token and returns the authenticated user
+// getUser validates the token and returns the authenticated user.
 func (h *AuthMiddleware) getUser(token string) (*AuthenticatedUser, error) {
 	claims, err := tokens.VerifyAuthToken(h.jwtManager, token)
 	if err != nil {
@@ -292,7 +292,7 @@ func (h *AuthMiddleware) validateClaims(user *AuthenticatedUser) error {
 	return nil
 }
 
-// NewAuthMiddleware creates a new AuthMiddlewareHandler
+// NewAuthMiddleware creates a new AuthMiddlewareHandler.
 func NewAuthMiddleware(jwtManager jwt.JWTManager, logger *slog.Logger, userService userservice.UserService, revokedRepo userrepo.RevokedJTIRepository) *AuthMiddleware {
 	return &AuthMiddleware{
 		jwtManager:  jwtManager,

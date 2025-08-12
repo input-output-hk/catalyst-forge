@@ -6,7 +6,7 @@ import (
 	"gorm.io/gorm"
 )
 
-// ReleaseAlias represents an alias for a release
+// ReleaseAlias represents an alias for a release.
 type ReleaseAlias struct {
 	Name      string         `gorm:"primaryKey" json:"name"`
 	ReleaseID string         `gorm:"not null;index" json:"release_id"`
@@ -18,7 +18,7 @@ type ReleaseAlias struct {
 	Release Release `gorm:"foreignKey:ReleaseID" json:"release,omitempty"`
 }
 
-// TableName specifies the table name for the ReleaseAlias model
+// TableName specifies the table name for the ReleaseAlias model.
 func (ReleaseAlias) TableName() string {
-	return "release_aliases"
+    return "release_aliases"
 }

@@ -7,7 +7,7 @@ import (
 	"gorm.io/gorm"
 )
 
-// Log represents an audit event persisted for admin review
+// Log represents an audit event persisted for admin review.
 type Log struct {
 	ID            uint           `gorm:"primaryKey" json:"id"`
 	EventType     string         `gorm:"not null;index" json:"event_type"`
@@ -20,4 +20,5 @@ type Log struct {
 	DeletedAt     gorm.DeletedAt `gorm:"index" json:"-"`
 }
 
+// TableName specifies the table name for the Log model.
 func (Log) TableName() string { return "audit_logs" }

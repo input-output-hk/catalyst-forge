@@ -6,12 +6,12 @@ import (
 	"time"
 )
 
-// Limiter provides a simple per-key rate limit interface
+// Limiter provides a simple per-key rate limit interface.
 type Limiter interface {
 	Allow(ctx context.Context, key string, limit int, window time.Duration) (bool, error)
 }
 
-// InMemoryLimiter is a simple in-memory limiter suitable for dev/tests
+// InMemoryLimiter is a simple in-memory limiter suitable for dev/tests.
 type InMemoryLimiter struct {
 	mu   sync.Mutex
 	data map[string][]time.Time

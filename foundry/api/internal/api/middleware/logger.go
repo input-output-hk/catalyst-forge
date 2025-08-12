@@ -7,7 +7,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// Logger returns a middleware that logs request information using the provided slog.Logger
+// Logger returns a middleware that logs request information using the provided slog.Logger.
 func Logger(logger *slog.Logger) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// Start timer

@@ -1,6 +1,7 @@
 package run
 
 import (
+	"context"
 	"log/slog"
 
 	"cuelang.org/go/cue"
@@ -55,4 +56,26 @@ type RunContext struct {
 
 	// Verbose is the verbosity level of the run.
 	Verbose int
+}
+
+type contextKey struct{}
+
+// WithContext returns a new context with the RunContext value attached.
+func WithContext(ctx context.Context, rc RunContext) context.Context {
+	return context.WithValue(ctx, contextKey{}, rc)
+}
+
+// FromContext extracts the RunContext from the context.
+func FromContext(ctx context.Context) (RunContext, bool) {
+	rc, ok := ctx.Value(contextKey{}).(RunContext)
+	return rc, ok
+}
+
+// MustFromContext extracts the RunContext from the context and panics if not found.
+func MustFromContext(ctx context.Context) RunContext {
+	rc, ok := FromContext(ctx)
+	if !ok {
+		panic("RunContext not found in context")
+	}
+	return rc
 }

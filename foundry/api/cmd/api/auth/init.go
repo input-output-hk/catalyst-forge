@@ -12,7 +12,7 @@ type InitCmd struct {
 	OutputDir string `kong:"help='Output directory for generated keys',default='./auth-keys'"`
 }
 
-// Run executes the auth init subcommand
+// Run executes the auth init subcommand.
 func (i *InitCmd) Run() error {
 	if err := os.MkdirAll(i.OutputDir, 0755); err != nil {
 		return fmt.Errorf("failed to create output directory: %w", err)

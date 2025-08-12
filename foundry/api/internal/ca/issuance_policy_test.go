@@ -6,6 +6,7 @@ import (
 )
 
 func TestClampTTL(t *testing.T) {
+    t.Parallel()
 	tests := []struct {
 		name string
 		req  time.Duration
@@ -17,8 +18,9 @@ func TestClampTTL(t *testing.T) {
 		{"equal_cap", 1 * time.Hour, 1 * time.Hour, 1 * time.Hour},
 		{"above_cap", 3 * time.Hour, 1 * time.Hour, 1 * time.Hour},
 	}
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
+    for _, tc := range tests {
+        t.Run(tc.name, func(t *testing.T) {
+            t.Parallel()
 			got := ClampTTL(tc.req, tc.cap)
 			if got != tc.want {
 				t.Fatalf("ClampTTL(%v,%v)=%v want %v", tc.req, tc.cap, got, tc.want)

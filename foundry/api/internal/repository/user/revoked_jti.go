@@ -1,8 +1,10 @@
 package user
 
 import (
-	dbmodel "github.com/input-output-hk/catalyst-forge/foundry/api/internal/models/user"
-	"gorm.io/gorm"
+    "errors"
+
+    dbmodel "github.com/input-output-hk/catalyst-forge/foundry/api/internal/models/user"
+    "gorm.io/gorm"
 )
 
 type RevokedJTIRepository interface {
@@ -24,7 +26,7 @@ func (r *revokedJTIRepository) IsRevoked(jti string) (bool, error) {
 	var rec dbmodel.RevokedJTI
 	tx := r.db.First(&rec, "jti = ?", jti)
 	if tx.Error != nil {
-		if tx.Error == gorm.ErrRecordNotFound {
+		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
 			return false, nil
 		}
 		return false, tx.Error

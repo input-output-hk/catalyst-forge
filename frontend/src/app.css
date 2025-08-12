@@ -1,0 +1,206 @@
+@import 'tailwindcss';
+@plugin '@tailwindcss/forms';
+@plugin '@tailwindcss/typography';
+
+@import './lib/theme.css';
+
+/* Base using tokens, avoid hard-coded hex */
+* {
+	box-sizing: border-box;
+}
+
+a {
+	color: var(--cf-link);
+	text-decoration: none;
+}
+
+a:hover {
+	text-decoration: underline;
+}
+
+/* Typography utilities */
+h1 {
+	font-size: var(--font-h1);
+	line-height: var(--leading-tight);
+	font-weight: var(--weight-bold);
+}
+
+h2 {
+	font-size: clamp(1.35rem, 1rem + 1.2vw, 2rem);
+	line-height: var(--leading-tight);
+	font-weight: var(--weight-bold);
+}
+
+body {
+	font-size: var(--font-body);
+	line-height: var(--leading-normal);
+}
+
+/* Layout utilities */
+.container {
+	max-width: 1200px;
+	margin-inline: auto;
+	padding-inline: var(--space-4);
+}
+
+.section {
+	padding-block: var(--space-12);
+}
+
+.stack-2 > * + * {
+	margin-top: var(--space-2);
+}
+
+.stack-3 > * + * {
+	margin-top: var(--space-3);
+}
+
+.stack-4 > * + * {
+	margin-top: var(--space-4);
+}
+
+.stack-6 > * + * {
+	margin-top: var(--space-6);
+}
+
+.stack-8 > * + * {
+	margin-top: var(--space-8);
+}
+
+.stack-12 > * + * {
+	margin-top: var(--space-12);
+}
+
+/* Small utility helpers (minimal set) */
+.grid {
+	display: grid;
+}
+
+.gap-2 {
+	gap: var(--space-2);
+}
+
+.my-4 {
+	margin-block: var(--space-4);
+}
+
+.max-w-560 {
+	max-width: 560px;
+}
+
+/* Hero band */
+.hero-band {
+	background: var(--cf-gradient-hero);
+	padding-block: var(--space-7);
+	border-radius: var(--cf-radius-lg);
+	border: 1px solid var(--cf-border-subtle);
+}
+
+/* Header */
+.site-header {
+	position: sticky;
+	top: 0;
+	background: var(--cf-surface);
+	border-bottom: 1px solid var(--cf-border-subtle);
+	z-index: 10;
+	box-shadow: 0 1px 0 var(--cf-border-subtle);
+}
+
+.header-inner {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding-block: var(--space-3);
+}
+
+.brand {
+	font-weight: var(--weight-bold);
+	color: var(--cf-blue-500);
+}
+
+.brand:focus-visible {
+	outline: none;
+	box-shadow: 0 0 0 3px color-mix(in oklab, var(--cf-blue-500) 40%, white);
+	border-radius: var(--cf-radius-sm);
+}
+
+.nav {
+	display: flex;
+	gap: var(--space-4);
+	align-items: center;
+}
+
+.nav-link {
+	color: var(--cf-text);
+	text-decoration: none;
+	padding: var(--space-2) var(--space-2);
+	border-radius: var(--cf-radius-sm);
+}
+
+.nav-link:hover {
+	background: var(--cf-surface-soft);
+}
+
+.nav-link[aria-current='page'] {
+	color: var(--cf-blue-500);
+	font-weight: var(--weight-medium);
+	box-shadow: inset 0 -2px 0 var(--cf-blue-500);
+}
+
+.nav-link:focus-visible {
+	outline: none;
+	box-shadow: 0 0 0 3px color-mix(in oklab, var(--cf-blue-500) 40%, white);
+}
+
+.menu {
+	display: none;
+	background: transparent;
+	border: none;
+	font-size: 1.25rem;
+	padding: var(--space-2);
+}
+
+.menu:focus-visible {
+	outline: none;
+	box-shadow: 0 0 0 3px color-mix(in oklab, var(--cf-blue-500) 40%, white);
+	border-radius: var(--cf-radius-sm);
+}
+
+/* Utility to opt-in focus ring when needed */
+.focus-ring:focus-visible {
+	outline: none;
+	box-shadow: 0 0 0 3px color-mix(in oklab, var(--cf-blue-500) 40%, white);
+	border-radius: var(--cf-radius-sm);
+}
+
+@media (max-width: 768px) {
+	.nav {
+		display: none;
+		position: absolute;
+		right: 16px;
+		top: 56px;
+		background: var(--cf-surface);
+		box-shadow: var(--cf-shadow-sm);
+		border-radius: var(--cf-radius-sm);
+		padding: var(--space-2) var(--space-3);
+		flex-direction: column;
+	}
+
+	.nav.open {
+		display: flex;
+	}
+
+	.menu {
+		display: inline-flex;
+	}
+}
+
+/* Reduced motion safety (global) */
+@media (prefers-reduced-motion: reduce) {
+	*,
+	*::before,
+	*::after {
+		transition: none !important;
+		animation: none !important;
+	}
+}

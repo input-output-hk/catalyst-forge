@@ -6,7 +6,7 @@ import (
 	"gorm.io/gorm"
 )
 
-// Release represents a point-in-time project release
+// Release represents a point-in-time project release.
 type Release struct {
 	ID           string    `gorm:"primaryKey" json:"id"`
 	SourceRepo   string    `gorm:"not null" json:"source_repo"`
@@ -26,7 +26,7 @@ type Release struct {
 	DeletedAt gorm.DeletedAt `gorm:"index" json:"-"`
 }
 
-// TableName specifies the table name for the Release model
+// TableName specifies the table name for the Release model.
 func (Release) TableName() string {
-	return "releases"
+    return "releases"
 }

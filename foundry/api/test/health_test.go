@@ -1,3 +1,5 @@
+//go:build integration
+
 package test
 
 import (
@@ -11,8 +13,13 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// TestHealthEndpoint is kept as a simple smoke test.
+// Note: The test harness already waits for /healthz during server startup (see testutil/server.go:waitForHealthy),
+// so this test primarily serves as a basic connectivity check and could be considered redundant.
+// Decision: Keep as a minimal smoke test to ensure the endpoint remains accessible after initialization.
 func TestHealthEndpoint(t *testing.T) {
-	apiURL := getTestAPIURL()
+    env := NewTestEnv(t)
+	apiURL := env.BaseURL()
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()

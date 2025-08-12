@@ -1,35 +1,55 @@
+# Build the Foundry API binary
+build:
+    mkdir -p bin && go build -o bin/foundry-api ./cmd/api
+
+# Run checks on the codebase
+check:
+    go mod tidy && go fmt ./... && go vet ./... && golangci-lint run
+
+# Start the local development environment
 up:
-    earthly --config "" +docker && docker compose up -d auth auth-jwt api postgres pgadmin
+    earthly --config "" +docker && docker compose up -d api auth-init caddy pgadmin postgres
 
+# Stop the local development environment
 down:
-    rm -rf .auth && docker compose down -v
+    docker compose down -v
 
+# Update the Foundry API container in the local development environment
 update:
     earthly --config "" +docker && docker compose up -d --no-deps api
 
+# Build the Foundry API container
 docker:
     earthly --config "" +docker
 
-docker-test:
-    earthly --config "" +docker-test
-
-register:
-    ./scripts/tests/register.sh
-
-login:
-    (cd ../../cli && go run cmd/main.go -vvv --api-url "http://localhost:5050" api login)
-
-login-admin:
-    (cd ../../cli && go run cmd/main.go -vvv --api-url "http://localhost:5050" api login --token "$(cat ../foundry/api/.auth/jwt.txt)")
-
+# Show the logs for the Foundry API container
 logs:
     docker compose logs api
 
+# Run unit tests (excludes integration tests)
 test:
-    docker compose up api-test
+    if command -v gotestsum >/dev/null 2>&1; then \
+        gotestsum --no-summary=output,skipped ./...; \
+    else \
+        go test ./...; \
+    fi
 
+# Run integration tests only
+test-integration:
+    if command -v gotestsum >/dev/null 2>&1; then \
+        gotestsum --no-summary=output,skipped -- -tags=integration -count=1 -p 1 -parallel 1 ./test; \
+    else \
+        go test -tags=integration -count=1 -p 1 -parallel 1 ./test -v; \
+    fi
+
+# Run all tests (unit + integration)
+test-all:
+    if command -v gotestsum >/dev/null 2>&1; then \
+        gotestsum --no-summary=output,skipped ./... && gotestsum --format=standard-verbose -- -tags=integration -count=1 -p 1 -parallel 1 ./test; \
+    else \
+        go test ./... && go test -tags=integration -count=1 -p 1 -parallel 1 ./test -v; \
+    fi
+
+# Generate the Swagger documentation
 swagger:
     earthly --config "" +swagger
-
-check:
-    go mod tidy && go fmt ./... && go vet ./... && golangci-lint run

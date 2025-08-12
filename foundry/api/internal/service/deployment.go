@@ -12,7 +12,7 @@ import (
 	"gorm.io/gorm"
 )
 
-// DeploymentService defines the interface for deployment-related business operations
+// DeploymentService defines the interface for deployment-related business operations.
 type DeploymentService interface {
 	CreateDeployment(ctx context.Context, releaseID string) (*models.ReleaseDeployment, error)
 	GetDeployment(ctx context.Context, id string) (*models.ReleaseDeployment, error)
@@ -25,7 +25,7 @@ type DeploymentService interface {
 	GetDeploymentEvents(ctx context.Context, deploymentID string) ([]models.DeploymentEvent, error)
 }
 
-// DeploymentServiceImpl implements the DeploymentService interface
+// DeploymentServiceImpl implements the DeploymentService interface.
 type DeploymentServiceImpl struct {
 	deploymentRepo repository.DeploymentRepository
 	releaseRepo    repository.ReleaseRepository
@@ -35,7 +35,7 @@ type DeploymentServiceImpl struct {
 	db             *gorm.DB
 }
 
-// NewDeploymentService creates a new instance of DeploymentService
+// NewDeploymentService creates a new instance of DeploymentService.
 func NewDeploymentService(
 	deploymentRepo repository.DeploymentRepository,
 	releaseRepo repository.ReleaseRepository,
@@ -54,7 +54,7 @@ func NewDeploymentService(
 	}
 }
 
-// CreateDeployment creates a new deployment for a release
+// CreateDeployment creates a new deployment for a release.
 func (s *DeploymentServiceImpl) CreateDeployment(ctx context.Context, releaseID string) (*models.ReleaseDeployment, error) {
 	release, err := s.releaseRepo.GetByID(ctx, releaseID)
 	if err != nil {
@@ -102,7 +102,7 @@ func (s *DeploymentServiceImpl) CreateDeployment(ctx context.Context, releaseID 
 	return deployment, nil
 }
 
-// GetDeployment retrieves a deployment by its ID
+// GetDeployment retrieves a deployment by its ID.
 func (s *DeploymentServiceImpl) GetDeployment(ctx context.Context, id string) (*models.ReleaseDeployment, error) {
 	deployment, err := s.deploymentRepo.GetByID(ctx, id)
 	if err != nil {
@@ -123,7 +123,7 @@ func (s *DeploymentServiceImpl) GetDeployment(ctx context.Context, id string) (*
 	return deployment, nil
 }
 
-// UpdateDeployment updates a deployment with new values
+// UpdateDeployment updates a deployment with new values.
 func (s *DeploymentServiceImpl) UpdateDeployment(ctx context.Context, deployment *models.ReleaseDeployment) error {
 	existing, err := s.deploymentRepo.GetByID(ctx, deployment.ID)
 	if err != nil {
@@ -135,7 +135,7 @@ func (s *DeploymentServiceImpl) UpdateDeployment(ctx context.Context, deployment
 	return s.deploymentRepo.Update(ctx, deployment)
 }
 
-// ListDeployments retrieves all deployments for a specific release
+// ListDeployments retrieves all deployments for a specific release.
 func (s *DeploymentServiceImpl) ListDeployments(ctx context.Context, releaseID string) ([]models.ReleaseDeployment, error) {
 	_, err := s.releaseRepo.GetByID(ctx, releaseID)
 	if err != nil {
@@ -145,7 +145,7 @@ func (s *DeploymentServiceImpl) ListDeployments(ctx context.Context, releaseID s
 	return s.deploymentRepo.ListByReleaseID(ctx, releaseID)
 }
 
-// GetLatestDeployment retrieves the most recent deployment for a release
+// GetLatestDeployment retrieves the most recent deployment for a release.
 func (s *DeploymentServiceImpl) GetLatestDeployment(ctx context.Context, releaseID string) (*models.ReleaseDeployment, error) {
 	_, err := s.releaseRepo.GetByID(ctx, releaseID)
 	if err != nil {
@@ -155,7 +155,7 @@ func (s *DeploymentServiceImpl) GetLatestDeployment(ctx context.Context, release
 	return s.deploymentRepo.GetLatestByReleaseID(ctx, releaseID)
 }
 
-// AddDeploymentEvent adds a new event to a deployment
+// AddDeploymentEvent adds a new event to a deployment.
 func (s *DeploymentServiceImpl) AddDeploymentEvent(ctx context.Context, deploymentID string, name string, message string) error {
 	_, err := s.deploymentRepo.GetByID(ctx, deploymentID)
 	if err != nil {
@@ -172,7 +172,7 @@ func (s *DeploymentServiceImpl) AddDeploymentEvent(ctx context.Context, deployme
 	return s.eventRepo.AddEvent(ctx, event)
 }
 
-// GetDeploymentEvents retrieves all events for a deployment
+// GetDeploymentEvents retrieves all events for a deployment.
 func (s *DeploymentServiceImpl) GetDeploymentEvents(ctx context.Context, deploymentID string) ([]models.DeploymentEvent, error) {
 	_, err := s.deploymentRepo.GetByID(ctx, deploymentID)
 	if err != nil {

@@ -33,16 +33,35 @@ type CreateInviteResponse struct {
 }
 
 type InviteHandler struct {
-	invites    userrepo.InviteRepository
-	userSvc    usersvc.UserService
-	roleSvc    usersvc.RoleService
-	userRole   usersvc.UserRoleService
-	defaultTTL time.Duration
-	email      emailsvc.Service
+	invites            userrepo.InviteRepository
+	userSvc            usersvc.UserService
+	roleSvc            usersvc.RoleService
+	userRole           usersvc.UserRoleService
+	defaultTTL         time.Duration
+	email              emailsvc.Service
+	maxVerifyAttempts  int
+	verifyLockDuration time.Duration
 }
 
-func NewInviteHandler(invRepo userrepo.InviteRepository, userSvc usersvc.UserService, roleSvc usersvc.RoleService, userRole usersvc.UserRoleService, defaultTTL time.Duration, email emailsvc.Service) *InviteHandler {
-	return &InviteHandler{invites: invRepo, userSvc: userSvc, roleSvc: roleSvc, userRole: userRole, defaultTTL: defaultTTL, email: email}
+func NewInviteHandler(invRepo userrepo.InviteRepository, userSvc usersvc.UserService, roleSvc usersvc.RoleService, userRole usersvc.UserRoleService, defaultTTL time.Duration, email emailsvc.Service, maxAttempts int, lockDuration time.Duration) *InviteHandler {
+	// Use defaults if not provided
+	if maxAttempts <= 0 {
+		maxAttempts = 5
+	}
+	if lockDuration <= 0 {
+		lockDuration = 30 * time.Minute
+	}
+
+	return &InviteHandler{
+		invites:            invRepo,
+		userSvc:            userSvc,
+		roleSvc:            roleSvc,
+		userRole:           userRole,
+		defaultTTL:         defaultTTL,
+		email:              email,
+		maxVerifyAttempts:  maxAttempts,
+		verifyLockDuration: lockDuration,
+	}
 }
 
 // CreateInvite issues an invite and optionally emails the recipient
@@ -57,7 +76,7 @@ func NewInviteHandler(invRepo userrepo.InviteRepository, userSvc usersvc.UserSer
 // @Failure 400 {object} map[string]interface{} "Invalid request"
 // @Failure 401 {object} map[string]interface{} "Unauthorized"
 // @Failure 500 {object} map[string]interface{} "Server error"
-// @Router /auth/invites [post]
+// @Router /auth/invites [post].
 func (h *InviteHandler) CreateInvite(c *gin.Context) {
 	// caller must be authenticated; get user context to set created_by
 	userData, ok := c.Get("user")
@@ -76,6 +95,40 @@ func (h *InviteHandler) CreateInvite(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request"})
 		return
 	}
+
+	// resolve creator from authenticated subject (ID preferred; fallback to email)
+	var creator *dbmodel.User
+	{
+		// Try numeric ID first
+		var idUint uint
+		if _, err := fmt.Sscanf(authUser.ID, "%d", &idUint); err == nil && idUint > 0 {
+			if u, err := h.userSvc.GetUserByID(idUint); err == nil && u != nil {
+				creator = u
+			}
+		}
+		if creator == nil {
+			// Fallback: treat subject as email (legacy tokens)
+			if u, err := h.userSvc.GetUserByEmail(authUser.ID); err == nil && u != nil {
+				creator = u
+			}
+		}
+		if creator == nil {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+			return
+		}
+	}
+
+	resp, err := h.CreateInviteInternal(c, req, creator.ID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusCreated, resp)
+}
+
+// CreateInviteInternal creates an invite with the given parameters (for internal use).
+func (h *InviteHandler) CreateInviteInternal(c *gin.Context, req CreateInviteRequest, creatorID uint) (*CreateInviteResponse, error) {
 	ttl := h.defaultTTL
 	if v, ok := c.Get("invite_default_ttl"); ok {
 		if d, ok2 := v.(time.Duration); ok2 && d > 0 {
@@ -88,18 +141,10 @@ func (h *InviteHandler) CreateInvite(c *gin.Context) {
 		}
 	}
 
-	// resolve creator id
-	creator, err := h.userSvc.GetUserByEmail(authUser.ID)
-	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
-		return
-	}
-
 	// generate invite token
 	raw := make([]byte, 32)
 	if _, err := rand.Read(raw); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "server error"})
-		return
+		return nil, fmt.Errorf("server error")
 	}
 	token := base64.RawURLEncoding.EncodeToString(raw)
 	// Use optional HMAC secret for hashing if configured
@@ -119,11 +164,10 @@ func (h *InviteHandler) CreateInvite(c *gin.Context) {
 		Roles:     req.Roles,
 		TokenHash: hexHash,
 		ExpiresAt: time.Now().Add(ttl),
-		CreatedBy: creator.ID,
+		CreatedBy: creatorID,
 	}
 	if err := h.invites.Create(inv); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create invite"})
-		return
+		return nil, fmt.Errorf("failed to create invite")
 	}
 
 	// Optionally send email if service is configured
@@ -140,10 +184,10 @@ func (h *InviteHandler) CreateInvite(c *gin.Context) {
 
 	if v, ok := c.Get("auditRepo"); ok {
 		if ar, ok2 := v.(auditrepo.LogRepository); ok2 {
-			_ = ar.Create(&adm.Log{EventType: "invite.created", ActorUserID: &creator.ID, RequestIP: c.ClientIP(), UserAgent: c.Request.UserAgent()})
+			_ = ar.Create(&adm.Log{EventType: "invite.created", ActorUserID: &creatorID, RequestIP: c.ClientIP(), UserAgent: c.Request.UserAgent()})
 		}
 	}
-	c.JSON(http.StatusCreated, CreateInviteResponse{ID: inv.ID, Token: token})
+	return &CreateInviteResponse{ID: inv.ID, Token: token}, nil
 }
 
 // Verify validates an invite token and activates the user, assigning roles
@@ -156,7 +200,7 @@ func (h *InviteHandler) CreateInvite(c *gin.Context) {
 // @Success 200 {object} map[string]interface{} "verified"
 // @Failure 400 {object} map[string]interface{} "Missing token"
 // @Failure 401 {object} map[string]interface{} "Invalid or expired"
-// @Router /verify [get]
+// @Router /verify [get].
 func (h *InviteHandler) Verify(c *gin.Context) {
 	token := c.Query("token")
 	if token == "" {
@@ -175,10 +219,41 @@ func (h *InviteHandler) Verify(c *gin.Context) {
 	}
 	inv, err := h.invites.GetByTokenHash(hexHash)
 	if err != nil || inv == nil {
+		// Log attempt with generic error to avoid information leakage
+		if v, ok := c.Get("auditRepo"); ok {
+			if ar, ok2 := v.(auditrepo.LogRepository); ok2 {
+				_ = ar.Create(&adm.Log{
+					EventType: "invite.verify.failed",
+					RequestIP: c.ClientIP(),
+					UserAgent: c.Request.UserAgent(),
+				})
+			}
+		}
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid or expired"})
 		return
 	}
+
+	// Check if invite is locked due to too many failed attempts
+	locked, err := h.invites.IsLocked(inv.ID)
+	if err == nil && locked {
+		// Log lockout attempt
+		if v, ok := c.Get("auditRepo"); ok {
+			if ar, ok2 := v.(auditrepo.LogRepository); ok2 {
+				_ = ar.Create(&adm.Log{
+					EventType: "invite.verify.locked",
+					RequestIP: c.ClientIP(),
+					UserAgent: c.Request.UserAgent(),
+				})
+			}
+		}
+		c.JSON(http.StatusTooManyRequests, gin.H{"error": "too many failed attempts, please try again later"})
+		return
+	}
+
+	// Check if already redeemed or expired
 	if inv.RedeemedAt != nil || time.Now().After(inv.ExpiresAt) {
+		// Increment failed attempts for valid but unusable invites
+		_ = h.invites.IncrementFailedAttempts(inv.ID, h.verifyLockDuration, h.maxVerifyAttempts)
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid or expired"})
 		return
 	}
@@ -204,6 +279,8 @@ func (h *InviteHandler) Verify(c *gin.Context) {
 		}
 		_ = h.userRole.AssignUserToRole(u.ID, r.ID)
 	}
+	// Reset failed attempts on successful verification
+	_ = h.invites.ResetFailedAttempts(inv.ID)
 	_ = h.invites.MarkRedeemed(inv.ID)
 	if v, ok := c.Get("auditRepo"); ok {
 		if ar, ok2 := v.(auditrepo.LogRepository); ok2 {

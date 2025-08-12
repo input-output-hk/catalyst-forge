@@ -1,3 +1,5 @@
+//go:build integration
+
 package test
 
 import (
@@ -13,7 +15,8 @@ import (
 )
 
 func TestReleaseAPI(t *testing.T) {
-	c := newTestClient()
+    env := NewTestEnv(t)
+	c := env.AdminClient()
 	ctx, cancel := newTestContext()
 	defer cancel()
 
@@ -114,7 +117,8 @@ func TestReleaseAPI(t *testing.T) {
 }
 
 func TestReleaseWithDefaultBranch(t *testing.T) {
-	c := newTestClient()
+    env := NewTestEnv(t)
+	c := env.AdminClient()
 	ctx, cancel := newTestContext()
 	defer cancel()
 
@@ -153,7 +157,8 @@ func TestReleaseWithDefaultBranch(t *testing.T) {
 }
 
 func TestReleaseWithBranch(t *testing.T) {
-	c := newTestClient()
+    env := NewTestEnv(t)
+	c := env.AdminClient()
 	ctx, cancel := newTestContext()
 	defer cancel()
 

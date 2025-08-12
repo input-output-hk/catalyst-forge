@@ -26,7 +26,7 @@ import (
 	"gorm.io/datatypes"
 )
 
-// CertificateSigningRequest represents a request to sign a certificate
+// CertificateSigningRequest represents a request to sign a certificate.
 type CertificateSigningRequest struct {
 	// CSR is the PEM-encoded Certificate Signing Request
 	CSR string `json:"csr" binding:"required" example:"-----BEGIN CERTIFICATE REQUEST-----\n..."`
@@ -43,7 +43,7 @@ type CertificateSigningRequest struct {
 	TTL string `json:"ttl,omitempty" example:"24h"`
 }
 
-// CertificateSigningResponse represents the response after signing a certificate
+// CertificateSigningResponse represents the response after signing a certificate.
 type CertificateSigningResponse struct {
 	// Certificate is the PEM-encoded signed certificate
 	Certificate string `json:"certificate" example:"-----BEGIN CERTIFICATE-----\n..."`
@@ -64,14 +64,14 @@ type CertificateSigningResponse struct {
 	Fingerprint string `json:"fingerprint" example:"sha256:abcdef..."`
 }
 
-// CertificateHandler handles certificate-related API endpoints
+// CertificateHandler handles certificate-related API endpoints.
 type CertificateHandler struct {
 	jwtManager jwt.JWTManager
 	pcaClient  pca.PCAClient
 	limiter    rate.Limiter
 }
 
-// NewCertificateHandler creates a new certificate handler
+// NewCertificateHandler creates a new certificate handler.
 func NewCertificateHandler(jwtManager jwt.JWTManager) *CertificateHandler {
 	return &CertificateHandler{
 		jwtManager: jwtManager,
@@ -79,7 +79,7 @@ func NewCertificateHandler(jwtManager jwt.JWTManager) *CertificateHandler {
 	}
 }
 
-// WithPCA sets the PCA client on the handler
+// WithPCA sets the PCA client on the handler.
 func (h *CertificateHandler) WithPCA(client pca.PCAClient) *CertificateHandler {
 	h.pcaClient = client
 	return h
@@ -98,7 +98,8 @@ func (h *CertificateHandler) WithPCA(client pca.PCAClient) *CertificateHandler {
 // @Failure 403 {object} map[string]interface{} "Forbidden - insufficient permissions"
 // @Failure 500 {object} map[string]interface{} "Internal server error"
 // @Router /certificates/sign [post]
-// @Security BearerAuth
+// @Security BearerAuth.
+//nolint:gocyclo // Certificate signing involves many validation and branching steps; refactor planned separately.
 func (h *CertificateHandler) SignCertificate(c *gin.Context) {
 	// Get user from context (set by auth middleware)
 	userData, exists := c.Get("user")
@@ -191,8 +192,8 @@ func (h *CertificateHandler) SignCertificate(c *gin.Context) {
 		subject = user.Claims.Subject
 	}
 
-	// Combine CSR SANs with request SANs
-	allSANs := append(csr.DNSNames, req.SANs...)
+    // Combine CSR SANs with request SANs; copy base to avoid aliasing.
+    allSANs := append(append([]string{}, csr.DNSNames...), req.SANs...)
 
 	// Deduplicate while preserving order
 	seen := make(map[string]struct{}, len(allSANs))
@@ -380,7 +381,7 @@ func (h *CertificateHandler) SignCertificate(c *gin.Context) {
 // @Failure 403 {object} map[string]interface{} "Forbidden - insufficient permissions"
 // @Failure 500 {object} map[string]interface{} "Internal server error"
 // @Router /ca/buildkit/server-certificates [post]
-// @Security BearerAuth
+// @Security BearerAuth.
 func (h *CertificateHandler) SignServerCertificate(c *gin.Context) {
 	// Bind and parse
 	var req CertificateSigningRequest
@@ -496,7 +497,7 @@ func (h *CertificateHandler) SignServerCertificate(c *gin.Context) {
 	c.JSON(http.StatusOK, resp)
 }
 
-// buildAuditMetadata constructs datatypes.JSON with core cert details and extras
+// buildAuditMetadata constructs datatypes.JSON with core cert details and extras.
 func buildAuditMetadata(subject string, sans []string, ttl time.Duration, extras map[string]any) datatypes.JSON {
 	m := map[string]any{
 		"subject": subject,
@@ -510,7 +511,7 @@ func buildAuditMetadata(subject string, sans []string, ttl time.Duration, extras
 	return datatypes.JSON(b)
 }
 
-// validateSANs checks if the user is authorized for the requested SANs
+// validateSANs checks if the user is authorized for the requested SANs.
 func (h *CertificateHandler) validateSANs(claims *tokens.AuthClaims, sans []string) bool {
 	// Get all certificate signing permissions for this user
 	certPerms := tokens.GetCertificateSignPermissions(claims)
@@ -527,7 +528,7 @@ func (h *CertificateHandler) validateSANs(claims *tokens.AuthClaims, sans []stri
 	return true
 }
 
-// isAuthorizedForSAN checks if a single SAN is authorized by any of the user's certificate permissions
+// isAuthorizedForSAN checks if a single SAN is authorized by any of the user's certificate permissions.
 func (h *CertificateHandler) isAuthorizedForSAN(san string, permissions []auth.Permission) bool {
 	for _, perm := range permissions {
 		if pattern, ok := auth.ParseCertificateSignPermission(perm); ok {
@@ -561,7 +562,7 @@ func (h *CertificateHandler) GetRootCertificate(c *gin.Context) {
 	c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to get root certificate: PCA not configured"})
 }
 
-// splitPEMCerts splits a PEM bundle into a slice of certificate PEMs
+// splitPEMCerts splits a PEM bundle into a slice of certificate PEMs.
 func splitPEMCerts(bundle string) []string {
 	var out []string
 	data := []byte(bundle)

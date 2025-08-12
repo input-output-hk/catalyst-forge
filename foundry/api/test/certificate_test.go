@@ -1,3 +1,5 @@
+//go:build integration
+
 package test
 
 import (
@@ -17,7 +19,8 @@ import (
 )
 
 func TestCertificateAPI(t *testing.T) {
-	c := newTestClient()
+    env := NewTestEnv(t)
+	c := env.AdminClient()
 	ctx, cancel := newTestContext()
 	defer cancel()
 
@@ -141,8 +144,8 @@ func TestCertificateAPI(t *testing.T) {
 		})
 	})
 
-	t.Run("ErrorCases", func(t *testing.T) {
-		t.Run("InvalidCSR", func(t *testing.T) {
+    t.Run("ErrorCases", func(t *testing.T) {
+        t.Run("InvalidCSR", func(t *testing.T) {
 			req := &certificates.CertificateSigningRequest{
 				CSR: "invalid-csr-data",
 			}
@@ -191,8 +194,17 @@ func TestCertificateAPI(t *testing.T) {
 				// If it fails, that's also acceptable behavior
 				t.Logf("Excessive TTL rejected (acceptable): %v", err)
 			}
-		})
-	})
+        })
+
+        t.Run("ServerCSR_NoSANs", func(t *testing.T) {
+            // CSR without DNS SANs should be invalid for server certificates
+            _, csr, err := generateTestCSR("server-no-san", nil)
+            require.NoError(t, err)
+
+            _, err = c.Certificates().SignServerCertificate(ctx, &certificates.CertificateSigningRequest{CSR: csr})
+            assert.Error(t, err)
+        })
+    })
 
 	t.Run("CertificateChain", func(t *testing.T) {
 		_, csr, err := generateTestCSR("chain-test.example.com", []string{"chain-test.example.com"})

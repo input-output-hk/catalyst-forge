@@ -1,0 +1,34 @@
+package gormstore
+
+import (
+	"context"
+
+	"github.com/catalystgo/catalyst-forge/lib/foundry/authkit/domain"
+	"gorm.io/gorm"
+)
+
+// AuditStore is a GORM-based implementation of store.AuditStore.
+type AuditStore struct {
+	db *gorm.DB
+}
+
+// NewAuditStore creates a new GORM-based audit store.
+func NewAuditStore(db *gorm.DB) *AuditStore {
+	return &AuditStore{db: db}
+}
+
+// Record stores an audit event.
+func (s *AuditStore) Record(ctx context.Context, evt domain.Event) error {
+	dbEvent := &AuditEvent{
+		ID:        evt.ID,
+		Type:      string(evt.Type),
+		UserID:    evt.UserID,
+		ActorID:   evt.ActorID,
+		IPAddress: evt.IPAddress,
+		UserAgent: evt.UserAgent,
+		Metadata:  JSON(evt.Metadata),
+		CreatedAt: evt.CreatedAt,
+	}
+
+	return s.db.WithContext(ctx).Create(dbEvent).Error
+}

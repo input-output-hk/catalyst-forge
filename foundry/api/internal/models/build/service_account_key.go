@@ -2,7 +2,7 @@ package build
 
 import "time"
 
-// ServiceAccountKey represents a public key bound to a service account
+// ServiceAccountKey represents a public key bound to a service account.
 type ServiceAccountKey struct {
 	ID        uint      `gorm:"primaryKey" json:"id"`
 	SAID      uint      `gorm:"index" json:"sa_id"`

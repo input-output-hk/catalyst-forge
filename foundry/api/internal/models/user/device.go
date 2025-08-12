@@ -3,19 +3,33 @@ package user
 import (
 	"time"
 
-	"gorm.io/gorm"
+	"github.com/google/uuid"
+	"gorm.io/datatypes"
 )
 
-// Device represents a user device that can hold refresh tokens and keys
+// Device represents a browser device registered for authentication with ECDSA keypairs.
 type Device struct {
-	ID          uint           `gorm:"primaryKey" json:"id"`
-	UserID      uint           `gorm:"not null;index" json:"user_id"`
-	Name        string         `json:"name"`
-	Platform    string         `json:"platform"`
-	Fingerprint string         `json:"fingerprint"`
-	CreatedAt   time.Time      `gorm:"autoCreateTime" json:"created_at"`
-	LastSeenAt  *time.Time     `json:"last_seen_at,omitempty"`
-	DeletedAt   gorm.DeletedAt `gorm:"index" json:"-"`
+	ID            uuid.UUID      `gorm:"type:uuid;primaryKey;default:gen_random_uuid()" json:"id"`
+	UserID        uint           `gorm:"not null;index" json:"user_id"`
+	Name          string         `gorm:"not null" json:"name"`
+	PublicJWK     datatypes.JSON `gorm:"type:jsonb;not null" json:"-"`
+	JWKThumbprint string         `gorm:"uniqueIndex;size:128;not null" json:"-"`
+	Status        string         `gorm:"index;default:'active';not null" json:"status"`
+	CreatedAt     time.Time      `gorm:"autoCreateTime" json:"created_at"`
+	LastUsedAt    *time.Time     `json:"last_used_at,omitempty"`
+	RevokedAt     *time.Time     `json:"revoked_at,omitempty"`
+
+	// Relationships
+	User          User           `gorm:"foreignKey:UserID" json:"-"`
+	RefreshTokens []RefreshToken `gorm:"foreignKey:DeviceID" json:"-"`
 }
 
-func (Device) TableName() string { return "devices" }
+// DeviceStatus constants.
+const (
+    DeviceStatusActive   = "active"
+    DeviceStatusRevoked  = "revoked"
+    DeviceStatusDisabled = "disabled"
+)
+
+// TableName specifies the table name for the Device model.
+func (Device) TableName() string { return "auth_devices" }

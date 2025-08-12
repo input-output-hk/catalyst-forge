@@ -1,0 +1,21 @@
+default: list
+
+list:
+  @just --list
+
+dev:
+  npm run dev
+
+lint:
+  npm run lint
+
+format:
+  npm run format
+
+e2e:
+  npm run e2e:dev
+
+analyze:
+  npm run analyze
+
+

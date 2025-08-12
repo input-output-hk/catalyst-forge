@@ -5,7 +5,7 @@ import (
 	"time"
 )
 
-// IDCounter tracks the monotonically increasing IDs for each project/branch combination
+// IDCounter tracks the monotonically increasing IDs for each project/branch combination.
 type IDCounter struct {
 	ID        uint      `gorm:"primaryKey;autoIncrement" json:"id"`
 	Project   string    `gorm:"not null" json:"project"`
@@ -15,12 +15,12 @@ type IDCounter struct {
 	UpdatedAt time.Time `gorm:"autoUpdateTime" json:"updated_at"`
 }
 
-// TableName specifies the table name for the IDCounter model
+// TableName specifies the table name for the IDCounter model.
 func (IDCounter) TableName() string {
-	return "id_counters"
+    return "id_counters"
 }
 
-// UniqueKey returns the unique key for this project-branch combination
+// UniqueKey returns the unique key for this project-branch combination.
 func (c *IDCounter) UniqueKey() string {
 	if c.Branch == "" {
 		return c.Project
@@ -28,7 +28,7 @@ func (c *IDCounter) UniqueKey() string {
 	return c.Project + "-" + c.Branch
 }
 
-// GetNextID returns the next ID for this counter in the format Project-Branch-XXX or Project-XXX
+// GetNextID returns the next ID for this counter in the format Project-Branch-XXX or Project-XXX.
 func (c *IDCounter) GetNextID() string {
 	c.Counter++
 

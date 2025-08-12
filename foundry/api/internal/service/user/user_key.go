@@ -10,7 +10,7 @@ import (
 
 //go:generate go run github.com/matryer/moq@latest -skip-ensure --pkg mocks --out ./mocks/user_key.go . UserKeyService
 
-// UserKeyService defines the interface for user key service operations
+// UserKeyService defines the interface for user key service operations.
 type UserKeyService interface {
 	CreateUserKey(userKey *user.UserKey) error
 	GetUserKeyByID(id uint) (*user.UserKey, error)
@@ -25,13 +25,13 @@ type UserKeyService interface {
 	ListUserKeys() ([]user.UserKey, error)
 }
 
-// DefaultUserKeyService is the default implementation of UserKeyService
+// DefaultUserKeyService is the default implementation of UserKeyService.
 type DefaultUserKeyService struct {
 	repo   userrepo.UserKeyRepository
 	logger *slog.Logger
 }
 
-// NewUserKeyService creates a new user key service
+// NewUserKeyService creates a new user key service.
 func NewUserKeyService(repo userrepo.UserKeyRepository, logger *slog.Logger) *DefaultUserKeyService {
 	return &DefaultUserKeyService{
 		repo:   repo,
@@ -39,7 +39,7 @@ func NewUserKeyService(repo userrepo.UserKeyRepository, logger *slog.Logger) *De
 	}
 }
 
-// CreateUserKey creates a new user key
+// CreateUserKey creates a new user key.
 func (s *DefaultUserKeyService) CreateUserKey(userKey *user.UserKey) error {
 	// Validate key data
 	if err := s.validateUserKey(userKey); err != nil {
@@ -65,37 +65,37 @@ func (s *DefaultUserKeyService) CreateUserKey(userKey *user.UserKey) error {
 	return s.repo.Create(userKey)
 }
 
-// GetUserKeyByID retrieves a user key by ID
+// GetUserKeyByID retrieves a user key by ID.
 func (s *DefaultUserKeyService) GetUserKeyByID(id uint) (*user.UserKey, error) {
 	return s.repo.GetByID(id)
 }
 
-// GetUserKeyByKid retrieves a user key by kid (key ID)
+// GetUserKeyByKid retrieves a user key by kid (key ID).
 func (s *DefaultUserKeyService) GetUserKeyByKid(kid string) (*user.UserKey, error) {
 	return s.repo.GetByKid(kid)
 }
 
-// GetUserKeysByUserID retrieves all keys for a specific user
+// GetUserKeysByUserID retrieves all keys for a specific user.
 func (s *DefaultUserKeyService) GetUserKeysByUserID(userID uint) ([]user.UserKey, error) {
 	return s.repo.GetByUserID(userID)
 }
 
-// GetActiveUserKeysByUserID retrieves all active keys for a specific user
+// GetActiveUserKeysByUserID retrieves all active keys for a specific user.
 func (s *DefaultUserKeyService) GetActiveUserKeysByUserID(userID uint) ([]user.UserKey, error) {
 	return s.repo.GetActiveByUserID(userID)
 }
 
-// GetInactiveUserKeysByUserID retrieves all inactive keys for a specific user
+// GetInactiveUserKeysByUserID retrieves all inactive keys for a specific user.
 func (s *DefaultUserKeyService) GetInactiveUserKeysByUserID(userID uint) ([]user.UserKey, error) {
 	return s.repo.GetInactiveByUserID(userID)
 }
 
-// GetInactiveUserKeys retrieves all inactive keys
+// GetInactiveUserKeys retrieves all inactive keys.
 func (s *DefaultUserKeyService) GetInactiveUserKeys() ([]user.UserKey, error) {
 	return s.repo.GetInactive()
 }
 
-// UpdateUserKey updates an existing user key
+// UpdateUserKey updates an existing user key.
 func (s *DefaultUserKeyService) UpdateUserKey(userKey *user.UserKey) error {
 	// Validate key data
 	if err := s.validateUserKey(userKey); err != nil {
@@ -111,7 +111,7 @@ func (s *DefaultUserKeyService) UpdateUserKey(userKey *user.UserKey) error {
 	return s.repo.Update(userKey)
 }
 
-// DeleteUserKey deletes a user key
+// DeleteUserKey deletes a user key.
 func (s *DefaultUserKeyService) DeleteUserKey(id uint) error {
 	existing, err := s.repo.GetByID(id)
 	if err != nil {
@@ -126,7 +126,7 @@ func (s *DefaultUserKeyService) DeleteUserKey(id uint) error {
 	return s.repo.Delete(id)
 }
 
-// RevokeUserKey revokes a user key by setting status to revoked
+// RevokeUserKey revokes a user key by setting status to revoked.
 func (s *DefaultUserKeyService) RevokeUserKey(id uint) error {
 	userKey, err := s.repo.GetByID(id)
 	if err != nil {
@@ -143,12 +143,12 @@ func (s *DefaultUserKeyService) RevokeUserKey(id uint) error {
 	return s.repo.Update(userKey)
 }
 
-// ListUserKeys retrieves all user keys
+// ListUserKeys retrieves all user keys.
 func (s *DefaultUserKeyService) ListUserKeys() ([]user.UserKey, error) {
 	return s.repo.List()
 }
 
-// validateUserKey validates user key data
+// validateUserKey validates user key data.
 func (s *DefaultUserKeyService) validateUserKey(userKey *user.UserKey) error {
 	if userKey.UserID == 0 {
 		return fmt.Errorf("user_id cannot be empty")

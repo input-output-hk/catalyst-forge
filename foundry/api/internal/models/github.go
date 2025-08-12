@@ -1,13 +1,15 @@
 package models
 
 import (
-	"time"
+    "time"
 
-	"github.com/input-output-hk/catalyst-forge/lib/foundry/auth"
-	"github.com/lib/pq"
-	"gorm.io/gorm"
+    "github.com/lib/pq"
+    "gorm.io/gorm"
+
+    "github.com/input-output-hk/catalyst-forge/lib/foundry/auth"
 )
 
+// GithubRepositoryAuth stores repository permissions configuration and metadata.
 type GithubRepositoryAuth struct {
 	ID          uint           `gorm:"primaryKey"          json:"id"`
 	Repository  string         `gorm:"not null;uniqueIndex" json:"repository"`
@@ -22,21 +24,24 @@ type GithubRepositoryAuth struct {
 	DeletedAt gorm.DeletedAt `gorm:"index" json:"-"`
 }
 
+// TableName specifies the table name for the GithubRepositoryAuth model.
 func (GithubRepositoryAuth) TableName() string { return "github_repository_auths" }
 
 // ----- helpers --------------------------------------------------------------
 
+// GetPermissions returns the permissions as typed auth.Permission values.
 func (g *GithubRepositoryAuth) GetPermissions() []auth.Permission {
-	out := make([]auth.Permission, len(g.Permissions))
-	for i, p := range g.Permissions {
-		out[i] = auth.Permission(p)
-	}
-	return out
+    out := make([]auth.Permission, len(g.Permissions))
+    for i, p := range g.Permissions {
+        out[i] = auth.Permission(p)
+    }
+    return out
 }
 
+// SetPermissions sets the permissions from typed auth.Permission values.
 func (g *GithubRepositoryAuth) SetPermissions(perms []auth.Permission) {
-	g.Permissions = make(pq.StringArray, len(perms))
-	for i, p := range perms {
-		g.Permissions[i] = string(p)
-	}
+    g.Permissions = make(pq.StringArray, len(perms))
+    for i, p := range perms {
+        g.Permissions[i] = string(p)
+    }
 }

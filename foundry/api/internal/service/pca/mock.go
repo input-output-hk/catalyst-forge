@@ -107,7 +107,7 @@ func (m *Mock) GetCA(ctx context.Context, caArn string) (string, string, error) 
 
 var _ PCAClient = (*Mock)(nil)
 
-// newSerial returns a small positive serial
+// newSerial returns a small positive serial.
 func newSerial() *big.Int {
 	// Use current unix seconds as serial for determinism
 	return big.NewInt(time.Now().Unix())

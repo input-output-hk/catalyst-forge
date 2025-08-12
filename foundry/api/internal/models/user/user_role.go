@@ -6,7 +6,7 @@ import (
 	"gorm.io/gorm"
 )
 
-// UserRole represents a many-to-many relationship between users and roles
+// UserRole represents a many-to-many relationship between users and roles.
 type UserRole struct {
 	ID     uint `gorm:"primaryKey" json:"id"`
 	UserID uint `gorm:"not null;index" json:"user_id"`
@@ -22,7 +22,7 @@ type UserRole struct {
 	DeletedAt gorm.DeletedAt `gorm:"index" json:"-"`
 }
 
-// TableName specifies the table name for the UserRole model
+// TableName specifies the table name for the UserRole model.
 func (UserRole) TableName() string {
-	return "user_roles"
+    return "user_roles"
 }

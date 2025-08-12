@@ -22,6 +22,24 @@ var _ auth.AuthClientInterface = &AuthClientInterfaceMock{}
 //			CreateChallengeFunc: func(ctx context.Context, req *auth.ChallengeRequest) (*auth.ChallengeResponse, error) {
 //				panic("mock out the CreateChallenge method")
 //			},
+//			DeleteDeviceFunc: func(ctx context.Context, deviceID string) error {
+//				panic("mock out the DeleteDevice method")
+//			},
+//			DeviceLogoutFunc: func(ctx context.Context) error {
+//				panic("mock out the DeviceLogout method")
+//			},
+//			DeviceRefreshFunc: func(ctx context.Context, req *auth.DeviceRefreshRequest) (*auth.DeviceRefreshResponse, error) {
+//				panic("mock out the DeviceRefresh method")
+//			},
+//			DeviceRegisterFunc: func(ctx context.Context, req *auth.DeviceRegisterRequest) (*auth.DeviceRegisterResponse, error) {
+//				panic("mock out the DeviceRegister method")
+//			},
+//			DeviceRegistrationInitFunc: func(ctx context.Context, req *auth.DeviceRegistrationInitRequest) (*auth.DeviceRegistrationInitResponse, error) {
+//				panic("mock out the DeviceRegistrationInit method")
+//			},
+//			GetDevicesFunc: func(ctx context.Context) ([]auth.DeviceListResponse, error) {
+//				panic("mock out the GetDevices method")
+//			},
 //			LoginFunc: func(ctx context.Context, req *auth.LoginRequest) (*auth.LoginResponse, error) {
 //				panic("mock out the Login method")
 //			},
@@ -35,6 +53,24 @@ type AuthClientInterfaceMock struct {
 	// CreateChallengeFunc mocks the CreateChallenge method.
 	CreateChallengeFunc func(ctx context.Context, req *auth.ChallengeRequest) (*auth.ChallengeResponse, error)
 
+	// DeleteDeviceFunc mocks the DeleteDevice method.
+	DeleteDeviceFunc func(ctx context.Context, deviceID string) error
+
+	// DeviceLogoutFunc mocks the DeviceLogout method.
+	DeviceLogoutFunc func(ctx context.Context) error
+
+	// DeviceRefreshFunc mocks the DeviceRefresh method.
+	DeviceRefreshFunc func(ctx context.Context, req *auth.DeviceRefreshRequest) (*auth.DeviceRefreshResponse, error)
+
+	// DeviceRegisterFunc mocks the DeviceRegister method.
+	DeviceRegisterFunc func(ctx context.Context, req *auth.DeviceRegisterRequest) (*auth.DeviceRegisterResponse, error)
+
+	// DeviceRegistrationInitFunc mocks the DeviceRegistrationInit method.
+	DeviceRegistrationInitFunc func(ctx context.Context, req *auth.DeviceRegistrationInitRequest) (*auth.DeviceRegistrationInitResponse, error)
+
+	// GetDevicesFunc mocks the GetDevices method.
+	GetDevicesFunc func(ctx context.Context) ([]auth.DeviceListResponse, error)
+
 	// LoginFunc mocks the Login method.
 	LoginFunc func(ctx context.Context, req *auth.LoginRequest) (*auth.LoginResponse, error)
 
@@ -47,6 +83,44 @@ type AuthClientInterfaceMock struct {
 			// Req is the req argument value.
 			Req *auth.ChallengeRequest
 		}
+		// DeleteDevice holds details about calls to the DeleteDevice method.
+		DeleteDevice []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// DeviceID is the deviceID argument value.
+			DeviceID string
+		}
+		// DeviceLogout holds details about calls to the DeviceLogout method.
+		DeviceLogout []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+		}
+		// DeviceRefresh holds details about calls to the DeviceRefresh method.
+		DeviceRefresh []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// Req is the req argument value.
+			Req *auth.DeviceRefreshRequest
+		}
+		// DeviceRegister holds details about calls to the DeviceRegister method.
+		DeviceRegister []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// Req is the req argument value.
+			Req *auth.DeviceRegisterRequest
+		}
+		// DeviceRegistrationInit holds details about calls to the DeviceRegistrationInit method.
+		DeviceRegistrationInit []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// Req is the req argument value.
+			Req *auth.DeviceRegistrationInitRequest
+		}
+		// GetDevices holds details about calls to the GetDevices method.
+		GetDevices []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+		}
 		// Login holds details about calls to the Login method.
 		Login []struct {
 			// Ctx is the ctx argument value.
@@ -55,8 +129,14 @@ type AuthClientInterfaceMock struct {
 			Req *auth.LoginRequest
 		}
 	}
-	lockCreateChallenge sync.RWMutex
-	lockLogin           sync.RWMutex
+	lockCreateChallenge        sync.RWMutex
+	lockDeleteDevice           sync.RWMutex
+	lockDeviceLogout           sync.RWMutex
+	lockDeviceRefresh          sync.RWMutex
+	lockDeviceRegister         sync.RWMutex
+	lockDeviceRegistrationInit sync.RWMutex
+	lockGetDevices             sync.RWMutex
+	lockLogin                  sync.RWMutex
 }
 
 // CreateChallenge calls CreateChallengeFunc.
@@ -92,6 +172,214 @@ func (mock *AuthClientInterfaceMock) CreateChallengeCalls() []struct {
 	mock.lockCreateChallenge.RLock()
 	calls = mock.calls.CreateChallenge
 	mock.lockCreateChallenge.RUnlock()
+	return calls
+}
+
+// DeleteDevice calls DeleteDeviceFunc.
+func (mock *AuthClientInterfaceMock) DeleteDevice(ctx context.Context, deviceID string) error {
+	if mock.DeleteDeviceFunc == nil {
+		panic("AuthClientInterfaceMock.DeleteDeviceFunc: method is nil but AuthClientInterface.DeleteDevice was just called")
+	}
+	callInfo := struct {
+		Ctx      context.Context
+		DeviceID string
+	}{
+		Ctx:      ctx,
+		DeviceID: deviceID,
+	}
+	mock.lockDeleteDevice.Lock()
+	mock.calls.DeleteDevice = append(mock.calls.DeleteDevice, callInfo)
+	mock.lockDeleteDevice.Unlock()
+	return mock.DeleteDeviceFunc(ctx, deviceID)
+}
+
+// DeleteDeviceCalls gets all the calls that were made to DeleteDevice.
+// Check the length with:
+//
+//	len(mockedAuthClientInterface.DeleteDeviceCalls())
+func (mock *AuthClientInterfaceMock) DeleteDeviceCalls() []struct {
+	Ctx      context.Context
+	DeviceID string
+} {
+	var calls []struct {
+		Ctx      context.Context
+		DeviceID string
+	}
+	mock.lockDeleteDevice.RLock()
+	calls = mock.calls.DeleteDevice
+	mock.lockDeleteDevice.RUnlock()
+	return calls
+}
+
+// DeviceLogout calls DeviceLogoutFunc.
+func (mock *AuthClientInterfaceMock) DeviceLogout(ctx context.Context) error {
+	if mock.DeviceLogoutFunc == nil {
+		panic("AuthClientInterfaceMock.DeviceLogoutFunc: method is nil but AuthClientInterface.DeviceLogout was just called")
+	}
+	callInfo := struct {
+		Ctx context.Context
+	}{
+		Ctx: ctx,
+	}
+	mock.lockDeviceLogout.Lock()
+	mock.calls.DeviceLogout = append(mock.calls.DeviceLogout, callInfo)
+	mock.lockDeviceLogout.Unlock()
+	return mock.DeviceLogoutFunc(ctx)
+}
+
+// DeviceLogoutCalls gets all the calls that were made to DeviceLogout.
+// Check the length with:
+//
+//	len(mockedAuthClientInterface.DeviceLogoutCalls())
+func (mock *AuthClientInterfaceMock) DeviceLogoutCalls() []struct {
+	Ctx context.Context
+} {
+	var calls []struct {
+		Ctx context.Context
+	}
+	mock.lockDeviceLogout.RLock()
+	calls = mock.calls.DeviceLogout
+	mock.lockDeviceLogout.RUnlock()
+	return calls
+}
+
+// DeviceRefresh calls DeviceRefreshFunc.
+func (mock *AuthClientInterfaceMock) DeviceRefresh(ctx context.Context, req *auth.DeviceRefreshRequest) (*auth.DeviceRefreshResponse, error) {
+	if mock.DeviceRefreshFunc == nil {
+		panic("AuthClientInterfaceMock.DeviceRefreshFunc: method is nil but AuthClientInterface.DeviceRefresh was just called")
+	}
+	callInfo := struct {
+		Ctx context.Context
+		Req *auth.DeviceRefreshRequest
+	}{
+		Ctx: ctx,
+		Req: req,
+	}
+	mock.lockDeviceRefresh.Lock()
+	mock.calls.DeviceRefresh = append(mock.calls.DeviceRefresh, callInfo)
+	mock.lockDeviceRefresh.Unlock()
+	return mock.DeviceRefreshFunc(ctx, req)
+}
+
+// DeviceRefreshCalls gets all the calls that were made to DeviceRefresh.
+// Check the length with:
+//
+//	len(mockedAuthClientInterface.DeviceRefreshCalls())
+func (mock *AuthClientInterfaceMock) DeviceRefreshCalls() []struct {
+	Ctx context.Context
+	Req *auth.DeviceRefreshRequest
+} {
+	var calls []struct {
+		Ctx context.Context
+		Req *auth.DeviceRefreshRequest
+	}
+	mock.lockDeviceRefresh.RLock()
+	calls = mock.calls.DeviceRefresh
+	mock.lockDeviceRefresh.RUnlock()
+	return calls
+}
+
+// DeviceRegister calls DeviceRegisterFunc.
+func (mock *AuthClientInterfaceMock) DeviceRegister(ctx context.Context, req *auth.DeviceRegisterRequest) (*auth.DeviceRegisterResponse, error) {
+	if mock.DeviceRegisterFunc == nil {
+		panic("AuthClientInterfaceMock.DeviceRegisterFunc: method is nil but AuthClientInterface.DeviceRegister was just called")
+	}
+	callInfo := struct {
+		Ctx context.Context
+		Req *auth.DeviceRegisterRequest
+	}{
+		Ctx: ctx,
+		Req: req,
+	}
+	mock.lockDeviceRegister.Lock()
+	mock.calls.DeviceRegister = append(mock.calls.DeviceRegister, callInfo)
+	mock.lockDeviceRegister.Unlock()
+	return mock.DeviceRegisterFunc(ctx, req)
+}
+
+// DeviceRegisterCalls gets all the calls that were made to DeviceRegister.
+// Check the length with:
+//
+//	len(mockedAuthClientInterface.DeviceRegisterCalls())
+func (mock *AuthClientInterfaceMock) DeviceRegisterCalls() []struct {
+	Ctx context.Context
+	Req *auth.DeviceRegisterRequest
+} {
+	var calls []struct {
+		Ctx context.Context
+		Req *auth.DeviceRegisterRequest
+	}
+	mock.lockDeviceRegister.RLock()
+	calls = mock.calls.DeviceRegister
+	mock.lockDeviceRegister.RUnlock()
+	return calls
+}
+
+// DeviceRegistrationInit calls DeviceRegistrationInitFunc.
+func (mock *AuthClientInterfaceMock) DeviceRegistrationInit(ctx context.Context, req *auth.DeviceRegistrationInitRequest) (*auth.DeviceRegistrationInitResponse, error) {
+	if mock.DeviceRegistrationInitFunc == nil {
+		panic("AuthClientInterfaceMock.DeviceRegistrationInitFunc: method is nil but AuthClientInterface.DeviceRegistrationInit was just called")
+	}
+	callInfo := struct {
+		Ctx context.Context
+		Req *auth.DeviceRegistrationInitRequest
+	}{
+		Ctx: ctx,
+		Req: req,
+	}
+	mock.lockDeviceRegistrationInit.Lock()
+	mock.calls.DeviceRegistrationInit = append(mock.calls.DeviceRegistrationInit, callInfo)
+	mock.lockDeviceRegistrationInit.Unlock()
+	return mock.DeviceRegistrationInitFunc(ctx, req)
+}
+
+// DeviceRegistrationInitCalls gets all the calls that were made to DeviceRegistrationInit.
+// Check the length with:
+//
+//	len(mockedAuthClientInterface.DeviceRegistrationInitCalls())
+func (mock *AuthClientInterfaceMock) DeviceRegistrationInitCalls() []struct {
+	Ctx context.Context
+	Req *auth.DeviceRegistrationInitRequest
+} {
+	var calls []struct {
+		Ctx context.Context
+		Req *auth.DeviceRegistrationInitRequest
+	}
+	mock.lockDeviceRegistrationInit.RLock()
+	calls = mock.calls.DeviceRegistrationInit
+	mock.lockDeviceRegistrationInit.RUnlock()
+	return calls
+}
+
+// GetDevices calls GetDevicesFunc.
+func (mock *AuthClientInterfaceMock) GetDevices(ctx context.Context) ([]auth.DeviceListResponse, error) {
+	if mock.GetDevicesFunc == nil {
+		panic("AuthClientInterfaceMock.GetDevicesFunc: method is nil but AuthClientInterface.GetDevices was just called")
+	}
+	callInfo := struct {
+		Ctx context.Context
+	}{
+		Ctx: ctx,
+	}
+	mock.lockGetDevices.Lock()
+	mock.calls.GetDevices = append(mock.calls.GetDevices, callInfo)
+	mock.lockGetDevices.Unlock()
+	return mock.GetDevicesFunc(ctx)
+}
+
+// GetDevicesCalls gets all the calls that were made to GetDevices.
+// Check the length with:
+//
+//	len(mockedAuthClientInterface.GetDevicesCalls())
+func (mock *AuthClientInterfaceMock) GetDevicesCalls() []struct {
+	Ctx context.Context
+} {
+	var calls []struct {
+		Ctx context.Context
+	}
+	mock.lockGetDevices.RLock()
+	calls = mock.calls.GetDevices
+	mock.lockGetDevices.RUnlock()
 	return calls
 }
 

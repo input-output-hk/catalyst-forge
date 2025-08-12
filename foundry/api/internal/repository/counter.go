@@ -8,22 +8,22 @@ import (
 	"gorm.io/gorm"
 )
 
-// IDCounterRepository defines the interface for ID counter operations
+// IDCounterRepository defines the interface for ID counter operations.
 type IDCounterRepository interface {
 	GetNextID(ctx context.Context, project string, branch string) (string, error)
 }
 
-// GormIDCounterRepository implements IDCounterRepository using GORM
+// GormIDCounterRepository implements IDCounterRepository using GORM.
 type GormIDCounterRepository struct {
 	db *gorm.DB
 }
 
-// NewIDCounterRepository creates a new IDCounterRepository
+// NewIDCounterRepository creates a new IDCounterRepository.
 func NewIDCounterRepository(db *gorm.DB) IDCounterRepository {
 	return &GormIDCounterRepository{db: db}
 }
 
-// GetNextID retrieves and increments the counter for a project-branch combination
+// GetNextID retrieves and increments the counter for a project-branch combination.
 func (r *GormIDCounterRepository) GetNextID(ctx context.Context, project string, branch string) (string, error) {
 	// Use a transaction to ensure atomicity when getting and updating the counter
 	var nextID string

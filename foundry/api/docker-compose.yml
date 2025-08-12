@@ -1,34 +1,50 @@
+# Foundry API Docker Compose - Local Development Environment
+#
+# This compose file sets up a complete local development environment for the Foundry API.
+# It uses the bootstrap system for admin user creation
+#
+# Quick Start:
+#   1. Build the API image: docker build -t foundry-api:latest .
+#   2. Start the stack: docker-compose up -d
+#   3. Bootstrap admin (optional): docker-compose --profile bootstrap up bootstrap-admin
+#   4. Use device registration flow to get access tokens for the admin user
+#
+# Admin Access:
+#   The new bootstrap system creates admin users through the invite flow instead of
+#   generating JWT tokens directly. To get an admin access token:
+#   1. Run bootstrap-admin service (profile: bootstrap)
+#   2. Use the device registration flow with the created invite
+#   3. Or use the testutil.BootstrapAdmin function for programmatic access
+#
 services:
-  auth:
+  # Initialize JWT signing keys (runs once to create keypair)
+  auth-init:
     image: foundry-api:latest
-    container_name: auth
-    entrypoint: ["/bin/sh", "-c", "if [ ! -f /data/private.pem ]; then /app/foundry-api auth init --output-dir /data; fi; /app/foundry-api auth generate -a -s admin@foundry.dev -k /data/private.pem > /data/jwt.txt"]
+    container_name: auth-init
+    entrypoint: ["/bin/sh", "-c", "if [ ! -f /data/private.pem ]; then /app/foundry-api auth init --output-dir /data; fi"]
     volumes:
       - ./.auth:/data
 
-  auth-jwt:
-    image: foundry-api:latest
-    container_name: auth-jwt
-    entrypoint: ["/bin/sh", "-c", "/app/foundry-api auth generate -a -s admin@foundry.dev -k /data/private.pem >/data/jwt.txt"]
-    volumes:
-      - ./.auth:/data
-    depends_on:
-      auth:
-        condition: service_completed_successfully
-
+  # Main API server with modern bootstrap-based authentication
   api:
     image: foundry-api:latest
     container_name: api
     environment:
       HTTP_PORT: 5050
       PUBLIC_BASE_URL: http://localhost:5050
+
+      # Auth config
+      AUTH_ALLOWED_WEB_ORIGINS: http://localhost:5173,https://localhost:5173,http://127.0.0.1:5173,https://127.0.0.1:5173
+      AUTH_DEV_MODE: "true"
       AUTH_PRIVATE_KEY: /data/private.pem
       AUTH_PUBLIC_KEY: /data/public.pem
-      # Auth TTLs
       INVITE_TTL: 72h
       AUTH_ACCESS_TTL: 30m
       AUTH_REFRESH_TTL: 720h
       KET_TTL: 10m
+
+      # Bootstrap token for initial admin creation (change in production!)
+      BOOTSTRAP_TOKEN: dev-bootstrap-token-change-in-production
 
       # Hash secrets for invite/refresh tokens (dev defaults)
       INVITE_HASH_SECRET: dev-invite-secret
@@ -51,10 +67,13 @@ services:
       DB_PASSWORD: changeme
       DB_NAME: foundry
       DB_SSLMODE: disable
+
+      # Kubernetes configuration
       K8S_ENABLED: "false"
+
+      # Logging configuration
       LOG_LEVEL: debug
       LOG_FORMAT: text
-      SEED_ADMIN: admin@foundry.dev
 
       # PCA configuration (dev defaults expect real ARNs in staging/e2e)
       PCA_CLIENT_CA_ARN: ""
@@ -76,23 +95,41 @@ services:
       retries: 3
       start_period: 10s
     depends_on:
-      auth:
+      auth-init:
         condition: service_completed_successfully
       postgres:
         condition: service_healthy
     restart: on-failure
 
-  api-test:
-    image: foundry-api-test:latest
-    container_name: api-test
-    environment:
-      API_URL: http://api:5050
-      JWT_TOKEN_PATH: /data/jwt.txt
+  # Caddy reverse proxy to terminate TLS for api.localhost
+  caddy:
+    image: caddy:2-alpine
+    container_name: caddy
+    ports:
+      - "443:443"
     volumes:
-      - ./.auth:/data
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./.certs:/certs:ro
+    depends_on:
+      api:
+        condition: service_started
+
+  # Optional: populate database with mock data (releases, deployments, events)
+  mockdata:
+    image: foundry-api:latest
+    container_name: api-mockdata
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: foundry
+      DB_PASSWORD: changeme
+      DB_NAME: foundry
+      DB_SSLMODE: disable
+    entrypoint: ["/bin/sh", "-c", "/app/foundry-api mock --projects ${MOCK_PROJECTS:-alpha,beta,gamma} --branches ${MOCK_BRANCHES:-main,develop,release/1.x} --releases ${MOCK_RELEASES:-100} --deployments ${MOCK_DEPLOYMENTS:-3} --events ${MOCK_EVENTS:-6}"]
     depends_on:
       api:
         condition: service_healthy
+    profiles: [ "mockdata" ]
 
   postgres:
     image: postgres:15-alpine

@@ -12,13 +12,13 @@ import (
 	"github.com/input-output-hk/catalyst-forge/lib/foundry/auth"
 )
 
-// RoleHandler handles role endpoints
+// RoleHandler handles role endpoints.
 type RoleHandler struct {
 	roleService userservice.RoleService
 	logger      *slog.Logger
 }
 
-// NewRoleHandler creates a new role handler
+// NewRoleHandler creates a new role handler.
 func NewRoleHandler(roleService userservice.RoleService, logger *slog.Logger) *RoleHandler {
 	return &RoleHandler{
 		roleService: roleService,
@@ -27,7 +27,7 @@ func NewRoleHandler(roleService userservice.RoleService, logger *slog.Logger) *R
 }
 
 // Role represents a role in the system (swagger-compatible version)
-// @Description Role represents a role in the system
+// @Description Role represents a role in the system.
 type Role struct {
 	ID          uint      `json:"id" example:"1"`
 	Name        string    `json:"name" example:"admin"`
@@ -36,13 +36,13 @@ type Role struct {
 	UpdatedAt   time.Time `json:"updated_at" example:"2023-01-01T00:00:00Z"`
 }
 
-// CreateRoleRequest represents the request body for creating a role
+// CreateRoleRequest represents the request body for creating a role.
 type CreateRoleRequest struct {
 	Name        string   `json:"name" binding:"required"`
 	Permissions []string `json:"permissions"`
 }
 
-// UpdateRoleRequest represents the request body for updating a role
+// UpdateRoleRequest represents the request body for updating a role.
 type UpdateRoleRequest struct {
 	Name        string   `json:"name" binding:"required"`
 	Permissions []string `json:"permissions" binding:"required"`
@@ -61,7 +61,7 @@ type UpdateRoleRequest struct {
 // @Failure 400 {object} map[string]interface{} "Invalid request"
 // @Failure 409 {object} map[string]interface{} "Role already exists"
 // @Failure 500 {object} map[string]interface{} "Internal server error"
-// @Router /auth/roles [post]
+// @Router /auth/roles [post].
 func (h *RoleHandler) CreateRole(c *gin.Context) {
 	var req CreateRoleRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -111,7 +111,7 @@ func (h *RoleHandler) CreateRole(c *gin.Context) {
 // @Success 200 {object} Role "Role found"
 // @Failure 404 {object} map[string]interface{} "Role not found"
 // @Failure 500 {object} map[string]interface{} "Internal server error"
-// @Router /auth/roles/{id} [get]
+// @Router /auth/roles/{id} [get].
 func (h *RoleHandler) GetRole(c *gin.Context) {
 	idStr := c.Param("id")
 
@@ -145,7 +145,7 @@ func (h *RoleHandler) GetRole(c *gin.Context) {
 // @Success 200 {object} Role "Role found"
 // @Failure 404 {object} map[string]interface{} "Role not found"
 // @Failure 500 {object} map[string]interface{} "Internal server error"
-// @Router /auth/roles/name/{name} [get]
+// @Router /auth/roles/name/{name} [get].
 func (h *RoleHandler) GetRoleByName(c *gin.Context) {
 	name := c.Param("name")
 
@@ -174,7 +174,7 @@ func (h *RoleHandler) GetRoleByName(c *gin.Context) {
 // @Failure 400 {object} map[string]interface{} "Invalid request"
 // @Failure 404 {object} map[string]interface{} "Role not found"
 // @Failure 500 {object} map[string]interface{} "Internal server error"
-// @Router /auth/roles/{id} [put]
+// @Router /auth/roles/{id} [put].
 func (h *RoleHandler) UpdateRole(c *gin.Context) {
 	idStr := c.Param("id")
 	var req UpdateRoleRequest
@@ -228,7 +228,7 @@ func (h *RoleHandler) UpdateRole(c *gin.Context) {
 // @Success 204 "Role deleted successfully"
 // @Failure 404 {object} map[string]interface{} "Role not found"
 // @Failure 500 {object} map[string]interface{} "Internal server error"
-// @Router /auth/roles/{id} [delete]
+// @Router /auth/roles/{id} [delete].
 func (h *RoleHandler) DeleteRole(c *gin.Context) {
 	idStr := c.Param("id")
 
@@ -259,7 +259,7 @@ func (h *RoleHandler) DeleteRole(c *gin.Context) {
 // @Security BearerAuth
 // @Success 200 {array} Role "List of roles"
 // @Failure 500 {object} map[string]interface{} "Internal server error"
-// @Router /auth/roles [get]
+// @Router /auth/roles [get].
 func (h *RoleHandler) ListRoles(c *gin.Context) {
 	roles, err := h.roleService.ListRoles()
 	if err != nil {
@@ -273,7 +273,7 @@ func (h *RoleHandler) ListRoles(c *gin.Context) {
 	c.JSON(http.StatusOK, roles)
 }
 
-// convertToPermissions converts string slice to auth.Permission slice
+// convertToPermissions converts string slice to auth.Permission slice.
 func convertToPermissions(permissions []string) []auth.Permission {
 	result := make([]auth.Permission, len(permissions))
 	for i, p := range permissions {

@@ -4,7 +4,7 @@ import (
 	"time"
 )
 
-// BuildSession represents a CI/build session for provenance and rate limiting
+// BuildSession represents a CI/build session for provenance and rate limiting.
 type BuildSession struct {
 	ID        string    `gorm:"primaryKey;size:36" json:"id"`
 	OwnerType string    `gorm:"size:32" json:"owner_type"`

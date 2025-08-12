@@ -8,7 +8,7 @@ import (
 	"time"
 )
 
-// Config represents the application configuration
+// Config represents the application configuration.
 type Config struct {
 	Server     ServerConfig     `kong:"embed"`
 	Auth       AuthConfig       `kong:"embed"`
@@ -20,7 +20,7 @@ type Config struct {
 	Certs      CertsConfig      `kong:"embed,prefix='certs-'"`
 }
 
-// ServerConfig represents server-specific configuration
+// ServerConfig represents server-specific configuration.
 type ServerConfig struct {
 	HttpPort       int           `kong:"help='HTTP port to listen on',default=8080,name='http-port',env='HTTP_PORT'"`
 	Timeout        time.Duration `kong:"help='Server timeout',default=30s,env='SERVER_TIMEOUT'"`
@@ -28,17 +28,41 @@ type ServerConfig struct {
 	CookieSameSite string        `kong:"help='Cookie SameSite policy (Strict|Lax|None)',default='Strict',env='COOKIE_SAMESITE'"`
 }
 
-// AuthConfig represents authentication-specific configuration
+// AuthConfig represents authentication-specific configuration.
 type AuthConfig struct {
-	PrivateKey string        `kong:"help='Path to private key for JWT authentication',env='AUTH_PRIVATE_KEY'"`
-	PublicKey  string        `kong:"help='Path to public key for JWT authentication',env='AUTH_PUBLIC_KEY'"`
+	// JWT signing/verification keys
+	PrivateKey string `kong:"help='Path to private key for JWT authentication',env='AUTH_PRIVATE_KEY'"`
+	PublicKey  string `kong:"help='Path to public key for JWT authentication',env='AUTH_PUBLIC_KEY'"`
+
+	// Token TTL configuration
 	InviteTTL  time.Duration `kong:"help='Default invite TTL (e.g., 72h)',default=72h,env='INVITE_TTL'"`
 	AccessTTL  time.Duration `kong:"help='Access token TTL (e.g., 30m)',default=30m,env='AUTH_ACCESS_TTL'"`
-	RefreshTTL time.Duration `kong:"help='Default refresh token TTL (CLI/browser; used as base for rotation)',default=720h,env='AUTH_REFRESH_TTL'"`
-	KETTTL     time.Duration `kong:"help='Key Enrollment Token TTL (e.g., 10m)',default=10m,env='KET_TTL'"`
+	RefreshTTL time.Duration `kong:"help='Refresh token TTL for new token families',default=720h,env='AUTH_REFRESH_TTL'"`
+
+	// Device-keypair authentication configuration
+	RefreshSkew         time.Duration `kong:"help='Clock skew tolerance for device proofs',default=30s,env='AUTH_REFRESH_SKEW'"`
+	RefreshCookieName   string        `kong:"help='Name of refresh token cookie',default='cforge_rt',env='AUTH_REFRESH_COOKIE_NAME'"`
+	RefreshCookieDomain string        `kong:"help='Domain for refresh token cookies (empty for default)',env='AUTH_REFRESH_COOKIE_DOMAIN'"`
+	RefreshCookieSecure bool          `kong:"help='Force secure flag on refresh cookies (auto-detected if empty)',default=true,env='AUTH_REFRESH_COOKIE_SECURE'"`
+	AllowedWebOrigins   string        `kong:"help='Comma-separated list of allowed web origins for CORS',env='AUTH_ALLOWED_WEB_ORIGINS'"`
+	RefreshHashSecret   string        `kong:"help='Secret for HMAC refresh token validation (required in production)',env='REFRESH_HASH_SECRET'"`
+
+	// Rate limiting for auth endpoints
+	AuthRateLimitBurst  int           `kong:"help='Rate limit burst for auth endpoints per user',default=10,env='AUTH_RATE_LIMIT_BURST'"`
+	AuthRateLimitWindow time.Duration `kong:"help='Rate limit window for auth endpoints',default=1m,env='AUTH_RATE_LIMIT_WINDOW'"`
+
+	// Rate limiting for invite verification
+	InviteMaxAttempts  int           `kong:"help='Max verification attempts per invite before lockout',default=5,env='INVITE_MAX_ATTEMPTS'"`
+	InviteLockDuration time.Duration `kong:"help='Duration to lock invite after max failed attempts',default=30m,env='INVITE_LOCK_DURATION'"`
+
+	// Bootstrap configuration
+	BootstrapToken string `kong:"help='One-time bootstrap token for creating initial admin invite (min 32 chars)',env='BOOTSTRAP_TOKEN'"`
+
+	// Development mode - NEVER enable in production
+	DevMode bool `kong:"help='Enable development mode features (DANGEROUS - never use in production)',default=false,env='AUTH_DEV_MODE'"`
 }
 
-// EmailConfig represents outbound email configuration
+// EmailConfig represents outbound email configuration.
 type EmailConfig struct {
 	Enabled   bool   `kong:"help='Enable outbound emails',default=false,env='EMAIL_ENABLED'"`
 	Provider  string `kong:"help='Email provider (ses, none)',default='none',env='EMAIL_PROVIDER'"`
@@ -46,12 +70,12 @@ type EmailConfig struct {
 	SESRegion string `kong:"help='AWS SES region (e.g., us-east-1)',env='SES_REGION'"`
 }
 
-// SecurityConfig toggles security-related features
+// SecurityConfig toggles security-related features.
 type SecurityConfig struct {
 	EnableNaivePerIPRateLimit bool `kong:"help='Enable in-process per-IP rate limiting (not suitable behind proxies that hide client IP)',default=false,env='ENABLE_PER_IP_RATELIMIT'"`
 }
 
-// DatabaseConfig represents database-specific configuration
+// DatabaseConfig represents database-specific configuration.
 type DatabaseConfig struct {
 	Host     string `kong:"help='Database host',default='localhost',env='DB_HOST'"`
 	DbPort   int    `kong:"help='Database port',default=5432,name='db-port',env='DB_PORT'"`
@@ -61,19 +85,19 @@ type DatabaseConfig struct {
 	SSLMode  string `kong:"help='Database SSL mode',default='disable',env='DB_SSLMODE'"`
 }
 
-// LoggingConfig represents logging-specific configuration
+// LoggingConfig represents logging-specific configuration.
 type LoggingConfig struct {
 	Level  string `kong:"help='Log level (debug, info, warn, error)',default='info',env='LOG_LEVEL'"`
 	Format string `kong:"help='Log format (json, text)',default='json',env='LOG_FORMAT'"`
 }
 
-// KubernetesConfig represents Kubernetes-specific configuration
+// KubernetesConfig represents Kubernetes-specific configuration.
 type KubernetesConfig struct {
 	Namespace string `kong:"help='Kubernetes namespace to use',default='default',env='K8S_NAMESPACE'"`
 	Enabled   bool   `kong:"help='Enable Kubernetes integration',default=false,env='K8S_ENABLED'"`
 }
 
-// CertsConfig represents configuration for certificate issuance feature
+// CertsConfig represents configuration for certificate issuance feature.
 type CertsConfig struct {
 	// ACM-PCA configuration
 	PCAClientCAArn       string        `kong:"help='ACM-PCA ARN for client certificates',env='PCA_CLIENT_CA_ARN'"`
@@ -111,7 +135,7 @@ type CertsConfig struct {
 	CAS3Bucket string `kong:"help='S3 bucket for CA register artifacts',env='CA_S3_BUCKET'"`
 }
 
-// Validate validates the configuration
+// Validate validates the configuration.
 func (c *Config) Validate() error {
 	// Validate required fields
 	if c.Database.Password == "" {
@@ -119,13 +143,14 @@ func (c *Config) Validate() error {
 	}
 	// Enforce refresh hash secret outside development
 	// If PUBLIC_BASE_URL looks like localhost or 127.0.0.1, allow missing secret; else require
-	if c.Server.PublicBaseURL != "" {
-		base := os.Getenv("PUBLIC_BASE_URL")
-		if base != "" && !isLocalhost(base) {
-			if os.Getenv("REFRESH_HASH_SECRET") == "" {
-				return errors.New("REFRESH_HASH_SECRET is required in non-dev environments")
-			}
+	if c.Server.PublicBaseURL != "" && !isLocalhost(c.Server.PublicBaseURL) {
+		if c.Auth.RefreshHashSecret == "" {
+			return errors.New("RefreshHashSecret is required in non-dev environments")
 		}
+	}
+	// Validate bootstrap token if provided
+	if c.Auth.BootstrapToken != "" && len(c.Auth.BootstrapToken) < 32 {
+		return errors.New("BootstrapToken must be at least 32 characters long for security")
 	}
 	return nil
 }
@@ -139,7 +164,7 @@ func isLocalhost(url string) bool {
 		len(url) >= 12 && url[:12] == "https://127.0"
 }
 
-// GetDSN returns the database connection string
+// GetDSN returns the database connection string.
 func (c *Config) GetDSN() string {
 	return fmt.Sprintf(
 		"host=%s port=%d user=%s password=%s dbname=%s sslmode=%s",
@@ -152,12 +177,32 @@ func (c *Config) GetDSN() string {
 	)
 }
 
-// GetServerAddr returns the server address string
+// GetServerAddr returns the server address string.
 func (c *Config) GetServerAddr() string {
 	return fmt.Sprintf(":%d", c.Server.HttpPort)
 }
 
-// GetLogger creates a slog.Logger based on the logging configuration
+// MaskSensitive returns a string indicating if a sensitive field is set.
+func MaskSensitive(value string) string {
+	if value == "" {
+		return "<not set>"
+	}
+	if len(value) <= 8 {
+		return "<set>"
+	}
+	// Show first 4 chars for debugging, rest masked
+	return value[:4] + "****"
+}
+
+// GetSafeBootstrapInfo returns safe-to-log bootstrap token info.
+func (c *Config) GetSafeBootstrapInfo() string {
+	if c.Auth.BootstrapToken == "" {
+		return "Bootstrap token not configured"
+	}
+	return fmt.Sprintf("Bootstrap token configured (length: %d)", len(c.Auth.BootstrapToken))
+}
+
+// GetLogger creates a slog.Logger based on the logging configuration.
 func (c *Config) GetLogger() (*slog.Logger, error) {
 	var level slog.Level
 	switch c.Logging.Level {

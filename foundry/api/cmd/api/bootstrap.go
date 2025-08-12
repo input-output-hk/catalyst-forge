@@ -5,6 +5,7 @@ import (
 	"crypto/ecdsa"
 	"crypto/x509"
 	"encoding/pem"
+	"fmt"
 	"os"
 	"time"
 
@@ -25,8 +26,64 @@ import (
 	"gorm.io/gorm"
 )
 
-func openDB(cfg config.Config) (*gorm.DB, error) {
-	return gorm.Open(postgres.Open(cfg.GetDSN()), &gorm.Config{})
+func openDB(cfg config.Config, logger *slog.Logger) (*gorm.DB, error) {
+	// Retry loop so the server waits for the DB to come up instead of crash-looping.
+	// In Kubernetes this keeps the container in an unhealthy/non-ready state until DB is reachable.
+	timeout := 60 * time.Second
+	if v := os.Getenv("DB_CONNECT_TIMEOUT"); v != "" {
+		if d, err := time.ParseDuration(v); err == nil {
+			timeout = d
+		}
+	}
+	interval := 500 * time.Millisecond
+	if v := os.Getenv("DB_CONNECT_INTERVAL"); v != "" {
+		if d, err := time.ParseDuration(v); err == nil {
+			interval = d
+		}
+	}
+
+	dsn := cfg.GetDSN()
+	deadline := time.Now().Add(timeout)
+	var lastErr error
+	if logger != nil {
+		logger.Info("Connecting to database",
+			"host", cfg.Database.Host,
+			"port", cfg.Database.DbPort,
+			"name", cfg.Database.Name,
+			"timeout", timeout,
+		)
+	}
+	for time.Now().Before(deadline) {
+		db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
+		if err == nil {
+			if sqlDB, err2 := db.DB(); err2 == nil {
+				if errPing := sqlDB.Ping(); errPing == nil {
+					if logger != nil {
+						logger.Info("Connected to database",
+							"host", cfg.Database.Host,
+							"port", cfg.Database.DbPort,
+							"name", cfg.Database.Name,
+						)
+					}
+					return db, nil
+				} else {
+					lastErr = errPing
+				}
+			} else {
+				lastErr = err2
+			}
+		} else {
+			lastErr = err
+		}
+		if logger != nil {
+			logger.Debug("Database not ready yet; retrying",
+				"error", lastErr,
+				"retry_in", interval,
+			)
+		}
+		time.Sleep(interval)
+	}
+	return nil, fmt.Errorf("database not ready within %s: %w", timeout, lastErr)
 }
 
 func runMigrations(db *gorm.DB) error {
@@ -46,6 +103,7 @@ func runMigrations(db *gorm.DB) error {
 		&user.DeviceSession{},
 		&user.RevokedJTI{},
 		&user.Invite{},
+		&user.BootstrapToken{},
 		&adm.Log{},
 		// Build identity models
 		&buildmodels.ServiceAccount{},
@@ -77,7 +135,7 @@ func initJWTManager(authCfg config.AuthConfig, logger *slog.Logger) (jwt.JWTMana
 // initGHAClient reserved for future extraction if needed
 //
 //lint:ignore U1000 kept intentionally to preserve API surface
-func initGHAClient() (Start func() error, Stop func(), clientCtx context.Context, err error) {
+func initGHAClient() (start func() error, stop func(), clientCtx context.Context, err error) {
 	// Kept in main for logging; this wrapper reserved for future extraction if needed.
 	return nil, nil, nil, nil
 }
@@ -157,7 +215,7 @@ func injectDefaultContext(r *gin.Engine, cfg config.Config, emailSvc emailsvc.Se
 	})
 }
 
-// initPCAClient optionally initializes an ACM-PCA client wrapper when ARNs are provided
+// initPCAClient optionally initializes an ACM-PCA client wrapper when ARNs are provided.
 func initPCAClient(cfg config.CertsConfig) (pcaclient.PCAClient, error) {
 	if cfg.PCAClientCAArn == "" && cfg.PCAServerCAArn == "" {
 		// Dev/local: return a mock PCA so cert flows work in integration tests without AWS

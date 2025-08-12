@@ -72,14 +72,6 @@ test:
         RUN docker compose up api-test
     END
 
-docker-test:
-    FROM +src
-
-    COPY --dir test .
-
-    ENTRYPOINT ["/usr/local/go/bin/go", "test", "-v", "./test/..."]
-    SAVE IMAGE foundry-api-test:latest
-
 docker:
     FROM debian:latest
     WORKDIR /app

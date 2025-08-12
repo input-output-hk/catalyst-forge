@@ -78,7 +78,7 @@ func InitDefault() {
 	prometheus.MustRegister(BuildSessionCreated, CertIssuedTotal, CertIssueErrorsTotal, PCAIssueLatencySeconds, SessionRefreshTotal, SessionLogoutTotal, DeviceTokenModeTotal)
 }
 
-// Certificate issuance metrics
+// Certificate issuance metrics.
 var (
 	CertIssuedTotal        *prometheus.CounterVec
 	CertIssueErrorsTotal   *prometheus.CounterVec

@@ -11,7 +11,7 @@ import (
 	jose "gopkg.in/square/go-jose.v2"
 )
 
-// JWKSHandler serves the public JWKS for token verification
+// JWKSHandler serves the public JWKS for token verification.
 type JWKSHandler struct {
 	jwtManager jwt.JWTManager
 }
@@ -27,7 +27,7 @@ func NewJWKSHandler(jwtManager jwt.JWTManager) *JWKSHandler {
 // @Accept json
 // @Produce json
 // @Success 200 {object} map[string]interface{} "JWKS"
-// @Router /.well-known/jwks.json [get]
+// @Router /.well-known/jwks.json [get].
 func (h *JWKSHandler) GetJWKS(c *gin.Context) {
 	pub := h.jwtManager.PublicKey()
 	if pub == nil {

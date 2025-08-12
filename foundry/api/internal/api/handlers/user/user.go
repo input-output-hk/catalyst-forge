@@ -10,13 +10,13 @@ import (
 	userservice "github.com/input-output-hk/catalyst-forge/foundry/api/internal/service/user"
 )
 
-// UserHandler handles user endpoints
+// UserHandler handles user endpoints.
 type UserHandler struct {
 	userService userservice.UserService
 	logger      *slog.Logger
 }
 
-// NewUserHandler creates a new user handler
+// NewUserHandler creates a new user handler.
 func NewUserHandler(userService userservice.UserService, logger *slog.Logger) *UserHandler {
 	return &UserHandler{
 		userService: userService,
@@ -24,19 +24,19 @@ func NewUserHandler(userService userservice.UserService, logger *slog.Logger) *U
 	}
 }
 
-// CreateUserRequest represents the request body for creating a user
+// CreateUserRequest represents the request body for creating a user.
 type CreateUserRequest struct {
 	Email  string `json:"email" binding:"required,email"`
 	Status string `json:"status,omitempty"`
 }
 
-// UpdateUserRequest represents the request body for updating a user
+// UpdateUserRequest represents the request body for updating a user.
 type UpdateUserRequest struct {
 	Email  string `json:"email" binding:"required,email"`
 	Status string `json:"status,omitempty"`
 }
 
-// RegisterUserRequest represents the request body for registering a user
+// RegisterUserRequest represents the request body for registering a user.
 type RegisterUserRequest struct {
 	Email string `json:"email" binding:"required,email"`
 }
@@ -53,7 +53,7 @@ type RegisterUserRequest struct {
 // @Failure 400 {object} map[string]interface{} "Invalid request"
 // @Failure 409 {object} map[string]interface{} "User already exists"
 // @Failure 500 {object} map[string]interface{} "Internal server error"
-// @Router /auth/users [post]
+// @Router /auth/users [post].
 func (h *UserHandler) CreateUser(c *gin.Context) {
 	var req CreateUserRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -92,7 +92,7 @@ func (h *UserHandler) CreateUser(c *gin.Context) {
 // @Failure 400 {object} map[string]interface{} "Invalid request"
 // @Failure 409 {object} map[string]interface{} "User already exists"
 // @Failure 500 {object} map[string]interface{} "Internal server error"
-// @Router /auth/users/register [post]
+// @Router /auth/users/register [post].
 func (h *UserHandler) RegisterUser(c *gin.Context) {
 	var req RegisterUserRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -140,7 +140,7 @@ func (h *UserHandler) RegisterUser(c *gin.Context) {
 // @Success 200 {object} user.User "User found"
 // @Failure 404 {object} map[string]interface{} "User not found"
 // @Failure 500 {object} map[string]interface{} "Internal server error"
-// @Router /auth/users/{id} [get]
+// @Router /auth/users/{id} [get].
 func (h *UserHandler) GetUser(c *gin.Context) {
 	idStr := c.Param("id")
 
@@ -176,7 +176,7 @@ func (h *UserHandler) GetUser(c *gin.Context) {
 // @Success 200 {object} user.User "User found"
 // @Failure 404 {object} map[string]interface{} "User not found"
 // @Failure 500 {object} map[string]interface{} "Internal server error"
-// @Router /auth/users/email/{email} [get]
+// @Router /auth/users/email/{email} [get].
 func (h *UserHandler) GetUserByEmail(c *gin.Context) {
 	email := c.Param("email")
 
@@ -205,7 +205,7 @@ func (h *UserHandler) GetUserByEmail(c *gin.Context) {
 // @Failure 400 {object} map[string]interface{} "Invalid request"
 // @Failure 404 {object} map[string]interface{} "User not found"
 // @Failure 500 {object} map[string]interface{} "Internal server error"
-// @Router /auth/users/{id} [put]
+// @Router /auth/users/{id} [put].
 func (h *UserHandler) UpdateUser(c *gin.Context) {
 	idStr := c.Param("id")
 
@@ -264,7 +264,7 @@ func (h *UserHandler) UpdateUser(c *gin.Context) {
 // @Success 204 "User deleted successfully"
 // @Failure 404 {object} map[string]interface{} "User not found"
 // @Failure 500 {object} map[string]interface{} "Internal server error"
-// @Router /auth/users/{id} [delete]
+// @Router /auth/users/{id} [delete].
 func (h *UserHandler) DeleteUser(c *gin.Context) {
 	id := c.Param("id")
 
@@ -297,7 +297,7 @@ func (h *UserHandler) DeleteUser(c *gin.Context) {
 // @Security BearerAuth
 // @Success 200 {array} user.User "List of users"
 // @Failure 500 {object} map[string]interface{} "Internal server error"
-// @Router /auth/users [get]
+// @Router /auth/users [get].
 func (h *UserHandler) ListUsers(c *gin.Context) {
 	users, err := h.userService.ListUsers()
 	if err != nil {
@@ -319,7 +319,7 @@ func (h *UserHandler) ListUsers(c *gin.Context) {
 // @Security BearerAuth
 // @Success 200 {array} user.User "List of pending users"
 // @Failure 500 {object} map[string]interface{} "Internal server error"
-// @Router /auth/pending/users [get]
+// @Router /auth/pending/users [get].
 func (h *UserHandler) GetPendingUsers(c *gin.Context) {
 	users, err := h.userService.GetPendingUsers()
 	if err != nil {
@@ -342,7 +342,7 @@ func (h *UserHandler) GetPendingUsers(c *gin.Context) {
 // @Success 200 {object} user.User "User activated successfully"
 // @Failure 404 {object} map[string]interface{} "User not found"
 // @Failure 500 {object} map[string]interface{} "Internal server error"
-// @Router /auth/users/{id}/activate [post]
+// @Router /auth/users/{id}/activate [post].
 func (h *UserHandler) ActivateUser(c *gin.Context) {
 	id := c.Param("id")
 
@@ -385,7 +385,7 @@ func (h *UserHandler) ActivateUser(c *gin.Context) {
 // @Success 200 {object} user.User "User deactivated successfully"
 // @Failure 404 {object} map[string]interface{} "User not found"
 // @Failure 500 {object} map[string]interface{} "Internal server error"
-// @Router /auth/users/{id}/deactivate [post]
+// @Router /auth/users/{id}/deactivate [post].
 func (h *UserHandler) DeactivateUser(c *gin.Context) {
 	id := c.Param("id")
 

@@ -6,7 +6,7 @@ import (
 	"gorm.io/gorm"
 )
 
-// DeviceSession represents a pending/approved device authorization session
+// DeviceSession represents a pending/approved device authorization session.
 type DeviceSession struct {
 	ID              uint       `gorm:"primaryKey" json:"id"`
 	DeviceCode      string     `gorm:"not null;uniqueIndex" json:"-"`
@@ -26,4 +26,5 @@ type DeviceSession struct {
 	DeletedAt   gorm.DeletedAt `gorm:"index" json:"-"`
 }
 
+// TableName specifies the table name for the DeviceSession model.
 func (DeviceSession) TableName() string { return "device_sessions" }

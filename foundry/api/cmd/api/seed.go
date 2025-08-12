@@ -12,7 +12,7 @@ import (
 	"github.com/input-output-hk/catalyst-forge/lib/foundry/auth"
 )
 
-// SeedCmd seeds default data (admin user and optional admin role)
+// SeedCmd seeds default data (admin user and optional admin role).
 type SeedCmd struct {
 	// Email for the admin account
 	Email string `kong:"help='Admin email to seed',default='admin@foundry.dev'"`
@@ -22,7 +22,9 @@ type SeedCmd struct {
 
 func (s *SeedCmd) Run() error {
 	cfg := configFromEnv()
-	db, err := openDB(cfg)
+	// Minimal stderr logger for seed command
+	logger, _ := cfg.GetLogger()
+	db, err := openDB(cfg, logger)
 	if err != nil {
 		return err
 	}
@@ -65,7 +67,7 @@ func (s *SeedCmd) Run() error {
 	return nil
 }
 
-// configFromEnv builds minimal DB config from envs used by entrypoint/compose
+// configFromEnv builds minimal DB config from envs used by entrypoint/compose.
 func configFromEnv() config.Config {
 	var cfg config.Config
 	// Server unused here

@@ -8,13 +8,13 @@ import (
 	"gorm.io/gorm"
 )
 
-// HealthHandler handles health check endpoints
+// HealthHandler handles health check endpoints.
 type HealthHandler struct {
 	db     *gorm.DB
 	logger *slog.Logger
 }
 
-// NewHealthHandler creates a new health check handler
+// NewHealthHandler creates a new health check handler.
 func NewHealthHandler(db *gorm.DB, logger *slog.Logger) *HealthHandler {
 	return &HealthHandler{
 		db:     db,
@@ -30,7 +30,7 @@ func NewHealthHandler(db *gorm.DB, logger *slog.Logger) *HealthHandler {
 // @Produce json
 // @Success 200 {object} map[string]interface{} "Service is healthy"
 // @Failure 503 {object} map[string]interface{} "Service is unhealthy"
-// @Router /healthz [get]
+// @Router /healthz [get].
 func (h *HealthHandler) CheckHealth(c *gin.Context) {
 	// Check database connection
 	sqlDB, err := h.db.DB()

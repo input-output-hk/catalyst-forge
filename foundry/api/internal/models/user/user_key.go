@@ -1,26 +1,27 @@
 package user
 
 import (
-	"crypto/ed25519"
-	"encoding/base64"
-	"fmt"
-	"time"
+    "crypto/ed25519"
+    "encoding/base64"
+    "fmt"
+    "time"
 
-	"github.com/input-output-hk/catalyst-forge/lib/foundry/auth"
-	"gorm.io/gorm"
+    "gorm.io/gorm"
+
+    "github.com/input-output-hk/catalyst-forge/lib/foundry/auth"
 )
 
-// UserKeyStatus type for user key status
+// UserKeyStatus type for user key status.
 type UserKeyStatus string
 
-// Possible user key statuses
+// Possible user key statuses.
 const (
-	UserKeyStatusActive   UserKeyStatus = "active"
-	UserKeyStatusInactive UserKeyStatus = "inactive"
-	UserKeyStatusRevoked  UserKeyStatus = "revoked"
+    UserKeyStatusActive   UserKeyStatus = "active"
+    UserKeyStatusInactive UserKeyStatus = "inactive"
+    UserKeyStatusRevoked  UserKeyStatus = "revoked"
 )
 
-// UserKey represents an Ed25519 key belonging to a user
+// UserKey represents an Ed25519 key belonging to a user.
 type UserKey struct {
 	ID        uint          `gorm:"primaryKey" json:"id"`
 	UserID    uint          `gorm:"not null;index" json:"user_id"`
@@ -40,9 +41,9 @@ type UserKey struct {
 	DeletedAt gorm.DeletedAt `gorm:"index" json:"-"`
 }
 
-// TableName specifies the table name for the UserKey model
+// TableName specifies the table name for the UserKey model.
 func (UserKey) TableName() string {
-	return "user_keys"
+    return "user_keys"
 }
 
 // ToKeyPair converts the UserKey to a KeyPair using the PubKeyB64 field.

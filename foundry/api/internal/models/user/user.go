@@ -6,17 +6,17 @@ import (
 	"gorm.io/gorm"
 )
 
-// UserStatus type for user status
+// UserStatus type for user status.
 type UserStatus string
 
-// Possible user statuses
+// Possible user statuses.
 const (
-	UserStatusPending  UserStatus = "pending"
-	UserStatusActive   UserStatus = "active"
-	UserStatusInactive UserStatus = "inactive"
+    UserStatusPending  UserStatus = "pending"
+    UserStatusActive   UserStatus = "active"
+    UserStatusInactive UserStatus = "inactive"
 )
 
-// User represents a user in the system
+// User represents a user in the system.
 type User struct {
 	ID     uint       `gorm:"primaryKey" json:"id"`
 	Email  string     `gorm:"not null;uniqueIndex" json:"email"`
@@ -31,7 +31,7 @@ type User struct {
 	DeletedAt gorm.DeletedAt `gorm:"index" json:"-"`
 }
 
-// TableName specifies the table name for the User model
+// TableName specifies the table name for the User model.
 func (User) TableName() string {
-	return "users"
+    return "users"
 }

@@ -1,3 +1,5 @@
+//go:build integration
+
 package test
 
 import (
@@ -16,7 +18,8 @@ import (
 
 // Client cert test: CSR without DNS/IP SANs
 func TestClientCertificateAPI(t *testing.T) {
-	c := newTestClient()
+    env := NewTestEnv(t)
+	c := env.AdminClient()
 	ctx, cancel := newTestContext()
 	defer cancel()
 

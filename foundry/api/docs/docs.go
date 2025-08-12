@@ -9,16 +9,7 @@ const docTemplate = `{
     "info": {
         "description": "{{escape .Description}}",
         "title": "{{.Title}}",
-        "termsOfService": "http://swagger.io/terms/",
-        "contact": {
-            "name": "API Support",
-            "url": "http://www.swagger.io/support",
-            "email": "support@swagger.io"
-        },
-        "license": {
-            "name": "Apache 2.0",
-            "url": "http://www.apache.org/licenses/LICENSE-2.0.html"
-        },
+        "contact": {},
         "version": "{{.Version}}"
     },
     "host": "{{.Host}}",
@@ -48,9 +39,9 @@ const docTemplate = `{
                 }
             }
         },
-        "/auth/challenge": {
+        "/auth/bootstrap": {
             "post": {
-                "description": "Create a new challenge for user authentication using Ed25519 keys",
+                "description": "Create an admin invite using the bootstrap token (one-time use)",
                 "consumes": [
                     "application/json"
                 ],
@@ -60,23 +51,23 @@ const docTemplate = `{
                 "tags": [
                     "auth"
                 ],
-                "summary": "Create a new authentication challenge",
+                "summary": "Bootstrap admin account",
                 "parameters": [
                     {
-                        "description": "Challenge creation request",
+                        "description": "Bootstrap request",
                         "name": "request",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/handlers.ChallengeRequest"
+                            "$ref": "#/definitions/handlers.BootstrapRequest"
                         }
                     }
                 ],
                 "responses": {
-                    "200": {
-                        "description": "Challenge created successfully",
+                    "201": {
+                        "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/handlers.ChallengeResponse"
+                            "$ref": "#/definitions/handlers.CreateInviteResponse"
                         }
                     },
                     "400": {
@@ -86,15 +77,344 @@ const docTemplate = `{
                             "additionalProperties": true
                         }
                     },
-                    "404": {
-                        "description": "User key not found",
+                    "401": {
+                        "description": "Invalid or used token",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
                         }
                     },
                     "500": {
-                        "description": "Internal server error",
+                        "description": "Server error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/devices": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Get list of all devices registered to the authenticated user",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth",
+                    "devices"
+                ],
+                "summary": "List user's devices",
+                "responses": {
+                    "200": {
+                        "description": "List of user's devices",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/handlers.DeviceListResponse"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Server error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/devices/init": {
+            "post": {
+                "description": "Initialize device registration flow for invited users, requires valid invite token",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Initialize device registration",
+                "parameters": [
+                    {
+                        "description": "Device registration initialization request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/handlers.DeviceRegistrationInitRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.DeviceRegistrationInitResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "401": {
+                        "description": "Invalid or expired invite",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Server error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/devices/login": {
+            "post": {
+                "description": "Verify signed challenge with stored device key, mint new refresh family and access token",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Complete returning-device login",
+                "parameters": [
+                    {
+                        "description": "Login request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/handlers.DeviceLoginRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.DeviceLoginResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "401": {
+                        "description": "Invalid or expired challenge or proof",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Server error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/devices/login/init": {
+            "post": {
+                "description": "Start sign-in for a device that still holds its device key; issues short-lived challenge",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Initialize returning-device login",
+                "parameters": [
+                    {
+                        "description": "Login init request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/handlers.DeviceLoginInitRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.DeviceLoginInitResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "401": {
+                        "description": "Device not found or inactive",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Server error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/devices/register": {
+            "post": {
+                "description": "Complete device registration by providing device proof over challenge",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Complete device registration",
+                "parameters": [
+                    {
+                        "description": "Device registration request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/handlers.DeviceRegisterRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.DeviceRegisterResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "401": {
+                        "description": "Invalid proof or expired challenge",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Server error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/devices/{id}": {
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Revoke a specific device and invalidate all its refresh tokens",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth",
+                    "devices"
+                ],
+                "summary": "Delete/revoke a device",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Device ID (UUID)",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content - device revoked successfully"
+                    },
+                    "400": {
+                        "description": "Invalid device ID",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "404": {
+                        "description": "Device not found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Server error",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
@@ -1176,9 +1496,9 @@ const docTemplate = `{
                 }
             }
         },
-        "/auth/login": {
+        "/auth/logout": {
             "post": {
-                "description": "Authenticate a user using their signed challenge response",
+                "description": "Logout user and revoke the current refresh token using device proof",
                 "consumes": [
                     "application/json"
                 ],
@@ -1188,24 +1508,10 @@ const docTemplate = `{
                 "tags": [
                     "auth"
                 ],
-                "summary": "Authenticate user with challenge response",
-                "parameters": [
-                    {
-                        "description": "Login request",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/handlers.LoginRequest"
-                        }
-                    }
-                ],
+                "summary": "Logout and revoke refresh token",
                 "responses": {
-                    "200": {
-                        "description": "Authentication successful",
-                        "schema": {
-                            "$ref": "#/definitions/handlers.LoginResponse"
-                        }
+                    "204": {
+                        "description": "No Content - logout successful"
                     },
                     "400": {
                         "description": "Invalid request",
@@ -1215,21 +1521,14 @@ const docTemplate = `{
                         }
                     },
                     "401": {
-                        "description": "Authentication failed",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "404": {
-                        "description": "Challenge or user not found",
+                        "description": "Invalid token or proof",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
                         }
                     },
                     "500": {
-                        "description": "Internal server error",
+                        "description": "Server error",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
@@ -1307,6 +1606,51 @@ const docTemplate = `{
                     },
                     "500": {
                         "description": "Internal server error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/refresh": {
+            "post": {
+                "description": "Refresh access token using device proof and cookie-bound refresh token",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Refresh access token",
+                "responses": {
+                    "200": {
+                        "description": "New access token",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "401": {
+                        "description": "Invalid token or proof",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Server error",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
@@ -2455,160 +2799,6 @@ const docTemplate = `{
                 }
             }
         },
-        "/device/approve": {
-            "post": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Approve a pending device session identified by user_code",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "device"
-                ],
-                "summary": "Approve device session",
-                "parameters": [
-                    {
-                        "description": "Approval request",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/handlers.DeviceApproveRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "approved",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "400": {
-                        "description": "Invalid request",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "404": {
-                        "description": "Not found",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    }
-                }
-            }
-        },
-        "/device/init": {
-            "post": {
-                "description": "Initialize a device authorization session and return device_code and user_code",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "device"
-                ],
-                "summary": "Start device authorization",
-                "parameters": [
-                    {
-                        "description": "Optional device metadata",
-                        "name": "request",
-                        "in": "body",
-                        "schema": {
-                            "$ref": "#/definitions/handlers.DeviceInitRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/handlers.DeviceInitResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Server error",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    }
-                }
-            }
-        },
-        "/device/token": {
-            "post": {
-                "description": "Poll the device authorization session for completion and receive tokens when approved",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "device"
-                ],
-                "summary": "Poll device token",
-                "parameters": [
-                    {
-                        "description": "Device token request",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/handlers.DeviceTokenRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/handlers.DeviceTokenResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Invalid request",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "401": {
-                        "description": "authorization_pending | expired_token | access_denied",
-                        "schema": {
-                            "$ref": "#/definitions/handlers.DeviceTokenResponse"
-                        }
-                    },
-                    "429": {
-                        "description": "slow_down",
-                        "schema": {
-                            "$ref": "#/definitions/handlers.DeviceTokenResponse"
-                        }
-                    }
-                }
-            }
-        },
         "/healthz": {
             "get": {
                 "description": "Check the health status of the API service",
@@ -3586,6 +3776,21 @@ const docTemplate = `{
                 }
             }
         },
+        "handlers.BootstrapRequest": {
+            "type": "object",
+            "required": [
+                "bootstrap_token",
+                "email"
+            ],
+            "properties": {
+                "bootstrap_token": {
+                    "type": "string"
+                },
+                "email": {
+                    "type": "string"
+                }
+            }
+        },
         "handlers.CertificateSigningRequest": {
             "type": "object",
             "required": [
@@ -3654,29 +3859,6 @@ const docTemplate = `{
                     "description": "SerialNumber is the certificate's serial number",
                     "type": "string",
                     "example": "123456789"
-                }
-            }
-        },
-        "handlers.ChallengeRequest": {
-            "type": "object",
-            "required": [
-                "email",
-                "kid"
-            ],
-            "properties": {
-                "email": {
-                    "type": "string"
-                },
-                "kid": {
-                    "type": "string"
-                }
-            }
-        },
-        "handlers.ChallengeResponse": {
-            "type": "object",
-            "properties": {
-                "token": {
-                    "type": "string"
                 }
             }
         },
@@ -3753,67 +3935,160 @@ const docTemplate = `{
                 }
             }
         },
-        "handlers.DeviceApproveRequest": {
+        "handlers.DeviceListResponse": {
             "type": "object",
             "properties": {
-                "user_code": {
+                "created_at": {
                     "type": "string"
-                }
-            }
-        },
-        "handlers.DeviceInitRequest": {
-            "type": "object",
-            "properties": {
-                "fingerprint": {
+                },
+                "id": {
+                    "type": "string"
+                },
+                "last_used_at": {
                     "type": "string"
                 },
                 "name": {
                     "type": "string"
                 },
-                "platform": {
+                "status": {
                     "type": "string"
                 }
             }
         },
-        "handlers.DeviceInitResponse": {
+        "handlers.DeviceLoginInitRequest": {
+            "type": "object",
+            "required": [
+                "device_id"
+            ],
+            "properties": {
+                "device_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "handlers.DeviceLoginInitResponse": {
             "type": "object",
             "properties": {
-                "device_code": {
+                "alg": {
+                    "type": "string"
+                },
+                "challenge": {
+                    "type": "string"
+                },
+                "device_id": {
+                    "type": "string"
+                },
+                "expires_at": {
+                    "type": "string"
+                }
+            }
+        },
+        "handlers.DeviceLoginRequest": {
+            "type": "object",
+            "required": [
+                "device_id",
+                "device_proof",
+                "timestamp"
+            ],
+            "properties": {
+                "device_id": {
+                    "type": "string"
+                },
+                "device_proof": {
+                    "description": "base64url(signature)",
+                    "type": "string"
+                },
+                "timestamp": {
+                    "type": "integer"
+                }
+            }
+        },
+        "handlers.DeviceLoginResponse": {
+            "type": "object",
+            "properties": {
+                "access_token": {
                     "type": "string"
                 },
                 "expires_in": {
                     "type": "integer"
                 },
-                "interval": {
+                "token_type": {
+                    "type": "string"
+                },
+                "user": {}
+            }
+        },
+        "handlers.DeviceRegisterRequest": {
+            "type": "object",
+            "required": [
+                "device_id",
+                "device_name",
+                "device_proof",
+                "public_key_jwk",
+                "timestamp"
+            ],
+            "properties": {
+                "device_id": {
+                    "type": "string"
+                },
+                "device_name": {
+                    "type": "string"
+                },
+                "device_proof": {
+                    "type": "string"
+                },
+                "public_key_jwk": {
+                    "type": "object",
+                    "additionalProperties": true
+                },
+                "timestamp": {
+                    "type": "integer"
+                }
+            }
+        },
+        "handlers.DeviceRegisterResponse": {
+            "type": "object",
+            "properties": {
+                "access_token": {
+                    "type": "string"
+                },
+                "expires_in": {
                     "type": "integer"
                 },
-                "user_code": {
+                "token_type": {
                     "type": "string"
                 },
-                "verification_uri": {
+                "user": {}
+            }
+        },
+        "handlers.DeviceRegistrationInitRequest": {
+            "type": "object",
+            "required": [
+                "invite_id",
+                "token"
+            ],
+            "properties": {
+                "invite_id": {
+                    "type": "integer"
+                },
+                "token": {
                     "type": "string"
                 }
             }
         },
-        "handlers.DeviceTokenRequest": {
+        "handlers.DeviceRegistrationInitResponse": {
             "type": "object",
             "properties": {
-                "device_code": {
-                    "type": "string"
-                }
-            }
-        },
-        "handlers.DeviceTokenResponse": {
-            "type": "object",
-            "properties": {
-                "access": {
+                "alg": {
                     "type": "string"
                 },
-                "error": {
-                    "description": "authorization_pending | slow_down | expired_token | access_denied",
+                "challenge": {
                     "type": "string"
                 },
-                "refresh": {
+                "device_id": {
+                    "type": "string"
+                },
+                "expires_at": {
                     "type": "string"
                 }
             }
@@ -3849,25 +4124,6 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "updated_by": {
-                    "type": "string"
-                }
-            }
-        },
-        "handlers.LoginRequest": {
-            "type": "object",
-            "properties": {
-                "signature": {
-                    "type": "string"
-                },
-                "token": {
-                    "type": "string"
-                }
-            }
-        },
-        "handlers.LoginResponse": {
-            "type": "object",
-            "properties": {
-                "token": {
                     "type": "string"
                 }
             }
@@ -4390,25 +4646,17 @@ const docTemplate = `{
                 "UserStatusInactive"
             ]
         }
-    },
-    "securityDefinitions": {
-        "BearerAuth": {
-            "description": "Type \"Bearer\" followed by a space and JWT token.",
-            "type": "apiKey",
-            "name": "Authorization",
-            "in": "header"
-        }
     }
 }`
 
-// SwaggerInfo holds exported Swagger Info so clients can modify it
+// SwaggerInfo holds exported Swagger Info so clients can modify it.
 var SwaggerInfo = &swag.Spec{
-	Version:          "1.0",
-	Host:             "localhost:5050",
-	BasePath:         "/",
+	Version:          "",
+	Host:             "",
+	BasePath:         "",
 	Schemes:          []string{},
-	Title:            "Catalyst Foundry API",
-	Description:      "API for managing releases and deployments in the Catalyst Foundry system.",
+	Title:            "",
+	Description:      "",
 	InfoInstanceName: "swagger",
 	SwaggerTemplate:  docTemplate,
 	LeftDelim:        "{{",

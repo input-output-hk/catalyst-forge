@@ -11,7 +11,7 @@ import (
 
 //go:generate go run github.com/matryer/moq@latest -skip-ensure --pkg mocks --out ./mocks/gha_auth.go . GithubAuthService
 
-// GithubAuthService defines the interface for GitHub Actions authentication service operations
+// GithubAuthService defines the interface for GitHub Actions authentication service operations.
 type GithubAuthService interface {
 	CreateAuth(auth *models.GithubRepositoryAuth) error
 	GetAuthByID(id uint) (*models.GithubRepositoryAuth, error)
@@ -22,13 +22,13 @@ type GithubAuthService interface {
 	GetPermissionsForRepository(repository string) ([]auth.Permission, error)
 }
 
-// DefaultGithubAuthService is the default implementation of GithubAuthService
+// DefaultGithubAuthService is the default implementation of GithubAuthService.
 type DefaultGithubAuthService struct {
 	repo   repository.GithubAuthRepository
 	logger *slog.Logger
 }
 
-// NewGithubAuthService creates a new GitHub Actions authentication service
+// NewGithubAuthService creates a new GitHub Actions authentication service.
 func NewGithubAuthService(repo repository.GithubAuthRepository, logger *slog.Logger) *DefaultGithubAuthService {
 	return &DefaultGithubAuthService{
 		repo:   repo,
@@ -36,7 +36,7 @@ func NewGithubAuthService(repo repository.GithubAuthRepository, logger *slog.Log
 	}
 }
 
-// CreateAuth creates a new GitHub Actions authentication configuration
+// CreateAuth creates a new GitHub Actions authentication configuration.
 func (s *DefaultGithubAuthService) CreateAuth(auth *models.GithubRepositoryAuth) error {
 	// Validate that the repository format is correct (owner/repo)
 	if err := s.validateRepositoryFormat(auth.Repository); err != nil {
@@ -56,17 +56,17 @@ func (s *DefaultGithubAuthService) CreateAuth(auth *models.GithubRepositoryAuth)
 	return s.repo.Create(auth)
 }
 
-// GetAuthByID retrieves a GitHub Actions authentication configuration by ID
+// GetAuthByID retrieves a GitHub Actions authentication configuration by ID.
 func (s *DefaultGithubAuthService) GetAuthByID(id uint) (*models.GithubRepositoryAuth, error) {
 	return s.repo.GetByID(id)
 }
 
-// GetAuthByRepository retrieves a GitHub Actions authentication configuration by repository name
+// GetAuthByRepository retrieves a GitHub Actions authentication configuration by repository name.
 func (s *DefaultGithubAuthService) GetAuthByRepository(repository string) (*models.GithubRepositoryAuth, error) {
 	return s.repo.GetByRepository(repository)
 }
 
-// UpdateAuth updates an existing GitHub Actions authentication configuration
+// UpdateAuth updates an existing GitHub Actions authentication configuration.
 func (s *DefaultGithubAuthService) UpdateAuth(auth *models.GithubRepositoryAuth) error {
 	// Validate that the repository format is correct
 	if err := s.validateRepositoryFormat(auth.Repository); err != nil {
@@ -80,7 +80,7 @@ func (s *DefaultGithubAuthService) UpdateAuth(auth *models.GithubRepositoryAuth)
 	return s.repo.Update(auth)
 }
 
-// DeleteAuth deletes a GitHub Actions authentication configuration
+// DeleteAuth deletes a GitHub Actions authentication configuration.
 func (s *DefaultGithubAuthService) DeleteAuth(id uint) error {
 	auth, err := s.repo.GetByID(id)
 	if err != nil {
@@ -93,17 +93,17 @@ func (s *DefaultGithubAuthService) DeleteAuth(id uint) error {
 	return s.repo.Delete(id)
 }
 
-// ListAuths retrieves all GitHub Actions authentication configurations
+// ListAuths retrieves all GitHub Actions authentication configurations.
 func (s *DefaultGithubAuthService) ListAuths() ([]models.GithubRepositoryAuth, error) {
 	return s.repo.List()
 }
 
-// GetPermissionsForRepository retrieves the permissions for a specific repository
+// GetPermissionsForRepository retrieves the permissions for a specific repository.
 func (s *DefaultGithubAuthService) GetPermissionsForRepository(repository string) ([]auth.Permission, error) {
 	return s.repo.GetPermissionsForRepository(repository)
 }
 
-// validateRepositoryFormat validates that the repository name follows the owner/repo format
+// validateRepositoryFormat validates that the repository name follows the owner/repo format.
 func (s *DefaultGithubAuthService) validateRepositoryFormat(repository string) error {
 	if repository == "" {
 		return fmt.Errorf("repository name cannot be empty")

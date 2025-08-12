@@ -40,7 +40,7 @@ type CreateBuildSessionResponse struct {
 
 // TODO: metrics hooks can be wired here (eg. prom counter) when metrics package is introduced
 
-// CreateBuildSession creates a new build session enforcing per-owner concurrency cap
+// CreateBuildSession creates a new build session enforcing per-owner concurrency cap.
 func (h *BuildHandler) CreateBuildSession(c *gin.Context) {
 	var req CreateBuildSessionRequest
 	if err := c.ShouldBindJSON(&req); err != nil {

@@ -1,65 +1,38 @@
-# Foundry API Scripts
+# Local TLS Proxy (Caddy)
 
-This directory contains scripts for managing the Foundry API infrastructure.
+This stack includes an optional Caddy reverse proxy to terminate TLS for `api.localhost` and forward to the API container.
 
-## init.sh
+## Quick start
 
-The `init.sh` script is responsible for generating and uploading authentication credentials to AWS Secrets Manager for the Foundry API and Operator services.
-
-### What it does
-
-1. **Generates certificates**: Uses Earthly to generate public and private key pairs for API authentication
-2. **Uploads certificates to AWS Secrets Manager**: Stores the certificates in the secret `FOUNDRY_API_CERTS_SECRET` with the following structure:
-   ```json
-   {
-     "public.pem": "-----BEGIN PUBLIC KEY-----...",
-     "private.pem": "-----BEGIN PRIVATE KEY-----..."
-   }
-   ```
-3. **Generates operator token**: Uses Earthly to generate a JWT token for the Foundry Operator
-4. **Uploads operator token to AWS Secrets Manager**: Stores the token in the secret `FOUNDRY_OPERATOR_TOKEN_SECRET` with the following structure:
-   ```json
-   {
-     "token": "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9..."
-   }
-   ```
-
-### Prerequisites
-
-- AWS CLI configured with appropriate permissions
-- Earthly installed and configured
-- `jq` command-line tool installed
-- AWS region set via `AWS_REGION` environment variable (defaults to `eu-central-1`)
-
-### Environment Variables
-
-The script requires the following environment variables to be set:
-
-- `FOUNDRY_API_CERTS_SECRET` - AWS Secrets Manager path for API certificates
-- `FOUNDRY_OPERATOR_TOKEN_SECRET` - AWS Secrets Manager path for operator JWT token
-
-You can set these variables in a `.env` file in the same directory as the script. Copy `env.example` to `.env` and update the values:
+1) Generate locally-trusted certificates (requires `mkcert`):
 
 ```bash
-cp env.example .env
-# Edit .env with your actual secret paths
+mkdir -p foundry/api/.certs
+cd foundry/api/.certs
+mkcert api.localhost
 ```
 
-### Usage
+This creates `api.localhost.pem` and `api.localhost-key.pem` in `.certs/`.
+
+2) Start the stack with the proxy profile:
 
 ```bash
-./init.sh
+docker compose -f foundry/api/docker-compose.yml --profile proxy up -d
 ```
 
-### Security
+3) Configure frontend to call the proxy base URL:
 
-- The script automatically cleans up local certificate and token files after upload
-- Sensitive files are removed from the local filesystem using a trap that runs on script exit
-- All credentials are stored securely in AWS Secrets Manager
+- Set `VITE_API_URL=https://api.localhost`
 
-### AWS Secrets Created/Updated
+The API compose already sets:
 
-The script creates or updates secrets at the paths specified in your environment variables:
+- `PUBLIC_BASE_URL=http://localhost:5050` (internal)
+- `AUTH_ALLOWED_WEB_ORIGINS=http://localhost:5173,https://localhost:5173`
 
-- `$FOUNDRY_API_CERTS_SECRET` - Contains API authentication certificates
-- `$FOUNDRY_OPERATOR_TOKEN_SECRET` - Contains operator JWT token
+When using the proxy, calls from `https://localhost:5173` to `https://api.localhost` will succeed without extra CORS tweaks.
+
+## Notes
+
+- Ensure `/etc/hosts` has `127.0.0.1 api.localhost`.
+- If you prefer, add `https://127.0.0.1:5173` to `AUTH_ALLOWED_WEB_ORIGINS`.
+- For clean shutdown: `docker compose --profile proxy down`.

@@ -11,9 +11,13 @@ node_modules
 !/.vscode/settings.recommended.json
 !/.vscode/tasks.recommended.json
 
+.gomodcache
+.gocache
+
 .auth
 .env
-.ai/
-.claude/
-.cursor/
+.ai
+.certs
+.claude
+.cursor
 CLAUDE.md

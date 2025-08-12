@@ -6,10 +6,10 @@ import (
 	"gorm.io/gorm"
 )
 
-// DeploymentStatus type for deployment status
+// DeploymentStatus type for deployment status.
 type DeploymentStatus string
 
-// Possible deployment statuses
+// Possible deployment statuses.
 const (
 	DeploymentStatusPending   DeploymentStatus = "pending"
 	DeploymentStatusRunning   DeploymentStatus = "running"
@@ -17,7 +17,7 @@ const (
 	DeploymentStatusFailed    DeploymentStatus = "failed"
 )
 
-// ReleaseDeployment represents a point-in-time deployment of a specific release
+// ReleaseDeployment represents a point-in-time deployment of a specific release.
 type ReleaseDeployment struct {
 	ID        string           `gorm:"primaryKey" json:"id"`
 	ReleaseID string           `gorm:"not null;index" json:"release_id"`
@@ -36,7 +36,7 @@ type ReleaseDeployment struct {
 	DeletedAt gorm.DeletedAt `gorm:"index" json:"-"`
 }
 
-// TableName specifies the table name for the ReleaseDeployment model
+// TableName specifies the table name for the ReleaseDeployment model.
 func (ReleaseDeployment) TableName() string {
-	return "release_deployments"
+    return "release_deployments"
 }

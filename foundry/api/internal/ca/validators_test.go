@@ -10,7 +10,7 @@ import (
 	"testing"
 )
 
-// helper to create a CSR with provided fields and sign it
+// helper to create a CSR with provided fields and sign it.
 func makeCSR(t *testing.T, subj pkix.Name, dns []string, ips []net.IP) *x509.CertificateRequest {
 	t.Helper()
 	key, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
@@ -35,6 +35,7 @@ func makeCSR(t *testing.T, subj pkix.Name, dns []string, ips []net.IP) *x509.Cer
 }
 
 func TestValidateClientCSR_Success_NoDNSNoIP(t *testing.T) {
+    t.Parallel()
 	csr := makeCSR(t, pkix.Name{CommonName: "client"}, nil, nil)
 	if err := ValidateClientCSR(csr); err != nil {
 		t.Fatalf("expected success, got error: %v", err)
@@ -42,6 +43,7 @@ func TestValidateClientCSR_Success_NoDNSNoIP(t *testing.T) {
 }
 
 func TestValidateClientCSR_Fails_WithDNS(t *testing.T) {
+    t.Parallel()
 	csr := makeCSR(t, pkix.Name{CommonName: "client"}, []string{"example.com"}, nil)
 	if err := ValidateClientCSR(csr); err == nil {
 		t.Fatalf("expected error for DNS SAN in client CSR")
@@ -49,6 +51,7 @@ func TestValidateClientCSR_Fails_WithDNS(t *testing.T) {
 }
 
 func TestValidateClientCSR_Fails_WithIP(t *testing.T) {
+    t.Parallel()
 	csr := makeCSR(t, pkix.Name{CommonName: "client"}, nil, []net.IP{net.ParseIP("192.0.2.10")})
 	if err := ValidateClientCSR(csr); err == nil {
 		t.Fatalf("expected error for IP SAN in client CSR")
@@ -56,6 +59,7 @@ func TestValidateClientCSR_Fails_WithIP(t *testing.T) {
 }
 
 func TestValidateServerCSR_Success_WithDNS(t *testing.T) {
+    t.Parallel()
 	csr := makeCSR(t, pkix.Name{CommonName: "server"}, []string{"api.example.com"}, nil)
 	if err := ValidateServerCSR(csr); err != nil {
 		t.Fatalf("expected success, got error: %v", err)
@@ -63,6 +67,7 @@ func TestValidateServerCSR_Success_WithDNS(t *testing.T) {
 }
 
 func TestValidateServerCSR_Success_WithIP(t *testing.T) {
+    t.Parallel()
 	csr := makeCSR(t, pkix.Name{CommonName: "server"}, nil, []net.IP{net.ParseIP("203.0.113.5")})
 	if err := ValidateServerCSR(csr); err != nil {
 		t.Fatalf("expected success, got error: %v", err)
@@ -70,6 +75,7 @@ func TestValidateServerCSR_Success_WithIP(t *testing.T) {
 }
 
 func TestValidateServerCSR_Fails_NoSANs(t *testing.T) {
+    t.Parallel()
 	csr := makeCSR(t, pkix.Name{CommonName: "server"}, nil, nil)
 	if err := ValidateServerCSR(csr); err == nil {
 		t.Fatalf("expected error when no DNS or IP SANs present")
