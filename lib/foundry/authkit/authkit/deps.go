@@ -5,9 +5,10 @@ import (
 	"time"
 
 	"github.com/catalystgo/catalyst-forge/lib/foundry/authkit/crypto"
-	"github.com/catalystgo/catalyst-forge/lib/foundry/authkit/httpkit"
 	"github.com/catalystgo/catalyst-forge/lib/foundry/authkit/rate"
+	"github.com/catalystgo/catalyst-forge/lib/foundry/authkit/service"
 	"github.com/catalystgo/catalyst-forge/lib/foundry/authkit/store"
+	basehttpkit "github.com/catalystgo/catalyst-forge/lib/foundry/httpkit"
 )
 
 // Deps holds all dependencies for the authentication system.
@@ -17,7 +18,7 @@ type Deps struct {
 	Rand    crypto.Rand       // Secure random generation
 	Clock   Clock             // Time provider (for testing)
 	Limiter rate.Limiter      // Rate limiter (optional, can be no-op)
-	CSRF    httpkit.CSRF      // CSRF protection provider
+	CSRF    basehttpkit.CSRF  // CSRF protection provider
 	Logger  Logger            // Logging interface
 	Mailer  Mailer            // Email service (optional, for recovery)
 	KV      store.KV          // Ephemeral storage for step-up grants
@@ -42,6 +43,8 @@ type Clock interface {
 
 // Logger defines the logging interface.
 type Logger interface {
+	// Deprecated: prefer stdlib slog.Logger. This interface remains only for
+	// compatibility during migration and will be removed in a future release.
 	// Debug logs a debug message with optional fields.
 	Debug(ctx context.Context, msg string, fields ...any)
 	// Info logs an info message with optional fields.
@@ -73,4 +76,10 @@ func (c defaultClock) Now() time.Time {
 // DefaultClock returns a Clock that uses real time.
 func DefaultClock() Clock {
 	return defaultClock{}
+}
+
+// newTokenServiceForMiddleware constructs a minimal TokenService for authn middleware.
+func newTokenServiceForMiddleware(cfg Config, deps Deps) service.TokenService {
+	// Default to 30 minutes; Sign is unused by middleware, ParseAccess uses deps.Keys
+	return service.NewTokenService(deps.Keys, deps.Rand, cfg.Origin, 30*time.Minute)
 }

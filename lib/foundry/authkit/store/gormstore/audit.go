@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/catalystgo/catalyst-forge/lib/foundry/authkit/domain"
+	repodb "github.com/catalystgo/catalyst-forge/lib/foundry/db"
 	"gorm.io/gorm"
 )
 
@@ -15,6 +16,14 @@ type AuditStore struct {
 // NewAuditStore creates a new GORM-based audit store.
 func NewAuditStore(db *gorm.DB) *AuditStore {
 	return &AuditStore{db: db}
+}
+
+// dbFor returns the appropriate database handle for the given context.
+func (s *AuditStore) dbFor(ctx context.Context) *gorm.DB {
+	if tx := repodb.TxFromContext(ctx); tx != nil {
+		return tx
+	}
+	return s.db
 }
 
 // Record stores an audit event.
@@ -30,5 +39,5 @@ func (s *AuditStore) Record(ctx context.Context, evt domain.Event) error {
 		CreatedAt: evt.CreatedAt,
 	}
 
-	return s.db.WithContext(ctx).Create(dbEvent).Error
+	return s.dbFor(ctx).WithContext(ctx).Create(dbEvent).Error
 }

@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/catalystgo/catalyst-forge/lib/foundry/authkit/domain"
+	repodb "github.com/catalystgo/catalyst-forge/lib/foundry/db"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
@@ -19,6 +20,14 @@ type CredentialStore struct {
 // NewCredentialStore creates a new GORM-based credential store.
 func NewCredentialStore(db *gorm.DB) *CredentialStore {
 	return &CredentialStore{db: db}
+}
+
+// dbFor returns the appropriate database handle for the given context.
+func (s *CredentialStore) dbFor(ctx context.Context) *gorm.DB {
+	if tx := repodb.TxFromContext(ctx); tx != nil {
+		return tx
+	}
+	return s.db
 }
 
 // Add stores a new credential for a user.
@@ -46,7 +55,7 @@ func (s *CredentialStore) Add(ctx context.Context, cred *domain.Credential) erro
 		Revoked:    cred.Revoked,
 	}
 
-	if err := s.db.WithContext(ctx).Create(dbCred).Error; err != nil {
+	if err := s.dbFor(ctx).WithContext(ctx).Create(dbCred).Error; err != nil {
 		return err
 	}
 
@@ -57,7 +66,7 @@ func (s *CredentialStore) Add(ctx context.Context, cred *domain.Credential) erro
 func (s *CredentialStore) GetByUser(ctx context.Context, userID uuid.UUID) ([]domain.Credential, error) {
 	var dbCreds []Credential
 	
-	if err := s.db.WithContext(ctx).
+	if err := s.dbFor(ctx).WithContext(ctx).
 		Where("user_id = ? AND revoked = ?", userID, false).
 		Find(&dbCreds).Error; err != nil {
 		return nil, err
@@ -79,7 +88,7 @@ func (s *CredentialStore) GetByUser(ctx context.Context, userID uuid.UUID) ([]do
 func (s *CredentialStore) Get(ctx context.Context, id []byte) (*domain.Credential, error) {
 	var dbCred Credential
 	
-	if err := s.db.WithContext(ctx).
+	if err := s.dbFor(ctx).WithContext(ctx).
 		Where("id = ?", id).
 		First(&dbCred).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -97,7 +106,7 @@ func (s *CredentialStore) Get(ctx context.Context, id []byte) (*domain.Credentia
 
 // UpdateOnAssertion updates the sign count and last used time after successful authentication.
 func (s *CredentialStore) UpdateOnAssertion(ctx context.Context, id []byte, signCount uint32, lastUsed time.Time) error {
-	result := s.db.WithContext(ctx).Model(&Credential{}).
+	result := s.dbFor(ctx).WithContext(ctx).Model(&Credential{}).
 		Where("id = ? AND revoked = ?", id, false).
 		Updates(map[string]interface{}{
 			"sign_count":   signCount,
@@ -117,7 +126,7 @@ func (s *CredentialStore) UpdateOnAssertion(ctx context.Context, id []byte, sign
 
 // Revoke marks a credential as revoked.
 func (s *CredentialStore) Revoke(ctx context.Context, id []byte) error {
-	result := s.db.WithContext(ctx).Model(&Credential{}).
+	result := s.dbFor(ctx).WithContext(ctx).Model(&Credential{}).
 		Where("id = ?", id).
 		Update("revoked", true)
 

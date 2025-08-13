@@ -1,15 +1,15 @@
 package middleware
 
 import (
-	"context"
-	"fmt"
-	"net/http"
-	"time"
+    "context"
+    "fmt"
+    "net/http"
+    "time"
 
-	"github.com/catalystgo/catalyst-forge/lib/foundry/authkit/authkit"
-	"github.com/catalystgo/catalyst-forge/lib/foundry/authkit/httpkit"
-	"github.com/catalystgo/catalyst-forge/lib/foundry/authkit/store"
-	"github.com/gin-gonic/gin"
+    "github.com/catalystgo/catalyst-forge/lib/foundry/authkit/authkit"
+    basehttpkit "github.com/catalystgo/catalyst-forge/lib/foundry/httpkit"
+    "github.com/catalystgo/catalyst-forge/lib/foundry/authkit/store"
+    "github.com/gin-gonic/gin"
 )
 
 // SessionValidator provides session validation middleware.
@@ -47,21 +47,21 @@ func (sv *SessionValidator) ValidateSession() gin.HandlerFunc {
 		user, err := sv.userStore.GetByID(c.Request.Context(), ctx.UserID)
 		if err != nil || user == nil {
 			// User not found or error
-			httpkit.ErrorResponse(c.Writer, http.StatusUnauthorized, "session_invalid", "Session is no longer valid")
+            basehttpkit.ErrorResponse(c.Writer, http.StatusUnauthorized, "session_invalid", "Session is no longer valid")
 			c.Abort()
 			return
 		}
 
 		// Check if user is suspended
 		if user.SuspendedAt != nil {
-			httpkit.ErrorResponse(c.Writer, http.StatusForbidden, "account_suspended", "Account has been suspended")
+            basehttpkit.ErrorResponse(c.Writer, http.StatusForbidden, "account_suspended", "Account has been suspended")
 			c.Abort()
 			return
 		}
 
 		// Re-verify session version
 		if user.SessionVersion != ctx.SessionVersion {
-			httpkit.ErrorResponse(c.Writer, http.StatusUnauthorized, "session_expired", "Session has been invalidated")
+            basehttpkit.ErrorResponse(c.Writer, http.StatusUnauthorized, "session_expired", "Session has been invalidated")
 			c.Abort()
 			return
 		}
@@ -70,7 +70,7 @@ func (sv *SessionValidator) ValidateSession() gin.HandlerFunc {
 		if ctx.TokenID != "" && sv.kv != nil {
 			revoked, err := sv.isTokenRevoked(c.Request.Context(), ctx.TokenID)
 			if err == nil && revoked {
-				httpkit.ErrorResponse(c.Writer, http.StatusUnauthorized, "token_revoked", "Token has been revoked")
+                basehttpkit.ErrorResponse(c.Writer, http.StatusUnauthorized, "token_revoked", "Token has been revoked")
 				c.Abort()
 				return
 			}
@@ -159,7 +159,7 @@ func (sv *SessionValidator) RequireActiveSession(maxInactivity time.Duration) gi
 	return func(c *gin.Context) {
 		ctx, ok := authkit.From(c)
 		if !ok || !ctx.IsAuthenticated() {
-			httpkit.ErrorResponse(c.Writer, http.StatusUnauthorized, "unauthorized", "Authentication required")
+            basehttpkit.ErrorResponse(c.Writer, http.StatusUnauthorized, "unauthorized", "Authentication required")
 			c.Abort()
 			return
 		}
@@ -173,12 +173,12 @@ func (sv *SessionValidator) RequireActiveSession(maxInactivity time.Duration) gi
 		key := "session:activity:" + ctx.UserID.String()
 		val, err := sv.kv.Get(c.Request.Context(), key)
 		if err != nil {
-			if err == store.ErrNotFound {
-				// No activity record, treat as inactive
-				httpkit.ErrorResponse(c.Writer, http.StatusUnauthorized, "session_timeout", "Session has timed out due to inactivity")
-				c.Abort()
-				return
-			}
+            if err == store.ErrNotFound {
+                // No activity record, treat as inactive
+                basehttpkit.ErrorResponse(c.Writer, http.StatusUnauthorized, "session_timeout", "Session has timed out due to inactivity")
+                c.Abort()
+                return
+            }
 			// Error checking activity, allow the request
 			c.Next()
 			return
@@ -192,11 +192,11 @@ func (sv *SessionValidator) RequireActiveSession(maxInactivity time.Duration) gi
 		}
 
 		// Use UTC for consistent comparison
-		if time.Since(lastActivity.UTC()) > maxInactivity {
-			httpkit.ErrorResponse(c.Writer, http.StatusUnauthorized, "session_timeout", "Session has timed out due to inactivity")
-			c.Abort()
-			return
-		}
+            if time.Since(lastActivity.UTC()) > maxInactivity {
+                basehttpkit.ErrorResponse(c.Writer, http.StatusUnauthorized, "session_timeout", "Session has timed out due to inactivity")
+                c.Abort()
+                return
+            }
 
 		c.Next()
 	}
@@ -237,11 +237,11 @@ func (sv *SessionValidator) TouchSessionWithID(sessionID string) gin.HandlerFunc
 func (sv *SessionValidator) RequireActiveSessionWithID(sessionID string, maxInactivity time.Duration) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		ctx, ok := authkit.From(c)
-		if !ok || !ctx.IsAuthenticated() {
-			httpkit.ErrorResponse(c.Writer, http.StatusUnauthorized, "unauthorized", "Authentication required")
-			c.Abort()
-			return
-		}
+            if !ok || !ctx.IsAuthenticated() {
+                basehttpkit.ErrorResponse(c.Writer, http.StatusUnauthorized, "unauthorized", "Authentication required")
+                c.Abort()
+                return
+            }
 
 		if sv.kv == nil {
 			// No KV store, can't track activity
@@ -252,12 +252,12 @@ func (sv *SessionValidator) RequireActiveSessionWithID(sessionID string, maxInac
 		key := fmt.Sprintf("session:activity:%s:%s", ctx.UserID.String(), sessionID)
 		val, err := sv.kv.Get(c.Request.Context(), key)
 		if err != nil {
-			if err == store.ErrNotFound {
-				// No activity record, treat as inactive
-				httpkit.ErrorResponse(c.Writer, http.StatusUnauthorized, "session_timeout", "Session has timed out due to inactivity")
-				c.Abort()
-				return
-			}
+                if err == store.ErrNotFound {
+                    // No activity record, treat as inactive
+                    basehttpkit.ErrorResponse(c.Writer, http.StatusUnauthorized, "session_timeout", "Session has timed out due to inactivity")
+                    c.Abort()
+                    return
+                }
 			// Error checking activity, allow the request
 			c.Next()
 			return
@@ -271,11 +271,11 @@ func (sv *SessionValidator) RequireActiveSessionWithID(sessionID string, maxInac
 		}
 
 		// Use UTC for consistent comparison
-		if time.Since(lastActivity.UTC()) > maxInactivity {
-			httpkit.ErrorResponse(c.Writer, http.StatusUnauthorized, "session_timeout", "Session has timed out due to inactivity")
-			c.Abort()
-			return
-		}
+            if time.Since(lastActivity.UTC()) > maxInactivity {
+                basehttpkit.ErrorResponse(c.Writer, http.StatusUnauthorized, "session_timeout", "Session has timed out due to inactivity")
+                c.Abort()
+                return
+            }
 
 		c.Next()
 	}

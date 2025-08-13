@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/catalystgo/catalyst-forge/lib/foundry/authkit/domain"
+	repodb "github.com/catalystgo/catalyst-forge/lib/foundry/db"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
@@ -20,6 +21,14 @@ func NewRefreshStore(db *gorm.DB) *RefreshStore {
 	return &RefreshStore{
 		db: db,
 	}
+}
+
+// dbFor returns the appropriate database handle for the given context.
+func (s *RefreshStore) dbFor(ctx context.Context) *gorm.DB {
+	if tx := repodb.TxFromContext(ctx); tx != nil {
+		return tx
+	}
+	return s.db
 }
 
 // CreateFamily creates a new refresh token family for initial login.
@@ -38,7 +47,7 @@ func (s *RefreshStore) CreateFamily(ctx context.Context, userID uuid.UUID, sessi
 		ExpiresAt:      expiresAt,
 	}
 
-	if err := s.db.WithContext(ctx).Create(token).Error; err != nil {
+	if err := s.dbFor(ctx).WithContext(ctx).Create(token).Error; err != nil {
 		return uuid.Nil, uuid.Nil, err
 	}
 
@@ -52,7 +61,7 @@ func (s *RefreshStore) Rotate(ctx context.Context, prevTokenID uuid.UUID, newHas
 	var prevToken RefreshToken
 	
 	// Start a transaction
-	tx := s.db.WithContext(ctx).Begin()
+	tx := s.dbFor(ctx).WithContext(ctx).Begin()
 	defer func() {
 		if err != nil {
 			tx.Rollback()
@@ -111,7 +120,7 @@ func (s *RefreshStore) Rotate(ctx context.Context, prevTokenID uuid.UUID, newHas
 func (s *RefreshStore) GetByID(ctx context.Context, id uuid.UUID) (*domain.RefreshToken, error) {
 	var token RefreshToken
 	
-	if err := s.db.WithContext(ctx).
+	if err := s.dbFor(ctx).WithContext(ctx).
 		Where("id = ?", id).
 		First(&token).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -127,7 +136,7 @@ func (s *RefreshStore) GetByID(ctx context.Context, id uuid.UUID) (*domain.Refre
 func (s *RefreshStore) GetByHash(ctx context.Context, hash []byte) (*domain.RefreshToken, error) {
 	var token RefreshToken
 	
-	if err := s.db.WithContext(ctx).
+	if err := s.dbFor(ctx).WithContext(ctx).
 		Where("hash = ?", hash).
 		First(&token).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -141,7 +150,7 @@ func (s *RefreshStore) GetByHash(ctx context.Context, hash []byte) (*domain.Refr
 
 // RevokeToken revokes a specific refresh token.
 func (s *RefreshStore) RevokeToken(ctx context.Context, id uuid.UUID, reason string, at time.Time) error {
-	result := s.db.WithContext(ctx).Model(&RefreshToken{}).
+	result := s.dbFor(ctx).WithContext(ctx).Model(&RefreshToken{}).
 		Where("id = ?", id).
 		Updates(map[string]interface{}{
 			"revoked_at": at,
@@ -163,7 +172,7 @@ func (s *RefreshStore) RevokeToken(ctx context.Context, id uuid.UUID, reason str
 //
 // This is used for replay detection.
 func (s *RefreshStore) RevokeFamily(ctx context.Context, familyID uuid.UUID, reason string, at time.Time) error {
-	result := s.db.WithContext(ctx).Model(&RefreshToken{}).
+	result := s.dbFor(ctx).WithContext(ctx).Model(&RefreshToken{}).
 		Where("family_id = ? AND revoked_at IS NULL", familyID).
 		Updates(map[string]interface{}{
 			"revoked_at": at,
@@ -175,7 +184,7 @@ func (s *RefreshStore) RevokeFamily(ctx context.Context, familyID uuid.UUID, rea
 
 // RevokeUserTokens revokes all refresh tokens for a user.
 func (s *RefreshStore) RevokeUserTokens(ctx context.Context, userID uuid.UUID, reason string, at time.Time) error {
-	result := s.db.WithContext(ctx).Model(&RefreshToken{}).
+	result := s.dbFor(ctx).WithContext(ctx).Model(&RefreshToken{}).
 		Where("user_id = ? AND revoked_at IS NULL", userID).
 		Updates(map[string]interface{}{
 			"revoked_at": at,

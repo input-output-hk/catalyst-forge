@@ -1,15 +1,15 @@
 package middleware
 
 import (
-	"fmt"
-	"net/http"
-	"strconv"
-	"time"
+    "fmt"
+    "net/http"
+    "strconv"
+    "time"
 
-	"github.com/catalystgo/catalyst-forge/lib/foundry/authkit/httpkit"
-	"github.com/catalystgo/catalyst-forge/lib/foundry/authkit/rate"
-	"github.com/gin-gonic/gin"
-	"github.com/google/uuid"
+    basehttpkit "github.com/catalystgo/catalyst-forge/lib/foundry/httpkit"
+    "github.com/catalystgo/catalyst-forge/lib/foundry/authkit/rate"
+    "github.com/gin-gonic/gin"
+    "github.com/google/uuid"
 )
 
 // RateLimiterV2 provides rate limiting middleware using the rate package.
@@ -61,12 +61,12 @@ func (rl *RateLimiterV2) Middleware() gin.HandlerFunc {
 				c.Header("Retry-After", strconv.Itoa(retryAfter))
 			}
 			
-			httpkit.ErrorResponse(
-				c.Writer,
-				http.StatusTooManyRequests,
-				"rate_limit_exceeded",
-				"Too many requests. Please try again later.",
-			)
+            basehttpkit.ErrorResponse(
+                c.Writer,
+                http.StatusTooManyRequests,
+                "rate_limit_exceeded",
+                "Too many requests. Please try again later.",
+            )
 			c.Abort()
 			return
 		}
@@ -208,12 +208,12 @@ func GlobalRateLimiter(limiter rate.Limiter, requests int, window time.Duration)
 				c.Header("Retry-After", strconv.Itoa(retryAfter))
 			}
 			
-			httpkit.ErrorResponse(
-				c.Writer,
-				http.StatusTooManyRequests,
-				"rate_limit_exceeded",
-				"Too many requests. Please try again later.",
-			)
+            basehttpkit.ErrorResponse(
+                c.Writer,
+                http.StatusTooManyRequests,
+                "rate_limit_exceeded",
+                "Too many requests. Please try again later.",
+            )
 			c.Abort()
 			return
 		}

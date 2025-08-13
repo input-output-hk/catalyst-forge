@@ -1,16 +1,16 @@
 package middleware
 
 import (
-	"fmt"
-	"math"
-	"net/http"
-	"strconv"
-	"time"
+    "fmt"
+    "math"
+    "net/http"
+    "strconv"
+    "time"
 
-	"github.com/catalystgo/catalyst-forge/lib/foundry/authkit/authkit"
-	"github.com/catalystgo/catalyst-forge/lib/foundry/authkit/httpkit"
-	"github.com/catalystgo/catalyst-forge/lib/foundry/authkit/rate"
-	"github.com/gin-gonic/gin"
+    "github.com/catalystgo/catalyst-forge/lib/foundry/authkit/authkit"
+    basehttpkit "github.com/catalystgo/catalyst-forge/lib/foundry/httpkit"
+    "github.com/catalystgo/catalyst-forge/lib/foundry/authkit/rate"
+    "github.com/gin-gonic/gin"
 )
 
 // RateLimiter provides rate limiting middleware.
@@ -60,10 +60,10 @@ func (rl *RateLimiter) LimitByIP(requests int, window time.Duration) gin.Handler
 			}
 			c.Header("Retry-After", strconv.Itoa(secs))
 			
-			httpkit.ErrorResponse(c.Writer, http.StatusTooManyRequests, "rate_limit_exceeded", "Too many requests")
-			c.Abort()
-			return
-		}
+            basehttpkit.ErrorResponse(c.Writer, http.StatusTooManyRequests, "rate_limit_exceeded", "Too many requests")
+            c.Abort()
+            return
+        }
 
 		c.Next()
 	}
@@ -102,10 +102,10 @@ func (rl *RateLimiter) LimitByUser(requests int, window time.Duration) gin.Handl
 			}
 			c.Header("Retry-After", strconv.Itoa(secs))
 			
-			httpkit.ErrorResponse(c.Writer, http.StatusTooManyRequests, "rate_limit_exceeded", "Too many requests")
-			c.Abort()
-			return
-		}
+            basehttpkit.ErrorResponse(c.Writer, http.StatusTooManyRequests, "rate_limit_exceeded", "Too many requests")
+            c.Abort()
+            return
+        }
 
 		c.Next()
 	}
@@ -141,10 +141,10 @@ func (rl *RateLimiter) LimitByKey(keyFunc func(*gin.Context) string, requests in
 			}
 			c.Header("Retry-After", strconv.Itoa(secs))
 			
-			httpkit.ErrorResponse(c.Writer, http.StatusTooManyRequests, "rate_limit_exceeded", "Too many requests")
-			c.Abort()
-			return
-		}
+            basehttpkit.ErrorResponse(c.Writer, http.StatusTooManyRequests, "rate_limit_exceeded", "Too many requests")
+            c.Abort()
+            return
+        }
 
 		c.Next()
 	}
@@ -256,7 +256,7 @@ func (rl *RateLimiter) GlobalRateLimit(requests int, window time.Duration) gin.H
 			}
 			c.Header("Retry-After", strconv.Itoa(secs))
 			
-			httpkit.ErrorResponse(c.Writer, http.StatusTooManyRequests, "rate_limit_exceeded", "Too many requests")
+                basehttpkit.ErrorResponse(c.Writer, http.StatusTooManyRequests, "rate_limit_exceeded", "Too many requests")
 			c.Abort()
 			return
 		}
@@ -293,7 +293,7 @@ func (rl *RateLimiter) PerRouteGlobalRateLimit(requests int, window time.Duratio
 			}
 			c.Header("Retry-After", strconv.Itoa(secs))
 			
-			httpkit.ErrorResponse(c.Writer, http.StatusTooManyRequests, "rate_limit_exceeded", "Too many requests")
+                basehttpkit.ErrorResponse(c.Writer, http.StatusTooManyRequests, "rate_limit_exceeded", "Too many requests")
 			c.Abort()
 			return
 		}

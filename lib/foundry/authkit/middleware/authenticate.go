@@ -1,15 +1,15 @@
 package middleware
 
 import (
-	"net/http"
-	"time"
+    "net/http"
+    "time"
 
-	"github.com/catalystgo/catalyst-forge/lib/foundry/authkit/authkit"
-	"github.com/catalystgo/catalyst-forge/lib/foundry/authkit/httpkit"
-	"github.com/catalystgo/catalyst-forge/lib/foundry/authkit/service"
-	"github.com/catalystgo/catalyst-forge/lib/foundry/authkit/store"
-	"github.com/gin-gonic/gin"
-	"github.com/google/uuid"
+    "github.com/catalystgo/catalyst-forge/lib/foundry/authkit/authkit"
+    basehttpkit "github.com/catalystgo/catalyst-forge/lib/foundry/httpkit"
+    "github.com/catalystgo/catalyst-forge/lib/foundry/authkit/service"
+    "github.com/catalystgo/catalyst-forge/lib/foundry/authkit/store"
+    "github.com/gin-gonic/gin"
+    "github.com/google/uuid"
 )
 
 // Authenticator provides JWT authentication middleware.
@@ -41,7 +41,7 @@ func NewAuthenticator(tokenService service.TokenService, userStore store.UserSto
 func (a *Authenticator) Authenticate() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// Extract bearer token
-		token, err := httpkit.GetBearerToken(c.Request)
+        token, err := basehttpkit.GetBearerToken(c.Request)
 		if err != nil || token == "" {
 			// No token provided, continue without auth
 			c.Next()
@@ -114,7 +114,7 @@ func RequireAuth() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		ctx, ok := authkit.From(c)
 		if !ok || !ctx.IsAuthenticated() {
-			httpkit.ErrorResponse(c.Writer, http.StatusUnauthorized, "unauthorized", "Authentication required")
+            basehttpkit.ErrorResponse(c.Writer, http.StatusUnauthorized, "unauthorized", "Authentication required")
 			c.Abort()
 			return
 		}
@@ -129,14 +129,14 @@ func RequireStepUp() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		ctx, ok := authkit.From(c)
 		if !ok || !ctx.IsAuthenticated() {
-			httpkit.ErrorResponse(c.Writer, http.StatusUnauthorized, "unauthorized", "Authentication required")
+            basehttpkit.ErrorResponse(c.Writer, http.StatusUnauthorized, "unauthorized", "Authentication required")
 			c.Abort()
 			return
 		}
 
 		// Check if step-up is still valid
 		if ctx.RequiresStepUp(time.Now().UTC()) {
-			httpkit.ErrorResponse(c.Writer, http.StatusPreconditionRequired, "step_up_required", "Step-up authentication required")
+            basehttpkit.ErrorResponse(c.Writer, http.StatusPreconditionRequired, "step_up_required", "Step-up authentication required")
 			c.Abort()
 			return
 		}
@@ -152,4 +152,3 @@ func RequireStepUp() gin.HandlerFunc {
 func (a *Authenticator) OptionalAuth() gin.HandlerFunc {
 	return a.Authenticate()
 }
-

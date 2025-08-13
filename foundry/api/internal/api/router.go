@@ -1,13 +1,16 @@
 package api
 
 import (
+	"context"
 	"log/slog"
 	"strings"
 
+	libauth "github.com/catalystgo/catalyst-forge/lib/foundry/authkit/authkit"
 	"github.com/gin-gonic/gin"
 	"github.com/input-output-hk/catalyst-forge/foundry/api/internal/api/handlers"
 	"github.com/input-output-hk/catalyst-forge/foundry/api/internal/api/handlers/user"
 	"github.com/input-output-hk/catalyst-forge/foundry/api/internal/api/middleware"
+	apiroutes "github.com/input-output-hk/catalyst-forge/foundry/api/internal/api/routes"
 	"github.com/input-output-hk/catalyst-forge/foundry/api/internal/config"
 	"github.com/input-output-hk/catalyst-forge/foundry/api/internal/rate"
 	auditrepo "github.com/input-output-hk/catalyst-forge/foundry/api/internal/repository/audit"
@@ -17,6 +20,8 @@ import (
 	emailsvc "github.com/input-output-hk/catalyst-forge/foundry/api/internal/service/email"
 	pca "github.com/input-output-hk/catalyst-forge/foundry/api/internal/service/pca"
 
+	libdb "github.com/catalystgo/catalyst-forge/lib/foundry/db"
+	apiauth "github.com/input-output-hk/catalyst-forge/foundry/api/internal/authkit"
 	userservice "github.com/input-output-hk/catalyst-forge/foundry/api/internal/service/user"
 	"github.com/input-output-hk/catalyst-forge/lib/foundry/auth"
 	ghauth "github.com/input-output-hk/catalyst-forge/lib/foundry/auth/github"
@@ -140,7 +145,7 @@ func SetupRouter(
 		certificateHandler = certificateHandler.WithPCA(pcaClient)
 	}
 	// JWKS handler (public)
-	jwksHandler := handlers.NewJWKSHandler(jwtManager)
+	_ = handlers.NewJWKSHandler(jwtManager)
 	// Legacy device handler removed in Task 5.1 - replaced by device-keypair authentication
 
 	// Device registration handler (new device-keypair authentication)
@@ -215,39 +220,32 @@ func SetupRouter(
 	buildHandler := handlers.NewBuildHandler(buildSessRepo, sessionMaxActive, auditRepo)
 	r.Use(func(c *gin.Context) { c.Set("auditRepo", auditRepo); c.Next() })
 
-	// Health check endpoint
-	r.GET("/healthz", healthHandler.CheckHealth)
-
-	// Swagger documentation
+	// Public routes (health; Swagger stays inline for now)
+	apiroutes.RegisterPublic(r, healthHandler.CheckHealth)
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
-	// Public JWKS endpoint for token verification
-	r.GET("/.well-known/jwks.json", jwksHandler.GetJWKS)
+	// Public JWKS is mounted by AuthKit registrar when enabled
+
+	// ---- New AuthKit side-by-side integration (phase 1) ----
+	// Build db store (for migrations/readiness) if desired; using existing gorm DB for now.
+	_ = libdb.Store(nil)
+
+	// Build AuthKit config/deps and manager
+	akCfg := apiauth.BuildConfig(authConfig)
+	akDeps := apiauth.BuildDeps(context.Background(), authConfig, nil, db, nil, apiauth.NewLogger(logger))
+	// Manager creation will succeed once authkit.New wiring is complete
+	if m, err := libauth.New(akCfg, akDeps); err == nil {
+		apiroutes.RegisterAuthKit(r, m, akCfg)
+	} else {
+		logger.Warn("AuthKit not mounted (wip)", "error", err)
+	}
+
+	// API-owned helpers registered by routes.RegisterAuthKit
 
 	// Route Setup //
-
-	// Release endpoints
-	r.POST("/release", am.ValidatePermissions([]auth.Permission{auth.PermReleaseWrite}), releaseHandler.CreateRelease)
-	r.GET("/release/:id", am.ValidatePermissions([]auth.Permission{auth.PermReleaseRead}), releaseHandler.GetRelease)
-	r.PUT("/release/:id", am.ValidatePermissions([]auth.Permission{auth.PermReleaseWrite}), releaseHandler.UpdateRelease)
-	r.GET("/releases", am.ValidatePermissions([]auth.Permission{auth.PermReleaseRead}), releaseHandler.ListReleases)
-
-	// Release aliases
-	r.GET("/release/alias/:name", am.ValidatePermissions([]auth.Permission{auth.PermReleaseRead}), releaseHandler.GetReleaseByAlias)
-	r.POST("/release/alias/:name", am.ValidatePermissions([]auth.Permission{auth.PermReleaseWrite}), releaseHandler.CreateAlias)
-	r.DELETE("/release/alias/:name", am.ValidatePermissions([]auth.Permission{auth.PermReleaseWrite}), releaseHandler.DeleteAlias)
-	r.GET("/release/:id/aliases", am.ValidatePermissions([]auth.Permission{auth.PermReleaseRead}), releaseHandler.ListAliases)
-
-	// Deployment endpoints
-	r.POST("/release/:id/deploy", am.ValidatePermissions([]auth.Permission{auth.PermDeploymentWrite}), deploymentHandler.CreateDeployment)
-	r.GET("/release/:id/deploy/:deployId", am.ValidatePermissions([]auth.Permission{auth.PermDeploymentRead}), deploymentHandler.GetDeployment)
-	r.PUT("/release/:id/deploy/:deployId", am.ValidatePermissions([]auth.Permission{auth.PermDeploymentWrite}), deploymentHandler.UpdateDeployment)
-	r.GET("/release/:id/deployments", am.ValidatePermissions([]auth.Permission{auth.PermDeploymentRead}), deploymentHandler.ListDeployments)
-	r.GET("/release/:id/deploy/latest", am.ValidatePermissions([]auth.Permission{auth.PermDeploymentRead}), deploymentHandler.GetLatestDeployment)
-
-	// Deployment event endpoints
-	r.POST("/release/:id/deploy/:deployId/events", am.ValidatePermissions([]auth.Permission{auth.PermDeploymentEventWrite}), deploymentHandler.AddDeploymentEvent)
-	r.GET("/release/:id/deploy/:deployId/events", am.ValidatePermissions([]auth.Permission{auth.PermDeploymentEventRead}), deploymentHandler.GetDeploymentEvents)
+	// Feature groups registered via routes package
+	apiroutes.RegisterReleases(r, apiroutes.ReleaseDeps{Auth: am, Handler: releaseHandler})
+	apiroutes.RegisterDeployments(r, apiroutes.DeploymentDeps{Auth: am, Handler: deploymentHandler})
 
 	// GitHub authentication management endpoints (requires auth)
 	r.POST("/auth/github", authCORSMiddleware.Handle(), am.ValidatePermissions([]auth.Permission{auth.PermGHAAuthWrite}), githubHandler.CreateAuth)
@@ -267,27 +265,9 @@ func SetupRouter(
 	// Bootstrap endpoint (unprotected, one-time use, rate-limited)
 	r.POST("/auth/bootstrap", authCORSMiddleware.Handle(), authRateLimitMiddleware.Handle(), bootstrapHandler.Bootstrap)
 
-	// Invite endpoints
-	r.POST("/auth/invites", authCORSMiddleware.Handle(), am.ValidatePermissions([]auth.Permission{auth.PermUserWrite}), inviteHandler.CreateInvite)
-	r.GET("/verify", inviteHandler.Verify)
-
-	// Device registration endpoints (new device-keypair authentication)
-	r.POST("/auth/devices/init", authCORSMiddleware.Handle(), authRateLimitMiddleware.Handle(), deviceRegistrationHandler.InitDeviceRegistration)
-	r.POST("/auth/devices/register", authCORSMiddleware.Handle(), authRateLimitMiddleware.Handle(), deviceRegistrationHandler.RegisterDevice)
-
-	// Returning device login endpoints (no invite/email)
-	r.POST("/auth/devices/login/init", authCORSMiddleware.Handle(), authRateLimitMiddleware.Handle(), deviceLoginHandler.InitLogin)
-	r.POST("/auth/devices/login", authCORSMiddleware.Handle(), authRateLimitMiddleware.Handle(), deviceLoginHandler.Login)
-
-	// Device-bound refresh endpoint (new device-keypair authentication)
-	r.POST("/auth/refresh", authCORSMiddleware.Handle(), authRateLimitMiddleware.Handle(), deviceRefreshHandler.RefreshToken)
-
-	// Device-bound logout endpoint (new device-keypair authentication)
-	r.POST("/auth/logout", authCORSMiddleware.Handle(), deviceLogoutHandler.Logout)
-
-	// Device management endpoints (require JWT authentication)
-	r.GET("/auth/devices", authCORSMiddleware.Handle(), am.ValidatePermissions([]auth.Permission{auth.PermUserRead}), deviceManagementHandler.ListDevices)
-	r.DELETE("/auth/devices/:id", authCORSMiddleware.Handle(), am.ValidatePermissions([]auth.Permission{auth.PermUserWrite}), deviceManagementHandler.DeleteDevice)
+	apiroutes.RegisterInvites(r, apiroutes.InviteDeps{CORS: authCORSMiddleware.Handle(), Auth: am, Handler: inviteHandler})
+	apiroutes.RegisterDevices(r, apiroutes.DeviceDeps{Auth: am, CORS: authCORSMiddleware.Handle(), Rate: authRateLimitMiddleware.Handle(), AuthCfg: authConfig, Reg: deviceRegistrationHandler, Refresh: deviceRefreshHandler, Logout: deviceLogoutHandler, Login: deviceLoginHandler, Mgmt: deviceManagementHandler})
+	apiroutes.RegisterUsers(r, apiroutes.UserDeps{Auth: am, User: userHandler, Role: roleHandler, UserRole: userRoleHandler, UserKey: userKeyHandler})
 
 	// Legacy device flow endpoints removed in Task 5.1 - replaced by device-keypair authentication
 
@@ -297,44 +277,6 @@ func SetupRouter(
 	// Pending endpoints
 	r.GET("/auth/pending/users", authCORSMiddleware.Handle(), am.ValidatePermissions([]auth.Permission{auth.PermUserRead}), userHandler.GetPendingUsers)
 	r.GET("/auth/pending/keys", authCORSMiddleware.Handle(), am.ValidatePermissions([]auth.Permission{auth.PermUserKeyRead}), userKeyHandler.GetInactiveUserKeys)
-
-	// User endpoints
-	r.POST("/auth/users", authCORSMiddleware.Handle(), am.ValidatePermissions([]auth.Permission{auth.PermUserWrite}), userHandler.CreateUser)
-	r.GET("/auth/users", authCORSMiddleware.Handle(), am.ValidatePermissions([]auth.Permission{auth.PermUserRead}), userHandler.ListUsers)
-	r.GET("/auth/users/email/:email", authCORSMiddleware.Handle(), am.ValidatePermissions([]auth.Permission{auth.PermUserRead}), userHandler.GetUserByEmail)
-	r.GET("/auth/users/:id", authCORSMiddleware.Handle(), am.ValidatePermissions([]auth.Permission{auth.PermUserRead}), userHandler.GetUser)
-	r.PUT("/auth/users/:id", authCORSMiddleware.Handle(), am.ValidatePermissions([]auth.Permission{auth.PermUserWrite}), userHandler.UpdateUser)
-	r.DELETE("/auth/users/:id", authCORSMiddleware.Handle(), am.ValidatePermissions([]auth.Permission{auth.PermUserWrite}), userHandler.DeleteUser)
-	r.POST("/auth/users/:id/activate", authCORSMiddleware.Handle(), am.ValidatePermissions([]auth.Permission{auth.PermUserWrite}), userHandler.ActivateUser)
-	r.POST("/auth/users/:id/deactivate", authCORSMiddleware.Handle(), am.ValidatePermissions([]auth.Permission{auth.PermUserWrite}), userHandler.DeactivateUser)
-
-	// User key endpoints
-	r.POST("/auth/keys", authCORSMiddleware.Handle(), am.ValidatePermissions([]auth.Permission{auth.PermUserKeyWrite}), userKeyHandler.CreateUserKey)
-	r.POST("/auth/keys/bootstrap", authCORSMiddleware.Handle(), userKeyHandler.BootstrapKET)
-	r.POST("/auth/keys/register", authCORSMiddleware.Handle(), userKeyHandler.RegisterWithKET)
-	r.GET("/auth/keys", authCORSMiddleware.Handle(), am.ValidatePermissions([]auth.Permission{auth.PermUserKeyRead}), userKeyHandler.ListUserKeys)
-	r.GET("/auth/keys/:id", authCORSMiddleware.Handle(), am.ValidatePermissions([]auth.Permission{auth.PermUserKeyRead}), userKeyHandler.GetUserKey)
-	r.GET("/auth/keys/kid/:kid", authCORSMiddleware.Handle(), am.ValidatePermissions([]auth.Permission{auth.PermUserKeyRead}), userKeyHandler.GetUserKeyByKid)
-	r.PUT("/auth/keys/:id", authCORSMiddleware.Handle(), am.ValidatePermissions([]auth.Permission{auth.PermUserKeyWrite}), userKeyHandler.UpdateUserKey)
-	r.DELETE("/auth/keys/:id", authCORSMiddleware.Handle(), am.ValidatePermissions([]auth.Permission{auth.PermUserKeyWrite}), userKeyHandler.DeleteUserKey)
-	r.POST("/auth/keys/:id/revoke", authCORSMiddleware.Handle(), am.ValidatePermissions([]auth.Permission{auth.PermUserKeyWrite}), userKeyHandler.RevokeUserKey)
-	r.GET("/auth/keys/user/:user_id", authCORSMiddleware.Handle(), am.ValidatePermissions([]auth.Permission{auth.PermUserKeyRead}), userKeyHandler.GetUserKeysByUserID)
-	r.GET("/auth/keys/user/:user_id/active", authCORSMiddleware.Handle(), am.ValidatePermissions([]auth.Permission{auth.PermUserKeyRead}), userKeyHandler.GetActiveUserKeysByUserID)
-	r.GET("/auth/keys/user/:user_id/inactive", authCORSMiddleware.Handle(), am.ValidatePermissions([]auth.Permission{auth.PermUserKeyRead}), userKeyHandler.GetInactiveUserKeysByUserID)
-
-	// Role endpoints
-	r.POST("/auth/roles", authCORSMiddleware.Handle(), am.ValidatePermissions([]auth.Permission{auth.PermRoleWrite}), roleHandler.CreateRole)
-	r.GET("/auth/roles", authCORSMiddleware.Handle(), am.ValidatePermissions([]auth.Permission{auth.PermRoleRead}), roleHandler.ListRoles)
-	r.GET("/auth/roles/:id", authCORSMiddleware.Handle(), am.ValidatePermissions([]auth.Permission{auth.PermRoleRead}), roleHandler.GetRole)
-	r.GET("/auth/roles/name/:name", authCORSMiddleware.Handle(), am.ValidatePermissions([]auth.Permission{auth.PermRoleRead}), roleHandler.GetRoleByName)
-	r.PUT("/auth/roles/:id", authCORSMiddleware.Handle(), am.ValidatePermissions([]auth.Permission{auth.PermRoleWrite}), roleHandler.UpdateRole)
-	r.DELETE("/auth/roles/:id", authCORSMiddleware.Handle(), am.ValidatePermissions([]auth.Permission{auth.PermRoleWrite}), roleHandler.DeleteRole)
-
-	// User-role endpoints
-	r.POST("/auth/user-roles", authCORSMiddleware.Handle(), am.ValidatePermissions([]auth.Permission{auth.PermUserWrite, auth.PermRoleWrite}), userRoleHandler.AssignUserToRole)
-	r.DELETE("/auth/user-roles", authCORSMiddleware.Handle(), am.ValidatePermissions([]auth.Permission{auth.PermUserWrite, auth.PermRoleWrite}), userRoleHandler.RemoveUserFromRole)
-	r.GET("/auth/user-roles", authCORSMiddleware.Handle(), am.ValidatePermissions([]auth.Permission{auth.PermUserRead, auth.PermRoleRead}), userRoleHandler.GetUserRoles)
-	r.GET("/auth/role-users", authCORSMiddleware.Handle(), am.ValidatePermissions([]auth.Permission{auth.PermUserRead, auth.PermRoleRead}), userRoleHandler.GetRoleUsers)
 
 	// Certificate endpoints
 	r.POST("/certificates/sign", am.ValidateAnyCertificatePermission(), certificateHandler.SignCertificate)

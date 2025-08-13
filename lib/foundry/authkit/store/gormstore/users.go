@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/catalystgo/catalyst-forge/lib/foundry/authkit/domain"
+	repodb "github.com/catalystgo/catalyst-forge/lib/foundry/db"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
@@ -19,6 +20,16 @@ type UserStore struct {
 // NewUserStore creates a new GORM-based user store.
 func NewUserStore(db *gorm.DB) *UserStore {
 	return &UserStore{db: db}
+}
+
+// dbFor returns the appropriate database handle for the given context.
+// If a transaction is present in the context, it returns the transaction handle.
+// Otherwise, it returns the default database handle.
+func (s *UserStore) dbFor(ctx context.Context) *gorm.DB {
+	if tx := repodb.TxFromContext(ctx); tx != nil {
+		return tx
+	}
+	return s.db
 }
 
 // Create creates a new user with the given email and roles.
@@ -35,7 +46,7 @@ func (s *UserStore) Create(ctx context.Context, email string, roles []string) (*
 		SessionVersion: 1,
 	}
 
-	if err := s.db.WithContext(ctx).Create(user).Error; err != nil {
+	if err := s.dbFor(ctx).WithContext(ctx).Create(user).Error; err != nil {
 		return nil, err
 	}
 
@@ -45,7 +56,7 @@ func (s *UserStore) Create(ctx context.Context, email string, roles []string) (*
 // GetByEmail retrieves a user by their email address.
 func (s *UserStore) GetByEmail(ctx context.Context, email string) (*domain.User, error) {
 	var user User
-	if err := s.db.WithContext(ctx).Where("email = ?", email).First(&user).Error; err != nil {
+	if err := s.dbFor(ctx).WithContext(ctx).Where("email = ?", email).First(&user).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, errors.New("user not found")
 		}
@@ -58,7 +69,7 @@ func (s *UserStore) GetByEmail(ctx context.Context, email string) (*domain.User,
 // GetByID retrieves a user by their ID.
 func (s *UserStore) GetByID(ctx context.Context, id uuid.UUID) (*domain.User, error) {
 	var user User
-	if err := s.db.WithContext(ctx).Where("id = ?", id).First(&user).Error; err != nil {
+	if err := s.dbFor(ctx).WithContext(ctx).Where("id = ?", id).First(&user).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, errors.New("user not found")
 		}
@@ -75,7 +86,7 @@ func (s *UserStore) UpdateRoles(ctx context.Context, id uuid.UUID, roles []strin
 		return err
 	}
 
-	result := s.db.WithContext(ctx).Model(&User{}).
+	result := s.dbFor(ctx).WithContext(ctx).Model(&User{}).
 		Where("id = ?", id).
 		Updates(map[string]interface{}{
 			"roles":      string(rolesJSON),
@@ -95,7 +106,7 @@ func (s *UserStore) UpdateRoles(ctx context.Context, id uuid.UUID, roles []strin
 
 // BumpSessionVersion increments the session version to invalidate all sessions.
 func (s *UserStore) BumpSessionVersion(ctx context.Context, id uuid.UUID) error {
-	result := s.db.WithContext(ctx).Model(&User{}).
+	result := s.dbFor(ctx).WithContext(ctx).Model(&User{}).
 		Where("id = ?", id).
 		Updates(map[string]interface{}{
 			"session_version": gorm.Expr("session_version + ?", 1),

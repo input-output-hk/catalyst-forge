@@ -1,13 +1,13 @@
 package middleware
 
 import (
-	"net/http"
-	"time"
+    "net/http"
+    "time"
 
-	"github.com/catalystgo/catalyst-forge/lib/foundry/authkit/authkit"
-	"github.com/catalystgo/catalyst-forge/lib/foundry/authkit/httpkit"
-	"github.com/catalystgo/catalyst-forge/lib/foundry/authkit/rbac"
-	"github.com/gin-gonic/gin"
+    "github.com/catalystgo/catalyst-forge/lib/foundry/authkit/authkit"
+    basehttpkit "github.com/catalystgo/catalyst-forge/lib/foundry/httpkit"
+    "github.com/catalystgo/catalyst-forge/lib/foundry/authkit/rbac"
+    "github.com/gin-gonic/gin"
 )
 
 // PolicyEnforcer provides policy-based authorization middleware.
@@ -58,21 +58,21 @@ func (pe *PolicyEnforcer) EnforcePolicies() gin.HandlerFunc {
 			// Authentication is required
 			ctx, ok := authkit.From(c)
 			if !ok || !ctx.IsAuthenticated() {
-				httpkit.ErrorResponse(c.Writer, http.StatusUnauthorized, "unauthorized", "Authentication required")
+                basehttpkit.ErrorResponse(c.Writer, http.StatusUnauthorized, "unauthorized", "Authentication required")
 				c.Abort()
 				return
 			}
 
 			// Check step-up requirement
 			if rule.RequireStepUp && ctx.RequiresStepUp(time.Now().UTC()) {
-				httpkit.ErrorResponse(c.Writer, http.StatusPreconditionRequired, "step_up_required", "Step-up authentication required")
+                basehttpkit.ErrorResponse(c.Writer, http.StatusPreconditionRequired, "step_up_required", "Step-up authentication required")
 				c.Abort()
 				return
 			}
 
 			// Check role requirement
 			if len(rule.Roles) > 0 && !ctx.HasAnyRole(rule.Roles) {
-				httpkit.ErrorResponse(c.Writer, http.StatusForbidden, "forbidden", "Insufficient privileges")
+                basehttpkit.ErrorResponse(c.Writer, http.StatusForbidden, "forbidden", "Insufficient privileges")
 				c.Abort()
 				return
 			}
@@ -80,11 +80,11 @@ func (pe *PolicyEnforcer) EnforcePolicies() gin.HandlerFunc {
 			// Check permission requirement
 			if len(rule.Permissions) > 0 {
 				if pe.rbacMgr == nil {
-					if !ctx.HasAnyPermission(rule.Permissions) {
-						httpkit.ErrorResponse(c.Writer, http.StatusForbidden, "forbidden", "Insufficient privileges")
-						c.Abort()
-						return
-					}
+                        if !ctx.HasAnyPermission(rule.Permissions) {
+                            basehttpkit.ErrorResponse(c.Writer, http.StatusForbidden, "forbidden", "Insufficient privileges")
+                            c.Abort()
+                            return
+                        }
 				} else {
 					// Build subject from AuthContext
 					subj := rbac.Subject{Type: rbac.SubjectUser, ID: ctx.UserID.String(), Attrs: map[string]any{"roles": ctx.Roles}}
@@ -94,15 +94,15 @@ func (pe *PolicyEnforcer) EnforcePolicies() gin.HandlerFunc {
 					for _, p := range rule.Permissions {
 						dec, err := pe.rbacMgr.Check(c.Request.Context(), subj, rbac.PermissionKey(p), res)
 						if err == rbac.ErrConditionStepUpRequired {
-							httpkit.ErrorResponse(c.Writer, http.StatusPreconditionRequired, "step_up_required", "Step-up authentication required")
-							c.Abort()
-							return
-						}
-						if dec != rbac.DecisionAllow {
-							httpkit.ErrorResponse(c.Writer, http.StatusForbidden, "forbidden", "Insufficient privileges")
-							c.Abort()
-							return
-						}
+                            basehttpkit.ErrorResponse(c.Writer, http.StatusPreconditionRequired, "step_up_required", "Step-up authentication required")
+                            c.Abort()
+                            return
+                        }
+                        if dec != rbac.DecisionAllow {
+                            basehttpkit.ErrorResponse(c.Writer, http.StatusForbidden, "forbidden", "Insufficient privileges")
+                            c.Abort()
+                            return
+                        }
 					}
 				}
 			}
@@ -122,31 +122,31 @@ func RequirePolicy(rule authkit.Rule) gin.HandlerFunc {
 			// Authentication is required
 			ctx, ok := authkit.From(c)
 			if !ok || !ctx.IsAuthenticated() {
-				httpkit.ErrorResponse(c.Writer, http.StatusUnauthorized, "unauthorized", "Authentication required")
+                basehttpkit.ErrorResponse(c.Writer, http.StatusUnauthorized, "unauthorized", "Authentication required")
 				c.Abort()
 				return
 			}
 
 			// Check step-up requirement
 			if rule.RequireStepUp && ctx.RequiresStepUp(time.Now().UTC()) {
-				httpkit.ErrorResponse(c.Writer, http.StatusPreconditionRequired, "step_up_required", "Step-up authentication required")
+                basehttpkit.ErrorResponse(c.Writer, http.StatusPreconditionRequired, "step_up_required", "Step-up authentication required")
 				c.Abort()
 				return
 			}
 
 			// Check role requirement
 			if len(rule.Roles) > 0 && !ctx.HasAnyRole(rule.Roles) {
-				httpkit.ErrorResponse(c.Writer, http.StatusForbidden, "forbidden", "Insufficient privileges")
+                basehttpkit.ErrorResponse(c.Writer, http.StatusForbidden, "forbidden", "Insufficient privileges")
 				c.Abort()
 				return
 			}
 
 			// Check permission requirement
-			if len(rule.Permissions) > 0 && !ctx.HasAnyPermission(rule.Permissions) {
-				httpkit.ErrorResponse(c.Writer, http.StatusForbidden, "forbidden", "Insufficient privileges")
-				c.Abort()
-				return
-			}
+                if len(rule.Permissions) > 0 && !ctx.HasAnyPermission(rule.Permissions) {
+                    basehttpkit.ErrorResponse(c.Writer, http.StatusForbidden, "forbidden", "Insufficient privileges")
+                    c.Abort()
+                    return
+                }
 		}
 
 		c.Next()
@@ -158,20 +158,20 @@ func RequirePolicy(rule authkit.Rule) gin.HandlerFunc {
 // Returns 403 if the user doesn't have any of the required roles.
 func RequireRoles(roles ...string) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		ctx, ok := authkit.From(c)
-		if !ok || !ctx.IsAuthenticated() {
-			httpkit.ErrorResponse(c.Writer, http.StatusUnauthorized, "unauthorized", "Authentication required")
-			c.Abort()
-			return
-		}
-		// Step-up not implied here; callers should layer RequirePolicy if needed
-		if !ctx.HasAnyRole(roles) {
-			httpkit.ErrorResponse(c.Writer, http.StatusForbidden, "forbidden", "Insufficient privileges")
-			c.Abort()
-			return
-		}
-		c.Next()
-	}
+            ctx, ok := authkit.From(c)
+            if !ok || !ctx.IsAuthenticated() {
+                basehttpkit.ErrorResponse(c.Writer, http.StatusUnauthorized, "unauthorized", "Authentication required")
+                c.Abort()
+                return
+            }
+            // Step-up not implied here; callers should layer RequirePolicy if needed
+            if !ctx.HasAnyRole(roles) {
+                basehttpkit.ErrorResponse(c.Writer, http.StatusForbidden, "forbidden", "Insufficient privileges")
+                c.Abort()
+                return
+            }
+            c.Next()
+        }
 }
 
 // RequirePermissions enforces that the user has at least one of the provided permissions.
@@ -179,20 +179,20 @@ func RequireRoles(roles ...string) gin.HandlerFunc {
 // Returns 403 if the user doesn't have any of the required permissions.
 func RequirePermissions(permissions ...string) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		ctx, ok := authkit.From(c)
-		if !ok || !ctx.IsAuthenticated() {
-			httpkit.ErrorResponse(c.Writer, http.StatusUnauthorized, "unauthorized", "Authentication required")
-			c.Abort()
-			return
-		}
-		// Step-up not implied here; callers should layer RequirePolicy if needed
-		if !ctx.HasAnyPermission(permissions) {
-			httpkit.ErrorResponse(c.Writer, http.StatusForbidden, "forbidden", "Insufficient privileges")
-			c.Abort()
-			return
-		}
-		c.Next()
-	}
+            ctx, ok := authkit.From(c)
+            if !ok || !ctx.IsAuthenticated() {
+                basehttpkit.ErrorResponse(c.Writer, http.StatusUnauthorized, "unauthorized", "Authentication required")
+                c.Abort()
+                return
+            }
+            // Step-up not implied here; callers should layer RequirePolicy if needed
+            if !ctx.HasAnyPermission(permissions) {
+                basehttpkit.ErrorResponse(c.Writer, http.StatusForbidden, "forbidden", "Insufficient privileges")
+                c.Abort()
+                return
+            }
+            c.Next()
+        }
 }
 
 // RequireAdmin is a convenience middleware for admin-only endpoints.

@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/catalystgo/catalyst-forge/lib/foundry/authkit/authkit"
+	akauth "github.com/catalystgo/catalyst-forge/lib/foundry/authkit/authkit"
 	"github.com/catalystgo/catalyst-forge/lib/foundry/authkit/domain"
 	"github.com/catalystgo/catalyst-forge/lib/foundry/authkit/store"
 	"github.com/gin-gonic/gin"
@@ -80,7 +80,7 @@ func (al *AuditLogger) buildAuditEvent(c *gin.Context, statusCode int, requestBo
 
 	// Get user ID if authenticated
 	var userID *uuid.UUID
-	if ctx, ok := authkit.From(c); ok && ctx.IsAuthenticated() {
+	if ctx, ok := akauth.From(c); ok && ctx.IsAuthenticated() {
 		userID = &ctx.UserID
 	}
 
@@ -92,12 +92,12 @@ func (al *AuditLogger) buildAuditEvent(c *gin.Context, statusCode int, requestBo
 
 	// Build metadata (excluding sensitive data)
 	metadata := map[string]interface{}{
-		"method":       c.Request.Method,
-		"path":         c.Request.URL.Path,
-		"status":       statusCode,
-		"ip":           clientIP,
-		"user_agent":   c.Request.UserAgent(),
-		"duration_ms":  time.Since(startTime).Milliseconds(),
+		"method":      c.Request.Method,
+		"path":        c.Request.URL.Path,
+		"status":      statusCode,
+		"ip":          clientIP,
+		"user_agent":  c.Request.UserAgent(),
+		"duration_ms": time.Since(startTime).Milliseconds(),
 	}
 
 	// Add sanitized request data for certain endpoints
@@ -125,12 +125,12 @@ func (al *AuditLogger) buildAuditEvent(c *gin.Context, statusCode int, requestBo
 func (al *AuditLogger) determineEventType(path string, method string, statusCode int) domain.EventType {
 	// Normalize method to uppercase for consistency
 	method = strings.ToUpper(method)
-	
+
 	// Check for rate limiting first (applies to any endpoint)
 	if statusCode == http.StatusTooManyRequests {
 		return domain.EventRateLimitExceeded
 	}
-	
+
 	// Map auth endpoints to event types
 	switch {
 	// Login events
@@ -141,7 +141,7 @@ func (al *AuditLogger) determineEventType(path string, method string, statusCode
 			return domain.EventLoginSuccess
 		}
 		return domain.EventLoginFailed
-		
+
 	// Logout events
 	case path == "/auth/logout" && method == "POST":
 		return domain.EventLogout
@@ -149,7 +149,7 @@ func (al *AuditLogger) determineEventType(path string, method string, statusCode
 		return domain.EventLogoutAll
 	case path == "/auth/admin/users/force-logout" && method == "POST":
 		return domain.EventAdminForceLogout
-		
+
 	// Registration/Onboarding events
 	case path == "/auth/onboard/begin" && method == "POST":
 		return domain.EventRegistrationBegin
@@ -158,7 +158,7 @@ func (al *AuditLogger) determineEventType(path string, method string, statusCode
 			return domain.EventRegistrationSuccess
 		}
 		return domain.EventRegistrationFailed
-		
+
 	// Token refresh events
 	case path == "/auth/refresh" && method == "POST":
 		if statusCode < 400 {
@@ -168,7 +168,7 @@ func (al *AuditLogger) determineEventType(path string, method string, statusCode
 			return domain.EventCSRFViolation
 		}
 		return domain.EventTokenRefreshFailed
-		
+
 	// Step-up authentication events
 	case path == "/auth/stepup/begin" && method == "POST":
 		return domain.EventStepUpBegin
@@ -177,7 +177,7 @@ func (al *AuditLogger) determineEventType(path string, method string, statusCode
 			return domain.EventStepUpSuccess
 		}
 		return domain.EventStepUpFailed
-		
+
 	// Recovery events
 	case path == "/auth/recovery/init" && method == "POST":
 		return domain.EventRecoveryInitiated
@@ -198,7 +198,7 @@ func (al *AuditLogger) determineEventType(path string, method string, statusCode
 			return domain.EventRecoveryCodeGenerated
 		}
 		return domain.EventType("")
-		
+
 	// Credential management events
 	case path == "/auth/credentials/add/begin" && method == "POST":
 		return domain.EventType("") // Begin events not audited
@@ -217,7 +217,7 @@ func (al *AuditLogger) determineEventType(path string, method string, statusCode
 			return domain.EventCredentialRevoked
 		}
 		return domain.EventType("")
-		
+
 	// Invite management events
 	case path == "/auth/invites" && method == "POST":
 		if statusCode < 400 {
@@ -229,7 +229,7 @@ func (al *AuditLogger) determineEventType(path string, method string, statusCode
 			return domain.EventInviteRevoked
 		}
 		return domain.EventType("")
-		
+
 	// Admin actions
 	case strings.HasPrefix(path, "/auth/admin/") && method == "POST":
 		if statusCode < 400 {
@@ -241,8 +241,8 @@ func (al *AuditLogger) determineEventType(path string, method string, statusCode
 			return domain.EventUserRolesUpdated
 		}
 		return domain.EventType("")
-		
-	// General security events  
+
+	// General security events
 	case statusCode == http.StatusForbidden:
 		// Check if it's a CSRF error or general access denied
 		if strings.HasPrefix(path, "/auth/refresh") {
@@ -256,7 +256,7 @@ func (al *AuditLogger) determineEventType(path string, method string, statusCode
 			return domain.EventInvalidJWT
 		}
 		return domain.EventType("")
-		
+
 	default:
 		return domain.EventType("")
 	}
@@ -285,7 +285,7 @@ func sanitizeRequestBody(path string, body []byte) map[string]interface{} {
 	if bytes.Contains(body, []byte("clientDataJSON")) {
 		return nil
 	}
-	
+
 	// Never log anything with passwords, tokens, or codes
 	if bytes.Contains(body, []byte("password")) ||
 		bytes.Contains(body, []byte("token")) ||
@@ -293,11 +293,11 @@ func sanitizeRequestBody(path string, body []byte) map[string]interface{} {
 		bytes.Contains(body, []byte("secret")) {
 		return nil
 	}
-	
+
 	// Vetted endpoints with safe fields only
 	// Currently no endpoints are vetted for body logging
 	// Add specific parsing logic here only after security review
-	
+
 	// Default: return nil (deny-by-default)
 	return nil
 }
@@ -328,7 +328,7 @@ func (w *responseWriter) Write(data []byte) (int, error) {
 func (al *AuditLogger) LogSecurityEvent(c *gin.Context, eventType string, metadata map[string]interface{}) {
 	// Get user ID if authenticated
 	var userID *uuid.UUID
-	if ctx, ok := authkit.From(c); ok && ctx.IsAuthenticated() {
+	if ctx, ok := akauth.From(c); ok && ctx.IsAuthenticated() {
 		userID = &ctx.UserID
 	}
 

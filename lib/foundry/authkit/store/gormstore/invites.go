@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/catalystgo/catalyst-forge/lib/foundry/authkit/domain"
+	repodb "github.com/catalystgo/catalyst-forge/lib/foundry/db"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
@@ -19,6 +20,14 @@ type InviteStore struct {
 // NewInviteStore creates a new GORM-based invite store.
 func NewInviteStore(db *gorm.DB) *InviteStore {
 	return &InviteStore{db: db}
+}
+
+// dbFor returns the appropriate database handle for the given context.
+func (s *InviteStore) dbFor(ctx context.Context) *gorm.DB {
+	if tx := repodb.TxFromContext(ctx); tx != nil {
+		return tx
+	}
+	return s.db
 }
 
 // Create stores a new invite.
@@ -39,7 +48,7 @@ func (s *InviteStore) Create(ctx context.Context, inv *domain.Invite) error {
 		CreatedBy:  inv.CreatedBy,
 	}
 
-	if err := s.db.WithContext(ctx).Create(dbInvite).Error; err != nil {
+	if err := s.dbFor(ctx).WithContext(ctx).Create(dbInvite).Error; err != nil {
 		return err
 	}
 
@@ -50,7 +59,7 @@ func (s *InviteStore) Create(ctx context.Context, inv *domain.Invite) error {
 func (s *InviteStore) Get(ctx context.Context, id uuid.UUID) (*domain.Invite, error) {
 	var dbInvite Invite
 	
-	if err := s.db.WithContext(ctx).
+	if err := s.dbFor(ctx).WithContext(ctx).
 		Where("id = ?", id).
 		First(&dbInvite).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -64,7 +73,7 @@ func (s *InviteStore) Get(ctx context.Context, id uuid.UUID) (*domain.Invite, er
 
 // IncrementAttempts increments the failed attempt counter for an invite.
 func (s *InviteStore) IncrementAttempts(ctx context.Context, id uuid.UUID) error {
-	result := s.db.WithContext(ctx).Model(&Invite{}).
+	result := s.dbFor(ctx).WithContext(ctx).Model(&Invite{}).
 		Where("id = ? AND redeemed_at IS NULL", id).
 		UpdateColumn("attempts", gorm.Expr("attempts + ?", 1))
 
@@ -81,7 +90,7 @@ func (s *InviteStore) IncrementAttempts(ctx context.Context, id uuid.UUID) error
 
 // Redeem marks an invite as successfully redeemed.
 func (s *InviteStore) Redeem(ctx context.Context, id uuid.UUID, at time.Time) error {
-	result := s.db.WithContext(ctx).Model(&Invite{}).
+	result := s.dbFor(ctx).WithContext(ctx).Model(&Invite{}).
 		Where("id = ? AND redeemed_at IS NULL", id).
 		Update("redeemed_at", at)
 

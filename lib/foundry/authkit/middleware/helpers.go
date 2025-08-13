@@ -1,14 +1,14 @@
 package middleware
 
 import (
-	"time"
+    "time"
 
-	"github.com/catalystgo/catalyst-forge/lib/foundry/authkit/authkit"
-	"github.com/catalystgo/catalyst-forge/lib/foundry/authkit/httpkit"
-	"github.com/catalystgo/catalyst-forge/lib/foundry/authkit/rate"
-	"github.com/catalystgo/catalyst-forge/lib/foundry/authkit/service"
-	"github.com/catalystgo/catalyst-forge/lib/foundry/authkit/store"
-	"github.com/gin-gonic/gin"
+    "github.com/catalystgo/catalyst-forge/lib/foundry/authkit/authkit"
+    basehttpkit "github.com/catalystgo/catalyst-forge/lib/foundry/httpkit"
+    "github.com/catalystgo/catalyst-forge/lib/foundry/authkit/rate"
+    "github.com/catalystgo/catalyst-forge/lib/foundry/authkit/service"
+    "github.com/catalystgo/catalyst-forge/lib/foundry/authkit/store"
+    "github.com/gin-gonic/gin"
 )
 
 // Stack represents a collection of middleware components.
@@ -48,15 +48,15 @@ func NewStack(
 //   - Session validation
 //   - Policy enforcement
 //   - Audit logging
-func (s *Stack) Default(corsConfig ...httpkit.CORSConfig) []gin.HandlerFunc {
+func (s *Stack) Default(corsConfig ...basehttpkit.CORSConfig) []gin.HandlerFunc {
 	handlers := []gin.HandlerFunc{
 		SecurityHeaders(),
 	}
 
 	// Add CORS if configured
-	if len(corsConfig) > 0 {
-		handlers = append(handlers, CORS(corsConfig[0]))
-	}
+    if len(corsConfig) > 0 {
+        handlers = append(handlers, CORS(corsConfig[0]))
+    }
 
 	handlers = append(handlers,
 		s.auth.Authenticate(),
@@ -75,15 +75,15 @@ func (s *Stack) Default(corsConfig ...httpkit.CORSConfig) []gin.HandlerFunc {
 //   - CORS (if configured)
 //   - Optional authentication
 //   - Rate limiting
-func (s *Stack) Public(rateLimit int, window time.Duration, corsConfig ...httpkit.CORSConfig) []gin.HandlerFunc {
+func (s *Stack) Public(rateLimit int, window time.Duration, corsConfig ...basehttpkit.CORSConfig) []gin.HandlerFunc {
 	handlers := []gin.HandlerFunc{
 		SecurityHeaders(),
 	}
 
 	// Add CORS if configured
-	if len(corsConfig) > 0 {
-		handlers = append(handlers, CORS(corsConfig[0]))
-	}
+    if len(corsConfig) > 0 {
+        handlers = append(handlers, CORS(corsConfig[0]))
+    }
 
 	handlers = append(handlers,
 		s.rate.LimitByIP(rateLimit, window),
@@ -143,7 +143,7 @@ func (s *Stack) Admin() []gin.HandlerFunc {
 //   - Audit logging
 func (s *Stack) AuthEndpoint(endpoint string) []gin.HandlerFunc {
 	limits := DefaultAuthLimits()
-	csrf := httpkit.NewHeaderCSRF()
+    csrf := basehttpkit.NewHeaderCSRF()
 
 	return []gin.HandlerFunc{
 		SecurityHeaders(),
@@ -199,7 +199,7 @@ func (c *CustomChain) SecurityHeaders() *CustomChain {
 }
 
 // CORS adds CORS middleware.
-func (c *CustomChain) CORS(config httpkit.CORSConfig) *CustomChain {
+func (c *CustomChain) CORS(config basehttpkit.CORSConfig) *CustomChain {
 	return c.Add(CORS(config))
 }
 
@@ -249,7 +249,7 @@ func (c *CustomChain) ContentTypeJSON() *CustomChain {
 }
 
 // CSRF adds CSRF protection.
-func (c *CustomChain) CSRF(csrf httpkit.CSRF) *CustomChain {
+func (c *CustomChain) CSRF(csrf basehttpkit.CSRF) *CustomChain {
 	return c.Add(RequireCSRF(csrf))
 }
 
