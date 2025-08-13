@@ -6,12 +6,14 @@ import (
 
 	"github.com/catalystgo/catalyst-forge/lib/foundry/authkit/authkit"
 	"github.com/catalystgo/catalyst-forge/lib/foundry/authkit/httpkit"
+	"github.com/catalystgo/catalyst-forge/lib/foundry/authkit/rbac"
 	"github.com/gin-gonic/gin"
 )
 
 // PolicyEnforcer provides policy-based authorization middleware.
 type PolicyEnforcer struct {
 	registry *authkit.PolicyRegistry
+	rbacMgr  rbac.Manager // optional; if nil, fallback to AuthContext permissions
 }
 
 // NewPolicyEnforcer creates a new policy enforcement middleware.
@@ -19,6 +21,12 @@ func NewPolicyEnforcer(registry *authkit.PolicyRegistry) *PolicyEnforcer {
 	return &PolicyEnforcer{
 		registry: registry,
 	}
+}
+
+// WithRBAC attaches an RBAC manager to the enforcer.
+func (pe *PolicyEnforcer) WithRBAC(m rbac.Manager) *PolicyEnforcer {
+	pe.rbacMgr = m
+	return pe
 }
 
 // EnforcePolicies evaluates authorization rules for the current request.
@@ -70,10 +78,33 @@ func (pe *PolicyEnforcer) EnforcePolicies() gin.HandlerFunc {
 			}
 
 			// Check permission requirement
-			if len(rule.Permissions) > 0 && !ctx.HasAnyPermission(rule.Permissions) {
-				httpkit.ErrorResponse(c.Writer, http.StatusForbidden, "forbidden", "Insufficient privileges")
-				c.Abort()
-				return
+			if len(rule.Permissions) > 0 {
+				if pe.rbacMgr == nil {
+					if !ctx.HasAnyPermission(rule.Permissions) {
+						httpkit.ErrorResponse(c.Writer, http.StatusForbidden, "forbidden", "Insufficient privileges")
+						c.Abort()
+						return
+					}
+				} else {
+					// Build subject from AuthContext
+					subj := rbac.Subject{Type: rbac.SubjectUser, ID: ctx.UserID.String(), Attrs: map[string]any{"roles": ctx.Roles}}
+					// Resolve resource if a resolver was registered for exact path
+					res, _, _ := pe.rbacMgr.Resolve(c, c.Request.URL.Path)
+
+					for _, p := range rule.Permissions {
+						dec, err := pe.rbacMgr.Check(c.Request.Context(), subj, rbac.PermissionKey(p), res)
+						if err == rbac.ErrConditionStepUpRequired {
+							httpkit.ErrorResponse(c.Writer, http.StatusPreconditionRequired, "step_up_required", "Step-up authentication required")
+							c.Abort()
+							return
+						}
+						if dec != rbac.DecisionAllow {
+							httpkit.ErrorResponse(c.Writer, http.StatusForbidden, "forbidden", "Insufficient privileges")
+							c.Abort()
+							return
+						}
+					}
+				}
 			}
 		}
 
@@ -183,10 +214,10 @@ func BuildPolicyRegistry() *authkit.PolicyRegistry {
 	// Example common patterns (applications should customize):
 	// Admin endpoints
 	registry.RequireRoles([]string{"admin"}, "*", "/admin/*")
-	
+
 	// User profile endpoints
 	registry.RequireAuth("*", "/profile", "/profile/*")
-	
+
 	// Sensitive operations require step-up
 	registry.RequireStepUp("POST", "/profile/delete")
 	registry.RequireStepUp("PUT", "/profile/email")

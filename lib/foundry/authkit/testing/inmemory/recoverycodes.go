@@ -100,3 +100,64 @@ func (s *RecoveryCodeStore) List(ctx context.Context, userID uuid.UUID) ([][]byt
 
 	return result, nil
 }
+
+// CountUnused returns the number of unused recovery codes for a user.
+//
+// This is used to show users how many codes they have left.
+func (s *RecoveryCodeStore) CountUnused(ctx context.Context, userID uuid.UUID) (int, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	userCodes, exists := s.codes[userID]
+	if !exists {
+		return 0, nil
+	}
+
+	count := 0
+	for _, code := range userCodes {
+		if code.UsedAt == nil {
+			count++
+		}
+	}
+
+	return count, nil
+}
+
+// GetByUserID returns all recovery codes for a user (for testing).
+//
+// This method is not part of the store.RecoveryCodeStore interface.
+func (s *RecoveryCodeStore) GetByUserID(ctx context.Context, userID uuid.UUID) ([]*domain.RecoveryCode, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	userCodes, exists := s.codes[userID]
+	if !exists {
+		return []*domain.RecoveryCode{}, nil
+	}
+
+	// Return a copy of the codes
+	result := make([]*domain.RecoveryCode, len(userCodes))
+	copy(result, userCodes)
+	return result, nil
+}
+
+// GetByHash returns a recovery code by its hash (for testing).
+//
+// This method is not part of the store.RecoveryCodeStore interface.
+func (s *RecoveryCodeStore) GetByHash(ctx context.Context, userID uuid.UUID, codeHash []byte) (*domain.RecoveryCode, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	userCodes, exists := s.codes[userID]
+	if !exists {
+		return nil, nil
+	}
+
+	for _, code := range userCodes {
+		if bytes.Equal(code.Hash, codeHash) {
+			return code, nil
+		}
+	}
+
+	return nil, nil
+}

@@ -4,6 +4,8 @@ import (
 	"context"
 	"sync"
 	"time"
+
+	"github.com/catalystgo/catalyst-forge/lib/foundry/authkit/store"
 )
 
 // kvEntry stores a value with optional expiration.
@@ -51,19 +53,19 @@ func (s *KV) Set(ctx context.Context, key string, value []byte, ttl time.Duratio
 
 // Get retrieves a value by key.
 //
-// Returns nil if the key doesn't exist or has expired.
+// Returns store.ErrNotFound if the key doesn't exist or has expired.
 func (s *KV) Get(ctx context.Context, key string) ([]byte, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
 	entry, exists := s.entries[key]
 	if !exists {
-		return nil, nil
+		return nil, store.ErrNotFound
 	}
 
 	// Check if expired
 	if entry.expiresAt != nil && time.Now().After(*entry.expiresAt) {
-		return nil, nil
+		return nil, store.ErrNotFound
 	}
 
 	// Return a copy of the value
@@ -82,10 +84,10 @@ func (s *KV) Del(ctx context.Context, key string) error {
 	return nil
 }
 
-// cleanup removes expired entries (for testing/maintenance).
+// Cleanup removes expired entries (for testing/maintenance).
 //
 // This method is not part of the store.KV interface.
-func (s *KV) cleanup() {
+func (s *KV) Cleanup() {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 

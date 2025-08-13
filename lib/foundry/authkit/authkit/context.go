@@ -90,3 +90,10 @@ func (ac AuthContext) HasAnyPermission(permissions []string) bool {
 func (ac AuthContext) RequiresStepUp(now time.Time) bool {
 	return ac.StepUpValidUntil.IsZero() || now.After(ac.StepUpValidUntil)
 }
+
+// SetContext stores an AuthContext in a gin.Context.
+//
+// This is a convenience function for testing and middleware.
+func SetContext(c *gin.Context, ctx AuthContext) {
+	c.Set(contextKey, ctx)
+}

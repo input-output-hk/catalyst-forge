@@ -25,7 +25,18 @@ func (s *AuditStore) Record(ctx context.Context, evt domain.Event) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	s.events = append(s.events, evt)
+	// Make a deep copy of the event to prevent external modifications
+	eventCopy := evt
+	
+	// Deep copy the metadata map if it exists
+	if evt.Metadata != nil {
+		eventCopy.Metadata = make(map[string]interface{})
+		for k, v := range evt.Metadata {
+			eventCopy.Metadata[k] = v
+		}
+	}
+
+	s.events = append(s.events, eventCopy)
 	return nil
 }
 
@@ -36,8 +47,18 @@ func (s *AuditStore) GetEvents() []domain.Event {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
-	// Return a copy of the events
+	// Return a deep copy of the events
 	result := make([]domain.Event, len(s.events))
-	copy(result, s.events)
+	for i, evt := range s.events {
+		result[i] = evt
+		
+		// Deep copy the metadata map if it exists
+		if evt.Metadata != nil {
+			result[i].Metadata = make(map[string]interface{})
+			for k, v := range evt.Metadata {
+				result[i].Metadata[k] = v
+			}
+		}
+	}
 	return result
 }

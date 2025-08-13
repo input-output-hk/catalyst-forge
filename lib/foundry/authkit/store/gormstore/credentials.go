@@ -23,9 +23,13 @@ func NewCredentialStore(db *gorm.DB) *CredentialStore {
 
 // Add stores a new credential for a user.
 func (s *CredentialStore) Add(ctx context.Context, cred *domain.Credential) error {
-	transportsJSON, err := json.Marshal(cred.Transports)
-	if err != nil {
-		return err
+	var transportsStr string
+	if cred.Transports != nil && len(cred.Transports) > 0 {
+		transportsJSON, err := json.Marshal(cred.Transports)
+		if err != nil {
+			return err
+		}
+		transportsStr = string(transportsJSON)
 	}
 
 	dbCred := &Credential{
@@ -35,7 +39,7 @@ func (s *CredentialStore) Add(ctx context.Context, cred *domain.Credential) erro
 		AAGUID:     cred.AAGUID,
 		DeviceName: cred.DeviceName,
 		RK:         cred.RK,
-		Transports: string(transportsJSON),
+		Transports: transportsStr,
 		SignCount:  cred.SignCount,
 		CreatedAt:  cred.CreatedAt,
 		LastUsedAt: cred.LastUsedAt,
@@ -133,9 +137,10 @@ func (s *CredentialStore) toDomain(cred *Credential) (*domain.Credential, error)
 	var transports []string
 	if cred.Transports != "" {
 		if err := json.Unmarshal([]byte(cred.Transports), &transports); err != nil {
-			// Handle invalid JSON by treating as empty array
-			transports = []string{}
+			return nil, err
 		}
+	} else {
+		transports = []string{}
 	}
 
 	return &domain.Credential{

@@ -60,8 +60,8 @@ func (s *InviteStore) IncrementAttempts(ctx context.Context, id uuid.UUID) error
 	defer s.mu.Unlock()
 
 	inv, exists := s.invites[id]
-	if !exists {
-		return errors.New("invite not found")
+	if !exists || inv.RedeemedAt != nil {
+		return errors.New("invite not found or already redeemed")
 	}
 
 	inv.Attempts++
@@ -75,12 +75,8 @@ func (s *InviteStore) Redeem(ctx context.Context, id uuid.UUID, at time.Time) er
 	defer s.mu.Unlock()
 
 	inv, exists := s.invites[id]
-	if !exists {
-		return errors.New("invite not found")
-	}
-
-	if inv.RedeemedAt != nil {
-		return errors.New("invite already redeemed")
+	if !exists || inv.RedeemedAt != nil {
+		return errors.New("invite not found or already redeemed")
 	}
 
 	inv.RedeemedAt = &at

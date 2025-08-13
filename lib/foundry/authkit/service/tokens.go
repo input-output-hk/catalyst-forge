@@ -169,8 +169,10 @@ func (s *tokenService) ParseAccess(ctx context.Context, token string) (*AccessCl
 	var foundAudience bool
 	switch v := claimsMap["aud"].(type) {
 	case string:
-		claims.Audience = v
-		foundAudience = true
+		if v == s.issuer {
+			claims.Audience = v
+			foundAudience = true
+		}
 	case []interface{}:
 		// Check if our expected audience is in the array
 		for _, aud := range v {

@@ -97,8 +97,10 @@ func (s *UserStore) UpdateRoles(ctx context.Context, id uuid.UUID, roles []strin
 func (s *UserStore) BumpSessionVersion(ctx context.Context, id uuid.UUID) error {
 	result := s.db.WithContext(ctx).Model(&User{}).
 		Where("id = ?", id).
-		UpdateColumn("session_version", gorm.Expr("session_version + ?", 1)).
-		UpdateColumn("updated_at", time.Now())
+		Updates(map[string]interface{}{
+			"session_version": gorm.Expr("session_version + ?", 1),
+			"updated_at":      time.Now(),
+		})
 
 	if result.Error != nil {
 		return result.Error
@@ -115,8 +117,7 @@ func (s *UserStore) BumpSessionVersion(ctx context.Context, id uuid.UUID) error 
 func (s *UserStore) toDomain(user *User) (*domain.User, error) {
 	var roles []string
 	if err := json.Unmarshal([]byte(user.RolesJSON), &roles); err != nil {
-		// Handle empty or invalid JSON
-		roles = []string{}
+		return nil, err
 	}
 
 	return &domain.User{

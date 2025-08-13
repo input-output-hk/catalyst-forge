@@ -126,37 +126,82 @@ func (al *AuditLogger) determineEventType(path string, method string, statusCode
 	// Normalize method to uppercase for consistency
 	method = strings.ToUpper(method)
 	
+	// Check for rate limiting first (applies to any endpoint)
+	if statusCode == http.StatusTooManyRequests {
+		return domain.EventRateLimitExceeded
+	}
+	
 	// Map auth endpoints to event types
 	switch {
+	// Login events
+	case path == "/auth/login/begin" && method == "POST":
+		return domain.EventLoginBegin
 	case path == "/auth/login/complete" && method == "POST":
 		if statusCode < 400 {
 			return domain.EventLoginSuccess
 		}
 		return domain.EventLoginFailed
+		
+	// Logout events
 	case path == "/auth/logout" && method == "POST":
 		return domain.EventLogout
 	case path == "/auth/logout-all" && method == "POST":
 		return domain.EventLogoutAll
+	case path == "/auth/admin/users/force-logout" && method == "POST":
+		return domain.EventAdminForceLogout
+		
+	// Registration/Onboarding events
+	case path == "/auth/onboard/begin" && method == "POST":
+		return domain.EventRegistrationBegin
 	case path == "/auth/onboard/complete" && method == "POST":
 		if statusCode < 400 {
 			return domain.EventRegistrationSuccess
 		}
 		return domain.EventRegistrationFailed
+		
+	// Token refresh events
 	case path == "/auth/refresh" && method == "POST":
 		if statusCode < 400 {
 			return domain.EventTokenRefresh
+		} else if statusCode == http.StatusForbidden {
+			// CSRF violation on refresh endpoint
+			return domain.EventCSRFViolation
 		}
 		return domain.EventTokenRefreshFailed
+		
+	// Step-up authentication events
+	case path == "/auth/stepup/begin" && method == "POST":
+		return domain.EventStepUpBegin
 	case path == "/auth/stepup/complete" && method == "POST":
 		if statusCode < 400 {
 			return domain.EventStepUpSuccess
 		}
 		return domain.EventStepUpFailed
+		
+	// Recovery events
+	case path == "/auth/recovery/init" && method == "POST":
+		return domain.EventRecoveryInitiated
 	case path == "/auth/recovery/verify" && method == "POST":
 		if statusCode < 400 {
-			return domain.EventRecoverySuccess
+			return domain.EventRecoveryCodeUsed
 		}
 		return domain.EventRecoveryFailed
+	case path == "/auth/recovery/register/begin" && method == "POST":
+		return domain.EventType("") // Part of recovery flow, not separately audited
+	case path == "/auth/recovery/register/complete" && method == "POST":
+		if statusCode < 400 {
+			return domain.EventRecoveryCompleted
+		}
+		return domain.EventRecoveryFailed
+	case path == "/auth/recovery/codes/generate" && method == "POST":
+		if statusCode < 400 {
+			return domain.EventRecoveryCodeGenerated
+		}
+		return domain.EventType("")
+		
+	// Credential management events
+	case path == "/auth/credentials/add/begin" && method == "POST":
+		return domain.EventType("") // Begin events not audited
 	case path == "/auth/credentials/add/complete" && method == "POST":
 		if statusCode < 400 {
 			return domain.EventCredentialAdded
@@ -167,10 +212,51 @@ func (al *AuditLogger) determineEventType(path string, method string, statusCode
 			return domain.EventCredentialRemoved
 		}
 		return domain.EventType("")
-	case statusCode == http.StatusTooManyRequests:
-		return domain.EventRateLimitExceeded
+	case path == "/auth/credentials/revoke" && method == "POST":
+		if statusCode < 400 {
+			return domain.EventCredentialRevoked
+		}
+		return domain.EventType("")
+		
+	// Invite management events
+	case path == "/auth/invites" && method == "POST":
+		if statusCode < 400 {
+			return domain.EventInviteCreated
+		}
+		return domain.EventType("")
+	case strings.HasPrefix(path, "/auth/invites/") && method == "DELETE":
+		if statusCode < 400 {
+			return domain.EventInviteRevoked
+		}
+		return domain.EventType("")
+		
+	// Admin actions
+	case strings.HasPrefix(path, "/auth/admin/") && method == "POST":
+		if statusCode < 400 {
+			return domain.EventAdminAction
+		}
+		return domain.EventType("")
+	case strings.HasPrefix(path, "/auth/admin/users/") && strings.Contains(path, "/roles") && method == "PUT":
+		if statusCode < 400 {
+			return domain.EventUserRolesUpdated
+		}
+		return domain.EventType("")
+		
+	// General security events  
 	case statusCode == http.StatusForbidden:
+		// Check if it's a CSRF error or general access denied
+		if strings.HasPrefix(path, "/auth/refresh") {
+			return domain.EventCSRFViolation
+		}
 		return domain.EventAccessDenied
+	case statusCode == http.StatusUnauthorized:
+		// Check the specific reason for 401
+		if strings.Contains(path, "/auth") {
+			// Could be expired JWT or invalid JWT
+			return domain.EventInvalidJWT
+		}
+		return domain.EventType("")
+		
 	default:
 		return domain.EventType("")
 	}
