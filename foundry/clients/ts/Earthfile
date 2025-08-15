@@ -1,0 +1,46 @@
+VERSION 0.8
+
+deps:
+    FROM node:20-bookworm-slim
+
+    WORKDIR /work
+
+    # Install dependencies
+    COPY package.json package-lock.json .
+    RUN npm ci
+
+src:
+    FROM +deps
+
+    # Copy source files and config
+    COPY --dir src examples tsconfig.json .prettierrc .eslintrc.json .
+
+    SAVE ARTIFACT . src
+
+generate:
+    FROM +src
+
+    # Use the API's generated swagger artifact
+    COPY ../../api+swagger/docs /api/docs
+
+    # Generate TypeScript types from OpenAPI spec using project script
+    RUN npm run generate
+
+    SAVE ARTIFACT src/api/schema.d.ts AS LOCAL src/api/schema.d.ts
+
+check:
+    FROM +src
+
+    # Ensure we are using the API's generated swagger artifact
+    COPY ../../api+swagger/docs /api/docs
+
+    # Ensure generated types are up-to-date
+    RUN npm run generate && git diff --exit-code src/api/schema.d.ts && echo "✓ OpenAPI types up-to-date"
+
+    # Type check
+    RUN npm run typecheck && echo "✓ TypeScript type checking passed"
+
+    # Format check
+    RUN npm run format:check && echo "✓ Code formatting check passed"
+
+

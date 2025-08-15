@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"time"
 
-	libauth "github.com/catalystgo/catalyst-forge/lib/foundry/authkit/authkit"
+	libauth "github.com/input-output-hk/catalyst-forge/foundry/api/internal/authkit/authkit"
 	apicfg "github.com/input-output-hk/catalyst-forge/foundry/api/internal/config"
 )
 
@@ -13,28 +13,61 @@ func BuildConfig(c *apicfg.Config) libauth.Config {
 	cfg := libauth.DefaultConfig()
 
 	// WebAuthn
-	cfg.RPName = "Foundry Platform"
+	if c.Auth.RPName != "" {
+		cfg.RPName = c.Auth.RPName
+	} else {
+		cfg.RPName = "Foundry Platform"
+	}
 	cfg.RPID = hostFromBaseURL(c.Server.PublicBaseURL)
 	cfg.Origin = c.Server.PublicBaseURL
-	cfg.ChallengeTTL = 5 * time.Minute
-	cfg.RequireUV = true
+	if c.Auth.ChallengeTTL > 0 {
+		cfg.ChallengeTTL = c.Auth.ChallengeTTL
+	}
+	if c.Auth.RequireUV {
+		cfg.RequireUV = true
+	}
 
 	// Tokens
 	cfg.AccessTokenTTL = c.Auth.AccessTTL
 	cfg.RefreshTokenTTL = c.Auth.RefreshTTL
-	cfg.StepUpTTL = 5 * time.Minute
+	if c.Auth.StepUpTTL > 0 {
+		cfg.StepUpTTL = c.Auth.StepUpTTL
+	} else {
+		cfg.StepUpTTL = 5 * time.Minute
+	}
 
 	// Cookies
-	cfg.RefreshCookieName = "__Host-refresh_token"
-	cfg.SecureCookies = true
+	if c.Auth.RefreshCookieName != "" {
+		cfg.RefreshCookieName = c.Auth.RefreshCookieName
+	}
+	if c.Auth.RefreshCookieSecure {
+		cfg.SecureCookies = true
+	}
 	cfg.SameSite = sameSiteFromString(c.Server.CookieSameSite)
 
 	// Admin policy and misc
-	cfg.AdminAAGUIDAllowlist = []string{}
-	cfg.RateEnabled = true
-	cfg.JWKSRoute = true
+	cfg.AdminAAGUIDAllowlist = c.Auth.AdminAAGUIDAllowlist
+	cfg.RateEnabled = c.Auth.RateEnabled
+	if c.Auth.JWKSRoute {
+		cfg.JWKSRoute = true
+	}
+	// Bootstrap token (picked from env/config via Viper)
+	cfg.BootstrapToken = c.Auth.BootstrapToken
 	cfg.InviteDefaultTTL = c.Auth.InviteTTL
 	cfg.InviteMaxAttempts = c.Auth.InviteMaxAttempts
+
+	// GitHub OIDC
+	cfg.GitHub.Enabled = c.Auth.GitHub.Enabled
+	if c.Auth.GitHub.Issuer != "" {
+		cfg.GitHub.Issuer = c.Auth.GitHub.Issuer
+	}
+	cfg.GitHub.Audiences = c.Auth.GitHub.Audiences
+	if c.Auth.GitHub.JWKSCacheTTL > 0 {
+		cfg.GitHub.JWKSCacheTTL = c.Auth.GitHub.JWKSCacheTTL
+	}
+	if c.Auth.GitHub.ExchangeTTL > 0 {
+		cfg.GitHub.ExchangeTTL = c.Auth.GitHub.ExchangeTTL
+	}
 	return cfg
 }
 

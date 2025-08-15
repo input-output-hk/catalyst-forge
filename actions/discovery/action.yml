@@ -18,8 +18,8 @@ outputs:
     description: The deployments discovered
   earthfiles:
     description: The earthfiles discovered
-  releases:
-    description: The releases discovered
+  publishers:
+    description: The publishers discovered
 
 runs:
   using: node20

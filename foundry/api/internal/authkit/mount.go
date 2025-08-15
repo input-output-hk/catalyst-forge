@@ -3,7 +3,7 @@ package authkit
 import (
 	"context"
 
-	libauth "github.com/catalystgo/catalyst-forge/lib/foundry/authkit/authkit"
+	libauth "github.com/input-output-hk/catalyst-forge/foundry/api/internal/authkit/authkit"
 	"github.com/gin-gonic/gin"
 )
 

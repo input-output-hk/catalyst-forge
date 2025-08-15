@@ -74,4 +74,9 @@ if [[ -n "${SEED_ADMIN:-}" ]]; then
 fi
 
 echo "Starting Foundry API server..."
-exec /app/foundry-api run
+if [[ "$#" -gt 0 ]]; then
+    echo "Forwarding args to foundry-api:" "$@"
+    exec /app/foundry-api "$@"
+else
+    exec /app/foundry-api run
+fi

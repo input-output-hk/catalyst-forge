@@ -97,15 +97,15 @@ func (p *Project) GetDeploymentEvents() map[string]cue.Value {
 }
 
 // GetReleaseEvents returns the release events for a release.
-func (p *Project) GetReleaseEvents(releaseName string) map[string]cue.Value {
-	release, ok := p.Blueprint.Project.Release[releaseName]
+func (p *Project) GetPublisherEvents(publisherName string) map[string]cue.Value {
+	publisher, ok := p.Blueprint.Project.Publishers[publisherName]
 	if !ok {
 		return nil
 	}
 
 	events := make(map[string]cue.Value)
-	for event := range release.On {
-		config := p.RawBlueprint.Get(fmt.Sprintf("project.release.%s.on.%s", releaseName, event))
+	for event := range publisher.On {
+		config := p.RawBlueprint.Get(fmt.Sprintf("project.publishers.%s.on.%s", publisherName, event))
 		events[event] = config
 	}
 

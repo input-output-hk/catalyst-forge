@@ -1,0 +1,11 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/oapi-codegen/oapi-codegen/HEAD/configuration-schema.json
+package: generated
+output: generated/client.gen.go
+generate:
+  models: true
+  client: true
+output-options:
+  nullable-type: true                   # tri-state null via nullable.Nullable[T]
+  prefer-skip-optional-pointer: true    # avoid *T for optionals by default
+  response-type-suffix: Resp            # avoid name collisions (…Response → …Resp)
+  # name-normalizer: default            # tweak if you want different naming rules

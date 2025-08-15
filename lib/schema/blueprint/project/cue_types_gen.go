@@ -66,20 +66,22 @@ type Project struct {
 	// Deployment contains the configuration for the deployment of the project.
 	Deployment *Deployment `json:"deployment,omitempty"`
 
-	// Release contains the configuration for the release of the project.
-	Release map[string]Release `json:"release,omitempty"`
+	// Publishers contains the configuration for the publishers of the project.
+	Publishers map[string]Publisher `json:"publishers,omitempty"`
 }
 
-type Release struct {
-	// Config contains the configuration to pass to the release.
+type Publisher struct {
+	// Config contains the configuration to pass to the publisher.
 	Config any/* CUE top */ `json:"config,omitempty"`
 
-	// On contains the events that trigger the release.
+	// On contains the events that trigger the publisher.
 	On map[string]any/* CUE top */ `json:"on"`
 
-	// Target is the Earthly target to run for this release.
-	// Defaults to release name.
-	Target string `json:"target,omitempty"`
+	// Target is the Earthly target to run for this publisher.
+	Target string `json:"target"`
+
+	// Type is the type of publisher to use.
+	Type string `json:"type"`
 }
 
 // Target contains the configuration for a single target.

@@ -1,0 +1,10 @@
+{
+  "Auth": "auth",
+  "Config": "config",
+  "Cosign": "cosign",
+  "Fallback": "fallback",
+  "Network": "network",
+  "Registry": "registry",
+  "Unknown": "unknown",
+  "Validation": "validation"
+}

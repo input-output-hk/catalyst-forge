@@ -1,3 +1,14 @@
+// ============================================================================
+// DEPRECATED: This model is part of the v1 schema and will be removed.
+// Please use the new v2 models located in the subdirectories:
+// - internal/models/repository/
+// - internal/models/project/
+// - internal/models/release/
+// - internal/models/deployment/
+// etc.
+// DO NOT add new functionality to this file.
+// ============================================================================
+
 package build
 
 import (

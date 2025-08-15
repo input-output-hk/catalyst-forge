@@ -1,98 +1,326 @@
 package handlers
 
 import (
+	"errors"
+	"log/slog"
 	"net/http"
-	"time"
-
-	"encoding/json"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
-	metrics "github.com/input-output-hk/catalyst-forge/foundry/api/internal/metrics"
-	adm "github.com/input-output-hk/catalyst-forge/foundry/api/internal/models/audit"
-	build "github.com/input-output-hk/catalyst-forge/foundry/api/internal/models/build"
-	auditrepo "github.com/input-output-hk/catalyst-forge/foundry/api/internal/repository/audit"
-	buildrepo "github.com/input-output-hk/catalyst-forge/foundry/api/internal/repository/build"
-	"gorm.io/datatypes"
+
+	contracts "github.com/input-output-hk/catalyst-forge/foundry/api/internal/contracts"
+	"github.com/input-output-hk/catalyst-forge/foundry/api/internal/models/build"
+	"github.com/input-output-hk/catalyst-forge/foundry/api/internal/models/enums"
+	buildService "github.com/input-output-hk/catalyst-forge/foundry/api/internal/service/build"
 )
 
+// BuildHandler handles build-related endpoints
 type BuildHandler struct {
-	sessions         buildrepo.BuildSessionRepository
-	sessionMaxActive int
-	audits           auditrepo.LogRepository
+	*BaseHandler
+	service buildService.Service
 }
 
-func NewBuildHandler(repo buildrepo.BuildSessionRepository, sessionMaxActive int, audits auditrepo.LogRepository) *BuildHandler {
-	return &BuildHandler{sessions: repo, sessionMaxActive: sessionMaxActive, audits: audits}
+// NewBuildHandler creates a new build handler
+func NewBuildHandler(service buildService.Service, logger *slog.Logger) *BuildHandler {
+	return &BuildHandler{
+		BaseHandler: NewBaseHandler(logger),
+		service:     service,
+	}
 }
 
-type CreateBuildSessionRequest struct {
-	OwnerType string         `json:"owner_type" binding:"required"` // "user" or "repo"
-	OwnerID   string         `json:"owner_id" binding:"required"`
-	TTL       string         `json:"ttl" binding:"required"` // eg. "90m"
-	Metadata  map[string]any `json:"metadata,omitempty"`
-}
-
-type CreateBuildSessionResponse struct {
-	ID        string    `json:"id"`
-	ExpiresAt time.Time `json:"expires_at"`
-}
-
-// TODO: metrics hooks can be wired here (eg. prom counter) when metrics package is introduced
-
-// CreateBuildSession creates a new build session enforcing per-owner concurrency cap.
-func (h *BuildHandler) CreateBuildSession(c *gin.Context) {
-	var req CreateBuildSessionRequest
+// Create handles POST /api/v1/builds
+// @Summary Create a new build
+// @Description Create a new build record for a project
+// @Tags builds
+// @Accept json
+// @Produce json
+// @Param build body contracts.BuildCreate true "Build creation request"
+// @Success 201 {object} contracts.BuildResponse "Created build"
+// @Failure 400 {object} contracts.ErrorResponse "Invalid request body"
+// @Failure 404 {object} contracts.ErrorResponse "Repository or project not found"
+// @Failure 500 {object} contracts.ErrorResponse "Internal server error"
+// @Router /api/v1/builds [post]
+func (h *BuildHandler) Create(c *gin.Context) {
+	var req contracts.BuildCreate
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request"})
+		h.RespondWithValidationError(c, err)
 		return
 	}
 
-	// enforce cap
-	count, err := h.sessions.CountActive(req.OwnerType, req.OwnerID)
+	// Convert to service request
+	svcReq := buildService.CreateRequest{
+		RepoID:        uuid.MustParse(req.RepoID),
+		ProjectID:     uuid.MustParse(req.ProjectID),
+		CommitSHA:     req.CommitSHA,
+		Branch:        req.Branch,
+		WorkflowRunID: req.WorkflowRunID,
+		Status:        enums.BuildStatus(req.Status),
+		RunnerEnv:     req.RunnerEnv,
+	}
+
+	if req.TraceID != nil {
+		id := uuid.MustParse(*req.TraceID)
+		svcReq.TraceID = &id
+	}
+
+	// Create build
+	b, err := h.service.Create(c.Request.Context(), svcReq)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to check active sessions"})
-		return
-	}
-	if int(count) >= h.sessionMaxActive {
-		c.JSON(http.StatusTooManyRequests, gin.H{"error": "too many active sessions"})
+		if errors.Is(err, buildService.ErrRepositoryNotFound) {
+			h.RespondWithNotFound(c, "Repository")
+			return
+		}
+		if errors.Is(err, buildService.ErrProjectNotFound) {
+			h.RespondWithNotFound(c, "Project")
+			return
+		}
+		h.RespondWithInternalError(c, err)
 		return
 	}
 
-	ttl, err := time.ParseDuration(req.TTL)
-	if err != nil || ttl <= 0 {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid ttl"})
+	h.RespondWithSuccess(c, http.StatusCreated, h.toResponse(b))
+}
+
+// GetByID handles GET /api/v1/builds/:id
+// @Summary Get a build by ID
+// @Description Retrieve a single build by its ID
+// @Tags builds
+// @Accept json
+// @Produce json
+// @Param id path string true "Build ID (UUID)"
+// @Success 200 {object} contracts.BuildResponse "Build details"
+// @Failure 400 {object} contracts.ErrorResponse "Invalid build ID"
+// @Failure 404 {object} contracts.ErrorResponse "Build not found"
+// @Failure 500 {object} contracts.ErrorResponse "Internal server error"
+// @Router /api/v1/builds/{id} [get]
+func (h *BuildHandler) GetByID(c *gin.Context) {
+	var param contracts.BuildIDParam
+	if err := c.ShouldBindUri(&param); err != nil {
+		h.RespondWithValidationError(c, err)
 		return
 	}
 
-	bs := &build.BuildSession{
-		ID:        uuid.NewString(),
-		OwnerType: req.OwnerType,
-		OwnerID:   req.OwnerID,
-		Source:    "api",
-		CreatedAt: time.Now(),
-		ExpiresAt: time.Now().Add(ttl),
-	}
-	if err := h.sessions.Create(bs); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create session"})
+	b, err := h.service.GetByID(c.Request.Context(), param.BuildID)
+	if err != nil {
+		if errors.Is(err, buildService.ErrBuildNotFound) {
+			h.RespondWithNotFound(c, "Build")
+			return
+		}
+		h.RespondWithInternalError(c, err)
 		return
 	}
-	// audit event
-	metaMap := map[string]any{
-		"session_id": bs.ID,
-		"owner_type": bs.OwnerType,
-		"owner_id":   bs.OwnerID,
-		"ttl":        ttl.String(),
+
+	h.RespondWithSuccess(c, http.StatusOK, h.toResponse(b))
+}
+
+// List handles GET /api/v1/builds
+// @Summary List builds
+// @Description List builds with optional filtering and pagination
+// @Tags builds
+// @Accept json
+// @Produce json
+// @Param page query int false "Page number (default: 1)"
+// @Param page_size query int false "Page size (default: 20)"
+// @Param trace_id query string false "Filter by trace ID"
+// @Param repo_id query string false "Filter by repository ID"
+// @Param project_id query string false "Filter by project ID"
+// @Param commit_sha query string false "Filter by commit SHA"
+// @Param branch query string false "Filter by branch"
+// @Param workflow_run_id query string false "Filter by workflow run ID"
+// @Param status query string false "Filter by status (pending, running, succeeded, failed)"
+// @Param since query string false "Filter by creation date (RFC3339)"
+// @Param until query string false "Filter by creation date (RFC3339)"
+// @Param sort_by query string false "Sort field (created_at, updated_at)"
+// @Param sort_order query string false "Sort order (asc, desc)"
+// @Success 200 {object} contracts.BuildPageResult "Paginated list of builds"
+// @Failure 400 {object} contracts.ErrorResponse "Invalid query parameters"
+// @Failure 500 {object} contracts.ErrorResponse "Internal server error"
+// @Router /api/v1/builds [get]
+func (h *BuildHandler) List(c *gin.Context) {
+	var filter contracts.BuildListFilter
+	if err := c.ShouldBindQuery(&filter); err != nil {
+		h.RespondWithValidationError(c, err)
+		return
 	}
-	metaJSON, _ := json.Marshal(metaMap)
-	_ = h.audits.Create(&adm.Log{
-		EventType: "build.session.created",
-		RequestIP: c.ClientIP(),
-		UserAgent: c.Request.UserAgent(),
-		Metadata:  datatypes.JSON(metaJSON),
-	})
-	if metrics.BuildSessionCreated != nil {
-		metrics.BuildSessionCreated.WithLabelValues(bs.OwnerType).Inc()
+
+	// Set default pagination if not provided
+	if filter.Page == 0 {
+		filter.Page = 1
 	}
-	c.JSON(http.StatusCreated, CreateBuildSessionResponse{ID: bs.ID, ExpiresAt: bs.ExpiresAt})
+	if filter.PageSize == 0 {
+		filter.PageSize = 20
+	}
+
+	// Convert to service filter
+	svcFilter := buildService.ListFilter{
+		Pagination:    h.GetPagination(c),
+		Sort:          h.GetSort(c),
+		CommitSHA:     filter.CommitSHA,
+		Branch:        filter.Branch,
+		WorkflowRunID: filter.WorkflowRunID,
+		Since:         filter.Since,
+		Until:         filter.Until,
+	}
+
+	if filter.TraceID != nil {
+		id := uuid.MustParse(*filter.TraceID)
+		svcFilter.TraceID = &id
+	}
+
+	if filter.RepoID != nil {
+		id := uuid.MustParse(*filter.RepoID)
+		svcFilter.RepoID = &id
+	}
+
+	if filter.ProjectID != nil {
+		id := uuid.MustParse(*filter.ProjectID)
+		svcFilter.ProjectID = &id
+	}
+
+	if filter.Status != nil {
+		status := enums.BuildStatus(*filter.Status)
+		svcFilter.Status = &status
+	}
+
+	builds, total, err := h.service.List(c.Request.Context(), svcFilter)
+	if err != nil {
+		h.RespondWithInternalError(c, err)
+		return
+	}
+
+	// Convert to response
+	items := make([]contracts.BuildResponse, len(builds))
+	for i, b := range builds {
+		items[i] = *h.toResponse(&b)
+	}
+
+	result := contracts.NewPageResult(items, filter.Page, filter.PageSize, total)
+	h.RespondWithSuccess(c, http.StatusOK, result)
+}
+
+// Update handles PATCH /api/v1/builds/:id
+// @Summary Update a build
+// @Description Update a build's status and metadata
+// @Tags builds
+// @Accept json
+// @Produce json
+// @Param id path string true "Build ID (UUID)"
+// @Param build body contracts.BuildUpdate true "Build update request"
+// @Success 200 {object} contracts.BuildResponse "Updated build"
+// @Failure 400 {object} contracts.ErrorResponse "Invalid request"
+// @Failure 404 {object} contracts.ErrorResponse "Build not found"
+// @Failure 422 {object} contracts.ErrorResponse "Invalid status transition"
+// @Failure 500 {object} contracts.ErrorResponse "Internal server error"
+// @Router /api/v1/builds/{id} [patch]
+func (h *BuildHandler) Update(c *gin.Context) {
+	var param contracts.BuildIDParam
+	if err := c.ShouldBindUri(&param); err != nil {
+		h.RespondWithValidationError(c, err)
+		return
+	}
+
+	var req contracts.BuildUpdate
+	if err := c.ShouldBindJSON(&req); err != nil {
+		h.RespondWithValidationError(c, err)
+		return
+	}
+
+	// Convert to service request
+	svcReq := buildService.UpdateRequest{
+		WorkflowRunID: req.WorkflowRunID,
+		RunnerEnv:     req.RunnerEnv,
+		FinishedAt:    req.FinishedAt,
+	}
+
+	if req.Status != nil {
+		status := enums.BuildStatus(*req.Status)
+		svcReq.Status = &status
+	}
+
+	b, err := h.service.Update(c.Request.Context(), param.BuildID, svcReq)
+	if err != nil {
+		if errors.Is(err, buildService.ErrBuildNotFound) {
+			h.RespondWithNotFound(c, "Build")
+			return
+		}
+		if errors.Is(err, buildService.ErrInvalidStatus) {
+			h.RespondWithUnprocessableEntity(c, "Invalid status transition", nil)
+			return
+		}
+		h.RespondWithInternalError(c, err)
+		return
+	}
+
+	h.RespondWithSuccess(c, http.StatusOK, h.toResponse(b))
+}
+
+// UpdateStatus handles PATCH /api/v1/builds/:id/status
+// @Summary Update build status
+// @Description Update only the status of a build
+// @Tags builds
+// @Accept json
+// @Produce json
+// @Param id path string true "Build ID (UUID)"
+// @Param status body contracts.BuildStatusUpdate true "Status update request"
+// @Success 204 "Status updated successfully"
+// @Failure 400 {object} contracts.ErrorResponse "Invalid request"
+// @Failure 404 {object} contracts.ErrorResponse "Build not found"
+// @Failure 422 {object} contracts.ErrorResponse "Invalid status transition"
+// @Failure 500 {object} contracts.ErrorResponse "Internal server error"
+// @Router /api/v1/builds/{id}/status [patch]
+func (h *BuildHandler) UpdateStatus(c *gin.Context) {
+	var param contracts.BuildIDParam
+	if err := c.ShouldBindUri(&param); err != nil {
+		h.RespondWithValidationError(c, err)
+		return
+	}
+
+	var req contracts.BuildStatusUpdate
+	if err := c.ShouldBindJSON(&req); err != nil {
+		h.RespondWithValidationError(c, err)
+		return
+	}
+
+	status := enums.BuildStatus(req.Status)
+	if err := h.service.UpdateStatus(c.Request.Context(), param.BuildID, status); err != nil {
+		if errors.Is(err, buildService.ErrBuildNotFound) {
+			h.RespondWithNotFound(c, "Build")
+			return
+		}
+		if errors.Is(err, buildService.ErrInvalidStatus) {
+			h.RespondWithUnprocessableEntity(c, "Invalid status transition", nil)
+			return
+		}
+		h.RespondWithInternalError(c, err)
+		return
+	}
+
+	c.Status(http.StatusNoContent)
+}
+
+// toResponse converts a build model to response DTO
+func (h *BuildHandler) toResponse(b *build.Build) *contracts.BuildResponse {
+	resp := &contracts.BuildResponse{
+		ID:            b.ID.String(),
+		RepoID:        b.RepoID.String(),
+		ProjectID:     b.ProjectID.String(),
+		CommitSHA:     b.CommitSHA,
+		Branch:        b.Branch,
+		WorkflowRunID: b.WorkflowRunID,
+		Status:        string(b.Status),
+		FinishedAt:    b.FinishedAt,
+		CreatedAt:     b.CreatedAt,
+		UpdatedAt:     b.UpdatedAt,
+	}
+
+	if b.TraceID != nil {
+		traceStr := b.TraceID.String()
+		resp.TraceID = &traceStr
+	}
+
+	if b.RunnerEnv != nil {
+		resp.RunnerEnv = map[string]interface{}(b.RunnerEnv)
+	}
+
+	return resp
 }

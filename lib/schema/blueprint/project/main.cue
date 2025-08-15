@@ -13,6 +13,6 @@ package project
 	// Deployment contains the configuration for the deployment of the project.
 	deployment?: #Deployment
 
-	// Release contains the configuration for the release of the project.
-	release?: [string]: #Release
+	// Publishers contains the configuration for the publishers of the project.
+	publishers?: [string]: #Publisher
 }

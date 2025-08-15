@@ -3,21 +3,30 @@ package routes
 import (
 	"github.com/gin-gonic/gin"
 	"github.com/input-output-hk/catalyst-forge/foundry/api/internal/api/handlers"
-	"github.com/input-output-hk/catalyst-forge/foundry/api/internal/api/middleware"
-	auth "github.com/input-output-hk/catalyst-forge/lib/foundry/auth"
 )
 
+// DeploymentDeps contains dependencies for deployment routes
 type DeploymentDeps struct {
-	Auth    *middleware.AuthMiddleware
-	Handler *handlers.DeploymentHandler
+	H *handlers.DeploymentHandler
 }
 
-func RegisterDeployments(r *gin.Engine, d DeploymentDeps) {
-	r.POST("/release/:id/deploy", d.Auth.ValidatePermissions([]auth.Permission{auth.PermDeploymentWrite}), d.Handler.CreateDeployment)
-	r.GET("/release/:id/deploy/:deployId", d.Auth.ValidatePermissions([]auth.Permission{auth.PermDeploymentRead}), d.Handler.GetDeployment)
-	r.PUT("/release/:id/deploy/:deployId", d.Auth.ValidatePermissions([]auth.Permission{auth.PermDeploymentWrite}), d.Handler.UpdateDeployment)
-	r.GET("/release/:id/deployments", d.Auth.ValidatePermissions([]auth.Permission{auth.PermDeploymentRead}), d.Handler.ListDeployments)
-	r.GET("/release/:id/deploy/latest", d.Auth.ValidatePermissions([]auth.Permission{auth.PermDeploymentRead}), d.Handler.GetLatestDeployment)
-	r.POST("/release/:id/deploy/:deployId/events", d.Auth.ValidatePermissions([]auth.Permission{auth.PermDeploymentEventWrite}), d.Handler.AddDeploymentEvent)
-	r.GET("/release/:id/deploy/:deployId/events", d.Auth.ValidatePermissions([]auth.Permission{auth.PermDeploymentEventRead}), d.Handler.GetDeploymentEvents)
+// RegisterDeployments registers v1 deployment routes
+func RegisterDeployments(r *gin.Engine, deps DeploymentDeps) {
+	v1 := r.Group("/api/v1")
+	{
+		deployments := v1.Group("/deployments")
+		{
+			// Main CRUD operations
+			deployments.POST("", deps.H.Create)
+			deployments.GET("", deps.H.List)
+			deployments.GET("/:deployment_id", deps.H.GetByID)
+			deployments.PATCH("/:deployment_id", deps.H.Update)
+			deployments.DELETE("/:deployment_id", deps.H.Delete)
+
+			// Render job sub-resource
+			deployments.GET("/:deployment_id/render-job", deps.H.GetRenderJob)
+			deployments.POST("/:deployment_id/render-job", deps.H.CreateRenderJob)
+			deployments.PATCH("/:deployment_id/render-job", deps.H.UpdateRenderJob)
+		}
+	}
 }

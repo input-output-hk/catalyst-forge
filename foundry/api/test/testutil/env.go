@@ -7,7 +7,8 @@ import (
 	"fmt"
 	"time"
 
-	client "github.com/input-output-hk/catalyst-forge/lib/foundry/client"
+	client "github.com/catalyst-forge/foundry/clients/go/client"
+	legacyclient "github.com/input-output-hk/catalyst-forge/lib/foundry/client"
 )
 
 // Suite encapsulates long-lived dependencies for the test run (Postgres container and DB snapshot).
@@ -77,8 +78,15 @@ func (s *Suite) PerTestEnv(ctx context.Context, adminEmail string) (*Env, error)
 }
 
 // AdminClient creates a new client authenticated with the admin JWT token.
-func (e *Env) AdminClient() client.Client {
-	return client.NewClient(e.Server.BaseURL, client.WithToken(e.AdminJWT))
+func (e *Env) AdminClient() legacyclient.Client {
+	return legacyclient.NewClient(e.Server.BaseURL, legacyclient.WithToken(e.AdminJWT))
+}
+
+// NewGenClient returns the new high-level client with AutoAuth transport wired.
+func (e *Env) NewGenClient() (*client.FoundryClient, error) {
+	cfg := client.NewDefaultConfig(e.Server.BaseURL).
+		WithAuth(client.NewBearerTokenProvider(e.AdminJWT))
+	return client.NewFoundryClient(cfg)
 }
 
 // BaseURL returns the base URL of the test server.

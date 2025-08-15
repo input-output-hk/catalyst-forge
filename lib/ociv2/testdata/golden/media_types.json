@@ -1,0 +1,9 @@
+{
+  "OCIArtifactManifest": "application/vnd.oci.artifact.manifest.v1+json",
+  "OCIEmptyJSON": "application/vnd.oci.empty.v1+json",
+  "OCIImageIndex": "application/vnd.oci.image.index.v1+json",
+  "OCIImageManifest": "application/vnd.oci.image.manifest.v1+json",
+  "ReleaseConfig": "application/vnd.forge.release+json",
+  "RenderedIndex": "application/vnd.forge.rendered.index.v1+json",
+  "RenderedTarGz": "application/vnd.forge.rendered.layer.v1.tar+gzip"
+}

@@ -15,9 +15,12 @@ deps:
     RUN go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.3.1
 
     # Copy local deps
+    COPY ../clients/go+src/src /clients/go
     COPY ../../lib/foundry/auth+src/src /lib/foundry/auth
     COPY ../../lib/foundry/client+src/src /lib/foundry/client
     COPY ../../lib/tools+src/src /lib/tools
+    COPY ../../lib/foundry/httpkit+src/src /lib/foundry/httpkit
+    COPY ../../lib/foundry/db+src/src /lib/foundry/db
 
     COPY go.mod go.sum .
     RUN go mod download
@@ -119,8 +122,8 @@ jwt:
 swagger:
     FROM +src
 
-    RUN go install github.com/swaggo/swag/cmd/swag@latest
-    RUN swag init -g cmd/api/main.go -o docs
+    RUN go install github.com/swaggo/swag/v2/cmd/swag@v2.0.0-rc4
+    RUN swag init --v3.1 -g cmd/api/main.go -o docs
 
     SAVE ARTIFACT docs docs AS LOCAL docs
 

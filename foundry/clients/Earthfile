@@ -1,0 +1,9 @@
+VERSION 0.8
+
+check:
+    BUILD ./go+check
+    BUILD ./ts+check
+
+generate:
+    BUILD ./go+generate
+    BUILD ./ts+generate

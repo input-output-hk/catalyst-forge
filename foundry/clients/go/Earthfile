@@ -1,0 +1,47 @@
+VERSION 0.8
+
+deps:
+    FROM golang:1.24.2-bookworm
+
+    WORKDIR /work
+
+    RUN mkdir -p /go/cache && mkdir -p /go/modcache
+    ENV GOCACHE=/go/cache
+    ENV GOMODCACHE=/go/modcache
+    CACHE --persist --sharing shared /go
+
+    COPY go.mod go.sum .
+    RUN go mod download
+
+src:
+    FROM +deps
+
+    CACHE --persist --sharing shared /go
+
+    COPY --dir . .
+
+    SAVE ARTIFACT . src
+
+generate:
+    FROM +src
+
+    COPY ../../api+swagger/docs /api/docs
+
+    RUN go run github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen@latest -config cfg.client.yaml /api/docs/swagger.yaml
+
+    SAVE ARTIFACT generated/client.gen.go AS LOCAL generated/client.gen.go
+
+check:
+    FROM +src
+
+    # For now, just verify the client compiles
+    # In a full CI pipeline, we would compare against the API's swagger artifact
+    RUN go build -o /dev/null ./...
+
+    # Check formatting
+    RUN gofmt -l . | grep . && \
+        (echo "Go files are not formatted. Run 'gofmt -w .' to fix." && exit 1) || \
+        echo "✓ Go files are properly formatted"
+
+    # Run go vet
+    RUN go vet ./... && echo "✓ Go vet passed"

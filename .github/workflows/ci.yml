@@ -22,8 +22,8 @@ on:
         required: false
         type: string
         default: ""
-      skip_release:
-        description: Skip the release job
+      skip_publish:
+        description: Skip the publish job
         required: false
         type: boolean
         default: false
@@ -58,7 +58,7 @@ jobs:
     outputs:
       deployments: ${{ steps.discovery.outputs.deployments }}
       earthfiles: ${{ steps.discovery.outputs.earthfiles }}
-      releases: ${{ steps.discovery.outputs.releases }}
+      publishers: ${{ steps.discovery.outputs.publishers }}
     steps:
       - uses: actions/checkout@v4
       - name: Install Forge
@@ -140,19 +140,19 @@ jobs:
       skip_output: true
       verbosity: ${{ inputs.verbosity }}
 
-  release:
-    uses: input-output-hk/catalyst-forge/.github/workflows/release.yml@master
+  publish:
+    uses: input-output-hk/catalyst-forge/.github/workflows/publish.yml@master
     needs: [discover, check, build, test]
-    if: (fromJson(needs.discover.outputs.releases)[0] != null) && !inputs.skip_release && !failure() && !cancelled()
+    if: (fromJson(needs.discover.outputs.publishers)[0] != null) && !inputs.skip_publish && !failure() && !cancelled()
     with:
-      releases: ${{ needs.discover.outputs.releases }}
+      publishers: ${{ needs.discover.outputs.publishers }}
       forge_version: ${{ inputs.forge_version }}
       local: ${{ inputs.local }}
       verbosity: ${{ inputs.verbosity }}
 
   deploy:
     uses: input-output-hk/catalyst-forge/.github/workflows/deploy.yml@master
-    needs: [discover, check, build, test, release]
+    needs: [discover, check, build, test, publish]
     if: (fromJson(needs.discover.outputs.deployments)[0] != null) && !inputs.skip_deploy && !failure() && !cancelled()
     with:
       deployments: ${{ needs.discover.outputs.deployments }}
@@ -161,7 +161,7 @@ jobs:
       verbosity: ${{ inputs.verbosity }}
 
   final:
-    needs: [check, build, package, test, release, deploy]
+    needs: [check, build, package, test, publish, deploy]
     if: ${{ always() && (contains(needs.*.result, 'failure') || !failure() && !cancelled()) }}
     runs-on: ubuntu-latest
     steps:

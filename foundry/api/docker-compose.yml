@@ -1,107 +1,51 @@
-# Foundry API Docker Compose - Local Development Environment
-#
-# This compose file sets up a complete local development environment for the Foundry API.
-# It uses the bootstrap system for admin user creation
-#
-# Quick Start:
-#   1. Build the API image: docker build -t foundry-api:latest .
-#   2. Start the stack: docker-compose up -d
-#   3. Bootstrap admin (optional): docker-compose --profile bootstrap up bootstrap-admin
-#   4. Use device registration flow to get access tokens for the admin user
-#
-# Admin Access:
-#   The new bootstrap system creates admin users through the invite flow instead of
-#   generating JWT tokens directly. To get an admin access token:
-#   1. Run bootstrap-admin service (profile: bootstrap)
-#   2. Use the device registration flow with the created invite
-#   3. Or use the testutil.BootstrapAdmin function for programmatic access
-#
 services:
-  # Initialize JWT signing keys (runs once to create keypair)
-  auth-init:
-    image: foundry-api:latest
-    container_name: auth-init
-    entrypoint: ["/bin/sh", "-c", "if [ ! -f /data/private.pem ]; then /app/foundry-api auth init --output-dir /data; fi"]
-    volumes:
-      - ./.auth:/data
-
-  # Main API server with modern bootstrap-based authentication
   api:
+    build: .
     image: foundry-api:latest
     container_name: api
+    command:
+      - run
+      - --http-port=5050
+      - --public-base-url=http://localhost:5050
+      - --invite-ttl=72h
+      - --auth-access-ttl=30m
+      - --auth-refresh-ttl=720h
+      - --auth-stepup-ttl=5m
+      - --auth-rp-name=Foundry Platform
+      - --auth-require-uv=true
+      - --auth-challenge-ttl=5m
+      - --auth-refresh-cookie-name=__Host-refresh_token
+      - --auth-refresh-cookie-secure=false
+      - --auth-rate-enabled=false
+      - --auth-jwks-route=true
+      - --bootstrap-token=dev-bootstrap-token-change-in-production
+      - --auth-rbac-seed-defaults=true
+      - --db-host=postgres
+      - --db-port=5432
+      - --db-user=postgres
+      - --db-password=postgres
+      - --db-name=foundry
+      - --db-sslmode=disable
+      - --log-level=debug
+      - --log-format=text
     environment:
-      HTTP_PORT: 5050
-      PUBLIC_BASE_URL: http://localhost:5050
-
-      # Auth config
-      AUTH_ALLOWED_WEB_ORIGINS: http://localhost:5173,https://localhost:5173,http://127.0.0.1:5173,https://127.0.0.1:5173
-      AUTH_DEV_MODE: "true"
-      AUTH_PRIVATE_KEY: /data/private.pem
-      AUTH_PUBLIC_KEY: /data/public.pem
-      INVITE_TTL: 72h
-      AUTH_ACCESS_TTL: 30m
-      AUTH_REFRESH_TTL: 720h
-      KET_TTL: 10m
-
-      # Bootstrap token for initial admin creation (change in production!)
-      BOOTSTRAP_TOKEN: dev-bootstrap-token-change-in-production
-
-      # Hash secrets for invite/refresh tokens (dev defaults)
-      INVITE_HASH_SECRET: dev-invite-secret
-      REFRESH_HASH_SECRET: dev-refresh-secret
-
-      # Email config (disabled by default for local compose)
-      EMAIL_ENABLED: "false"
-      EMAIL_PROVIDER: none
-      # EMAIL_SENDER: noreply@example.com
-      # SES_REGION: us-east-1
-
-      # Database configuration
-      DB_SUPER_USER: postgres
-      DB_SUPER_PASSWORD: postgres
-      DB_ROOT_NAME: postgres
-      DB_INIT: "true"
+      DB_PASSWORD: postgres
+      DB_USER: postgres
       DB_HOST: postgres
-      DB_PORT: 5432
-      DB_USER: foundry
-      DB_PASSWORD: changeme
-      DB_NAME: foundry
-      DB_SSLMODE: disable
-
-      # Kubernetes configuration
-      K8S_ENABLED: "false"
-
-      # Logging configuration
-      LOG_LEVEL: debug
-      LOG_FORMAT: text
-
-      # PCA configuration (dev defaults expect real ARNs in staging/e2e)
-      PCA_CLIENT_CA_ARN: ""
-      PCA_SERVER_CA_ARN: ""
-      PCA_CLIENT_TEMPLATE_ARN: arn:aws:acm-pca:::template/EndEntityClientAuthCertificate_APIPassthrough/V1
-      PCA_SERVER_TEMPLATE_ARN: arn:aws:acm-pca:::template/EndEntityServerAuthCertificate_APIPassthrough/V1
-      PCA_SIGNING_ALGO_CLIENT: SHA256WITHECDSA
-      PCA_SIGNING_ALGO_SERVER: SHA256WITHECDSA
-      PCA_TIMEOUT: 10s
+      DB_PORT: "5432"
     ports:
       - "5050:5050"
-      - "8080:8080"
-    volumes:
-      - ./.auth:/data
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:5050/healthz"]
       interval: 10s
       timeout: 5s
-      retries: 3
-      start_period: 10s
+      retries: 6
+      start_period: 15s
     depends_on:
-      auth-init:
-        condition: service_completed_successfully
       postgres:
         condition: service_healthy
     restart: on-failure
 
-  # Caddy reverse proxy to terminate TLS for api.localhost
   caddy:
     image: caddy:2-alpine
     container_name: caddy
@@ -114,39 +58,23 @@ services:
       api:
         condition: service_started
 
-  # Optional: populate database with mock data (releases, deployments, events)
-  mockdata:
-    image: foundry-api:latest
-    container_name: api-mockdata
-    environment:
-      DB_HOST: postgres
-      DB_PORT: 5432
-      DB_USER: foundry
-      DB_PASSWORD: changeme
-      DB_NAME: foundry
-      DB_SSLMODE: disable
-    entrypoint: ["/bin/sh", "-c", "/app/foundry-api mock --projects ${MOCK_PROJECTS:-alpha,beta,gamma} --branches ${MOCK_BRANCHES:-main,develop,release/1.x} --releases ${MOCK_RELEASES:-100} --deployments ${MOCK_DEPLOYMENTS:-3} --events ${MOCK_EVENTS:-6}"]
-    depends_on:
-      api:
-        condition: service_healthy
-    profiles: [ "mockdata" ]
-
   postgres:
-    image: postgres:15-alpine
+    image: postgres:16-alpine
     container_name: db
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: releases
+      POSTGRES_DB: foundry
     ports:
       - "5432:5432"
     volumes:
       - postgres-data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      test: ["CMD-SHELL", "pg_isready -U postgres -d foundry"]
       interval: 5s
       timeout: 5s
-      retries: 5
+      retries: 20
+      start_period: 15s
     restart: on-failure
 
   pgadmin:

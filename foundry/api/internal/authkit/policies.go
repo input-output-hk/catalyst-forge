@@ -1,6 +1,6 @@
 package authkit
 
-import libauth "github.com/catalystgo/catalyst-forge/lib/foundry/authkit/authkit"
+import libauth "github.com/input-output-hk/catalyst-forge/foundry/api/internal/authkit/authkit"
 
 // BuildPolicies returns a baseline policy registry for new routes.
 func BuildPolicies() *libauth.PolicyRegistry {

@@ -1,0 +1,11 @@
+{
+  "org.opencontainers.image.authors": "Test Team \u003ctest@example.com\u003e",
+  "org.opencontainers.image.created": "2025-01-01T00:00:00Z",
+  "org.opencontainers.image.description": "A test application for golden tests",
+  "org.opencontainers.image.documentation": "https://docs.example.com",
+  "org.opencontainers.image.licenses": "MIT",
+  "org.opencontainers.image.title": "Test Application",
+  "org.opencontainers.image.url": "https://example.com",
+  "org.opencontainers.image.vendor": "Example Corp",
+  "org.opencontainers.image.version": "1.0.0"
+}

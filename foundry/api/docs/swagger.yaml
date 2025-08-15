@@ -1,3088 +1,3696 @@
-definitions:
-  handlers.AddEventRequest:
-    properties:
-      message:
-        type: string
-      name:
-        type: string
-    required:
-    - message
-    - name
-    type: object
-  handlers.BootstrapRequest:
-    properties:
-      bootstrap_token:
-        type: string
-      email:
-        type: string
-    required:
-    - bootstrap_token
-    - email
-    type: object
-  handlers.CertificateSigningRequest:
-    properties:
-      common_name:
-        description: CommonName can override the CN in the CSR
-        example: user.example.com
-        type: string
-      csr:
-        description: CSR is the PEM-encoded Certificate Signing Request
-        example: |-
-          -----BEGIN CERTIFICATE REQUEST-----
-          ...
-        type: string
-      sans:
-        description: |-
-          SANs are additional Subject Alternative Names to include
-          These will be validated against user permissions. For client certs, use URI SANs.
-        example:
-        - example.com
-        - '*.example.com'
-        items:
+components:
+  schemas:
+    auth.GithubPolicyCreateRequest:
+      properties:
+        enabled:
+          type: boolean
+        environments:
+          items:
+            type: string
+          type: array
+          uniqueItems: false
+        refs:
+          items:
+            type: string
+          type: array
+          uniqueItems: false
+        repository:
           type: string
-        type: array
-      ttl:
-        description: |-
-          TTL is the requested certificate lifetime
-          Will be capped by server policy
-        example: 24h
-        type: string
-    required:
-    - csr
-    type: object
-  handlers.CertificateSigningResponse:
-    properties:
-      certificate:
-        description: Certificate is the PEM-encoded signed certificate
-        example: |-
-          -----BEGIN CERTIFICATE-----
-          ...
-        type: string
-      certificate_chain:
-        description: CertificateChain includes intermediate certificates if available
-        items:
+        roles:
+          items:
+            type: string
+          type: array
+          uniqueItems: false
+        workflows:
+          items:
+            type: string
+          type: array
+          uniqueItems: false
+      required:
+      - repository
+      - roles
+      type: object
+    auth.GithubPolicyResponse:
+      properties:
+        enabled:
+          type: boolean
+        environments:
+          items:
+            type: string
+          type: array
+          uniqueItems: false
+        id:
           type: string
-        type: array
-      fingerprint:
-        description: Fingerprint is the SHA256 fingerprint of the certificate
-        example: sha256:abcdef...
-        type: string
-      not_after:
-        description: NotAfter is when the certificate expires
-        example: "2024-01-02T00:00:00Z"
-        type: string
-      not_before:
-        description: NotBefore is when the certificate becomes valid
-        example: "2024-01-01T00:00:00Z"
-        type: string
-      serial_number:
-        description: SerialNumber is the certificate's serial number
-        example: "123456789"
-        type: string
-    type: object
-  handlers.CreateAliasRequest:
-    properties:
-      release_id:
-        type: string
-    required:
-    - release_id
-    type: object
-  handlers.CreateAuthRequest:
-    type: object
-  handlers.CreateInviteRequest:
-    properties:
-      email:
-        type: string
-      roles:
-        items:
+        refs:
+          items:
+            type: string
+          type: array
+          uniqueItems: false
+        repository:
           type: string
-        type: array
-      ttl:
-        description: e.g., "72h"
-        type: string
-    type: object
-  handlers.CreateInviteResponse:
-    properties:
-      id:
-        type: integer
-      token:
-        type: string
-    type: object
-  handlers.CreateReleaseRequest:
-    properties:
-      bundle:
-        type: string
-      project:
-        type: string
-      project_path:
-        type: string
-      source_branch:
-        type: string
-      source_commit:
-        type: string
-      source_repo:
-        type: string
-    required:
-    - bundle
-    - project
-    - project_path
-    - source_commit
-    - source_repo
-    type: object
-  handlers.DeviceListResponse:
-    properties:
-      created_at:
-        type: string
-      id:
-        type: string
-      last_used_at:
-        type: string
-      name:
-        type: string
-      status:
-        type: string
-    type: object
-  handlers.DeviceLoginInitRequest:
-    properties:
-      device_id:
-        type: string
-    required:
-    - device_id
-    type: object
-  handlers.DeviceLoginInitResponse:
-    properties:
-      alg:
-        type: string
-      challenge:
-        type: string
-      device_id:
-        type: string
-      expires_at:
-        type: string
-    type: object
-  handlers.DeviceLoginRequest:
-    properties:
-      device_id:
-        type: string
-      device_proof:
-        description: base64url(signature)
-        type: string
-      timestamp:
-        type: integer
-    required:
-    - device_id
-    - device_proof
-    - timestamp
-    type: object
-  handlers.DeviceLoginResponse:
-    properties:
-      access_token:
-        type: string
-      expires_in:
-        type: integer
-      token_type:
-        type: string
-      user: {}
-    type: object
-  handlers.DeviceRegisterRequest:
-    properties:
-      device_id:
-        type: string
-      device_name:
-        type: string
-      device_proof:
-        type: string
-      public_key_jwk:
-        additionalProperties: true
-        type: object
-      timestamp:
-        type: integer
-    required:
-    - device_id
-    - device_name
-    - device_proof
-    - public_key_jwk
-    - timestamp
-    type: object
-  handlers.DeviceRegisterResponse:
-    properties:
-      access_token:
-        type: string
-      expires_in:
-        type: integer
-      token_type:
-        type: string
-      user: {}
-    type: object
-  handlers.DeviceRegistrationInitRequest:
-    properties:
-      invite_id:
-        type: integer
-      token:
-        type: string
-    required:
-    - invite_id
-    - token
-    type: object
-  handlers.DeviceRegistrationInitResponse:
-    properties:
-      alg:
-        type: string
-      challenge:
-        type: string
-      device_id:
-        type: string
-      expires_at:
-        type: string
-    type: object
-  handlers.GithubRepositoryAuthResponse:
-    properties:
-      created_at:
-        type: string
-      created_by:
-        type: string
-      description:
-        type: string
-      enabled:
-        type: boolean
-      id:
-        type: integer
-      permissions:
-        items:
+        roles:
+          items:
+            type: string
+          type: array
+          uniqueItems: false
+        workflows:
+          items:
+            type: string
+          type: array
+          uniqueItems: false
+      type: object
+    contracts.ArtifactCreate:
+      properties:
+        build_args:
+          additionalProperties: {}
+          type: object
+        build_id:
           type: string
-        type: array
-      repository:
-        type: string
-      updated_at:
-        type: string
-      updated_by:
-        type: string
-    type: object
-  handlers.UpdateAuthRequest:
-    type: object
-  handlers.UpdateReleaseRequest:
-    properties:
-      bundle:
-        type: string
-      project_path:
-        type: string
-      source_branch:
-        type: string
-      source_commit:
-        type: string
-      source_repo:
-        type: string
-    type: object
-  handlers.ValidateTokenRequest:
-    properties:
-      audience:
-        type: string
-      token:
-        type: string
-    required:
-    - token
-    type: object
-  handlers.ValidateTokenResponse:
-    properties:
-      expires_at:
-        type: string
-      token:
-        type: string
-      user_id:
-        type: string
-    type: object
-  internal_api_handlers_user.Role:
-    description: Role represents a role in the system
-    properties:
-      created_at:
-        example: "2023-01-01T00:00:00Z"
-        type: string
-      id:
-        example: 1
-        type: integer
-      name:
-        example: admin
-        type: string
-      permissions:
-        example:
-        - user:read
-        - user:write
-        items:
+        build_meta:
+          additionalProperties: {}
+          type: object
+        image_digest:
           type: string
-        type: array
-      updated_at:
-        example: "2023-01-01T00:00:00Z"
-        type: string
-    type: object
-  internal_api_handlers_user.User:
-    description: User represents a user in the system
-    properties:
-      created_at:
-        example: "2023-01-01T00:00:00Z"
-        type: string
-      email:
-        example: user@example.com
-        type: string
-      id:
-        example: 123
-        type: integer
-      status:
-        example: active
-        type: string
-      updated_at:
-        example: "2023-01-01T00:00:00Z"
-        type: string
-    type: object
-  internal_api_handlers_user.UserRole:
-    description: UserRole represents a many-to-many relationship between users and
-      roles
-    properties:
-      created_at:
-        example: "2023-01-01T00:00:00Z"
-        type: string
-      id:
-        example: 1
-        type: integer
-      role:
-        $ref: '#/definitions/internal_api_handlers_user.Role'
-      role_id:
-        example: 456
-        type: integer
-      updated_at:
-        example: "2023-01-01T00:00:00Z"
-        type: string
-      user:
-        $ref: '#/definitions/internal_api_handlers_user.User'
-      user_id:
-        example: 123
-        type: integer
-    type: object
-  internal_models_user.User:
-    properties:
-      created_at:
-        description: Timestamps
-        type: string
-      email:
-        type: string
-      email_verified_at:
-        type: string
-      id:
-        type: integer
-      status:
-        $ref: '#/definitions/user.UserStatus'
-      updated_at:
-        type: string
-      user_ver:
-        type: integer
-    type: object
-  models.DeploymentEvent:
-    properties:
-      created_at:
-        type: string
-      deployment_id:
-        type: string
-      id:
-        type: integer
-      message:
-        type: string
-      name:
-        type: string
-      timestamp:
-        type: string
-      updated_at:
-        type: string
-    type: object
-  models.DeploymentStatus:
-    enum:
-    - pending
-    - running
-    - succeeded
-    - failed
-    type: string
-    x-enum-varnames:
-    - DeploymentStatusPending
-    - DeploymentStatusRunning
-    - DeploymentStatusSucceeded
-    - DeploymentStatusFailed
-  models.Release:
-    properties:
-      bundle:
-        type: string
-      created:
-        type: string
-      created_at:
-        description: Timestamps
-        type: string
-      deployments:
-        description: Relationships
-        items:
-          $ref: '#/definitions/models.ReleaseDeployment'
-        type: array
-      id:
-        type: string
-      project:
-        type: string
-      project_path:
-        type: string
-      source_branch:
-        type: string
-      source_commit:
-        type: string
-      source_repo:
-        type: string
-      updated_at:
-        type: string
-    type: object
-  models.ReleaseAlias:
-    properties:
-      created_at:
-        type: string
-      name:
-        type: string
-      release:
-        allOf:
-        - $ref: '#/definitions/models.Release'
-        description: Relationships
-      release_id:
-        type: string
-      updated_at:
-        type: string
-    type: object
-  models.ReleaseDeployment:
-    properties:
-      attempts:
-        type: integer
-      created_at:
-        description: Timestamps
-        type: string
-      events:
-        items:
-          $ref: '#/definitions/models.DeploymentEvent'
-        type: array
-      id:
-        type: string
-      reason:
-        type: string
-      release:
-        allOf:
-        - $ref: '#/definitions/models.Release'
-        description: Relationships
-      release_id:
-        type: string
-      status:
-        $ref: '#/definitions/models.DeploymentStatus'
-      timestamp:
-        type: string
-      updated_at:
-        type: string
-    type: object
-  user.CreateRoleRequest:
-    properties:
-      name:
-        type: string
-      permissions:
-        items:
+        image_name:
           type: string
-        type: array
-    required:
-    - name
-    type: object
-  user.CreateUserKeyRequest:
-    properties:
-      kid:
-        type: string
-      pubkey_b64:
-        type: string
-      status:
-        type: string
-      user_id:
-        type: integer
-    required:
-    - kid
-    - pubkey_b64
-    - user_id
-    type: object
-  user.CreateUserRequest:
-    properties:
-      email:
-        type: string
-      status:
-        type: string
-    required:
-    - email
-    type: object
-  user.RegisterUserKeyRequest:
-    properties:
-      email:
-        type: string
-      kid:
-        type: string
-      pubkey_b64:
-        type: string
-    required:
-    - email
-    - kid
-    - pubkey_b64
-    type: object
-  user.RegisterUserRequest:
-    properties:
-      email:
-        type: string
-    required:
-    - email
-    type: object
-  user.UpdateRoleRequest:
-    properties:
-      name:
-        type: string
-      permissions:
-        items:
+        project_id:
           type: string
-        type: array
-    required:
-    - name
-    - permissions
-    type: object
-  user.UpdateUserKeyRequest:
-    properties:
-      kid:
-        type: string
-      pubkey_b64:
-        type: string
-      status:
-        type: string
-      user_id:
-        type: integer
-    type: object
-  user.UpdateUserRequest:
-    properties:
-      email:
-        type: string
-      status:
-        type: string
-    required:
-    - email
-    type: object
-  user.UserKey:
-    properties:
-      created_at:
-        description: Timestamps
-        type: string
-      device_id:
-        description: Device association (optional)
-        type: integer
-      id:
-        type: integer
-      kid:
-        type: string
-      pubkey_b64:
-        type: string
-      status:
-        $ref: '#/definitions/user.UserKeyStatus'
-      updated_at:
-        type: string
-      user:
-        allOf:
-        - $ref: '#/definitions/internal_models_user.User'
-        description: Relationships
-      user_id:
-        type: integer
-    type: object
-  user.UserKeyStatus:
-    enum:
-    - active
-    - inactive
-    - revoked
-    type: string
-    x-enum-varnames:
-    - UserKeyStatusActive
-    - UserKeyStatusInactive
-    - UserKeyStatusRevoked
-  user.UserStatus:
-    enum:
-    - pending
-    - active
-    - inactive
-    type: string
-    x-enum-varnames:
-    - UserStatusPending
-    - UserStatusActive
-    - UserStatusInactive
+        provider:
+          enum:
+          - dockerhub
+          - gcr
+          - ecr
+          - quay
+          - ghcr
+          - other
+          type: string
+        repo:
+          type: string
+        scan_results:
+          additionalProperties: {}
+          type: object
+        scan_status:
+          enum:
+          - pending
+          - passed
+          - failed
+          - skipped
+          type: string
+        signed_by:
+          type: string
+        tag:
+          type: string
+      required:
+      - build_id
+      - image_digest
+      - image_name
+      - project_id
+      type: object
+    contracts.ArtifactPageResult:
+      properties:
+        items:
+          items:
+            $ref: '#/components/schemas/contracts.ArtifactResponse'
+          type: array
+          uniqueItems: false
+        page:
+          type: integer
+        page_size:
+          type: integer
+        total:
+          type: integer
+      type: object
+    contracts.ArtifactResponse:
+      properties:
+        build_args:
+          additionalProperties: {}
+          type: object
+        build_id:
+          type: string
+        build_meta:
+          additionalProperties: {}
+          type: object
+        created_at:
+          type: string
+        id:
+          type: string
+        image_digest:
+          type: string
+        image_name:
+          type: string
+        project_id:
+          type: string
+        provider:
+          type: string
+        repo:
+          type: string
+        scan_results:
+          additionalProperties: {}
+          type: object
+        scan_status:
+          type: string
+        signed_at:
+          type: string
+        signed_by:
+          type: string
+        tag:
+          type: string
+        updated_at:
+          type: string
+      type: object
+    contracts.ArtifactUpdate:
+      properties:
+        scan_results:
+          additionalProperties: {}
+          type: object
+        scan_status:
+          enum:
+          - pending
+          - passed
+          - failed
+          - skipped
+          type: string
+        signed_at:
+          type: string
+        signed_by:
+          type: string
+        tag:
+          type: string
+      type: object
+    contracts.BuildCreate:
+      properties:
+        branch:
+          type: string
+        commit_sha:
+          type: string
+        project_id:
+          type: string
+        repo_id:
+          type: string
+        runner_env:
+          additionalProperties: {}
+          type: object
+        status:
+          enum:
+          - queued
+          - running
+          - success
+          - failed
+          - canceled
+          type: string
+        trace_id:
+          type: string
+        workflow_run_id:
+          type: string
+      required:
+      - commit_sha
+      - project_id
+      - repo_id
+      - status
+      type: object
+    contracts.BuildPageResult:
+      properties:
+        items:
+          items:
+            $ref: '#/components/schemas/contracts.BuildResponse'
+          type: array
+          uniqueItems: false
+        page:
+          type: integer
+        page_size:
+          type: integer
+        total:
+          type: integer
+      type: object
+    contracts.BuildResponse:
+      properties:
+        branch:
+          type: string
+        commit_sha:
+          type: string
+        created_at:
+          type: string
+        finished_at:
+          type: string
+        id:
+          type: string
+        project_id:
+          type: string
+        repo_id:
+          type: string
+        runner_env:
+          additionalProperties: {}
+          type: object
+        status:
+          type: string
+        trace_id:
+          type: string
+        updated_at:
+          type: string
+        workflow_run_id:
+          type: string
+      type: object
+    contracts.BuildStatusUpdate:
+      properties:
+        status:
+          enum:
+          - queued
+          - running
+          - success
+          - failed
+          - canceled
+          type: string
+      required:
+      - status
+      type: object
+    contracts.BuildUpdate:
+      properties:
+        finished_at:
+          type: string
+        runner_env:
+          additionalProperties: {}
+          type: object
+        status:
+          enum:
+          - queued
+          - running
+          - success
+          - failed
+          - canceled
+          type: string
+        workflow_run_id:
+          type: string
+      type: object
+    contracts.DeploymentCreate:
+      properties:
+        deployed_by:
+          type: string
+        environment_id:
+          type: string
+        intent_digest:
+          type: string
+        release_id:
+          type: string
+        status:
+          enum:
+          - pending
+          - submitted
+          - failed
+          - succeeded
+          - canceled
+          type: string
+        status_reason:
+          type: string
+      required:
+      - environment_id
+      - release_id
+      type: object
+    contracts.DeploymentPageResult:
+      properties:
+        items:
+          items:
+            $ref: '#/components/schemas/contracts.DeploymentResponse'
+          type: array
+          uniqueItems: false
+        page:
+          type: integer
+        page_size:
+          type: integer
+        total:
+          type: integer
+      type: object
+    contracts.DeploymentResponse:
+      properties:
+        created_at:
+          type: string
+        deployed_at:
+          type: string
+        deployed_by:
+          type: string
+        environment_id:
+          type: string
+        id:
+          type: string
+        intent_digest:
+          type: string
+        release_id:
+          type: string
+        status:
+          type: string
+        status_reason:
+          type: string
+        updated_at:
+          type: string
+      type: object
+    contracts.DeploymentUpdate:
+      properties:
+        deployed_at:
+          type: string
+        status:
+          enum:
+          - pending
+          - submitted
+          - failed
+          - succeeded
+          - canceled
+          type: string
+        status_reason:
+          type: string
+      type: object
+    contracts.EnvironmentCreate:
+      properties:
+        active:
+          type: boolean
+        cloud_provider:
+          enum:
+          - aws
+          - gcp
+          - azure
+          - other
+          type: string
+        cluster_ref:
+          type: string
+        config:
+          additionalProperties: {}
+          type: object
+        environment_type:
+          enum:
+          - dev
+          - staging
+          - prod
+          type: string
+        name:
+          type: string
+        namespace:
+          type: string
+        project_id:
+          type: string
+        protection_rules:
+          additionalProperties: {}
+          type: object
+        region:
+          type: string
+        secrets:
+          additionalProperties: {}
+          type: object
+      required:
+      - environment_type
+      - name
+      - project_id
+      type: object
+    contracts.EnvironmentPageResult:
+      properties:
+        items:
+          items:
+            $ref: '#/components/schemas/contracts.EnvironmentResponse'
+          type: array
+          uniqueItems: false
+        page:
+          type: integer
+        page_size:
+          type: integer
+        total:
+          type: integer
+      type: object
+    contracts.EnvironmentResponse:
+      properties:
+        active:
+          type: boolean
+        cloud_provider:
+          type: string
+        cluster_ref:
+          type: string
+        config:
+          additionalProperties: {}
+          type: object
+        created_at:
+          type: string
+        environment_type:
+          type: string
+        id:
+          type: string
+        name:
+          type: string
+        namespace:
+          type: string
+        project_id:
+          type: string
+        protection_rules:
+          additionalProperties: {}
+          type: object
+        region:
+          type: string
+        secrets:
+          additionalProperties: {}
+          type: object
+        updated_at:
+          type: string
+      type: object
+    contracts.EnvironmentUpdate:
+      properties:
+        active:
+          type: boolean
+        cloud_provider:
+          enum:
+          - aws
+          - gcp
+          - azure
+          - other
+          type: string
+        cluster_ref:
+          type: string
+        config:
+          additionalProperties: {}
+          type: object
+        environment_type:
+          enum:
+          - dev
+          - staging
+          - prod
+          type: string
+        name:
+          type: string
+        namespace:
+          type: string
+        protection_rules:
+          additionalProperties: {}
+          type: object
+        region:
+          type: string
+        secrets:
+          additionalProperties: {}
+          type: object
+      type: object
+    contracts.ErrorDetail:
+      properties:
+        code:
+          type: string
+        details: {}
+        message:
+          type: string
+      type: object
+    contracts.ErrorResponse:
+      properties:
+        error:
+          $ref: '#/components/schemas/contracts.ErrorDetail'
+      type: object
+    contracts.ModuleVersion:
+      properties:
+        name:
+          type: string
+        version:
+          type: string
+      type: object
+    contracts.ProjectPageResult:
+      properties:
+        items:
+          items:
+            $ref: '#/components/schemas/contracts.ProjectResponse'
+          type: array
+          uniqueItems: false
+        page:
+          type: integer
+        page_size:
+          type: integer
+        total:
+          type: integer
+      type: object
+    contracts.ProjectResponse:
+      properties:
+        blueprint_fingerprint:
+          type: string
+        created_at:
+          type: string
+        display_name:
+          type: string
+        first_seen_commit:
+          type: string
+        id:
+          type: string
+        last_seen_commit:
+          type: string
+        path:
+          description: Repo-relative directory for project root
+          type: string
+        repo_id:
+          type: string
+        slug:
+          type: string
+        status:
+          description: '"active" or "removed"'
+          type: string
+        updated_at:
+          type: string
+      type: object
+    contracts.ReleaseArtifactCreate:
+      properties:
+        artifact_id:
+          type: string
+        artifact_key:
+          type: string
+        role:
+          type: string
+      required:
+      - artifact_id
+      - role
+      type: object
+    contracts.ReleaseArtifactLink:
+      properties:
+        artifact_id:
+          type: string
+        artifact_key:
+          type: string
+        role:
+          type: string
+      required:
+      - artifact_id
+      - role
+      type: object
+    contracts.ReleaseArtifactResponse:
+      properties:
+        artifact_id:
+          type: string
+        artifact_key:
+          type: string
+        created_at:
+          type: string
+        release_id:
+          type: string
+        role:
+          type: string
+      type: object
+    contracts.ReleaseCreate:
+      properties:
+        artifacts:
+          items:
+            $ref: '#/components/schemas/contracts.ReleaseArtifactLink'
+          type: array
+          uniqueItems: false
+        content_hash:
+          type: string
+        created_by:
+          type: string
+        injections:
+          items:
+            $ref: '#/components/schemas/contracts.ReleaseInjection'
+          type: array
+          uniqueItems: false
+        modules:
+          items:
+            $ref: '#/components/schemas/contracts.ReleaseModule'
+          type: array
+          uniqueItems: false
+        oci_digest:
+          type: string
+        oci_ref:
+          type: string
+        project_id:
+          type: string
+        release_key:
+          type: string
+        source_branch:
+          type: string
+        source_commit:
+          type: string
+        status:
+          enum:
+          - draft
+          - sealed
+          type: string
+        tag:
+          type: string
+        trace_id:
+          type: string
+        values_hash:
+          type: string
+        values_snapshot:
+          additionalProperties: {}
+          type: object
+      required:
+      - project_id
+      - release_key
+      - source_commit
+      type: object
+    contracts.ReleaseInjection:
+      properties:
+        artifact_field:
+          enum:
+          - image_name
+          - image_digest
+          - tag
+          - repo
+          type: string
+        artifact_key:
+          type: string
+        created_at:
+          type: string
+        id:
+          type: string
+        json_pointer:
+          type: string
+        module_key:
+          type: string
+        module_name:
+          type: string
+        release_id:
+          type: string
+      required:
+      - artifact_field
+      - artifact_key
+      - json_pointer
+      type: object
+    contracts.ReleaseInjectionCreate:
+      properties:
+        injections:
+          items:
+            $ref: '#/components/schemas/contracts.ReleaseInjection'
+          minItems: 1
+          type: array
+          uniqueItems: false
+      required:
+      - injections
+      type: object
+    contracts.ReleaseModule:
+      properties:
+        created_at:
+          type: string
+        git_ref:
+          type: string
+        git_url:
+          type: string
+        id:
+          type: string
+        module_key:
+          type: string
+        module_type:
+          enum:
+          - kcl
+          - helm
+          - git
+          type: string
+        name:
+          type: string
+        oci_digest:
+          type: string
+        oci_ref:
+          type: string
+        path:
+          type: string
+        registry:
+          type: string
+        release_id:
+          type: string
+        version:
+          type: string
+      required:
+      - module_key
+      - module_type
+      - name
+      type: object
+    contracts.ReleaseModuleCreate:
+      properties:
+        modules:
+          items:
+            $ref: '#/components/schemas/contracts.ReleaseModule'
+          minItems: 1
+          type: array
+          uniqueItems: false
+      required:
+      - modules
+      type: object
+    contracts.ReleasePageResult:
+      properties:
+        items:
+          items:
+            $ref: '#/components/schemas/contracts.ReleaseResponse'
+          type: array
+          uniqueItems: false
+        page:
+          type: integer
+        page_size:
+          type: integer
+        total:
+          type: integer
+      type: object
+    contracts.ReleaseResponse:
+      properties:
+        content_hash:
+          type: string
+        created_at:
+          type: string
+        created_by:
+          type: string
+        id:
+          type: string
+        oci_digest:
+          type: string
+        oci_ref:
+          type: string
+        project_id:
+          type: string
+        release_key:
+          type: string
+        sig_issuer:
+          type: string
+        sig_subject:
+          type: string
+        signature_verified_at:
+          type: string
+        signed:
+          type: boolean
+        source_branch:
+          type: string
+        source_commit:
+          type: string
+        status:
+          type: string
+        tag:
+          type: string
+        trace_id:
+          type: string
+        updated_at:
+          type: string
+        values_hash:
+          type: string
+        values_snapshot:
+          additionalProperties: {}
+          type: object
+      type: object
+    contracts.ReleaseUpdate:
+      properties:
+        oci_digest:
+          type: string
+        oci_ref:
+          type: string
+        sig_issuer:
+          type: string
+        sig_subject:
+          type: string
+        signature_verified_at:
+          type: string
+        signed:
+          type: boolean
+        status:
+          enum:
+          - draft
+          - sealed
+          type: string
+      type: object
+    contracts.RenderJobCreate:
+      properties:
+        bundle_hash:
+          type: string
+        deployment_id:
+          type: string
+        module_versions:
+          items:
+            $ref: '#/components/schemas/contracts.ModuleVersion'
+          type: array
+          uniqueItems: false
+        renderer_version:
+          type: string
+      required:
+      - deployment_id
+      type: object
+    contracts.RenderJobResponse:
+      properties:
+        bundle_hash:
+          type: string
+        deployment_id:
+          type: string
+        finished_at:
+          type: string
+        id:
+          type: string
+        module_versions:
+          items:
+            $ref: '#/components/schemas/contracts.ModuleVersion'
+          type: array
+          uniqueItems: false
+        oci_digest:
+          type: string
+        oci_ref:
+          type: string
+        output_hash:
+          type: string
+        renderer_version:
+          type: string
+        signature_verified_at:
+          type: string
+        signed:
+          type: boolean
+        started_at:
+          type: string
+        status:
+          type: string
+        storage_uri:
+          type: string
+      type: object
+    contracts.RenderJobUpdate:
+      properties:
+        bundle_hash:
+          type: string
+        finished_at:
+          type: string
+        module_versions:
+          items:
+            $ref: '#/components/schemas/contracts.ModuleVersion'
+          type: array
+          uniqueItems: false
+        oci_digest:
+          type: string
+        oci_ref:
+          type: string
+        output_hash:
+          type: string
+        renderer_version:
+          type: string
+        signature_verified_at:
+          type: string
+        signed:
+          type: boolean
+        status:
+          enum:
+          - pending
+          - running
+          - succeeded
+          - failed
+          type: string
+        storage_uri:
+          type: string
+      type: object
+    contracts.RepositoryPageResult:
+      properties:
+        items:
+          items:
+            $ref: '#/components/schemas/contracts.RepositoryResponse'
+          type: array
+          uniqueItems: false
+        page:
+          type: integer
+        page_size:
+          type: integer
+        total:
+          type: integer
+      type: object
+    contracts.RepositoryResponse:
+      properties:
+        created_at:
+          type: string
+        host:
+          type: string
+        id:
+          type: string
+        name:
+          type: string
+        org:
+          type: string
+        updated_at:
+          type: string
+      type: object
+    contracts.TraceCreate:
+      properties:
+        branch:
+          type: string
+        created_by:
+          type: string
+        purpose:
+          enum:
+          - release
+          - deployment
+          - build
+          - test
+          type: string
+        repo_id:
+          type: string
+        retention_class:
+          enum:
+          - short
+          - long
+          - permanent
+          type: string
+      required:
+      - purpose
+      - retention_class
+      type: object
+    contracts.TracePageResult:
+      properties:
+        items:
+          items:
+            $ref: '#/components/schemas/contracts.TraceResponse'
+          type: array
+          uniqueItems: false
+        page:
+          type: integer
+        page_size:
+          type: integer
+        total:
+          type: integer
+      type: object
+    contracts.TraceResponse:
+      properties:
+        branch:
+          type: string
+        created_at:
+          type: string
+        created_by:
+          type: string
+        id:
+          type: string
+        purpose:
+          type: string
+        repo_id:
+          type: string
+        retention_class:
+          type: string
+        updated_at:
+          type: string
+      type: object
+    handlers.CertificateSigningRequest:
+      properties:
+        common_name:
+          description: CommonName can override the CN in the CSR
+          example: user.example.com
+          type: string
+        csr:
+          description: CSR is the PEM-encoded Certificate Signing Request
+          example: |-
+            -----BEGIN CERTIFICATE REQUEST-----
+            ...
+          type: string
+        sans:
+          description: |-
+            SANs are additional Subject Alternative Names to include
+            These will be validated against user permissions. For client certs, use URI SANs.
+          example:
+          - example.com
+          - '*.example.com'
+          items:
+            type: string
+          type: array
+          uniqueItems: false
+        ttl:
+          description: |-
+            TTL is the requested certificate lifetime
+            Will be capped by server policy
+          example: 24h
+          type: string
+      required:
+      - csr
+      type: object
+    handlers.CertificateSigningResponse:
+      properties:
+        certificate:
+          description: Certificate is the PEM-encoded signed certificate
+          example: |-
+            -----BEGIN CERTIFICATE-----
+            ...
+          type: string
+        certificate_chain:
+          description: CertificateChain includes intermediate certificates if available
+          items:
+            type: string
+          type: array
+          uniqueItems: false
+        fingerprint:
+          description: Fingerprint is the SHA256 fingerprint of the certificate
+          example: sha256:abcdef...
+          type: string
+        not_after:
+          description: NotAfter is when the certificate expires
+          example: "2024-01-02T00:00:00Z"
+          type: string
+        not_before:
+          description: NotBefore is when the certificate becomes valid
+          example: "2024-01-01T00:00:00Z"
+          type: string
+        serial_number:
+          description: SerialNumber is the certificate's serial number
+          example: "123456789"
+          type: string
+      type: object
+externalDocs:
+  description: ""
+  url: ""
 info:
-  contact: {}
+  title: ""
+  version: ""
+openapi: 3.1.0
 paths:
   /.well-known/jwks.json:
     get:
-      consumes:
-      - application/json
       description: Returns the public JSON Web Key Set used to verify access tokens
-      produces:
-      - application/json
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
       responses:
         "200":
+          content:
+            application/json:
+              schema:
+                additionalProperties: {}
+                type: object
           description: JWKS
-          schema:
-            additionalProperties: true
-            type: object
       summary: Get JWKS
       tags:
       - auth
-  /auth/bootstrap:
-    post:
-      consumes:
-      - application/json
-      description: Create an admin invite using the bootstrap token (one-time use)
-      parameters:
-      - description: Bootstrap request
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/handlers.BootstrapRequest'
-      produces:
-      - application/json
-      responses:
-        "201":
-          description: Created
-          schema:
-            $ref: '#/definitions/handlers.CreateInviteResponse'
-        "400":
-          description: Invalid request
-          schema:
-            additionalProperties: true
-            type: object
-        "401":
-          description: Invalid or used token
-          schema:
-            additionalProperties: true
-            type: object
-        "500":
-          description: Server error
-          schema:
-            additionalProperties: true
-            type: object
-      summary: Bootstrap admin account
-      tags:
-      - auth
-  /auth/devices:
+  /api/v1/artifacts:
     get:
-      consumes:
-      - application/json
-      description: Get list of all devices registered to the authenticated user
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: List of user's devices
-          schema:
-            items:
-              $ref: '#/definitions/handlers.DeviceListResponse'
-            type: array
-        "401":
-          description: Unauthorized
-          schema:
-            additionalProperties: true
-            type: object
-        "500":
-          description: Server error
-          schema:
-            additionalProperties: true
-            type: object
-      security:
-      - BearerAuth: []
-      summary: List user's devices
-      tags:
-      - auth
-      - devices
-  /auth/devices/{id}:
-    delete:
-      consumes:
-      - application/json
-      description: Revoke a specific device and invalidate all its refresh tokens
+      description: List artifacts with optional filtering and pagination
       parameters:
-      - description: Device ID (UUID)
-        in: path
-        name: id
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "204":
-          description: No Content - device revoked successfully
-        "400":
-          description: Invalid device ID
-          schema:
-            additionalProperties: true
-            type: object
-        "401":
-          description: Unauthorized
-          schema:
-            additionalProperties: true
-            type: object
-        "404":
-          description: Device not found
-          schema:
-            additionalProperties: true
-            type: object
-        "500":
-          description: Server error
-          schema:
-            additionalProperties: true
-            type: object
-      security:
-      - BearerAuth: []
-      summary: Delete/revoke a device
-      tags:
-      - auth
-      - devices
-  /auth/devices/init:
-    post:
-      consumes:
-      - application/json
-      description: Initialize device registration flow for invited users, requires
-        valid invite token
-      parameters:
-      - description: Device registration initialization request
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/handlers.DeviceRegistrationInitRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/handlers.DeviceRegistrationInitResponse'
-        "400":
-          description: Invalid request
-          schema:
-            additionalProperties: true
-            type: object
-        "401":
-          description: Invalid or expired invite
-          schema:
-            additionalProperties: true
-            type: object
-        "500":
-          description: Server error
-          schema:
-            additionalProperties: true
-            type: object
-      summary: Initialize device registration
-      tags:
-      - auth
-  /auth/devices/login:
-    post:
-      consumes:
-      - application/json
-      description: Verify signed challenge with stored device key, mint new refresh
-        family and access token
-      parameters:
-      - description: Login request
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/handlers.DeviceLoginRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/handlers.DeviceLoginResponse'
-        "400":
-          description: Invalid request
-          schema:
-            additionalProperties: true
-            type: object
-        "401":
-          description: Invalid or expired challenge or proof
-          schema:
-            additionalProperties: true
-            type: object
-        "500":
-          description: Server error
-          schema:
-            additionalProperties: true
-            type: object
-      summary: Complete returning-device login
-      tags:
-      - auth
-  /auth/devices/login/init:
-    post:
-      consumes:
-      - application/json
-      description: Start sign-in for a device that still holds its device key; issues
-        short-lived challenge
-      parameters:
-      - description: Login init request
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/handlers.DeviceLoginInitRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/handlers.DeviceLoginInitResponse'
-        "400":
-          description: Invalid request
-          schema:
-            additionalProperties: true
-            type: object
-        "401":
-          description: Device not found or inactive
-          schema:
-            additionalProperties: true
-            type: object
-        "500":
-          description: Server error
-          schema:
-            additionalProperties: true
-            type: object
-      summary: Initialize returning-device login
-      tags:
-      - auth
-  /auth/devices/register:
-    post:
-      consumes:
-      - application/json
-      description: Complete device registration by providing device proof over challenge
-      parameters:
-      - description: Device registration request
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/handlers.DeviceRegisterRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/handlers.DeviceRegisterResponse'
-        "400":
-          description: Invalid request
-          schema:
-            additionalProperties: true
-            type: object
-        "401":
-          description: Invalid proof or expired challenge
-          schema:
-            additionalProperties: true
-            type: object
-        "500":
-          description: Server error
-          schema:
-            additionalProperties: true
-            type: object
-      summary: Complete device registration
-      tags:
-      - auth
-  /auth/github:
-    get:
-      consumes:
-      - application/json
-      description: Get all GitHub Actions authentication configurations
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: List of authentication configurations
-          schema:
-            items:
-              $ref: '#/definitions/handlers.GithubRepositoryAuthResponse'
-            type: array
-        "401":
-          description: Authentication required
-          schema:
-            additionalProperties: true
-            type: object
-        "500":
-          description: Internal server error
-          schema:
-            additionalProperties: true
-            type: object
-      security:
-      - BearerAuth: []
-      summary: List GHA authentication configurations
-      tags:
-      - gha
-    post:
-      consumes:
-      - application/json
-      description: Create a new GitHub Actions authentication configuration for a
-        repository
-      parameters:
-      - description: GHA authentication configuration
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/handlers.CreateAuthRequest'
-      produces:
-      - application/json
-      responses:
-        "201":
-          description: Authentication configuration created
-          schema:
-            $ref: '#/definitions/handlers.GithubRepositoryAuthResponse'
-        "400":
-          description: Invalid request
-          schema:
-            additionalProperties: true
-            type: object
-        "401":
-          description: Authentication required
-          schema:
-            additionalProperties: true
-            type: object
-        "500":
-          description: Internal server error
-          schema:
-            additionalProperties: true
-            type: object
-      security:
-      - BearerAuth: []
-      summary: Create GHA authentication configuration
-      tags:
-      - gha
-  /auth/github/{id}:
-    delete:
-      consumes:
-      - application/json
-      description: Delete a GitHub Actions authentication configuration
-      parameters:
-      - description: Authentication configuration ID
-        in: path
-        name: id
-        required: true
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Authentication configuration deleted
-          schema:
-            additionalProperties: true
-            type: object
-        "400":
-          description: Invalid ID parameter
-          schema:
-            additionalProperties: true
-            type: object
-        "401":
-          description: Authentication required
-          schema:
-            additionalProperties: true
-            type: object
-        "500":
-          description: Internal server error
-          schema:
-            additionalProperties: true
-            type: object
-      security:
-      - BearerAuth: []
-      summary: Delete GHA authentication configuration
-      tags:
-      - gha
-    get:
-      consumes:
-      - application/json
-      description: Get a specific GitHub Actions authentication configuration by its
-        ID
-      parameters:
-      - description: Authentication configuration ID
-        in: path
-        name: id
-        required: true
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Authentication configuration
-          schema:
-            $ref: '#/definitions/handlers.GithubRepositoryAuthResponse'
-        "400":
-          description: Invalid ID parameter
-          schema:
-            additionalProperties: true
-            type: object
-        "401":
-          description: Authentication required
-          schema:
-            additionalProperties: true
-            type: object
-        "404":
-          description: Authentication configuration not found
-          schema:
-            additionalProperties: true
-            type: object
-      security:
-      - BearerAuth: []
-      summary: Get GHA authentication configuration by ID
-      tags:
-      - gha
-    put:
-      consumes:
-      - application/json
-      description: Update an existing GitHub Actions authentication configuration
-      parameters:
-      - description: Authentication configuration ID
-        in: path
-        name: id
-        required: true
-        type: integer
-      - description: Updated GHA authentication configuration
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/handlers.UpdateAuthRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Authentication configuration updated
-          schema:
-            $ref: '#/definitions/handlers.GithubRepositoryAuthResponse'
-        "400":
-          description: Invalid request
-          schema:
-            additionalProperties: true
-            type: object
-        "401":
-          description: Authentication required
-          schema:
-            additionalProperties: true
-            type: object
-        "404":
-          description: Authentication configuration not found
-          schema:
-            additionalProperties: true
-            type: object
-        "500":
-          description: Internal server error
-          schema:
-            additionalProperties: true
-            type: object
-      security:
-      - BearerAuth: []
-      summary: Update GHA authentication configuration
-      tags:
-      - gha
-  /auth/github/login:
-    post:
-      consumes:
-      - application/json
-      description: Validate a GitHub Actions OIDC token and return a JWT token
-      parameters:
-      - description: Token validation request
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/handlers.ValidateTokenRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Token validated successfully
-          schema:
-            $ref: '#/definitions/handlers.ValidateTokenResponse'
-        "400":
-          description: Invalid request
-          schema:
-            additionalProperties: true
-            type: object
-        "401":
-          description: Invalid token
-          schema:
-            additionalProperties: true
-            type: object
-        "403":
-          description: Repository not authorized
-          schema:
-            additionalProperties: true
-            type: object
-        "500":
-          description: Internal server error
-          schema:
-            additionalProperties: true
-            type: object
-      summary: Validate GitHub Actions token
-      tags:
-      - gha
-  /auth/github/repository/{repository}:
-    get:
-      consumes:
-      - application/json
-      description: Get a GitHub Actions authentication configuration by repository
-        name
-      parameters:
-      - description: Repository name
-        in: path
-        name: repository
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Authentication configuration
-          schema:
-            $ref: '#/definitions/handlers.GithubRepositoryAuthResponse'
-        "401":
-          description: Authentication required
-          schema:
-            additionalProperties: true
-            type: object
-        "404":
-          description: Authentication configuration not found
-          schema:
-            additionalProperties: true
-            type: object
-      security:
-      - BearerAuth: []
-      summary: Get GHA authentication configuration by repository
-      tags:
-      - gha
-  /auth/invites:
-    post:
-      consumes:
-      - application/json
-      description: Create an invite for a user with one or more roles; optionally
-        emails a verification link
-      parameters:
-      - description: Invite creation request
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/handlers.CreateInviteRequest'
-      produces:
-      - application/json
-      responses:
-        "201":
-          description: Created
-          schema:
-            $ref: '#/definitions/handlers.CreateInviteResponse'
-        "400":
-          description: Invalid request
-          schema:
-            additionalProperties: true
-            type: object
-        "401":
-          description: Unauthorized
-          schema:
-            additionalProperties: true
-            type: object
-        "500":
-          description: Server error
-          schema:
-            additionalProperties: true
-            type: object
-      security:
-      - BearerAuth: []
-      summary: Create invite
-      tags:
-      - auth
-  /auth/keys:
-    get:
-      description: Retrieve a list of all user keys
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: List of user keys
-          schema:
-            items:
-              $ref: '#/definitions/user.UserKey'
-            type: array
-        "401":
-          description: Authentication required
-          schema:
-            additionalProperties: true
-            type: object
-        "500":
-          description: Internal server error
-          schema:
-            additionalProperties: true
-            type: object
-      security:
-      - BearerAuth: []
-      summary: List all user keys
-      tags:
-      - user-keys
-    post:
-      consumes:
-      - application/json
-      description: Create a new Ed25519 key for a user
-      parameters:
-      - description: User key creation request
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/user.CreateUserKeyRequest'
-      produces:
-      - application/json
-      responses:
-        "201":
-          description: User key created successfully
-          schema:
-            $ref: '#/definitions/user.UserKey'
-        "400":
-          description: Invalid request
-          schema:
-            additionalProperties: true
-            type: object
-        "409":
-          description: User key already exists
-          schema:
-            additionalProperties: true
-            type: object
-        "500":
-          description: Internal server error
-          schema:
-            additionalProperties: true
-            type: object
-      security:
-      - BearerAuth: []
-      summary: Create a new user key
-      tags:
-      - user-keys
-  /auth/keys/{id}:
-    delete:
-      description: Delete a user key by their ID
-      parameters:
-      - description: User Key ID
-        in: path
-        name: id
-        required: true
-        type: string
-      responses:
-        "204":
-          description: User key deleted successfully
-        "401":
-          description: Authentication required
-          schema:
-            additionalProperties: true
-            type: object
-        "404":
-          description: User key not found
-          schema:
-            additionalProperties: true
-            type: object
-        "500":
-          description: Internal server error
-          schema:
-            additionalProperties: true
-            type: object
-      security:
-      - BearerAuth: []
-      summary: Delete a user key
-      tags:
-      - user-keys
-    get:
-      description: Retrieve a user key by their ID
-      parameters:
-      - description: User Key ID
-        in: path
-        name: id
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: User key found
-          schema:
-            $ref: '#/definitions/user.UserKey'
-        "401":
-          description: Authentication required
-          schema:
-            additionalProperties: true
-            type: object
-        "404":
-          description: User key not found
-          schema:
-            additionalProperties: true
-            type: object
-        "500":
-          description: Internal server error
-          schema:
-            additionalProperties: true
-            type: object
-      security:
-      - BearerAuth: []
-      summary: Get a user key by ID
-      tags:
-      - user-keys
-    put:
-      consumes:
-      - application/json
-      description: Update an existing user key's information
-      parameters:
-      - description: User Key ID
-        in: path
-        name: id
-        required: true
-        type: string
-      - description: User key update request
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/user.UpdateUserKeyRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: User key updated successfully
-          schema:
-            $ref: '#/definitions/user.UserKey'
-        "400":
-          description: Invalid request
-          schema:
-            additionalProperties: true
-            type: object
-        "401":
-          description: Authentication required
-          schema:
-            additionalProperties: true
-            type: object
-        "404":
-          description: User key not found
-          schema:
-            additionalProperties: true
-            type: object
-        "500":
-          description: Internal server error
-          schema:
-            additionalProperties: true
-            type: object
-      security:
-      - BearerAuth: []
-      summary: Update a user key
-      tags:
-      - user-keys
-  /auth/keys/{id}/revoke:
-    post:
-      description: Revoke a user key by setting its status to revoked
-      parameters:
-      - description: User Key ID
-        in: path
-        name: id
-        required: true
-        type: string
-      responses:
-        "200":
-          description: User key revoked successfully
-          schema:
-            $ref: '#/definitions/user.UserKey'
-        "401":
-          description: Authentication required
-          schema:
-            additionalProperties: true
-            type: object
-        "404":
-          description: User key not found
-          schema:
-            additionalProperties: true
-            type: object
-        "500":
-          description: Internal server error
-          schema:
-            additionalProperties: true
-            type: object
-      security:
-      - BearerAuth: []
-      summary: Revoke a user key
-      tags:
-      - user-keys
-  /auth/keys/kid/{kid}:
-    get:
-      description: Retrieve a user key by their kid (key ID)
-      parameters:
-      - description: Key ID
-        in: path
-        name: kid
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: User key found
-          schema:
-            $ref: '#/definitions/user.UserKey'
-        "401":
-          description: Authentication required
-          schema:
-            additionalProperties: true
-            type: object
-        "404":
-          description: User key not found
-          schema:
-            additionalProperties: true
-            type: object
-        "500":
-          description: Internal server error
-          schema:
-            additionalProperties: true
-            type: object
-      security:
-      - BearerAuth: []
-      summary: Get a user key by kid
-      tags:
-      - user-keys
-  /auth/keys/register:
-    post:
-      consumes:
-      - application/json
-      description: Register a new Ed25519 key for a user with inactive status
-      parameters:
-      - description: User key registration request
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/user.RegisterUserKeyRequest'
-      produces:
-      - application/json
-      responses:
-        "201":
-          description: User key registered successfully
-          schema:
-            $ref: '#/definitions/user.UserKey'
-        "400":
-          description: Invalid request
-          schema:
-            additionalProperties: true
-            type: object
-        "404":
-          description: User not found
-          schema:
-            additionalProperties: true
-            type: object
-        "409":
-          description: User key already exists
-          schema:
-            additionalProperties: true
-            type: object
-        "500":
-          description: Internal server error
-          schema:
-            additionalProperties: true
-            type: object
-      summary: Register a new user key
-      tags:
-      - user-keys
-  /auth/keys/user/{user_id}:
-    get:
-      description: Retrieve all keys for a specific user
-      parameters:
-      - description: User ID
-        in: path
-        name: user_id
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: List of user keys
-          schema:
-            items:
-              $ref: '#/definitions/user.UserKey'
-            type: array
-        "401":
-          description: Authentication required
-          schema:
-            additionalProperties: true
-            type: object
-        "500":
-          description: Internal server error
-          schema:
-            additionalProperties: true
-            type: object
-      security:
-      - BearerAuth: []
-      summary: Get user keys by user ID
-      tags:
-      - user-keys
-  /auth/keys/user/{user_id}/active:
-    get:
-      description: Get all active user keys for a specific user
-      parameters:
-      - description: User ID
-        in: path
-        name: user_id
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: List of active user keys
-          schema:
-            items:
-              $ref: '#/definitions/user.UserKey'
-            type: array
-        "400":
-          description: Invalid user ID
-          schema:
-            additionalProperties: true
-            type: object
-        "401":
-          description: Authentication required
-          schema:
-            additionalProperties: true
-            type: object
-        "500":
-          description: Internal server error
-          schema:
-            additionalProperties: true
-            type: object
-      security:
-      - BearerAuth: []
-      summary: Get active user keys by user ID
-      tags:
-      - user-keys
-  /auth/keys/user/{user_id}/inactive:
-    get:
-      description: Get all inactive user keys for a specific user
-      parameters:
-      - description: User ID
-        in: path
-        name: user_id
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: List of inactive user keys
-          schema:
-            items:
-              $ref: '#/definitions/user.UserKey'
-            type: array
-        "400":
-          description: Invalid user ID
-          schema:
-            additionalProperties: true
-            type: object
-        "401":
-          description: Authentication required
-          schema:
-            additionalProperties: true
-            type: object
-        "500":
-          description: Internal server error
-          schema:
-            additionalProperties: true
-            type: object
-      security:
-      - BearerAuth: []
-      summary: Get inactive user keys by user ID
-      tags:
-      - user-keys
-  /auth/logout:
-    post:
-      consumes:
-      - application/json
-      description: Logout user and revoke the current refresh token using device proof
-      produces:
-      - application/json
-      responses:
-        "204":
-          description: No Content - logout successful
-        "400":
-          description: Invalid request
-          schema:
-            additionalProperties: true
-            type: object
-        "401":
-          description: Invalid token or proof
-          schema:
-            additionalProperties: true
-            type: object
-        "500":
-          description: Server error
-          schema:
-            additionalProperties: true
-            type: object
-      summary: Logout and revoke refresh token
-      tags:
-      - auth
-  /auth/pending/keys:
-    get:
-      description: Get all user keys with inactive status
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: List of inactive user keys
-          schema:
-            items:
-              $ref: '#/definitions/user.UserKey'
-            type: array
-        "401":
-          description: Authentication required
-          schema:
-            additionalProperties: true
-            type: object
-        "500":
-          description: Internal server error
-          schema:
-            additionalProperties: true
-            type: object
-      security:
-      - BearerAuth: []
-      summary: Get all inactive user keys
-      tags:
-      - user-keys
-  /auth/pending/users:
-    get:
-      description: Get a list of all users with pending status
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: List of pending users
-          schema:
-            items:
-              $ref: '#/definitions/internal_api_handlers_user.User'
-            type: array
-        "500":
-          description: Internal server error
-          schema:
-            additionalProperties: true
-            type: object
-      security:
-      - BearerAuth: []
-      summary: List pending users
-      tags:
-      - users
-  /auth/refresh:
-    post:
-      consumes:
-      - application/json
-      description: Refresh access token using device proof and cookie-bound refresh
-        token
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: New access token
-          schema:
-            additionalProperties: true
-            type: object
-        "400":
-          description: Invalid request
-          schema:
-            additionalProperties: true
-            type: object
-        "401":
-          description: Invalid token or proof
-          schema:
-            additionalProperties: true
-            type: object
-        "500":
-          description: Server error
-          schema:
-            additionalProperties: true
-            type: object
-      summary: Refresh access token
-      tags:
-      - auth
-  /auth/role-users:
-    get:
-      description: Retrieve all users assigned to a specific role
-      parameters:
-      - description: Role ID
+      - description: 'Page number (default: 1)'
         in: query
-        name: role_id
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: List of role users
-          schema:
-            items:
-              $ref: '#/definitions/internal_api_handlers_user.UserRole'
-            type: array
-        "401":
-          description: Authentication required
-          schema:
-            additionalProperties: true
-            type: object
-        "404":
-          description: Role not found
-          schema:
-            additionalProperties: true
-            type: object
-        "500":
-          description: Internal server error
-          schema:
-            additionalProperties: true
-            type: object
-      security:
-      - BearerAuth: []
-      summary: Get all users for a role
-      tags:
-      - user-roles
-  /auth/roles:
-    get:
-      description: Retrieve a list of all roles
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: List of roles
-          schema:
-            items:
-              $ref: '#/definitions/internal_api_handlers_user.Role'
-            type: array
-        "500":
-          description: Internal server error
-          schema:
-            additionalProperties: true
-            type: object
-      security:
-      - BearerAuth: []
-      summary: List all roles
-      tags:
-      - roles
-    post:
-      consumes:
-      - application/json
-      description: Create a new role with the provided information
-      parameters:
-      - description: Role creation request
-        in: body
-        name: request
-        required: true
+        name: page
         schema:
-          $ref: '#/definitions/user.CreateRoleRequest'
-      - description: If true, ignore permissions and add all permissions
+          type: integer
+      - description: 'Page size (default: 20)'
         in: query
-        name: admin
-        type: boolean
-      produces:
-      - application/json
+        name: page_size
+        schema:
+          type: integer
+      - description: Filter by build ID
+        in: query
+        name: build_id
+        schema:
+          type: string
+      - description: Filter by image name
+        in: query
+        name: image_name
+        schema:
+          type: string
+      - description: Filter by image digest
+        in: query
+        name: image_digest
+        schema:
+          type: string
+      - description: Filter by tag
+        in: query
+        name: tag
+        schema:
+          type: string
+      - description: Filter by repository
+        in: query
+        name: repo
+        schema:
+          type: string
+      - description: Filter by provider
+        in: query
+        name: provider
+        schema:
+          type: string
+      - description: Filter by signer
+        in: query
+        name: signed_by
+        schema:
+          type: string
+      - description: Filter by scan status
+        in: query
+        name: scan_status
+        schema:
+          type: string
+      - description: Filter by creation date (RFC3339)
+        in: query
+        name: since
+        schema:
+          type: string
+      - description: Filter by creation date (RFC3339)
+        in: query
+        name: until
+        schema:
+          type: string
+      - description: Sort field (created_at)
+        in: query
+        name: sort_by
+        schema:
+          type: string
+      - description: Sort order (asc, desc)
+        in: query
+        name: sort_order
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.ArtifactPageResult'
+          description: Paginated list of artifacts
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.ErrorResponse'
+          description: Invalid query parameters
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.ErrorResponse'
+          description: Internal server error
+      summary: List artifacts
+      tags:
+      - artifacts
+    post:
+      description: Create a new container artifact associated with a build
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/contracts.ArtifactCreate'
+        description: Artifact creation request
+        required: true
       responses:
         "201":
-          description: Role created successfully
-          schema:
-            $ref: '#/definitions/internal_api_handlers_user.Role'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.ArtifactResponse'
+          description: Created artifact
         "400":
-          description: Invalid request
-          schema:
-            additionalProperties: true
-            type: object
-        "409":
-          description: Role already exists
-          schema:
-            additionalProperties: true
-            type: object
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.ErrorResponse'
+          description: Invalid request body
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.ErrorResponse'
+          description: Build not found
         "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.ErrorResponse'
           description: Internal server error
-          schema:
-            additionalProperties: true
-            type: object
-      security:
-      - BearerAuth: []
-      summary: Create a new role
+      summary: Create a new artifact
       tags:
-      - roles
-  /auth/roles/{id}:
+      - artifacts
+  /api/v1/artifacts/{id}:
     delete:
-      description: Delete a role by their ID
+      description: Delete an artifact if it is not referenced by any releases
       parameters:
-      - description: Role ID
+      - description: Artifact ID (UUID)
         in: path
         name: id
-        required: true
-        type: string
-      responses:
-        "204":
-          description: Role deleted successfully
-        "404":
-          description: Role not found
-          schema:
-            additionalProperties: true
-            type: object
-        "500":
-          description: Internal server error
-          schema:
-            additionalProperties: true
-            type: object
-      security:
-      - BearerAuth: []
-      summary: Delete a role
-      tags:
-      - roles
-    get:
-      description: Retrieve a role by their ID
-      parameters:
-      - description: Role ID
-        in: path
-        name: id
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Role found
-          schema:
-            $ref: '#/definitions/internal_api_handlers_user.Role'
-        "404":
-          description: Role not found
-          schema:
-            additionalProperties: true
-            type: object
-        "500":
-          description: Internal server error
-          schema:
-            additionalProperties: true
-            type: object
-      security:
-      - BearerAuth: []
-      summary: Get a role by ID
-      tags:
-      - roles
-    put:
-      consumes:
-      - application/json
-      description: Update an existing role's information
-      parameters:
-      - description: Role ID
-        in: path
-        name: id
-        required: true
-        type: string
-      - description: Role update request
-        in: body
-        name: request
         required: true
         schema:
-          $ref: '#/definitions/user.UpdateRoleRequest'
-      produces:
-      - application/json
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        "204":
+          description: Artifact deleted successfully
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.ErrorResponse'
+          description: Invalid artifact ID
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.ErrorResponse'
+          description: Artifact not found
+        "409":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.ErrorResponse'
+          description: Artifact is referenced by releases
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.ErrorResponse'
+          description: Internal server error
+      summary: Delete an artifact
+      tags:
+      - artifacts
+    get:
+      description: Retrieve a single artifact by its ID
+      parameters:
+      - description: Artifact ID (UUID)
+        in: path
+        name: id
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
       responses:
         "200":
-          description: Role updated successfully
-          schema:
-            $ref: '#/definitions/internal_api_handlers_user.Role'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.ArtifactResponse'
+          description: Artifact details
         "400":
-          description: Invalid request
-          schema:
-            additionalProperties: true
-            type: object
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.ErrorResponse'
+          description: Invalid artifact ID
         "404":
-          description: Role not found
-          schema:
-            additionalProperties: true
-            type: object
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.ErrorResponse'
+          description: Artifact not found
         "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.ErrorResponse'
           description: Internal server error
-          schema:
-            additionalProperties: true
-            type: object
-      security:
-      - BearerAuth: []
-      summary: Update a role
+      summary: Get an artifact by ID
       tags:
-      - roles
-  /auth/roles/name/{name}:
-    get:
-      description: Retrieve a role by their name
+      - artifacts
+    patch:
+      description: Update an artifact's metadata, scan results, and signature information
       parameters:
-      - description: Role name
+      - description: Artifact ID (UUID)
+        in: path
+        name: id
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/contracts.ArtifactUpdate'
+        description: Artifact update request
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.ArtifactResponse'
+          description: Updated artifact
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.ErrorResponse'
+          description: Invalid request
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.ErrorResponse'
+          description: Artifact not found
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.ErrorResponse'
+          description: Internal server error
+      summary: Update an artifact
+      tags:
+      - artifacts
+  /api/v1/artifacts/digest/{digest}:
+    get:
+      description: Retrieve a single artifact by its image digest
+      parameters:
+      - description: Image digest (sha256:...)
+        in: path
+        name: digest
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.ArtifactResponse'
+          description: Artifact details
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.ErrorResponse'
+          description: Invalid digest format
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.ErrorResponse'
+          description: Artifact not found
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.ErrorResponse'
+          description: Internal server error
+      summary: Get an artifact by digest
+      tags:
+      - artifacts
+  /api/v1/auth/oidc/github/policies:
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/auth.GithubPolicyCreateRequest'
+        description: Create policy
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/auth.GithubPolicyResponse'
+          description: Created
+      summary: Create GitHub policy
+      tags:
+      - auth
+  /api/v1/builds:
+    get:
+      description: List builds with optional filtering and pagination
+      parameters:
+      - description: 'Page number (default: 1)'
+        in: query
+        name: page
+        schema:
+          type: integer
+      - description: 'Page size (default: 20)'
+        in: query
+        name: page_size
+        schema:
+          type: integer
+      - description: Filter by trace ID
+        in: query
+        name: trace_id
+        schema:
+          type: string
+      - description: Filter by repository ID
+        in: query
+        name: repo_id
+        schema:
+          type: string
+      - description: Filter by project ID
+        in: query
+        name: project_id
+        schema:
+          type: string
+      - description: Filter by commit SHA
+        in: query
+        name: commit_sha
+        schema:
+          type: string
+      - description: Filter by branch
+        in: query
+        name: branch
+        schema:
+          type: string
+      - description: Filter by workflow run ID
+        in: query
+        name: workflow_run_id
+        schema:
+          type: string
+      - description: Filter by status (pending, running, succeeded, failed)
+        in: query
+        name: status
+        schema:
+          type: string
+      - description: Filter by creation date (RFC3339)
+        in: query
+        name: since
+        schema:
+          type: string
+      - description: Filter by creation date (RFC3339)
+        in: query
+        name: until
+        schema:
+          type: string
+      - description: Sort field (created_at, updated_at)
+        in: query
+        name: sort_by
+        schema:
+          type: string
+      - description: Sort order (asc, desc)
+        in: query
+        name: sort_order
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.BuildPageResult'
+          description: Paginated list of builds
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.ErrorResponse'
+          description: Invalid query parameters
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.ErrorResponse'
+          description: Internal server error
+      summary: List builds
+      tags:
+      - builds
+    post:
+      description: Create a new build record for a project
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/contracts.BuildCreate'
+        description: Build creation request
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.BuildResponse'
+          description: Created build
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.ErrorResponse'
+          description: Invalid request body
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.ErrorResponse'
+          description: Repository or project not found
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.ErrorResponse'
+          description: Internal server error
+      summary: Create a new build
+      tags:
+      - builds
+  /api/v1/builds/{id}:
+    get:
+      description: Retrieve a single build by its ID
+      parameters:
+      - description: Build ID (UUID)
+        in: path
+        name: id
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.BuildResponse'
+          description: Build details
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.ErrorResponse'
+          description: Invalid build ID
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.ErrorResponse'
+          description: Build not found
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.ErrorResponse'
+          description: Internal server error
+      summary: Get a build by ID
+      tags:
+      - builds
+    patch:
+      description: Update a build's status and metadata
+      parameters:
+      - description: Build ID (UUID)
+        in: path
+        name: id
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/contracts.BuildUpdate'
+        description: Build update request
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.BuildResponse'
+          description: Updated build
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.ErrorResponse'
+          description: Invalid request
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.ErrorResponse'
+          description: Build not found
+        "422":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.ErrorResponse'
+          description: Invalid status transition
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.ErrorResponse'
+          description: Internal server error
+      summary: Update a build
+      tags:
+      - builds
+  /api/v1/builds/{id}/status:
+    patch:
+      description: Update only the status of a build
+      parameters:
+      - description: Build ID (UUID)
+        in: path
+        name: id
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/contracts.BuildStatusUpdate'
+        description: Status update request
+        required: true
+      responses:
+        "204":
+          description: Status updated successfully
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.ErrorResponse'
+          description: Invalid request
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.ErrorResponse'
+          description: Build not found
+        "422":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.ErrorResponse'
+          description: Invalid status transition
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.ErrorResponse'
+          description: Internal server error
+      summary: Update build status
+      tags:
+      - builds
+  /api/v1/deployments:
+    get:
+      description: List deployments with optional filtering and pagination
+      parameters:
+      - description: 'Page number (default: 1)'
+        in: query
+        name: page
+        schema:
+          type: integer
+      - description: 'Page size (default: 20)'
+        in: query
+        name: page_size
+        schema:
+          type: integer
+      - description: Filter by release ID
+        in: query
+        name: release_id
+        schema:
+          type: string
+      - description: Filter by environment ID
+        in: query
+        name: environment_id
+        schema:
+          type: string
+      - description: Filter by status (pending, healthy, unhealthy, failed)
+        in: query
+        name: status
+        schema:
+          type: string
+      - description: Filter by deployer
+        in: query
+        name: deployed_by
+        schema:
+          type: string
+      - description: Filter by deployment date (RFC3339)
+        in: query
+        name: since
+        schema:
+          type: string
+      - description: Filter by deployment date (RFC3339)
+        in: query
+        name: until
+        schema:
+          type: string
+      - description: Sort field (created_at, deployed_at)
+        in: query
+        name: sort_by
+        schema:
+          type: string
+      - description: Sort order (asc, desc)
+        in: query
+        name: sort_order
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.DeploymentPageResult'
+          description: Paginated list of deployments
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.ErrorResponse'
+          description: Invalid query parameters
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.ErrorResponse'
+          description: Internal server error
+      summary: List deployments
+      tags:
+      - deployments
+    post:
+      description: Create a new deployment for a release to an environment
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/contracts.DeploymentCreate'
+        description: Deployment creation request
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.DeploymentResponse'
+          description: Created deployment
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.ErrorResponse'
+          description: Invalid request body
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.ErrorResponse'
+          description: Release or environment not found
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.ErrorResponse'
+          description: Internal server error
+      summary: Create a new deployment
+      tags:
+      - deployments
+  /api/v1/deployments/{deployment_id}/render-job:
+    get:
+      description: Retrieve the render job associated with a deployment
+      parameters:
+      - description: Deployment ID (UUID)
+        in: path
+        name: deployment_id
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.RenderJobResponse'
+          description: Render job details
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.ErrorResponse'
+          description: Invalid deployment ID
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.ErrorResponse'
+          description: Render job not found
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.ErrorResponse'
+          description: Internal server error
+      summary: Get render job for a deployment
+      tags:
+      - deployments
+    patch:
+      description: Update the render job associated with a deployment
+      parameters:
+      - description: Deployment ID (UUID)
+        in: path
+        name: deployment_id
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/contracts.RenderJobUpdate'
+        description: Render job update request
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.RenderJobResponse'
+          description: Updated render job
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.ErrorResponse'
+          description: Invalid request
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.ErrorResponse'
+          description: Render job not found
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.ErrorResponse'
+          description: Internal server error
+      summary: Update a render job
+      tags:
+      - deployments
+    post:
+      description: Create a new render job for an existing deployment
+      parameters:
+      - description: Deployment ID (UUID)
+        in: path
+        name: deployment_id
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/contracts.RenderJobCreate'
+        description: Render job creation request
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.RenderJobResponse'
+          description: Created render job
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.ErrorResponse'
+          description: Invalid request
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.ErrorResponse'
+          description: Deployment not found
+        "409":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.ErrorResponse'
+          description: Render job already exists for this deployment
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.ErrorResponse'
+          description: Internal server error
+      summary: Create a render job for a deployment
+      tags:
+      - deployments
+  /api/v1/deployments/{id}:
+    delete:
+      description: Delete a deployment
+      parameters:
+      - description: Deployment ID (UUID)
+        in: path
+        name: id
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        "204":
+          description: Deployment deleted successfully
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.ErrorResponse'
+          description: Invalid deployment ID
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.ErrorResponse'
+          description: Deployment not found
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.ErrorResponse'
+          description: Internal server error
+      summary: Delete a deployment
+      tags:
+      - deployments
+    get:
+      description: Retrieve a single deployment by its ID
+      parameters:
+      - description: Deployment ID (UUID)
+        in: path
+        name: id
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.DeploymentResponse'
+          description: Deployment details
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.ErrorResponse'
+          description: Invalid deployment ID
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.ErrorResponse'
+          description: Deployment not found
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.ErrorResponse'
+          description: Internal server error
+      summary: Get a deployment by ID
+      tags:
+      - deployments
+    patch:
+      description: Update a deployment's status and status reason
+      parameters:
+      - description: Deployment ID (UUID)
+        in: path
+        name: id
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/contracts.DeploymentUpdate'
+        description: Deployment update request
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.DeploymentResponse'
+          description: Updated deployment
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.ErrorResponse'
+          description: Invalid request
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.ErrorResponse'
+          description: Deployment not found
+        "422":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.ErrorResponse'
+          description: Invalid status transition
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.ErrorResponse'
+          description: Internal server error
+      summary: Update a deployment
+      tags:
+      - deployments
+  /api/v1/environments:
+    get:
+      description: List environments with optional filtering and pagination
+      parameters:
+      - description: 'Page number (default: 1)'
+        in: query
+        name: page
+        schema:
+          type: integer
+      - description: 'Page size (default: 20)'
+        in: query
+        name: page_size
+        schema:
+          type: integer
+      - description: Filter by project ID
+        in: query
+        name: project_id
+        schema:
+          type: string
+      - description: Filter by name
+        in: query
+        name: name
+        schema:
+          type: string
+      - description: Filter by type (dev, staging, prod)
+        in: query
+        name: environment_type
+        schema:
+          type: string
+      - description: Filter by cluster reference
+        in: query
+        name: cluster_ref
+        schema:
+          type: string
+      - description: Filter by namespace
+        in: query
+        name: namespace
+        schema:
+          type: string
+      - description: Filter by active status
+        in: query
+        name: active
+        schema:
+          type: boolean
+      - description: Sort field (created_at, updated_at, name)
+        in: query
+        name: sort_by
+        schema:
+          type: string
+      - description: Sort order (asc, desc)
+        in: query
+        name: sort_order
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.EnvironmentPageResult'
+          description: Paginated list of environments
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.ErrorResponse'
+          description: Invalid query parameters
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.ErrorResponse'
+          description: Internal server error
+      summary: List environments
+      tags:
+      - environments
+    post:
+      description: Create a new environment for deployments
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/contracts.EnvironmentCreate'
+        description: Environment creation request
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.EnvironmentResponse'
+          description: Created environment
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.ErrorResponse'
+          description: Invalid request body
+        "409":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.ErrorResponse'
+          description: Environment already exists
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.ErrorResponse'
+          description: Internal server error
+      summary: Create a new environment
+      tags:
+      - environments
+  /api/v1/environments/{id}:
+    delete:
+      description: Delete an environment if it has no deployments
+      parameters:
+      - description: Environment ID (UUID)
+        in: path
+        name: id
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        "204":
+          description: Environment deleted successfully
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.ErrorResponse'
+          description: Invalid environment ID
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.ErrorResponse'
+          description: Environment not found
+        "409":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.ErrorResponse'
+          description: Environment has deployments or is protected
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.ErrorResponse'
+          description: Internal server error
+      summary: Delete an environment
+      tags:
+      - environments
+    get:
+      description: Retrieve a single environment by its ID
+      parameters:
+      - description: Environment ID (UUID)
+        in: path
+        name: id
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.EnvironmentResponse'
+          description: Environment details
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.ErrorResponse'
+          description: Invalid environment ID
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.ErrorResponse'
+          description: Environment not found
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.ErrorResponse'
+          description: Internal server error
+      summary: Get an environment by ID
+      tags:
+      - environments
+    patch:
+      description: Update an environment's configuration
+      parameters:
+      - description: Environment ID (UUID)
+        in: path
+        name: id
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/contracts.EnvironmentUpdate'
+        description: Environment update request
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.EnvironmentResponse'
+          description: Updated environment
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.ErrorResponse'
+          description: Invalid request
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.ErrorResponse'
+          description: Environment not found
+        "409":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.ErrorResponse'
+          description: Environment is protected
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.ErrorResponse'
+          description: Internal server error
+      summary: Update an environment
+      tags:
+      - environments
+  /api/v1/projects:
+    get:
+      description: List projects with optional filtering and pagination
+      parameters:
+      - description: 'Page number (default: 1)'
+        in: query
+        name: page
+        schema:
+          type: integer
+      - description: 'Page size (default: 20)'
+        in: query
+        name: page_size
+        schema:
+          type: integer
+      - description: Filter by repository ID
+        in: query
+        name: repo_id
+        schema:
+          type: string
+      - description: Filter by path
+        in: query
+        name: path
+        schema:
+          type: string
+      - description: Filter by slug
+        in: query
+        name: slug
+        schema:
+          type: string
+      - description: Filter by status (active, archived)
+        in: query
+        name: status
+        schema:
+          type: string
+      - description: Sort field (created_at, updated_at)
+        in: query
+        name: sort_by
+        schema:
+          type: string
+      - description: Sort order (asc, desc)
+        in: query
+        name: sort_order
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.ProjectPageResult'
+          description: Paginated list of projects
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.ErrorResponse'
+          description: Invalid query parameters
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.ErrorResponse'
+          description: Internal server error
+      summary: List projects
+      tags:
+      - projects
+  /api/v1/projects/{id}:
+    get:
+      description: Retrieve a single project by its ID
+      parameters:
+      - description: Project ID (UUID)
+        in: path
+        name: id
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.ProjectResponse'
+          description: Project details
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.ErrorResponse'
+          description: Invalid project ID
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.ErrorResponse'
+          description: Project not found
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.ErrorResponse'
+          description: Internal server error
+      summary: Get a project by ID
+      tags:
+      - projects
+  /api/v1/projects/{project_id}/environments/{name}:
+    get:
+      description: Retrieve a single environment by project ID and environment name
+      parameters:
+      - description: Project ID (UUID)
+        in: path
+        name: project_id
+        required: true
+        schema:
+          type: string
+      - description: Environment name
         in: path
         name: name
         required: true
-        type: string
-      produces:
-      - application/json
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
       responses:
         "200":
-          description: Role found
-          schema:
-            $ref: '#/definitions/internal_api_handlers_user.Role'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.EnvironmentResponse'
+          description: Environment details
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.ErrorResponse'
+          description: Invalid parameters
         "404":
-          description: Role not found
-          schema:
-            additionalProperties: true
-            type: object
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.ErrorResponse'
+          description: Environment not found
         "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.ErrorResponse'
           description: Internal server error
-          schema:
-            additionalProperties: true
-            type: object
-      security:
-      - BearerAuth: []
-      summary: Get a role by name
+      summary: Get an environment by project and name
       tags:
-      - roles
-  /auth/user-roles:
-    delete:
-      description: Remove a user from a specific role
+      - environments
+  /api/v1/releases:
+    get:
+      description: List releases with optional filtering and pagination
       parameters:
-      - description: User ID
+      - description: 'Page number (default: 1)'
         in: query
-        name: user_id
-        required: true
-        type: string
-      - description: Role ID
+        name: page
+        schema:
+          type: integer
+      - description: 'Page size (default: 20)'
         in: query
-        name: role_id
+        name: page_size
+        schema:
+          type: integer
+      - description: Filter by project ID
+        in: query
+        name: project_id
+        schema:
+          type: string
+      - description: Filter by release key
+        in: query
+        name: release_key
+        schema:
+          type: string
+      - description: Filter by status (pending, building, sealed, failed)
+        in: query
+        name: status
+        schema:
+          type: string
+      - description: Filter by OCI digest
+        in: query
+        name: oci_digest
+        schema:
+          type: string
+      - description: Filter by tag
+        in: query
+        name: tag
+        schema:
+          type: string
+      - description: Filter by creator
+        in: query
+        name: created_by
+        schema:
+          type: string
+      - description: Filter by creation date (RFC3339)
+        in: query
+        name: since
+        schema:
+          type: string
+      - description: Filter by creation date (RFC3339)
+        in: query
+        name: until
+        schema:
+          type: string
+      - description: Sort field (created_at, updated_at)
+        in: query
+        name: sort_by
+        schema:
+          type: string
+      - description: Sort order (asc, desc)
+        in: query
+        name: sort_order
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.ReleasePageResult'
+          description: Paginated list of releases
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.ErrorResponse'
+          description: Invalid query parameters
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.ErrorResponse'
+          description: Internal server error
+      summary: List releases
+      tags:
+      - releases
+    post:
+      description: Create a new release with modules, injections, and artifacts
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/contracts.ReleaseCreate'
+        description: Release creation request
         required: true
-        type: string
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.ReleaseResponse'
+          description: Created release
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.ErrorResponse'
+          description: Invalid request body
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.ErrorResponse'
+          description: Project or artifact not found
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.ErrorResponse'
+          description: Internal server error
+      summary: Create a new release
+      tags:
+      - releases
+  /api/v1/releases/{id}:
+    delete:
+      description: Delete a release if it has no deployments
+      parameters:
+      - description: Release ID (UUID)
+        in: path
+        name: id
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
       responses:
         "204":
-          description: User removed from role successfully
-        "401":
-          description: Authentication required
-          schema:
-            additionalProperties: true
-            type: object
-        "404":
-          description: User or role not found
-          schema:
-            additionalProperties: true
-            type: object
-        "500":
-          description: Internal server error
-          schema:
-            additionalProperties: true
-            type: object
-      security:
-      - BearerAuth: []
-      summary: Remove a user from a role
-      tags:
-      - user-roles
-    get:
-      description: Retrieve all roles assigned to a specific user
-      parameters:
-      - description: User ID
-        in: query
-        name: user_id
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: List of user roles
-          schema:
-            items:
-              $ref: '#/definitions/internal_api_handlers_user.UserRole'
-            type: array
-        "401":
-          description: Authentication required
-          schema:
-            additionalProperties: true
-            type: object
-        "404":
-          description: User not found
-          schema:
-            additionalProperties: true
-            type: object
-        "500":
-          description: Internal server error
-          schema:
-            additionalProperties: true
-            type: object
-      security:
-      - BearerAuth: []
-      summary: Get all roles for a user
-      tags:
-      - user-roles
-    post:
-      consumes:
-      - application/json
-      description: Assign a user to a specific role
-      parameters:
-      - description: User ID
-        in: query
-        name: user_id
-        required: true
-        type: string
-      - description: Role ID
-        in: query
-        name: role_id
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "201":
-          description: User assigned to role successfully
-          schema:
-            $ref: '#/definitions/internal_api_handlers_user.UserRole'
+          description: Release deleted successfully
         "400":
-          description: Invalid request
-          schema:
-            additionalProperties: true
-            type: object
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.ErrorResponse'
+          description: Invalid release ID
         "404":
-          description: User or role not found
-          schema:
-            additionalProperties: true
-            type: object
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.ErrorResponse'
+          description: Release not found
         "409":
-          description: User already has this role
-          schema:
-            additionalProperties: true
-            type: object
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.ErrorResponse'
+          description: Release is sealed or has deployments
         "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.ErrorResponse'
           description: Internal server error
-          schema:
-            additionalProperties: true
-            type: object
-      security:
-      - BearerAuth: []
-      summary: Assign a user to a role
+      summary: Delete a release
       tags:
-      - user-roles
-  /auth/users:
+      - releases
     get:
-      description: Get a list of all users in the system
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: List of users
-          schema:
-            items:
-              $ref: '#/definitions/internal_api_handlers_user.User'
-            type: array
-        "500":
-          description: Internal server error
-          schema:
-            additionalProperties: true
-            type: object
-      security:
-      - BearerAuth: []
-      summary: List all users
-      tags:
-      - users
-    post:
-      consumes:
-      - application/json
-      description: Create a new user with the provided information
+      description: Retrieve a single release by its ID
       parameters:
-      - description: User creation request
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/user.CreateUserRequest'
-      produces:
-      - application/json
-      responses:
-        "201":
-          description: User created successfully
-          schema:
-            $ref: '#/definitions/internal_api_handlers_user.User'
-        "400":
-          description: Invalid request
-          schema:
-            additionalProperties: true
-            type: object
-        "409":
-          description: User already exists
-          schema:
-            additionalProperties: true
-            type: object
-        "500":
-          description: Internal server error
-          schema:
-            additionalProperties: true
-            type: object
-      security:
-      - BearerAuth: []
-      summary: Create a new user
-      tags:
-      - users
-  /auth/users/{id}:
-    delete:
-      description: Delete a user by their ID
-      parameters:
-      - description: User ID
+      - description: Release ID (UUID)
         in: path
         name: id
         required: true
-        type: string
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.ReleaseResponse'
+          description: Release details
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.ErrorResponse'
+          description: Invalid release ID
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.ErrorResponse'
+          description: Release not found
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.ErrorResponse'
+          description: Internal server error
+      summary: Get a release by ID
+      tags:
+      - releases
+    patch:
+      description: Update a release's status and signature information
+      parameters:
+      - description: Release ID (UUID)
+        in: path
+        name: id
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/contracts.ReleaseUpdate'
+        description: Release update request
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.ReleaseResponse'
+          description: Updated release
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.ErrorResponse'
+          description: Invalid request
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.ErrorResponse'
+          description: Release not found
+        "409":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.ErrorResponse'
+          description: Release is sealed and cannot be modified
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.ErrorResponse'
+          description: Internal server error
+      summary: Update a release
+      tags:
+      - releases
+  /api/v1/releases/{id}/artifacts:
+    get:
+      description: List all artifacts associated with a release
+      parameters:
+      - description: Release ID (UUID)
+        in: path
+        name: id
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/contracts.ReleaseArtifactResponse'
+                type: array
+          description: List of release artifacts
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.ErrorResponse'
+          description: Invalid release ID
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.ErrorResponse'
+          description: Release not found
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.ErrorResponse'
+          description: Internal server error
+      summary: Get release artifacts
+      tags:
+      - releases
+    post:
+      description: Attach an existing artifact to a release with a specific role
+      parameters:
+      - description: Release ID (UUID)
+        in: path
+        name: id
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/contracts.ReleaseArtifactCreate'
+        description: Artifact attachment request
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                type: object
+          description: Artifact attached successfully
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.ErrorResponse'
+          description: Invalid request
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.ErrorResponse'
+          description: Release or artifact not found
+        "409":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.ErrorResponse'
+          description: Release is sealed and cannot be modified
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.ErrorResponse'
+          description: Internal server error
+      summary: Attach an artifact to a release
+      tags:
+      - releases
+  /api/v1/releases/{id}/injections:
+    get:
+      description: List all injections associated with a release
+      parameters:
+      - description: Release ID (UUID)
+        in: path
+        name: id
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/contracts.ReleaseInjection'
+                type: array
+          description: List of release injections
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.ErrorResponse'
+          description: Invalid release ID
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.ErrorResponse'
+          description: Release not found
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.ErrorResponse'
+          description: Internal server error
+      summary: Get release injections
+      tags:
+      - releases
+    post:
+      description: Add one or more injections to an existing release
+      parameters:
+      - description: Release ID (UUID)
+        in: path
+        name: id
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/contracts.ReleaseInjectionCreate'
+        description: Injections to add
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                type: object
+          description: Injections added successfully
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.ErrorResponse'
+          description: Invalid request
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.ErrorResponse'
+          description: Release not found
+        "409":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.ErrorResponse'
+          description: Release is sealed and cannot be modified
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.ErrorResponse'
+          description: Internal server error
+      summary: Add injections to a release
+      tags:
+      - releases
+  /api/v1/releases/{id}/modules:
+    get:
+      description: List all modules associated with a release
+      parameters:
+      - description: Release ID (UUID)
+        in: path
+        name: id
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/contracts.ReleaseModule'
+                type: array
+          description: List of release modules
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.ErrorResponse'
+          description: Invalid release ID
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.ErrorResponse'
+          description: Release not found
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.ErrorResponse'
+          description: Internal server error
+      summary: Get release modules
+      tags:
+      - releases
+    post:
+      description: Add one or more modules to an existing release
+      parameters:
+      - description: Release ID (UUID)
+        in: path
+        name: id
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/contracts.ReleaseModuleCreate'
+        description: Modules to add
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                type: object
+          description: Modules added successfully
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.ErrorResponse'
+          description: Invalid request
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.ErrorResponse'
+          description: Release not found
+        "409":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.ErrorResponse'
+          description: Release is sealed and cannot be modified
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.ErrorResponse'
+          description: Internal server error
+      summary: Add modules to a release
+      tags:
+      - releases
+  /api/v1/releases/{release_id}/artifacts/{artifact_id}:
+    delete:
+      description: Detach a specific artifact from a release
+      parameters:
+      - description: Release ID (UUID)
+        in: path
+        name: release_id
+        required: true
+        schema:
+          type: string
+      - description: Artifact ID (UUID)
+        in: path
+        name: artifact_id
+        required: true
+        schema:
+          type: string
+      - description: Artifact role (optional)
+        in: query
+        name: role
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
       responses:
         "204":
-          description: User deleted successfully
-        "404":
-          description: User not found
-          schema:
-            additionalProperties: true
-            type: object
-        "500":
-          description: Internal server error
-          schema:
-            additionalProperties: true
-            type: object
-      security:
-      - BearerAuth: []
-      summary: Delete a user
-      tags:
-      - users
-    get:
-      description: Retrieve a user by their ID
-      parameters:
-      - description: User ID
-        in: path
-        name: id
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: User found
-          schema:
-            $ref: '#/definitions/internal_api_handlers_user.User'
-        "404":
-          description: User not found
-          schema:
-            additionalProperties: true
-            type: object
-        "500":
-          description: Internal server error
-          schema:
-            additionalProperties: true
-            type: object
-      security:
-      - BearerAuth: []
-      summary: Get a user by ID
-      tags:
-      - users
-    put:
-      consumes:
-      - application/json
-      description: Update an existing user's information
-      parameters:
-      - description: User ID
-        in: path
-        name: id
-        required: true
-        type: string
-      - description: User update request
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/user.UpdateUserRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: User updated successfully
-          schema:
-            $ref: '#/definitions/internal_api_handlers_user.User'
+          description: Artifact detached successfully
         "400":
-          description: Invalid request
-          schema:
-            additionalProperties: true
-            type: object
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.ErrorResponse'
+          description: Invalid parameters
         "404":
-          description: User not found
-          schema:
-            additionalProperties: true
-            type: object
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.ErrorResponse'
+          description: Release or artifact not found
+        "409":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.ErrorResponse'
+          description: Release is sealed and cannot be modified
         "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.ErrorResponse'
           description: Internal server error
-          schema:
-            additionalProperties: true
-            type: object
-      security:
-      - BearerAuth: []
-      summary: Update a user
+      summary: Detach an artifact from a release
       tags:
-      - users
-  /auth/users/{id}/activate:
-    post:
-      description: Activate a user by setting their status to active
+      - releases
+  /api/v1/releases/{release_id}/injections/{injection_id}:
+    delete:
+      description: Remove a specific injection from a release
       parameters:
-      - description: User ID
+      - description: Release ID (UUID)
         in: path
-        name: id
-        required: true
-        type: string
-      responses:
-        "200":
-          description: User activated successfully
-          schema:
-            $ref: '#/definitions/internal_api_handlers_user.User'
-        "404":
-          description: User not found
-          schema:
-            additionalProperties: true
-            type: object
-        "500":
-          description: Internal server error
-          schema:
-            additionalProperties: true
-            type: object
-      security:
-      - BearerAuth: []
-      summary: Activate a user
-      tags:
-      - users
-  /auth/users/{id}/deactivate:
-    post:
-      description: Deactivate a user by setting their status to inactive
-      parameters:
-      - description: User ID
-        in: path
-        name: id
-        required: true
-        type: string
-      responses:
-        "200":
-          description: User deactivated successfully
-          schema:
-            $ref: '#/definitions/internal_api_handlers_user.User'
-        "404":
-          description: User not found
-          schema:
-            additionalProperties: true
-            type: object
-        "500":
-          description: Internal server error
-          schema:
-            additionalProperties: true
-            type: object
-      security:
-      - BearerAuth: []
-      summary: Deactivate a user
-      tags:
-      - users
-  /auth/users/email/{email}:
-    get:
-      description: Retrieve a user by their email address
-      parameters:
-      - description: User email
-        in: path
-        name: email
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: User found
-          schema:
-            $ref: '#/definitions/internal_api_handlers_user.User'
-        "404":
-          description: User not found
-          schema:
-            additionalProperties: true
-            type: object
-        "500":
-          description: Internal server error
-          schema:
-            additionalProperties: true
-            type: object
-      security:
-      - BearerAuth: []
-      summary: Get a user by email
-      tags:
-      - users
-  /auth/users/register:
-    post:
-      consumes:
-      - application/json
-      description: Register a new user with pending status
-      parameters:
-      - description: User registration request
-        in: body
-        name: request
+        name: release_id
         required: true
         schema:
-          $ref: '#/definitions/user.RegisterUserRequest'
-      produces:
-      - application/json
+          type: string
+      - description: Injection ID (UUID)
+        in: path
+        name: injection_id
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        "204":
+          description: Injection removed successfully
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.ErrorResponse'
+          description: Invalid parameters
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.ErrorResponse'
+          description: Release or injection not found
+        "409":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.ErrorResponse'
+          description: Release is sealed and cannot be modified
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.ErrorResponse'
+          description: Internal server error
+      summary: Remove an injection from a release
+      tags:
+      - releases
+  /api/v1/releases/{release_id}/modules/{module_key}:
+    delete:
+      description: Remove a specific module from a release by module key
+      parameters:
+      - description: Release ID (UUID)
+        in: path
+        name: release_id
+        required: true
+        schema:
+          type: string
+      - description: Module key
+        in: path
+        name: module_key
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        "204":
+          description: Module removed successfully
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.ErrorResponse'
+          description: Invalid parameters
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.ErrorResponse'
+          description: Release or module not found
+        "409":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.ErrorResponse'
+          description: Release is sealed and cannot be modified
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.ErrorResponse'
+          description: Internal server error
+      summary: Remove a module from a release
+      tags:
+      - releases
+  /api/v1/repositories:
+    get:
+      description: List repositories with optional filtering and pagination
+      parameters:
+      - description: 'Page number (default: 1)'
+        in: query
+        name: page
+        schema:
+          type: integer
+      - description: 'Page size (default: 20)'
+        in: query
+        name: page_size
+        schema:
+          type: integer
+      - description: Filter by host
+        in: query
+        name: host
+        schema:
+          type: string
+      - description: Filter by organization
+        in: query
+        name: org
+        schema:
+          type: string
+      - description: Filter by name
+        in: query
+        name: name
+        schema:
+          type: string
+      - description: Sort field (created_at, updated_at)
+        in: query
+        name: sort_by
+        schema:
+          type: string
+      - description: Sort order (asc, desc)
+        in: query
+        name: sort_order
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.RepositoryPageResult'
+          description: Paginated list of repositories
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.ErrorResponse'
+          description: Invalid query parameters
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.ErrorResponse'
+          description: Internal server error
+      summary: List repositories
+      tags:
+      - repositories
+  /api/v1/repositories/{repo_id}:
+    get:
+      description: Retrieve a single repository by its ID
+      parameters:
+      - description: Repository ID (UUID)
+        in: path
+        name: repo_id
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.RepositoryResponse'
+          description: Repository details
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.ErrorResponse'
+          description: Invalid repository ID
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.ErrorResponse'
+          description: Repository not found
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.ErrorResponse'
+          description: Internal server error
+      summary: Get a repository by ID
+      tags:
+      - repositories
+  /api/v1/repositories/{repo_id}/projects/by-path:
+    get:
+      description: Retrieve a single project by repository ID and project path
+      parameters:
+      - description: Repository ID (UUID)
+        in: path
+        name: repo_id
+        required: true
+        schema:
+          type: string
+      - description: Project path
+        in: query
+        name: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.ProjectResponse'
+          description: Project details
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.ErrorResponse'
+          description: Invalid parameters
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.ErrorResponse'
+          description: Project not found
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.ErrorResponse'
+          description: Internal server error
+      summary: Get a project by repository and path
+      tags:
+      - projects
+  /api/v1/repositories/by-path/{host}/{org}/{name}:
+    get:
+      description: Retrieve a single repository by its host, organization, and name
+      parameters:
+      - description: Repository host (e.g., github.com)
+        in: path
+        name: host
+        required: true
+        schema:
+          type: string
+      - description: Organization name
+        in: path
+        name: org
+        required: true
+        schema:
+          type: string
+      - description: Repository name
+        in: path
+        name: name
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.RepositoryResponse'
+          description: Repository details
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.ErrorResponse'
+          description: Invalid parameters
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.ErrorResponse'
+          description: Repository not found
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.ErrorResponse'
+          description: Internal server error
+      summary: Get a repository by path
+      tags:
+      - repositories
+  /api/v1/traces:
+    get:
+      description: List traces with optional filtering and pagination
+      parameters:
+      - description: 'Page number (default: 1)'
+        in: query
+        name: page
+        schema:
+          type: integer
+      - description: 'Page size (default: 20)'
+        in: query
+        name: page_size
+        schema:
+          type: integer
+      - description: Filter by repository ID
+        in: query
+        name: repo_id
+        schema:
+          type: string
+      - description: Filter by purpose (build, test, deploy)
+        in: query
+        name: purpose
+        schema:
+          type: string
+      - description: Filter by retention class (temp, short, long)
+        in: query
+        name: retention_class
+        schema:
+          type: string
+      - description: Filter by branch
+        in: query
+        name: branch
+        schema:
+          type: string
+      - description: Filter by creator
+        in: query
+        name: created_by
+        schema:
+          type: string
+      - description: Filter by creation date (RFC3339)
+        in: query
+        name: since
+        schema:
+          type: string
+      - description: Filter by creation date (RFC3339)
+        in: query
+        name: until
+        schema:
+          type: string
+      - description: Sort field (created_at)
+        in: query
+        name: sort_by
+        schema:
+          type: string
+      - description: Sort order (asc, desc)
+        in: query
+        name: sort_order
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.TracePageResult'
+          description: Paginated list of traces
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.ErrorResponse'
+          description: Invalid query parameters
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.ErrorResponse'
+          description: Internal server error
+      summary: List traces
+      tags:
+      - traces
+    post:
+      description: Create a new trace for tracking build operations
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/contracts.TraceCreate'
+        description: Trace creation request
+        required: true
       responses:
         "201":
-          description: User registered successfully
-          schema:
-            $ref: '#/definitions/internal_api_handlers_user.User'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.TraceResponse'
+          description: Created trace
         "400":
-          description: Invalid request
-          schema:
-            additionalProperties: true
-            type: object
-        "409":
-          description: User already exists
-          schema:
-            additionalProperties: true
-            type: object
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.ErrorResponse'
+          description: Invalid request body
         "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.ErrorResponse'
           description: Internal server error
-          schema:
-            additionalProperties: true
-            type: object
-      summary: Register a new user
+      summary: Create a new trace
       tags:
-      - users
+      - traces
+  /api/v1/traces/{id}:
+    get:
+      description: Retrieve a single trace by its ID
+      parameters:
+      - description: Trace ID (UUID)
+        in: path
+        name: id
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.TraceResponse'
+          description: Trace details
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.ErrorResponse'
+          description: Invalid trace ID
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.ErrorResponse'
+          description: Trace not found
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.ErrorResponse'
+          description: Internal server error
+      summary: Get a trace by ID
+      tags:
+      - traces
   /ca/buildkit/server-certificates:
     post:
-      consumes:
-      - application/json
       description: Signs a server CSR
-      parameters:
-      - description: Server certificate signing request
-        in: body
-        name: request
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/handlers.CertificateSigningRequest'
+        description: Server certificate signing request
         required: true
-        schema:
-          $ref: '#/definitions/handlers.CertificateSigningRequest'
-      produces:
-      - application/json
       responses:
         "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/handlers.CertificateSigningResponse'
           description: OK
-          schema:
-            $ref: '#/definitions/handlers.CertificateSigningResponse'
         "400":
+          content:
+            application/json:
+              schema:
+                additionalProperties: {}
+                type: object
           description: Invalid request
-          schema:
-            additionalProperties: true
-            type: object
         "401":
+          content:
+            application/json:
+              schema:
+                additionalProperties: {}
+                type: object
           description: Unauthorized
-          schema:
-            additionalProperties: true
-            type: object
         "403":
+          content:
+            application/json:
+              schema:
+                additionalProperties: {}
+                type: object
           description: Forbidden - insufficient permissions
-          schema:
-            additionalProperties: true
-            type: object
         "500":
+          content:
+            application/json:
+              schema:
+                additionalProperties: {}
+                type: object
           description: Internal server error
-          schema:
-            additionalProperties: true
-            type: object
       security:
-      - BearerAuth: []
+      - BearerAuth.: []
       summary: Sign a BuildKit server certificate
       tags:
       - certificates
   /certificates/root:
     get:
       description: Returns the Certificate Authority's root certificate
-      produces:
-      - text/plain
       responses:
         "200":
+          content:
+            application/json:
+              schema:
+                type: string
+            text/plain:
+              schema:
+                type: string
           description: PEM-encoded root certificate
-          schema:
-            type: string
         "500":
+          content:
+            application/json:
+              schema:
+                additionalProperties: {}
+                type: object
           description: Internal server error
-          schema:
-            additionalProperties: true
-            type: object
       summary: Get root certificate
       tags:
       - certificates
   /certificates/sign:
     post:
-      consumes:
-      - application/json
       description: Signs a Certificate Signing Request (CSR)
-      parameters:
-      - description: Certificate signing request
-        in: body
-        name: request
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/handlers.CertificateSigningRequest'
+        description: Certificate signing request
         required: true
-        schema:
-          $ref: '#/definitions/handlers.CertificateSigningRequest'
-      produces:
-      - application/json
       responses:
         "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/handlers.CertificateSigningResponse'
           description: OK
-          schema:
-            $ref: '#/definitions/handlers.CertificateSigningResponse'
         "400":
+          content:
+            application/json:
+              schema:
+                additionalProperties: {}
+                type: object
           description: Invalid request
-          schema:
-            additionalProperties: true
-            type: object
         "401":
+          content:
+            application/json:
+              schema:
+                additionalProperties: {}
+                type: object
           description: Unauthorized
-          schema:
-            additionalProperties: true
-            type: object
         "403":
+          content:
+            application/json:
+              schema:
+                additionalProperties: {}
+                type: object
           description: Forbidden - insufficient permissions
-          schema:
-            additionalProperties: true
-            type: object
         "500":
+          content:
+            application/json:
+              schema:
+                additionalProperties: {}
+                type: object
           description: Internal server error
-          schema:
-            additionalProperties: true
-            type: object
       security:
-      - BearerAuth: []
+      - BearerAuth.: []
       summary: Sign a certificate
       tags:
       - certificates
   /healthz:
     get:
-      consumes:
-      - application/json
       description: Check the health status of the API service
-      produces:
-      - application/json
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
       responses:
         "200":
+          content:
+            application/json:
+              schema:
+                additionalProperties: {}
+                type: object
           description: Service is healthy
-          schema:
-            additionalProperties: true
-            type: object
         "503":
+          content:
+            application/json:
+              schema:
+                additionalProperties: {}
+                type: object
           description: Service is unhealthy
-          schema:
-            additionalProperties: true
-            type: object
       summary: Health check
       tags:
       - health
-  /release:
-    post:
-      consumes:
-      - application/json
-      description: Create a new release with the specified source repository and project
-        details
-      parameters:
-      - description: Release creation request
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/handlers.CreateReleaseRequest'
-      - description: Deploy the release immediately (true/false)
-        in: query
-        name: deploy
-        type: string
-      produces:
-      - application/json
-      responses:
-        "201":
-          description: Release created successfully
-          schema:
-            $ref: '#/definitions/models.Release'
-        "400":
-          description: Invalid request
-          schema:
-            additionalProperties: true
-            type: object
-        "401":
-          description: Authentication required
-          schema:
-            additionalProperties: true
-            type: object
-        "500":
-          description: Internal server error
-          schema:
-            additionalProperties: true
-            type: object
-      security:
-      - BearerAuth: []
-      summary: Create a new release
-      tags:
-      - releases
-  /release/{id}:
-    get:
-      consumes:
-      - application/json
-      description: Retrieve a specific release by its ID
-      parameters:
-      - description: Release ID
-        in: path
-        name: id
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Release details
-          schema:
-            $ref: '#/definitions/models.Release'
-        "401":
-          description: Authentication required
-          schema:
-            additionalProperties: true
-            type: object
-        "404":
-          description: Release not found
-          schema:
-            additionalProperties: true
-            type: object
-      security:
-      - BearerAuth: []
-      summary: Get a release by ID
-      tags:
-      - releases
-    put:
-      consumes:
-      - application/json
-      description: Update an existing release with new information
-      parameters:
-      - description: Release ID
-        in: path
-        name: id
-        required: true
-        type: string
-      - description: Release update request
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/handlers.UpdateReleaseRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Release updated successfully
-          schema:
-            $ref: '#/definitions/models.Release'
-        "400":
-          description: Invalid request
-          schema:
-            additionalProperties: true
-            type: object
-        "401":
-          description: Authentication required
-          schema:
-            additionalProperties: true
-            type: object
-        "404":
-          description: Release not found
-          schema:
-            additionalProperties: true
-            type: object
-        "500":
-          description: Internal server error
-          schema:
-            additionalProperties: true
-            type: object
-      security:
-      - BearerAuth: []
-      summary: Update a release
-      tags:
-      - releases
-  /release/{id}/aliases:
-    get:
-      consumes:
-      - application/json
-      description: Get all aliases for a specific release
-      parameters:
-      - description: Release ID
-        in: path
-        name: id
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: List of aliases
-          schema:
-            items:
-              $ref: '#/definitions/models.ReleaseAlias'
-            type: array
-        "401":
-          description: Authentication required
-          schema:
-            additionalProperties: true
-            type: object
-        "500":
-          description: Internal server error
-          schema:
-            additionalProperties: true
-            type: object
-      security:
-      - BearerAuth: []
-      summary: List release aliases
-      tags:
-      - releases
-  /release/{id}/deploy:
-    post:
-      consumes:
-      - application/json
-      description: Create a new deployment for a release
-      parameters:
-      - description: Release ID
-        in: path
-        name: id
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "201":
-          description: Deployment created successfully
-          schema:
-            $ref: '#/definitions/models.ReleaseDeployment'
-        "401":
-          description: Authentication required
-          schema:
-            additionalProperties: true
-            type: object
-        "500":
-          description: Internal server error
-          schema:
-            additionalProperties: true
-            type: object
-      security:
-      - BearerAuth: []
-      summary: Create a deployment
-      tags:
-      - deployments
-  /release/{id}/deploy/{deployId}:
-    get:
-      consumes:
-      - application/json
-      description: Get a specific deployment by its ID
-      parameters:
-      - description: Release ID
-        in: path
-        name: id
-        required: true
-        type: string
-      - description: Deployment ID
-        in: path
-        name: deployId
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Deployment details
-          schema:
-            $ref: '#/definitions/models.ReleaseDeployment'
-        "401":
-          description: Authentication required
-          schema:
-            additionalProperties: true
-            type: object
-        "404":
-          description: Deployment not found
-          schema:
-            additionalProperties: true
-            type: object
-      security:
-      - BearerAuth: []
-      summary: Get a deployment
-      tags:
-      - deployments
-    put:
-      consumes:
-      - application/json
-      description: Update an existing deployment
-      parameters:
-      - description: Release ID
-        in: path
-        name: id
-        required: true
-        type: string
-      - description: Deployment ID
-        in: path
-        name: deployId
-        required: true
-        type: string
-      - description: Deployment update request
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/models.ReleaseDeployment'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Deployment updated successfully
-          schema:
-            $ref: '#/definitions/models.ReleaseDeployment'
-        "400":
-          description: Invalid request
-          schema:
-            additionalProperties: true
-            type: object
-        "401":
-          description: Authentication required
-          schema:
-            additionalProperties: true
-            type: object
-        "500":
-          description: Internal server error
-          schema:
-            additionalProperties: true
-            type: object
-      security:
-      - BearerAuth: []
-      summary: Update a deployment
-      tags:
-      - deployments
-  /release/{id}/deploy/{deployId}/events:
-    get:
-      consumes:
-      - application/json
-      description: Get all events for a deployment
-      parameters:
-      - description: Release ID
-        in: path
-        name: id
-        required: true
-        type: string
-      - description: Deployment ID
-        in: path
-        name: deployId
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: List of deployment events
-          schema:
-            items:
-              $ref: '#/definitions/models.DeploymentEvent'
-            type: array
-        "401":
-          description: Authentication required
-          schema:
-            additionalProperties: true
-            type: object
-        "500":
-          description: Internal server error
-          schema:
-            additionalProperties: true
-            type: object
-      security:
-      - BearerAuth: []
-      summary: Get deployment events
-      tags:
-      - deployments
-    post:
-      consumes:
-      - application/json
-      description: Add an event to a deployment
-      parameters:
-      - description: Release ID
-        in: path
-        name: id
-        required: true
-        type: string
-      - description: Deployment ID
-        in: path
-        name: deployId
-        required: true
-        type: string
-      - description: Event details
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/handlers.AddEventRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Deployment with updated events
-          schema:
-            $ref: '#/definitions/models.ReleaseDeployment'
-        "400":
-          description: Invalid request
-          schema:
-            additionalProperties: true
-            type: object
-        "401":
-          description: Authentication required
-          schema:
-            additionalProperties: true
-            type: object
-        "500":
-          description: Internal server error
-          schema:
-            additionalProperties: true
-            type: object
-      security:
-      - BearerAuth: []
-      summary: Add deployment event
-      tags:
-      - deployments
-  /release/{id}/deploy/latest:
-    get:
-      consumes:
-      - application/json
-      description: Get the most recent deployment for a release
-      parameters:
-      - description: Release ID
-        in: path
-        name: id
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Latest deployment
-          schema:
-            $ref: '#/definitions/models.ReleaseDeployment'
-        "401":
-          description: Authentication required
-          schema:
-            additionalProperties: true
-            type: object
-        "404":
-          description: No deployments found
-          schema:
-            additionalProperties: true
-            type: object
-      security:
-      - BearerAuth: []
-      summary: Get latest deployment
-      tags:
-      - deployments
-  /release/{id}/deployments:
-    get:
-      consumes:
-      - application/json
-      description: Get all deployments for a release
-      parameters:
-      - description: Release ID
-        in: path
-        name: id
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: List of deployments
-          schema:
-            items:
-              $ref: '#/definitions/models.ReleaseDeployment'
-            type: array
-        "401":
-          description: Authentication required
-          schema:
-            additionalProperties: true
-            type: object
-        "500":
-          description: Internal server error
-          schema:
-            additionalProperties: true
-            type: object
-      security:
-      - BearerAuth: []
-      summary: List deployments
-      tags:
-      - deployments
-  /release/alias/{name}:
-    delete:
-      consumes:
-      - application/json
-      description: Delete an alias for a release
-      parameters:
-      - description: Alias name
-        in: path
-        name: name
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Alias deleted successfully
-          schema:
-            additionalProperties: true
-            type: object
-        "401":
-          description: Authentication required
-          schema:
-            additionalProperties: true
-            type: object
-        "500":
-          description: Internal server error
-          schema:
-            additionalProperties: true
-            type: object
-      security:
-      - BearerAuth: []
-      summary: Delete a release alias
-      tags:
-      - releases
-    get:
-      consumes:
-      - application/json
-      description: Retrieve a release by its alias name
-      parameters:
-      - description: Release alias name
-        in: path
-        name: name
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Release details
-          schema:
-            $ref: '#/definitions/models.Release'
-        "401":
-          description: Authentication required
-          schema:
-            additionalProperties: true
-            type: object
-        "404":
-          description: Release alias not found
-          schema:
-            additionalProperties: true
-            type: object
-      security:
-      - BearerAuth: []
-      summary: Get release by alias
-      tags:
-      - releases
-    post:
-      consumes:
-      - application/json
-      description: Create an alias for a release
-      parameters:
-      - description: Alias name
-        in: path
-        name: name
-        required: true
-        type: string
-      - description: Alias creation request
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/handlers.CreateAliasRequest'
-      produces:
-      - application/json
-      responses:
-        "201":
-          description: Alias created successfully
-          schema:
-            additionalProperties: true
-            type: object
-        "400":
-          description: Invalid request
-          schema:
-            additionalProperties: true
-            type: object
-        "401":
-          description: Authentication required
-          schema:
-            additionalProperties: true
-            type: object
-        "500":
-          description: Internal server error
-          schema:
-            additionalProperties: true
-            type: object
-      security:
-      - BearerAuth: []
-      summary: Create a release alias
-      tags:
-      - releases
-  /releases:
-    get:
-      consumes:
-      - application/json
-      description: Get all releases, optionally filtered by project
-      parameters:
-      - description: Filter releases by project name
-        in: query
-        name: project
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: List of releases
-          schema:
-            items:
-              $ref: '#/definitions/models.Release'
-            type: array
-        "401":
-          description: Authentication required
-          schema:
-            additionalProperties: true
-            type: object
-        "500":
-          description: Internal server error
-          schema:
-            additionalProperties: true
-            type: object
-      security:
-      - BearerAuth: []
-      summary: List releases
-      tags:
-      - releases
-  /verify:
-    get:
-      consumes:
-      - application/json
-      description: Verify an invite token and activate the user; assigns roles from
-        the invite
-      parameters:
-      - description: Invite token
-        in: query
-        name: token
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: verified
-          schema:
-            additionalProperties: true
-            type: object
-        "400":
-          description: Missing token
-          schema:
-            additionalProperties: true
-            type: object
-        "401":
-          description: Invalid or expired
-          schema:
-            additionalProperties: true
-            type: object
-      summary: Verify invite
-      tags:
-      - auth
-swagger: "2.0"

@@ -1,7 +1,7 @@
 package authkit
 
 import (
-	"github.com/catalystgo/catalyst-forge/lib/foundry/authkit/store/gormstore"
+	"github.com/input-output-hk/catalyst-forge/foundry/api/internal/authkit/store/gormstore"
 	repodb "github.com/catalystgo/catalyst-forge/lib/foundry/db"
 	"gorm.io/gorm"
 )

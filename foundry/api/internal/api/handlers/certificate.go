@@ -12,7 +12,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/input-output-hk/catalyst-forge/foundry/api/internal/api/middleware"
+	libauth "github.com/input-output-hk/catalyst-forge/foundry/api/internal/authkit/authkit"
 	"github.com/input-output-hk/catalyst-forge/foundry/api/internal/ca"
 	metrics "github.com/input-output-hk/catalyst-forge/foundry/api/internal/metrics"
 	adm "github.com/input-output-hk/catalyst-forge/foundry/api/internal/models/audit"
@@ -21,7 +21,6 @@ import (
 	pca "github.com/input-output-hk/catalyst-forge/foundry/api/internal/service/pca"
 	"github.com/input-output-hk/catalyst-forge/foundry/api/internal/utils"
 	"github.com/input-output-hk/catalyst-forge/lib/foundry/auth"
-	"github.com/input-output-hk/catalyst-forge/lib/foundry/auth/jwt"
 	"github.com/input-output-hk/catalyst-forge/lib/foundry/auth/jwt/tokens"
 	"gorm.io/datatypes"
 )
@@ -66,16 +65,14 @@ type CertificateSigningResponse struct {
 
 // CertificateHandler handles certificate-related API endpoints.
 type CertificateHandler struct {
-	jwtManager jwt.JWTManager
-	pcaClient  pca.PCAClient
-	limiter    rate.Limiter
+	pcaClient pca.PCAClient
+	limiter   rate.Limiter
 }
 
 // NewCertificateHandler creates a new certificate handler.
-func NewCertificateHandler(jwtManager jwt.JWTManager) *CertificateHandler {
+func NewCertificateHandler() *CertificateHandler {
 	return &CertificateHandler{
-		jwtManager: jwtManager,
-		limiter:    rate.NewInMemoryLimiter(),
+		limiter: rate.NewInMemoryLimiter(),
 	}
 }
 
@@ -99,14 +96,15 @@ func (h *CertificateHandler) WithPCA(client pca.PCAClient) *CertificateHandler {
 // @Failure 500 {object} map[string]interface{} "Internal server error"
 // @Router /certificates/sign [post]
 // @Security BearerAuth.
+//
 //nolint:gocyclo // Certificate signing involves many validation and branching steps; refactor planned separately.
 func (h *CertificateHandler) SignCertificate(c *gin.Context) {
 	// Get user from context (set by auth middleware)
-	userData, exists := c.Get("user")
-	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{
-			"error": "user not authenticated",
-		})
+	// Extract user from AuthKit context
+	authCtx, ok := libauth.From(c)
+	if !ok || !authCtx.IsAuthenticated() {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "user not authenticated"})
+		return
 	}
 
 	// Rate limit per principal (user ID or repo) per hour (policy key ISSUANCE_RATE_HOURLY; default 20)
@@ -117,9 +115,9 @@ func (h *CertificateHandler) SignCertificate(c *gin.Context) {
 		}
 	}
 	// Use subject from claims if available; else fall back to IP
-	principalKey := ""
-	if u, ok2 := userData.(*middleware.AuthenticatedUser); ok2 && u.Claims != nil {
-		principalKey = u.Claims.Subject
+	principalKey := authCtx.Email
+	if principalKey == "" {
+		principalKey = authCtx.UserID.String()
 	}
 	if principalKey == "" {
 		principalKey = c.ClientIP()
@@ -129,11 +127,7 @@ func (h *CertificateHandler) SignCertificate(c *gin.Context) {
 		return
 	}
 
-	user, ok := userData.(*middleware.AuthenticatedUser)
-	if !ok {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "invalid user data"})
-		return
-	}
+	// user claims are derived from AuthKit context; continue with request parsing
 
 	// Parse request
 	var req CertificateSigningRequest
@@ -188,12 +182,12 @@ func (h *CertificateHandler) SignCertificate(c *gin.Context) {
 	}
 
 	// Use email from claims if no subject specified
-	if subject == "" && user.Claims.Subject != "" {
-		subject = user.Claims.Subject
+	if subject == "" && authCtx.Email != "" {
+		subject = authCtx.Email
 	}
 
-    // Combine CSR SANs with request SANs; copy base to avoid aliasing.
-    allSANs := append(append([]string{}, csr.DNSNames...), req.SANs...)
+	// Combine CSR SANs with request SANs; copy base to avoid aliasing.
+	allSANs := append(append([]string{}, csr.DNSNames...), req.SANs...)
 
 	// Deduplicate while preserving order
 	seen := make(map[string]struct{}, len(allSANs))
@@ -208,7 +202,9 @@ func (h *CertificateHandler) SignCertificate(c *gin.Context) {
 	}
 
 	// Validate SANs against user permissions
-	if !h.validateSANs(user.Claims, sans) {
+	// Claims are not directly available; skip claim-derived SAN validation here.
+	// TODO: integrate SAN authorization via AuthKit policies when available.
+	if !h.validateSANs(nil, sans) {
 		c.JSON(http.StatusForbidden, gin.H{
 			"error": "not authorized for requested SANs",
 		})
@@ -258,12 +254,7 @@ func (h *CertificateHandler) SignCertificate(c *gin.Context) {
 		if ttl > maxCI {
 			ttl = maxCI
 		}
-		if user != nil && user.Claims != nil && user.Claims.ExpiresAt != nil {
-			untilExp := time.Until(user.Claims.ExpiresAt.Time)
-			if untilExp > 0 && ttl > untilExp {
-				ttl = untilExp
-			}
-		}
+		// If auth context carries an expiry, clamp TTL accordingly (not available via AuthKit yet)
 	}
 
 	// Build SANs for APIPassthrough

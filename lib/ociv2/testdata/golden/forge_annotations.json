@@ -1,0 +1,14 @@
+{
+  "io.projectcatalyst.forge.build.id": "build-789",
+  "io.projectcatalyst.forge.build.number": "123",
+  "io.projectcatalyst.forge.build.url": "https://ci.example.com/build/789",
+  "io.projectcatalyst.forge.env": "production",
+  "io.projectcatalyst.forge.git.branch": "main",
+  "io.projectcatalyst.forge.git.commit": "abc123def456",
+  "io.projectcatalyst.forge.git.tag": "v1.0.0",
+  "io.projectcatalyst.forge.kind": "release",
+  "io.projectcatalyst.forge.project": "catalyst",
+  "org.opencontainers.image.created": "2025-01-01T00:00:00Z",
+  "org.opencontainers.image.revision": "abc123def456",
+  "org.opencontainers.image.source": "https://github.com/input-output-hk/catalyst-forge"
+}

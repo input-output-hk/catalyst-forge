@@ -58,7 +58,7 @@ func NewRootCommand() *cobra.Command {
 	rootCmd.AddCommand(NewRunCommand())
 	rootCmd.AddCommand(NewValidateCommand())
 	rootCmd.AddCommand(NewDumpCommand())
-	rootCmd.AddCommand(NewReleaseCommand())
+    rootCmd.AddCommand(NewPublishCommand())
 	rootCmd.AddCommand(secret.NewCommand())
 	rootCmd.AddCommand(NewCICommand())
 	rootCmd.AddCommand(NewConfigureSatelliteCommand())

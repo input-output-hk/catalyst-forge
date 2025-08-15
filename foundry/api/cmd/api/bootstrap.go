@@ -2,9 +2,6 @@ package main
 
 import (
 	"context"
-	"crypto/ecdsa"
-	"crypto/x509"
-	"encoding/pem"
 	"fmt"
 	"os"
 	"time"
@@ -13,15 +10,23 @@ import (
 
 	"github.com/gin-gonic/gin"
 
+	rbacgorm "github.com/input-output-hk/catalyst-forge/foundry/api/internal/authkit/rbac/gormstore"
+	rbacseed "github.com/input-output-hk/catalyst-forge/foundry/api/internal/authkit/rbacseed"
+	akgormstore "github.com/input-output-hk/catalyst-forge/foundry/api/internal/authkit/store/gormstore"
 	"github.com/input-output-hk/catalyst-forge/foundry/api/internal/config"
-	"github.com/input-output-hk/catalyst-forge/foundry/api/internal/models"
+	argomodels "github.com/input-output-hk/catalyst-forge/foundry/api/internal/models/argo"
+	artifactmodels "github.com/input-output-hk/catalyst-forge/foundry/api/internal/models/artifact"
 	adm "github.com/input-output-hk/catalyst-forge/foundry/api/internal/models/audit"
 	buildmodels "github.com/input-output-hk/catalyst-forge/foundry/api/internal/models/build"
-	"github.com/input-output-hk/catalyst-forge/foundry/api/internal/models/user"
+	deploymentmodels "github.com/input-output-hk/catalyst-forge/foundry/api/internal/models/deployment"
+	environmentmodels "github.com/input-output-hk/catalyst-forge/foundry/api/internal/models/environment"
+	gitopsmodels "github.com/input-output-hk/catalyst-forge/foundry/api/internal/models/gitops"
+	projectmodels "github.com/input-output-hk/catalyst-forge/foundry/api/internal/models/project"
+	releasemodels "github.com/input-output-hk/catalyst-forge/foundry/api/internal/models/release"
+	repositorymodels "github.com/input-output-hk/catalyst-forge/foundry/api/internal/models/repository"
+	tracemodels "github.com/input-output-hk/catalyst-forge/foundry/api/internal/models/trace"
+	policy "github.com/input-output-hk/catalyst-forge/foundry/api/internal/policy"
 	emailsvc "github.com/input-output-hk/catalyst-forge/foundry/api/internal/service/email"
-	pcaclient "github.com/input-output-hk/catalyst-forge/foundry/api/internal/service/pca"
-	"github.com/input-output-hk/catalyst-forge/foundry/api/pkg/k8s"
-	"github.com/input-output-hk/catalyst-forge/lib/foundry/auth/jwt"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
@@ -87,58 +92,79 @@ func openDB(cfg config.Config, logger *slog.Logger) (*gorm.DB, error) {
 }
 
 func runMigrations(db *gorm.DB) error {
-	return db.AutoMigrate(
-		&models.Release{},
-		&models.ReleaseDeployment{},
-		&models.IDCounter{},
-		&models.ReleaseAlias{},
-		&models.DeploymentEvent{},
-		&models.GithubRepositoryAuth{},
-		&user.User{},
-		&user.Role{},
-		&user.UserRole{},
-		&user.UserKey{},
-		&user.Device{},
-		&user.RefreshToken{},
-		&user.DeviceSession{},
-		&user.RevokedJTI{},
-		&user.Invite{},
-		&user.BootstrapToken{},
+	// Core API models - All new models from Phase 1-4 implementation
+	if err := db.AutoMigrate(
+		// Audit models
 		&adm.Log{},
-		// Build identity models
+
+		// Repository and Project models
+		&repositorymodels.Repository{},
+		&projectmodels.Project{},
+
+		// Trace models
+		&tracemodels.Trace{},
+
+		// Build models
+		&buildmodels.Build{},
 		&buildmodels.ServiceAccount{},
 		&buildmodels.ServiceAccountKey{},
 		&buildmodels.BuildSession{},
-	)
-}
 
-func initK8sClient(cfg config.KubernetesConfig, logger *slog.Logger) (k8s.Client, error) {
-	if cfg.Enabled {
-		return k8s.New(cfg.Namespace, logger)
+		// Artifact models
+		&artifactmodels.Artifact{},
+
+		// Release models
+		&releasemodels.Release{},
+		&releasemodels.ReleaseModule{},
+		&releasemodels.ReleaseInjection{},
+		&releasemodels.ReleaseArtifact{},
+
+		// Environment models
+		&environmentmodels.Environment{},
+
+		// Deployment models
+		&deploymentmodels.Deployment{},
+		&deploymentmodels.RenderJob{},
+
+		// GitOps models
+		&gitopsmodels.GitOpsChange{},
+
+		// Argo models
+		&argomodels.ArgoSync{},
+	); err != nil {
+		return err
 	}
-	return nil, nil
-}
 
-func initJWTManager(authCfg config.AuthConfig, logger *slog.Logger) (jwt.JWTManager, error) {
-	manager, err := jwt.NewES256Manager(
-		authCfg.PrivateKey,
-		authCfg.PublicKey,
-		jwt.WithManagerLogger(logger),
-		jwt.WithMaxAuthTokenTTL(authCfg.AccessTTL),
-	)
-	if err != nil {
-		return nil, err
+	// Ensure conditional indexes exist for nullable digest columns
+	if db.Migrator().HasTable("release") {
+		if err := db.Exec(`CREATE UNIQUE INDEX IF NOT EXISTS ux_release_oci_digest ON "release" (oci_digest) WHERE oci_digest IS NOT NULL`).Error; err != nil {
+			return err
+		}
 	}
-	return manager, nil
+	if db.Migrator().HasTable("render_job") {
+		if err := db.Exec(`CREATE INDEX IF NOT EXISTS ix_render_job_oci_digest ON render_job (oci_digest) WHERE oci_digest IS NOT NULL`).Error; err != nil {
+			return err
+		}
+	}
+
+	// AuthKit models
+	if err := akgormstore.AutoMigrate(db); err != nil {
+		return err
+	}
+
+	// Dynamic policy models
+	if err := policy.AutoMigrate(db); err != nil {
+		return err
+	}
+	return nil
 }
 
-// initGHAClient reserved for future extraction if needed
-//
-//lint:ignore U1000 kept intentionally to preserve API surface
-func initGHAClient() (start func() error, stop func(), clientCtx context.Context, err error) {
-	// Kept in main for logging; this wrapper reserved for future extraction if needed.
-	return nil, nil, nil, nil
-}
+// func initK8sClient(cfg config.KubernetesConfig, logger *slog.Logger) (k8s.Client, error) {
+// 	if cfg.Enabled {
+// 		return k8s.New(cfg.Namespace, logger)
+// 	}
+// 	return nil, nil
+// }
 
 func initEmailService(cfg config.EmailConfig, publicBaseURL string) (emailsvc.Service, error) {
 	if cfg.Enabled && cfg.Provider == "ses" {
@@ -151,32 +177,6 @@ func initEmailService(cfg config.EmailConfig, publicBaseURL string) (emailsvc.Se
 	return nil, nil
 }
 
-// parseProvisionerSigner retained for legacy dev paths
-//
-//lint:ignore U1000 unused after PCA migration
-func parseProvisionerSigner(path string) *ecdsa.PrivateKey {
-	if path == "" {
-		return nil
-	}
-	b, err := os.ReadFile(path)
-	if err != nil {
-		return nil
-	}
-	block, _ := pem.Decode(b)
-	if block == nil {
-		return nil
-	}
-	if pk, err := x509.ParsePKCS8PrivateKey(block.Bytes); err == nil {
-		if ec, ok := pk.(*ecdsa.PrivateKey); ok {
-			return ec
-		}
-	}
-	if ec, err := x509.ParseECPrivateKey(block.Bytes); err == nil {
-		return ec
-	}
-	return nil
-}
-
 func injectDefaultContext(r *gin.Engine, cfg config.Config, emailSvc emailsvc.Service) {
 	r.Use(func(c *gin.Context) {
 		c.Set("invite_default_ttl", cfg.Auth.InviteTTL)
@@ -187,13 +187,7 @@ func injectDefaultContext(r *gin.Engine, cfg config.Config, emailSvc emailsvc.Se
 			c.Set("email_region", cfg.Email.SESRegion)
 		}
 		c.Set("enable_per_ip_ratelimit", cfg.Security.EnableNaivePerIPRateLimit)
-		// GitHub OIDC policy
-		c.Set("github_expected_iss", cfg.Certs.GhOIDCIssuer)
-		c.Set("github_expected_aud", cfg.Certs.GhOIDCAudience)
-		c.Set("github_allowed_orgs", cfg.Certs.GhAllowedOrgs)
-		c.Set("github_allowed_repos", cfg.Certs.GhAllowedRepos)
-		c.Set("github_protected_refs", cfg.Certs.GhProtectedRefs)
-		c.Set("github_job_token_default_ttl", cfg.Certs.JobTokenDefaultTTL)
+
 		// PCA configuration keys for handlers
 		clientArn := cfg.Certs.PCAClientCAArn
 		serverArn := cfg.Certs.PCAServerCAArn
@@ -209,25 +203,32 @@ func injectDefaultContext(r *gin.Engine, cfg config.Config, emailSvc emailsvc.Se
 		c.Set("certs_pca_server_template_arn", cfg.Certs.PCAServerTemplateArn)
 		c.Set("certs_pca_signing_algo_client", cfg.Certs.PCASigningAlgoClient)
 		c.Set("certs_pca_signing_algo_server", cfg.Certs.PCASigningAlgoServer)
-		// Feature flags
-		c.Set("feature_ext_authz_enabled", cfg.Certs.ExtAuthzEnabled)
 		c.Next()
 	})
 }
 
-// initPCAClient optionally initializes an ACM-PCA client wrapper when ARNs are provided.
-func initPCAClient(cfg config.CertsConfig) (pcaclient.PCAClient, error) {
-	if cfg.PCAClientCAArn == "" && cfg.PCAServerCAArn == "" {
-		// Dev/local: return a mock PCA so cert flows work in integration tests without AWS
-		return &pcaclient.Mock{}, nil
+// initRBAC migrates and seeds default RBAC roles if enabled via config.
+func initRBAC(ctx context.Context, db *gorm.DB, cfg config.Config, logger *slog.Logger) {
+	store := rbacgorm.New(db)
+	if err := store.AutoMigrate(); err != nil {
+		if logger != nil {
+			logger.Error("RBAC automigrate failed", "error", err)
+		}
+		return
 	}
-	return pcaclient.NewAWS(pcaclient.Options{Timeout: cfg.PCATimeout})
-}
-
-// Utility: short timeout context
-// newTimeoutCtx helper (currently unused)
-//
-//lint:ignore U1000 reserved for future use
-func newTimeoutCtx(d time.Duration) (context.Context, context.CancelFunc) {
-	return context.WithTimeout(context.Background(), d)
+	if !cfg.Auth.RBACSeedDefaults {
+		if logger != nil {
+			logger.Info("RBAC seeding skipped by config")
+		}
+		return
+	}
+	if logger != nil {
+		logger.Info("Seeding default RBAC roles")
+	}
+	// Idempotent seeding; bump versions on change
+	if err := rbacseed.SeedDefaultRoles(ctx, store, true); err != nil {
+		if logger != nil {
+			logger.Error("RBAC seeding failed", "error", err)
+		}
+	}
 }

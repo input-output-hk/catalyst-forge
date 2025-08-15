@@ -8,7 +8,7 @@ check:
 
 # Start the local development environment
 up:
-    earthly --config "" +docker && docker compose up -d api auth-init caddy pgadmin postgres
+    earthly --config "" +docker && docker compose up -d postgres api pgadmin caddy
 
 # Stop the local development environment
 down:

@@ -3,22 +3,40 @@ package routes
 import (
 	"github.com/gin-gonic/gin"
 	"github.com/input-output-hk/catalyst-forge/foundry/api/internal/api/handlers"
-	"github.com/input-output-hk/catalyst-forge/foundry/api/internal/api/middleware"
-	auth "github.com/input-output-hk/catalyst-forge/lib/foundry/auth"
 )
 
+// ReleaseDeps contains dependencies for release routes
 type ReleaseDeps struct {
-	Auth    *middleware.AuthMiddleware
-	Handler *handlers.ReleaseHandler
+	H *handlers.ReleaseHandler
 }
 
-func RegisterReleases(r *gin.Engine, d ReleaseDeps) {
-	r.POST("/release", d.Auth.ValidatePermissions([]auth.Permission{auth.PermReleaseWrite}), d.Handler.CreateRelease)
-	r.GET("/release/:id", d.Auth.ValidatePermissions([]auth.Permission{auth.PermReleaseRead}), d.Handler.GetRelease)
-	r.PUT("/release/:id", d.Auth.ValidatePermissions([]auth.Permission{auth.PermReleaseWrite}), d.Handler.UpdateRelease)
-	r.GET("/releases", d.Auth.ValidatePermissions([]auth.Permission{auth.PermReleaseRead}), d.Handler.ListReleases)
-	r.GET("/release/alias/:name", d.Auth.ValidatePermissions([]auth.Permission{auth.PermReleaseRead}), d.Handler.GetReleaseByAlias)
-	r.POST("/release/alias/:name", d.Auth.ValidatePermissions([]auth.Permission{auth.PermReleaseWrite}), d.Handler.CreateAlias)
-	r.DELETE("/release/alias/:name", d.Auth.ValidatePermissions([]auth.Permission{auth.PermReleaseWrite}), d.Handler.DeleteAlias)
-	r.GET("/release/:id/aliases", d.Auth.ValidatePermissions([]auth.Permission{auth.PermReleaseRead}), d.Handler.ListAliases)
+// RegisterReleases registers v1 release routes
+func RegisterReleases(r *gin.Engine, deps ReleaseDeps) {
+	v1 := r.Group("/api/v1")
+	{
+		releases := v1.Group("/releases")
+		{
+			// Main CRUD operations
+			releases.POST("", deps.H.Create)
+			releases.GET("", deps.H.List)
+			releases.GET("/:release_id", deps.H.GetByID)
+			releases.PATCH("/:release_id", deps.H.Update)
+			releases.DELETE("/:release_id", deps.H.Delete)
+
+			// Module sub-resources
+			releases.GET("/:release_id/modules", deps.H.GetModules)
+			releases.POST("/:release_id/modules", deps.H.AddModules)
+			releases.DELETE("/:release_id/modules/:module_key", deps.H.RemoveModule)
+
+			// Injection sub-resources
+			releases.GET("/:release_id/injections", deps.H.GetInjections)
+			releases.POST("/:release_id/injections", deps.H.AddInjections)
+			releases.DELETE("/:release_id/injections/:injection_id", deps.H.RemoveInjection)
+
+			// Artifact sub-resources
+			releases.GET("/:release_id/artifacts", deps.H.GetArtifacts)
+			releases.POST("/:release_id/artifacts", deps.H.AttachArtifact)
+			releases.DELETE("/:release_id/artifacts/:artifact_id/:role", deps.H.DetachArtifact)
+		}
+	}
 }
