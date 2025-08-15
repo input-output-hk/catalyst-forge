@@ -42,12 +42,12 @@ func ensureDigest(ref string, d Descriptor) Descriptor {
 func parseRef(ref string) (name.Reference, error) {
 	// Handle oci:// scheme
 	ref = NormalizeRef(ref)
-	
+
 	// Try to parse as a digest reference first
 	if IsDigestRef(ref) {
 		return name.ParseReference(ref, name.WeakValidation)
 	}
-	
+
 	// Parse as tag reference
 	return name.ParseReference(ref, name.WeakValidation)
 }
@@ -56,7 +56,7 @@ func parseRef(ref string) (name.Reference, error) {
 func NormalizeRef(ref string) string {
 	// Remove oci:// prefix if present
 	ref = strings.TrimPrefix(ref, "oci://")
-	
+
 	// Ensure we have a valid reference format
 	// If no tag or digest, default to :latest
 	if !strings.Contains(ref, "@") && !strings.Contains(ref, ":") {
@@ -74,18 +74,18 @@ func NormalizeRef(ref string) string {
 		}
 		// If we have only one part (like "nginx:latest"), it already has a tag, don't add :latest
 	}
-	
+
 	return ref
 }
 
 // toCanonical converts a reference to its canonical form (with digest if available)
 func toCanonical(ref string, digest string) string {
 	ref = NormalizeRef(ref)
-	
+
 	if digest == "" {
 		return ref
 	}
-	
+
 	// Remove any existing tag or digest
 	if idx := strings.LastIndex(ref, "@"); idx > 0 {
 		ref = ref[:idx]
@@ -96,19 +96,19 @@ func toCanonical(ref string, digest string) string {
 			ref = ref[:idx]
 		}
 	}
-	
+
 	return fmt.Sprintf("%s@%s", ref, digest)
 }
 
 // extractRegistry extracts the registry hostname from a reference
 func extractRegistry(ref string) (string, error) {
 	ref = NormalizeRef(ref)
-	
+
 	parsed, err := parseRef(ref)
 	if err != nil {
 		return "", fmt.Errorf("failed to parse reference: %w", err)
 	}
-	
+
 	return parsed.Context().RegistryStr(), nil
 }
 
@@ -118,23 +118,23 @@ func validateRef(ref string) error {
 	if strings.HasPrefix(ref, "http://") {
 		return observability.ErrInsecureRef
 	}
-	
+
 	// Remove oci:// for parsing
 	ref = NormalizeRef(ref)
-	
+
 	// Try to parse the reference
 	_, err := parseRef(ref)
 	if err != nil {
 		return fmt.Errorf("%w: %s", observability.ErrInvalidRef, err.Error())
 	}
-	
+
 	return nil
 }
 
 // isLocalRegistry checks if a reference points to a local registry
 func isLocalRegistry(ref string) bool {
 	ref = NormalizeRef(ref)
-	
+
 	// Common local registry patterns
 	localPatterns := []string{
 		"localhost",
@@ -142,20 +142,20 @@ func isLocalRegistry(ref string) bool {
 		"::1",
 		"host.docker.internal",
 	}
-	
+
 	for _, pattern := range localPatterns {
 		if strings.HasPrefix(ref, pattern+":") || strings.HasPrefix(ref, pattern+"/") {
 			return true
 		}
 	}
-	
+
 	// Check if it's a local IP
 	if parts := strings.Split(ref, "/"); len(parts) > 0 {
 		host := parts[0]
 		if colonIdx := strings.Index(host, ":"); colonIdx > 0 {
 			host = host[:colonIdx]
 		}
-		
+
 		// Check for private IP ranges
 		if strings.HasPrefix(host, "10.") ||
 			strings.HasPrefix(host, "172.") ||
@@ -163,29 +163,49 @@ func isLocalRegistry(ref string) bool {
 			return true
 		}
 	}
-	
+
+	return false
+}
+
+// isLoopbackRegistry checks if a reference points strictly to a loopback host
+// This is more conservative than isLocalRegistry and only allows plaintext
+// when the registry is on localhost or loopback IPs.
+func isLoopbackRegistry(ref string) bool {
+	ref = NormalizeRef(ref)
+
+	loopbacks := []string{
+		"localhost",
+		"127.0.0.1",
+		"::1",
+	}
+
+	for _, host := range loopbacks {
+		if strings.HasPrefix(ref, host+":") || strings.HasPrefix(ref, host+"/") {
+			return true
+		}
+	}
 	return false
 }
 
 // splitRefParts splits a reference into registry, repository, and tag/digest parts
 func splitRefParts(ref string) (registry, repository, tagOrDigest string, err error) {
 	ref = NormalizeRef(ref)
-	
+
 	parsed, err := parseRef(ref)
 	if err != nil {
 		return "", "", "", err
 	}
-	
+
 	registry = parsed.Context().RegistryStr()
 	repository = parsed.Context().RepositoryStr()
-	
+
 	// Extract tag or digest
 	if tagged, ok := parsed.(name.Tag); ok {
 		tagOrDigest = tagged.TagStr()
 	} else if digested, ok := parsed.(name.Digest); ok {
 		tagOrDigest = digested.DigestStr()
 	}
-	
+
 	return registry, repository, tagOrDigest, nil
 }
 
@@ -204,12 +224,12 @@ func isHTTPSRegistry(ref string, plainHTTP bool) bool {
 	if plainHTTP {
 		return false
 	}
-	
+
 	// Local registries can use HTTP
 	if isLocalRegistry(ref) {
 		return false
 	}
-	
+
 	// Default to HTTPS for remote registries
 	return true
 }
@@ -220,16 +240,16 @@ func parseRegistryURL(registry string, useHTTPS bool) (*url.URL, error) {
 	if !useHTTPS {
 		scheme = "http"
 	}
-	
+
 	// Add scheme if not present
 	if !strings.HasPrefix(registry, "http://") && !strings.HasPrefix(registry, "https://") {
 		registry = scheme + "://" + registry
 	}
-	
+
 	u, err := url.Parse(registry)
 	if err != nil {
 		return nil, fmt.Errorf("invalid registry URL: %w", err)
 	}
-	
+
 	return u, nil
 }

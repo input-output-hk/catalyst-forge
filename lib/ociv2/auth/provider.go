@@ -35,7 +35,7 @@ func (d *DefaultAuth) Authenticator(registry string) (any, error) {
 	if kc == nil {
 		kc = authn.DefaultKeychain
 	}
-	
+
 	// For ggcr, we return the keychain directly
 	// For ORAS, we need to convert to ORAS auth
 	// Since we return 'any', the caller will type-assert as needed
@@ -59,14 +59,14 @@ func (m *multiAuth) GetAuthn() (authn.Authenticator, error) {
 		// Fallback to anonymous if parsing fails
 		return authn.Anonymous, nil
 	}
-	
+
 	// Get authenticator from keychain
 	auth, err := m.keychain.Resolve(resource)
 	if err != nil {
 		// Fallback to anonymous on error
 		return authn.Anonymous, nil
 	}
-	
+
 	return auth, nil
 }
 
@@ -77,20 +77,20 @@ func (m *multiAuth) GetCredential(ctx context.Context, registry string) (auth.Cr
 	if err != nil {
 		return auth.EmptyCredential, err
 	}
-	
+
 	// Get auth config from authenticator
 	authConfig, err := authenticator.Authorization()
 	if err != nil {
 		return auth.EmptyCredential, err
 	}
-	
+
 	// Convert to ORAS credential
 	if authConfig == nil || authConfig.Username == "" && authConfig.Password == "" && authConfig.Auth == "" && authConfig.IdentityToken == "" {
 		return auth.EmptyCredential, nil
 	}
-	
+
 	cred := auth.Credential{}
-	
+
 	// Handle different auth types
 	if authConfig.IdentityToken != "" {
 		// Bearer token auth
@@ -110,12 +110,12 @@ func (m *multiAuth) GetCredential(ctx context.Context, registry string) (auth.Cr
 		cred.Username = authConfig.Username
 		cred.Password = authConfig.Password
 	}
-	
+
 	// Set refresh token if available
 	if authConfig.RegistryToken != "" {
 		cred.RefreshToken = authConfig.RegistryToken
 	}
-	
+
 	return cred, nil
 }
 
@@ -183,7 +183,7 @@ func (g *GitHubAuth) Authenticator(registry string) (any, error) {
 	if !strings.Contains(registry, "ghcr.io") {
 		return &DefaultAuth{}, nil
 	}
-	
+
 	token := g.Token
 	if token == "" {
 		// Try to get from GitHub keychain (uses GITHUB_TOKEN env var)
@@ -192,7 +192,7 @@ func (g *GitHubAuth) Authenticator(registry string) (any, error) {
 			registry: registry,
 		}, nil
 	}
-	
+
 	return &staticTokenAuth{token: token}, nil
 }
 
@@ -210,7 +210,7 @@ func (e *ECRAuth) Authenticator(registry string) (any, error) {
 		// Not ECR, fallback to default
 		return (&DefaultAuth{}).Authenticator(registry)
 	}
-	
+
 	// In production, you would:
 	// 1. Use AWS SDK to get ECR auth token
 	// 2. Return appropriate authenticator
@@ -226,7 +226,7 @@ type ChainAuth struct {
 // Authenticator tries each provider until one succeeds
 func (c *ChainAuth) Authenticator(registry string) (any, error) {
 	var lastErr error
-	
+
 	for _, provider := range c.Providers {
 		auth, err := provider.Authenticator(registry)
 		if err == nil && auth != nil {
@@ -236,83 +236,47 @@ func (c *ChainAuth) Authenticator(registry string) (any, error) {
 			lastErr = err
 		}
 	}
-	
+
 	if lastErr != nil {
 		return nil, lastErr
 	}
-	
+
 	// Fallback to anonymous
 	return nil, nil
 }
 
-// Helper functions for auth
-
-// isGGCRAuth checks if the auth object is for ggcr
-func isGGCRAuth(auth any) bool {
-	if auth == nil {
-		return false
-	}
-	
-	switch auth.(type) {
-	case authn.Authenticator, authn.Keychain:
-		return true
-	case interface{ GetAuthn() (authn.Authenticator, error) }:
-		return true
-	default:
-		return false
-	}
-}
-
-// isORASAuth checks if the auth object is for ORAS
-func isORASAuth(authObj any) bool {
-	if authObj == nil {
-		return false
-	}
-	
-	switch authObj.(type) {
-	case *auth.Credential:
-		return true
-	case interface{ GetCredential(context.Context, string) (auth.Credential, error) }:
-		return true
-	default:
-		return false
-	}
-}
-
-// ToGGCRAuth converts auth to ggcr authenticator
+// ToGGCRAuth converts an auth object to a ggcr authenticator
 func ToGGCRAuth(authObj any) (authn.Authenticator, error) {
 	if authObj == nil {
 		return authn.Anonymous, nil
 	}
-	
 	// Direct ggcr authenticator
-	if auth, ok := authObj.(authn.Authenticator); ok {
-		return auth, nil
+	if a, ok := authObj.(authn.Authenticator); ok {
+		return a, nil
 	}
-	
-	// Has GetAuthn method
-	if provider, ok := authObj.(interface{ GetAuthn() (authn.Authenticator, error) }); ok {
+	// Provider exposing GetAuthn
+	if provider, ok := authObj.(interface {
+		GetAuthn() (authn.Authenticator, error)
+	}); ok {
 		return provider.GetAuthn()
 	}
-	
 	return authn.Anonymous, nil
 }
 
-// ToORASAuth converts auth to ORAS credential
+// ToORASAuth converts an auth object to an ORAS credential
 func ToORASAuth(ctx context.Context, authObj any, registry string) (auth.Credential, error) {
 	if authObj == nil {
 		return auth.EmptyCredential, nil
 	}
-	
 	// Direct ORAS credential
 	if cred, ok := authObj.(*auth.Credential); ok {
 		return *cred, nil
 	}
-	
-	// Has GetCredential method
-	if provider, ok := authObj.(interface{ GetCredential(context.Context, string) (auth.Credential, error) }); ok {
+	// Provider exposing GetCredential
+	if provider, ok := authObj.(interface {
+		GetCredential(context.Context, string) (auth.Credential, error)
+	}); ok {
 		return provider.GetCredential(ctx, registry)
 	}
-	
 	return auth.EmptyCredential, nil
 }

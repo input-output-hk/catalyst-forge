@@ -61,10 +61,10 @@ func TestSignDigest(t *testing.T) {
 				},
 			},
 			setupEnv: func() {
-				os.Setenv("COSIGN_EXPERIMENTAL", "1")
+				_ = os.Setenv("COSIGN_EXPERIMENTAL", "1")
 			},
 			cleanupEnv: func() {
-				os.Unsetenv("COSIGN_EXPERIMENTAL")
+				_ = os.Unsetenv("COSIGN_EXPERIMENTAL")
 			},
 			wantErr: false,
 			checkResult: func(t *testing.T, desc Descriptor) {

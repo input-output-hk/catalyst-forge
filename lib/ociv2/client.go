@@ -4,7 +4,6 @@ import (
 	"context"
 	"io"
 	"net/http"
-	"sync"
 	"time"
 )
 
@@ -28,11 +27,11 @@ type CosignOpts struct {
 // ClientOptions configures the OCI client
 type ClientOptions struct {
 	// Networking
-	PlainHTTP      bool          // Use HTTP instead of HTTPS (local registries only)
-	Timeout        time.Duration // Request timeout (default: 2 minutes)
-	UserAgent      string        // User-Agent header for requests
+	PlainHTTP      bool            // Use HTTP instead of HTTPS (local registries only)
+	Timeout        time.Duration   // Request timeout (default: 2 minutes)
+	UserAgent      string          // User-Agent header for requests
 	HTTPTransport  *http.Transport // Custom HTTP transport for connection pooling
-	MaxConcurrency int           // Max concurrent operations (default: 10)
+	MaxConcurrency int             // Max concurrent operations (default: 10)
 
 	// Auth & signing
 	Auth   AuthProvider // Authentication provider (nil for anonymous)
@@ -47,7 +46,7 @@ type ClientOptions struct {
 	StructuredLogger Logger                      // Enhanced structured logger
 	EnableMetrics    bool                        // Enable operation metrics collection
 	MetricsCallback  func(*Metrics)              // Callback for metrics reporting
-	
+
 	// Resource limits
 	MaxBlobSize      int64 // Maximum blob size allowed (default: 5GB)
 	StreamBufferSize int   // Buffer size for streaming operations (default: 32KB)
@@ -119,6 +118,9 @@ type Client interface {
 	// VerifyDigest verifies signatures on an artifact
 	VerifyDigest(ctx context.Context, refOrDigest string) (*VerificationReport, error)
 
+	// VerifyArtifact pulls and verifies an artifact with configurable validation
+	VerifyArtifact(ctx context.Context, ref string, opts VerifyOptions) (*PullResult, *ValidationReport, error)
+
 	// -------- Attestations --------
 
 	// Attest attaches a DSSE attestation to an artifact
@@ -134,7 +136,6 @@ type client struct {
 	auth      AuthProvider
 	transport *http.Transport
 	semaphore chan struct{} // For concurrency limiting
-	mu        sync.RWMutex  // Protects shared state
 }
 
 // New creates a new OCI client with the given options
@@ -153,16 +154,16 @@ func New(opts ClientOptions) (Client, error) {
 		opts.PreferArtifactManifest = true
 		opts.FallbackImageManifest = true
 	}
-	
+
 	// Set resource limits
 	if opts.MaxBlobSize == 0 {
 		opts.MaxBlobSize = 5 * 1024 * 1024 * 1024 // 5GB default
 	}
-	
+
 	if opts.StreamBufferSize == 0 {
 		opts.StreamBufferSize = 32 * 1024 // 32KB default
 	}
-	
+
 	if opts.MaxConcurrency == 0 {
 		opts.MaxConcurrency = 10 // Default max concurrent operations
 	}

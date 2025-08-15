@@ -220,6 +220,10 @@ func TestIntegrationAttestation(t *testing.T) {
 		"test.type": "attestation-subject",
 	})
 	require.NoError(t, err)
+	require.NotEmpty(t, desc.Digest)
+	
+	// Use the original ref for attestations (not desc.Ref which includes digest)
+	attestRef := ref
 
 	t.Run("AttachSLSAProvenance", func(t *testing.T) {
 		// Create SLSA provenance
@@ -245,7 +249,7 @@ func TestIntegrationAttestation(t *testing.T) {
 			},
 		}
 
-		attestDesc, err := client.Attest(ctx, desc.Ref, attestOpts)
+		attestDesc, err := client.Attest(ctx, attestRef, attestOpts)
 		require.NoError(t, err)
 		assert.NotEmpty(t, attestDesc.Digest)
 		assert.Contains(t, attestDesc.Ref, ".att")
@@ -253,7 +257,7 @@ func TestIntegrationAttestation(t *testing.T) {
 
 	t.Run("QueryAttestations", func(t *testing.T) {
 		// Query attestations
-		report, err := client.VerifyAttestations(ctx, desc.Ref, PredicateSLSAProvenance)
+		report, err := client.VerifyAttestations(ctx, attestRef, PredicateSLSAProvenance)
 		require.NoError(t, err)
 		
 		// Should have at least one attestation
@@ -276,11 +280,11 @@ func TestIntegrationAttestation(t *testing.T) {
 			},
 		}
 
-		_, err := client.Attest(ctx, desc.Ref, customOpts)
+		_, err := client.Attest(ctx, attestRef, customOpts)
 		require.NoError(t, err)
 
 		// Query only SLSA attestations
-		report, err := client.VerifyAttestations(ctx, desc.Ref, PredicateSLSAProvenance)
+		report, err := client.VerifyAttestations(ctx, attestRef, PredicateSLSAProvenance)
 		require.NoError(t, err)
 
 		// Should only have SLSA attestations
@@ -289,7 +293,7 @@ func TestIntegrationAttestation(t *testing.T) {
 		}
 
 		// Query all attestations
-		allReport, err := client.VerifyAttestations(ctx, desc.Ref, "")
+		allReport, err := client.VerifyAttestations(ctx, attestRef, "")
 		require.NoError(t, err)
 
 		// Should have more attestations

@@ -1,0 +1,293 @@
+@tailwind components;
+
+/* Design tokens for Catalyst Forge - HSL only */
+
+:root {
+  /* Brand palette (HSL) */
+  --brand-amber: 17 77% 53%;   /* Burnished Amber */
+  --brand-orange: 35 76% 48%;  /* Molten Orange */
+  --brand-charcoal: 215 28% 17%; /* Forge Charcoal */
+  --brand-steel: 215 14% 34%;   /* Steel Gray */
+  --brand-silver: 217 12% 84%;  /* Iron Silver */
+  --brand-ash: 210 20% 98%;     /* Ash White */
+
+  /* Semantic aliases */
+  --color-primary: var(--brand-amber);
+  --color-primary-foreground: var(--brand-ash);
+
+  --surface-1: var(--brand-ash);
+  --surface-2: 0 0% 100%;
+  --surface-3: 210 20% 96%;
+
+  /* Gradients */
+  --gradient-primary: linear-gradient(90deg, hsl(var(--brand-amber) / 0.95), hsl(var(--brand-orange) / 0.95));
+  --gradient-hero: radial-gradient(1200px 600px at 80% 30%, hsl(var(--brand-orange) / 0.18) 0%, transparent 60%),
+                    linear-gradient(135deg, hsl(var(--brand-ash)), hsl(var(--brand-silver)));
+  --forge-arc-gradient: linear-gradient(90deg, hsl(var(--primary)), hsl(var(--secondary)));
+
+  /* Shadows */
+  --shadow-elevated: 0 8px 24px hsl(var(--color-primary) / 0.15);
+  --shadow-glow: 0 10px 30px -10px hsl(var(--color-primary) / 0.35);
+
+  /* Radii */
+  --radius-lg: 16px;
+  --radius-md: 12px;
+  --radius-sm: 8px;
+
+  /* Typography */
+  --font-sans: "Montserrat", "Inter", ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+}
+
+.dark {
+  --surface-1: 215 28% 17%;
+  --surface-2: 217 15% 22%;
+  --surface-3: 220 13% 18%;
+
+  --color-primary: 17 85% 60%; /* brighter for dark */
+  --color-primary-foreground: 215 28% 17%;
+
+  --gradient-primary: linear-gradient(90deg, hsl(var(--brand-amber) / 0.95), hsl(var(--brand-orange) / 0.95));
+  --gradient-hero: radial-gradient(1200px 600px at 80% 30%, hsl(25 80% 40% / 0.25) 0%, transparent 60%),
+                    linear-gradient(135deg, hsl(215 25% 14%), hsl(25 35% 18%));
+}
+
+/* Component-level utilities bound to tokens */
+@layer components {
+  .surface-card {
+    @apply bg-card text-card-foreground rounded-lg transition-all duration-200;
+    will-change: transform, box-shadow;
+    box-shadow: var(--shadow-elevated);
+  }
+  .surface-card:hover {
+    transform: translateY(-1px) scale(1.01);
+    box-shadow: var(--shadow-glow), 0 0 0 1px hsl(var(--color-primary) / 0.18) inset;
+  }
+  .shadow-glow { box-shadow: var(--shadow-glow); }
+  .btn-hero {
+    background-image: var(--gradient-primary);
+    color: hsl(var(--primary-foreground));
+    border: 1px solid hsl(var(--border));
+  }
+  .bg-hero {
+    background-image: var(--gradient-hero);
+  }
+  .hover-scale {
+    transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .hover-scale:hover {
+    transform: translateY(-1px) scale(1.01);
+  }
+  .text-gradient {
+    background-image: var(--gradient-primary);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  .forge-arc {
+    display: block;
+    width: 56px;
+    height: 3px;
+    border-radius: 9999px;
+    background-image: var(--forge-arc-gradient);
+  }
+
+  /* Subtle brand radial glow for the logo container (6–8% opacity) */
+  .logo-motif { position: relative; }
+  .logo-motif::before {
+    content: "";
+    position: absolute;
+    inset: -2px; /* slight bleed to avoid hard edge */
+    border-radius: 9999px;
+    background: radial-gradient(60% 60% at 50% 50%, hsl(var(--primary) / 0.08) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .dark .logo-motif::before {
+    background: radial-gradient(60% 60% at 50% 50%, hsl(var(--primary) / 0.06) 0%, transparent 70%);
+  }
+
+  /* Animated hero gradient drift */
+  .bg-hero-animated {
+    background-size: 320% 320%;
+    animation: hero-shift 18s ease-in-out infinite alternate;
+    will-change: background-position;
+  }
+
+  /* Center spotlight vignette */
+  .vignette-center {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: radial-gradient(60% 50% at 50% 40%, hsl(var(--background) / 0) 0%, hsl(var(--background) / 0.25) 60%, hsl(var(--background) / 0.65) 100%);
+  }
+
+  /* Subtle forged pattern watermark */
+  .forged-pattern {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    opacity: 0.06;
+    background-image:
+      radial-gradient(2px 2px at 20px 20px, hsl(var(--primary) / 0.35) 0, transparent 40%),
+      radial-gradient(2px 2px at 60px 60px, hsl(var(--primary) / 0.25) 0, transparent 40%);
+    background-size: 80px 80px;
+    mix-blend-mode: overlay;
+  }
+  .dark .forged-pattern { opacity: 0.045; }
+
+  /* Gentle pulse/glow for the logo container */
+  .pulse-glow { animation: pulse-glow 3.2s ease-in-out infinite; }
+
+  /* Button ripple micro-interaction */
+  .btn-ripple { position: relative; overflow: hidden; }
+  .btn-ripple::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 140px;
+    height: 140px;
+    transform: translate(-50%, -50%) scale(0);
+    border-radius: 9999px;
+    background: radial-gradient(circle, hsl(var(--primary) / 0.35) 0%, transparent 60%);
+    opacity: 0;
+  }
+  .btn-ripple:active::after { animation: btn-ripple 450ms ease-out; }
+
+  /* Glassy hero panel with subtle brand glow */
+  .panel-hero {
+    border-radius: var(--radius-lg, 16px);
+    background: hsl(var(--card) / 0.6);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid hsl(var(--border) / 0.6);
+    box-shadow:
+      0 0 0 1px hsl(var(--color-primary) / 0.10) inset,
+      0 12px 36px -12px hsl(var(--color-primary) / 0.28);
+    transition: box-shadow 200ms ease, transform 200ms ease, background-color 200ms ease;
+    will-change: transform, box-shadow;
+  }
+  .panel-hero:hover {
+    box-shadow:
+      0 0 0 1px hsl(var(--color-primary) / 0.16) inset,
+      0 16px 44px -12px hsl(var(--color-primary) / 0.35);
+    transform: translateY(-1px) scale(1.01);
+  }
+
+  /* Soft hover glow utility */
+  .hover-glow:hover { box-shadow: var(--shadow-glow); }
+
+  /* Overshoot feedback */
+  .animate-jiggle { animation: jiggle 180ms cubic-bezier(0.36, 0.07, 0.19, 0.97); }
+
+  /* Outline CTA that inverts to gradient on hover */
+  .cta-outline-invert {
+    color: hsl(var(--primary));
+    background: transparent;
+    border: 1px solid hsl(var(--border));
+    transition: color 200ms ease, background 200ms ease, box-shadow 200ms ease, border-color 200ms ease;
+  }
+  .cta-outline-invert:hover {
+    background-image: var(--gradient-primary);
+    color: hsl(var(--foreground));
+    border-color: transparent;
+    box-shadow: var(--shadow-glow);
+  }
+
+  /* Staged entrance utilities */
+  .fade-in-up {
+    animation: fade-in-up 280ms cubic-bezier(0.4, 0, 0.2, 1) both;
+    will-change: opacity, transform;
+  }
+  .anim-delay-200 { animation-delay: 180ms; }
+
+  /* Ambient breathing for logo glow */
+  .logo-motif.pulse-ambient::before {
+    animation: ambient-glow 4.8s ease-in-out infinite;
+  }
+
+  /* Subtle idle motion for the logo mark */
+  .gear-idle {
+    display: inline-block;
+    transform-origin: 50% 50%;
+    animation: gear-idle 12s ease-in-out 0.6s infinite;
+    will-change: transform;
+  }
+
+  /* Cinematic ambient light sweep layer */
+  .bg-light-sweep { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+  .bg-light-sweep::before {
+    content: "";
+    position: absolute;
+    inset: -15%;
+    background:
+      radial-gradient(42% 42% at 30% 20%, hsl(var(--primary) / 0.10) 0%, transparent 60%),
+      radial-gradient(36% 36% at 70% 80%, hsl(var(--primary) / 0.06) 0%, transparent 65%);
+    opacity: 0.8;
+    animation: light-sweep 10s ease-in-out infinite;
+    will-change: transform, opacity;
+  }
+
+}
+
+/* Keyframes for hero and interactions */
+@keyframes hero-shift {
+  0% { background-position: 0% 0%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 100%; }
+}
+
+@keyframes pulse-glow {
+  0% { box-shadow: 0 0 0 0 hsl(var(--primary) / 0.35), 0 8px 24px hsl(var(--primary) / 0.18); }
+  70% { box-shadow: 0 0 0 14px hsl(var(--primary) / 0); }
+  100% { box-shadow: 0 0 0 0 hsl(var(--primary) / 0); }
+}
+
+@keyframes btn-ripple {
+  0% { transform: translate(-50%, -50%) scale(0); opacity: 0.45; }
+  100% { transform: translate(-50%, -50%) scale(2.6); opacity: 0; }
+}
+
+/* New keyframes */
+@keyframes fade-in-up {
+  0% { opacity: 0; transform: translateY(8px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes gear-idle {
+  0% { transform: rotate(0deg); }
+  50% { transform: rotate(2deg); }
+  100% { transform: rotate(0deg); }
+}
+
+@keyframes ambient-glow {
+  0%, 100% { opacity: 0.6; filter: blur(18px); }
+  50% { opacity: 0.85; filter: blur(22px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fade-in-up,
+  .gear-idle,
+  .logo-motif.pulse-ambient::before,
+  .bg-light-sweep::before { animation: none !important; }
+}
+@keyframes slow-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes light-sweep {
+  0% { transform: translate(-8%, -4%) rotate(0.001deg); opacity: 0.55; }
+  50% { transform: translate(8%, 4%) rotate(0.001deg); opacity: 0.95; }
+  100% { transform: translate(-8%, -4%) rotate(0.001deg); opacity: 0.55; }
+}
+
+/* Jiggle micro-animation for input overshoot */
+@keyframes jiggle {
+  0% { transform: translateX(0); }
+  20% { transform: translateX(-3px); }
+  40% { transform: translateX(3px); }
+  60% { transform: translateX(-2px); }
+  80% { transform: translateX(2px); }
+  100% { transform: translateX(0); }
+}

@@ -194,6 +194,31 @@
     box-shadow: var(--shadow-glow);
   }
 
+  /* Forge Animation Utilities */
+  .forge-background {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    opacity: 0.2;
+  }
+
+  .hammer-animation {
+    animation: hammer-strike 3s ease-in-out infinite;
+    transform-origin: bottom right;
+  }
+
+  .anvil-glow {
+    animation: anvil-glow 3s ease-in-out infinite;
+  }
+
+  .spark-particle {
+    animation: spark-burst 1.5s ease-out infinite;
+  }
+
+  .forge-ember {
+    animation: forge-ember 4s ease-in-out infinite;
+  }
+
   /* Staged entrance utilities */
   .fade-in-up {
     animation: fade-in-up 280ms cubic-bezier(0.4, 0, 0.2, 1) both;
@@ -290,4 +315,27 @@
   60% { transform: translateX(-2px); }
   80% { transform: translateX(2px); }
   100% { transform: translateX(0); }
+}
+
+/* Forge Animation Keyframes */
+@keyframes hammer-strike {
+  0%, 85%, 100% { transform: translateY(0) rotate(-15deg); }
+  15% { transform: translateY(-12px) rotate(-25deg); }
+  25% { transform: translateY(8px) rotate(-5deg); }
+}
+
+@keyframes anvil-glow {
+  0%, 85%, 100% { filter: brightness(1) drop-shadow(0 0 0 transparent); }
+  25%, 30% { filter: brightness(1.3) drop-shadow(0 0 20px hsl(var(--brand-amber) / 0.6)); }
+}
+
+@keyframes spark-burst {
+  0% { opacity: 0; transform: scale(0) translateY(0); }
+  20% { opacity: 1; transform: scale(1) translateY(-8px); }
+  100% { opacity: 0; transform: scale(0.2) translateY(-24px); }
+}
+
+@keyframes forge-ember {
+  0%, 100% { opacity: 0.3; transform: translateY(0) scale(1); }
+  50% { opacity: 0.8; transform: translateY(-4px) scale(1.1); }
 }

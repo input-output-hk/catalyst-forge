@@ -12,7 +12,7 @@ deps:
     ENV GOMODCACHE=/go/modcache
     CACHE --persist --sharing shared /go
 
-    COPY ../foundry/api+src/src /foundry/api
+    COPY ../services/api+src/src /services/api
     COPY ../lib/deployment+src/src /lib/deployment
     COPY ../lib/external/helm+src/src /lib/external/helm
     COPY ../lib/external/kcl+src/src /lib/external/kcl

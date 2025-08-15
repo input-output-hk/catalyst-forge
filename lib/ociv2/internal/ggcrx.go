@@ -10,7 +10,7 @@ import (
 
 	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/google/go-containerregistry/pkg/name"
-	"github.com/google/go-containerregistry/pkg/v1"
+	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/go-containerregistry/pkg/v1/empty"
 	"github.com/google/go-containerregistry/pkg/v1/mutate"
 	"github.com/google/go-containerregistry/pkg/v1/remote"
@@ -34,7 +34,7 @@ func NewGGCRClient(plainHTTP bool, userAgent string, authFunc func() (authn.Auth
 	if httpClient == nil {
 		httpClient = http.DefaultClient
 	}
-	
+
 	return &GGCRClient{
 		plainHTTP: plainHTTP,
 		userAgent: userAgent,
@@ -48,31 +48,31 @@ func (c *GGCRClient) getRemoteOptions(ctx context.Context) []remote.Option {
 	opts := []remote.Option{
 		remote.WithContext(ctx),
 	}
-	
+
 	// Add auth
 	if c.auth != nil {
 		if auth, err := c.auth(); err == nil && auth != nil {
 			opts = append(opts, remote.WithAuth(auth))
 		}
 	}
-	
+
 	// Add transport with user agent
 	if c.userAgent != "" {
 		opts = append(opts, remote.WithUserAgent(c.userAgent))
 	}
-	
+
 	// Add HTTP client
 	if c.client != nil {
 		opts = append(opts, remote.WithTransport(c.client.Transport))
 	}
-	
+
 	// Handle plain HTTP
 	if c.plainHTTP {
 		opts = append(opts, remote.WithTransport(&plainHTTPTransport{
 			base: c.client.Transport,
 		}))
 	}
-	
+
 	return opts
 }
 
@@ -83,45 +83,45 @@ func (c *GGCRClient) PushJSONLayer(ctx context.Context, ref string, mediaType st
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse reference: %w", err)
 	}
-	
+
 	// Create empty image
 	img := empty.Image
-	
+
 	// Add JSON as a layer
 	layer := static.NewLayer(payload, types.MediaType(mediaType))
 	img, err = mutate.AppendLayers(img, layer)
 	if err != nil {
 		return nil, fmt.Errorf("failed to add layer: %w", err)
 	}
-	
+
 	// Set annotations on the image
 	if len(annotations) > 0 {
 		img = mutate.Annotations(img, annotations).(v1.Image)
 	}
-	
+
 	// Push the image
 	opts := c.getRemoteOptions(ctx)
 	if err := remote.Write(r, img, opts...); err != nil {
 		return nil, mapGGCRError(err)
 	}
-	
+
 	// Get the digest
 	d, err := img.Digest()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get digest: %w", err)
 	}
-	
+
 	// Get manifest to extract size
 	manifest, err := img.Manifest()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get manifest: %w", err)
 	}
-	
+
 	manifestJSON, err := json.Marshal(manifest)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal manifest: %w", err)
 	}
-	
+
 	return &ocispec.Descriptor{
 		MediaType:   string(types.OCIManifestSchema1),
 		Digest:      digest.Digest(d.String()),
@@ -137,65 +137,65 @@ func (c *GGCRClient) PushConfigAndLayer(ctx context.Context, ref string, cfg []b
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse reference: %w", err)
 	}
-	
+
 	// Read tar data
 	tarData, err := io.ReadAll(tar)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read tar: %w", err)
 	}
-	
+
 	// Create base image with custom config
 	configFile := &v1.ConfigFile{
 		Config: v1.Config{
 			Labels: annotations,
 		},
 	}
-	
+
 	// Create image with config
 	img, err := mutate.ConfigFile(empty.Image, configFile)
 	if err != nil {
 		return nil, fmt.Errorf("failed to set config: %w", err)
 	}
-	
+
 	// Add tar as layer
 	layer := static.NewLayer(tarData, types.MediaType(layerMT))
 	img, err = mutate.AppendLayers(img, layer)
 	if err != nil {
 		return nil, fmt.Errorf("failed to add layer: %w", err)
 	}
-	
+
 	// Set media types
 	img = mutate.MediaType(img, types.OCIManifestSchema1)
 	img = mutate.ConfigMediaType(img, types.MediaType(cfgMT))
-	
+
 	// Set annotations
 	if len(annotations) > 0 {
 		img = mutate.Annotations(img, annotations).(v1.Image)
 	}
-	
+
 	// Push the image
 	opts := c.getRemoteOptions(ctx)
 	if err := remote.Write(r, img, opts...); err != nil {
 		return nil, mapGGCRError(err)
 	}
-	
+
 	// Get the digest
 	d, err := img.Digest()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get digest: %w", err)
 	}
-	
+
 	// Get manifest size
 	manifest, err := img.Manifest()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get manifest: %w", err)
 	}
-	
+
 	manifestJSON, err := json.Marshal(manifest)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal manifest: %w", err)
 	}
-	
+
 	return &ocispec.Descriptor{
 		MediaType:   string(types.OCIManifestSchema1),
 		Digest:      digest.Digest(d.String()),
@@ -211,20 +211,20 @@ func (c *GGCRClient) PullJSONLayer(ctx context.Context, ref string, wantMT strin
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to parse reference: %w", err)
 	}
-	
+
 	// Get the image
 	opts := c.getRemoteOptions(ctx)
 	img, err := remote.Image(r, opts...)
 	if err != nil {
 		return nil, nil, mapGGCRError(err)
 	}
-	
+
 	// Get layers
 	layers, err := img.Layers()
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to get layers: %w", err)
 	}
-	
+
 	// Find the layer with matching media type or get the first layer
 	var targetLayer v1.Layer
 	for _, layer := range layers {
@@ -232,56 +232,56 @@ func (c *GGCRClient) PullJSONLayer(ctx context.Context, ref string, wantMT strin
 		if err != nil {
 			continue
 		}
-		
+
 		if wantMT == "" || string(mt) == wantMT {
 			targetLayer = layer
 			break
 		}
 	}
-	
+
 	if targetLayer == nil && len(layers) > 0 {
 		// Fallback to first layer if no match
 		targetLayer = layers[0]
 	}
-	
+
 	if targetLayer == nil {
 		return nil, nil, fmt.Errorf("no layers found")
 	}
-	
+
 	// Get layer content
 	rc, err := targetLayer.Uncompressed()
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to get layer content: %w", err)
 	}
-	defer rc.Close()
-	
+	defer func() { _ = rc.Close() }()
+
 	data, err := io.ReadAll(rc)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to read layer: %w", err)
 	}
-	
+
 	// Get manifest for descriptor
 	d, err := img.Digest()
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to get digest: %w", err)
 	}
-	
+
 	manifest, err := img.Manifest()
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to get manifest: %w", err)
 	}
-	
+
 	manifestJSON, err := json.Marshal(manifest)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to marshal manifest: %w", err)
 	}
-	
+
 	// Get annotations
 	annotations := make(map[string]string)
 	if manifest.Annotations != nil {
 		annotations = manifest.Annotations
 	}
-	
+
 	return data, &ocispec.Descriptor{
 		MediaType:   string(manifest.MediaType),
 		Digest:      digest.Digest(d.String()),
@@ -297,20 +297,20 @@ func (c *GGCRClient) PullLayer(ctx context.Context, ref string, layerMT string) 
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to parse reference: %w", err)
 	}
-	
+
 	// Get the image
 	opts := c.getRemoteOptions(ctx)
 	img, err := remote.Image(r, opts...)
 	if err != nil {
 		return nil, nil, mapGGCRError(err)
 	}
-	
+
 	// Get layers
 	layers, err := img.Layers()
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to get layers: %w", err)
 	}
-	
+
 	// Find the layer with matching media type
 	var targetLayer v1.Layer
 	for _, layer := range layers {
@@ -318,48 +318,48 @@ func (c *GGCRClient) PullLayer(ctx context.Context, ref string, layerMT string) 
 		if err != nil {
 			continue
 		}
-		
+
 		if string(mt) == layerMT {
 			targetLayer = layer
 			break
 		}
 	}
-	
+
 	if targetLayer == nil {
 		return nil, nil, fmt.Errorf("layer with media type %s not found", layerMT)
 	}
-	
+
 	// Get layer content
 	rc, err := targetLayer.Compressed()
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to get layer content: %w", err)
 	}
-	
+
 	// Get manifest for descriptor
 	d, err := img.Digest()
 	if err != nil {
-		rc.Close()
+		_ = rc.Close()
 		return nil, nil, fmt.Errorf("failed to get digest: %w", err)
 	}
-	
+
 	manifest, err := img.Manifest()
 	if err != nil {
-		rc.Close()
+		_ = rc.Close()
 		return nil, nil, fmt.Errorf("failed to get manifest: %w", err)
 	}
-	
+
 	manifestJSON, err := json.Marshal(manifest)
 	if err != nil {
-		rc.Close()
+		_ = rc.Close()
 		return nil, nil, fmt.Errorf("failed to marshal manifest: %w", err)
 	}
-	
+
 	// Get annotations
 	annotations := make(map[string]string)
 	if manifest.Annotations != nil {
 		annotations = manifest.Annotations
 	}
-	
+
 	return rc, &ocispec.Descriptor{
 		MediaType:   string(manifest.MediaType),
 		Digest:      digest.Digest(d.String()),
@@ -375,14 +375,14 @@ func (c *GGCRClient) Head(ctx context.Context, ref string) (*ocispec.Descriptor,
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse reference: %w", err)
 	}
-	
+
 	// Get descriptor using HEAD
 	opts := c.getRemoteOptions(ctx)
 	desc, err := remote.Head(r, opts...)
 	if err != nil {
 		return nil, mapGGCRError(err)
 	}
-	
+
 	return &ocispec.Descriptor{
 		MediaType:   string(desc.MediaType),
 		Digest:      digest.Digest(desc.Digest.String()),
@@ -398,14 +398,14 @@ func (c *GGCRClient) Resolve(ctx context.Context, ref string) (*ocispec.Descript
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse reference: %w", err)
 	}
-	
+
 	// Get the descriptor
 	opts := c.getRemoteOptions(ctx)
 	desc, err := remote.Get(r, opts...)
 	if err != nil {
 		return nil, mapGGCRError(err)
 	}
-	
+
 	return &ocispec.Descriptor{
 		MediaType:   string(desc.MediaType),
 		Digest:      digest.Digest(desc.Digest.String()),
@@ -424,12 +424,12 @@ func (t *plainHTTPTransport) RoundTrip(req *http.Request) (*http.Response, error
 	if req.URL.Scheme == "https" {
 		req.URL.Scheme = "http"
 	}
-	
+
 	base := t.base
 	if base == nil {
 		base = http.DefaultTransport
 	}
-	
+
 	return base.RoundTrip(req)
 }
 
@@ -438,7 +438,7 @@ func mapGGCRError(err error) error {
 	if err == nil {
 		return nil
 	}
-	
+
 	// Check for transport errors
 	var transportErr *transport.Error
 	if errors.As(err, &transportErr) {
@@ -453,7 +453,7 @@ func mapGGCRError(err error) error {
 			return ErrTimeout
 		}
 	}
-	
+
 	// Check error messages
 	errStr := err.Error()
 	if contains(errStr, "not found") {
@@ -474,6 +474,6 @@ func mapGGCRError(err error) error {
 	if contains(errStr, "NAME_UNKNOWN") {
 		return ErrNotFound
 	}
-	
+
 	return err
 }

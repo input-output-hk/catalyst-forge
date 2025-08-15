@@ -114,7 +114,9 @@ func (c *ORASClient) PushConfigOnly(ctx context.Context, ref string, registryHos
 		return nil, mapORASError(err)
 	}
 	
-	return &manifestDesc, nil
+	// Return the config descriptor for backwards compatibility
+	// PushJSON is expected to return the descriptor of the pushed JSON content
+	return &configDesc, nil
 }
 
 // PushConfigAndLayer pushes config + tar layer as an artifact
@@ -213,11 +215,17 @@ func (c *ORASClient) PullConfig(ctx context.Context, ref string, registryHost st
 		return nil, nil, mapORASError(err)
 	}
 	
+	// Return the config descriptor for consistency with PushConfigOnly
+	// This ensures PushJSON and PullJSON return matching descriptors
 	desc := &ocispec.Descriptor{
-		MediaType:   manifestDesc.MediaType,
-		Digest:      manifestDesc.Digest,
-		Size:        manifestDesc.Size,
-		Annotations: manifest.Annotations,
+		MediaType:   manifest.Config.MediaType,
+		Digest:      manifest.Config.Digest,
+		Size:        manifest.Config.Size,
+		Annotations: manifest.Config.Annotations,
+	}
+	if desc.Annotations == nil && manifest.Annotations != nil {
+		// If config has no annotations, use manifest annotations
+		desc.Annotations = manifest.Annotations
 	}
 	
 	return configData, desc, nil

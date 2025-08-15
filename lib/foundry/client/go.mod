@@ -17,7 +17,7 @@ require (
 	golang.org/x/sys v0.29.0 // indirect
 )
 
-replace github.com/input-output-hk/catalyst-forge/foundry/api => ../../../foundry/api
+replace github.com/input-output-hk/catalyst-forge/services/api => ../../../services/api
 
 replace github.com/input-output-hk/catalyst-forge/lib/tools => ../../tools
 

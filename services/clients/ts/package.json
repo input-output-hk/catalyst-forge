@@ -1,0 +1,72 @@
+{
+  "name": "@catalyst-forge/foundry-client",
+  "version": "0.1.0",
+  "description": "TypeScript client for Foundry API",
+  "main": "dist/index.js",
+  "module": "dist/index.mjs",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist",
+    "src"
+  ],
+  "scripts": {
+    "generate": "swagger2openapi -o /tmp/foundry_openapi3.yaml ../../api/docs/swagger.yaml && openapi-typescript /tmp/foundry_openapi3.yaml -o src/api/schema.d.ts",
+    "build": "tsup src/index.ts --format cjs,esm --dts --clean",
+    "dev": "tsup src/index.ts --format cjs,esm --dts --watch",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "check": "npm run generate && git diff --exit-code src/api/schema.d.ts",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src",
+    "format": "prettier --write \"src/**/*.{ts,tsx,js,jsx,json,md}\"",
+    "format:check": "prettier --check \"src/**/*.{ts,tsx,js,jsx,json,md}\""
+  },
+  "keywords": [
+    "foundry",
+    "api",
+    "client",
+    "typescript",
+    "openapi"
+  ],
+  "author": "Catalyst Forge",
+  "license": "MIT",
+  "dependencies": {
+    "openapi-fetch": "^0.13.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.5",
+    "@typescript-eslint/eslint-plugin": "^8.19.1",
+    "@typescript-eslint/parser": "^8.19.1",
+    "eslint": "^9.18.0",
+    "openapi-typescript": "^7.4.4",
+    "swagger2openapi": "^7.0.8",
+    "prettier": "^3.4.2",
+    "tsup": "^8.3.5",
+    "typescript": "^5.7.3",
+    "vitest": "^2.1.8"
+  },
+  "optionalDependencies": {
+    "@tanstack/react-query": "^5.65.0",
+    "openapi-react-query": "^0.2.4"
+  },
+  "peerDependencies": {
+    "@tanstack/react-query": "^5.0.0",
+    "react": "^18.0.0"
+  },
+  "peerDependenciesMeta": {
+    "@tanstack/react-query": {
+      "optional": true
+    },
+    "react": {
+      "optional": true
+    }
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/catalyst-forge/foundry.git",
+    "directory": "services/clients/ts"
+  }
+}

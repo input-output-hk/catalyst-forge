@@ -3,6 +3,7 @@ import { Helmet } from "react-helmet-async";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { LogoMark } from "@/components/brand/LogoMark";
+import { ForgeAnimation } from "@/components/brand/ForgeAnimation";
 import { BRAND } from "@/lib/brand";
 import { preloadAuthFlows } from "@/lib/preloaders";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
@@ -106,6 +107,9 @@ export default function Landing() {
 
       {/* Vignette spotlight */}
       <div className="absolute inset-0 vignette-center" aria-hidden="true" />
+
+      {/* Animated forge background */}
+      <ForgeAnimation className="z-0" />
 
       <main className="relative z-10 flex min-h-screen items-center justify-center px-4">
         <section

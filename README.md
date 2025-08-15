@@ -100,7 +100,7 @@ go build -o forge ./cmd
 
 ### Reference
 - **[CLI Reference](cli/)** - Command-line interface documentation
-- **[API Reference](foundry/api/)** - REST API documentation
+- **[API Reference](services/api/)** - REST API documentation
 - **[Blueprint Reference](docs/reference/blueprint.md)** - Configuration schema reference
 - **[Deployment Reference](docs/reference/deployments.md)** - Deployment configuration guide
 

@@ -369,15 +369,21 @@ func GetErrorCategory(err error) ErrorCategory {
 		return ociErr.Category
 	}
 	
-	// Classify based on error type
+	// Check error message for common patterns
+	errStr := err.Error()
+	
+	// Classify based on error type or message
 	switch {
-	case errors.Is(err, ErrUnauthorized), errors.Is(err, ErrForbidden):
+	case errors.Is(err, ErrUnauthorized), errors.Is(err, ErrForbidden),
+		strings.Contains(errStr, "unauthorized"), strings.Contains(errStr, "forbidden"):
 		return ErrorCategoryAuth
-	case errors.Is(err, ErrTimeout), errors.Is(err, context.DeadlineExceeded):
+	case errors.Is(err, ErrTimeout), errors.Is(err, context.DeadlineExceeded),
+		strings.Contains(errStr, "timeout"):
 		return ErrorCategoryNetwork
 	case errors.Is(err, ErrInvalidRef), errors.Is(err, ErrInsecureRef):
 		return ErrorCategoryValidation
-	case errors.Is(err, ErrNotFound), errors.Is(err, ErrUnsupported):
+	case errors.Is(err, ErrNotFound), errors.Is(err, ErrUnsupported),
+		strings.Contains(errStr, "not found"), strings.Contains(errStr, "NAME_UNKNOWN"):
 		return ErrorCategoryRegistry
 	default:
 		return ErrorCategoryUnknown

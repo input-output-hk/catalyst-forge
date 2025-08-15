@@ -62,7 +62,7 @@ All generated manifests will be printed to `stdout` and can be redirected to a l
 The below example shows what it looks like to generate the raw manifests for the Foundry API server:
 
 ```text
-$ forge deploy template foundry/api
+$ forge deploy template services/api
 ---
 # Instance: foundry-api
 ---
