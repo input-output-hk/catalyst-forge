@@ -123,6 +123,20 @@ func DocAuthMePatch(c *gin.Context) {}
 // @Router /api/v1/auth/session [get]
 func DocAuthSession(c *gin.Context) {}
 
+// @Summary List active sessions
+// @Tags auth
+// @Produce json
+// @Success 200 {object} auth.SessionsListResponse
+// @Router /api/v1/auth/sessions [get]
+func DocAuthSessionsList(c *gin.Context) {}
+
+// @Summary Revoke a session
+// @Tags auth
+// @Param family_id path string true "Family ID"
+// @Success 204
+// @Router /api/v1/auth/sessions/{family_id} [delete]
+func DocAuthSessionsDelete(c *gin.Context) {}
+
 // @Summary Onboard begin
 // @Tags auth
 // @Accept json
@@ -338,6 +352,10 @@ func DocAdminInviteCreate(c *gin.Context) {}
 // @Summary List users (admin)
 // @Tags admin
 // @Produce json
+// @Param q query string false "Search query (email or ID)"
+// @Param role query string false "Filter by role (admin|member)"
+// @Param limit query integer false "Max results (1-200)" default(50)
+// @Param offset query integer false "Offset for pagination" default(0)
 // @Success 200 {object} auth.AdminUsersListResponse
 // @Router /api/v1/admin/users [get]
 func DocAdminUsersList(c *gin.Context) {}
@@ -375,6 +393,10 @@ func DocAdminAuditList(c *gin.Context) {}
 // @Summary List access requests (admin)
 // @Tags admin
 // @Produce json
+// @Param status query string false "Filter by status (pending|approved|rejected)"
+// @Param q query string false "Search query (email or reason)"
+// @Param limit query integer false "Max results (1-200)" default(50)
+// @Param offset query integer false "Offset for pagination" default(0)
 // @Success 200 {object} auth.AccessRequestListResponse
 // @Router /api/v1/admin/access-requests [get]
 func DocAdminAccessRequestsList(c *gin.Context) {}

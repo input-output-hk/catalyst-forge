@@ -1,5 +1,12 @@
 import { useEffect, useState } from "react";
-import { getKpis, getEnvironments, getActivity, type Kpi, type EnvHealth, type ActivityItem } from "@/lib/mock/dashboard";
+import {
+  getKpis,
+  getEnvironments,
+  getActivity,
+  type Kpi,
+  type EnvHealth,
+  type ActivityItem,
+} from "@/lib/mock/dashboard";
 import { withLatency } from "@/mocks/latency";
 
 export function useDashboardData() {
@@ -9,7 +16,6 @@ export function useDashboardData() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    let timer: number | undefined;
     let mounted = true;
 
     async function load() {
@@ -24,7 +30,7 @@ export function useDashboardData() {
 
     load();
     // refresh every 15s
-    timer = window.setInterval(() => {
+    const timerId = window.setInterval(() => {
       setKpis(getKpis());
       setEnvs(getEnvironments());
       setActivity(getActivity());
@@ -32,7 +38,7 @@ export function useDashboardData() {
 
     return () => {
       mounted = false;
-      if (timer) window.clearInterval(timer);
+      window.clearInterval(timerId);
     };
   }, []);
 

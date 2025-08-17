@@ -36,8 +36,8 @@ export function getAccessToken(): string | null {
 export function getApiBaseUrl(): string {
   const importMeta = import.meta as unknown as {
     env?: {
-      VITE_API_URL?: string
-    }
+      VITE_API_URL?: string;
+    };
   };
 
   const envUrl = importMeta.env?.VITE_API_URL;
@@ -68,7 +68,7 @@ export async function apiFetch(
   const requestOptions: RequestInit = {
     ...init,
     headers,
-    credentials: "include"
+    credentials: "include",
   };
 
   return fetch(input, requestOptions);
@@ -87,16 +87,12 @@ export function readCookie(name: string): string | null {
     const equalIndex = cookie.indexOf("=");
     const hasValue = equalIndex > -1;
 
-    const cookieName = hasValue
-      ? cookie.substring(0, equalIndex)
-      : cookie;
+    const cookieName = hasValue ? cookie.substring(0, equalIndex) : cookie;
 
     const decodedName = decodeURIComponent(cookieName);
 
     if (decodedName === name) {
-      const cookieValue = hasValue
-        ? cookie.substring(equalIndex + 1)
-        : "";
+      const cookieValue = hasValue ? cookie.substring(equalIndex + 1) : "";
 
       return decodeURIComponent(cookieValue);
     }
@@ -117,7 +113,7 @@ export async function refreshAccessToken(): Promise<string | null> {
 
     // Build headers with CSRF token if available
     const headers: HeadersInit = {
-      "content-type": "application/json"
+      "content-type": "application/json",
     };
 
     if (csrfToken) {
@@ -137,8 +133,8 @@ export async function refreshAccessToken(): Promise<string | null> {
     }
 
     // Parse response and extract token
-    const responseData = await response.json().catch(() => null) as {
-      access_token?: string
+    const responseData = (await response.json().catch(() => null)) as {
+      access_token?: string;
     } | null;
 
     if (!responseData || typeof responseData.access_token !== "string") {
@@ -150,7 +146,6 @@ export async function refreshAccessToken(): Promise<string | null> {
     setAccessToken(newToken);
 
     return newToken;
-
   } catch {
     return null;
   }
@@ -262,12 +257,8 @@ export async function readResponseError(
     }
 
     return defaultMessage || `${response.status}`;
-
   } catch {
     // If reading response fails, return default or status
     return defaultMessage || `${response.status}`;
   }
 }
-
-
-

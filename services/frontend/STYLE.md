@@ -122,13 +122,53 @@ if (canEditResource(user, resource)) {
 }
 ```
 
-### 6. Comments and Documentation
+### 6. Code Organization and Reuse
+- **Always check `src/lib` BEFORE writing new code** to avoid duplication
+- Move reusable helper functions to appropriate modules in `src/lib`
+- Never duplicate utility functions across components or pages
+- Organize shared code by domain (e.g., `lib/auth/`, `lib/api/`, `lib/utils/`)
+
+**Bad:**
+```typescript
+// In Profile.tsx
+function formatDate(date: Date): string {
+  return new Intl.DateTimeFormat('en-US').format(date);
+}
+
+// In Dashboard.tsx (duplicated)
+function formatDate(date: Date): string {
+  return new Intl.DateTimeFormat('en-US').format(date);
+}
+```
+
+**Good:**
+```typescript
+// In lib/utils/date.ts
+export function formatDate(date: Date): string {
+  return new Intl.DateTimeFormat('en-US').format(date);
+}
+
+// In Profile.tsx
+import { formatDate } from '@/lib/utils/date';
+
+// In Dashboard.tsx
+import { formatDate } from '@/lib/utils/date';
+```
+
+**Code Organization Checklist:**
+1. Before implementing any utility function, search `src/lib` for existing implementations
+2. If a function is used in more than one file, it belongs in `src/lib`
+3. Group related utilities together in domain-specific modules
+4. Document exported functions with JSDoc comments
+5. Keep page/component files focused on UI logic, not utility functions
+
+### 7. Comments and Documentation
 - Code should be self-documenting through clear naming
 - Comments explain "why", not "what"
 - Complex business logic deserves a comment explaining the intent
 - Remove commented-out code - version control preserves history
 
-### 7. Consistent Formatting
+### 8. Consistent Formatting
 - Use consistent indentation (2 spaces for TypeScript/JavaScript)
 - Add blank lines between logical sections
 - Group related declarations together
@@ -151,6 +191,107 @@ if (canEditResource(user, resource)) {
 - Prefer explicit types over 'any'
 - Use proper generics instead of type assertions where possible
 - Define domain types in dedicated type files
+
+### OpenAPI Generated Types (CRITICAL)
+**ALWAYS use the types generated from the OpenAPI specification. NEVER bypass or cast around them.**
+
+#### Mandatory Rules for Generated Types
+1. **Use generated types from `forge-client` for ALL API interactions**
+2. **NEVER cast or bypass generated types** - they are the source of truth
+3. **If generated types are wrong, FIX THE API** - update Swagger definitions in the backend
+4. **NO WORKAROUNDS** - incorrect types indicate an API contract violation
+
+#### Examples
+
+**ABSOLUTELY FORBIDDEN:**
+```typescript
+// NEVER DO THIS - bypassing generated types
+const response = await forge.GET('/api/users');
+const users = response.data as any; // ❌ FORBIDDEN
+
+// NEVER DO THIS - casting around incorrect types
+const data = response.data as unknown as MyCustomType; // ❌ FORBIDDEN
+
+// NEVER DO THIS - creating duplicate type definitions
+interface User { // ❌ FORBIDDEN if this exists in generated types
+  id: string;
+  name: string;
+}
+```
+
+**CORRECT APPROACH:**
+```typescript
+import type { components } from 'forge-client';
+
+// Use the generated types directly
+type User = components['schemas']['User'];
+type GetUsersResponse = components['schemas']['GetUsersResponse'];
+
+const response = await forge.GET('/api/users');
+if (response.data) {
+  // response.data is already correctly typed from OpenAPI
+  const users = response.data; // ✅ CORRECT
+}
+```
+
+#### When Types Don't Match Reality
+
+If the generated types don't match the actual API response:
+
+1. **STOP** - Do not proceed with workarounds
+2. **FIX THE API** - Update the Swagger/OpenAPI definitions in the backend
+3. **REGENERATE** - Run the type generation to get updated types
+4. **VERIFY** - Ensure the types now match the actual API behavior
+
+**The Process:**
+```bash
+# 1. Fix the API swagger definitions (in ../api/*)
+# 2. Regenerate the client types
+npm run generate:client  # or appropriate command
+# 3. Use the updated types in your code
+```
+
+#### Why This Matters
+- **Type safety** - The OpenAPI spec IS the contract
+- **Consistency** - One source of truth for API types
+- **Maintainability** - Changes to API are automatically reflected
+- **Documentation** - Generated types serve as living documentation
+- **Debugging** - Type mismatches catch API breaking changes immediately
+
+**Remember:** If you're tempted to cast around generated types, you're identifying a bug in the API specification that MUST be fixed at the source.
+
+## Code Quality Enforcement
+
+### All Code Changes MUST Pass Quality Checks
+**Code changes are NOT complete until all formatting and linting checks pass.**
+
+Before considering any code change complete, you MUST run and pass:
+```bash
+npm run check-all
+```
+
+This ensures:
+- **TypeScript compilation** succeeds (`npm run typecheck`)
+- **ESLint** passes with no errors (`npm run lint`)
+- **Prettier formatting** is applied (`npm run format:check`)
+
+#### Quick Fix Commands
+```bash
+# Fix all issues automatically
+npm run fix-all
+
+# Individual fix commands
+npm run format      # Fix formatting issues
+npm run lint:fix    # Fix auto-fixable lint issues
+```
+
+#### Pre-Commit Checklist
+1. ✅ Run `npm run check-all` - must pass with no errors
+2. ✅ Fix any ESLint errors (warnings are acceptable but should be minimized)
+3. ✅ Apply Prettier formatting to all changed files
+4. ✅ Ensure TypeScript compilation succeeds
+
+**Important:** Code with formatting or linting errors is considered broken code. Always run checks before completing any task.
 
 ## The Refactoring Test
 When reviewing or refactoring code, ask yourself:

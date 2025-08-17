@@ -36,9 +36,14 @@ export const LogViewer = ({ run }: { run: JobRun }) => {
           {paused ? <Play className="mr-2 h-4 w-4" /> : <Pause className="mr-2 h-4 w-4" />}
           {paused ? "Resume" : "Pause"}
         </Button>
-        <Button size="sm" variant="outline" onClick={download}><Download className="mr-2 h-4 w-4" /> Download</Button>
+        <Button size="sm" variant="outline" onClick={download}>
+          <Download className="mr-2 h-4 w-4" /> Download
+        </Button>
       </div>
-      <div ref={ref} className="flex-1 overflow-auto rounded-md border bg-secondary/20 p-3 font-mono text-xs leading-relaxed">
+      <div
+        ref={ref}
+        className="flex-1 overflow-auto rounded-md border bg-secondary/20 p-3 font-mono text-xs leading-relaxed"
+      >
         {lines.length === 0 ? (
           <div className="text-muted-foreground">No logs yet…</div>
         ) : (

@@ -1,9 +1,15 @@
 import { useMemo, useState } from "react";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { useAppStore } from "@/store/app-store";
-import { keysToText } from "@/lib/recovery";
+import { keysToText } from "@/lib/auth/recovery";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Copy, Download, Printer, ShieldAlert } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -25,7 +31,11 @@ export const RecoveryKeysGate = () => {
       setInteracted(true);
       toast({ title: "Copied", description: "All recovery keys copied to clipboard." });
     } catch {
-      toast({ title: "Copy failed", description: "Could not copy to clipboard.", variant: "destructive" });
+      toast({
+        title: "Copy failed",
+        description: "Could not copy to clipboard.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -43,7 +53,9 @@ export const RecoveryKeysGate = () => {
   const onPrint = () => {
     const w = window.open("", "_blank", "noopener,noreferrer");
     if (!w) return;
-    w.document.write(`<pre style="font: 14px/1.4 ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, \"Liberation Mono\", \"Courier New\", monospace; white-space: pre-wrap;">${printable.replace(/</g, "&lt;")}</pre>`);
+    w.document.write(
+      `<pre style="font: 14px/1.4 ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace; white-space: pre-wrap;">${printable.replace(/</g, "&lt;")}</pre>`
+    );
     w.document.close();
     w.focus();
     setInteracted(true);
@@ -56,13 +68,16 @@ export const RecoveryKeysGate = () => {
     if (!canContinue) return;
     actions.completeRecoveryGate();
     setInteracted(false);
-    toast({ title: "Device registered successfully", description: "Recovery keys saved. You're all set." });
+    toast({
+      title: "Device registered successfully",
+      description: "Recovery keys saved. You're all set.",
+    });
     const dest = state.recoveryGate.returnTo || window.location.pathname;
     navigate(dest);
   };
 
   return (
-    <Dialog open={state.recoveryGate.open} onOpenChange={() => { }}>
+    <Dialog open={state.recoveryGate.open} onOpenChange={() => {}}>
       <DialogContent
         className="sm:max-w-3xl max-w-[calc(100vw-2rem)] overflow-x-hidden sm:max-h-[80vh] sm:overflow-y-auto [&>button.absolute.right-4.top-4]:hidden"
         aria-describedby="recovery-description"
@@ -75,7 +90,8 @@ export const RecoveryKeysGate = () => {
             Save these recovery keys — you will not see them again
           </DialogTitle>
           <DialogDescription id="recovery-description">
-            If you lose access to your device, these keys are the only way to sign in. Treat them like passwords. Store them somewhere safe.
+            If you lose access to your device, these keys are the only way to sign in. Treat them
+            like passwords. Store them somewhere safe.
           </DialogDescription>
         </DialogHeader>
 
@@ -83,7 +99,10 @@ export const RecoveryKeysGate = () => {
           <section>
             <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3">
               {keys.map((k, i) => (
-                <div key={i} className="rounded-md border border-input bg-muted/60 shadow-sm px-3 py-2 min-h-16 min-w-0">
+                <div
+                  key={i}
+                  className="rounded-md border border-input bg-muted/60 shadow-sm px-3 py-2 min-h-16 min-w-0"
+                >
                   <div className="text-xs text-muted-foreground">Key {i + 1}</div>
                   <code className="block font-mono text-xs sm:text-sm tracking-normal sm:tracking-wider text-foreground select-text leading-6 break-all">
                     {k}
@@ -130,7 +149,10 @@ export const RecoveryKeysGate = () => {
             </Button>
           </section>
 
-          <div className="sm:hidden sticky bottom-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-t pt-3 px-4 sm:px-6" style={{ paddingBottom: 'max(env(safe-area-inset-bottom), 0.75rem)' }}>
+          <div
+            className="sm:hidden sticky bottom-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-t pt-3 px-4 sm:px-6"
+            style={{ paddingBottom: "max(env(safe-area-inset-bottom), 0.75rem)" }}
+          >
             {/* Mobile actions in sticky bar */}
             <div className="mb-3 flex gap-2 justify-center sm:hidden flex-wrap">
               <Button

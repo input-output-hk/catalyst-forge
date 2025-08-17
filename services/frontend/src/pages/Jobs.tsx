@@ -1,6 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useAppStore } from "@/store/app-store";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { usePageTitle } from "@/hooks/usePageTitle";
@@ -30,7 +37,11 @@ const Jobs = () => {
             </TableHeader>
             <TableBody>
               {state.jobs.map((j) => (
-                <TableRow key={j.id} className={selected === j.id ? "bg-muted" : ""} onClick={() => setSelected(j.id)}>
+                <TableRow
+                  key={j.id}
+                  className={selected === j.id ? "bg-muted" : ""}
+                  onClick={() => setSelected(j.id)}
+                >
                   <TableCell className="font-mono text-xs">{j.id}</TableCell>
                   <TableCell>{j.serviceId}</TableCell>
                   <TableCell>{j.status}</TableCell>

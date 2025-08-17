@@ -19,12 +19,12 @@ export const ProfileDropdown = () => {
 
   const userInitials = state.session.user
     ? state.session.user
-      .split("@")[0]
-      .split(".")
-      .map((part) => part[0])
-      .join("")
-      .toUpperCase()
-      .slice(0, 2)
+        .split("@")[0]
+        .split(".")
+        .map((part) => part[0])
+        .join("")
+        .toUpperCase()
+        .slice(0, 2)
     : "U";
 
   return (
@@ -57,7 +57,7 @@ export const ProfileDropdown = () => {
           onClick={async () => {
             await logoutEverywhere();
             actions.logout();
-            const from = (location.state as any)?.from as string | undefined;
+            const from = (location.state as { from?: string })?.from;
             navigate("/welcome", { replace: true, state: { from } });
           }}
           className="cursor-pointer"

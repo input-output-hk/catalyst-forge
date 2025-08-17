@@ -19,8 +19,12 @@ type PublicKeyCredentialWithHelpers = PublicKeyCredential & {
 };
 
 interface PublicKeyCredentialConstructorWithParsers {
-  parseRequestOptionsFromJSON?: (options: Record<string, unknown>) => PublicKeyCredentialRequestOptions;
-  parseCreationOptionsFromJSON?: (options: Record<string, unknown>) => PublicKeyCredentialCreationOptions;
+  parseRequestOptionsFromJSON?: (
+    options: Record<string, unknown>
+  ) => PublicKeyCredentialRequestOptions;
+  parseCreationOptionsFromJSON?: (
+    options: Record<string, unknown>
+  ) => PublicKeyCredentialCreationOptions;
   isConditionalMediationAvailable?: () => Promise<boolean>;
 }
 
@@ -76,14 +80,12 @@ function toBytesUnknown(value: unknown): Uint8Array {
     return new Uint8Array(bufferView.buffer);
   }
 
-  if (typeof value === 'string') {
+  if (typeof value === "string") {
     // Try URL-safe base64 first, then standard base64
     try {
       const paddingNeeded = (value.length + 3) % 4;
-      const padding = '==='.slice(paddingNeeded);
-      const standardBase64 = value
-        .replace(/-/g, '+')
-        .replace(/_/g, '/');
+      const padding = "===".slice(paddingNeeded);
+      const standardBase64 = value.replace(/-/g, "+").replace(/_/g, "/");
       const paddedBase64 = standardBase64 + padding;
 
       return b64ToBytes(paddedBase64);
@@ -96,7 +98,7 @@ function toBytesUnknown(value: unknown): Uint8Array {
     return new Uint8Array(value as number[]);
   }
 
-  throw new Error('Unsupported binary value');
+  throw new Error("Unsupported binary value");
 }
 
 /**
@@ -106,17 +108,14 @@ function toBytesUnknown(value: unknown): Uint8Array {
  */
 function arrayBufferToB64url(buf: ArrayBuffer): string {
   const bytes = new Uint8Array(buf);
-  let binary = '';
+  let binary = "";
 
   for (let i = 0; i < bytes.byteLength; i++) {
     binary += String.fromCharCode(bytes[i]);
   }
 
   const base64 = btoa(binary);
-  const base64url = base64
-    .replace(/\+/g, '-')
-    .replace(/\//g, '_')
-    .replace(/=+$/g, '');
+  const base64url = base64.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
 
   return base64url;
 }
@@ -127,14 +126,14 @@ function arrayBufferToB64url(buf: ArrayBuffer): string {
  * @returns True if native parsing methods are available, false otherwise
  */
 function hasParseHelpers(): boolean {
-  if (typeof PublicKeyCredential === 'undefined') {
+  if (typeof PublicKeyCredential === "undefined") {
     return false;
   }
 
   const PKC = PublicKeyCredential as unknown as PublicKeyCredentialConstructorWithParsers;
 
-  const hasRequestParser = typeof PKC.parseRequestOptionsFromJSON === 'function';
-  const hasCreationParser = typeof PKC.parseCreationOptionsFromJSON === 'function';
+  const hasRequestParser = typeof PKC.parseRequestOptionsFromJSON === "function";
+  const hasCreationParser = typeof PKC.parseCreationOptionsFromJSON === "function";
 
   return hasRequestParser && hasCreationParser;
 }
@@ -146,7 +145,9 @@ function hasParseHelpers(): boolean {
  * @returns Properly formatted PublicKeyCredentialRequestOptions for WebAuthn API
  * @throws Error if challenge is missing or invalid
  */
-function toPublicKeyRequestOptions(opts: Record<string, unknown>): PublicKeyCredentialRequestOptions {
+function toPublicKeyRequestOptions(
+  opts: Record<string, unknown>
+): PublicKeyCredentialRequestOptions {
   // Use native parser if available
   if (hasParseHelpers()) {
     const PKC = PublicKeyCredential as unknown as PublicKeyCredentialConstructorWithParsers;
@@ -161,7 +162,7 @@ function toPublicKeyRequestOptions(opts: Record<string, unknown>): PublicKeyCred
 
   const challengeBytes = normalizedOptions.challenge as Uint8Array;
   if (!(challengeBytes instanceof Uint8Array) || challengeBytes.byteLength === 0) {
-    throw new Error('Server did not provide a valid publicKey.challenge');
+    throw new Error("Server did not provide a valid publicKey.challenge");
   }
 
   // Normalize allowCredentials
@@ -172,12 +173,11 @@ function toPublicKeyRequestOptions(opts: Record<string, unknown>): PublicKeyCred
       const credentialWithIds = credential as CredentialIdVariants;
 
       // Try different possible ID field names
-      const credentialId = credentialWithIds.id
-        ?? credentialWithIds.credentialId
-        ?? credentialWithIds.credential_id;
+      const credentialId =
+        credentialWithIds.id ?? credentialWithIds.credentialId ?? credentialWithIds.credential_id;
 
       const descriptor: PublicKeyCredentialDescriptor = {
-        type: 'public-key',
+        type: "public-key",
         id: toBytesUnknown(credentialId),
         transports: (credential as { transports?: AuthenticatorTransport[] }).transports,
       };
@@ -187,7 +187,7 @@ function toPublicKeyRequestOptions(opts: Record<string, unknown>): PublicKeyCred
   }
 
   // Parse timeout if it's a string
-  if (typeof normalizedOptions.timeout === 'string') {
+  if (typeof normalizedOptions.timeout === "string") {
     const timeoutValue = parseInt(normalizedOptions.timeout as string, 10);
     normalizedOptions.timeout = timeoutValue || undefined;
   }
@@ -201,7 +201,7 @@ function toPublicKeyRequestOptions(opts: Record<string, unknown>): PublicKeyCred
  * @returns Error with a user-friendly message
  */
 function mapDomError(e: unknown): Error {
-  if (!e || typeof e !== 'object' || !('name' in e)) {
+  if (!e || typeof e !== "object" || !("name" in e)) {
     return new Error(String(e));
   }
 
@@ -209,16 +209,16 @@ function mapDomError(e: unknown): Error {
   const errorName = errorWithName.name;
 
   switch (errorName) {
-    case 'NotAllowedError':
-      return new Error('Authentication was cancelled or timed out.');
+    case "NotAllowedError":
+      return new Error("Authentication was cancelled or timed out.");
 
-    case 'InvalidStateError':
-      return new Error('Credential is already registered on this origin.');
+    case "InvalidStateError":
+      return new Error("Credential is already registered on this origin.");
 
-    case 'SecurityError':
-      return new Error('Security policy blocked WebAuthn on this page.');
+    case "SecurityError":
+      return new Error("Security policy blocked WebAuthn on this page.");
 
-    case 'NotSupportedError':
+    case "NotSupportedError":
       return new Error("This authenticator or algorithm isn't supported.");
 
     default:
@@ -234,16 +234,22 @@ function mapDomError(e: unknown): Error {
  * @param opts.signal - AbortSignal to cancel the authentication
  * @throws Error if authentication fails at any step
  */
-export async function loginWithWebAuthn(opts?: { conditionalUi?: boolean; signal?: AbortSignal }): Promise<void> {
+export async function loginWithWebAuthn(opts?: {
+  conditionalUi?: boolean;
+  signal?: AbortSignal;
+}): Promise<void> {
   // Step 1: Begin authentication flow
   // Create a fresh Request to avoid reusing a consumed Request object across retries
-  const beginResponse = await forgeFetch('/api/v1/auth/login/begin', { method: 'POST', cache: 'no-store' });
+  const beginResponse = await forgeFetch("/api/v1/auth/login/begin", {
+    method: "POST",
+    cache: "no-store",
+  });
 
   if (!beginResponse.ok) {
     throw new Error(`begin ${beginResponse.status}`);
   }
 
-  const beginData = await beginResponse.json() as BeginLoginResponse;
+  const beginData = (await beginResponse.json()) as BeginLoginResponse;
 
   // Step 2: Extract and normalize publicKey options
   // Some servers wrap the options as { publicKey: { publicKey: {...} } }
@@ -262,27 +268,27 @@ export async function loginWithWebAuthn(opts?: { conditionalUi?: boolean; signal
   try {
     const getOptions = {
       ...credentialRequestOptions,
-      signal: opts?.signal
+      signal: opts?.signal,
     } as CredentialRequestOptions;
 
-    credential = await navigator.credentials.get(getOptions) as PublicKeyCredential | null;
+    credential = (await navigator.credentials.get(getOptions)) as PublicKeyCredential | null;
   } catch (e) {
     throw mapDomError(e);
   }
 
   if (!credential) {
-    throw new Error('No credential returned');
+    throw new Error("No credential returned");
   }
 
   // Step 5: Prepare completion payload
   const completionPayload = buildCompletionPayload(credential, beginData.session_key);
 
   // Step 6: Complete authentication
-  const completeResponse = await forgeFetch('/api/v1/auth/login/complete', {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
+  const completeResponse = await forgeFetch("/api/v1/auth/login/complete", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
     body: JSON.stringify(completionPayload),
-    cache: 'no-store'
+    cache: "no-store",
   });
 
   if (!completeResponse.ok) {
@@ -309,11 +315,11 @@ function extractPublicKeyOptions(beginData: BeginLoginResponse): Record<string, 
   // Check for nested publicKey.publicKey structure
   const publicKeyWrapper = publicKeyField as { publicKey?: unknown };
 
-  if (publicKeyWrapper.publicKey && typeof publicKeyWrapper.publicKey === 'object') {
+  if (publicKeyWrapper.publicKey && typeof publicKeyWrapper.publicKey === "object") {
     // Handle double-nested publicKey.publicKey.publicKey
     const innerWrapper = publicKeyWrapper.publicKey as { publicKey?: unknown };
 
-    if (innerWrapper.publicKey && typeof innerWrapper.publicKey === 'object') {
+    if (innerWrapper.publicKey && typeof innerWrapper.publicKey === "object") {
       return innerWrapper.publicKey as Record<string, unknown>;
     }
 
@@ -334,7 +340,7 @@ async function buildCredentialRequestOptions(
   publicKey: PublicKeyCredentialRequestOptions,
   conditionalUi?: boolean
 ): Promise<CredentialRequestOptions> {
-  type ExtendedCredentialRequestOptions = CredentialRequestOptions & { mediation?: 'conditional' };
+  type ExtendedCredentialRequestOptions = CredentialRequestOptions & { mediation?: "conditional" };
   const requestOptions: ExtendedCredentialRequestOptions = { publicKey };
 
   // Check and enable conditional UI if available
@@ -342,11 +348,11 @@ async function buildCredentialRequestOptions(
     try {
       const PKC = PublicKeyCredential as unknown as PublicKeyCredentialConstructorWithParsers;
 
-      if (typeof PKC.isConditionalMediationAvailable === 'function') {
+      if (typeof PKC.isConditionalMediationAvailable === "function") {
         const isAvailable = await PKC.isConditionalMediationAvailable();
 
         if (isAvailable) {
-          requestOptions.mediation = 'conditional';
+          requestOptions.mediation = "conditional";
         }
       }
     } catch {
@@ -371,10 +377,10 @@ function buildCompletionPayload(
   const credentialWithHelpers = credential as PublicKeyCredentialWithHelpers;
 
   // Use native toJSON if available
-  if (typeof credentialWithHelpers.toJSON === 'function') {
+  if (typeof credentialWithHelpers.toJSON === "function") {
     return {
-      session_key: sessionKey || '',
-      credential: credentialWithHelpers.toJSON()
+      session_key: sessionKey || "",
+      credential: credentialWithHelpers.toJSON(),
     };
   }
 
@@ -397,8 +403,8 @@ function buildCompletionPayload(
   };
 
   return {
-    session_key: sessionKey || '',
-    credential: serializedCredential
+    session_key: sessionKey || "",
+    credential: serializedCredential,
   };
 }
 
@@ -408,7 +414,7 @@ function buildCompletionPayload(
  */
 async function storeAccessToken(response: Response): Promise<void> {
   try {
-    const responseData = await response.json() as CompleteLoginResponse | null;
+    const responseData = (await response.json()) as CompleteLoginResponse | null;
 
     if (!responseData || !responseData.access_token) {
       return;
@@ -416,7 +422,7 @@ async function storeAccessToken(response: Response): Promise<void> {
 
     const accessToken = responseData.access_token;
 
-    if (typeof accessToken === 'string' && accessToken.length > 0) {
+    if (typeof accessToken === "string" && accessToken.length > 0) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const forgeClient = forge as any;
       forgeClient.setAccessToken?.(accessToken);
@@ -437,9 +443,10 @@ export function b64urlToBuf(value: string): ArrayBuffer {
   const paddingNeeded = base64.length % 4 ? 4 - (base64.length % 4) : 0;
   const paddedBase64 = base64 + "=".repeat(paddingNeeded);
 
-  const binaryString = typeof atob === "function"
-    ? atob(paddedBase64)
-    : Buffer.from(paddedBase64, "base64").toString("binary");
+  const binaryString =
+    typeof atob === "function"
+      ? atob(paddedBase64)
+      : Buffer.from(paddedBase64, "base64").toString("binary");
 
   const bytes = new Uint8Array(binaryString.length);
 
@@ -456,7 +463,9 @@ export function b64urlToBuf(value: string): ArrayBuffer {
  * @param options - Raw creation options from server
  * @returns Properly formatted PublicKeyCredentialCreationOptions
  */
-export function decodeCreationOptions(options: Record<string, unknown>): PublicKeyCredentialCreationOptions {
+export function decodeCreationOptions(
+  options: Record<string, unknown>
+): PublicKeyCredentialCreationOptions {
   const decodedOptions: Record<string, unknown> = { ...options };
 
   // Normalize challenge
@@ -469,7 +478,7 @@ export function decodeCreationOptions(options: Record<string, unknown>): PublicK
     const user = decodedOptions.user as { id?: unknown } & Record<string, unknown>;
     decodedOptions.user = {
       ...user,
-      id: b64urlToBuf(user.id as string)
+      id: b64urlToBuf(user.id as string),
     };
   }
 
@@ -479,7 +488,7 @@ export function decodeCreationOptions(options: Record<string, unknown>): PublicK
 
     decodedOptions.excludeCredentials = excludeCredentials.map((credential) => {
       const decodedCredential: Partial<PublicKeyCredentialDescriptor> & Record<string, unknown> = {
-        ...credential
+        ...credential,
       };
 
       const credentialId = credential.id as unknown;
@@ -489,7 +498,7 @@ export function decodeCreationOptions(options: Record<string, unknown>): PublicK
       }
 
       if (!decodedCredential.type) {
-        decodedCredential.type = 'public-key';
+        decodedCredential.type = "public-key";
       }
 
       return decodedCredential as unknown as PublicKeyCredentialDescriptor;
@@ -513,14 +522,12 @@ export function bufferToBase64Url(buffer: ArrayBuffer): string {
     binaryString += String.fromCharCode(bytes[i]);
   }
 
-  const base64 = typeof btoa === "function"
-    ? btoa(binaryString)
-    : Buffer.from(binaryString, "binary").toString("base64");
+  const base64 =
+    typeof btoa === "function"
+      ? btoa(binaryString)
+      : Buffer.from(binaryString, "binary").toString("base64");
 
-  const base64url = base64
-    .replace(/\+/g, "-")
-    .replace(/\//g, "_")
-    .replace(/=+$/g, "");
+  const base64url = base64.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
 
   return base64url;
 }
@@ -566,13 +573,13 @@ export function encodeAttestation(credential: PublicKeyCredential): Record<strin
  * @returns Normalized creation options object
  */
 export function extractCreationOptionsFromServer(publicKeyBlock: unknown): Record<string, unknown> {
-  if (!publicKeyBlock || typeof publicKeyBlock !== 'object') {
+  if (!publicKeyBlock || typeof publicKeyBlock !== "object") {
     return {};
   }
 
   const maybeWrapper = publicKeyBlock as { publicKey?: unknown };
 
-  if (maybeWrapper.publicKey && typeof maybeWrapper.publicKey === 'object') {
+  if (maybeWrapper.publicKey && typeof maybeWrapper.publicKey === "object") {
     return maybeWrapper.publicKey as Record<string, unknown>;
   }
 
@@ -586,15 +593,15 @@ export function extractCreationOptionsFromServer(publicKeyBlock: unknown): Recor
  * @returns Promise resolving to the created PublicKeyCredential
  * @throws Error if credential creation fails or is cancelled
  */
-export async function createCredentialFromServerPublicKey(publicKeyBlock: unknown): Promise<PublicKeyCredential> {
+export async function createCredentialFromServerPublicKey(
+  publicKeyBlock: unknown
+): Promise<PublicKeyCredential> {
   const rawOptions = extractCreationOptionsFromServer(publicKeyBlock);
   const decodedOptions = decodeCreationOptions(rawOptions);
 
-  const credential = await navigator.credentials.create({
-    publicKey: decodedOptions
-  }) as PublicKeyCredential;
+  const credential = (await navigator.credentials.create({
+    publicKey: decodedOptions,
+  })) as PublicKeyCredential;
 
   return credential;
 }
-
-

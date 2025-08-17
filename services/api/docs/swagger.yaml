@@ -477,6 +477,39 @@ components:
         valid:
           type: boolean
       type: object
+    auth.SessionSummary:
+      properties:
+        amr:
+          description: webauthn | device_link
+          type: string
+        created_at:
+          type: string
+        current:
+          type: boolean
+        device_id:
+          type: string
+        device_name:
+          type: string
+        expires_at:
+          type: string
+        id:
+          description: family_id
+          type: string
+        ip_address:
+          type: string
+        last_activity_at:
+          type: string
+        user_agent:
+          type: string
+      type: object
+    auth.SessionsListResponse:
+      properties:
+        sessions:
+          items:
+            $ref: '#/components/schemas/auth.SessionSummary'
+          type: array
+          uniqueItems: false
+      type: object
     auth.StepUpCompleteRequest:
       properties:
         credential:
@@ -1551,6 +1584,29 @@ paths:
       - auth
   /api/v1/admin/access-requests:
     get:
+      parameters:
+      - description: Filter by status (pending|approved|rejected)
+        in: query
+        name: status
+        schema:
+          type: string
+      - description: Search query (email or reason)
+        in: query
+        name: q
+        schema:
+          type: string
+      - description: Max results (1-200)
+        in: query
+        name: limit
+        schema:
+          default: 50
+          type: integer
+      - description: Offset for pagination
+        in: query
+        name: offset
+        schema:
+          default: 0
+          type: integer
       responses:
         "200":
           content:
@@ -1677,6 +1733,29 @@ paths:
       - admin
   /api/v1/admin/users:
     get:
+      parameters:
+      - description: Search query (email or ID)
+        in: query
+        name: q
+        schema:
+          type: string
+      - description: Filter by role (admin|member)
+        in: query
+        name: role
+        schema:
+          type: string
+      - description: Max results (1-200)
+        in: query
+        name: limit
+        schema:
+          default: 50
+          type: integer
+      - description: Offset for pagination
+        in: query
+        name: offset
+        schema:
+          default: 0
+          type: integer
       responses:
         "200":
           content:
@@ -2652,6 +2731,33 @@ paths:
                 $ref: '#/components/schemas/auth.SessionResponse'
           description: OK
       summary: Session
+      tags:
+      - auth
+  /api/v1/auth/sessions:
+    get:
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/auth.SessionsListResponse'
+          description: OK
+      summary: List active sessions
+      tags:
+      - auth
+  /api/v1/auth/sessions/{family_id}:
+    delete:
+      parameters:
+      - description: Family ID
+        in: path
+        name: family_id
+        required: true
+        schema:
+          type: string
+      responses:
+        "204":
+          description: No Content
+      summary: Revoke a session
       tags:
       - auth
   /api/v1/auth/step-up/begin:

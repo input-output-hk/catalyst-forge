@@ -125,7 +125,7 @@ export function getEnvironments(): EnvHealth[] {
 
 const baseActivities: ActivityItem[] = Array.from({ length: 20 }).map((_, i) => {
   const start = subMinutes(baseNow, i * 7 + 3);
-  const env: EnvHealth["id"] = (i % 3 === 0 ? "dev" : i % 3 === 1 ? "preprod" : "prod");
+  const env: EnvHealth["id"] = i % 3 === 0 ? "dev" : i % 3 === 1 ? "preprod" : "prod";
   const type: ActivityItem["type"] = i % 2 === 0 ? "deploy" : "job";
   const name = type === "deploy" ? `Deploy ${env} #${142 + i}` : `Job build-${i}`;
   return {
@@ -149,7 +149,9 @@ export function getActivity(): ActivityItem[] {
       status = idx % 7 === 0 ? "failed" : "succeeded";
       finishedAt = formatISO(addMinutes(new Date(a.startedAt), 6));
     }
-    const durationMs = finishedAt ? new Date(finishedAt).getTime() - new Date(a.startedAt).getTime() : undefined;
+    const durationMs = finishedAt
+      ? new Date(finishedAt).getTime() - new Date(a.startedAt).getTime()
+      : undefined;
     return { ...a, status, finishedAt, durationMs };
   });
 }

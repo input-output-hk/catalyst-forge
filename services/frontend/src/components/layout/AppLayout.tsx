@@ -5,7 +5,7 @@ import { TopBar } from "./TopBar";
 
 export const AppLayout = ({ children }: { children: React.ReactNode }) => {
   return (
-    <SidebarProvider style={{ ["--sidebar-width-icon" as any]: "3.5rem" }}>
+    <SidebarProvider style={{ "--sidebar-width-icon": "3.5rem" } as React.CSSProperties}>
       <div className="min-h-screen flex w-full bg-background text-foreground">
         <aside>
           <AppSidebar />
@@ -17,9 +17,7 @@ export const AppLayout = ({ children }: { children: React.ReactNode }) => {
               <TopBar />
             </div>
           </header>
-          <main className="flex-1">
-            {children}
-          </main>
+          <main className="flex-1">{children}</main>
         </div>
       </div>
       <FeatureFlagsPanel />

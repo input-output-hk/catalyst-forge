@@ -1,8 +1,16 @@
-import { useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { withLatency } from "@/mocks/latency";
@@ -32,32 +40,48 @@ const schema = z.object({
     .refine((val) => {
       const domain = val.split("@")[1]?.toLowerCase();
       return Boolean(domain) && !FREE_EMAIL_DOMAINS.has(domain!);
-    }, "Please use your work email (no free domains)")
+    }, "Please use your work email (no free domains)"),
 });
 
-export default function RegisterRequestForm({ onDone, defaultEmail, autoSubmit }: { onDone: (email: string) => void; defaultEmail?: string; autoSubmit?: boolean }) {
+export default function RegisterRequestForm({
+  onDone,
+  defaultEmail,
+  autoSubmit,
+}: {
+  onDone: (email: string) => void;
+  defaultEmail?: string;
+  autoSubmit?: boolean;
+}) {
   const { actions } = useAppStore();
   const form = useForm<z.infer<typeof schema>>({
     resolver: zodResolver(schema),
     defaultValues: { email: defaultEmail ?? "" },
   });
 
-  const onSubmit = async (values: z.infer<typeof schema>) => {
-    try {
-      // Submit to API (public endpoint)
-      const res = await forge.raw.POST('/api/v1/public/access-requests', {
-        body: { email: values.email } as any,
-      });
-      if (!res.response.ok) {
-        // fall back to minor delay to keep UX flowing
+  const onSubmit = useCallback(
+    async (values: z.infer<typeof schema>) => {
+      try {
+        // Submit to API (public endpoint)
+        const res = await forge.raw.POST("/api/v1/public/access-requests", {
+          body: { email: values.email },
+        });
+        if (!res.response.ok) {
+          // fall back to minor delay to keep UX flowing
+          await withLatency();
+        }
+      } catch {
         await withLatency();
       }
-    } catch {
-      await withLatency();
-    }
-    actions.addAudit({ actor: values.email, action: "access.request", resource: "registration", meta: { email: values.email } });
-    onDone(values.email);
-  };
+      actions.addAudit({
+        actor: values.email,
+        action: "access.request",
+        resource: "registration",
+        meta: { email: values.email },
+      });
+      onDone(values.email);
+    },
+    [actions, onDone]
+  );
 
   const autoSubmittedRef = useRef(false);
 
@@ -88,7 +112,13 @@ export default function RegisterRequestForm({ onDone, defaultEmail, autoSubmit }
             <FormItem className="group">
               <FormLabel>Work email</FormLabel>
               <FormControl>
-                <Input type="email" placeholder="you@company.com" autoFocus inputMode="email" {...field} />
+                <Input
+                  type="email"
+                  placeholder="you@company.com"
+                  autoFocus
+                  inputMode="email"
+                  {...field}
+                />
               </FormControl>
               <FormDescription className="mt-3 text-[13px] leading-tight text-muted-foreground/90 opacity-90 transition-opacity duration-200 group-focus-within:opacity-100">
                 We’ll email you a login link after approval.
@@ -97,7 +127,12 @@ export default function RegisterRequestForm({ onDone, defaultEmail, autoSubmit }
             </FormItem>
           )}
         />
-        <Button type="submit" className="w-full hover-scale" disabled={submitting} aria-disabled={submitting}>
+        <Button
+          type="submit"
+          className="w-full hover-scale"
+          disabled={submitting}
+          aria-disabled={submitting}
+        >
           {submitting ? "Submitting..." : "Request access"}
         </Button>
       </form>

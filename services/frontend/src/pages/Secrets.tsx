@@ -1,7 +1,21 @@
 import { useAppStore } from "@/store/app-store";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { toast } from "@/hooks/use-toast";
 import { usePageTitle } from "@/hooks/usePageTitle";
@@ -32,10 +46,20 @@ const Secrets = () => {
             <TableRow key={s.id}>
               <TableCell className="font-mono">{s.key}</TableCell>
               <TableCell>v{s.version}</TableCell>
-              <TableCell><span className="blur-sm select-all">{s.value}</span></TableCell>
+              <TableCell>
+                <span className="blur-sm select-all">{s.value}</span>
+              </TableCell>
               <TableCell className="space-x-2">
-                <Button size="sm" variant="secondary" onClick={async () => setRevealValue(await actions.revealSecret(s.id))}>Reveal</Button>
-                <Button size="sm" variant="outline" onClick={() => setRotateId(s.id)}>Rotate</Button>
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  onClick={async () => setRevealValue(await actions.revealSecret(s.id))}
+                >
+                  Reveal
+                </Button>
+                <Button size="sm" variant="outline" onClick={() => setRotateId(s.id)}>
+                  Rotate
+                </Button>
               </TableCell>
             </TableRow>
           ))}
@@ -56,10 +80,24 @@ const Secrets = () => {
           <DialogHeader>
             <DialogTitle>Rotate secret</DialogTitle>
           </DialogHeader>
-          <p className="text-sm text-muted-foreground">This will create a new version and revoke the previous one.</p>
+          <p className="text-sm text-muted-foreground">
+            This will create a new version and revoke the previous one.
+          </p>
           <DialogFooter>
-            <Button variant="ghost" onClick={() => setRotateId(null)}>Cancel</Button>
-            <Button onClick={async () => { if (rotateId) { await actions.rotateSecret(rotateId); toast({ title: "Rotated", description: "A new version was created." }); setRotateId(null); } }}>Confirm</Button>
+            <Button variant="ghost" onClick={() => setRotateId(null)}>
+              Cancel
+            </Button>
+            <Button
+              onClick={async () => {
+                if (rotateId) {
+                  await actions.rotateSecret(rotateId);
+                  toast({ title: "Rotated", description: "A new version was created." });
+                  setRotateId(null);
+                }
+              }}
+            >
+              Confirm
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

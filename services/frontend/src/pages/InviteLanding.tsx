@@ -4,13 +4,18 @@ import { Button } from "@/components/ui/button";
 import { LogoMark } from "@/components/brand/LogoMark";
 import { useToast } from "@/hooks/use-toast";
 import { usePageTitle } from "@/hooks/usePageTitle";
-import { parseInviteToken, formatExpiry } from "@/lib/invite";
+import { parseInviteToken, formatExpiry } from "@/lib/auth/invite";
 import { useAppStore } from "@/store/app-store";
 import { refreshAccessToken, extractErrorMessage, readResponseError } from "@/lib/api";
 import { forge } from "@/lib/client";
-import { extractCreationOptionsFromServer, decodeCreationOptions, encodeAttestation, createCredentialFromServerPublicKey } from "@/lib/webauthn";
+import {
+  extractCreationOptionsFromServer,
+  decodeCreationOptions,
+  encodeAttestation,
+  createCredentialFromServerPublicKey,
+} from "@/lib/webauthn";
 import type { components } from "forge-client";
-import { requestCodesAndStartGate } from "@/lib/recovery";
+import { requestCodesAndStartGate } from "@/lib/auth/recovery";
 
 // Type definitions for cleaner code
 type InvitePreviewResponse = components["schemas"]["auth.InvitePreviewResponse"];
@@ -52,7 +57,7 @@ export default function InviteLanding() {
       if (!token) return;
       try {
         const id = new URLSearchParams(location.search).get("id") || undefined;
-        const res = await forge.raw.GET('/api/v1/admin/invites/preview', {
+        const res = await forge.raw.GET("/api/v1/admin/invites/preview", {
           params: { query: { token, id } },
         });
         if (res.response.ok) {
@@ -73,7 +78,7 @@ export default function InviteLanding() {
       toast({
         title: "Invite not found",
         description: "This link is missing a token.",
-        variant: "destructive"
+        variant: "destructive",
       });
       return;
     }
@@ -89,8 +94,8 @@ export default function InviteLanding() {
         device_name: "Passkey (this device)",
       };
 
-      const beginResponse = await forge.raw.POST('/api/v1/auth/onboard/begin', {
-        body: beginRequestBody
+      const beginResponse = await forge.raw.POST("/api/v1/auth/onboard/begin", {
+        body: beginRequestBody,
       });
 
       if (!beginResponse.response.ok) {
@@ -101,7 +106,9 @@ export default function InviteLanding() {
       const beginData = beginResponse.data as OnboardBeginResponse;
 
       // Step 2-3: Normalize server options and create WebAuthn credential
-      const publicKeyCredential = await createCredentialFromServerPublicKey(beginData?.publicKey as unknown);
+      const publicKeyCredential = await createCredentialFromServerPublicKey(
+        beginData?.publicKey as unknown
+      );
 
       if (!publicKeyCredential) {
         throw new Error("Credential creation cancelled");
@@ -122,8 +129,8 @@ export default function InviteLanding() {
         invite_id: finalInviteId,
       };
 
-      const completeResponse = await forge.raw.POST('/api/v1/auth/onboard/complete', {
-        body: completeRequestBody
+      const completeResponse = await forge.raw.POST("/api/v1/auth/onboard/complete", {
+        body: completeRequestBody,
       });
 
       if (!completeResponse.response.ok) {
@@ -139,7 +146,6 @@ export default function InviteLanding() {
 
       // Step 9: Navigate to welcome page
       navigate("/welcome", { replace: true });
-
     } catch (error: unknown) {
       const errorMessage = extractErrorMessage(error, "Please try again or contact your admin.");
       toast({
@@ -167,13 +173,21 @@ export default function InviteLanding() {
       <main className="mx-auto flex min-h-dvh w-full max-w-2xl flex-col items-center justify-center px-6 text-center">
         <section className="w-full rounded-xl border bg-card/60 p-8 backdrop-blur">
           <h1 className="text-2xl font-semibold tracking-tight">
-            {isValid ? "You’ve been invited to join Catalyst Forge" : "Invite unavailable • Catalyst Forge"}
+            {isValid
+              ? "You’ve been invited to join Catalyst Forge"
+              : "Invite unavailable • Catalyst Forge"}
           </h1>
 
           <div className="mt-8">
             {isValid ? (
               <div>
-                <Button size="cta" className="w-full sm:w-auto" onClick={handleAccept} disabled={busy} variant="hero">
+                <Button
+                  size="cta"
+                  className="w-full sm:w-auto"
+                  onClick={handleAccept}
+                  disabled={busy}
+                  variant="hero"
+                >
                   {busy ? "Registering device…" : "Register device"}
                 </Button>
                 <p className="mt-3 text-[13px] text-muted-foreground/75 dark:text-muted-foreground/65">
@@ -185,10 +199,11 @@ export default function InviteLanding() {
                     <p>
                       {inviteMeta.invitedBy && (
                         <>
-                          <span className="font-medium text-foreground/90">From:</span> {inviteMeta.invitedBy}
+                          <span className="font-medium text-foreground/90">From:</span>{" "}
+                          {inviteMeta.invitedBy}
                         </>
                       )}
-                      {(inviteMeta.invitedBy && (inviteMeta.email || previewEmail)) && (
+                      {inviteMeta.invitedBy && (inviteMeta.email || previewEmail) && (
                         <span className="mx-[0.5em]">•</span>
                       )}
                       {(inviteMeta.email || previewEmail) && (
@@ -199,14 +214,16 @@ export default function InviteLanding() {
                       )}
                     </p>
                   )}
-                  {!inviteMeta.email && !previewEmail && <p>We couldn’t determine the invite email.</p>}
+                  {!inviteMeta.email && !previewEmail && (
+                    <p>We couldn’t determine the invite email.</p>
+                  )}
                   {(inviteMeta.expiresAt || previewExpiry) && (
                     <p>
                       <span className="font-medium text-foreground/90">Expires on:</span>{" "}
                       <span>
                         {formatExpiry(
                           inviteMeta.expiresAt ||
-                          (previewExpiry ? new Date(previewExpiry) : undefined)
+                            (previewExpiry ? new Date(previewExpiry) : undefined)
                         )}
                       </span>
                     </p>
@@ -225,7 +242,14 @@ export default function InviteLanding() {
           </div>
 
           <p className="mt-8 text-xs text-muted-foreground">
-            Need help? <a className="underline-offset-4 hover:underline focus-visible:underline" href="mailto:admin@company.com">Contact your admin</a>.
+            Need help?{" "}
+            <a
+              className="underline-offset-4 hover:underline focus-visible:underline"
+              href="mailto:admin@company.com"
+            >
+              Contact your admin
+            </a>
+            .
           </p>
         </section>
       </main>

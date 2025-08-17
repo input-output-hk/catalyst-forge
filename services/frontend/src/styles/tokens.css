@@ -4,12 +4,12 @@
 
 :root {
   /* Brand palette (HSL) */
-  --brand-amber: 17 77% 53%;   /* Burnished Amber */
-  --brand-orange: 35 76% 48%;  /* Molten Orange */
+  --brand-amber: 17 77% 53%; /* Burnished Amber */
+  --brand-orange: 35 76% 48%; /* Molten Orange */
   --brand-charcoal: 215 28% 17%; /* Forge Charcoal */
-  --brand-steel: 215 14% 34%;   /* Steel Gray */
-  --brand-silver: 217 12% 84%;  /* Iron Silver */
-  --brand-ash: 210 20% 98%;     /* Ash White */
+  --brand-steel: 215 14% 34%; /* Steel Gray */
+  --brand-silver: 217 12% 84%; /* Iron Silver */
+  --brand-ash: 210 20% 98%; /* Ash White */
 
   /* Semantic aliases */
   --color-primary: var(--brand-amber);
@@ -20,9 +20,14 @@
   --surface-3: 210 20% 96%;
 
   /* Gradients */
-  --gradient-primary: linear-gradient(90deg, hsl(var(--brand-amber) / 0.95), hsl(var(--brand-orange) / 0.95));
-  --gradient-hero: radial-gradient(1200px 600px at 80% 30%, hsl(var(--brand-orange) / 0.18) 0%, transparent 60%),
-                    linear-gradient(135deg, hsl(var(--brand-ash)), hsl(var(--brand-silver)));
+  --gradient-primary: linear-gradient(
+    90deg,
+    hsl(var(--brand-amber) / 0.95),
+    hsl(var(--brand-orange) / 0.95)
+  );
+  --gradient-hero:
+    radial-gradient(1200px 600px at 80% 30%, hsl(var(--brand-orange) / 0.18) 0%, transparent 60%),
+    linear-gradient(135deg, hsl(var(--brand-ash)), hsl(var(--brand-silver)));
   --forge-arc-gradient: linear-gradient(90deg, hsl(var(--primary)), hsl(var(--secondary)));
 
   /* Shadows */
@@ -35,8 +40,12 @@
   --radius-sm: 8px;
 
   /* Typography */
-  --font-sans: "Montserrat", "Inter", ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
-  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  --font-sans:
+    "Montserrat", "Inter", ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica,
+    Arial, "Apple Color Emoji", "Segoe UI Emoji";
+  --font-mono:
+    "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
+    "Courier New", monospace;
 }
 
 .dark {
@@ -47,9 +56,14 @@
   --color-primary: 17 85% 60%; /* brighter for dark */
   --color-primary-foreground: 215 28% 17%;
 
-  --gradient-primary: linear-gradient(90deg, hsl(var(--brand-amber) / 0.95), hsl(var(--brand-orange) / 0.95));
-  --gradient-hero: radial-gradient(1200px 600px at 80% 30%, hsl(25 80% 40% / 0.25) 0%, transparent 60%),
-                    linear-gradient(135deg, hsl(215 25% 14%), hsl(25 35% 18%));
+  --gradient-primary: linear-gradient(
+    90deg,
+    hsl(var(--brand-amber) / 0.95),
+    hsl(var(--brand-orange) / 0.95)
+  );
+  --gradient-hero:
+    radial-gradient(1200px 600px at 80% 30%, hsl(25 80% 40% / 0.25) 0%, transparent 60%),
+    linear-gradient(135deg, hsl(215 25% 14%), hsl(25 35% 18%));
 }
 
 /* Component-level utilities bound to tokens */
@@ -61,9 +75,13 @@
   }
   .surface-card:hover {
     transform: translateY(-1px) scale(1.01);
-    box-shadow: var(--shadow-glow), 0 0 0 1px hsl(var(--color-primary) / 0.18) inset;
+    box-shadow:
+      var(--shadow-glow),
+      0 0 0 1px hsl(var(--color-primary) / 0.18) inset;
   }
-  .shadow-glow { box-shadow: var(--shadow-glow); }
+  .shadow-glow {
+    box-shadow: var(--shadow-glow);
+  }
   .btn-hero {
     background-image: var(--gradient-primary);
     color: hsl(var(--primary-foreground));
@@ -93,7 +111,9 @@
   }
 
   /* Subtle brand radial glow for the logo container (6–8% opacity) */
-  .logo-motif { position: relative; }
+  .logo-motif {
+    position: relative;
+  }
   .logo-motif::before {
     content: "";
     position: absolute;
@@ -118,7 +138,12 @@
     position: absolute;
     inset: 0;
     pointer-events: none;
-    background: radial-gradient(60% 50% at 50% 40%, hsl(var(--background) / 0) 0%, hsl(var(--background) / 0.25) 60%, hsl(var(--background) / 0.65) 100%);
+    background: radial-gradient(
+      60% 50% at 50% 40%,
+      hsl(var(--background) / 0) 0%,
+      hsl(var(--background) / 0.25) 60%,
+      hsl(var(--background) / 0.65) 100%
+    );
   }
 
   /* Subtle forged pattern watermark */
@@ -133,13 +158,20 @@
     background-size: 80px 80px;
     mix-blend-mode: overlay;
   }
-  .dark .forged-pattern { opacity: 0.045; }
+  .dark .forged-pattern {
+    opacity: 0.045;
+  }
 
   /* Gentle pulse/glow for the logo container */
-  .pulse-glow { animation: pulse-glow 3.2s ease-in-out infinite; }
+  .pulse-glow {
+    animation: pulse-glow 3.2s ease-in-out infinite;
+  }
 
   /* Button ripple micro-interaction */
-  .btn-ripple { position: relative; overflow: hidden; }
+  .btn-ripple {
+    position: relative;
+    overflow: hidden;
+  }
   .btn-ripple::after {
     content: "";
     position: absolute;
@@ -152,7 +184,9 @@
     background: radial-gradient(circle, hsl(var(--primary) / 0.35) 0%, transparent 60%);
     opacity: 0;
   }
-  .btn-ripple:active::after { animation: btn-ripple 450ms ease-out; }
+  .btn-ripple:active::after {
+    animation: btn-ripple 450ms ease-out;
+  }
 
   /* Glassy hero panel with subtle brand glow */
   .panel-hero {
@@ -162,9 +196,12 @@
     -webkit-backdrop-filter: blur(16px);
     border: 1px solid hsl(var(--border) / 0.6);
     box-shadow:
-      0 0 0 1px hsl(var(--color-primary) / 0.10) inset,
+      0 0 0 1px hsl(var(--color-primary) / 0.1) inset,
       0 12px 36px -12px hsl(var(--color-primary) / 0.28);
-    transition: box-shadow 200ms ease, transform 200ms ease, background-color 200ms ease;
+    transition:
+      box-shadow 200ms ease,
+      transform 200ms ease,
+      background-color 200ms ease;
     will-change: transform, box-shadow;
   }
   .panel-hero:hover {
@@ -175,17 +212,25 @@
   }
 
   /* Soft hover glow utility */
-  .hover-glow:hover { box-shadow: var(--shadow-glow); }
+  .hover-glow:hover {
+    box-shadow: var(--shadow-glow);
+  }
 
   /* Overshoot feedback */
-  .animate-jiggle { animation: jiggle 180ms cubic-bezier(0.36, 0.07, 0.19, 0.97); }
+  .animate-jiggle {
+    animation: jiggle 180ms cubic-bezier(0.36, 0.07, 0.19, 0.97);
+  }
 
   /* Outline CTA that inverts to gradient on hover */
   .cta-outline-invert {
     color: hsl(var(--primary));
     background: transparent;
     border: 1px solid hsl(var(--border));
-    transition: color 200ms ease, background 200ms ease, box-shadow 200ms ease, border-color 200ms ease;
+    transition:
+      color 200ms ease,
+      background 200ms ease,
+      box-shadow 200ms ease,
+      border-color 200ms ease;
   }
   .cta-outline-invert:hover {
     background-image: var(--gradient-primary);
@@ -224,7 +269,9 @@
     animation: fade-in-up 280ms cubic-bezier(0.4, 0, 0.2, 1) both;
     will-change: opacity, transform;
   }
-  .anim-delay-200 { animation-delay: 180ms; }
+  .anim-delay-200 {
+    animation-delay: 180ms;
+  }
 
   /* Ambient breathing for logo glow */
   .logo-motif.pulse-ambient::before {
@@ -240,102 +287,203 @@
   }
 
   /* Cinematic ambient light sweep layer */
-  .bg-light-sweep { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+  .bg-light-sweep {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    overflow: hidden;
+  }
   .bg-light-sweep::before {
     content: "";
     position: absolute;
     inset: -15%;
     background:
-      radial-gradient(42% 42% at 30% 20%, hsl(var(--primary) / 0.10) 0%, transparent 60%),
+      radial-gradient(42% 42% at 30% 20%, hsl(var(--primary) / 0.1) 0%, transparent 60%),
       radial-gradient(36% 36% at 70% 80%, hsl(var(--primary) / 0.06) 0%, transparent 65%);
     opacity: 0.8;
     animation: light-sweep 10s ease-in-out infinite;
     will-change: transform, opacity;
   }
-
 }
 
 /* Keyframes for hero and interactions */
 @keyframes hero-shift {
-  0% { background-position: 0% 0%; }
-  50% { background-position: 100% 50%; }
-  100% { background-position: 0% 100%; }
+  0% {
+    background-position: 0% 0%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 100%;
+  }
 }
 
 @keyframes pulse-glow {
-  0% { box-shadow: 0 0 0 0 hsl(var(--primary) / 0.35), 0 8px 24px hsl(var(--primary) / 0.18); }
-  70% { box-shadow: 0 0 0 14px hsl(var(--primary) / 0); }
-  100% { box-shadow: 0 0 0 0 hsl(var(--primary) / 0); }
+  0% {
+    box-shadow:
+      0 0 0 0 hsl(var(--primary) / 0.35),
+      0 8px 24px hsl(var(--primary) / 0.18);
+  }
+  70% {
+    box-shadow: 0 0 0 14px hsl(var(--primary) / 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 hsl(var(--primary) / 0);
+  }
 }
 
 @keyframes btn-ripple {
-  0% { transform: translate(-50%, -50%) scale(0); opacity: 0.45; }
-  100% { transform: translate(-50%, -50%) scale(2.6); opacity: 0; }
+  0% {
+    transform: translate(-50%, -50%) scale(0);
+    opacity: 0.45;
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(2.6);
+    opacity: 0;
+  }
 }
 
 /* New keyframes */
 @keyframes fade-in-up {
-  0% { opacity: 0; transform: translateY(8px); }
-  100% { opacity: 1; transform: translateY(0); }
+  0% {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 @keyframes gear-idle {
-  0% { transform: rotate(0deg); }
-  50% { transform: rotate(2deg); }
-  100% { transform: rotate(0deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+  50% {
+    transform: rotate(2deg);
+  }
+  100% {
+    transform: rotate(0deg);
+  }
 }
 
 @keyframes ambient-glow {
-  0%, 100% { opacity: 0.6; filter: blur(18px); }
-  50% { opacity: 0.85; filter: blur(22px); }
+  0%,
+  100% {
+    opacity: 0.6;
+    filter: blur(18px);
+  }
+  50% {
+    opacity: 0.85;
+    filter: blur(22px);
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .fade-in-up,
   .gear-idle,
   .logo-motif.pulse-ambient::before,
-  .bg-light-sweep::before { animation: none !important; }
+  .bg-light-sweep::before {
+    animation: none !important;
+  }
 }
 @keyframes slow-spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 @keyframes light-sweep {
-  0% { transform: translate(-8%, -4%) rotate(0.001deg); opacity: 0.55; }
-  50% { transform: translate(8%, 4%) rotate(0.001deg); opacity: 0.95; }
-  100% { transform: translate(-8%, -4%) rotate(0.001deg); opacity: 0.55; }
+  0% {
+    transform: translate(-8%, -4%) rotate(0.001deg);
+    opacity: 0.55;
+  }
+  50% {
+    transform: translate(8%, 4%) rotate(0.001deg);
+    opacity: 0.95;
+  }
+  100% {
+    transform: translate(-8%, -4%) rotate(0.001deg);
+    opacity: 0.55;
+  }
 }
 
 /* Jiggle micro-animation for input overshoot */
 @keyframes jiggle {
-  0% { transform: translateX(0); }
-  20% { transform: translateX(-3px); }
-  40% { transform: translateX(3px); }
-  60% { transform: translateX(-2px); }
-  80% { transform: translateX(2px); }
-  100% { transform: translateX(0); }
+  0% {
+    transform: translateX(0);
+  }
+  20% {
+    transform: translateX(-3px);
+  }
+  40% {
+    transform: translateX(3px);
+  }
+  60% {
+    transform: translateX(-2px);
+  }
+  80% {
+    transform: translateX(2px);
+  }
+  100% {
+    transform: translateX(0);
+  }
 }
 
 /* Forge Animation Keyframes */
 @keyframes hammer-strike {
-  0%, 85%, 100% { transform: translateY(0) rotate(-15deg); }
-  15% { transform: translateY(-12px) rotate(-25deg); }
-  25% { transform: translateY(8px) rotate(-5deg); }
+  0%,
+  85%,
+  100% {
+    transform: translateY(0) rotate(-15deg);
+  }
+  15% {
+    transform: translateY(-12px) rotate(-25deg);
+  }
+  25% {
+    transform: translateY(8px) rotate(-5deg);
+  }
 }
 
 @keyframes anvil-glow {
-  0%, 85%, 100% { filter: brightness(1) drop-shadow(0 0 0 transparent); }
-  25%, 30% { filter: brightness(1.3) drop-shadow(0 0 20px hsl(var(--brand-amber) / 0.6)); }
+  0%,
+  85%,
+  100% {
+    filter: brightness(1) drop-shadow(0 0 0 transparent);
+  }
+  25%,
+  30% {
+    filter: brightness(1.3) drop-shadow(0 0 20px hsl(var(--brand-amber) / 0.6));
+  }
 }
 
 @keyframes spark-burst {
-  0% { opacity: 0; transform: scale(0) translateY(0); }
-  20% { opacity: 1; transform: scale(1) translateY(-8px); }
-  100% { opacity: 0; transform: scale(0.2) translateY(-24px); }
+  0% {
+    opacity: 0;
+    transform: scale(0) translateY(0);
+  }
+  20% {
+    opacity: 1;
+    transform: scale(1) translateY(-8px);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(0.2) translateY(-24px);
+  }
 }
 
 @keyframes forge-ember {
-  0%, 100% { opacity: 0.3; transform: translateY(0) scale(1); }
-  50% { opacity: 0.8; transform: translateY(-4px) scale(1.1); }
+  0%,
+  100% {
+    opacity: 0.3;
+    transform: translateY(0) scale(1);
+  }
+  50% {
+    opacity: 0.8;
+    transform: translateY(-4px) scale(1.1);
+  }
 }

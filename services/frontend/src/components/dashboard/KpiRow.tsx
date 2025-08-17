@@ -25,7 +25,9 @@ const iconFor = (id: string) => {
 const StatusBadge = ({ kind }: { kind: "good" | "warn" | "bad" }) => {
   const variant = kind === "bad" ? "destructive" : kind === "warn" ? "secondary" : "default";
   const label = kind === "bad" ? "At risk" : kind === "warn" ? "Watch" : "Healthy";
-  return <Badge variant={variant as any}>{label}</Badge>;
+  return (
+    <Badge variant={variant as "default" | "secondary" | "destructive" | "outline"}>{label}</Badge>
+  );
 };
 
 export function KpiSkeletonRow() {
@@ -65,12 +67,20 @@ export default function KpiRow({ kpis }: { kpis: Kpi[] }) {
           <CardContent>
             <div className="text-3xl font-semibold leading-tight">
               {k.value}
-              {k.unit ? <span className="text-muted-foreground text-lg align-top ml-1">{k.unit}</span> : null}
+              {k.unit ? (
+                <span className="text-muted-foreground text-lg align-top ml-1">{k.unit}</span>
+              ) : null}
             </div>
             <div className="mt-2 h-10">
               <ResponsiveContainer width="100%" height={40}>
                 <AreaChart data={k.spark.map((v, idx) => ({ idx, v }))}>
-                  <Area type="monotone" dataKey="v" stroke="hsl(var(--primary))" fill="hsl(var(--primary) / 0.2)" strokeWidth={2} />
+                  <Area
+                    type="monotone"
+                    dataKey="v"
+                    stroke="hsl(var(--primary))"
+                    fill="hsl(var(--primary) / 0.2)"
+                    strokeWidth={2}
+                  />
                 </AreaChart>
               </ResponsiveContainer>
             </div>

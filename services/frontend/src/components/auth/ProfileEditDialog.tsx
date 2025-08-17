@@ -22,7 +22,10 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 
 const profileSchema = z.object({
-  fullName: z.string().min(1, "Full name is required").max(100, "Full name must be less than 100 characters"),
+  fullName: z
+    .string()
+    .min(1, "Full name is required")
+    .max(100, "Full name must be less than 100 characters"),
 });
 
 type ProfileFormData = z.infer<typeof profileSchema>;
@@ -34,7 +37,12 @@ interface ProfileEditDialogProps {
   onSave: (name: string) => Promise<void>;
 }
 
-export function ProfileEditDialog({ open, onOpenChange, currentName, onSave }: ProfileEditDialogProps) {
+export function ProfileEditDialog({
+  open,
+  onOpenChange,
+  currentName,
+  onSave,
+}: ProfileEditDialogProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
 
@@ -83,11 +91,9 @@ export function ProfileEditDialog({ open, onOpenChange, currentName, onSave }: P
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle>Edit Profile</DialogTitle>
-          <DialogDescription>
-            Update your profile information below.
-          </DialogDescription>
+          <DialogDescription>Update your profile information below.</DialogDescription>
         </DialogHeader>
-        
+
         <Form {...form}>
           <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
             <FormField
@@ -103,7 +109,7 @@ export function ProfileEditDialog({ open, onOpenChange, currentName, onSave }: P
                 </FormItem>
               )}
             />
-            
+
             <div className="flex justify-end gap-2 pt-4">
               <Button
                 type="button"

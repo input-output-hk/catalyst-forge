@@ -49,11 +49,34 @@ const App = () => (
                   <Route path="/environments" element={<Environments />} />
                   <Route path="/jobs" element={<Jobs />} />
                   <Route path="/secrets" element={<Secrets />} />
-                  <Route path="/audit" element={<RequireAdmin><AuditLog /></RequireAdmin>} />
-                  <Route path="/users" element={<RequireAdmin><Users /></RequireAdmin>} />
+                  <Route
+                    path="/audit"
+                    element={
+                      <RequireAdmin>
+                        <AuditLog />
+                      </RequireAdmin>
+                    }
+                  />
+                  <Route
+                    path="/users"
+                    element={
+                      <RequireAdmin>
+                        <Users />
+                      </RequireAdmin>
+                    }
+                  />
                   <Route path="/profile" element={<Profile />} />
                   <Route path="/settings" element={<SettingsProfile />} />
-                  <Route path="/auth-demo" element={<Suspense fallback={<div className="p-4 text-sm text-muted-foreground">Loading…</div>}><AuthFlows /></Suspense>} />
+                  <Route
+                    path="/auth-demo"
+                    element={
+                      <Suspense
+                        fallback={<div className="p-4 text-sm text-muted-foreground">Loading…</div>}
+                      >
+                        <AuthFlows />
+                      </Suspense>
+                    }
+                  />
                 </Route>
               </Route>
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

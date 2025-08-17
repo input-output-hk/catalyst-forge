@@ -1,18 +1,18 @@
-import * as React from "react"
-import * as ToggleGroupPrimitive from "@radix-ui/react-toggle-group"
+import * as React from "react";
+import * as ToggleGroupPrimitive from "@radix-ui/react-toggle-group";
 
-import { cn } from "@/lib/utils"
+import { cn } from "@/lib/utils";
 
 // Keep API parity so existing usages that pass `size`/`variant` don't error
 // These props are intentionally swallowed and unused here
- type SizeVariant = "default" | "sm" | "lg"
- type Variant = "default" | "outline"
+type SizeVariant = "default" | "sm" | "lg";
+type Variant = "default" | "outline";
 
 const ToggleGroup = React.forwardRef<
   React.ElementRef<typeof ToggleGroupPrimitive.Root>,
   React.ComponentPropsWithoutRef<typeof ToggleGroupPrimitive.Root> & {
-    size?: SizeVariant
-    variant?: Variant
+    size?: SizeVariant;
+    variant?: Variant;
   }
 >(({ className, size, variant, children, ...props }, ref) => (
   <ToggleGroupPrimitive.Root
@@ -22,15 +22,15 @@ const ToggleGroup = React.forwardRef<
   >
     {children}
   </ToggleGroupPrimitive.Root>
-))
+));
 
-ToggleGroup.displayName = ToggleGroupPrimitive.Root.displayName
+ToggleGroup.displayName = ToggleGroupPrimitive.Root.displayName;
 
 const ToggleGroupItem = React.forwardRef<
   React.ElementRef<typeof ToggleGroupPrimitive.Item>,
   React.ComponentPropsWithoutRef<typeof ToggleGroupPrimitive.Item> & {
-    size?: SizeVariant
-    variant?: Variant
+    size?: SizeVariant;
+    variant?: Variant;
   }
 >(({ className, ...props }, ref) => (
   <ToggleGroupPrimitive.Item
@@ -50,8 +50,8 @@ const ToggleGroupItem = React.forwardRef<
     )}
     {...props}
   />
-))
+));
 
-ToggleGroupItem.displayName = ToggleGroupPrimitive.Item.displayName
+ToggleGroupItem.displayName = ToggleGroupPrimitive.Item.displayName;
 
-export { ToggleGroup, ToggleGroupItem }
+export { ToggleGroup, ToggleGroupItem };

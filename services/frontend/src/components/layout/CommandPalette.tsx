@@ -1,5 +1,12 @@
 import * as React from "react";
-import { CommandDialog, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import {
+  CommandDialog,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
 import { useNavigate } from "react-router-dom";
 import { LogoMark } from "@/components/brand/LogoMark";
 
@@ -15,7 +22,13 @@ const entries = [
   { label: "Auth Flows", to: "/auth-demo" },
 ];
 
-export function CommandPalette({ open, onOpenChange }: { open: boolean; onOpenChange: (o: boolean) => void }) {
+export function CommandPalette({
+  open,
+  onOpenChange,
+}: {
+  open: boolean;
+  onOpenChange: (o: boolean) => void;
+}) {
   const navigate = useNavigate();
 
   React.useEffect(() => {
@@ -44,7 +57,13 @@ export function CommandPalette({ open, onOpenChange }: { open: boolean; onOpenCh
         <CommandEmpty>No results.</CommandEmpty>
         <CommandGroup heading="Navigate">
           {entries.map((e) => (
-            <CommandItem key={e.to} onSelect={() => { onOpenChange(false); navigate(e.to); }}>
+            <CommandItem
+              key={e.to}
+              onSelect={() => {
+                onOpenChange(false);
+                navigate(e.to);
+              }}
+            >
               {e.label}
             </CommandItem>
           ))}

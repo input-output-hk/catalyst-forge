@@ -59,7 +59,16 @@ export interface paths {
         /** List access requests (admin) */
         get: {
             parameters: {
-                query?: never;
+                query?: {
+                    /** @description Filter by status (pending|approved|rejected) */
+                    status?: string;
+                    /** @description Search query (email or reason) */
+                    q?: string;
+                    /** @description Max results (1-200) */
+                    limit?: number;
+                    /** @description Offset for pagination */
+                    offset?: number;
+                };
                 header?: never;
                 path?: never;
                 cookie?: never;
@@ -270,7 +279,16 @@ export interface paths {
         /** List users (admin) */
         get: {
             parameters: {
-                query?: never;
+                query?: {
+                    /** @description Search query (email or ID) */
+                    q?: string;
+                    /** @description Filter by role (admin|member) */
+                    role?: string;
+                    /** @description Max results (1-200) */
+                    limit?: number;
+                    /** @description Offset for pagination */
+                    offset?: number;
+                };
                 header?: never;
                 path?: never;
                 cookie?: never;
@@ -2133,6 +2151,79 @@ export interface paths {
         put?: never;
         post?: never;
         delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/sessions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List active sessions */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["auth.SessionsListResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/sessions/{family_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Revoke a session */
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Family ID */
+                    family_id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description No Content */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
         options?: never;
         head?: never;
         patch?: never;
@@ -5718,6 +5809,23 @@ export interface components {
             step_up_required?: boolean;
             step_up_until?: string;
             valid?: boolean;
+        };
+        "auth.SessionSummary": {
+            /** @description webauthn | device_link */
+            amr?: string;
+            created_at?: string;
+            current?: boolean;
+            device_id?: string;
+            device_name?: string;
+            expires_at?: string;
+            /** @description family_id */
+            id?: string;
+            ip_address?: string;
+            last_activity_at?: string;
+            user_agent?: string;
+        };
+        "auth.SessionsListResponse": {
+            sessions?: components["schemas"]["auth.SessionSummary"][];
         };
         "auth.StepUpCompleteRequest": {
             credential?: Record<string, never>;

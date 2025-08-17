@@ -1,10 +1,15 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Separator } from "@/components/ui/separator";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import {
   AlertDialog,
@@ -29,15 +34,40 @@ import { useAppStore } from "@/store/app-store";
 import { usePageTitle } from "@/hooks/usePageTitle";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
-import { Key, Monitor, RotateCcw, Trash2, MoreVertical, Edit, LogOut, Info, Terminal, Check } from "lucide-react";
+import {
+  Key,
+  Monitor,
+  RotateCcw,
+  Trash2,
+  MoreVertical,
+  Edit,
+  LogOut,
+  Info,
+  Terminal,
+  Check,
+} from "lucide-react";
 import { format, formatDistanceToNow } from "date-fns";
-import { generateRecoveryKeys, keysToText } from "@/lib/recovery";
-import { apiFetch, getApiBaseUrl } from "@/lib/api";
+import { generateRecoveryKeys } from "@/lib/auth/recovery";
+import { extractErrorMessage, readResponseError } from "@/lib/api";
 import { forge } from "@/lib/client";
 import { Skeleton } from "@/components/ui/skeleton";
+import type { components } from "forge-client";
+import { listCredentials, renameCredential, deleteCredential } from "@/lib/auth/credentials";
+import {
+  listSessions,
+  deleteSession,
+  deleteSessions,
+  logoutAllSessions,
+} from "@/lib/auth/sessions";
+import { updateFullName } from "@/lib/auth/profile";
+import { regenerateRecoveryCodes } from "@/lib/auth/recovery";
 
-// Session item shaped for UI
-type UISession = {
+// Type definitions
+type RecoveryGenerateResponse = components["schemas"]["auth.RecoveryGenerateResponse"];
+type SessionsListResponse = components["schemas"]["auth.SessionsListResponse"];
+type CredentialsListResponse = components["schemas"]["auth.CredentialsListResponse"];
+
+interface UISession {
   id: string;
   browser: string;
   os: string;
@@ -49,19 +79,27 @@ type UISession = {
   ipAddress?: string;
   amr?: string;
   lastActivityAtMs: number;
-};
+}
 
+/**
+ * Profile page component for managing user account settings.
+ * Handles passkeys, sessions, recovery keys, and account management.
+ */
 const Profile = () => {
   const { state, actions } = useAppStore();
   const { toast } = useToast();
-  const helmet = usePageTitle("My Profile – Catalyst Forge", "Manage your account information, devices, and security.", "/profile");
+  const helmet = usePageTitle(
+    "My Profile – Catalyst Forge",
+    "Manage your account information, devices, and security.",
+    "/profile"
+  );
 
   const [fullName, setFullName] = useState(
     state.session.user ? state.session.user.split("@")[0].replace(".", " ") : ""
   );
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [sessions, setSessions] = useState<UISession[]>([]);
-  type CredentialItem = { id: string; aaguid: string; device_name: string; sign_count: number; last_used_at?: string | null };
+  type CredentialItem = components["schemas"]["auth.CredentialSummary"];
   const [credentials, setCredentials] = useState<CredentialItem[]>([]);
   const [loadingCreds, setLoadingCreds] = useState(false);
   const [recoveryKeysGenerated, setRecoveryKeysGenerated] = useState(true);
@@ -75,69 +113,63 @@ const Profile = () => {
 
   const userInitials = state.session.user
     ? state.session.user
-      .split("@")[0]
-      .split(".")
-      .map((part) => part[0])
-      .join("")
-      .toUpperCase()
-      .slice(0, 2)
+        .split("@")[0]
+        .split(".")
+        .map((part) => part[0])
+        .join("")
+        .toUpperCase()
+        .slice(0, 2)
     : "U";
 
+  /**
+   * Handles saving profile name changes.
+   * @param newName - The new display name for the user
+   */
   const handleSave = async (newName: string) => {
     try {
-      const res = await forge.raw.PATCH('/api/v1/auth/me', {
-        body: { full_name: newName } as any,
-      });
-      if (res.response.status === 204) {
+      await updateFullName(newName);
+      {
         setFullName(newName);
         toast({ title: "Profile updated successfully" });
-      } else {
-        const text = await res.response.text().catch(() => "");
-        toast({ title: "Failed to update profile", description: text || `${res.response.status}`, variant: "destructive" });
       }
     } catch {
-      toast({ title: "Failed to update profile", variant: "destructive" });
+      toast({
+        title: "Failed to update profile",
+        variant: "destructive",
+      });
     }
   };
 
-  const refreshCredentials = async () => {
+  /**
+   * Refreshes the list of user credentials (passkeys).
+   */
+  const refreshCredentials = useCallback(async () => {
     setLoadingCreds(true);
+
     try {
-      const res = await apiFetch(new URL("/api/v1/auth/credentials", getApiBaseUrl()).toString());
-      if (res.ok) {
-        const json = await res.json().catch(() => null as any);
-        setCredentials(Array.isArray(json?.credentials) ? json.credentials : []);
-      }
+      const data = await listCredentials();
+      const credentialsList = data?.credentials || [];
+      const typedCredentials = credentialsList as unknown as CredentialItem[];
+      setCredentials(typedCredentials);
     } finally {
       setLoadingCreds(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     void refreshCredentials();
-    void refreshSessions();
-    // Sync display name from server on load to avoid stale cache
-    (async () => {
-      try {
-        const res = await forge.raw.GET('/api/v1/auth/me');
-        if (res.response.ok) {
-          const me = res.data as any;
-          if (me && typeof me.full_name === "string" && me.full_name.trim().length > 0) {
-            setFullName(me.full_name.trim());
-          }
-        }
-      } catch { /* ignore */ }
-    })();
-  }, []);
+  }, [refreshCredentials]);
 
+  /**
+   * Logs out all devices associated with the user account.
+   */
   const handleLogoutAllDevices = async () => {
     try {
-      await apiFetch(new URL("/api/v1/auth/logout-all", getApiBaseUrl()).toString(), {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: "{}",
-      });
+      await logoutAllSessions();
+
       toast({ title: "Logged out of all devices" });
+
+      // Refresh both credentials and sessions
       void refreshCredentials();
       void refreshSessions();
     } catch {
@@ -145,35 +177,34 @@ const Profile = () => {
     }
   };
 
+  /**
+   * Regenerates recovery keys for account recovery.
+   */
   const handleRegenerateKeys = async () => {
     try {
-      const res = await apiFetch(new URL("/api/v1/auth/recovery/codes/generate", getApiBaseUrl()).toString(), {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: "{}",
-      });
-      if (!res.ok) {
-        const text = await res.text().catch(() => "");
-        toast({ title: "Failed to regenerate recovery keys", description: text || `${res.status}`, variant: "destructive" });
-        return;
-      }
-      const json = await res.json().catch(() => null as any);
-      const codes = Array.isArray(json?.codes) ? (json.codes as string[]) : generateRecoveryKeys(8);
+      const codes = await regenerateRecoveryCodes();
       actions.startRecoveryGate(codes, "/profile");
       setRecoveryKeysGenerated(true);
-      toast({ title: "Recovery keys regenerated", description: "Make sure to save them securely." });
-    } catch { }
-  };
 
+      toast({
+        title: "Recovery keys regenerated",
+        description: "Make sure to save them securely.",
+      });
+    } catch (error) {
+      const errorMessage = extractErrorMessage(error);
+      toast({
+        title: "Failed to regenerate recovery keys",
+        description: errorMessage,
+        variant: "destructive",
+      });
+    }
+  };
 
   const handleEndSession = async (sessionId: string) => {
     try {
-      const res = await apiFetch(new URL(`/api/v1/auth/sessions/${sessionId}`, getApiBaseUrl()).toString(), { method: "DELETE" });
-      if (res.status === 204) {
+      await deleteSession(sessionId);
+      {
         toast({ title: "Session terminated" });
-      } else {
-        const text = await res.text().catch(() => "");
-        toast({ title: "Failed to terminate session", description: text || `${res.status}`, variant: "destructive" });
       }
     } catch {
       toast({ title: "Failed to terminate session", variant: "destructive" });
@@ -184,8 +215,8 @@ const Profile = () => {
 
   const handleTerminateAllSessions = async () => {
     try {
-      const targets = sessions.filter(s => !s.current).map(s => s.id);
-      await Promise.allSettled(targets.map(id => apiFetch(new URL(`/api/v1/auth/sessions/${id}`, getApiBaseUrl()).toString(), { method: "DELETE" })));
+      const targets = sessions.filter((s) => !s.current).map((s) => s.id);
+      await deleteSessions(targets);
       toast({ title: "All other sessions terminated" });
     } catch {
       toast({ title: "Failed to terminate all other sessions", variant: "destructive" });
@@ -194,40 +225,72 @@ const Profile = () => {
     }
   };
 
-  const refreshSessions = async () => {
+  /**
+   * Refreshes the list of active sessions.
+   */
+  const refreshSessions = useCallback(async () => {
     try {
-      const res = await apiFetch(new URL("/api/v1/auth/sessions", getApiBaseUrl()).toString());
-      if (!res.ok) return;
-      const json = await res.json().catch(() => null as any);
-      const items: Array<{ id: string; current: boolean; amr: string; device_id?: string | null; device_name?: string | null; created_at: string; last_activity_at: string; expires_at: string; user_agent?: string; ip_address?: string; }> = json?.sessions ?? [];
-      const mapped: UISession[] = items.map((s) => {
-        const amrLabel = s.amr === "device_link" ? `CLI device${s.device_name ? ` • ${s.device_name}` : ""}` : s.current ? "This browser" : "Passkey session";
+      const data = await listSessions();
+      const sessionItems = data?.sessions || [];
+
+      // Map sessions to UI format
+      const mappedSessions: UISession[] = sessionItems.map((session) => {
+        const isCliDevice = session.amr === "device_link";
+        const deviceName = session.device_name || "";
+        const cliLabel = `CLI device${deviceName ? ` • ${deviceName}` : ""}`;
+
+        const browserLabel = isCliDevice
+          ? cliLabel
+          : session.current
+            ? "This browser"
+            : "Passkey session";
+
+        const lastActivityTime = session.last_activity_at
+          ? new Date(session.last_activity_at).getTime()
+          : 0;
+
         return {
-          id: s.id,
-          browser: amrLabel,
-          amr: s.amr,
+          id: session.id,
+          browser: browserLabel,
+          amr: session.amr,
           os: "",
           location: "",
-          lastActivity: formatLastUsedLabel(s.last_activity_at),
-          loginDate: s.created_at,
-          current: !!s.current,
-          userAgent: s.user_agent || (json?.sessions?.find((x: any) => x.id === s.id)?.user_agent as string) || "",
-          ipAddress: s.ip_address || (json?.sessions?.find((x: any) => x.id === s.id)?.ip_address as string) || "",
-          lastActivityAtMs: new Date(s.last_activity_at).getTime() || 0,
+          lastActivity: formatLastUsedLabel(session.last_activity_at),
+          loginDate: session.created_at,
+          current: !!session.current,
+          userAgent: session.user_agent || "",
+          ipAddress: session.ip_address || "",
+          lastActivityAtMs: lastActivityTime,
         };
       });
-      mapped.sort((a, b) => {
-        if (a.current !== b.current) return a.current ? -1 : 1;
+
+      // Sort sessions: current first, then by activity
+      mappedSessions.sort((a, b) => {
+        const currentDifference = Number(b.current) - Number(a.current);
+
+        if (currentDifference !== 0) {
+          return currentDifference;
+        }
+
         return b.lastActivityAtMs - a.lastActivityAtMs;
       });
-      setSessions(mapped);
+
+      setSessions(mappedSessions);
     } catch {
-      // ignore
+      // Silently ignore errors
     }
-  };
+  }, []);
+
+  // Load active sessions after callbacks are defined
+  useEffect(() => {
+    void refreshSessions();
+  }, [refreshSessions]);
 
   const handleDeleteAccount = () => {
-    toast({ title: "Account deletion initiated", description: "Your account will be deleted within 24 hours." });
+    toast({
+      title: "Account deletion initiated",
+      description: "Your account will be deleted within 24 hours.",
+    });
   };
 
   const openRenameDialog = (cred: CredentialItem) => {
@@ -260,20 +323,13 @@ const Profile = () => {
       return;
     }
     try {
-      const res = await apiFetch(new URL(`/api/v1/auth/credentials/${target.id}`, getApiBaseUrl()).toString(), {
-        method: "PATCH",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ device_name: newName }),
-      });
-      if (res.status === 204) {
+      await renameCredential(target.id!, newName);
+      {
         toast({ title: "Device renamed" });
         setRenameOpen(false);
         setRenameTarget(null);
         setRenameValue("");
         void refreshCredentials();
-      } else {
-        const text = await res.text().catch(() => "");
-        toast({ title: "Failed to rename device", description: text || `${res.status}`, variant: "destructive" });
       }
     } catch {
       toast({ title: "Failed to rename device", variant: "destructive" });
@@ -318,9 +374,13 @@ const Profile = () => {
               <div className="flex items-center gap-2">
                 <h1 className="truncate text-xl font-semibold">{fullName || state.session.user}</h1>
                 {Array.isArray(state.session.roles) && state.session.roles.includes("admin") ? (
-                  <span className="rounded-full bg-muted px-2.5 py-0.5 text-[11px] font-medium text-muted-foreground">Administrator</span>
+                  <span className="rounded-full bg-muted px-2.5 py-0.5 text-[11px] font-medium text-muted-foreground">
+                    Administrator
+                  </span>
                 ) : (
-                  <span className="rounded-full bg-muted px-2.5 py-0.5 text-[11px] font-medium text-muted-foreground">Member</span>
+                  <span className="rounded-full bg-muted px-2.5 py-0.5 text-[11px] font-medium text-muted-foreground">
+                    Member
+                  </span>
                 )}
                 <Button
                   variant="ghost"
@@ -355,7 +415,6 @@ const Profile = () => {
           </DropdownMenu>
         </section>
 
-
         {/* Grid */}
         <div className="mt-16 grid grid-cols-1 gap-6 lg:grid-cols-2">
           {/* Passkeys & Security Keys */}
@@ -363,7 +422,14 @@ const Profile = () => {
             <div className="flex items-baseline justify-between flex-wrap gap-2">
               <h2 className="text-xl font-bold">Passkeys & Security Keys</h2>
               <div className="flex gap-2">
-                <Button size="sm" onClick={() => toast({ title: "Register a new passkey from your browser (coming soon)" })}>+ Register passkey</Button>
+                <Button
+                  size="sm"
+                  onClick={() =>
+                    toast({ title: "Register a new passkey from your browser (coming soon)" })
+                  }
+                >
+                  + Register passkey
+                </Button>
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
                     <Button size="sm" variant="outline" className="text-destructive">
@@ -379,7 +445,10 @@ const Profile = () => {
                     </AlertDialogHeader>
                     <AlertDialogFooter>
                       <AlertDialogCancel>Cancel</AlertDialogCancel>
-                      <AlertDialogAction onClick={handleLogoutAllDevices} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                      <AlertDialogAction
+                        onClick={handleLogoutAllDevices}
+                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                      >
                         Log out all
                       </AlertDialogAction>
                     </AlertDialogFooter>
@@ -390,7 +459,7 @@ const Profile = () => {
             <ul className="divide-y divide-border/40 rounded-lg border border-border/40">
               {loadingCreds ? (
                 <>
-                  {[0, 1, 2].map(i => (
+                  {[0, 1, 2].map((i) => (
                     <li key={i} className="py-3 px-3">
                       <div className="flex items-center gap-3">
                         <Skeleton className="h-4 w-4 rounded-full" />
@@ -405,98 +474,108 @@ const Profile = () => {
               ) : credentials.length === 0 ? (
                 <li className="py-6 px-3 text-sm text-muted-foreground">No passkeys yet.</li>
               ) : (
-                [...credentials].sort((a, b) => {
-                  const ta = a.last_used_at ? new Date(a.last_used_at).getTime() : 0;
-                  const tb = b.last_used_at ? new Date(b.last_used_at).getTime() : 0;
-                  return tb - ta;
-                }).map((cred) => (
-                  <li key={cred.id} className="flex items-center justify-between py-3.5 px-3 hover:bg-accent/40 rounded-md transition-colors">
-                    <div className="min-w-0 flex items-center gap-3">
-                      <Key className="h-4 w-4 text-muted-foreground shrink-0" />
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-2">
-                          <div className="font-medium truncate">{cred.device_name}</div>
-                          {isRecent(cred.last_used_at) && (
-                            <span className="rounded-full bg-info/15 text-info px-2 py-0.5 text-[10px]">Recent</span>
-                          )}
-                        </div>
-                        <div className="text-xs text-muted-foreground space-y-0.5 leading-5">
-                          <div>Sign count {cred.sign_count}</div>
-                          <div>Last used {formatLastUsedLabel(cred.last_used_at)}</div>
+                [...credentials]
+                  .sort((a, b) => {
+                    const timeA = a.last_used_at ? new Date(a.last_used_at).getTime() : 0;
+                    const timeB = b.last_used_at ? new Date(b.last_used_at).getTime() : 0;
+
+                    return timeB - timeA;
+                  })
+                  .map((cred) => (
+                    <li
+                      key={cred.id}
+                      className="flex items-center justify-between py-3.5 px-3 hover:bg-accent/40 rounded-md transition-colors"
+                    >
+                      <div className="min-w-0 flex items-center gap-3">
+                        <Key className="h-4 w-4 text-muted-foreground shrink-0" />
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-2">
+                            <div className="font-medium truncate">{cred.device_name}</div>
+                            {isRecent(cred.last_used_at) && (
+                              <span className="rounded-full bg-info/15 text-info px-2 py-0.5 text-[10px]">
+                                Recent
+                              </span>
+                            )}
+                          </div>
+                          <div className="text-xs text-muted-foreground space-y-0.5 leading-5">
+                            <div>Sign count {cred.sign_count}</div>
+                            <div>Last used {formatLastUsedLabel(cred.last_used_at)}</div>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                    <div className="flex gap-2">
-                      <Button size="sm" variant="ghost" className="text-foreground/80 hover:text-foreground" aria-label={`Rename ${cred.device_name}`} onClick={() => openRenameDialog(cred)}>Rename</Button>
-                      {credentials.length <= 1 ? (
-                        <TooltipProvider>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <span className="inline-flex">
-                                <Button
-                                  size="sm"
-                                  variant="ghost"
-                                  className="text-destructive"
-                                  aria-label={`Delete ${cred.device_name}`}
-                                  disabled
-                                >
-                                  Delete
-                                </Button>
-                              </span>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                              You must keep at least one passkey
-                            </TooltipContent>
-                          </Tooltip>
-                        </TooltipProvider>
-                      ) : (
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              className="text-destructive hover:text-destructive hover:bg-destructive/5"
-                              aria-label={`Delete ${cred.device_name}`}
-                            >
-                              Delete
-                            </Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>Remove device?</AlertDialogTitle>
-                              <AlertDialogDescription>
-                                This will remove "{cred.device_name}" from your account. You must have at least one passkey; the last one cannot be removed.
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel>Cancel</AlertDialogCancel>
-                              <AlertDialogAction
-                                onClick={async () => {
-                                  try {
-                                    const res = await forge.raw.DELETE(`/api/v1/auth/credentials/${cred.id}`);
-                                    if (res.response.status === 204) {
-                                      toast({ title: "Passkey removed" });
-                                    } else {
-                                      const text = await res.response.text().catch(() => "");
-                                      toast({ title: "Failed to remove passkey", description: text || `${res.response.status}` });
-                                    }
-                                  } catch {
-                                    toast({ title: "Failed to remove passkey" });
-                                  } finally {
-                                    void refreshCredentials();
-                                  }
-                                }}
-                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                      <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="text-foreground/80 hover:text-foreground"
+                          aria-label={`Rename ${cred.device_name}`}
+                          onClick={() => openRenameDialog(cred)}
+                        >
+                          Rename
+                        </Button>
+                        {credentials.length <= 1 ? (
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <span className="inline-flex">
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    className="text-destructive"
+                                    aria-label={`Delete ${cred.device_name}`}
+                                    disabled
+                                  >
+                                    Delete
+                                  </Button>
+                                </span>
+                              </TooltipTrigger>
+                              <TooltipContent>You must keep at least one passkey</TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        ) : (
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="text-destructive hover:text-destructive hover:bg-destructive/5"
+                                aria-label={`Delete ${cred.device_name}`}
                               >
-                                Remove
-                              </AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
-                      )}
-                    </div>
-                  </li>
-                ))
+                                Delete
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Remove device?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  This will remove "{cred.device_name}" from your account. You must
+                                  have at least one passkey; the last one cannot be removed.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction
+                                  onClick={async () => {
+                                    try {
+                                      await deleteCredential(cred.id!);
+                                      toast({ title: "Passkey removed" });
+                                    } catch {
+                                      toast({ title: "Failed to remove passkey" });
+                                    } finally {
+                                      void refreshCredentials();
+                                    }
+                                  }}
+                                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                >
+                                  Remove
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        )}
+                      </div>
+                    </li>
+                  ))
               )}
             </ul>
           </section>
@@ -507,7 +586,11 @@ const Profile = () => {
               <h2 className="text-xl font-bold">Active Sessions</h2>
               <AlertDialog>
                 <AlertDialogTrigger asChild>
-                  <Button size="sm" variant="outline" className="whitespace-nowrap text-destructive">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="whitespace-nowrap text-destructive"
+                  >
                     Terminate all sessions
                   </Button>
                 </AlertDialogTrigger>
@@ -515,7 +598,8 @@ const Profile = () => {
                   <AlertDialogHeader>
                     <AlertDialogTitle>Terminate all sessions?</AlertDialogTitle>
                     <AlertDialogDescription>
-                      This will end all other active sessions except your current one. Other devices will need to sign in again.
+                      This will end all other active sessions except your current one. Other devices
+                      will need to sign in again.
                     </AlertDialogDescription>
                   </AlertDialogHeader>
                   <AlertDialogFooter>
@@ -552,7 +636,9 @@ const Profile = () => {
                         <div className="flex items-center gap-2">
                           <div className="font-medium truncate">{session.browser}</div>
                           {session.current && (
-                            <span className="rounded-full bg-success/15 text-success px-2.5 py-0.5 text-[11px] font-medium">Current</span>
+                            <span className="rounded-full bg-success/15 text-success px-2.5 py-0.5 text-[11px] font-medium">
+                              Current
+                            </span>
                           )}
                         </div>
                         <div className="mt-1 grid grid-cols-[auto,1fr] gap-x-3 gap-y-1 text-sm text-muted-foreground">
@@ -578,10 +664,14 @@ const Profile = () => {
                                       }}
                                       className={cn(
                                         "inline-flex items-center gap-1 rounded px-1.5 py-0.5 font-mono focus:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-                                        copied ? "bg-success/15 text-success ring-1 ring-success/30" : "bg-muted/70 hover:bg-muted"
+                                        copied
+                                          ? "bg-success/15 text-success ring-1 ring-success/30"
+                                          : "bg-muted/70 hover:bg-muted"
                                       )}
                                       aria-live="polite"
-                                      aria-label={copied ? "Copied" : `Copy IP ${session.ipAddress}`}
+                                      aria-label={
+                                        copied ? "Copied" : `Copy IP ${session.ipAddress}`
+                                      }
                                       title={copied ? "Copied!" : "Copy IP"}
                                     >
                                       {copied ? (
@@ -603,7 +693,9 @@ const Profile = () => {
                               <div className="truncate pl-1.5">
                                 <TooltipProvider>
                                   <Tooltip>
-                                    <TooltipTrigger className="underline decoration-dotted">View</TooltipTrigger>
+                                    <TooltipTrigger className="underline decoration-dotted">
+                                      View
+                                    </TooltipTrigger>
                                     <TooltipContent className="max-w-xs break-words">
                                       {session.userAgent}
                                     </TooltipContent>
@@ -669,8 +761,7 @@ const Profile = () => {
             <p className="text-sm text-muted-foreground/70">
               {recoveryKeysGenerated
                 ? `Last regenerated ${format(lastRecoveryDate, "PP")}`
-                : "Never generated"
-              }
+                : "Never generated"}
             </p>
             <TooltipProvider>
               <Tooltip>
@@ -678,7 +769,11 @@ const Profile = () => {
                   <Info className="h-4 w-4 text-muted-foreground" />
                 </TooltipTrigger>
                 <TooltipContent>
-                  <p>Regenerating creates new keys and invalidates old ones.<br />New keys are shown only once.</p>
+                  <p>
+                    Regenerating creates new keys and invalidates old ones.
+                    <br />
+                    New keys are shown only once.
+                  </p>
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
@@ -686,7 +781,8 @@ const Profile = () => {
           <div className="flex items-center gap-2 p-3 rounded-lg bg-info/10 border border-info/30">
             <Info className="h-4 w-4 text-info shrink-0" />
             <p className="text-sm text-foreground">
-              Your recovery keys can only be viewed right after they're generated. If you've lost them, regenerate to create new keys.
+              Your recovery keys can only be viewed right after they're generated. If you've lost
+              them, regenerate to create new keys.
             </p>
           </div>
         </section>
@@ -699,7 +795,11 @@ const Profile = () => {
           </p>
           <AlertDialog>
             <AlertDialogTrigger asChild>
-              <Button variant="destructive" className="w-full sm:w-auto" aria-describedby="delete-account-description">
+              <Button
+                variant="destructive"
+                className="w-full sm:w-auto"
+                aria-describedby="delete-account-description"
+              >
                 <Trash2 className="mr-2 h-4 w-4" />
                 Delete account
               </Button>
@@ -708,7 +808,8 @@ const Profile = () => {
               <AlertDialogHeader>
                 <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
                 <AlertDialogDescription id="delete-account-description">
-                  This action cannot be undone. This will permanently delete your account and remove all associated data from our servers.
+                  This action cannot be undone. This will permanently delete your account and remove
+                  all associated data from our servers.
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
@@ -756,8 +857,18 @@ const Profile = () => {
             />
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setRenameOpen(false)}>Cancel</Button>
-            <Button onClick={() => void submitRename()} disabled={renameValue.trim().length === 0 || (renameTarget && renameValue.trim() === renameTarget.device_name)}>Save</Button>
+            <Button variant="outline" onClick={() => setRenameOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              onClick={() => void submitRename()}
+              disabled={
+                renameValue.trim().length === 0 ||
+                (renameTarget && renameValue.trim() === renameTarget.device_name)
+              }
+            >
+              Save
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

@@ -1,12 +1,23 @@
 import { useAppStore } from "@/store/app-store";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { usePageTitle } from "@/hooks/usePageTitle";
 
 const Environments = () => {
   const { state } = useAppStore();
-  const helmet = usePageTitle("Environments – Catalyst Forge", "All deployment environments.", "/environments");
+  const helmet = usePageTitle(
+    "Environments – Catalyst Forge",
+    "All deployment environments.",
+    "/environments"
+  );
 
   return (
     <section className="container py-8">
@@ -28,7 +39,17 @@ const Environments = () => {
                 <TableCell className="font-medium">{e.name}</TableCell>
                 <TableCell>{e.region}</TableCell>
                 <TableCell>
-                  <Badge variant={e.status === "ready" ? "secondary" : e.status === "provisioning" ? "outline" : "destructive"}>{e.status}</Badge>
+                  <Badge
+                    variant={
+                      e.status === "ready"
+                        ? "secondary"
+                        : e.status === "provisioning"
+                          ? "outline"
+                          : "destructive"
+                    }
+                  >
+                    {e.status}
+                  </Badge>
                 </TableCell>
               </TableRow>
             ))}

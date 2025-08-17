@@ -21,7 +21,11 @@ const Stat = ({ label, value, to }: { label: string; value: string | number; to:
 
 const Dashboard = () => {
   const { state } = useAppStore();
-  const helmet = usePageTitle("Dashboard – Catalyst Forge", "Overview of services, jobs, and activity.", "/");
+  const helmet = usePageTitle(
+    "Dashboard – Catalyst Forge",
+    "Overview of services, jobs, and activity.",
+    "/"
+  );
 
   return (
     <div className="bg-hero">
@@ -30,7 +34,9 @@ const Dashboard = () => {
         <div className="mb-6">
           <div className="text-[11px] uppercase tracking-widest text-primary font-semibold flex items-center gap-2">
             <span>{BRAND.name}</span>
-            <span className="inline-flex items-center rounded-full border border-primary/50 text-primary px-2 py-0.5 text-[10px]">{BRAND.version}</span>
+            <span className="inline-flex items-center rounded-full border border-primary/50 text-primary px-2 py-0.5 text-[10px]">
+              {BRAND.version}
+            </span>
           </div>
           <h1 className="text-3xl font-extrabold text-gradient">Welcome back</h1>
           <span className="forge-arc mt-2" aria-hidden />
@@ -42,7 +48,9 @@ const Dashboard = () => {
           <Stat label="Recent Jobs" value={state.jobs.length} to="/jobs" />
         </div>
         <div className="mt-8">
-          <a className={cn(buttonVariants({ variant: "hero" }), "shadow-glow")} href="/auth-demo">Explore Auth Flows</a>
+          <a className={cn(buttonVariants({ variant: "hero" }), "shadow-glow")} href="/auth-demo">
+            Explore Auth Flows
+          </a>
         </div>
       </section>
     </div>

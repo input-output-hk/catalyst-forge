@@ -47,15 +47,15 @@ export function LogoMark({ size = 24, className = "", rounded = false }: LogoMar
         aria-label="Catalyst Forge logo"
         className="absolute inset-0 hidden dark:block"
         style={{
-          backgroundColor: 'hsl(var(--foreground))',
+          backgroundColor: "hsl(var(--foreground))",
           WebkitMaskImage: `url(${BRAND.logoMono})`,
           maskImage: `url(${BRAND.logoMono})`,
-          WebkitMaskRepeat: 'no-repeat',
-          maskRepeat: 'no-repeat',
-          WebkitMaskPosition: 'center',
-          maskPosition: 'center',
-          WebkitMaskSize: 'contain',
-          maskSize: 'contain',
+          WebkitMaskRepeat: "no-repeat",
+          maskRepeat: "no-repeat",
+          WebkitMaskPosition: "center",
+          maskPosition: "center",
+          WebkitMaskSize: "contain",
+          maskSize: "contain",
         }}
       />
       {/* Preload invisible img to preserve onError fallback handling */}

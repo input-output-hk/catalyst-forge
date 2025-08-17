@@ -12,7 +12,9 @@ export const FeatureFlagsPanel = () => {
   return (
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger asChild>
-        <Button className="fixed bottom-4 right-4 shadow-glow" variant="hero">Flags</Button>
+        <Button className="fixed bottom-4 right-4 shadow-glow" variant="hero">
+          Flags
+        </Button>
       </SheetTrigger>
       <SheetContent side="right" className="w-96">
         <SheetHeader>
@@ -21,15 +23,27 @@ export const FeatureFlagsPanel = () => {
         <div className="mt-6 space-y-5">
           <div className="flex items-center justify-between">
             <Label htmlFor="dark">Dark mode</Label>
-            <Switch id="dark" checked={state.flags.darkMode} onCheckedChange={() => actions.toggleFlag("darkMode")} />
+            <Switch
+              id="dark"
+              checked={state.flags.darkMode}
+              onCheckedChange={() => actions.toggleFlag("darkMode")}
+            />
           </div>
           <div className="flex items-center justify-between">
             <Label htmlFor="compact">Compact density</Label>
-            <Switch id="compact" checked={state.flags.compact} onCheckedChange={() => actions.toggleFlag("compact")} />
+            <Switch
+              id="compact"
+              checked={state.flags.compact}
+              onCheckedChange={() => actions.toggleFlag("compact")}
+            />
           </div>
           <div className="flex items-center justify-between">
             <Label htmlFor="stream">Stream logs</Label>
-            <Switch id="stream" checked={state.flags.streamLogs} onCheckedChange={() => actions.toggleFlag("streamLogs")} />
+            <Switch
+              id="stream"
+              checked={state.flags.streamLogs}
+              onCheckedChange={() => actions.toggleFlag("streamLogs")}
+            />
           </div>
         </div>
       </SheetContent>

@@ -13,6 +13,3 @@ export const authApi = {
     return forge.raw.POST("/api/v1/auth/logout", { body: {} as Record<string, never> });
   },
 };
-
-
-

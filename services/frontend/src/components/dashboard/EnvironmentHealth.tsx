@@ -16,7 +16,8 @@ function formatAgo(iso: string) {
 }
 
 function ActionButton({ env }: { env: EnvHealth["id"] }) {
-  const actionKey = env === "prod" ? "promote:prod" : env === "preprod" ? "promote:preprod" : "promote:dev";
+  const actionKey =
+    env === "prod" ? "promote:prod" : env === "preprod" ? "promote:preprod" : "promote:dev";
   const perm = can(actionKey);
   const btn = (
     <Button size="sm" variant="secondary" disabled={!perm.allowed} aria-label={`Promote ${env}`}>
@@ -70,8 +71,12 @@ export default function EnvironmentHealth({ envs }: { envs: EnvHealth[] }) {
               <div className="text-sm text-muted-foreground">{formatAgo(e.lastDeployAt)}</div>
             </div>
             <div className="mt-2 flex items-center gap-2">
-              <Badge variant={e.drift ? "destructive" : "secondary"}>{e.drift ? "Drift" : "In sync"}</Badge>
-              <Badge variant={e.errorRate > 1 ? "destructive" : "secondary"}>{e.errorRate.toFixed(1)}% errors</Badge>
+              <Badge variant={e.drift ? "destructive" : "secondary"}>
+                {e.drift ? "Drift" : "In sync"}
+              </Badge>
+              <Badge variant={e.errorRate > 1 ? "destructive" : "secondary"}>
+                {e.errorRate.toFixed(1)}% errors
+              </Badge>
             </div>
             <div className="mt-3 flex items-center gap-2">
               <ActionButton env={e.id} />

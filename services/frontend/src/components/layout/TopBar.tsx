@@ -11,7 +11,10 @@ export const TopBar = () => {
   return (
     <div className="flex items-center gap-2 w-full">
       <div className="relative max-w-xl w-full">
-        <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
+        <Search
+          className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
+          aria-hidden="true"
+        />
         <Input
           placeholder="Search or jump to… (⌘K)"
           onFocus={() => setOpen(true)}

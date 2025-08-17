@@ -1,62 +1,79 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, lazy, Suspense } from "react";
 import { Helmet } from "react-helmet-async";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
 import { Checkbox } from "@/components/ui/checkbox";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip";
 import { useToast } from "@/hooks/use-toast";
-import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
 import { format, formatDistanceToNow } from "date-fns";
-import { Download, Loader2, MoreVertical, Search, Trash2, Upload, Users, X, LogOut, Eye, Power, CheckCircle2, Slash, Mail, Clock, Rows3, List, ChevronsLeft, ChevronsRight, Copy, Laptop, Key, Pencil } from "lucide-react";
+import {
+  Download,
+  Loader2,
+  MoreVertical,
+  Search,
+  Trash2,
+  Upload,
+  Users,
+  LogOut,
+  Eye,
+  Power,
+  CheckCircle2,
+  Slash,
+  Mail,
+  Clock,
+  Rows3,
+  List,
+  ChevronsLeft,
+  ChevronsRight,
+} from "lucide-react";
 import { withLatency } from "@/mocks/latency";
 import { forgeFetch } from "@/lib/client";
+import { adminListUsers, adminDeleteUser, adminUpdateUser } from "@/lib/auth/admin";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 import EmptyState from "@/components/EmptyState";
 import { useAppStore } from "@/store/app-store";
+import type { User, Credential } from "@/features/users/types";
+import Filters from "@/features/users/directory/components/Filters";
+import BulkActionsBar from "@/features/users/directory/components/BulkActionsBar";
+import UserTable from "@/features/users/directory/components/UserTable";
+import PaginationControls from "@/features/users/directory/components/PaginationControls";
 
-// Types (mocked)
-type Credential = {
-  id: string;
-  label: string;
-  addedAt: string;
-  lastUsedAt?: string;
-  platform: "platform" | "security_key";
-  aaguid?: string;
-};
-
-export type User = {
-  id: string;
-  name: string;
-  email: string;
-  role: "admin" | "member";
-  status: "active" | "disabled" | "pending_invite" | "pending_approval";
-  createdAt: string; // ISO
-  lastActivityAt?: string; // ISO | undefined for never
-  sessions: number;
-  credentials: Credential[];
-  invites?: {
-    link: string;
-    expiresAt: string;
-    lastSentAt: string;
-  } | null;
-  requests?: Array<{
-    submittedAt: string;
-    reason?: string;
-    status: "pending" | "approved" | "rejected";
-    decidedAt?: string;
-    decidedBy?: string;
-    note?: string;
-  }>;
-};
+const RequestsTab = lazy(() => import("@/features/users/requests/RequestsTab"));
+const InviteDialog = lazy(() => import("@/features/users/overlays/InviteDialog"));
+const UserSheet = lazy(() => import("@/features/users/overlays/UserSheet"));
 
 // Helpers
 const randomFrom = <T,>(arr: T[]) => arr[Math.floor(Math.random() * arr.length)];
@@ -69,10 +86,64 @@ const firstLast = (name: string) => {
 };
 
 function seedUsers(count = 96): User[] {
-  const firstNames = ["Alice", "Bob", "Carol", "David", "Eve", "Frank", "Grace", "Heidi", "Ivan", "Judy", "Mallory", "Nia", "Olivia", "Peggy", "Rupert", "Sybil", "Trent", "Victor", "Walter", "Yara", "Zoe"];
-  const lastNames = ["Anderson", "Brown", "Clark", "Davis", "Evans", "Foster", "Garcia", "Harris", "Iverson", "Johnson", "Klein", "Lopez", "Miller", "Nguyen", "Olsen", "Patel", "Quinn", "Roberts", "Smith", "Turner", "Ulrich", "Vega", "Williams", "Xu", "Young", "Zimmerman"];
+  const firstNames = [
+    "Alice",
+    "Bob",
+    "Carol",
+    "David",
+    "Eve",
+    "Frank",
+    "Grace",
+    "Heidi",
+    "Ivan",
+    "Judy",
+    "Mallory",
+    "Nia",
+    "Olivia",
+    "Peggy",
+    "Rupert",
+    "Sybil",
+    "Trent",
+    "Victor",
+    "Walter",
+    "Yara",
+    "Zoe",
+  ];
+  const lastNames = [
+    "Anderson",
+    "Brown",
+    "Clark",
+    "Davis",
+    "Evans",
+    "Foster",
+    "Garcia",
+    "Harris",
+    "Iverson",
+    "Johnson",
+    "Klein",
+    "Lopez",
+    "Miller",
+    "Nguyen",
+    "Olsen",
+    "Patel",
+    "Quinn",
+    "Roberts",
+    "Smith",
+    "Turner",
+    "Ulrich",
+    "Vega",
+    "Williams",
+    "Xu",
+    "Young",
+    "Zimmerman",
+  ];
   const roles: Array<User["role"]> = ["admin", "member"];
-  const statuses: Array<User["status"]> = ["active", "disabled", "pending_invite", "pending_approval"];
+  const statuses: Array<User["status"]> = [
+    "active",
+    "disabled",
+    "pending_invite",
+    "pending_approval",
+  ];
   const users: User[] = [];
   const now = Date.now();
 
@@ -83,8 +154,13 @@ function seedUsers(count = 96): User[] {
     const email = `${fname}.${lname}${i % 7 === 0 ? ".test" : ""}@example.com`.toLowerCase();
     const role = Math.random() < 0.18 ? "admin" : "member";
     const status = randomFrom(statuses);
-    const createdAt = new Date(now - Math.floor(Math.random() * 1000 * 60 * 60 * 24 * 365)).toISOString();
-    const lastActivityAt = Math.random() < 0.12 ? undefined : new Date(now - Math.floor(Math.random() * 1000 * 60 * 60 * 24 * 120)).toISOString();
+    const createdAt = new Date(
+      now - Math.floor(Math.random() * 1000 * 60 * 60 * 24 * 365)
+    ).toISOString();
+    const lastActivityAt =
+      Math.random() < 0.12
+        ? undefined
+        : new Date(now - Math.floor(Math.random() * 1000 * 60 * 60 * 24 * 120)).toISOString();
     const sessions = status === "disabled" ? 0 : Math.floor(Math.random() * 4);
 
     const credsCount = Math.random() < 0.6 ? 1 : Math.random() < 0.8 ? 2 : 0;
@@ -97,19 +173,41 @@ function seedUsers(count = 96): User[] {
       aaguid: Math.random() < 0.5 ? makeId("aag") : undefined,
     }));
 
-    const invites = status === "pending_invite" ? {
-      link: `https://app.example.com/invite/${makeId("inv")}`,
-      expiresAt: new Date(now + 1000 * 60 * 60 * 24 * 7).toISOString(),
-      lastSentAt: new Date(now - 1000 * 60 * 60 * 24).toISOString(),
-    } : null;
+    const invites =
+      status === "pending_invite"
+        ? {
+            link: `https://app.example.com/invite/${makeId("inv")}`,
+            expiresAt: new Date(now + 1000 * 60 * 60 * 24 * 7).toISOString(),
+            lastSentAt: new Date(now - 1000 * 60 * 60 * 24).toISOString(),
+          }
+        : null;
 
-    const requests = status === "pending_approval" ? [{
-      submittedAt: new Date(now - 1000 * 60 * 60 * (Math.floor(Math.random() * 96) + 1)).toISOString(),
-      reason: Math.random() < 0.8 ? "Need access to run deployment workflows" : "",
-      status: "pending" as const,
-    }] : [];
+    const requests =
+      status === "pending_approval"
+        ? [
+            {
+              submittedAt: new Date(
+                now - 1000 * 60 * 60 * (Math.floor(Math.random() * 96) + 1)
+              ).toISOString(),
+              reason: Math.random() < 0.8 ? "Need access to run deployment workflows" : "",
+              status: "pending" as const,
+            },
+          ]
+        : [];
 
-    users.push({ id: makeId("usr"), name, email, role, status, createdAt, lastActivityAt, sessions, credentials, invites, requests });
+    users.push({
+      id: makeId("usr"),
+      name,
+      email,
+      role,
+      status,
+      createdAt,
+      lastActivityAt,
+      sessions,
+      credentials,
+      invites,
+      requests,
+    });
   }
   return users.sort((a, b) => a.name.localeCompare(b.name));
 }
@@ -118,9 +216,24 @@ function seedUsers(count = 96): User[] {
 function StatusBadge({ status }: { status: User["status"] }) {
   const map = {
     active: { label: "Active", tooltip: "Active", Icon: CheckCircle2, tone: "success" as const },
-    disabled: { label: "Disabled", tooltip: "Disabled account", Icon: Slash, tone: "muted" as const },
-    pending_invite: { label: "Pending", tooltip: "Invite sent, awaiting acceptance", Icon: Mail, tone: "primary" as const },
-    pending_approval: { label: "Pending", tooltip: "Awaiting admin approval", Icon: Clock, tone: "info" as const },
+    disabled: {
+      label: "Disabled",
+      tooltip: "Disabled account",
+      Icon: Slash,
+      tone: "muted" as const,
+    },
+    pending_invite: {
+      label: "Pending",
+      tooltip: "Invite sent, awaiting acceptance",
+      Icon: Mail,
+      tone: "primary" as const,
+    },
+    pending_approval: {
+      label: "Pending",
+      tooltip: "Awaiting admin approval",
+      Icon: Clock,
+      tone: "info" as const,
+    },
   } as const;
   const { label, tooltip, Icon, tone } = map[status];
   return (
@@ -147,14 +260,19 @@ function StatusBadge({ status }: { status: User["status"] }) {
 
 function RoleBadge({ role }: { role: User["role"] }) {
   return (
-    <span aria-label={`Role: ${role}`} className="rounded-full border border-muted-foreground/60 px-2 py-0.5 text-xs text-muted-foreground">
+    <span
+      aria-label={`Role: ${role}`}
+      className="rounded-full border border-muted-foreground/60 px-2 py-0.5 text-xs text-muted-foreground"
+    >
       {role === "admin" ? "Admin" : "Member"}
     </span>
   );
 }
 
 function HeaderUnderline() {
-  return <div className="mt-2 h-0.5 w-32 rounded-full bg-gradient-to-r from-primary via-primary/60 to-transparent" />;
+  return (
+    <div className="mt-2 h-0.5 w-32 rounded-full bg-gradient-to-r from-primary via-primary/60 to-transparent" />
+  );
 }
 
 export default function UsersPage() {
@@ -167,7 +285,10 @@ export default function UsersPage() {
   const [activityFilter, setActivityFilter] = useState<string>("all");
   const [density, setDensity] = useState<"comfortable" | "compact">("comfortable");
   const [selected, setSelected] = useState<Record<string, boolean>>({});
-  const [sort, setSort] = useState<{ key: "name" | "lastActivityAt" | "createdAt"; dir: "asc" | "desc" }>({ key: "name", dir: "asc" });
+  const [sort, setSort] = useState<{
+    key: "name" | "lastActivityAt" | "createdAt";
+    dir: "asc" | "desc";
+  }>({ key: "name", dir: "asc" });
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(25);
   const [serverTotal, setServerTotal] = useState<number | null>(null);
@@ -178,27 +299,21 @@ export default function UsersPage() {
   const { state } = useAppStore();
   const currentUserEmail = state.session.user || "";
 
-  // Admin: open user credentials
-  type APICred = { id: string; device_name: string; sign_count: number; last_used_at?: string };
-  const [openUserCreds, setOpenUserCreds] = useState<APICred[]>([]);
-  const [loadingOpenCreds, setLoadingOpenCreds] = useState(false);
-  const [openUserAudit, setOpenUserAudit] = useState<Array<{ id: string; type: string; actor_id?: string; created_at: string }>>([]);
+  // User sheet loads its own data lazily
 
   // Load users from API with filters/paging (fallback to mock seed on error for now)
   useEffect(() => {
     (async () => {
       setLoading(true);
       try {
-        const params = new URLSearchParams();
-        if (search.trim()) params.set("q", search.trim());
-        if (roleFilter !== "all") params.set("role", roleFilter);
         const offset = (page - 1) * pageSize;
-        params.set("limit", String(pageSize));
-        params.set("offset", String(offset));
-        const res = await forgeFetch(`/api/v1/admin/users?${params.toString()}`);
-        const totalHdr = res.headers.get("X-Total-Count");
-        if (totalHdr) setServerTotal(parseInt(totalHdr, 10));
-        const data = await res.json() as { users: Array<{ id: string; email: string; roles: string[]; active_sessions?: number; created_at: string; updated_at: string; last_activity_at?: string | null; }> };
+        const { data, total } = await adminListUsers({
+          q: search.trim() || undefined,
+          role: roleFilter !== "all" ? roleFilter : undefined,
+          limit: pageSize,
+          offset,
+        });
+        if (typeof total === "number") setServerTotal(total);
         const mapped: User[] = data.users.map((u) => ({
           id: u.id,
           name: u.email,
@@ -207,7 +322,7 @@ export default function UsersPage() {
           status: "active",
           createdAt: u.created_at,
           lastActivityAt: u.last_activity_at || undefined,
-          sessions: (u as any).active_sessions ?? 0,
+          sessions: (u as unknown as { active_sessions?: number }).active_sessions ?? 0,
           credentials: [],
           invites: null,
           requests: [],
@@ -215,7 +330,12 @@ export default function UsersPage() {
         setUsers(mapped);
       } catch {
         await withLatency(350, 700);
-        setUsers(seedUsers(120));
+        if (import.meta.env.DEV) {
+          const mod = await import("@/features/users/utils/seed");
+          setUsers(mod.seedUsers(120));
+        } else {
+          setUsers([]);
+        }
         setServerTotal(null);
       } finally {
         setLoading(false);
@@ -226,7 +346,8 @@ export default function UsersPage() {
   // Persist density preference
   useEffect(() => {
     const saved = localStorage.getItem("users:density");
-    if (saved === "comfortable" || saved === "compact") setDensity(saved as any);
+    if (saved === "comfortable" || saved === "compact")
+      setDensity(saved as "comfortable" | "compact");
   }, []);
   useEffect(() => {
     localStorage.setItem("users:density", density);
@@ -239,11 +360,11 @@ export default function UsersPage() {
         e.preventDefault();
         (activeTab === "directory" ? searchRef : requestsSearchRef).current?.focus();
       }
-      if (e.shiftKey && (e.key.toLowerCase() === "a")) {
+      if (e.shiftKey && e.key.toLowerCase() === "a") {
         e.preventDefault();
         setInviteOpen(true);
       }
-      if (e.shiftKey && (e.key.toLowerCase() === "d")) {
+      if (e.shiftKey && e.key.toLowerCase() === "d") {
         e.preventDefault();
         setDensity((prev) => (prev === "compact" ? "comfortable" : "compact"));
       }
@@ -258,12 +379,16 @@ export default function UsersPage() {
   // Derived rows
   const filtered = useMemo(() => {
     const s = search.trim().toLowerCase();
-    let list = users.filter(u =>
-      !s || u.name.toLowerCase().includes(s) || u.email.toLowerCase().includes(s) || u.id.toLowerCase().includes(s)
+    let list = users.filter(
+      (u) =>
+        !s ||
+        u.name.toLowerCase().includes(s) ||
+        u.email.toLowerCase().includes(s) ||
+        u.id.toLowerCase().includes(s)
     );
 
-    if (statusFilter !== "all") list = list.filter(u => u.status === statusFilter);
-    if (roleFilter !== "all") list = list.filter(u => u.role === roleFilter);
+    if (statusFilter !== "all") list = list.filter((u) => u.status === statusFilter);
+    if (roleFilter !== "all") list = list.filter((u) => u.role === roleFilter);
     if (activityFilter !== "all") {
       const now = Date.now();
       const ranges: Record<string, number> = {
@@ -273,11 +398,13 @@ export default function UsersPage() {
         "90d": 24 * 90,
       };
       if (activityFilter === "never") {
-        list = list.filter(u => !u.lastActivityAt);
+        list = list.filter((u) => !u.lastActivityAt);
       } else if (ranges[activityFilter]) {
         const hours = ranges[activityFilter];
         const cutoff = now - hours * 60 * 60 * 1000;
-        list = list.filter(u => (u.lastActivityAt ? new Date(u.lastActivityAt).getTime() >= cutoff : false));
+        list = list.filter((u) =>
+          u.lastActivityAt ? new Date(u.lastActivityAt).getTime() >= cutoff : false
+        );
       }
     }
 
@@ -289,7 +416,8 @@ export default function UsersPage() {
         const bt = b.lastActivityAt ? new Date(b.lastActivityAt).getTime() : -Infinity;
         res = at - bt;
       }
-      if (sort.key === "createdAt") res = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+      if (sort.key === "createdAt")
+        res = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
       return sort.dir === "asc" ? res : -res;
     });
 
@@ -319,9 +447,11 @@ export default function UsersPage() {
     setSelected(next);
   };
 
-  // Actions (mocked)
+  // Actions
   const bulkDisable = () => {
-    setUsers((prev) => prev.map((u) => (selected[u.id] ? { ...u, status: "disabled", sessions: 0 } : u)));
+    setUsers((prev) =>
+      prev.map((u) => (selected[u.id] ? { ...u, status: "disabled", sessions: 0 } : u))
+    );
     toast({ title: `${selectedIds.length} users disabled.` });
     setSelected({});
   };
@@ -337,16 +467,18 @@ export default function UsersPage() {
   };
   const bulkDelete = () => {
     (async () => {
-      const ids = Object.entries(selected).filter(([, v]) => v).map(([id]) => id);
+      const ids = Object.entries(selected)
+        .filter(([, v]) => v)
+        .map(([id]) => id);
       for (const id of ids) {
         try {
-          const res = await forgeFetch(`/api/v1/admin/users/${id}`, { method: "DELETE" });
-          if (!res.ok) {
-            const t = await res.text().catch(() => "");
-            toast({ title: `Failed deleting ${id}`, description: t || `${res.status}`, variant: "destructive" });
-          }
-        } catch {
-          toast({ title: `Network error deleting ${id}`, variant: "destructive" });
+          await adminDeleteUser(id);
+        } catch (e) {
+          toast({
+            title: `Failed deleting ${id}`,
+            description: (e as Error).message,
+            variant: "destructive",
+          });
         }
       }
       setUsers((prev) => prev.filter((u) => !selected[u.id]));
@@ -361,7 +493,7 @@ export default function UsersPage() {
   };
 
   // CSV Export
-  const exportCsv = () => {
+  const exportCsv = async () => {
     const rows = filtered.map((u) => ({
       id: u.id,
       name: u.name,
@@ -372,128 +504,41 @@ export default function UsersPage() {
       lastActivityAt: u.lastActivityAt ?? "",
       sessions: u.sessions,
     }));
-    const header = Object.keys(rows[0] ?? { id: "", name: "", email: "", role: "", status: "", createdAt: "", lastActivityAt: "", sessions: 0 }).join(",");
-    const body = rows.map((r) => Object.values(r).map((v) => `${String(v).replace(/"/g, '""')}`).join(",")).join("\n");
-    const csv = `${header}\n${body}`;
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `users_export_${format(new Date(), "yyyyMMdd_HHmmss")}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
+    const mod = await import("@/features/users/utils/csv");
+    mod.exportUsersCsv(rows as Array<Record<string, unknown>>);
   };
 
-  // Invite flow (mock)
+  // Invite dialog visibility
   const [inviteOpen, setInviteOpen] = useState(false);
-  const [inviteEmail, setInviteEmail] = useState("");
-  const [inviteRole, setInviteRole] = useState<User["role"]>("member");
-  const [inviteDays, setInviteDays] = useState("7");
-  const [inviteEmailUser, setInviteEmailUser] = useState(true);
-
-  // Listen for request-approval event to prefill and open invite dialog
   useEffect(() => {
-    const handler = (e: Event) => {
-      const detail = (e as CustomEvent).detail as { email?: string; role?: User["role"] };
-      if (detail?.email) setInviteEmail(detail.email);
-      if (detail?.role) setInviteRole(detail.role);
-      setInviteOpen(true);
-    };
-    window.addEventListener("cf:open-invite", handler as EventListener);
-    return () => window.removeEventListener("cf:open-invite", handler as EventListener);
+    const openHandler = () => setInviteOpen(true);
+    window.addEventListener("cf:open-invite", openHandler as EventListener);
+    return () => window.removeEventListener("cf:open-invite", openHandler as EventListener);
   }, []);
 
-  const submitInvite = async () => {
-    if (!inviteEmail) return;
-    try {
-      const res = await forgeFetch(`/api/v1/admin/invites`, {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          email: inviteEmail,
-          roles: [inviteRole],
-          days_to_expire: parseInt(inviteDays) || 7,
-          email_user: !!inviteEmailUser,
-        }),
-      });
-      if (!res.ok) {
-        const text = await res.text().catch(() => "");
-        toast({ title: "Invite failed", description: text || `${res.status}`, variant: "destructive" });
-        return;
-      }
-      const out = await res.json().catch(() => ({} as any));
-      const link = out?.invite_link || "";
-      const exp = out?.expires_at || new Date(Date.now() + (parseInt(inviteDays) || 7) * 86400e3).toISOString();
-      const nowIso = new Date().toISOString();
-      const newUser: User = {
-        id: out?.invite_id || makeId("usr"),
-        name: inviteEmail.split("@")[0].replace(/\./g, " ").replace(/\b\w/g, (c) => c.toUpperCase()) || "Pending User",
-        email: inviteEmail,
-        role: inviteRole,
-        status: "pending_invite",
-        createdAt: nowIso,
-        lastActivityAt: undefined,
-        sessions: 0,
-        credentials: [],
-        invites: { link, expiresAt: exp, lastSentAt: nowIso },
-        requests: [],
-      };
-      setUsers((prev) => [newUser, ...prev]);
-      setInviteOpen(false);
-      setInviteEmail("");
-      toast({ title: `Invite sent to ${newUser.email}. Link copied to clipboard.` });
-      if (link) {
-        try { await navigator.clipboard.writeText(link); } catch { }
-      }
-    } catch {
-      toast({ title: "Network error", variant: "destructive" });
-    }
-  };
-
-  // User sheet data
+  // User selected for sheet
   const openUser = users.find((u) => u.id === openUserId) || null;
-
-  // Load credentials when the sheet opens
-  useEffect(() => {
-    (async () => {
-      if (!openUserId) {
-        setOpenUserCreds([]);
-        setOpenUserAudit([]);
-        return;
-      }
-      try {
-        setLoadingOpenCreds(true);
-        const res = await forgeFetch(`/api/v1/admin/users/${openUserId}/credentials`);
-        const data = await res.json() as { credentials: Array<{ id: string; device_name: string; sign_count: number; last_used_at?: string }> };
-        setOpenUserCreds(data.credentials || []);
-        const ar = await forgeFetch(`/api/v1/admin/audit?user_id=${openUserId}&limit=10`);
-        if (ar.ok) {
-          const aj = await ar.json() as { events: Array<{ id: string; type: string; actor_id?: string; created_at: string }>; total: number };
-          setOpenUserAudit(aj.events || []);
-        } else {
-          setOpenUserAudit([]);
-        }
-      } catch {
-        setOpenUserCreds([]);
-        setOpenUserAudit([]);
-      } finally {
-        setLoadingOpenCreds(false);
-      }
-    })();
-  }, [openUserId]);
 
   return (
     <div className="p-4 md:p-6">
       <Helmet>
         <title>Users | Admin Console</title>
-        <meta name="description" content="Manage and audit users: search, filter, view details, and take actions." />
+        <meta
+          name="description"
+          content="Manage and audit users: search, filter, view details, and take actions."
+        />
         <link rel="canonical" href="/users" />
       </Helmet>
 
       <header className="mb-4 md:mb-6">
         <div className="flex items-center justify-between gap-3">
           <div>
-            <h1 className="text-2xl md:text-3xl font-semibold tracking-tight">Users <span className="ml-2 align-middle text-xs font-normal text-muted-foreground">{totalAll.toLocaleString()}</span></h1>
+            <h1 className="text-2xl md:text-3xl font-semibold tracking-tight">
+              Users{" "}
+              <span className="ml-2 align-middle text-xs font-normal text-muted-foreground">
+                {totalAll.toLocaleString()}
+              </span>
+            </h1>
             <HeaderUnderline />
           </div>
           <div className="flex items-center gap-2">
@@ -509,7 +554,7 @@ export default function UsersPage() {
         </div>
       </header>
 
-      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)}>
+      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "directory" | "requests")}>
         <div className="flex items-center gap-3 flex-wrap">
           <TabsList>
             <TabsTrigger value="directory">Directory</TabsTrigger>
@@ -519,7 +564,7 @@ export default function UsersPage() {
           <ToggleGroup
             type="single"
             value={density}
-            onValueChange={(v) => v && setDensity(v as any)}
+            onValueChange={(v) => v && setDensity(v as "comfortable" | "compact")}
             size="sm"
             className="inline-flex rounded-lg border border-input bg-muted/30 p-0.5"
           >
@@ -575,40 +620,24 @@ export default function UsersPage() {
             <div className="flex flex-1 items-center gap-2">
               <div className="relative flex-1 max-w-md">
                 <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input ref={searchRef} value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search name, email, ID ( / )" className="pl-8" aria-label="Search users" />
+                <Input
+                  ref={searchRef}
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Search name, email, ID ( / )"
+                  className="pl-8"
+                  aria-label="Search users"
+                />
               </div>
             </div>
-            <div className="flex items-center gap-2">
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-[160px]"><SelectValue placeholder="Status" /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Status: All</SelectItem>
-                  <SelectItem value="active">Active</SelectItem>
-                  <SelectItem value="disabled">Disabled</SelectItem>
-                  <SelectItem value="pending_invite">Pending invite</SelectItem>
-                  <SelectItem value="pending_approval">Pending approval</SelectItem>
-                </SelectContent>
-              </Select>
-              <Select value={roleFilter} onValueChange={setRoleFilter}>
-                <SelectTrigger className="w-[140px]"><SelectValue placeholder="Role" /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Role: All</SelectItem>
-                  <SelectItem value="admin">Admin</SelectItem>
-                  <SelectItem value="member">Member</SelectItem>
-                </SelectContent>
-              </Select>
-              <Select value={activityFilter} onValueChange={setActivityFilter}>
-                <SelectTrigger className="w-[160px]"><SelectValue placeholder="Last activity" /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Last activity: All</SelectItem>
-                  <SelectItem value="24h">24h</SelectItem>
-                  <SelectItem value="7d">7d</SelectItem>
-                  <SelectItem value="30d">30d</SelectItem>
-                  <SelectItem value="90d">90d</SelectItem>
-                  <SelectItem value="never">Never</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+            <Filters
+              statusFilter={statusFilter}
+              roleFilter={roleFilter}
+              activityFilter={activityFilter}
+              setStatusFilter={setStatusFilter}
+              setRoleFilter={setRoleFilter}
+              setActivityFilter={setActivityFilter}
+            />
           </div>
 
           {/* Active filter chips */}
@@ -616,48 +645,65 @@ export default function UsersPage() {
             <div className="mt-2 flex flex-wrap items-center gap-2 text-xs">
               {statusFilter !== "all" && (
                 <span className="inline-flex items-center gap-1 rounded-full border border-muted-foreground/50 px-2 py-0.5">
-                  <span className="text-muted-foreground">Status: {statusFilter.replace("_", " ")}</span>
-                  <button className="hover:text-foreground" onClick={() => setStatusFilter("all")} aria-label="Clear status">×</button>
+                  <span className="text-muted-foreground">
+                    Status: {statusFilter.replace("_", " ")}
+                  </span>
+                  <button
+                    className="hover:text-foreground"
+                    onClick={() => setStatusFilter("all")}
+                    aria-label="Clear status"
+                  >
+                    ×
+                  </button>
                 </span>
               )}
               {roleFilter !== "all" && (
                 <span className="inline-flex items-center gap-1 rounded-full border border-muted-foreground/50 px-2 py-0.5">
                   <span className="text-muted-foreground">Role: {roleFilter}</span>
-                  <button className="hover:text-foreground" onClick={() => setRoleFilter("all")} aria-label="Clear role">×</button>
+                  <button
+                    className="hover:text-foreground"
+                    onClick={() => setRoleFilter("all")}
+                    aria-label="Clear role"
+                  >
+                    ×
+                  </button>
                 </span>
               )}
               {activityFilter !== "all" && (
                 <span className="inline-flex items-center gap-1 rounded-full border border-muted-foreground/50 px-2 py-0.5">
                   <span className="text-muted-foreground">Last activity: {activityFilter}</span>
-                  <button className="hover:text-foreground" onClick={() => setActivityFilter("all")} aria-label="Clear last activity">×</button>
+                  <button
+                    className="hover:text-foreground"
+                    onClick={() => setActivityFilter("all")}
+                    aria-label="Clear last activity"
+                  >
+                    ×
+                  </button>
                 </span>
               )}
-              <button className="ml-auto text-muted-foreground hover:text-foreground" onClick={() => { setStatusFilter("all"); setRoleFilter("all"); setActivityFilter("all"); }}>Clear all</button>
+              <button
+                className="ml-auto text-muted-foreground hover:text-foreground"
+                onClick={() => {
+                  setStatusFilter("all");
+                  setRoleFilter("all");
+                  setActivityFilter("all");
+                }}
+              >
+                Clear all
+              </button>
             </div>
           )}
 
           {/* Selection bar */}
           {selectedIds.length > 0 && (
-            <div className="mt-3 flex items-center justify-between rounded-md border bg-muted/30 px-3 py-2 text-sm">
-              <div>
-                <span className="font-medium">{selectedIds.length} selected</span>
-              </div>
-              <div className="flex flex-wrap items-center gap-2">
-                <Button size="sm" variant="secondary" onClick={bulkDisable}>Disable</Button>
-                <Button size="sm" variant="secondary" onClick={bulkEnable}>Re-enable</Button>
-                <Button size="sm" variant="secondary" onClick={bulkLogout}><LogOut className="h-4 w-4" /> Force log out</Button>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button size="sm" variant="outline">Change role</Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={() => changeRoleBulk("admin")}>Admin</DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => changeRoleBulk("member")}>Member</DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-                <Confirm destructive label="Delete" onConfirm={bulkDelete} description="This removes selected users and their credentials." />
-              </div>
-            </div>
+            <BulkActionsBar
+              selectedCount={selectedIds.length}
+              onDisable={bulkDisable}
+              onEnable={bulkEnable}
+              onLogout={bulkLogout}
+              onChangeRole={changeRoleBulk}
+              onDelete={bulkDelete}
+            />
           )}
 
           {/* Table */}
@@ -682,499 +728,135 @@ export default function UsersPage() {
               <EmptyState
                 icon={<Users className="mx-auto h-12 w-12" />}
                 title="Nothing matches your filters"
-                primaryCta={{ label: "Clear filters", onClick: () => { setSearch(""); setStatusFilter("all"); setRoleFilter("all"); setActivityFilter("all"); } }}
+                primaryCta={{
+                  label: "Clear filters",
+                  onClick: () => {
+                    setSearch("");
+                    setStatusFilter("all");
+                    setRoleFilter("all");
+                    setActivityFilter("all");
+                  },
+                }}
                 secondaryCta={{ label: "Invite user", onClick: () => setInviteOpen(true) }}
               />
             ) : (
-              <Table className="">
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-[40px]">
-                      <Checkbox checked={allVisibleSelected} onCheckedChange={(v) => toggleAllVisible(Boolean(v))} aria-label="Select all visible" />
-                    </TableHead>
-                    <TableHead className="cursor-pointer select-none" onClick={() => setSort((s) => ({ key: "name", dir: s.key === "name" && s.dir === "asc" ? "desc" : "asc" }))}>
-                      User {sort.key === "name" && (sort.dir === "asc" ? "↑" : "↓")}
-                    </TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Role</TableHead>
-                    <TableHead className="cursor-pointer select-none" onClick={() => setSort((s) => ({ key: "lastActivityAt", dir: s.key === "lastActivityAt" && s.dir === "asc" ? "desc" : "asc" }))}>
-                      Last activity {sort.key === "lastActivityAt" && (sort.dir === "asc" ? "↑" : "↓")}
-                    </TableHead>
-                    <TableHead>Sessions</TableHead>
-                    <TableHead className="cursor-pointer select-none" onClick={() => setSort((s) => ({ key: "createdAt", dir: s.key === "createdAt" && s.dir === "asc" ? "desc" : "asc" }))}>
-                      Created {sort.key === "createdAt" && (sort.dir === "asc" ? "↑" : "↓")}
-                    </TableHead>
-                    <TableHead className="w-[120px] text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {visible.map((u, idx) => (
-                    <TableRow
-                      key={u.id}
-                      className={cn(
-                        "cursor-pointer group",
-                        density === "compact" ? "h-11" : "h-14",
-                        "odd:bg-foreground/[0.015] even:bg-transparent hover:bg-foreground/[0.03]"
-                      )}
-                      onClick={(e) => {
-                        const tag = (e.target as HTMLElement).closest("button,input,svg,span,[role='menuitem']");
-                        if (tag) return;
-                        setOpenUserId(u.id);
-                      }}
-                    >
-                      <TableCell className={cn("w-[40px]", density === "compact" && "py-1")} onClick={(e) => e.stopPropagation()}>
-                        <Checkbox
-                          checked={!!selected[u.id]}
-                          onCheckedChange={(v) => setSelected((prev) => ({ ...prev, [u.id]: Boolean(v) }))}
-                          aria-label={`Select ${u.name}`}
-                        />
-                      </TableCell>
-                      <TableCell className={cn(density === "compact" && "py-1")}>
-                        <div className="flex items-center gap-3">
-                          <Avatar className="h-9 w-9">
-                            <AvatarFallback>{firstLast(u.name)}</AvatarFallback>
-                          </Avatar>
-                          <div>
-                            <div className={cn("font-medium", density === "compact" ? "text-sm" : "")}>{(u.name && u.name.trim() && u.name.trim().toLowerCase() !== u.email.toLowerCase()) ? u.name : u.email}</div>
-                            {(u.name && u.name.trim() && u.name.trim().toLowerCase() !== u.email.toLowerCase()) && (
-                              <div className="text-xs text-muted-foreground">{u.email}</div>
-                            )}
-                          </div>
-                        </div>
-                      </TableCell>
-                      <TableCell className={cn(density === "compact" && "py-1")}> <StatusBadge status={u.status} /> </TableCell>
-                      <TableCell className={cn(density === "compact" && "py-1")}> <RoleBadge role={u.role} /> </TableCell>
-                      <TableCell className={cn(density === "compact" && "py-1")} title={u.lastActivityAt ? format(new Date(u.lastActivityAt), "PPpp") : "Never"}>
-                        {u.lastActivityAt ? `${formatDistanceToNow(new Date(u.lastActivityAt), { addSuffix: true })}` : "Never"}
-                      </TableCell>
-                      <TableCell className={cn(density === "compact" && "py-1")}>{u.sessions}</TableCell>
-                      <TableCell className={cn(density === "compact" && "py-1")} title={format(new Date(u.createdAt), "PPpp")}>{format(new Date(u.createdAt), "PP")}</TableCell>
-                      <TableCell className={cn("text-right", density === "compact" && "py-1")} onClick={(e) => e.stopPropagation()}>
-                        <TooltipProvider>
-                          <div className="flex items-center justify-end gap-1 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Button variant="ghost" size="icon" aria-label="View" onClick={() => setOpenUserId(u.id)}>
-                                  <Eye className="h-4 w-4" />
-                                </Button>
-                              </TooltipTrigger>
-                              <TooltipContent>View</TooltipContent>
-                            </Tooltip>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Button variant="ghost" size="icon" aria-label={u.status === "disabled" ? "Re-enable" : "Disable"} disabled={u.email === currentUserEmail || u.role === "admin"} onClick={async () => {
-                                  try {
-                                    const res = await forgeFetch(`/api/v1/admin/users/${u.id}`, {
-                                      method: "PATCH",
-                                      headers: { "content-type": "application/json" },
-                                      body: JSON.stringify({ suspend: u.status !== "disabled" })
-                                    });
-                                    if (res.status === 204) {
-                                      setUsers((prev) => prev.map((x) => x.id === u.id ? { ...x, status: u.status !== "disabled" ? "disabled" : "active", sessions: u.status !== "disabled" ? 0 : x.sessions } : x));
-                                      toast({ title: u.status !== "disabled" ? "User disabled" : "User re-enabled" });
-                                    } else {
-                                      const text = await res.text().catch(() => "");
-                                      toast({ title: "Failed", description: text || `${res.status}` });
-                                    }
-                                  } catch {
-                                    toast({ title: "Network error" });
-                                  }
-                                }}>
-                                  <Power className="h-4 w-4" />
-                                </Button>
-                              </TooltipTrigger>
-                              <TooltipContent>{u.email === currentUserEmail ? "You can’t disable yourself" : (u.role === "admin" ? "Admins cannot be disabled here" : (u.status === "disabled" ? "Re-enable" : "Disable"))}</TooltipContent>
-                            </Tooltip>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Button variant="ghost" size="icon" aria-label="Force log out" onClick={() => setUsers((prev) => prev.map((x) => x.id === u.id ? { ...x, sessions: 0 } : x))}>
-                                  <LogOut className="h-4 w-4" />
-                                </Button>
-                              </TooltipTrigger>
-                              <TooltipContent>Force log out</TooltipContent>
-                            </Tooltip>
-                            <DropdownMenu>
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <DropdownMenuTrigger asChild>
-                                    <Button variant="ghost" size="icon" aria-label="More">
-                                      <MoreVertical className="h-4 w-4" />
-                                    </Button>
-                                  </DropdownMenuTrigger>
-                                </TooltipTrigger>
-                                <TooltipContent>More</TooltipContent>
-                              </Tooltip>
-                              <DropdownMenuContent align="end">
-                                {u.status === "pending_invite" && (
-                                  <DropdownMenuItem onClick={() => toast({ title: `Invite resent to ${u.email}.` })}>Resend invite</DropdownMenuItem>
-                                )}
-                                <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={() => setUsers((prev) => prev.filter((x) => x.id !== u.id))}><Trash2 className="h-4 w-4 mr-2" /> Delete</DropdownMenuItem>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                          </div>
-                        </TooltipProvider>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+              <UserTable
+                users={users}
+                density={density}
+                currentUserEmail={currentUserEmail}
+                visible={visible}
+                selected={selected}
+                onSelectUser={(id, checked) => setSelected((prev) => ({ ...prev, [id]: checked }))}
+                onToggleAllVisible={(checked) => toggleAllVisible(checked)}
+                allVisibleSelected={allVisibleSelected}
+                onOpenUser={(id) => setOpenUserId(id)}
+                onDisableToggle={async (u) => {
+                  try {
+                    const res = await forgeFetch(`/api/v1/admin/users/${u.id}`, {
+                      method: "PATCH",
+                      headers: { "content-type": "application/json" },
+                      body: JSON.stringify({ suspend: u.status !== "disabled" }),
+                    });
+                    if (res.status === 204) {
+                      setUsers((prev) =>
+                        prev.map((x) =>
+                          x.id === u.id
+                            ? {
+                                ...x,
+                                status: u.status !== "disabled" ? "disabled" : "active",
+                                sessions: u.status !== "disabled" ? 0 : x.sessions,
+                              }
+                            : x
+                        )
+                      );
+                      toast({
+                        title: u.status !== "disabled" ? "User disabled" : "User re-enabled",
+                      });
+                    } else {
+                      const text = await res.text().catch(() => "");
+                      toast({ title: "Failed", description: text || `${res.status}` });
+                    }
+                  } catch {
+                    toast({ title: "Network error" });
+                  }
+                }}
+                onLogout={(id) =>
+                  setUsers((prev) => prev.map((x) => (x.id === id ? { ...x, sessions: 0 } : x)))
+                }
+                onDelete={(id) => setUsers((prev) => prev.filter((x) => x.id !== id))}
+                sortKey={sort.key}
+                sortDir={sort.dir}
+                onChangeSort={(key) =>
+                  setSort((s) => ({ key, dir: s.key === key && s.dir === "asc" ? "desc" : "asc" }))
+                }
+              />
             )}
           </div>
 
           {/* Pagination */}
-          {!loading && total > 0 && (
-            <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-              <div className="text-sm text-muted-foreground">
-                {total === 0 ? "0" : `${startIdx + 1}–${endIdx}`} of {total.toLocaleString()}
-              </div>
-              <div className="flex items-center gap-3">
-                <Select value={String(pageSize)} onValueChange={(v) => { setPageSize(parseInt(v)); setPage(1); }}>
-                  <SelectTrigger className="w-[120px] shrink-0 whitespace-nowrap"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="25">25 / page</SelectItem>
-                    <SelectItem value="50">50 / page</SelectItem>
-                    <SelectItem value="100">100 / page</SelectItem>
-                  </SelectContent>
-                </Select>
-                <Pagination>
-                  <PaginationContent>
-                    <PaginationItem>
-                      <PaginationLink
-                        href="#"
-                        className="gap-1 pl-2.5"
-                        onClick={(e) => { e.preventDefault(); if (page > 1) setPage(1); }}
-                        aria-label="Go to first page"
-                        aria-disabled={page === 1}
-                        size="default"
-                      >
-                        <ChevronsLeft className="h-4 w-4" />
-                        <span>First</span>
-                      </PaginationLink>
-                    </PaginationItem>
-                    <PaginationItem>
-                      <PaginationPrevious href="#" onClick={(e) => { e.preventDefault(); setPage((p) => Math.max(1, p - 1)); }} aria-disabled={page === 1} />
-                    </PaginationItem>
-                    <PaginationItem>
-                      <PaginationLink href="#" isActive>{page}</PaginationLink>
-                    </PaginationItem>
-                    <PaginationItem>
-                      <PaginationNext href="#" onClick={(e) => { e.preventDefault(); setPage((p) => Math.min(pageCount, p + 1)); }} aria-disabled={page === pageCount} />
-                    </PaginationItem>
-                    <PaginationItem>
-                      <PaginationLink
-                        href="#"
-                        className="gap-1 pr-2.5"
-                        onClick={(e) => { e.preventDefault(); if (page < pageCount) setPage(pageCount); }}
-                        aria-label="Go to last page"
-                        aria-disabled={page === pageCount}
-                        size="default"
-                      >
-                        <span>Last</span>
-                        <ChevronsRight className="h-4 w-4" />
-                      </PaginationLink>
-                    </PaginationItem>
-                  </PaginationContent>
-                </Pagination>
-              </div>
-            </div>
-          )}
+          <PaginationControls
+            loading={loading}
+            total={total}
+            page={page}
+            pageCount={pageCount}
+            pageSize={pageSize}
+            setPage={setPage}
+            setPageSize={setPageSize}
+            startIdx={startIdx}
+            endIdx={endIdx}
+          />
         </TabsContent>
 
-        {/* Requests Tab (simplified mocked) */}
+        {/* Requests Tab (lazy) */}
         <TabsContent value="requests" className="mt-4">
-          <RequestsTab users={users} setUsers={setUsers} density={density} setDensity={setDensity} searchRef={requestsSearchRef} />
+          <Suspense fallback={null}>
+            <RequestsTab
+              users={users}
+              setUsers={setUsers}
+              density={density}
+              setDensity={setDensity}
+              searchRef={requestsSearchRef}
+            />
+          </Suspense>
         </TabsContent>
       </Tabs>
 
       {/* Invite dialog */}
-      <AlertDialog open={inviteOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Invite user</AlertDialogTitle>
-            <AlertDialogDescription>Send an invitation link with an optional expiration.</AlertDialogDescription>
-          </AlertDialogHeader>
-          <div className="space-y-3">
-            <div>
-              <label className="block text-sm mb-1">Email</label>
-              <Input type="email" value={inviteEmail} onChange={(e) => setInviteEmail(e.target.value)} placeholder="user@company.com" />
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div>
-                <label className="block text-sm mb-1">Role</label>
-                <Select value={inviteRole} onValueChange={(v) => setInviteRole(v as any)}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="member">Member</SelectItem>
-                    <SelectItem value="admin">Admin</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <label className="block text-sm mb-1">Expiration</label>
-                <Select value={inviteDays} onValueChange={setInviteDays}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="7">7 days</SelectItem>
-                    <SelectItem value="14">14 days</SelectItem>
-                    <SelectItem value="30">30 days</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            <div className="flex items-center gap-2 pt-1">
-              <Checkbox id="invite-email-user" checked={inviteEmailUser} onCheckedChange={(v) => setInviteEmailUser(Boolean(v))} />
-              <label htmlFor="invite-email-user" className="text-sm select-none">Email user the invite link</label>
-            </div>
-          </div>
-          <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setInviteOpen(false)}>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={submitInvite}
-              disabled={!inviteEmail || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(inviteEmail)}
-              className="disabled:opacity-80 disabled:bg-primary/35 disabled:text-foreground/80 disabled:cursor-not-allowed hover:scale-[1.01] shadow-[0_8px_24px_-8px_hsl(var(--primary)/0.25)]"
-            >
-              Send invite
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <Suspense fallback={null}>
+        {inviteOpen && (
+          <InviteDialog
+            open={inviteOpen}
+            onOpenChange={setInviteOpen}
+            onInvited={(newUser) => setUsers((prev) => [newUser, ...prev])}
+          />
+        )}
+      </Suspense>
 
       {/* User slide-over */}
-      <Sheet open={!!openUser} onOpenChange={(o) => setOpenUserId(o ? openUserId : null)}>
-        <SheetContent side="right" className="w-full sm:max-w-[520px] md:max-w-[560px] motion-safe:animate-in fade-in slide-in-from-right-2">
-          {openUser && (
-            <div className="flex h-full flex-col">
-              <SheetHeader className="sticky top-0 z-10 bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-                <SheetTitle>
-                  <div className="rounded-lg border border-white/5 bg-foreground/[0.02] shadow-inner">
-                    <div className={cn("grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3", density === "compact" ? "px-4 pt-4 pb-3" : "px-5 pt-5 pb-4")}>
-                      {/* Identity */}
-                      <div className="min-w-0 flex items-center gap-3">
-                        <Avatar className="h-9 w-9">
-                          <AvatarFallback>{firstLast(openUser.name)}</AvatarFallback>
-                        </Avatar>
-                        <div className="min-w-0">
-                          <div className="truncate font-semibold leading-tight">
-                            {(openUser.name && openUser.name.trim().toLowerCase() !== openUser.email.toLowerCase())
-                              ? openUser.name
-                              : openUser.email}
-                          </div>
-                          {(openUser.name && openUser.name.trim().toLowerCase() !== openUser.email.toLowerCase()) && (
-                            <div className="truncate text-xs text-muted-foreground">{openUser.email}</div>
-                          )}
-                          <div className="mt-1 flex flex-wrap items-center gap-2">
-                            <RoleBadge role={openUser.role} />
-                            <StatusBadge status={openUser.status} />
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Overflow only */}
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button size="icon" variant="ghost" className="h-8 w-8 shrink-0">
-                            <MoreVertical className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          {openUser.status === "disabled" ? (
-                            <DropdownMenuItem onClick={() => setUsers((prev) => prev.map((u) => u.id === openUser.id ? { ...u, status: "active" } : u))}>
-                              Enable
-                            </DropdownMenuItem>
-                          ) : (
-                            <DropdownMenuItem
-                              disabled={openUser.email === currentUserEmail || openUser.role === "admin"}
-                              title={openUser.email === currentUserEmail ? "You can’t disable yourself" : (openUser.role === "admin" ? "Admins cannot be disabled here" : undefined)}
-                              onClick={async () => {
-                                if (openUser.email === currentUserEmail || openUser.role === "admin") return;
-                                try {
-                                  const res = await forgeFetch(`/api/v1/admin/users/${openUser.id}`, {
-                                    method: "PATCH",
-                                    headers: { "content-type": "application/json" },
-                                    body: JSON.stringify({ suspend: true })
-                                  });
-                                  if (res.status === 204) {
-                                    setUsers((prev) => prev.map((u) => u.id === openUser.id ? { ...u, status: "disabled", sessions: 0 } : u));
-                                    toast({ title: "User disabled" });
-                                  } else {
-                                    const text = await res.text().catch(() => "");
-                                    toast({ title: "Failed", description: text || `${res.status}` });
-                                  }
-                                } catch {
-                                  toast({ title: "Network error" });
-                                }
-                              }}
-                            >
-                              Disable
-                            </DropdownMenuItem>
-                          )}
-                          <DropdownMenuItem onClick={() => setUsers((prev) => prev.map((u) => u.id === openUser.id ? { ...u, sessions: 0 } : u))}>
-                            Log out
-                          </DropdownMenuItem>
-                          {openUser.status === "pending_invite" && (
-                            <DropdownMenuItem onClick={() => toast({ title: `Invite resent to ${openUser.email}.` })}>
-                              Resend invite
-                            </DropdownMenuItem>
-                          )}
-
-                          <DropdownMenuItem className="text-destructive" onClick={() => setUsers((prev) => prev.filter((u) => u.id !== openUser.id))}>
-                            Delete
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </div>
-                  </div>
-                </SheetTitle>
-              </SheetHeader>
-
-              <div className="flex-1 overflow-y-auto">
-                {/* Overview */}
-                <section className={cn("border-b border-white/[0.06]", density === "compact" ? "px-4 py-3" : "px-5 py-4")}>
-                  <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Overview</h3>
-                  <HeaderUnderline />
-                  <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
-                    <div>
-                      <div className="text-muted-foreground">User ID</div>
-                      <div className="flex items-center gap-2 font-mono text-xs break-all">
-                        <span className="truncate">{openUser.id}</span>
-                        <TooltipProvider>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Button size="icon" variant="ghost" aria-label="Copy user ID" onClick={async () => { try { await navigator.clipboard.writeText(openUser.id); toast({ title: "Copied user ID" }); } catch { } }}>
-                                <Copy className="h-4 w-4" />
-                              </Button>
-                            </TooltipTrigger>
-                            <TooltipContent>Copy</TooltipContent>
-                          </Tooltip>
-                        </TooltipProvider>
-                      </div>
-                    </div>
-                    <div>
-                      <div className="text-muted-foreground">Role</div>
-                      <div><RoleBadge role={openUser.role} /></div>
-                    </div>
-                    <div>
-                      <div className="text-muted-foreground">Created</div>
-                      <div>{format(new Date(openUser.createdAt), "PPpp")}</div>
-                    </div>
-                    <div>
-                      <div className="text-muted-foreground">Active sessions</div>
-                      <div>{openUser.sessions}</div>
-                    </div>
-                    <div>
-                      <div className="text-muted-foreground">Last login</div>
-                      <div>{openUser.lastActivityAt ? format(new Date(openUser.lastActivityAt), "PPpp") : "Never"}</div>
-                    </div>
-                  </div>
-                </section>
-
-                {/* Credentials */}
-                <section className={cn("border-b border-white/[0.06]", density === "compact" ? "px-4 py-3" : "px-5 py-4")}>
-                  <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Credentials</h3>
-                  <HeaderUnderline />
-                  <div className="mt-3 space-y-2">
-                    {loadingOpenCreds ? (
-                      <div className="text-sm text-muted-foreground">Loading…</div>
-                    ) : openUserCreds.length === 0 ? (
-                      <div className="text-sm text-muted-foreground">No credentials added.</div>
-                    ) : (
-                      openUserCreds
-                        .slice()
-                        .sort((a, b) => {
-                          const ta = a.last_used_at ? new Date(a.last_used_at).getTime() : 0;
-                          const tb = b.last_used_at ? new Date(b.last_used_at).getTime() : 0;
-                          return tb - ta;
-                        })
-                        .map((c) => (
-                          <article key={c.id} className="flex items-center justify-between rounded-md border bg-background/[0.6] px-3 py-2">
-                            <div className="flex items-center gap-3">
-                              <Key className="h-4 w-4 text-muted-foreground" />
-                              <div className="text-sm">
-                                <div className="font-medium">{c.device_name}</div>
-                                <div className="text-xs text-muted-foreground">Sign count {c.sign_count} • Last used {c.last_used_at ? format(new Date(c.last_used_at), "PP") : "—"}</div>
-                              </div>
-                            </div>
-                          </article>
-                        ))
-                    )}
-                  </div>
-                </section>
-
-                {/* Security */}
-                <section className={cn("border-b border-white/[0.06]", density === "compact" ? "px-4 py-3" : "px-5 py-4")}>
-                  <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Security</h3>
-                  <HeaderUnderline />
-                  <div className="mt-3 flex items-center justify-between">
-                    <div className="text-sm text-muted-foreground">Recovery keys: Generate new one-time codes for this user.</div>
-                    <Button
-                      size="sm"
-                      onClick={async () => {
-                        try {
-                          const res = await forgeFetch(`/api/v1/admin/users/${openUser.id}/recovery/codes/generate`, { method: "POST" });
-                          if (!res.ok) {
-                            const text = await res.text().catch(() => "");
-                            toast({ title: "Failed to generate recovery keys", description: text || `${res.status}` });
-                            return;
-                          }
-                          const data = await res.json() as { codes: string[] };
-                          const filename = `recovery_codes_${openUser.email}_${format(new Date(), "yyyyMMdd_HHmmss")}.txt`;
-                          const { downloadRecoveryCodes } = await import("@/lib/recovery");
-                          downloadRecoveryCodes(filename, data.codes);
-                          toast({ title: "Recovery keys generated", description: "A .txt file was downloaded with the one-time codes." });
-                        } catch {
-                          toast({ title: "Failed to generate recovery keys" });
-                        }
-                      }}
-                    >
-                      Regenerate
-                    </Button>
-                  </div>
-                </section>
-
-
-                {/* Audit */}
-                <section className={cn(density === "compact" ? "px-4 py-3" : "px-5 py-4")}>
-                  <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Audit</h3>
-                  <HeaderUnderline />
-                  <div className="mt-3">
-                    <div className="overflow-x-auto">
-                      <table className="w-full text-sm">
-                        <thead>
-                          <tr className="text-xs text-muted-foreground">
-                            <th className="text-left font-normal">Actor</th>
-                            <th className="text-left font-normal">Type</th>
-                            <th className="text-left font-normal">Date</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {(openUserAudit || []).slice(0, 4).map((evt) => (
-                            <tr key={evt.id} className="border-t border-white/[0.06]">
-                              <td className="py-2">{evt.actor_id || ""}</td>
-                              <td className="py-2">{evt.type}</td>
-                              <td className="py-2">{format(new Date(evt.created_at), "PP")}</td>
-                            </tr>
-                          ))}
-                          {(!openUserAudit || openUserAudit.length === 0) && (
-                            <tr><td className="py-2 text-muted-foreground" colSpan={3}>No recent events</td></tr>
-                          )}
-                        </tbody>
-                      </table>
-                    </div>
-                    <div className="mt-2 text-right">
-                      <a href="/audit" className="text-sm story-link">Open in Audit Log</a>
-                    </div>
-                  </div>
-                </section>
-              </div>
-            </div>
-          )}
-        </SheetContent>
-      </Sheet>
+      <Suspense fallback={null}>
+        {openUser && (
+          <UserSheet
+            user={openUser}
+            onOpenChange={(o) => setOpenUserId(o ? openUserId : null)}
+            density={density}
+          />
+        )}
+      </Suspense>
     </div>
   );
 }
 
-function RowActions({ user, onOpen, onChange, onDelete }: { user: User; onOpen: () => void; onChange: (u: User) => void; onDelete: () => void }) {
+function RowActions({
+  user,
+  onOpen,
+  onChange,
+  onDelete,
+}: {
+  user: User;
+  onOpen: () => void;
+  onChange: (u: User) => void;
+  onDelete: () => void;
+}) {
   const { toast } = useToast();
   return (
     <DropdownMenu>
@@ -1186,214 +868,76 @@ function RowActions({ user, onOpen, onChange, onDelete }: { user: User; onOpen: 
       <DropdownMenuContent align="end">
         <DropdownMenuItem onClick={onOpen}>View</DropdownMenuItem>
         {user.status === "disabled" ? (
-          <DropdownMenuItem onClick={() => onChange({ ...user, status: "active" })}>Re-enable</DropdownMenuItem>
+          <DropdownMenuItem onClick={() => onChange({ ...user, status: "active" })}>
+            Re-enable
+          </DropdownMenuItem>
         ) : (
-          <DropdownMenuItem onClick={() => onChange({ ...user, status: "disabled", sessions: 0 })}>Disable</DropdownMenuItem>
+          <DropdownMenuItem onClick={() => onChange({ ...user, status: "disabled", sessions: 0 })}>
+            Disable
+          </DropdownMenuItem>
         )}
-        <DropdownMenuItem onClick={() => onChange({ ...user, sessions: 0 })}>Force log out</DropdownMenuItem>
+        <DropdownMenuItem onClick={() => onChange({ ...user, sessions: 0 })}>
+          Force log out
+        </DropdownMenuItem>
         {user.status === "pending_invite" && (
-          <DropdownMenuItem onClick={() => toast({ title: `Invite resent to ${user.email}.` })}>Resend invite</DropdownMenuItem>
+          <DropdownMenuItem onClick={() => toast({ title: `Invite resent to ${user.email}.` })}>
+            Resend invite
+          </DropdownMenuItem>
         )}
-        <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={onDelete}><Trash2 className="h-4 w-4 mr-2" /> Delete</DropdownMenuItem>
+        <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={onDelete}>
+          <Trash2 className="h-4 w-4 mr-2" /> Delete
+        </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   );
 }
 
-function Confirm({ label, description, destructive, onConfirm }: { label: string; description?: string; destructive?: boolean; onConfirm: () => void }) {
+function Confirm({
+  label,
+  description,
+  destructive,
+  onConfirm,
+}: {
+  label: string;
+  description?: string;
+  destructive?: boolean;
+  onConfirm: () => void;
+}) {
   const [open, setOpen] = useState(false);
   return (
     <>
-      <Button size="sm" variant={destructive ? "destructive" : "secondary"} onClick={() => setOpen(true)}>{label}</Button>
-      <AlertDialog open={open}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>{label}</AlertDialogTitle>
-            {description && <AlertDialogDescription>{description}</AlertDialogDescription>}
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setOpen(false)}>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={() => { onConfirm(); setOpen(false); }}>Confirm</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <Button
+        size="sm"
+        variant={destructive ? "destructive" : "secondary"}
+        onClick={() => setOpen(true)}
+      >
+        {label}
+      </Button>
+      {open && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="rounded-md border bg-background p-4 shadow-md w-[360px] max-w-[92vw]">
+            <div className="mb-2 text-sm font-medium">{label}</div>
+            {description && <div className="mb-3 text-sm text-muted-foreground">{description}</div>}
+            <div className="flex justify-end gap-2">
+              <Button size="sm" variant="outline" onClick={() => setOpen(false)}>
+                Cancel
+              </Button>
+              <Button
+                size="sm"
+                variant={destructive ? "destructive" : "default"}
+                onClick={() => {
+                  onConfirm();
+                  setOpen(false);
+                }}
+              >
+                Confirm
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }
 
-// Requests tab (polished mock)
-function RequestsTab({ users, setUsers, density, setDensity, searchRef }: { users: User[]; setUsers: React.Dispatch<React.SetStateAction<User[]>>; density: "comfortable" | "compact"; setDensity: (d: "comfortable" | "compact") => void; searchRef: React.RefObject<HTMLInputElement>; }) {
-  const { toast } = useToast();
-  type AccessRequest = { id: string; email: string; reason?: string; status: string; attempts: number; decided_at?: string | null; created_at: string };
-  const [q, setQ] = useState("");
-  const [selected, setSelected] = useState<Record<string, boolean>>({});
-  const [rejectOpen, setRejectOpen] = useState(false);
-  const [rejectTarget, setRejectTarget] = useState<AccessRequest | null>(null);
-  const [rejectReason, setRejectReason] = useState("");
-  const [notify, setNotify] = useState(true);
-  const [requests, setRequests] = useState<AccessRequest[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [page, setPage] = useState(1);
-  const pageSize = 25;
-  const [total, setTotal] = useState<number | null>(null);
-
-  async function load() {
-    setLoading(true);
-    try {
-      const params = new URLSearchParams();
-      params.set("status", "pending");
-      if (q.trim()) params.set("q", q.trim());
-      params.set("limit", String(pageSize));
-      params.set("offset", String((page - 1) * pageSize));
-      const res = await forgeFetch(`/api/v1/admin/access-requests?${params.toString()}`);
-      if (!res.ok) {
-        throw new Error(`Failed to load requests (${res.status})`);
-      }
-      const data = (await res.json()) as { requests: AccessRequest[]; total?: number };
-      setRequests(data.requests || []);
-      setTotal(typeof data.total === "number" ? data.total : null);
-      setSelected({});
-    } catch (err) {
-      toast({ title: "Failed to load access requests", variant: "destructive" });
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  useEffect(() => {
-    load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [q, page]);
-
-  // Open the parent-level invite dialog with prefilled email, default role "member"
-  const approveOne = (r: AccessRequest) => {
-    window.dispatchEvent(new CustomEvent("cf:open-invite", { detail: { email: r.email, role: "member" } }));
-  };
-
-  const rejectOne = async (r: AccessRequest, reason?: string) => {
-    try {
-      const res = await forgeFetch(`/api/v1/admin/access-requests/${r.id}`, { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify({ approve: false, note: reason || "" }) });
-      if (!res.ok) throw new Error(String(res.status));
-      toast({ title: `Request rejected for ${r.email}.` });
-    } catch {
-      toast({ title: `Failed to reject ${r.email}`, variant: "destructive" });
-    } finally {
-      load();
-    }
-  };
-
-  const selectedIds = Object.keys(selected).filter((id) => selected[id]);
-
-  return (
-    <div>
-      <div className="mb-3 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-        <div className="relative flex-1 max-w-md">
-          <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input ref={searchRef} value={q} onChange={(e) => { setPage(1); setQ(e.target.value); }} placeholder="Search email, reason ( / )" className="pl-8" aria-label="Search requests" />
-        </div>
-      </div>
-
-      {q && (
-        <div className="mb-2 flex items-center gap-2 text-xs">
-          <span className="inline-flex items-center gap-1 rounded-full border border-muted-foreground/50 px-2 py-0.5">
-            <span className="text-muted-foreground">Search: “{q}”</span>
-            <button className="hover:text-foreground" onClick={() => { setQ(""); setPage(1); }} aria-label="Clear search">×</button>
-          </span>
-        </div>
-      )}
-
-      {loading ? (
-        <div className="rounded-md border p-10 text-center text-muted-foreground">Loading…</div>
-      ) : requests.length === 0 ? (
-        <EmptyState
-          icon={<Users className="mx-auto h-12 w-12" />}
-          title="No access requests"
-          body="Requests from ‘Get access’ will appear here."
-        />
-      ) : (
-        <>
-          {selectedIds.length > 0 && (
-            <div className="sticky top-0 z-10 mb-3 flex items-center justify-between rounded-lg border border-white/5 bg-background/70 px-3 py-2 text-sm backdrop-blur">
-              <div className="font-medium">{selectedIds.length} selected</div>
-              <div className="flex items-center gap-2">
-                <Button size="sm" className="hover:scale-[1.01]" onClick={() => selectedIds.forEach((id) => { const r = requests.find(x => x.id === id); if (r) approveOne(r); })}>Approve</Button>
-                <Button size="sm" variant="outline" onClick={async () => { setRejectTarget(null); setRejectOpen(true); }}>
-                  Reject
-                </Button>
-              </div>
-            </div>
-          )}
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-[40px]"><Checkbox checked={requests.every((r) => selected[r.id])} onCheckedChange={(v) => { const next: Record<string, boolean> = { ...selected }; requests.forEach((r) => next[r.id] = Boolean(v)); setSelected(next); }} /></TableHead>
-                <TableHead>Email</TableHead>
-                <TableHead>Submitted</TableHead>
-                <TableHead>Reason</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {requests.map((r) => (
-                <TableRow key={r.id} className={cn("odd:bg-foreground/[0.015] hover:bg-foreground/[0.03]", density === "compact" ? "h-11" : "h-14")}>
-                  <TableCell className={cn("w-[40px]", density === "compact" && "py-1")}><Checkbox checked={!!selected[r.id]} onCheckedChange={(v) => setSelected((prev) => ({ ...prev, [r.id]: Boolean(v) }))} /></TableCell>
-                  <TableCell className={cn(density === "compact" && "py-1")}>{r.email}</TableCell>
-                  <TableCell className={cn(density === "compact" && "py-1")}>{r.created_at ? formatDistanceToNow(new Date(r.created_at), { addSuffix: true }) : "—"}</TableCell>
-                  <TableCell className={cn("max-w-[280px] truncate", density === "compact" && "py-1")} title={r.reason || ""}>{r.reason || ""}</TableCell>
-                  <TableCell className={cn("text-right", density === "compact" && "py-1")}>
-                    <div className="flex justify-end gap-2">
-                      <Button size="sm" className="hover:scale-[1.01]" onClick={() => approveOne(r)}>Approve</Button>
-                      <Button size="sm" variant="outline" onClick={() => { setRejectTarget(r); setRejectReason(""); setNotify(true); setRejectOpen(true); }}>Reject</Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-
-          {total !== null && total > pageSize && (
-            <div className="mt-3 flex items-center justify-between text-sm">
-              <div className="text-muted-foreground">Page {page} of {Math.ceil(total / pageSize)}</div>
-              <div className="flex items-center gap-2">
-                <Button size="sm" variant="ghost" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1}>Previous</Button>
-                <Button size="sm" variant="ghost" onClick={() => setPage((p) => (total ? (p * pageSize < total ? p + 1 : p) : p))} disabled={total ? (page * pageSize >= total) : true}>Next</Button>
-              </div>
-            </div>
-          )}
-
-          {/* Reject confirm modal */}
-          <AlertDialog open={rejectOpen}>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Reject access request?</AlertDialogTitle>
-                <AlertDialogDescription>Optionally include a reason. “Notify requester” is on by default.</AlertDialogDescription>
-              </AlertDialogHeader>
-              <div className="space-y-3">
-                <div>
-                  <label className="block text-sm mb-1">Reason (optional)</label>
-                  <textarea className="w-full rounded-md border bg-background p-2 text-sm" rows={3} value={rejectReason} onChange={(e) => setRejectReason(e.target.value)} />
-                </div>
-                <label className="flex items-center gap-2 text-sm"><Checkbox checked={notify} onCheckedChange={(v) => setNotify(Boolean(v))} /> Notify requester</label>
-              </div>
-              <AlertDialogFooter>
-                <AlertDialogCancel onClick={() => setRejectOpen(false)}>Cancel</AlertDialogCancel>
-                <AlertDialogAction onClick={async () => {
-                  try {
-                    if (rejectTarget) {
-                      await rejectOne(rejectTarget, rejectReason);
-                    } else {
-                      const items = requests.filter((r) => selectedIds.includes(r.id));
-                      for (const r of items) { await rejectOne(r, rejectReason); }
-                    }
-                  } finally {
-                    setRejectOpen(false);
-                  }
-                }}>Reject</AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
-        </>
-      )}
-    </div>
-  );
-}
+// Requests tab moved to @/features/users/requests/RequestsTab

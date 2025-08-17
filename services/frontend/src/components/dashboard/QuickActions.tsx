@@ -3,14 +3,18 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { can } from "@/lib/mock/dashboard";
 import { PlusSquare, Rocket, Shield, KeyRound } from "lucide-react";
 
-function Gate({ action, children }: { action: Parameters<typeof can>[0]; children: React.ReactElement }) {
+function Gate({
+  action,
+  children,
+}: {
+  action: Parameters<typeof can>[0];
+  children: React.ReactElement;
+}) {
   const perm = can(action);
   if (perm.allowed) return children;
   return (
     <Tooltip>
-      <TooltipTrigger asChild>
-        {children}
-      </TooltipTrigger>
+      <TooltipTrigger asChild>{children}</TooltipTrigger>
       <TooltipContent>{perm.reason}</TooltipContent>
     </Tooltip>
   );
@@ -20,7 +24,12 @@ export default function QuickActions() {
   return (
     <div className="flex flex-wrap gap-2">
       <Gate action="create:preview">
-        <Button size="sm" variant="secondary" disabled={!can("create:preview").allowed} aria-label="New Preview Env">
+        <Button
+          size="sm"
+          variant="secondary"
+          disabled={!can("create:preview").allowed}
+          aria-label="New Preview Env"
+        >
           <PlusSquare className="mr-2" /> New Preview Env
         </Button>
       </Gate>
@@ -30,12 +39,22 @@ export default function QuickActions() {
         </Button>
       </Gate>
       <Gate action="cert:request">
-        <Button size="sm" variant="outline" disabled={!can("cert:request").allowed} aria-label="Request Cert">
+        <Button
+          size="sm"
+          variant="outline"
+          disabled={!can("cert:request").allowed}
+          aria-label="Request Cert"
+        >
           <Shield className="mr-2" /> Request Cert
         </Button>
       </Gate>
       <Gate action="secret:rotate">
-        <Button size="sm" variant="outline" disabled={!can("secret:rotate").allowed} aria-label="Rotate Secret">
+        <Button
+          size="sm"
+          variant="outline"
+          disabled={!can("secret:rotate").allowed}
+          aria-label="Rotate Secret"
+        >
           <KeyRound className="mr-2" /> Rotate Secret
         </Button>
       </Gate>
