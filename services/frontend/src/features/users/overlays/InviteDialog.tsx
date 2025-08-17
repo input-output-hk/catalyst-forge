@@ -27,28 +27,28 @@ type InviteDialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onInvited: (newUser: User) => void;
+  defaultEmail?: string;
+  defaultRole?: User["role"];
+  requestId?: string;
+  onAfterInvite?: (info: { requestId?: string; email: string }) => void;
 };
 
 const makeId = (prefix: string) => `${prefix}_${Math.random().toString(36).slice(2, 9)}`;
 
-export default function InviteDialog({ open, onOpenChange, onInvited }: InviteDialogProps) {
+export default function InviteDialog({ open, onOpenChange, onInvited, defaultEmail, defaultRole = "member", requestId, onAfterInvite }: InviteDialogProps) {
   const { toast } = useToast();
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteRole, setInviteRole] = useState<User["role"]>("member");
   const [inviteDays, setInviteDays] = useState("7");
   const [inviteEmailUser, setInviteEmailUser] = useState(true);
 
-  // Listen for request-approval event to prefill and open invite dialog
+  // Prefill when opening or when defaults change
   useEffect(() => {
-    const handler = (e: Event) => {
-      const detail = (e as CustomEvent).detail as { email?: string; role?: User["role"] };
-      if (detail?.email) setInviteEmail(detail.email);
-      if (detail?.role) setInviteRole(detail.role);
-      onOpenChange(true);
-    };
-    window.addEventListener("cf:open-invite", handler as EventListener);
-    return () => window.removeEventListener("cf:open-invite", handler as EventListener);
-  }, [onOpenChange]);
+    if (open) {
+      if (defaultEmail) setInviteEmail(defaultEmail);
+      setInviteRole(defaultRole || "member");
+    }
+  }, [open, defaultEmail, defaultRole]);
 
   const submitInvite = async () => {
     if (!inviteEmail) return;
@@ -61,8 +61,7 @@ export default function InviteDialog({ open, onOpenChange, onInvited }: InviteDi
       });
       const link = out?.invite_link || "";
       const exp =
-        out?.expires_at ||
-        new Date(Date.now() + (parseInt(inviteDays) || 7) * 86400e3).toISOString();
+        out?.expires_at || new Date(Date.now() + (parseInt(inviteDays) || 7) * 86400e3).toISOString();
       const nowIso = new Date().toISOString();
       const newUser: User = {
         id: out?.invite_id || makeId("usr"),
@@ -82,6 +81,7 @@ export default function InviteDialog({ open, onOpenChange, onInvited }: InviteDi
         requests: [],
       };
       onInvited(newUser);
+      if (onAfterInvite) onAfterInvite({ requestId, email: inviteEmail });
       onOpenChange(false);
       setInviteEmail("");
       const message = `Invite sent to ${newUser.email}. Link copied to clipboard.`;
@@ -120,10 +120,7 @@ export default function InviteDialog({ open, onOpenChange, onInvited }: InviteDi
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="block text-sm mb-1">Role</label>
-              <Select
-                value={inviteRole}
-                onValueChange={(v) => setInviteRole(v as "member" | "admin")}
-              >
+              <Select value={inviteRole} onValueChange={(v) => setInviteRole(v as "member" | "admin")}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>

@@ -176,23 +176,23 @@ function seedUsers(count = 96): User[] {
     const invites =
       status === "pending_invite"
         ? {
-            link: `https://app.example.com/invite/${makeId("inv")}`,
-            expiresAt: new Date(now + 1000 * 60 * 60 * 24 * 7).toISOString(),
-            lastSentAt: new Date(now - 1000 * 60 * 60 * 24).toISOString(),
-          }
+          link: `https://app.example.com/invite/${makeId("inv")}`,
+          expiresAt: new Date(now + 1000 * 60 * 60 * 24 * 7).toISOString(),
+          lastSentAt: new Date(now - 1000 * 60 * 60 * 24).toISOString(),
+        }
         : null;
 
     const requests =
       status === "pending_approval"
         ? [
-            {
-              submittedAt: new Date(
-                now - 1000 * 60 * 60 * (Math.floor(Math.random() * 96) + 1)
-              ).toISOString(),
-              reason: Math.random() < 0.8 ? "Need access to run deployment workflows" : "",
-              status: "pending" as const,
-            },
-          ]
+          {
+            submittedAt: new Date(
+              now - 1000 * 60 * 60 * (Math.floor(Math.random() * 96) + 1)
+            ).toISOString(),
+            reason: Math.random() < 0.8 ? "Need access to run deployment workflows" : "",
+            status: "pending" as const,
+          },
+        ]
         : [];
 
     users.push({
@@ -510,6 +510,7 @@ export default function UsersPage() {
 
   // Invite dialog visibility
   const [inviteOpen, setInviteOpen] = useState(false);
+  const [invitePrefill, setInvitePrefill] = useState<{ email?: string; role?: User["role"]; requestId?: string }>({});
   useEffect(() => {
     const openHandler = () => setInviteOpen(true);
     window.addEventListener("cf:open-invite", openHandler as EventListener);
@@ -762,10 +763,10 @@ export default function UsersPage() {
                         prev.map((x) =>
                           x.id === u.id
                             ? {
-                                ...x,
-                                status: u.status !== "disabled" ? "disabled" : "active",
-                                sessions: u.status !== "disabled" ? 0 : x.sessions,
-                              }
+                              ...x,
+                              status: u.status !== "disabled" ? "disabled" : "active",
+                              sessions: u.status !== "disabled" ? 0 : x.sessions,
+                            }
                             : x
                         )
                       );
@@ -816,6 +817,11 @@ export default function UsersPage() {
               density={density}
               setDensity={setDensity}
               searchRef={requestsSearchRef}
+              // when approving a request, prefill invite dialog
+              onApprovePrefill={(email: string, role: User["role"], requestId?: string) => {
+                setInvitePrefill({ email, role, requestId });
+                setInviteOpen(true);
+              }}
             />
           </Suspense>
         </TabsContent>
@@ -828,6 +834,25 @@ export default function UsersPage() {
             open={inviteOpen}
             onOpenChange={setInviteOpen}
             onInvited={(newUser) => setUsers((prev) => [newUser, ...prev])}
+            defaultEmail={invitePrefill.email}
+            defaultRole={invitePrefill.role}
+            requestId={invitePrefill.requestId}
+            onAfterInvite={({ requestId }) => {
+              if (requestId) {
+                window.dispatchEvent(
+                  new CustomEvent("cf:access-request-closed", { detail: { id: requestId } })
+                );
+              }
+              // backend close (fire-and-forget)
+              if (requestId) {
+                fetch(`/api/v1/admin/access-requests/${requestId}`, {
+                  method: "PATCH",
+                  headers: { "content-type": "application/json" },
+                  body: JSON.stringify({ approve: true }),
+                  credentials: "include",
+                }).catch(() => { });
+              }
+            }}
           />
         )}
       </Suspense>

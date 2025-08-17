@@ -36,6 +36,7 @@ type RequestsTabProps = {
   density: "comfortable" | "compact";
   setDensity: (d: "comfortable" | "compact") => void;
   searchRef: React.RefObject<HTMLInputElement>;
+  onApprovePrefill?: (email: string, role: User["role"], requestId?: string) => void;
 };
 
 type AccessRequest = {
@@ -48,13 +49,7 @@ type AccessRequest = {
   created_at: string;
 };
 
-export default function RequestsTab({
-  users,
-  setUsers,
-  density,
-  setDensity,
-  searchRef,
-}: RequestsTabProps) {
+export default function RequestsTab({ users, setUsers, density, setDensity, searchRef, onApprovePrefill }: RequestsTabProps) {
   const { toast } = useToast();
   const [q, setQ] = useState("");
   const [selected, setSelected] = useState<Record<string, boolean>>({});
@@ -71,12 +66,7 @@ export default function RequestsTab({
   async function load() {
     setLoading(true);
     try {
-      const data = await adminListAccessRequests({
-        status: "pending",
-        q: q.trim() || undefined,
-        limit: pageSize,
-        offset: (page - 1) * pageSize,
-      });
+      const data = await adminListAccessRequests({ status: "pending", q: q.trim() || undefined, limit: pageSize, offset: (page - 1) * pageSize });
       setRequests((data.requests as unknown as AccessRequest[]) || []);
       setTotal(typeof data.total === "number" ? data.total : null);
       setSelected({});
@@ -92,11 +82,30 @@ export default function RequestsTab({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [q, page]);
 
-  // Open the parent-level invite dialog with prefilled email, default role "member"
+  // Optimistically remove requests when handled elsewhere (approve via invite)
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const { id } = (e as CustomEvent).detail as { id?: string };
+      if (!id) return;
+      setRequests((prev) => prev.filter((r) => r.id !== id));
+      setSelected((prev) => {
+        const next = { ...prev };
+        delete next[id];
+        return next;
+      });
+      setTotal((t) => (typeof t === "number" ? Math.max(0, t - 1) : t));
+    };
+    window.addEventListener("cf:access-request-closed", handler as EventListener);
+    return () => window.removeEventListener("cf:access-request-closed", handler as EventListener);
+  }, []);
+
   const approveOne = (r: AccessRequest) => {
-    window.dispatchEvent(
-      new CustomEvent("cf:open-invite", { detail: { email: r.email, role: "member" } })
-    );
+    if (onApprovePrefill) {
+      onApprovePrefill(r.email, "member", r.id);
+    } else {
+      // Fallback to legacy event if parent didn't pass callback
+      window.dispatchEvent(new CustomEvent("cf:open-invite", { detail: { email: r.email, role: "member" } }));
+    }
   };
 
   const rejectOne = async (r: AccessRequest, reason?: string) => {

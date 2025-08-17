@@ -2,16 +2,12 @@ import { format, formatDistanceToNow } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Eye, LogOut, MoreVertical, Power, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { User } from "@/features/users/types";
+import { TableCell, TableRow } from "@/components/ui/table";
 
 type Props = {
   user: User;
@@ -50,20 +46,9 @@ function StatusBadge({ status }: { status: User["status"] }) {
   );
 }
 
-export default function UserRow({
-  user: u,
-  density,
-  currentUserEmail,
-  selected,
-  onSelect,
-  onOpen,
-  onDisableToggle,
-  onLogout,
-  onDelete,
-  onResendInvite,
-}: Props) {
+export default function UserRow({ user: u, density, currentUserEmail, selected, onSelect, onOpen, onDisableToggle, onLogout, onDelete, onResendInvite }: Props) {
   return (
-    <tr
+    <TableRow
       className={cn(
         "cursor-pointer group",
         density === "compact" ? "h-11" : "h-14",
@@ -75,58 +60,41 @@ export default function UserRow({
         onOpen(u.id);
       }}
     >
-      <td
-        className={cn("w-[40px]", density === "compact" && "py-1")}
-        onClick={(e) => e.stopPropagation()}
-      >
-        <Checkbox
-          checked={selected}
-          onCheckedChange={(v) => onSelect(Boolean(v))}
-          aria-label={`Select ${u.name}`}
-        />
-      </td>
-      <td className={cn(density === "compact" && "py-1")}>
+      <TableCell className={cn("w-[40px]", density === "compact" && "py-1")} onClick={(e) => e.stopPropagation()}>
+        <Checkbox checked={selected} onCheckedChange={(v) => onSelect(Boolean(v))} aria-label={`Select ${u.name}`} />
+      </TableCell>
+      <TableCell className={cn(density === "compact" && "py-1")}>
         <div className="flex items-center gap-3">
           <Avatar className="h-9 w-9">
             <AvatarFallback>{firstLast(u.name)}</AvatarFallback>
           </Avatar>
           <div>
             <div className={cn("font-medium", density === "compact" ? "text-sm" : "")}>
-              {u.name && u.name.trim() && u.name.trim().toLowerCase() !== u.email.toLowerCase()
-                ? u.name
-                : u.email}
+              {u.name && u.name.trim() && u.name.trim().toLowerCase() !== u.email.toLowerCase() ? u.name : u.email}
             </div>
             {u.name && u.name.trim() && u.name.trim().toLowerCase() !== u.email.toLowerCase() && (
               <div className="text-xs text-muted-foreground">{u.email}</div>
             )}
           </div>
         </div>
-      </td>
-      <td className={cn(density === "compact" && "py-1")}>
+      </TableCell>
+      <TableCell className={cn(density === "compact" && "py-1")}>
         <StatusBadge status={u.status} />
-      </td>
-      <td className={cn(density === "compact" && "py-1")}>
+      </TableCell>
+      <TableCell className={cn(density === "compact" && "py-1")}>
         <RoleBadge role={u.role} />
-      </td>
-      <td
+      </TableCell>
+      <TableCell
         className={cn(density === "compact" && "py-1")}
         title={u.lastActivityAt ? format(new Date(u.lastActivityAt), "PPpp") : "Never"}
       >
-        {u.lastActivityAt
-          ? `${formatDistanceToNow(new Date(u.lastActivityAt), { addSuffix: true })}`
-          : "Never"}
-      </td>
-      <td className={cn(density === "compact" && "py-1")}>{u.sessions}</td>
-      <td
-        className={cn(density === "compact" && "py-1")}
-        title={format(new Date(u.createdAt), "PPpp")}
-      >
+        {u.lastActivityAt ? `${formatDistanceToNow(new Date(u.lastActivityAt), { addSuffix: true })}` : "Never"}
+      </TableCell>
+      <TableCell className={cn(density === "compact" && "py-1")}>{u.sessions}</TableCell>
+      <TableCell className={cn(density === "compact" && "py-1")} title={format(new Date(u.createdAt), "PPpp")}>
         {format(new Date(u.createdAt), "PP")}
-      </td>
-      <td
-        className={cn("text-right", density === "compact" && "py-1")}
-        onClick={(e) => e.stopPropagation()}
-      >
+      </TableCell>
+      <TableCell className={cn("text-right", density === "compact" && "py-1")} onClick={(e) => e.stopPropagation()}>
         <TooltipProvider>
           <div className="flex items-center justify-end gap-1 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">
             <Tooltip>
@@ -161,12 +129,7 @@ export default function UserRow({
             </Tooltip>
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  aria-label="Force log out"
-                  onClick={() => onLogout(u.id)}
-                >
+                <Button variant="ghost" size="icon" aria-label="Force log out" onClick={() => onLogout(u.id)}>
                   <LogOut className="h-4 w-4" />
                 </Button>
               </TooltipTrigger>
@@ -185,21 +148,16 @@ export default function UserRow({
               </Tooltip>
               <DropdownMenuContent align="end">
                 {u.status === "pending_invite" && (
-                  <DropdownMenuItem onClick={() => onResendInvite?.(u.id)}>
-                    Resend invite
-                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => onResendInvite?.(u.id)}>Resend invite</DropdownMenuItem>
                 )}
-                <DropdownMenuItem
-                  className="text-destructive focus:text-destructive"
-                  onClick={() => onDelete(u.id)}
-                >
+                <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={() => onDelete(u.id)}>
                   <Trash2 className="h-4 w-4 mr-2" /> Delete
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
         </TooltipProvider>
-      </td>
-    </tr>
+      </TableCell>
+    </TableRow>
   );
 }

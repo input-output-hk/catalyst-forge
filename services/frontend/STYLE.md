@@ -83,11 +83,11 @@ try {
 ```typescript
 try {
   const response = await fetch(url);
-  
+
   if (!response.ok) {
     throw new Error('Failed to fetch data');
   }
-  
+
   return response.json();
 } catch (error) {
   console.error('Error fetching data:', error);
@@ -113,7 +113,7 @@ function canEditResource(user: User, resource: Resource): boolean {
   const isAdmin = user.role === 'admin';
   const isModeratorWithEditPermission = user.role === 'moderator' && user.permissions.includes('edit');
   const isOwner = user.id === resource.ownerId;
-  
+
   return isAdmin || isModeratorWithEditPermission || isOwner;
 }
 
@@ -309,3 +309,48 @@ If the answer to any of these is "no", the code needs to be simplified.
 - **Simple > Complex**
 
 Good code reads like well-written prose - it tells a clear story of what it does and why.
+
+## Practical Guidance: Prevent oversized, unmaintainable files
+
+### File size and decomposition rules
+- Prefer files under 300 lines. If a file approaches 300 lines, plan a split before adding more.
+- Hard limit: keep files under 500 lines. If you cross this threshold, extract components, hooks, or utilities immediately.
+- One main component per file. Extract sub-views (rows, cards, dialogs, menus) into dedicated components.
+
+### Page shells and feature modules
+- A page file is a shell that owns routing context and top-level state only. All heavy UI should live in feature modules.
+- Organize by domain under `src/features/<domain>/`:
+  - `pages/` (thin shells)
+  - `directory/` (tables, rows, filters, pagination)
+  - `overlays/` (dialogs, sheets, wizards)
+  - `hooks/` (data/state hooks; debounce, selection, queries)
+  - `utils/` (formatting, CSV, seed/mock helpers)
+- Never implement mocks/seed data inline in a page. Put them in `utils/` and lazy-load in dev-only paths.
+
+### Lazy-load heavy/rare UI
+- Always lazy-load overlays: Dialogs/Sheets/Wizards must be separate files loaded with `React.lazy` and wrapped in `Suspense`.
+- Lazy-load secondary tabs or views that are not shown on initial render.
+- Defer rare actions to dynamic imports (e.g., CSV export, advanced formatters, large icon sets).
+- Keep icons and date utilities inside the lazy modules that use them to avoid bloating the initial chunk.
+
+### Tables and lists
+- Keep the page shell responsible for query params and selection state; render tables via a `UserTable`-style component.
+- Extract rows into a `Row` component to keep the table declarative and small.
+- For large datasets or page sizes > 200, consider virtualization (e.g., `react-window`) inside the table component.
+
+### Hooks and utilities
+- Extract reusable logic (filters, sorting, debouncing, selection) into hooks under `features/<domain>/hooks/`.
+- Extract CSV/date/formatting helpers into `utils/` and import them dynamically when triggered.
+- Never place utility functions inside page or component files if used in more than one place.
+
+### Anti-patterns to avoid
+- Monolithic page files that mix data fetching, business logic, and large JSX trees.
+- Inlining mocks/seed data in production code paths.
+- Pulling in heavy libraries (date-fns formatting, icon packs) in the initial render path when not necessary.
+
+### Pull request checklist (frontend pages)
+- Page file size under 300 lines (hard limit 500).
+- Overlays and secondary tabs are lazy-loaded with `React.lazy` + `Suspense`.
+- Tables/rows/filters/pagination are extracted into components.
+- Utilities moved to `lib/` or `features/<domain>/utils/` (no duplicates).
+- Optional: if adding significant UI, consider a brief feature module diagram in the PR description.
