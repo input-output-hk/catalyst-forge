@@ -59,6 +59,12 @@ func TestBuilds_Create_And_List(t *testing.T) {
 	_, err = uuid.Parse(id)
 	require.NoError(t, err)
 
+	// Get by id (positive)
+	var got map[string]any
+	r, err = tu.DoJSON(nil, http.MethodGet, env.BaseURL()+"/api/v1/builds/"+id, headers, nil, &got)
+	require.NoError(t, err)
+	require.Equal(t, http.StatusOK, r.StatusCode)
+
 	// List with filters to find the created build
 	var list map[string]any
 	url := env.BaseURL() + "/api/v1/builds?page=1&page_size=20&repo_id=" + repoID.String() + "&project_id=" + projID.String() + "&branch=main"
@@ -141,4 +147,44 @@ func TestBuilds_Update_And_UpdateStatus(t *testing.T) {
 	r, err = tu.DoJSON(nil, http.MethodPatch, env.BaseURL()+"/api/v1/builds/"+id+"/status", headers, status, nil)
 	require.NoError(t, err)
 	require.Equal(t, http.StatusNoContent, r.StatusCode)
+}
+
+func TestBuilds_Update_Invalid_And_NotFound(t *testing.T) {
+	// no t.Parallel; uses DB seed directly
+	env := newDomainEnv(t)
+	repoID, projID := seedRepoProject(t)
+
+	// Grant write permissions
+	headers := withBypassHeaders(authHeaders(env))
+	headers["X-Test-Permissions"] = headers["X-Test-Permissions"] + ",build:write"
+
+	// Create build
+	create := map[string]any{
+		"repo_id":    repoID.String(),
+		"project_id": projID.String(),
+		"commit_sha": "cafebabe",
+		"status":     "queued",
+	}
+	var created map[string]any
+	r, err := tu.DoJSON(nil, http.MethodPost, env.BaseURL()+"/api/v1/builds", headers, create, &created)
+	require.NoError(t, err)
+	require.Equal(t, http.StatusCreated, r.StatusCode)
+	id := created["id"].(string)
+
+	// Invalid status update -> 422
+	upd := map[string]any{"status": "success"}
+	var out map[string]any
+	r, err = tu.DoJSON(nil, http.MethodPatch, env.BaseURL()+"/api/v1/builds/"+id, headers, upd, &out)
+	require.Error(t, err)
+	require.Equal(t, http.StatusUnprocessableEntity, r.StatusCode)
+
+	// Not found update
+	r, err = tu.DoJSON(nil, http.MethodPatch, env.BaseURL()+"/api/v1/builds/"+uuid.NewString(), headers, map[string]any{"status": "running"}, &out)
+	require.Error(t, err)
+	assert.Equal(t, http.StatusNotFound, r.StatusCode)
+
+	// Not found update-status
+	r, err = tu.DoJSON(nil, http.MethodPatch, env.BaseURL()+"/api/v1/builds/"+uuid.NewString()+"/status", headers, map[string]any{"status": "failed"}, &out)
+	require.Error(t, err)
+	assert.Equal(t, http.StatusNotFound, r.StatusCode)
 }

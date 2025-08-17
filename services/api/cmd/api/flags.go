@@ -28,6 +28,11 @@ func addRunFlags(cmd *cobra.Command) {
 	cmd.Flags().Bool("auth-rate-enabled", true, "Enable AuthKit rate limiting (requires limiter wiring)")
 	cmd.Flags().Bool("auth-jwks-route", true, "Expose /.well-known/jwks.json")
 	cmd.Flags().String("auth-admin-aaguids", "", "Comma-separated allowed AAGUIDs for admin users (hardware keys)")
+	// Persistent signing/CSRF config
+	cmd.Flags().String("auth-signing-key-path", "", "Path to PEM-encoded ES256 private key for JWT signing")
+	cmd.Flags().String("auth-signing-key-pem", "", "Inline PEM-encoded ES256 private key for JWT signing")
+	cmd.Flags().String("auth-signing-key-kid", "default", "Key ID to use for JWT signing")
+	cmd.Flags().String("auth-csrf-secret", "", "Secret for CSRF double-submit (raw/base64/hex). If empty, random per-boot")
 	// Do not set a non-empty default; env/config should supply when flag omitted
 	cmd.Flags().String("bootstrap-token", "", "One-time bootstrap token for creating initial admin")
 	cmd.Flags().Bool("auth-rbac-seed-defaults", true, "Seed baseline RBAC roles and permissions on startup")
@@ -110,6 +115,10 @@ func bindRunFlags() {
 	_ = viper.BindPFlag("auth.rateenabled", runCmd.Flags().Lookup("auth-rate-enabled"))
 	_ = viper.BindPFlag("auth.jwksroute", runCmd.Flags().Lookup("auth-jwks-route"))
 	_ = viper.BindPFlag("auth.adminaaguids", runCmd.Flags().Lookup("auth-admin-aaguids"))
+	_ = viper.BindPFlag("auth.signingkeypath", runCmd.Flags().Lookup("auth-signing-key-path"))
+	_ = viper.BindPFlag("auth.signingkeypem", runCmd.Flags().Lookup("auth-signing-key-pem"))
+	_ = viper.BindPFlag("auth.signingkeykid", runCmd.Flags().Lookup("auth-signing-key-kid"))
+	_ = viper.BindPFlag("auth.csrfsecret", runCmd.Flags().Lookup("auth-csrf-secret"))
 	// Intentionally avoid binding bootstrap-token to Viper to let ENV/Config take precedence
 
 	_ = viper.BindPFlag("auth.github.enabled", runCmd.Flags().Lookup("auth-github-enabled"))

@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"context"
 	"net/http"
 	"time"
 
@@ -71,7 +72,9 @@ func RegisterRefresh(r *gin.Engine, deps RefreshDeps) {
 		}
 
 		// Rotate the refresh token
-		newRefreshToken, accessJWT, _, err := deps.Service.Rotate(c.Request.Context(), refreshToken, time.Now().UTC())
+		ctx := context.WithValue(c.Request.Context(), "client_ua", c.Request.UserAgent())
+		ctx = context.WithValue(ctx, "client_ip", c.ClientIP())
+		newRefreshToken, accessJWT, _, err := deps.Service.Rotate(ctx, refreshToken, time.Now().UTC())
 		if err != nil {
 			_ = basehttp.NewUnauthorizedError("session expired").Write(c.Writer)
 			return
@@ -84,8 +87,11 @@ func RegisterRefresh(r *gin.Engine, deps RefreshDeps) {
 				"refresh_token": newRefreshToken,
 			})
 		} else {
-			// Browser mode: set cookie and return access token
+			// Browser mode: set cookies and return access token
 			authhttp.SetRefreshCookie(c.Writer, newRefreshToken, 24*time.Hour, deps.Cookie)
+
+			// Match access cookie to default access TTL (30m) as best-effort; consider making TTL available here
+			authhttp.SetAccessCookie(c.Writer, accessJWT, 30*time.Minute, deps.Cookie)
 			_ = basehttp.WriteJSON(c.Writer, http.StatusOK, apimodels.AccessTokenResponse{AccessToken: accessJWT})
 		}
 	})

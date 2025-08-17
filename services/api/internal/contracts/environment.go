@@ -2,8 +2,6 @@ package contracts
 
 import (
 	"time"
-
-	"github.com/google/uuid"
 )
 
 // EnvironmentCreate represents a request to create an environment
@@ -70,11 +68,11 @@ type EnvironmentListFilter struct {
 
 // EnvironmentIDParam represents an environment ID parameter
 type EnvironmentIDParam struct {
-	EnvironmentID uuid.UUID `uri:"environment_id" binding:"required,uuid4"`
+	EnvironmentID string `uri:"environment_id" binding:"required"`
 }
 
 // EnvironmentNameParam represents an environment name parameter
 type EnvironmentNameParam struct {
-	ProjectID uuid.UUID `uri:"project_id" binding:"required,uuid4"`
-	Name      string    `uri:"name" binding:"required"`
+	ProjectID string `uri:"project_id" binding:"required"`
+	Name      string `uri:"name" binding:"required"`
 }

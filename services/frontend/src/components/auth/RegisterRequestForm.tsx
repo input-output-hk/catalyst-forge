@@ -7,6 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { withLatency } from "@/mocks/latency";
 import { useAppStore } from "@/store/app-store";
+// import { apiFetch, getApiBaseUrl } from "@/lib/api";
+import { forge } from "@/lib/client";
 
 const FREE_EMAIL_DOMAINS = new Set([
   "gmail.com",
@@ -41,13 +43,19 @@ export default function RegisterRequestForm({ onDone, defaultEmail, autoSubmit }
   });
 
   const onSubmit = async (values: z.infer<typeof schema>) => {
-    await withLatency();
-    actions.addAudit({
-      actor: values.email,
-      action: "access.request",
-      resource: "registration",
-      meta: { email: values.email },
-    });
+    try {
+      // Submit to API (public endpoint)
+      const res = await forge.raw.POST('/api/v1/public/access-requests', {
+        body: { email: values.email } as any,
+      });
+      if (!res.response.ok) {
+        // fall back to minor delay to keep UX flowing
+        await withLatency();
+      }
+    } catch {
+      await withLatency();
+    }
+    actions.addAudit({ actor: values.email, action: "access.request", resource: "registration", meta: { email: values.email } });
     onDone(values.email);
   };
 

@@ -16,6 +16,7 @@ const (
 type User struct {
 	ID             uuid.UUID
 	Email          string
+	FullName       string
 	Roles          []string
 	Permissions    []string // Derived permissions from roles
 	SessionVersion int64
@@ -62,7 +63,7 @@ type RecoveryCode struct {
 // RefreshToken represents a refresh token with rotation tracking.
 type RefreshToken struct {
 	ID             uuid.UUID
-	FamilyID       uuid.UUID  // Groups related tokens for rotation
+	FamilyID       uuid.UUID // Groups related tokens for rotation
 	UserID         uuid.UUID
 	DeviceID       *uuid.UUID // Optional: CLI device that owns this token
 	Hash           []byte     // SHA256 of the token
@@ -72,13 +73,28 @@ type RefreshToken struct {
 	RotatedAt      *time.Time // When this token was rotated to a new one
 	RevokedAt      *time.Time // When this token was explicitly revoked
 	Reason         *string    // Reason for revocation
+	UserAgent      string     // Captured UA at issuance/rotation
+	IPAddress      string     // Captured client IP at issuance/rotation
+}
+
+// AccessRequest represents a user's request to gain access to the system.
+type AccessRequest struct {
+	ID        uuid.UUID
+	Email     string
+	Reason    string
+	Status    string // pending | approved | rejected
+	Attempts  int    // number of times user submitted
+	DecidedAt *time.Time
+	DecidedBy *uuid.UUID
+	CreatedAt time.Time
+	UpdatedAt time.Time
 }
 
 // Device represents a CLI device that has been linked to a user account.
 type Device struct {
 	ID         uuid.UUID
 	UserID     uuid.UUID
-	DeviceName string    // User-friendly name like "Paul's MBP • Forge CLI"
+	DeviceName string // User-friendly name like "Paul's MBP • Forge CLI"
 	CreatedAt  time.Time
 	LastUsedAt time.Time
 	RevokedAt  *time.Time // When device was revoked/deleted
@@ -87,13 +103,13 @@ type Device struct {
 // DeviceLink represents a pending device authorization flow.
 type DeviceLink struct {
 	ID           uuid.UUID
-	DeviceCode   []byte    // Hashed device code (long, opaque)
-	UserCode     string    // Short, human-friendly code like "J7FQ-K9"
-	DeviceName   string    // Device name provided by CLI
-	Purpose      string    // "login" or "step_up"
+	DeviceCode   []byte     // Hashed device code (long, opaque)
+	UserCode     string     // Short, human-friendly code like "J7FQ-K9"
+	DeviceName   string     // Device name provided by CLI
+	Purpose      string     // "login" or "step_up"
 	UserID       *uuid.UUID // Set after authorization
 	AuthorizedAt *time.Time // When user authorized in browser
 	ExpiresAt    time.Time  // TTL for the flow (10 min default)
 	CreatedAt    time.Time
-	Interval     int       // Polling interval in seconds (5s default)
+	Interval     int // Polling interval in seconds (5s default)
 }

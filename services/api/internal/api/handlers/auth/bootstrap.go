@@ -19,7 +19,7 @@ type bootstrapRequest struct {
 }
 
 // RegisterBootstrap binds the bootstrap endpoint.
-func RegisterBootstrap(r *gin.Engine, svc akservice.BootstrapService, tokens akservice.TokenService, refresh akservice.RefreshService) {
+func RegisterBootstrap(r *gin.Engine, svc akservice.BootstrapService, tokens akservice.TokenService, refresh akservice.RefreshService, csrf basehttp.CSRF) {
 	// @Summary Admin bootstrap
 	// @Tags auth
 	// @Accept json
@@ -41,7 +41,7 @@ func RegisterBootstrap(r *gin.Engine, svc akservice.BootstrapService, tokens aks
 			return
 		}
 
-		// Establish session: best-effort issue refresh cookie and access token
+		// Establish session: best-effort issue refresh cookie, set CSRF cookie, and access token
 		var accessToken string
 		if tokens != nil {
 			claims := akservice.AccessClaims{Sub: user.ID.String(), Email: user.Email, Roles: user.Roles, SessionVersion: user.SessionVersion}
@@ -53,6 +53,13 @@ func RegisterBootstrap(r *gin.Engine, svc akservice.BootstrapService, tokens aks
 		if refresh != nil {
 			if cookieVal, _, _, err := refresh.Issue(c.Request.Context(), user, time.Now().UTC()); err == nil {
 				authhttp.SetRefreshCookie(c.Writer, cookieVal, 24*time.Hour, basehttp.DefaultCookieConfig())
+			}
+		}
+
+		// Set CSRF cookie to enable immediate refresh from the browser
+		if csrf != nil {
+			if tok, err := csrf.Generate(); err == nil {
+				csrf.SetCookie(c.Writer, tok)
 			}
 		}
 

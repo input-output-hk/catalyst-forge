@@ -91,4 +91,43 @@ func RegisterCredentials(r *gin.Engine, deps CredentialsDeps) {
 		}
 		c.Status(http.StatusNoContent)
 	})
+
+	// @Summary Update credential device name
+	// @Tags auth
+	// @Param id path string true "Credential ID (base64url)"
+	// @Accept json
+	// @Produce json
+	// @Success 204
+	// @Router /api/v1/auth/credentials/{id} [patch]
+	g.PATCH("/credentials/:id", func(c *gin.Context) {
+		ctx, ok := akauth.From(c)
+		if !ok || !ctx.IsAuthenticated() {
+			_ = basehttp.NewUnauthorizedError("").Write(c.Writer)
+			return
+		}
+
+		idParam := c.Param("id")
+		id, err := base64.RawURLEncoding.DecodeString(idParam)
+		if err != nil {
+			_ = basehttp.NewBadRequestError("invalid credential id").Write(c.Writer)
+			return
+		}
+
+		var in struct {
+			DeviceName string `json:"device_name"`
+		}
+		if err := basehttp.ParseJSON(c.Writer, c.Request, &in); err != nil {
+			return
+		}
+		if in.DeviceName == "" {
+			_ = basehttp.NewBadRequestError("device_name is required").Write(c.Writer)
+			return
+		}
+
+		if err := deps.Credentials.UpdateDeviceName(c.Request.Context(), id, ctx.UserID, in.DeviceName); err != nil {
+			_ = basehttp.NewBadRequestError(err.Error()).Write(c.Writer)
+			return
+		}
+		c.Status(http.StatusNoContent)
+	})
 }

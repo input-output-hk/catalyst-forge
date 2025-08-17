@@ -61,6 +61,23 @@ func BuildRegistry() *authkit.PolicyRegistry {
 	// Auth: user credential management requires authentication
 	reg.RequireAuth("GET", "/api/v1/auth/credentials")
 	reg.RequireAuth("DELETE", "/api/v1/auth/credentials/*")
+	// Access requests: public submit, admin list/decide
+	// public POST intentionally left without a rule → allowed
+	reg.RequireRoles([]string{"admin"}, "GET", "/api/v1/admin/access-requests")
+	reg.RequireRoles([]string{"admin"}, "PATCH", "/api/v1/admin/access-requests/*")
+	// Auth: profile
+	reg.RequireAuth("GET", "/api/v1/auth/me", "/api/v1/auth/session")
+	reg.RequireAuth("PATCH", "/api/v1/auth/me")
+
+	// Admin: users listing requires admin role
+	reg.RequireRoles([]string{"admin"}, "GET", "/api/v1/admin/users")
+	reg.RequireRoles([]string{"admin"}, "GET", "/api/v1/admin/users/*/credentials")
+	reg.RequireRoles([]string{"admin"}, "POST", "/api/v1/admin/users/*/recovery/codes/generate")
+	reg.RequireRoles([]string{"admin"}, "GET", "/api/v1/admin/audit")
+	reg.RequireRoles([]string{"admin"}, "PATCH", "/api/v1/admin/users/*")
+	reg.RequireRoles([]string{"admin"}, "DELETE", "/api/v1/admin/users/*")
+	reg.RequireRoles([]string{"admin"}, "POST", "/api/v1/admin/invites")
+	// Public preview does not require auth; keep it readable
 
 	// Sensitive operations may also require step-up in handlers where applicable
 	return reg

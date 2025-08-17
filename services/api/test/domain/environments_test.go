@@ -51,6 +51,12 @@ func TestEnvironments_Create_And_List(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, http.StatusCreated, r.StatusCode)
 
+	// Get by id positive
+	var got map[string]any
+	r, err = tu.DoJSON(nil, http.MethodGet, env.BaseURL()+"/api/v1/environments/"+created["id"].(string), headers, nil, &got)
+	require.NoError(t, err)
+	require.Equal(t, http.StatusOK, r.StatusCode)
+
 	// List with filter by name
 	var list map[string]any
 	url := env.BaseURL() + "/api/v1/environments?page=1&page_size=20&name=dev"
@@ -126,4 +132,9 @@ func TestEnvironments_Update_And_Delete(t *testing.T) {
 	r, err = tu.DoJSON(nil, http.MethodDelete, env.BaseURL()+"/api/v1/environments/"+id, headers, nil, nil)
 	require.Error(t, err)
 	assert.Contains(t, []int{http.StatusNoContent, http.StatusConflict}, r.StatusCode)
+
+	// Delete not-found
+	r, err = tu.DoJSON(nil, http.MethodDelete, env.BaseURL()+"/api/v1/environments/"+uuid.NewString(), headers, nil, nil)
+	require.Error(t, err)
+	require.Equal(t, http.StatusNotFound, r.StatusCode)
 }

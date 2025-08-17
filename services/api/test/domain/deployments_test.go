@@ -133,3 +133,70 @@ func TestDeployments_GetByID_Positive(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, http.StatusOK, r.StatusCode)
 }
+
+func TestDeployments_Update_And_Delete(t *testing.T) {
+	// no t.Parallel; uses DB seed directly
+	env := newDomainEnv(t)
+	_, projID := seedRepoProject(t)
+
+	headers := withBypassHeaders(authHeaders(env))
+	headers["X-Test-Permissions"] = headers["X-Test-Permissions"] + ",release:write,env:write,deploy:write"
+
+	// Create environment
+	envCreate := map[string]any{
+		"project_id":       projID.String(),
+		"name":             "dev-upd",
+		"environment_type": "dev",
+	}
+	var e map[string]any
+	r, err := tu.DoJSON(nil, http.MethodPost, env.BaseURL()+"/api/v1/environments", headers, envCreate, &e)
+	require.NoError(t, err)
+	require.Equal(t, http.StatusCreated, r.StatusCode)
+	envID := e["id"].(string)
+
+	// Create release
+	relCreate := map[string]any{
+		"project_id":    projID.String(),
+		"release_key":   "rel-upd-dep",
+		"source_commit": "deadbeef",
+	}
+	var rel map[string]any
+	r, err = tu.DoJSON(nil, http.MethodPost, env.BaseURL()+"/api/v1/releases", headers, relCreate, &rel)
+	require.NoError(t, err)
+	require.Equal(t, http.StatusCreated, r.StatusCode)
+	relID := rel["id"].(string)
+
+	// Create deployment
+	depCreate := map[string]any{
+		"release_id":     relID,
+		"environment_id": envID,
+	}
+	var dep map[string]any
+	r, err = tu.DoJSON(nil, http.MethodPost, env.BaseURL()+"/api/v1/deployments", headers, depCreate, &dep)
+	require.NoError(t, err)
+	require.Equal(t, http.StatusCreated, r.StatusCode)
+	depID := dep["id"].(string)
+
+	// Update deployment: set status and reason
+	upd := map[string]any{"status": "rendered", "status_reason": "ok"}
+	var out map[string]any
+	r, err = tu.DoJSON(nil, http.MethodPatch, env.BaseURL()+"/api/v1/deployments/"+depID, headers, upd, &out)
+	require.NoError(t, err)
+	require.Equal(t, http.StatusOK, r.StatusCode)
+
+	// Invalid transition -> 422
+	bad := map[string]any{"status": "healthy"}
+	r, err = tu.DoJSON(nil, http.MethodPatch, env.BaseURL()+"/api/v1/deployments/"+depID, headers, bad, &out)
+	require.Error(t, err)
+	require.Equal(t, http.StatusUnprocessableEntity, r.StatusCode)
+
+	// Delete success
+	r, err = tu.DoJSON(nil, http.MethodDelete, env.BaseURL()+"/api/v1/deployments/"+depID, headers, nil, nil)
+	require.NoError(t, err)
+	require.Equal(t, http.StatusNoContent, r.StatusCode)
+
+	// Delete not-found
+	r, err = tu.DoJSON(nil, http.MethodDelete, env.BaseURL()+"/api/v1/deployments/"+uuid.NewString(), headers, nil, nil)
+	require.Error(t, err)
+	require.Equal(t, http.StatusNotFound, r.StatusCode)
+}

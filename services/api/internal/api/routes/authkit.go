@@ -1,11 +1,13 @@
 package routes
 
 import (
+	"net/http"
 	"time"
 
 	"github.com/catalystgo/catalyst-forge/lib/foundry/httpkit"
 	"github.com/gin-gonic/gin"
 	authhandlers "github.com/input-output-hk/catalyst-forge/services/api/internal/api/handlers/auth"
+	apimodels "github.com/input-output-hk/catalyst-forge/services/api/internal/api/models/auth"
 	apiauth "github.com/input-output-hk/catalyst-forge/services/api/internal/authkit"
 	akservice "github.com/input-output-hk/catalyst-forge/services/api/internal/authkit/service"
 )
@@ -42,7 +44,7 @@ func bindAuthKitRoutes(
 	// @Produce json
 	// @Success 200 {object} map[string]interface{}
 	// @Router /api/v1/auth/login/complete [post]
-	authhandlers.RegisterLoginComplete(r, wa, refresh, tokens, cookie, refreshTTL)
+	authhandlers.RegisterLoginComplete(r, wa, refresh, tokens, cookie, refreshTTL, csrf)
 
 	// @Summary List credentials
 	// @Tags auth
@@ -108,14 +110,24 @@ func bindAuthKitRoutes(
 	// @Tags auth
 	// @Success 204
 	// @Router /api/v1/auth/logout-all [post]
-	authhandlers.RegisterLogoutAll(r, authhandlers.LogoutAllDeps{Service: refresh})
+	authhandlers.RegisterLogoutAll(r, authhandlers.LogoutAllDeps{Service: refresh, Cookie: cookie})
 
 	// @Summary Me
 	// @Tags auth
 	// @Produce json
 	// @Success 200 {object} map[string]interface{}
 	// @Router /api/v1/auth/me [get]
-	authhandlers.RegisterMeSession(r)
+	authhandlers.RegisterMeSession(r, apiauth.BuildDepsCached().Stores.Users)
+
+	// @Summary Sessions
+	// @Tags auth
+	// @Produce json
+	// @Success 200 {object} map[string]interface{}
+	// @Router /api/v1/auth/sessions [get]
+	{
+		deps := apiauth.BuildDepsCached()
+		authhandlers.RegisterSessions(r, authhandlers.SessionsDeps{Refresh: deps.Stores.Refresh, Devices: deps.Stores.Devices})
+	}
 
 	// @Summary Create invite
 	// @Tags auth
@@ -124,6 +136,30 @@ func bindAuthKitRoutes(
 	// @Success 201 {object} map[string]interface{}
 	// @Router /api/v1/auth/invites [post]
 	// invites TBD
+
+	// Public access requests and admin review
+	{
+		deps := apiauth.BuildDepsCached()
+		r.POST("/api/v1/public/access-requests", func(c *gin.Context) {
+			var in apimodels.AccessRequestCreateRequest
+			if err := httpkit.ParseJSON(c.Writer, c.Request, &in); err != nil {
+				return
+			}
+			if in.Email == "" {
+				_ = httpkit.NewBadRequestError("email required").Write(c.Writer)
+				return
+			}
+			if deps.Stores.Access == nil {
+				_ = httpkit.NewInternalError().Write(c.Writer)
+				return
+			}
+			if _, err := deps.Stores.Access.CreateOrBump(c.Request.Context(), in.Email, in.Reason, time.Now().UTC()); err != nil {
+				_ = httpkit.NewInternalError().Write(c.Writer)
+				return
+			}
+			c.Status(http.StatusCreated)
+		})
+	}
 
 	// @Summary Onboard begin
 	// @Tags auth
@@ -146,7 +182,7 @@ func bindAuthKitRoutes(
 	{
 		deps := apiauth.BuildDepsCached()
 		bs := akservice.NewBootstrapService(bootstrapToken, deps.Stores.Users, deps.Stores.Bootstrap)
-		authhandlers.RegisterBootstrap(r, bs, tokens, refresh)
+		authhandlers.RegisterBootstrap(r, bs, tokens, refresh, csrf)
 	}
 
 	// GitHub OIDC exchange (public)
@@ -184,7 +220,7 @@ func bindAuthKitRoutes(
 	// @Router /api/v1/auth/recovery/init [post]
 	{
 		deps := apiauth.BuildDepsCached()
-		authhandlers.RegisterRecovery(r, authhandlers.RecoveryDeps{Flow: akservice.NewRecoveryFlowService(deps.Stores.Users, akservice.NewRecoveryService(deps.Stores.RecoveryCodes, deps.Rand), deps.KV, deps.Rand)}, wa)
+		authhandlers.RegisterRecovery(r, authhandlers.RecoveryDeps{Flow: akservice.NewRecoveryFlowService(deps.Stores.Users, akservice.NewRecoveryService(deps.Stores.RecoveryCodes, deps.Rand), deps.KV, deps.Rand), Store: deps.Stores.RecoveryCodes, Rand: deps.Rand}, wa)
 	}
 
 	// @Summary Recovery verify
@@ -275,6 +311,12 @@ func bindAuthKitRoutes(
 			RefreshStore: deps.Stores.Refresh,
 			AuditStore:   deps.Stores.Audit,
 		})
+	}
+
+	// Admin: users listing (basic)
+	{
+		deps := apiauth.BuildDepsCached()
+		authhandlers.RegisterAdminUsers(r, authhandlers.AdminUsersDeps{Users: deps.Stores.Users, Refresh: deps.Stores.Refresh, RefreshSvc: refresh, Creds: deps.Stores.Credentials, Recovery: deps.Stores.RecoveryCodes, Rand: deps.Rand, Audit: deps.Stores.Audit})
 	}
 
 	// @Summary Get device details

@@ -11,10 +11,12 @@ import (
 
 // User represents a user in the database.
 type User struct {
-	ID             uuid.UUID `gorm:"type:uuid;primaryKey"`
-	Email          string    `gorm:"uniqueIndex;not null"`
-	RolesJSON      string    `gorm:"type:text;column:roles"` // JSON array of roles
-	SessionVersion int64     `gorm:"not null;default:1"`
+	ID             uuid.UUID  `gorm:"type:uuid;primaryKey"`
+	Email          string     `gorm:"uniqueIndex;not null"`
+	FullName       string     `gorm:"type:text"`
+	RolesJSON      string     `gorm:"type:text;column:roles"` // JSON array of roles
+	SessionVersion int64      `gorm:"not null;default:1"`
+	SuspendedAt    *time.Time `gorm:"index"`
 	CreatedAt      time.Time
 	UpdatedAt      time.Time
 	DeletedAt      gorm.DeletedAt `gorm:"index"`
@@ -69,6 +71,21 @@ func (Invite) TableName() string {
 	return "auth_invites"
 }
 
+// AccessRequest stores access requests submitted from the landing page.
+type AccessRequest struct {
+	ID        uuid.UUID  `gorm:"type:uuid;primaryKey"`
+	Email     string     `gorm:"uniqueIndex;not null"`
+	Reason    string     `gorm:"type:text"`
+	Status    string     `gorm:"index;not null;default:pending"`
+	Attempts  int        `gorm:"not null;default:1"`
+	DecidedAt *time.Time `gorm:"index"`
+	DecidedBy *uuid.UUID `gorm:"type:uuid;index"`
+	CreatedAt time.Time
+	UpdatedAt time.Time
+}
+
+func (AccessRequest) TableName() string { return "auth_access_requests" }
+
 // RecoveryCode represents a recovery code in the database.
 type RecoveryCode struct {
 	ID        uuid.UUID  `gorm:"type:uuid;primaryKey;default:gen_random_uuid()"`
@@ -99,6 +116,8 @@ type RefreshToken struct {
 	RotatedAt      *time.Time `gorm:"index"`
 	RevokedAt      *time.Time `gorm:"index"`
 	Reason         *string
+	UserAgent      string
+	IPAddress      string
 
 	// Foreign key relations
 	User   User    `gorm:"foreignKey:UserID;references:ID"`
@@ -112,9 +131,9 @@ func (RefreshToken) TableName() string {
 
 // Device represents a CLI device linked to a user account.
 type Device struct {
-	ID         uuid.UUID  `gorm:"type:uuid;primaryKey"`
-	UserID     uuid.UUID  `gorm:"type:uuid;index;not null"`
-	DeviceName string     `gorm:"not null"`
+	ID         uuid.UUID `gorm:"type:uuid;primaryKey"`
+	UserID     uuid.UUID `gorm:"type:uuid;index;not null"`
+	DeviceName string    `gorm:"not null"`
 	CreatedAt  time.Time
 	LastUsedAt time.Time
 	RevokedAt  *time.Time `gorm:"index"`
@@ -131,7 +150,7 @@ func (Device) TableName() string {
 // DeviceLink represents a pending device authorization flow.
 type DeviceLink struct {
 	ID           uuid.UUID  `gorm:"type:uuid;primaryKey"`
-	DeviceCode   []byte     `gorm:"not null;uniqueIndex"` // Hashed device code
+	DeviceCode   []byte     `gorm:"not null;uniqueIndex"`         // Hashed device code
 	UserCode     string     `gorm:"size:10;uniqueIndex;not null"` // Short user code
 	DeviceName   string     `gorm:"not null"`
 	Purpose      string     `gorm:"size:20;not null"` // "login" or "step_up"
@@ -139,7 +158,7 @@ type DeviceLink struct {
 	AuthorizedAt *time.Time
 	ExpiresAt    time.Time `gorm:"index;not null"`
 	CreatedAt    time.Time
-	Interval     int       `gorm:"not null;default:5"` // Polling interval in seconds
+	Interval     int `gorm:"not null;default:5"` // Polling interval in seconds
 
 	// Foreign key relation (optional, set after authorization)
 	User *User `gorm:"foreignKey:UserID;references:ID"`
@@ -231,10 +250,11 @@ func AutoMigrate(db *gorm.DB) error {
 		&User{},
 		&Credential{},
 		&Invite{},
+		&AccessRequest{},
 		&RecoveryCode{},
-		&Device{},         // Added for CLI device management
-		&DeviceLink{},     // Added for device-code linking flow
-		&RefreshToken{},   // Updated with DeviceID foreign key
+		&Device{},       // Added for CLI device management
+		&DeviceLink{},   // Added for device-code linking flow
+		&RefreshToken{}, // Updated with DeviceID foreign key
 		&AuditEvent{},
 		&BootstrapTokenUsed{},
 		&GithubPolicy{},

@@ -1,5 +1,7 @@
 // Recovery key utilities: unambiguous Base32 (uppercase A-Z without I, L, O; digits 2-7)
 // NOTE: Frontend-only demo generation. Do not use as-is for production secrets.
+import { forge } from "./client";
+import type { components } from "forge-client";
 
 export const RECOVERY_ALPHABET = "ABCDEFGHJKMNPQRSTUVWXYZ234567"; // excludes I, L, O and 0,1; uses Base32 digits 2-7
 
@@ -47,4 +49,46 @@ export function generateRecoveryKeys(count = 8, groups = 5, groupLen = 5): strin
 
 export function keysToText(keys: string[], header = "Recovery Keys") {
   return `${header}\n\n${keys.map((k, i) => `Key ${i + 1}: ${k}`).join("\n")}\n`;
+}
+
+// Download helpers
+export function downloadRecoveryCodes(filename: string, codes: string[]): void {
+  const blob = new Blob([codes.join("\n")], { type: "text/plain;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+export async function copyRecoveryCodesToClipboard(codes: string[]): Promise<void> {
+  const text = codes.join("\n");
+  try {
+    await navigator.clipboard.writeText(text);
+  } catch {
+    // no-op: clipboard may be unavailable; callers may handle errors
+  }
+}
+
+// API-driven recovery code helpers
+type RecoveryGenerateResponse = components["schemas"]["auth.RecoveryGenerateResponse"];
+
+export async function requestRecoveryCodes(): Promise<string[]> {
+  try {
+    const res = await forge.raw.POST('/api/v1/auth/recovery/codes/generate');
+    if (!res.response.ok) return [];
+    const data = res.data as RecoveryGenerateResponse;
+    return Array.isArray(data?.codes) ? (data.codes as string[]) : [];
+  } catch {
+    return [];
+  }
+}
+
+export async function requestCodesAndStartGate(
+  startRecoveryGate: (keys: string[], returnTo?: string) => void,
+  returnTo?: string
+): Promise<void> {
+  const codes = await requestRecoveryCodes().catch(() => []);
+  startRecoveryGate(codes, returnTo);
 }

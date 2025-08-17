@@ -6,9 +6,9 @@ import (
 	"errors"
 	"time"
 
-	"github.com/input-output-hk/catalyst-forge/services/api/internal/authkit/domain"
 	repodb "github.com/catalystgo/catalyst-forge/lib/foundry/db"
 	"github.com/google/uuid"
+	"github.com/input-output-hk/catalyst-forge/services/api/internal/authkit/domain"
 	"gorm.io/gorm"
 )
 
@@ -65,7 +65,7 @@ func (s *CredentialStore) Add(ctx context.Context, cred *domain.Credential) erro
 // GetByUser retrieves all credentials for a user.
 func (s *CredentialStore) GetByUser(ctx context.Context, userID uuid.UUID) ([]domain.Credential, error) {
 	var dbCreds []Credential
-	
+
 	if err := s.dbFor(ctx).WithContext(ctx).
 		Where("user_id = ? AND revoked = ?", userID, false).
 		Find(&dbCreds).Error; err != nil {
@@ -87,7 +87,7 @@ func (s *CredentialStore) GetByUser(ctx context.Context, userID uuid.UUID) ([]do
 // Get retrieves a specific credential by its ID.
 func (s *CredentialStore) Get(ctx context.Context, id []byte) (*domain.Credential, error) {
 	var dbCred Credential
-	
+
 	if err := s.dbFor(ctx).WithContext(ctx).
 		Where("id = ?", id).
 		First(&dbCred).Error; err != nil {
@@ -138,6 +138,22 @@ func (s *CredentialStore) Revoke(ctx context.Context, id []byte) error {
 		return errors.New("credential not found")
 	}
 
+	return nil
+}
+
+// UpdateDeviceName updates the device name for a credential, ensuring it belongs to the user and is not revoked.
+func (s *CredentialStore) UpdateDeviceName(ctx context.Context, id []byte, userID uuid.UUID, deviceName string) error {
+	result := s.dbFor(ctx).WithContext(ctx).Model(&Credential{}).
+		Where("id = ? AND user_id = ? AND revoked = ?", id, userID, false).
+		Update("device_name", deviceName)
+
+	if result.Error != nil {
+		return result.Error
+	}
+
+	if result.RowsAffected == 0 {
+		return errors.New("credential not found or revoked")
+	}
 	return nil
 }
 

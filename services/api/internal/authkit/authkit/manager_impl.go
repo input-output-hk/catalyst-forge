@@ -6,6 +6,7 @@ import (
 
 	"crypto/subtle"
 	"encoding/base64"
+	"encoding/json"
 
 	"fmt"
 	"os"
@@ -69,8 +70,8 @@ func registerRoutes(rg *gin.RouterGroup, cfg Config, deps Deps) {
 	// POST /login/complete
 	rg.POST("/login/complete", func(c *gin.Context) {
 		var in struct {
-			SessionKey string      `json:"session_key"`
-			Credential interface{} `json:"credential"`
+			SessionKey string          `json:"session_key"`
+			Credential json.RawMessage `json:"credential"`
 		}
 		if err := basehttp.ParseJSON(c.Writer, c.Request, &in); err != nil {
 			return
@@ -93,6 +94,8 @@ func registerRoutes(rg *gin.RouterGroup, cfg Config, deps Deps) {
 			_ = basehttp.NewInternalError().Write(c.Writer)
 			return
 		}
+
+		authhttp.SetAccessCookie(c.Writer, access, cfg.AccessTokenTTL, cookieCfg)
 		_ = basehttp.WriteJSON(c.Writer, http.StatusOK, map[string]any{
 			"user":         map[string]any{"id": user.ID.String(), "email": user.Email, "roles": user.Roles},
 			"access_token": access,
@@ -161,8 +164,8 @@ func registerRoutes(rg *gin.RouterGroup, cfg Config, deps Deps) {
 			return
 		}
 		var in struct {
-			SessionKey string      `json:"session_key"`
-			Credential interface{} `json:"credential"`
+			SessionKey string          `json:"session_key"`
+			Credential json.RawMessage `json:"credential"`
 		}
 		if err := basehttp.ParseJSON(c.Writer, c.Request, &in); err != nil {
 			return
@@ -229,8 +232,8 @@ func registerRoutes(rg *gin.RouterGroup, cfg Config, deps Deps) {
 			return
 		}
 		var in struct {
-			SessionKey string      `json:"session_key"`
-			Credential interface{} `json:"credential"`
+			SessionKey string          `json:"session_key"`
+			Credential json.RawMessage `json:"credential"`
 		}
 		if err := basehttp.ParseJSON(c.Writer, c.Request, &in); err != nil {
 			return
@@ -415,9 +418,9 @@ func registerRoutes(rg *gin.RouterGroup, cfg Config, deps Deps) {
 	// POST /onboard/complete
 	rg.POST("/onboard/complete", func(c *gin.Context) {
 		var in struct {
-			SessionKey string      `json:"session_key"`
-			Credential interface{} `json:"credential"`
-			InviteID   string      `json:"invite_id"`
+			SessionKey string          `json:"session_key"`
+			Credential json.RawMessage `json:"credential"`
+			InviteID   string          `json:"invite_id"`
 		}
 		if err := basehttp.ParseJSON(c.Writer, c.Request, &in); err != nil {
 			return
@@ -497,9 +500,9 @@ func registerRoutes(rg *gin.RouterGroup, cfg Config, deps Deps) {
 	// Recovery: register new credential complete
 	rg.POST("/recovery/register/complete", func(c *gin.Context) {
 		var in struct {
-			FlowID     string      `json:"flow_id"`
-			SessionKey string      `json:"session_key"`
-			Credential interface{} `json:"credential"`
+			FlowID     string          `json:"flow_id"`
+			SessionKey string          `json:"session_key"`
+			Credential json.RawMessage `json:"credential"`
 		}
 		if err := basehttp.ParseJSON(c.Writer, c.Request, &in); err != nil {
 			return
@@ -579,8 +582,8 @@ func buildHandlers(cfg Config, deps Deps) Handlers {
 	}
 	h.LoginComplete = func(c *gin.Context) {
 		var in struct {
-			SessionKey string      `json:"session_key"`
-			Credential interface{} `json:"credential"`
+			SessionKey string          `json:"session_key"`
+			Credential json.RawMessage `json:"credential"`
 		}
 		if err := basehttp.ParseJSON(c.Writer, c.Request, &in); err != nil {
 			return
@@ -602,6 +605,8 @@ func buildHandlers(cfg Config, deps Deps) Handlers {
 			_ = basehttp.NewInternalError().Write(c.Writer)
 			return
 		}
+		// Also issue access cookie for browser flows
+		authhttp.SetAccessCookie(c.Writer, access, cfg.AccessTokenTTL, cookieCfg)
 		_ = basehttp.WriteJSON(c.Writer, http.StatusOK, map[string]any{"user": map[string]any{"id": user.ID.String(), "email": user.Email, "roles": user.Roles}, "access_token": access})
 	}
 	h.CredentialsList = func(c *gin.Context) {
@@ -653,8 +658,8 @@ func buildHandlers(cfg Config, deps Deps) Handlers {
 			return
 		}
 		var in struct {
-			SessionKey string      `json:"session_key"`
-			Credential interface{} `json:"credential"`
+			SessionKey string          `json:"session_key"`
+			Credential json.RawMessage `json:"credential"`
 		}
 		if err := basehttp.ParseJSON(c.Writer, c.Request, &in); err != nil {
 			return
@@ -713,8 +718,8 @@ func buildHandlers(cfg Config, deps Deps) Handlers {
 			return
 		}
 		var in struct {
-			SessionKey string      `json:"session_key"`
-			Credential interface{} `json:"credential"`
+			SessionKey string          `json:"session_key"`
+			Credential json.RawMessage `json:"credential"`
 		}
 		if err := basehttp.ParseJSON(c.Writer, c.Request, &in); err != nil {
 			return
@@ -867,9 +872,9 @@ func buildHandlers(cfg Config, deps Deps) Handlers {
 	}
 	h.OnboardComplete = func(c *gin.Context) {
 		var in struct {
-			SessionKey string      `json:"session_key"`
-			Credential interface{} `json:"credential"`
-			InviteID   string      `json:"invite_id"`
+			SessionKey string          `json:"session_key"`
+			Credential json.RawMessage `json:"credential"`
+			InviteID   string          `json:"invite_id"`
 		}
 		if err := basehttp.ParseJSON(c.Writer, c.Request, &in); err != nil {
 			return
@@ -941,9 +946,9 @@ func buildHandlers(cfg Config, deps Deps) Handlers {
 	}
 	h.RecoveryRegisterComplete = func(c *gin.Context) {
 		var in struct {
-			FlowID     string      `json:"flow_id"`
-			SessionKey string      `json:"session_key"`
-			Credential interface{} `json:"credential"`
+			FlowID     string          `json:"flow_id"`
+			SessionKey string          `json:"session_key"`
+			Credential json.RawMessage `json:"credential"`
 		}
 		if err := basehttp.ParseJSON(c.Writer, c.Request, &in); err != nil {
 			return
@@ -982,11 +987,16 @@ func authenticateMiddleware(cfg Config, deps Deps) gin.HandlerFunc {
 		// Extract bearer token
 		token, err := basehttp.GetBearerToken(c.Request)
 		if err != nil || token == "" {
-			if os.Getenv("TEST_LOG") == "1" {
-				println("[authkit] no bearer token on", c.Request.Method, c.Request.URL.Path)
+			// Try cookie-based access token
+			if v, cerr := authhttp.GetAccessCookie(c.Request); cerr == nil && v != "" {
+				token = v
+			} else {
+				if os.Getenv("TEST_LOG") == "1" {
+					println("[authkit] no bearer token on", c.Request.Method, c.Request.URL.Path)
+				}
+				c.Next()
+				return
 			}
-			c.Next()
-			return
 		}
 		// Verify JWT
 		claims, err := ts.ParseAccess(c.Request.Context(), token)
@@ -1030,6 +1040,7 @@ func authenticateMiddleware(cfg Config, deps Deps) gin.HandlerFunc {
 		ac := AuthContext{
 			UserID:           userID,
 			Email:            user.Email,
+			FullName:         user.FullName,
 			Roles:            user.Roles,
 			Permissions:      user.Permissions,
 			SessionVersion:   user.SessionVersion,

@@ -5,9 +5,9 @@ import (
 	"errors"
 	"time"
 
-	"github.com/input-output-hk/catalyst-forge/services/api/internal/authkit/domain"
 	repodb "github.com/catalystgo/catalyst-forge/lib/foundry/db"
 	"github.com/google/uuid"
+	"github.com/input-output-hk/catalyst-forge/services/api/internal/authkit/domain"
 	"gorm.io/gorm"
 )
 
@@ -21,6 +21,25 @@ func NewRefreshStore(db *gorm.DB) *RefreshStore {
 	return &RefreshStore{
 		db: db,
 	}
+}
+
+// Context helpers to capture client metadata without expanding service interfaces.
+func clientUserAgentFromContext(ctx context.Context) string {
+	if v := ctx.Value("client_ua"); v != nil {
+		if s, ok := v.(string); ok {
+			return s
+		}
+	}
+	return ""
+}
+
+func clientIPFromContext(ctx context.Context) string {
+	if v := ctx.Value("client_ip"); v != nil {
+		if s, ok := v.(string); ok {
+			return s
+		}
+	}
+	return ""
 }
 
 // dbFor returns the appropriate database handle for the given context.
@@ -45,6 +64,8 @@ func (s *RefreshStore) CreateFamily(ctx context.Context, userID uuid.UUID, sessi
 		SessionVersion: sessionVersion,
 		CreatedAt:      now,
 		ExpiresAt:      expiresAt,
+		UserAgent:      clientUserAgentFromContext(ctx),
+		IPAddress:      clientIPFromContext(ctx),
 	}
 
 	if err := s.dbFor(ctx).WithContext(ctx).Create(token).Error; err != nil {
@@ -69,6 +90,8 @@ func (s *RefreshStore) CreateFamilyWithDevice(ctx context.Context, userID uuid.U
 		SessionVersion: sessionVersion,
 		CreatedAt:      now,
 		ExpiresAt:      expiresAt,
+		UserAgent:      clientUserAgentFromContext(ctx),
+		IPAddress:      clientIPFromContext(ctx),
 	}
 
 	if err := s.dbFor(ctx).WithContext(ctx).Create(token).Error; err != nil {
@@ -83,7 +106,7 @@ func (s *RefreshStore) CreateFamilyWithDevice(ctx context.Context, userID uuid.U
 // This marks the previous token as rotated and creates a new one.
 func (s *RefreshStore) Rotate(ctx context.Context, prevTokenID uuid.UUID, newHash []byte, now time.Time, expiresAt time.Time) (newTokenID uuid.UUID, familyID uuid.UUID, err error) {
 	var prevToken RefreshToken
-	
+
 	// Start a transaction
 	tx := s.dbFor(ctx).WithContext(ctx).Begin()
 	defer func() {
@@ -127,6 +150,8 @@ func (s *RefreshStore) Rotate(ctx context.Context, prevTokenID uuid.UUID, newHas
 		SessionVersion: prevToken.SessionVersion,
 		CreatedAt:      now,
 		ExpiresAt:      expiresAt,
+		UserAgent:      clientUserAgentFromContext(ctx),
+		IPAddress:      clientIPFromContext(ctx),
 	}
 
 	if err := tx.Create(newToken).Error; err != nil {
@@ -144,7 +169,7 @@ func (s *RefreshStore) Rotate(ctx context.Context, prevTokenID uuid.UUID, newHas
 // GetByID retrieves a refresh token by its ID.
 func (s *RefreshStore) GetByID(ctx context.Context, id uuid.UUID) (*domain.RefreshToken, error) {
 	var token RefreshToken
-	
+
 	if err := s.dbFor(ctx).WithContext(ctx).
 		Where("id = ?", id).
 		First(&token).Error; err != nil {
@@ -160,7 +185,7 @@ func (s *RefreshStore) GetByID(ctx context.Context, id uuid.UUID) (*domain.Refre
 // GetByHash retrieves a refresh token by its hash.
 func (s *RefreshStore) GetByHash(ctx context.Context, hash []byte) (*domain.RefreshToken, error) {
 	var token RefreshToken
-	
+
 	if err := s.dbFor(ctx).WithContext(ctx).
 		Where("hash = ?", hash).
 		First(&token).Error; err != nil {
@@ -231,6 +256,35 @@ func (s *RefreshStore) RevokeDeviceTokens(ctx context.Context, deviceID uuid.UUI
 	return result.Error
 }
 
+// ListActiveByUser returns all non-revoked, non-expired refresh tokens for a user.
+func (s *RefreshStore) ListActiveByUser(ctx context.Context, userID uuid.UUID, now time.Time) ([]*domain.RefreshToken, error) {
+	var tokens []RefreshToken
+	err := s.dbFor(ctx).WithContext(ctx).
+		Where("user_id = ? AND revoked_at IS NULL AND expires_at > ?", userID, now).
+		Order("family_id, created_at").
+		Find(&tokens).Error
+	if err != nil {
+		return nil, err
+	}
+	out := make([]*domain.RefreshToken, 0, len(tokens))
+	for i := range tokens {
+		out = append(out, s.toDomain(&tokens[i]))
+	}
+	return out, nil
+}
+
+// GetAnyByFamily retrieves any token from a family.
+func (s *RefreshStore) GetAnyByFamily(ctx context.Context, familyID uuid.UUID) (*domain.RefreshToken, error) {
+	var token RefreshToken
+	if err := s.dbFor(ctx).WithContext(ctx).Where("family_id = ?", familyID).Order("created_at DESC").First(&token).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, errors.New("family not found")
+		}
+		return nil, err
+	}
+	return s.toDomain(&token), nil
+}
+
 // toDomain converts a database model to a domain entity.
 func (s *RefreshStore) toDomain(token *RefreshToken) *domain.RefreshToken {
 	return &domain.RefreshToken{
@@ -245,5 +299,7 @@ func (s *RefreshStore) toDomain(token *RefreshToken) *domain.RefreshToken {
 		RotatedAt:      token.RotatedAt,
 		RevokedAt:      token.RevokedAt,
 		Reason:         token.Reason,
+		UserAgent:      token.UserAgent,
+		IPAddress:      token.IPAddress,
 	}
 }

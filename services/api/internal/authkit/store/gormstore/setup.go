@@ -14,6 +14,7 @@ type Stores struct {
 	Users         store.UserStore
 	Credentials   store.CredentialStore
 	Invites       store.InviteStore
+	Access        store.AccessRequestStore
 	RefreshTokens store.RefreshStore
 	RecoveryCodes store.RecoveryCodeStore
 	Audit         store.AuditStore
@@ -33,6 +34,7 @@ func NewStores(db *gorm.DB) *Stores {
 		Users:         NewUserStore(db),
 		Credentials:   NewCredentialStore(db),
 		Invites:       NewInviteStore(db),
+		Access:        NewAccessRequestStore(db),
 		RefreshTokens: NewRefreshStore(db),
 		RecoveryCodes: NewRecoveryCodeStore(db),
 		Audit:         NewAuditStore(db),

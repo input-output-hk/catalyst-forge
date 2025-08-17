@@ -20,6 +20,18 @@ const (
 	BearerAuth_Scopes = "BearerAuth_.Scopes"
 )
 
+// Defines values for AuthBeginDeviceLinkRequestPurpose.
+const (
+	AuthBeginDeviceLinkRequestPurposeLogin  AuthBeginDeviceLinkRequestPurpose = "login"
+	AuthBeginDeviceLinkRequestPurposeStepUp AuthBeginDeviceLinkRequestPurpose = "step_up"
+)
+
+// Defines values for AuthDeviceLinkVerificationResponsePurpose.
+const (
+	AuthDeviceLinkVerificationResponsePurposeLogin  AuthDeviceLinkVerificationResponsePurpose = "login"
+	AuthDeviceLinkVerificationResponsePurposeStepUp AuthDeviceLinkVerificationResponsePurpose = "step_up"
+)
+
 // Defines values for ContractsArtifactCreateProvider.
 const (
 	ContractsArtifactCreateProviderDockerhub ContractsArtifactCreateProvider = "dockerhub"
@@ -75,20 +87,26 @@ const (
 
 // Defines values for ContractsDeploymentCreateStatus.
 const (
-	ContractsDeploymentCreateStatusCanceled  ContractsDeploymentCreateStatus = "canceled"
-	ContractsDeploymentCreateStatusFailed    ContractsDeploymentCreateStatus = "failed"
-	ContractsDeploymentCreateStatusPending   ContractsDeploymentCreateStatus = "pending"
-	ContractsDeploymentCreateStatusSubmitted ContractsDeploymentCreateStatus = "submitted"
-	ContractsDeploymentCreateStatusSucceeded ContractsDeploymentCreateStatus = "succeeded"
+	ContractsDeploymentCreateStatusDegraded    ContractsDeploymentCreateStatus = "degraded"
+	ContractsDeploymentCreateStatusFailed      ContractsDeploymentCreateStatus = "failed"
+	ContractsDeploymentCreateStatusHealthy     ContractsDeploymentCreateStatus = "healthy"
+	ContractsDeploymentCreateStatusPending     ContractsDeploymentCreateStatus = "pending"
+	ContractsDeploymentCreateStatusPushed      ContractsDeploymentCreateStatus = "pushed"
+	ContractsDeploymentCreateStatusReconciling ContractsDeploymentCreateStatus = "reconciling"
+	ContractsDeploymentCreateStatusRendered    ContractsDeploymentCreateStatus = "rendered"
+	ContractsDeploymentCreateStatusRolledBack  ContractsDeploymentCreateStatus = "rolled_back"
 )
 
 // Defines values for ContractsDeploymentUpdateStatus.
 const (
-	ContractsDeploymentUpdateStatusCanceled  ContractsDeploymentUpdateStatus = "canceled"
-	ContractsDeploymentUpdateStatusFailed    ContractsDeploymentUpdateStatus = "failed"
-	ContractsDeploymentUpdateStatusPending   ContractsDeploymentUpdateStatus = "pending"
-	ContractsDeploymentUpdateStatusSubmitted ContractsDeploymentUpdateStatus = "submitted"
-	ContractsDeploymentUpdateStatusSucceeded ContractsDeploymentUpdateStatus = "succeeded"
+	ContractsDeploymentUpdateStatusDegraded    ContractsDeploymentUpdateStatus = "degraded"
+	ContractsDeploymentUpdateStatusFailed      ContractsDeploymentUpdateStatus = "failed"
+	ContractsDeploymentUpdateStatusHealthy     ContractsDeploymentUpdateStatus = "healthy"
+	ContractsDeploymentUpdateStatusPending     ContractsDeploymentUpdateStatus = "pending"
+	ContractsDeploymentUpdateStatusPushed      ContractsDeploymentUpdateStatus = "pushed"
+	ContractsDeploymentUpdateStatusReconciling ContractsDeploymentUpdateStatus = "reconciling"
+	ContractsDeploymentUpdateStatusRendered    ContractsDeploymentUpdateStatus = "rendered"
+	ContractsDeploymentUpdateStatusRolledBack  ContractsDeploymentUpdateStatus = "rolled_back"
 )
 
 // Defines values for ContractsEnvironmentCreateCloudProvider.
@@ -171,6 +189,174 @@ const (
 	Short     ContractsTraceCreateRetentionClass = "short"
 )
 
+// AuthAccessRequest defines model for auth.AccessRequest.
+type AuthAccessRequest struct {
+	Attempts  int    `json:"attempts,omitempty"`
+	CreatedAt string `json:"created_at,omitempty"`
+	DecidedAt string `json:"decided_at,omitempty"`
+	Email     string `json:"email,omitempty"`
+	Id        string `json:"id,omitempty"`
+	Reason    string `json:"reason,omitempty"`
+	Status    string `json:"status,omitempty"`
+}
+
+// AuthAccessRequestDecideRequest defines model for auth.AccessRequestDecideRequest.
+type AuthAccessRequestDecideRequest struct {
+	Approve bool   `json:"approve,omitempty"`
+	Note    string `json:"note,omitempty"`
+}
+
+// AuthAccessRequestListResponse defines model for auth.AccessRequestListResponse.
+type AuthAccessRequestListResponse struct {
+	Requests []AuthAccessRequest `json:"requests,omitempty"`
+	Total    int                 `json:"total,omitempty"`
+}
+
+// AuthAccessTokenResponse defines model for auth.AccessTokenResponse.
+type AuthAccessTokenResponse struct {
+	AccessToken string `json:"access_token,omitempty"`
+}
+
+// AuthAdminInviteCreateRequest defines model for auth.AdminInviteCreateRequest.
+type AuthAdminInviteCreateRequest struct {
+	DaysToExpire int      `json:"days_to_expire,omitempty"`
+	Email        string   `json:"email,omitempty"`
+	EmailUser    bool     `json:"email_user,omitempty"`
+	Roles        []string `json:"roles,omitempty"`
+}
+
+// AuthAdminInviteCreateResponse defines model for auth.AdminInviteCreateResponse.
+type AuthAdminInviteCreateResponse struct {
+	ExpiresAt  string `json:"expires_at,omitempty"`
+	InviteId   string `json:"invite_id,omitempty"`
+	InviteLink string `json:"invite_link,omitempty"`
+}
+
+// AuthAdminUser defines model for auth.AdminUser.
+type AuthAdminUser struct {
+	ActiveSessions int      `json:"active_sessions,omitempty"`
+	CreatedAt      string   `json:"created_at,omitempty"`
+	Email          string   `json:"email,omitempty"`
+	Id             string   `json:"id,omitempty"`
+	LastActivityAt string   `json:"last_activity_at,omitempty"`
+	Roles          []string `json:"roles,omitempty"`
+	UpdatedAt      string   `json:"updated_at,omitempty"`
+}
+
+// AuthAdminUsersListResponse defines model for auth.AdminUsersListResponse.
+type AuthAdminUsersListResponse struct {
+	Users []AuthAdminUser `json:"users,omitempty"`
+}
+
+// AuthAuditEvent defines model for auth.AuditEvent.
+type AuthAuditEvent struct {
+	ActorId   string                 `json:"actor_id,omitempty"`
+	CreatedAt string                 `json:"created_at,omitempty"`
+	Id        string                 `json:"id,omitempty"`
+	IpAddress string                 `json:"ip_address,omitempty"`
+	Metadata  map[string]interface{} `json:"metadata,omitempty"`
+	Type      string                 `json:"type,omitempty"`
+	UserAgent string                 `json:"user_agent,omitempty"`
+	UserId    string                 `json:"user_id,omitempty"`
+}
+
+// AuthAuditListResponse defines model for auth.AuditListResponse.
+type AuthAuditListResponse struct {
+	Events []AuthAuditEvent `json:"events,omitempty"`
+	Total  int              `json:"total,omitempty"`
+}
+
+// AuthAuthorizeDeviceLinkRequest defines model for auth.AuthorizeDeviceLinkRequest.
+type AuthAuthorizeDeviceLinkRequest struct {
+	UserCode string `json:"user_code"`
+}
+
+// AuthBeginDeviceLinkRequest defines model for auth.BeginDeviceLinkRequest.
+type AuthBeginDeviceLinkRequest struct {
+	DeviceName string                            `json:"device_name,omitempty"`
+	Purpose    AuthBeginDeviceLinkRequestPurpose `json:"purpose,omitempty"`
+}
+
+// AuthBeginDeviceLinkRequestPurpose defines model for AuthBeginDeviceLinkRequest.Purpose.
+type AuthBeginDeviceLinkRequestPurpose string
+
+// AuthBootstrapRequest defines model for auth.BootstrapRequest.
+type AuthBootstrapRequest struct {
+	BootstrapToken string `json:"bootstrap_token,omitempty"`
+	Email          string `json:"email,omitempty"`
+}
+
+// AuthBootstrapResponse defines model for auth.BootstrapResponse.
+type AuthBootstrapResponse struct {
+	Email     string `json:"email,omitempty"`
+	TokenHash string `json:"token_hash,omitempty"`
+	UserId    string `json:"user_id,omitempty"`
+}
+
+// AuthCredentialSummary defines model for auth.CredentialSummary.
+type AuthCredentialSummary struct {
+	Aaguid     string `json:"aaguid,omitempty"`
+	DeviceName string `json:"device_name,omitempty"`
+	Id         string `json:"id,omitempty"`
+	LastUsedAt string `json:"last_used_at,omitempty"`
+	SignCount  int    `json:"sign_count,omitempty"`
+}
+
+// AuthCredentialsAddBeginRequest defines model for auth.CredentialsAddBeginRequest.
+type AuthCredentialsAddBeginRequest struct {
+	DeviceName string `json:"device_name,omitempty"`
+}
+
+// AuthCredentialsAddCompleteRequest defines model for auth.CredentialsAddCompleteRequest.
+type AuthCredentialsAddCompleteRequest struct {
+	Credential interface{} `json:"credential,omitempty"`
+	SessionKey string      `json:"session_key,omitempty"`
+}
+
+// AuthCredentialsListResponse defines model for auth.CredentialsListResponse.
+type AuthCredentialsListResponse struct {
+	Credentials []AuthCredentialSummary `json:"credentials,omitempty"`
+}
+
+// AuthDeviceInfo defines model for auth.DeviceInfo.
+type AuthDeviceInfo struct {
+	CreatedAt  string `json:"created_at,omitempty"`
+	DeviceName string `json:"device_name,omitempty"`
+	Id         string `json:"id,omitempty"`
+	IsCurrent  bool   `json:"is_current,omitempty"`
+	LastUsedAt string `json:"last_used_at,omitempty"`
+}
+
+// AuthDeviceLinkVerificationResponse defines model for auth.DeviceLinkVerificationResponse.
+type AuthDeviceLinkVerificationResponse struct {
+	Authorized bool                                      `json:"authorized,omitempty"`
+	DeviceName string                                    `json:"device_name,omitempty"`
+	ExpiresAt  string                                    `json:"expires_at,omitempty"`
+	Purpose    AuthDeviceLinkVerificationResponsePurpose `json:"purpose,omitempty"`
+}
+
+// AuthDeviceLinkVerificationResponsePurpose defines model for AuthDeviceLinkVerificationResponse.Purpose.
+type AuthDeviceLinkVerificationResponsePurpose string
+
+// AuthDeviceListResponse defines model for auth.DeviceListResponse.
+type AuthDeviceListResponse struct {
+	Devices []AuthDeviceInfo `json:"devices,omitempty"`
+}
+
+// AuthDeviceResponse defines model for auth.DeviceResponse.
+type AuthDeviceResponse struct {
+	CreatedAt  string `json:"created_at,omitempty"`
+	DeviceName string `json:"device_name,omitempty"`
+	Id         string `json:"id,omitempty"`
+	IsCurrent  bool   `json:"is_current,omitempty"`
+	LastUsedAt string `json:"last_used_at,omitempty"`
+}
+
+// AuthExchangeDeviceCodeRequest defines model for auth.ExchangeDeviceCodeRequest.
+type AuthExchangeDeviceCodeRequest struct {
+	DeviceCode string `json:"device_code"`
+}
+
 // AuthGithubPolicyCreateRequest defines model for auth.GithubPolicyCreateRequest.
 type AuthGithubPolicyCreateRequest struct {
 	Enabled      bool     `json:"enabled,omitempty"`
@@ -190,6 +376,137 @@ type AuthGithubPolicyResponse struct {
 	Repository   string   `json:"repository,omitempty"`
 	Roles        []string `json:"roles,omitempty"`
 	Workflows    []string `json:"workflows,omitempty"`
+}
+
+// AuthGithubPolicyUpdateRequest defines model for auth.GithubPolicyUpdateRequest.
+type AuthGithubPolicyUpdateRequest struct {
+	Enabled      bool     `json:"enabled,omitempty"`
+	Environments []string `json:"environments,omitempty"`
+	Refs         []string `json:"refs,omitempty"`
+	Roles        []string `json:"roles"`
+	Workflows    []string `json:"workflows,omitempty"`
+}
+
+// AuthInvitePreviewResponse defines model for auth.InvitePreviewResponse.
+type AuthInvitePreviewResponse struct {
+	Email     string `json:"email,omitempty"`
+	ExpiresAt string `json:"expires_at,omitempty"`
+	Reason    string `json:"reason,omitempty"`
+	Valid     bool   `json:"valid,omitempty"`
+}
+
+// AuthLoginCompleteRequest defines model for auth.LoginCompleteRequest.
+type AuthLoginCompleteRequest struct {
+	Credential interface{} `json:"credential,omitempty"`
+	SessionKey string      `json:"session_key,omitempty"`
+}
+
+// AuthLoginCompleteResponse defines model for auth.LoginCompleteResponse.
+type AuthLoginCompleteResponse struct {
+	AccessToken string          `json:"access_token,omitempty"`
+	User        AuthUserSummary `json:"user,omitempty"`
+}
+
+// AuthMeResponse defines model for auth.MeResponse.
+type AuthMeResponse struct {
+	Email    string   `json:"email,omitempty"`
+	FullName string   `json:"full_name,omitempty"`
+	Id       string   `json:"id,omitempty"`
+	Roles    []string `json:"roles,omitempty"`
+}
+
+// AuthOnboardBeginRequest defines model for auth.OnboardBeginRequest.
+type AuthOnboardBeginRequest struct {
+	DeviceName string `json:"device_name,omitempty"`
+	InviteId   string `json:"invite_id,omitempty"`
+	Token      string `json:"token,omitempty"`
+}
+
+// AuthOnboardBeginResponse defines model for auth.OnboardBeginResponse.
+type AuthOnboardBeginResponse struct {
+	PublicKey  interface{} `json:"publicKey,omitempty"`
+	SessionKey string      `json:"session_key,omitempty"`
+	UserId     string      `json:"user_id,omitempty"`
+}
+
+// AuthOnboardCompleteRequest defines model for auth.OnboardCompleteRequest.
+type AuthOnboardCompleteRequest struct {
+	Credential interface{} `json:"credential,omitempty"`
+	InviteId   string      `json:"invite_id,omitempty"`
+	SessionKey string      `json:"session_key,omitempty"`
+}
+
+// AuthPublicKeyOptionsResponse defines model for auth.PublicKeyOptionsResponse.
+type AuthPublicKeyOptionsResponse struct {
+	PublicKey  interface{} `json:"publicKey,omitempty"`
+	SessionKey string      `json:"session_key,omitempty"`
+}
+
+// AuthRecoveryGenerateResponse defines model for auth.RecoveryGenerateResponse.
+type AuthRecoveryGenerateResponse struct {
+	Codes []string `json:"codes,omitempty"`
+}
+
+// AuthRecoveryInitRequest defines model for auth.RecoveryInitRequest.
+type AuthRecoveryInitRequest struct {
+	Email string `json:"email,omitempty"`
+}
+
+// AuthRecoveryInitResponse defines model for auth.RecoveryInitResponse.
+type AuthRecoveryInitResponse struct {
+	FlowId string `json:"flow_id,omitempty"`
+}
+
+// AuthRecoveryRegisterBeginRequest defines model for auth.RecoveryRegisterBeginRequest.
+type AuthRecoveryRegisterBeginRequest struct {
+	DeviceName string `json:"device_name,omitempty"`
+	FlowId     string `json:"flow_id,omitempty"`
+}
+
+// AuthRecoveryRegisterCompleteRequest defines model for auth.RecoveryRegisterCompleteRequest.
+type AuthRecoveryRegisterCompleteRequest struct {
+	Credential interface{} `json:"credential,omitempty"`
+	FlowId     string      `json:"flow_id,omitempty"`
+	SessionKey string      `json:"session_key,omitempty"`
+}
+
+// AuthRecoveryVerifyRequest defines model for auth.RecoveryVerifyRequest.
+type AuthRecoveryVerifyRequest struct {
+	Code   string `json:"code,omitempty"`
+	FlowId string `json:"flow_id,omitempty"`
+}
+
+// AuthRecoveryVerifyResponse defines model for auth.RecoveryVerifyResponse.
+type AuthRecoveryVerifyResponse struct {
+	FlowId string `json:"flow_id,omitempty"`
+	UserId string `json:"user_id,omitempty"`
+}
+
+// AuthSessionResponse defines model for auth.SessionResponse.
+type AuthSessionResponse struct {
+	SessionVersion int    `json:"session_version,omitempty"`
+	StepUpRequired bool   `json:"step_up_required,omitempty"`
+	StepUpUntil    string `json:"step_up_until,omitempty"`
+	Valid          bool   `json:"valid,omitempty"`
+}
+
+// AuthStepUpCompleteRequest defines model for auth.StepUpCompleteRequest.
+type AuthStepUpCompleteRequest struct {
+	Credential interface{} `json:"credential,omitempty"`
+	SessionKey string      `json:"session_key,omitempty"`
+}
+
+// AuthUserSummary defines model for auth.UserSummary.
+type AuthUserSummary struct {
+	Email    string   `json:"email,omitempty"`
+	FullName string   `json:"full_name,omitempty"`
+	Id       string   `json:"id,omitempty"`
+	Roles    []string `json:"roles,omitempty"`
+}
+
+// AuthGhaExchangeRequest defines model for auth.ghaExchangeRequest.
+type AuthGhaExchangeRequest struct {
+	IdToken string `json:"id_token"`
 }
 
 // ContractsArtifactCreate defines model for contracts.ArtifactCreate.
@@ -609,7 +926,6 @@ type ContractsReleaseUpdateStatus string
 // ContractsRenderJobCreate defines model for contracts.RenderJobCreate.
 type ContractsRenderJobCreate struct {
 	BundleHash      string                   `json:"bundle_hash,omitempty"`
-	DeploymentId    string                   `json:"deployment_id"`
 	ModuleVersions  []ContractsModuleVersion `json:"module_versions,omitempty"`
 	RendererVersion string                   `json:"renderer_version,omitempty"`
 }
@@ -741,8 +1057,65 @@ type HandlersCertificateSigningResponse struct {
 	SerialNumber string `json:"serial_number,omitempty"`
 }
 
+// ServiceDeviceLinkResponse defines model for service.DeviceLinkResponse.
+type ServiceDeviceLinkResponse struct {
+	DeviceCode              string `json:"device_code,omitempty"`
+	ExpiresIn               int    `json:"expires_in,omitempty"`
+	Interval                int    `json:"interval,omitempty"`
+	UserCode                string `json:"user_code,omitempty"`
+	VerificationUri         string `json:"verification_uri,omitempty"`
+	VerificationUriComplete string `json:"verification_uri_complete,omitempty"`
+}
+
+// ServiceExchangeResponse defines model for service.ExchangeResponse.
+type ServiceExchangeResponse struct {
+	AccessToken      string `json:"access_token,omitempty"`
+	DeviceId         string `json:"device_id,omitempty"`
+	ExpiresIn        int    `json:"expires_in,omitempty"`
+	RefreshExpiresIn int    `json:"refresh_expires_in,omitempty"`
+	RefreshToken     string `json:"refresh_token,omitempty"`
+
+	// Status "authorization_pending", "slow_down", "expired_token"
+	Status string          `json:"status,omitempty"`
+	User   ServiceUserInfo `json:"user,omitempty"`
+}
+
+// ServiceUserInfo defines model for service.UserInfo.
+type ServiceUserInfo struct {
+	Email string   `json:"email,omitempty"`
+	Id    string   `json:"id,omitempty"`
+	Roles []string `json:"roles,omitempty"`
+}
+
 // GetWellKnownJwksJsonJSONBody defines parameters for GetWellKnownJwksJson.
 type GetWellKnownJwksJsonJSONBody = map[string]interface{}
+
+// GetApiV1AdminAuditParams defines parameters for GetApiV1AdminAudit.
+type GetApiV1AdminAuditParams struct {
+	// ActorId Filter by actor ID (UUID)
+	ActorId string `form:"actor_id,omitempty" json:"actor_id,omitempty"`
+
+	// UserId Filter by user ID (UUID)
+	UserId string `form:"user_id,omitempty" json:"user_id,omitempty"`
+
+	// Types Comma-separated event types
+	Types string `form:"types,omitempty" json:"types,omitempty"`
+
+	// Since Filter events created at or after this RFC3339 timestamp
+	Since string `form:"since,omitempty" json:"since,omitempty"`
+
+	// Until Filter events created before this RFC3339 timestamp
+	Until string `form:"until,omitempty" json:"until,omitempty"`
+
+	// Limit Max results (1-200)
+	Limit int `form:"limit,omitempty" json:"limit,omitempty"`
+
+	// Offset Offset for pagination
+	Offset int `form:"offset,omitempty" json:"offset,omitempty"`
+}
+
+// PatchApiV1AdminUsersIdJSONBody defines parameters for PatchApiV1AdminUsersId.
+type PatchApiV1AdminUsersIdJSONBody = map[string]interface{}
 
 // GetApiV1ArtifactsJSONBody defines parameters for GetApiV1Artifacts.
 type GetApiV1ArtifactsJSONBody = map[string]interface{}
@@ -800,6 +1173,33 @@ type DeleteApiV1ArtifactsIdJSONBody = map[string]interface{}
 
 // GetApiV1ArtifactsIdJSONBody defines parameters for GetApiV1ArtifactsId.
 type GetApiV1ArtifactsIdJSONBody = map[string]interface{}
+
+// PatchApiV1AuthCredentialsIdJSONBody defines parameters for PatchApiV1AuthCredentialsId.
+type PatchApiV1AuthCredentialsIdJSONBody = map[string]interface{}
+
+// GetApiV1AuthDeviceLinkVerifyJSONBody defines parameters for GetApiV1AuthDeviceLinkVerify.
+type GetApiV1AuthDeviceLinkVerifyJSONBody = map[string]interface{}
+
+// GetApiV1AuthDeviceLinkVerifyParams defines parameters for GetApiV1AuthDeviceLinkVerify.
+type GetApiV1AuthDeviceLinkVerifyParams struct {
+	// Code User code to verify
+	Code string `form:"code" json:"code"`
+}
+
+// GetApiV1AuthDevicesJSONBody defines parameters for GetApiV1AuthDevices.
+type GetApiV1AuthDevicesJSONBody = map[string]interface{}
+
+// DeleteApiV1AuthDevicesIdJSONBody defines parameters for DeleteApiV1AuthDevicesId.
+type DeleteApiV1AuthDevicesIdJSONBody = map[string]interface{}
+
+// GetApiV1AuthDevicesIdJSONBody defines parameters for GetApiV1AuthDevicesId.
+type GetApiV1AuthDevicesIdJSONBody = map[string]interface{}
+
+// PatchApiV1AuthMeJSONBody defines parameters for PatchApiV1AuthMe.
+type PatchApiV1AuthMeJSONBody = map[string]interface{}
+
+// PostApiV1AuthRefreshJSONBody defines parameters for PostApiV1AuthRefresh.
+type PostApiV1AuthRefreshJSONBody = map[string]interface{}
 
 // GetApiV1BuildsJSONBody defines parameters for GetApiV1Builds.
 type GetApiV1BuildsJSONBody = map[string]interface{}
@@ -1134,6 +1534,15 @@ type GetHealthzJSONBody = map[string]interface{}
 // GetWellKnownJwksJsonJSONRequestBody defines body for GetWellKnownJwksJson for application/json ContentType.
 type GetWellKnownJwksJsonJSONRequestBody = GetWellKnownJwksJsonJSONBody
 
+// PatchApiV1AdminAccessRequestsIdJSONRequestBody defines body for PatchApiV1AdminAccessRequestsId for application/json ContentType.
+type PatchApiV1AdminAccessRequestsIdJSONRequestBody = AuthAccessRequestDecideRequest
+
+// PostApiV1AdminInvitesJSONRequestBody defines body for PostApiV1AdminInvites for application/json ContentType.
+type PostApiV1AdminInvitesJSONRequestBody = AuthAdminInviteCreateRequest
+
+// PatchApiV1AdminUsersIdJSONRequestBody defines body for PatchApiV1AdminUsersId for application/json ContentType.
+type PatchApiV1AdminUsersIdJSONRequestBody = PatchApiV1AdminUsersIdJSONBody
+
 // GetApiV1ArtifactsJSONRequestBody defines body for GetApiV1Artifacts for application/json ContentType.
 type GetApiV1ArtifactsJSONRequestBody = GetApiV1ArtifactsJSONBody
 
@@ -1152,8 +1561,77 @@ type GetApiV1ArtifactsIdJSONRequestBody = GetApiV1ArtifactsIdJSONBody
 // PatchApiV1ArtifactsIdJSONRequestBody defines body for PatchApiV1ArtifactsId for application/json ContentType.
 type PatchApiV1ArtifactsIdJSONRequestBody = ContractsArtifactUpdate
 
+// PostApiV1AuthBootstrapJSONRequestBody defines body for PostApiV1AuthBootstrap for application/json ContentType.
+type PostApiV1AuthBootstrapJSONRequestBody = AuthBootstrapRequest
+
+// PostApiV1AuthCredentialsAddBeginJSONRequestBody defines body for PostApiV1AuthCredentialsAddBegin for application/json ContentType.
+type PostApiV1AuthCredentialsAddBeginJSONRequestBody = AuthCredentialsAddBeginRequest
+
+// PostApiV1AuthCredentialsAddCompleteJSONRequestBody defines body for PostApiV1AuthCredentialsAddComplete for application/json ContentType.
+type PostApiV1AuthCredentialsAddCompleteJSONRequestBody = AuthCredentialsAddCompleteRequest
+
+// PatchApiV1AuthCredentialsIdJSONRequestBody defines body for PatchApiV1AuthCredentialsId for application/json ContentType.
+type PatchApiV1AuthCredentialsIdJSONRequestBody = PatchApiV1AuthCredentialsIdJSONBody
+
+// PostApiV1AuthDeviceLinkAuthorizeJSONRequestBody defines body for PostApiV1AuthDeviceLinkAuthorize for application/json ContentType.
+type PostApiV1AuthDeviceLinkAuthorizeJSONRequestBody = AuthAuthorizeDeviceLinkRequest
+
+// PostApiV1AuthDeviceLinkBeginJSONRequestBody defines body for PostApiV1AuthDeviceLinkBegin for application/json ContentType.
+type PostApiV1AuthDeviceLinkBeginJSONRequestBody = AuthBeginDeviceLinkRequest
+
+// PostApiV1AuthDeviceLinkExchangeJSONRequestBody defines body for PostApiV1AuthDeviceLinkExchange for application/json ContentType.
+type PostApiV1AuthDeviceLinkExchangeJSONRequestBody = AuthExchangeDeviceCodeRequest
+
+// GetApiV1AuthDeviceLinkVerifyJSONRequestBody defines body for GetApiV1AuthDeviceLinkVerify for application/json ContentType.
+type GetApiV1AuthDeviceLinkVerifyJSONRequestBody = GetApiV1AuthDeviceLinkVerifyJSONBody
+
+// GetApiV1AuthDevicesJSONRequestBody defines body for GetApiV1AuthDevices for application/json ContentType.
+type GetApiV1AuthDevicesJSONRequestBody = GetApiV1AuthDevicesJSONBody
+
+// DeleteApiV1AuthDevicesIdJSONRequestBody defines body for DeleteApiV1AuthDevicesId for application/json ContentType.
+type DeleteApiV1AuthDevicesIdJSONRequestBody = DeleteApiV1AuthDevicesIdJSONBody
+
+// GetApiV1AuthDevicesIdJSONRequestBody defines body for GetApiV1AuthDevicesId for application/json ContentType.
+type GetApiV1AuthDevicesIdJSONRequestBody = GetApiV1AuthDevicesIdJSONBody
+
+// PostApiV1AuthLoginCompleteJSONRequestBody defines body for PostApiV1AuthLoginComplete for application/json ContentType.
+type PostApiV1AuthLoginCompleteJSONRequestBody = AuthLoginCompleteRequest
+
+// PatchApiV1AuthMeJSONRequestBody defines body for PatchApiV1AuthMe for application/json ContentType.
+type PatchApiV1AuthMeJSONRequestBody = PatchApiV1AuthMeJSONBody
+
+// PostApiV1AuthOidcGithubExchangeJSONRequestBody defines body for PostApiV1AuthOidcGithubExchange for application/json ContentType.
+type PostApiV1AuthOidcGithubExchangeJSONRequestBody = AuthGhaExchangeRequest
+
 // PostApiV1AuthOidcGithubPoliciesJSONRequestBody defines body for PostApiV1AuthOidcGithubPolicies for application/json ContentType.
 type PostApiV1AuthOidcGithubPoliciesJSONRequestBody = AuthGithubPolicyCreateRequest
+
+// PutApiV1AuthOidcGithubPoliciesIdJSONRequestBody defines body for PutApiV1AuthOidcGithubPoliciesId for application/json ContentType.
+type PutApiV1AuthOidcGithubPoliciesIdJSONRequestBody = AuthGithubPolicyUpdateRequest
+
+// PostApiV1AuthOnboardBeginJSONRequestBody defines body for PostApiV1AuthOnboardBegin for application/json ContentType.
+type PostApiV1AuthOnboardBeginJSONRequestBody = AuthOnboardBeginRequest
+
+// PostApiV1AuthOnboardCompleteJSONRequestBody defines body for PostApiV1AuthOnboardComplete for application/json ContentType.
+type PostApiV1AuthOnboardCompleteJSONRequestBody = AuthOnboardCompleteRequest
+
+// PostApiV1AuthRecoveryInitJSONRequestBody defines body for PostApiV1AuthRecoveryInit for application/json ContentType.
+type PostApiV1AuthRecoveryInitJSONRequestBody = AuthRecoveryInitRequest
+
+// PostApiV1AuthRecoveryRegisterBeginJSONRequestBody defines body for PostApiV1AuthRecoveryRegisterBegin for application/json ContentType.
+type PostApiV1AuthRecoveryRegisterBeginJSONRequestBody = AuthRecoveryRegisterBeginRequest
+
+// PostApiV1AuthRecoveryRegisterCompleteJSONRequestBody defines body for PostApiV1AuthRecoveryRegisterComplete for application/json ContentType.
+type PostApiV1AuthRecoveryRegisterCompleteJSONRequestBody = AuthRecoveryRegisterCompleteRequest
+
+// PostApiV1AuthRecoveryVerifyJSONRequestBody defines body for PostApiV1AuthRecoveryVerify for application/json ContentType.
+type PostApiV1AuthRecoveryVerifyJSONRequestBody = AuthRecoveryVerifyRequest
+
+// PostApiV1AuthRefreshJSONRequestBody defines body for PostApiV1AuthRefresh for application/json ContentType.
+type PostApiV1AuthRefreshJSONRequestBody = PostApiV1AuthRefreshJSONBody
+
+// PostApiV1AuthStepUpCompleteJSONRequestBody defines body for PostApiV1AuthStepUpComplete for application/json ContentType.
+type PostApiV1AuthStepUpCompleteJSONRequestBody = AuthStepUpCompleteRequest
 
 // GetApiV1BuildsJSONRequestBody defines body for GetApiV1Builds for application/json ContentType.
 type GetApiV1BuildsJSONRequestBody = GetApiV1BuildsJSONBody
@@ -1368,6 +1846,42 @@ type ClientInterface interface {
 
 	GetWellKnownJwksJson(ctx context.Context, body GetWellKnownJwksJsonJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// GetApiV1AdminAccessRequests request
+	GetApiV1AdminAccessRequests(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// PatchApiV1AdminAccessRequestsIdWithBody request with any body
+	PatchApiV1AdminAccessRequestsIdWithBody(ctx context.Context, id string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	PatchApiV1AdminAccessRequestsId(ctx context.Context, id string, body PatchApiV1AdminAccessRequestsIdJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetApiV1AdminAudit request
+	GetApiV1AdminAudit(ctx context.Context, params *GetApiV1AdminAuditParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// PostApiV1AdminInvitesWithBody request with any body
+	PostApiV1AdminInvitesWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	PostApiV1AdminInvites(ctx context.Context, body PostApiV1AdminInvitesJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetApiV1AdminInvitesPreview request
+	GetApiV1AdminInvitesPreview(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetApiV1AdminUsers request
+	GetApiV1AdminUsers(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// DeleteApiV1AdminUsersId request
+	DeleteApiV1AdminUsersId(ctx context.Context, id string, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// PatchApiV1AdminUsersIdWithBody request with any body
+	PatchApiV1AdminUsersIdWithBody(ctx context.Context, id string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	PatchApiV1AdminUsersId(ctx context.Context, id string, body PatchApiV1AdminUsersIdJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetApiV1AdminUsersIdCredentials request
+	GetApiV1AdminUsersIdCredentials(ctx context.Context, id string, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// PostApiV1AdminUsersIdRecoveryCodesGenerate request
+	PostApiV1AdminUsersIdRecoveryCodesGenerate(ctx context.Context, id string, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// GetApiV1ArtifactsWithBody request with any body
 	GetApiV1ArtifactsWithBody(ctx context.Context, params *GetApiV1ArtifactsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -1398,10 +1912,161 @@ type ClientInterface interface {
 
 	PatchApiV1ArtifactsId(ctx context.Context, id string, body PatchApiV1ArtifactsIdJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// PostApiV1AuthBootstrapWithBody request with any body
+	PostApiV1AuthBootstrapWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	PostApiV1AuthBootstrap(ctx context.Context, body PostApiV1AuthBootstrapJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetApiV1AuthCredentials request
+	GetApiV1AuthCredentials(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// PostApiV1AuthCredentialsAddBeginWithBody request with any body
+	PostApiV1AuthCredentialsAddBeginWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	PostApiV1AuthCredentialsAddBegin(ctx context.Context, body PostApiV1AuthCredentialsAddBeginJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// PostApiV1AuthCredentialsAddCompleteWithBody request with any body
+	PostApiV1AuthCredentialsAddCompleteWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	PostApiV1AuthCredentialsAddComplete(ctx context.Context, body PostApiV1AuthCredentialsAddCompleteJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// DeleteApiV1AuthCredentialsCredentialId request
+	DeleteApiV1AuthCredentialsCredentialId(ctx context.Context, credentialId string, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// PatchApiV1AuthCredentialsIdWithBody request with any body
+	PatchApiV1AuthCredentialsIdWithBody(ctx context.Context, id string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	PatchApiV1AuthCredentialsId(ctx context.Context, id string, body PatchApiV1AuthCredentialsIdJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// PostApiV1AuthDeviceLinkAuthorizeWithBody request with any body
+	PostApiV1AuthDeviceLinkAuthorizeWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	PostApiV1AuthDeviceLinkAuthorize(ctx context.Context, body PostApiV1AuthDeviceLinkAuthorizeJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// PostApiV1AuthDeviceLinkBeginWithBody request with any body
+	PostApiV1AuthDeviceLinkBeginWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	PostApiV1AuthDeviceLinkBegin(ctx context.Context, body PostApiV1AuthDeviceLinkBeginJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// PostApiV1AuthDeviceLinkExchangeWithBody request with any body
+	PostApiV1AuthDeviceLinkExchangeWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	PostApiV1AuthDeviceLinkExchange(ctx context.Context, body PostApiV1AuthDeviceLinkExchangeJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetApiV1AuthDeviceLinkVerifyWithBody request with any body
+	GetApiV1AuthDeviceLinkVerifyWithBody(ctx context.Context, params *GetApiV1AuthDeviceLinkVerifyParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	GetApiV1AuthDeviceLinkVerify(ctx context.Context, params *GetApiV1AuthDeviceLinkVerifyParams, body GetApiV1AuthDeviceLinkVerifyJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetApiV1AuthDevicesWithBody request with any body
+	GetApiV1AuthDevicesWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	GetApiV1AuthDevices(ctx context.Context, body GetApiV1AuthDevicesJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// DeleteApiV1AuthDevicesIdWithBody request with any body
+	DeleteApiV1AuthDevicesIdWithBody(ctx context.Context, id string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	DeleteApiV1AuthDevicesId(ctx context.Context, id string, body DeleteApiV1AuthDevicesIdJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetApiV1AuthDevicesIdWithBody request with any body
+	GetApiV1AuthDevicesIdWithBody(ctx context.Context, id string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	GetApiV1AuthDevicesId(ctx context.Context, id string, body GetApiV1AuthDevicesIdJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// PostApiV1AuthLoginBegin request
+	PostApiV1AuthLoginBegin(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// PostApiV1AuthLoginCompleteWithBody request with any body
+	PostApiV1AuthLoginCompleteWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	PostApiV1AuthLoginComplete(ctx context.Context, body PostApiV1AuthLoginCompleteJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// PostApiV1AuthLogout request
+	PostApiV1AuthLogout(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// PostApiV1AuthLogoutAll request
+	PostApiV1AuthLogoutAll(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetApiV1AuthMe request
+	GetApiV1AuthMe(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// PatchApiV1AuthMeWithBody request with any body
+	PatchApiV1AuthMeWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	PatchApiV1AuthMe(ctx context.Context, body PatchApiV1AuthMeJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// PostApiV1AuthOidcGithubExchangeWithBody request with any body
+	PostApiV1AuthOidcGithubExchangeWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	PostApiV1AuthOidcGithubExchange(ctx context.Context, body PostApiV1AuthOidcGithubExchangeJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetApiV1AuthOidcGithubPolicies request
+	GetApiV1AuthOidcGithubPolicies(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// PostApiV1AuthOidcGithubPoliciesWithBody request with any body
 	PostApiV1AuthOidcGithubPoliciesWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	PostApiV1AuthOidcGithubPolicies(ctx context.Context, body PostApiV1AuthOidcGithubPoliciesJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// DeleteApiV1AuthOidcGithubPoliciesId request
+	DeleteApiV1AuthOidcGithubPoliciesId(ctx context.Context, id string, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetApiV1AuthOidcGithubPoliciesId request
+	GetApiV1AuthOidcGithubPoliciesId(ctx context.Context, id string, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// PutApiV1AuthOidcGithubPoliciesIdWithBody request with any body
+	PutApiV1AuthOidcGithubPoliciesIdWithBody(ctx context.Context, id string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	PutApiV1AuthOidcGithubPoliciesId(ctx context.Context, id string, body PutApiV1AuthOidcGithubPoliciesIdJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// PostApiV1AuthOnboardBeginWithBody request with any body
+	PostApiV1AuthOnboardBeginWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	PostApiV1AuthOnboardBegin(ctx context.Context, body PostApiV1AuthOnboardBeginJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// PostApiV1AuthOnboardCompleteWithBody request with any body
+	PostApiV1AuthOnboardCompleteWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	PostApiV1AuthOnboardComplete(ctx context.Context, body PostApiV1AuthOnboardCompleteJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// PostApiV1AuthRecoveryCodesGenerate request
+	PostApiV1AuthRecoveryCodesGenerate(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// PostApiV1AuthRecoveryInitWithBody request with any body
+	PostApiV1AuthRecoveryInitWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	PostApiV1AuthRecoveryInit(ctx context.Context, body PostApiV1AuthRecoveryInitJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// PostApiV1AuthRecoveryRegisterBeginWithBody request with any body
+	PostApiV1AuthRecoveryRegisterBeginWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	PostApiV1AuthRecoveryRegisterBegin(ctx context.Context, body PostApiV1AuthRecoveryRegisterBeginJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// PostApiV1AuthRecoveryRegisterCompleteWithBody request with any body
+	PostApiV1AuthRecoveryRegisterCompleteWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	PostApiV1AuthRecoveryRegisterComplete(ctx context.Context, body PostApiV1AuthRecoveryRegisterCompleteJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// PostApiV1AuthRecoveryVerifyWithBody request with any body
+	PostApiV1AuthRecoveryVerifyWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	PostApiV1AuthRecoveryVerify(ctx context.Context, body PostApiV1AuthRecoveryVerifyJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// PostApiV1AuthRefreshWithBody request with any body
+	PostApiV1AuthRefreshWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	PostApiV1AuthRefresh(ctx context.Context, body PostApiV1AuthRefreshJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetApiV1AuthSession request
+	GetApiV1AuthSession(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// PostApiV1AuthStepUpBegin request
+	PostApiV1AuthStepUpBegin(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// PostApiV1AuthStepUpCompleteWithBody request with any body
+	PostApiV1AuthStepUpCompleteWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	PostApiV1AuthStepUpComplete(ctx context.Context, body PostApiV1AuthStepUpCompleteJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// GetApiV1BuildsWithBody request with any body
 	GetApiV1BuildsWithBody(ctx context.Context, params *GetApiV1BuildsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -1656,6 +2321,162 @@ func (c *Client) GetWellKnownJwksJson(ctx context.Context, body GetWellKnownJwks
 	return c.Client.Do(req)
 }
 
+func (c *Client) GetApiV1AdminAccessRequests(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetApiV1AdminAccessRequestsRequest(c.Server)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) PatchApiV1AdminAccessRequestsIdWithBody(ctx context.Context, id string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPatchApiV1AdminAccessRequestsIdRequestWithBody(c.Server, id, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) PatchApiV1AdminAccessRequestsId(ctx context.Context, id string, body PatchApiV1AdminAccessRequestsIdJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPatchApiV1AdminAccessRequestsIdRequest(c.Server, id, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetApiV1AdminAudit(ctx context.Context, params *GetApiV1AdminAuditParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetApiV1AdminAuditRequest(c.Server, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) PostApiV1AdminInvitesWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPostApiV1AdminInvitesRequestWithBody(c.Server, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) PostApiV1AdminInvites(ctx context.Context, body PostApiV1AdminInvitesJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPostApiV1AdminInvitesRequest(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetApiV1AdminInvitesPreview(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetApiV1AdminInvitesPreviewRequest(c.Server)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetApiV1AdminUsers(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetApiV1AdminUsersRequest(c.Server)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) DeleteApiV1AdminUsersId(ctx context.Context, id string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDeleteApiV1AdminUsersIdRequest(c.Server, id)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) PatchApiV1AdminUsersIdWithBody(ctx context.Context, id string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPatchApiV1AdminUsersIdRequestWithBody(c.Server, id, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) PatchApiV1AdminUsersId(ctx context.Context, id string, body PatchApiV1AdminUsersIdJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPatchApiV1AdminUsersIdRequest(c.Server, id, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetApiV1AdminUsersIdCredentials(ctx context.Context, id string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetApiV1AdminUsersIdCredentialsRequest(c.Server, id)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) PostApiV1AdminUsersIdRecoveryCodesGenerate(ctx context.Context, id string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPostApiV1AdminUsersIdRecoveryCodesGenerateRequest(c.Server, id)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
 func (c *Client) GetApiV1ArtifactsWithBody(ctx context.Context, params *GetApiV1ArtifactsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetApiV1ArtifactsRequestWithBody(c.Server, params, contentType, body)
 	if err != nil {
@@ -1800,6 +2621,426 @@ func (c *Client) PatchApiV1ArtifactsId(ctx context.Context, id string, body Patc
 	return c.Client.Do(req)
 }
 
+func (c *Client) PostApiV1AuthBootstrapWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPostApiV1AuthBootstrapRequestWithBody(c.Server, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) PostApiV1AuthBootstrap(ctx context.Context, body PostApiV1AuthBootstrapJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPostApiV1AuthBootstrapRequest(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetApiV1AuthCredentials(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetApiV1AuthCredentialsRequest(c.Server)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) PostApiV1AuthCredentialsAddBeginWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPostApiV1AuthCredentialsAddBeginRequestWithBody(c.Server, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) PostApiV1AuthCredentialsAddBegin(ctx context.Context, body PostApiV1AuthCredentialsAddBeginJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPostApiV1AuthCredentialsAddBeginRequest(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) PostApiV1AuthCredentialsAddCompleteWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPostApiV1AuthCredentialsAddCompleteRequestWithBody(c.Server, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) PostApiV1AuthCredentialsAddComplete(ctx context.Context, body PostApiV1AuthCredentialsAddCompleteJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPostApiV1AuthCredentialsAddCompleteRequest(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) DeleteApiV1AuthCredentialsCredentialId(ctx context.Context, credentialId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDeleteApiV1AuthCredentialsCredentialIdRequest(c.Server, credentialId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) PatchApiV1AuthCredentialsIdWithBody(ctx context.Context, id string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPatchApiV1AuthCredentialsIdRequestWithBody(c.Server, id, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) PatchApiV1AuthCredentialsId(ctx context.Context, id string, body PatchApiV1AuthCredentialsIdJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPatchApiV1AuthCredentialsIdRequest(c.Server, id, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) PostApiV1AuthDeviceLinkAuthorizeWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPostApiV1AuthDeviceLinkAuthorizeRequestWithBody(c.Server, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) PostApiV1AuthDeviceLinkAuthorize(ctx context.Context, body PostApiV1AuthDeviceLinkAuthorizeJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPostApiV1AuthDeviceLinkAuthorizeRequest(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) PostApiV1AuthDeviceLinkBeginWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPostApiV1AuthDeviceLinkBeginRequestWithBody(c.Server, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) PostApiV1AuthDeviceLinkBegin(ctx context.Context, body PostApiV1AuthDeviceLinkBeginJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPostApiV1AuthDeviceLinkBeginRequest(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) PostApiV1AuthDeviceLinkExchangeWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPostApiV1AuthDeviceLinkExchangeRequestWithBody(c.Server, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) PostApiV1AuthDeviceLinkExchange(ctx context.Context, body PostApiV1AuthDeviceLinkExchangeJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPostApiV1AuthDeviceLinkExchangeRequest(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetApiV1AuthDeviceLinkVerifyWithBody(ctx context.Context, params *GetApiV1AuthDeviceLinkVerifyParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetApiV1AuthDeviceLinkVerifyRequestWithBody(c.Server, params, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetApiV1AuthDeviceLinkVerify(ctx context.Context, params *GetApiV1AuthDeviceLinkVerifyParams, body GetApiV1AuthDeviceLinkVerifyJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetApiV1AuthDeviceLinkVerifyRequest(c.Server, params, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetApiV1AuthDevicesWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetApiV1AuthDevicesRequestWithBody(c.Server, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetApiV1AuthDevices(ctx context.Context, body GetApiV1AuthDevicesJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetApiV1AuthDevicesRequest(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) DeleteApiV1AuthDevicesIdWithBody(ctx context.Context, id string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDeleteApiV1AuthDevicesIdRequestWithBody(c.Server, id, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) DeleteApiV1AuthDevicesId(ctx context.Context, id string, body DeleteApiV1AuthDevicesIdJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDeleteApiV1AuthDevicesIdRequest(c.Server, id, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetApiV1AuthDevicesIdWithBody(ctx context.Context, id string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetApiV1AuthDevicesIdRequestWithBody(c.Server, id, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetApiV1AuthDevicesId(ctx context.Context, id string, body GetApiV1AuthDevicesIdJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetApiV1AuthDevicesIdRequest(c.Server, id, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) PostApiV1AuthLoginBegin(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPostApiV1AuthLoginBeginRequest(c.Server)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) PostApiV1AuthLoginCompleteWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPostApiV1AuthLoginCompleteRequestWithBody(c.Server, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) PostApiV1AuthLoginComplete(ctx context.Context, body PostApiV1AuthLoginCompleteJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPostApiV1AuthLoginCompleteRequest(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) PostApiV1AuthLogout(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPostApiV1AuthLogoutRequest(c.Server)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) PostApiV1AuthLogoutAll(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPostApiV1AuthLogoutAllRequest(c.Server)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetApiV1AuthMe(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetApiV1AuthMeRequest(c.Server)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) PatchApiV1AuthMeWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPatchApiV1AuthMeRequestWithBody(c.Server, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) PatchApiV1AuthMe(ctx context.Context, body PatchApiV1AuthMeJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPatchApiV1AuthMeRequest(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) PostApiV1AuthOidcGithubExchangeWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPostApiV1AuthOidcGithubExchangeRequestWithBody(c.Server, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) PostApiV1AuthOidcGithubExchange(ctx context.Context, body PostApiV1AuthOidcGithubExchangeJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPostApiV1AuthOidcGithubExchangeRequest(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetApiV1AuthOidcGithubPolicies(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetApiV1AuthOidcGithubPoliciesRequest(c.Server)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
 func (c *Client) PostApiV1AuthOidcGithubPoliciesWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewPostApiV1AuthOidcGithubPoliciesRequestWithBody(c.Server, contentType, body)
 	if err != nil {
@@ -1814,6 +3055,282 @@ func (c *Client) PostApiV1AuthOidcGithubPoliciesWithBody(ctx context.Context, co
 
 func (c *Client) PostApiV1AuthOidcGithubPolicies(ctx context.Context, body PostApiV1AuthOidcGithubPoliciesJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewPostApiV1AuthOidcGithubPoliciesRequest(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) DeleteApiV1AuthOidcGithubPoliciesId(ctx context.Context, id string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDeleteApiV1AuthOidcGithubPoliciesIdRequest(c.Server, id)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetApiV1AuthOidcGithubPoliciesId(ctx context.Context, id string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetApiV1AuthOidcGithubPoliciesIdRequest(c.Server, id)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) PutApiV1AuthOidcGithubPoliciesIdWithBody(ctx context.Context, id string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPutApiV1AuthOidcGithubPoliciesIdRequestWithBody(c.Server, id, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) PutApiV1AuthOidcGithubPoliciesId(ctx context.Context, id string, body PutApiV1AuthOidcGithubPoliciesIdJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPutApiV1AuthOidcGithubPoliciesIdRequest(c.Server, id, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) PostApiV1AuthOnboardBeginWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPostApiV1AuthOnboardBeginRequestWithBody(c.Server, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) PostApiV1AuthOnboardBegin(ctx context.Context, body PostApiV1AuthOnboardBeginJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPostApiV1AuthOnboardBeginRequest(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) PostApiV1AuthOnboardCompleteWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPostApiV1AuthOnboardCompleteRequestWithBody(c.Server, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) PostApiV1AuthOnboardComplete(ctx context.Context, body PostApiV1AuthOnboardCompleteJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPostApiV1AuthOnboardCompleteRequest(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) PostApiV1AuthRecoveryCodesGenerate(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPostApiV1AuthRecoveryCodesGenerateRequest(c.Server)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) PostApiV1AuthRecoveryInitWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPostApiV1AuthRecoveryInitRequestWithBody(c.Server, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) PostApiV1AuthRecoveryInit(ctx context.Context, body PostApiV1AuthRecoveryInitJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPostApiV1AuthRecoveryInitRequest(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) PostApiV1AuthRecoveryRegisterBeginWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPostApiV1AuthRecoveryRegisterBeginRequestWithBody(c.Server, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) PostApiV1AuthRecoveryRegisterBegin(ctx context.Context, body PostApiV1AuthRecoveryRegisterBeginJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPostApiV1AuthRecoveryRegisterBeginRequest(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) PostApiV1AuthRecoveryRegisterCompleteWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPostApiV1AuthRecoveryRegisterCompleteRequestWithBody(c.Server, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) PostApiV1AuthRecoveryRegisterComplete(ctx context.Context, body PostApiV1AuthRecoveryRegisterCompleteJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPostApiV1AuthRecoveryRegisterCompleteRequest(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) PostApiV1AuthRecoveryVerifyWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPostApiV1AuthRecoveryVerifyRequestWithBody(c.Server, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) PostApiV1AuthRecoveryVerify(ctx context.Context, body PostApiV1AuthRecoveryVerifyJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPostApiV1AuthRecoveryVerifyRequest(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) PostApiV1AuthRefreshWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPostApiV1AuthRefreshRequestWithBody(c.Server, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) PostApiV1AuthRefresh(ctx context.Context, body PostApiV1AuthRefreshJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPostApiV1AuthRefreshRequest(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetApiV1AuthSession(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetApiV1AuthSessionRequest(c.Server)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) PostApiV1AuthStepUpBegin(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPostApiV1AuthStepUpBeginRequest(c.Server)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) PostApiV1AuthStepUpCompleteWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPostApiV1AuthStepUpCompleteRequestWithBody(c.Server, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) PostApiV1AuthStepUpComplete(ctx context.Context, body PostApiV1AuthStepUpCompleteJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPostApiV1AuthStepUpCompleteRequest(c.Server, body)
 	if err != nil {
 		return nil, err
 	}
@@ -2956,6 +4473,440 @@ func NewGetWellKnownJwksJsonRequestWithBody(server string, contentType string, b
 	return req, nil
 }
 
+// NewGetApiV1AdminAccessRequestsRequest generates requests for GetApiV1AdminAccessRequests
+func NewGetApiV1AdminAccessRequestsRequest(server string) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/admin/access-requests")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewPatchApiV1AdminAccessRequestsIdRequest calls the generic PatchApiV1AdminAccessRequestsId builder with application/json body
+func NewPatchApiV1AdminAccessRequestsIdRequest(server string, id string, body PatchApiV1AdminAccessRequestsIdJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewPatchApiV1AdminAccessRequestsIdRequestWithBody(server, id, "application/json", bodyReader)
+}
+
+// NewPatchApiV1AdminAccessRequestsIdRequestWithBody generates requests for PatchApiV1AdminAccessRequestsId with any type of body
+func NewPatchApiV1AdminAccessRequestsIdRequestWithBody(server string, id string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "id", runtime.ParamLocationPath, id)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/admin/access-requests/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("PATCH", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewGetApiV1AdminAuditRequest generates requests for GetApiV1AdminAudit
+func NewGetApiV1AdminAuditRequest(server string, params *GetApiV1AdminAuditParams) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/admin/audit")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		queryValues := queryURL.Query()
+
+		if queryFrag, err := runtime.StyleParamWithLocation("form", true, "actor_id", runtime.ParamLocationQuery, params.ActorId); err != nil {
+			return nil, err
+		} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+			return nil, err
+		} else {
+			for k, v := range parsed {
+				for _, v2 := range v {
+					queryValues.Add(k, v2)
+				}
+			}
+		}
+
+		if queryFrag, err := runtime.StyleParamWithLocation("form", true, "user_id", runtime.ParamLocationQuery, params.UserId); err != nil {
+			return nil, err
+		} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+			return nil, err
+		} else {
+			for k, v := range parsed {
+				for _, v2 := range v {
+					queryValues.Add(k, v2)
+				}
+			}
+		}
+
+		if queryFrag, err := runtime.StyleParamWithLocation("form", true, "types", runtime.ParamLocationQuery, params.Types); err != nil {
+			return nil, err
+		} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+			return nil, err
+		} else {
+			for k, v := range parsed {
+				for _, v2 := range v {
+					queryValues.Add(k, v2)
+				}
+			}
+		}
+
+		if queryFrag, err := runtime.StyleParamWithLocation("form", true, "since", runtime.ParamLocationQuery, params.Since); err != nil {
+			return nil, err
+		} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+			return nil, err
+		} else {
+			for k, v := range parsed {
+				for _, v2 := range v {
+					queryValues.Add(k, v2)
+				}
+			}
+		}
+
+		if queryFrag, err := runtime.StyleParamWithLocation("form", true, "until", runtime.ParamLocationQuery, params.Until); err != nil {
+			return nil, err
+		} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+			return nil, err
+		} else {
+			for k, v := range parsed {
+				for _, v2 := range v {
+					queryValues.Add(k, v2)
+				}
+			}
+		}
+
+		if queryFrag, err := runtime.StyleParamWithLocation("form", true, "limit", runtime.ParamLocationQuery, params.Limit); err != nil {
+			return nil, err
+		} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+			return nil, err
+		} else {
+			for k, v := range parsed {
+				for _, v2 := range v {
+					queryValues.Add(k, v2)
+				}
+			}
+		}
+
+		if queryFrag, err := runtime.StyleParamWithLocation("form", true, "offset", runtime.ParamLocationQuery, params.Offset); err != nil {
+			return nil, err
+		} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+			return nil, err
+		} else {
+			for k, v := range parsed {
+				for _, v2 := range v {
+					queryValues.Add(k, v2)
+				}
+			}
+		}
+
+		queryURL.RawQuery = queryValues.Encode()
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewPostApiV1AdminInvitesRequest calls the generic PostApiV1AdminInvites builder with application/json body
+func NewPostApiV1AdminInvitesRequest(server string, body PostApiV1AdminInvitesJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewPostApiV1AdminInvitesRequestWithBody(server, "application/json", bodyReader)
+}
+
+// NewPostApiV1AdminInvitesRequestWithBody generates requests for PostApiV1AdminInvites with any type of body
+func NewPostApiV1AdminInvitesRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/admin/invites")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewGetApiV1AdminInvitesPreviewRequest generates requests for GetApiV1AdminInvitesPreview
+func NewGetApiV1AdminInvitesPreviewRequest(server string) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/admin/invites/preview")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewGetApiV1AdminUsersRequest generates requests for GetApiV1AdminUsers
+func NewGetApiV1AdminUsersRequest(server string) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/admin/users")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewDeleteApiV1AdminUsersIdRequest generates requests for DeleteApiV1AdminUsersId
+func NewDeleteApiV1AdminUsersIdRequest(server string, id string) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "id", runtime.ParamLocationPath, id)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/admin/users/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("DELETE", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewPatchApiV1AdminUsersIdRequest calls the generic PatchApiV1AdminUsersId builder with application/json body
+func NewPatchApiV1AdminUsersIdRequest(server string, id string, body PatchApiV1AdminUsersIdJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewPatchApiV1AdminUsersIdRequestWithBody(server, id, "application/json", bodyReader)
+}
+
+// NewPatchApiV1AdminUsersIdRequestWithBody generates requests for PatchApiV1AdminUsersId with any type of body
+func NewPatchApiV1AdminUsersIdRequestWithBody(server string, id string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "id", runtime.ParamLocationPath, id)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/admin/users/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("PATCH", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewGetApiV1AdminUsersIdCredentialsRequest generates requests for GetApiV1AdminUsersIdCredentials
+func NewGetApiV1AdminUsersIdCredentialsRequest(server string, id string) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "id", runtime.ParamLocationPath, id)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/admin/users/%s/credentials", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewPostApiV1AdminUsersIdRecoveryCodesGenerateRequest generates requests for PostApiV1AdminUsersIdRecoveryCodesGenerate
+func NewPostApiV1AdminUsersIdRecoveryCodesGenerateRequest(server string, id string) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "id", runtime.ParamLocationPath, id)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/admin/users/%s/recovery/codes/generate", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
 // NewGetApiV1ArtifactsRequest calls the generic GetApiV1Artifacts builder with application/json body
 func NewGetApiV1ArtifactsRequest(server string, params *GetApiV1ArtifactsParams, body GetApiV1ArtifactsJSONRequestBody) (*http.Request, error) {
 	var bodyReader io.Reader
@@ -3398,6 +5349,801 @@ func NewPatchApiV1ArtifactsIdRequestWithBody(server string, id string, contentTy
 	return req, nil
 }
 
+// NewPostApiV1AuthBootstrapRequest calls the generic PostApiV1AuthBootstrap builder with application/json body
+func NewPostApiV1AuthBootstrapRequest(server string, body PostApiV1AuthBootstrapJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewPostApiV1AuthBootstrapRequestWithBody(server, "application/json", bodyReader)
+}
+
+// NewPostApiV1AuthBootstrapRequestWithBody generates requests for PostApiV1AuthBootstrap with any type of body
+func NewPostApiV1AuthBootstrapRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/auth/bootstrap")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewGetApiV1AuthCredentialsRequest generates requests for GetApiV1AuthCredentials
+func NewGetApiV1AuthCredentialsRequest(server string) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/auth/credentials")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewPostApiV1AuthCredentialsAddBeginRequest calls the generic PostApiV1AuthCredentialsAddBegin builder with application/json body
+func NewPostApiV1AuthCredentialsAddBeginRequest(server string, body PostApiV1AuthCredentialsAddBeginJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewPostApiV1AuthCredentialsAddBeginRequestWithBody(server, "application/json", bodyReader)
+}
+
+// NewPostApiV1AuthCredentialsAddBeginRequestWithBody generates requests for PostApiV1AuthCredentialsAddBegin with any type of body
+func NewPostApiV1AuthCredentialsAddBeginRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/auth/credentials/add/begin")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewPostApiV1AuthCredentialsAddCompleteRequest calls the generic PostApiV1AuthCredentialsAddComplete builder with application/json body
+func NewPostApiV1AuthCredentialsAddCompleteRequest(server string, body PostApiV1AuthCredentialsAddCompleteJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewPostApiV1AuthCredentialsAddCompleteRequestWithBody(server, "application/json", bodyReader)
+}
+
+// NewPostApiV1AuthCredentialsAddCompleteRequestWithBody generates requests for PostApiV1AuthCredentialsAddComplete with any type of body
+func NewPostApiV1AuthCredentialsAddCompleteRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/auth/credentials/add/complete")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewDeleteApiV1AuthCredentialsCredentialIdRequest generates requests for DeleteApiV1AuthCredentialsCredentialId
+func NewDeleteApiV1AuthCredentialsCredentialIdRequest(server string, credentialId string) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "credentialId", runtime.ParamLocationPath, credentialId)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/auth/credentials/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("DELETE", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewPatchApiV1AuthCredentialsIdRequest calls the generic PatchApiV1AuthCredentialsId builder with application/json body
+func NewPatchApiV1AuthCredentialsIdRequest(server string, id string, body PatchApiV1AuthCredentialsIdJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewPatchApiV1AuthCredentialsIdRequestWithBody(server, id, "application/json", bodyReader)
+}
+
+// NewPatchApiV1AuthCredentialsIdRequestWithBody generates requests for PatchApiV1AuthCredentialsId with any type of body
+func NewPatchApiV1AuthCredentialsIdRequestWithBody(server string, id string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "id", runtime.ParamLocationPath, id)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/auth/credentials/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("PATCH", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewPostApiV1AuthDeviceLinkAuthorizeRequest calls the generic PostApiV1AuthDeviceLinkAuthorize builder with application/json body
+func NewPostApiV1AuthDeviceLinkAuthorizeRequest(server string, body PostApiV1AuthDeviceLinkAuthorizeJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewPostApiV1AuthDeviceLinkAuthorizeRequestWithBody(server, "application/json", bodyReader)
+}
+
+// NewPostApiV1AuthDeviceLinkAuthorizeRequestWithBody generates requests for PostApiV1AuthDeviceLinkAuthorize with any type of body
+func NewPostApiV1AuthDeviceLinkAuthorizeRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/auth/device-link/authorize")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewPostApiV1AuthDeviceLinkBeginRequest calls the generic PostApiV1AuthDeviceLinkBegin builder with application/json body
+func NewPostApiV1AuthDeviceLinkBeginRequest(server string, body PostApiV1AuthDeviceLinkBeginJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewPostApiV1AuthDeviceLinkBeginRequestWithBody(server, "application/json", bodyReader)
+}
+
+// NewPostApiV1AuthDeviceLinkBeginRequestWithBody generates requests for PostApiV1AuthDeviceLinkBegin with any type of body
+func NewPostApiV1AuthDeviceLinkBeginRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/auth/device-link/begin")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewPostApiV1AuthDeviceLinkExchangeRequest calls the generic PostApiV1AuthDeviceLinkExchange builder with application/json body
+func NewPostApiV1AuthDeviceLinkExchangeRequest(server string, body PostApiV1AuthDeviceLinkExchangeJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewPostApiV1AuthDeviceLinkExchangeRequestWithBody(server, "application/json", bodyReader)
+}
+
+// NewPostApiV1AuthDeviceLinkExchangeRequestWithBody generates requests for PostApiV1AuthDeviceLinkExchange with any type of body
+func NewPostApiV1AuthDeviceLinkExchangeRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/auth/device-link/exchange")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewGetApiV1AuthDeviceLinkVerifyRequest calls the generic GetApiV1AuthDeviceLinkVerify builder with application/json body
+func NewGetApiV1AuthDeviceLinkVerifyRequest(server string, params *GetApiV1AuthDeviceLinkVerifyParams, body GetApiV1AuthDeviceLinkVerifyJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewGetApiV1AuthDeviceLinkVerifyRequestWithBody(server, params, "application/json", bodyReader)
+}
+
+// NewGetApiV1AuthDeviceLinkVerifyRequestWithBody generates requests for GetApiV1AuthDeviceLinkVerify with any type of body
+func NewGetApiV1AuthDeviceLinkVerifyRequestWithBody(server string, params *GetApiV1AuthDeviceLinkVerifyParams, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/auth/device-link/verify")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		queryValues := queryURL.Query()
+
+		if queryFrag, err := runtime.StyleParamWithLocation("form", true, "code", runtime.ParamLocationQuery, params.Code); err != nil {
+			return nil, err
+		} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+			return nil, err
+		} else {
+			for k, v := range parsed {
+				for _, v2 := range v {
+					queryValues.Add(k, v2)
+				}
+			}
+		}
+
+		queryURL.RawQuery = queryValues.Encode()
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewGetApiV1AuthDevicesRequest calls the generic GetApiV1AuthDevices builder with application/json body
+func NewGetApiV1AuthDevicesRequest(server string, body GetApiV1AuthDevicesJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewGetApiV1AuthDevicesRequestWithBody(server, "application/json", bodyReader)
+}
+
+// NewGetApiV1AuthDevicesRequestWithBody generates requests for GetApiV1AuthDevices with any type of body
+func NewGetApiV1AuthDevicesRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/auth/devices")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewDeleteApiV1AuthDevicesIdRequest calls the generic DeleteApiV1AuthDevicesId builder with application/json body
+func NewDeleteApiV1AuthDevicesIdRequest(server string, id string, body DeleteApiV1AuthDevicesIdJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewDeleteApiV1AuthDevicesIdRequestWithBody(server, id, "application/json", bodyReader)
+}
+
+// NewDeleteApiV1AuthDevicesIdRequestWithBody generates requests for DeleteApiV1AuthDevicesId with any type of body
+func NewDeleteApiV1AuthDevicesIdRequestWithBody(server string, id string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "id", runtime.ParamLocationPath, id)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/auth/devices/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("DELETE", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewGetApiV1AuthDevicesIdRequest calls the generic GetApiV1AuthDevicesId builder with application/json body
+func NewGetApiV1AuthDevicesIdRequest(server string, id string, body GetApiV1AuthDevicesIdJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewGetApiV1AuthDevicesIdRequestWithBody(server, id, "application/json", bodyReader)
+}
+
+// NewGetApiV1AuthDevicesIdRequestWithBody generates requests for GetApiV1AuthDevicesId with any type of body
+func NewGetApiV1AuthDevicesIdRequestWithBody(server string, id string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "id", runtime.ParamLocationPath, id)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/auth/devices/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewPostApiV1AuthLoginBeginRequest generates requests for PostApiV1AuthLoginBegin
+func NewPostApiV1AuthLoginBeginRequest(server string) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/auth/login/begin")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewPostApiV1AuthLoginCompleteRequest calls the generic PostApiV1AuthLoginComplete builder with application/json body
+func NewPostApiV1AuthLoginCompleteRequest(server string, body PostApiV1AuthLoginCompleteJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewPostApiV1AuthLoginCompleteRequestWithBody(server, "application/json", bodyReader)
+}
+
+// NewPostApiV1AuthLoginCompleteRequestWithBody generates requests for PostApiV1AuthLoginComplete with any type of body
+func NewPostApiV1AuthLoginCompleteRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/auth/login/complete")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewPostApiV1AuthLogoutRequest generates requests for PostApiV1AuthLogout
+func NewPostApiV1AuthLogoutRequest(server string) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/auth/logout")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewPostApiV1AuthLogoutAllRequest generates requests for PostApiV1AuthLogoutAll
+func NewPostApiV1AuthLogoutAllRequest(server string) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/auth/logout-all")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewGetApiV1AuthMeRequest generates requests for GetApiV1AuthMe
+func NewGetApiV1AuthMeRequest(server string) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/auth/me")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewPatchApiV1AuthMeRequest calls the generic PatchApiV1AuthMe builder with application/json body
+func NewPatchApiV1AuthMeRequest(server string, body PatchApiV1AuthMeJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewPatchApiV1AuthMeRequestWithBody(server, "application/json", bodyReader)
+}
+
+// NewPatchApiV1AuthMeRequestWithBody generates requests for PatchApiV1AuthMe with any type of body
+func NewPatchApiV1AuthMeRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/auth/me")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("PATCH", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewPostApiV1AuthOidcGithubExchangeRequest calls the generic PostApiV1AuthOidcGithubExchange builder with application/json body
+func NewPostApiV1AuthOidcGithubExchangeRequest(server string, body PostApiV1AuthOidcGithubExchangeJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewPostApiV1AuthOidcGithubExchangeRequestWithBody(server, "application/json", bodyReader)
+}
+
+// NewPostApiV1AuthOidcGithubExchangeRequestWithBody generates requests for PostApiV1AuthOidcGithubExchange with any type of body
+func NewPostApiV1AuthOidcGithubExchangeRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/auth/oidc/github/exchange")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewGetApiV1AuthOidcGithubPoliciesRequest generates requests for GetApiV1AuthOidcGithubPolicies
+func NewGetApiV1AuthOidcGithubPoliciesRequest(server string) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/auth/oidc/github/policies")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
 // NewPostApiV1AuthOidcGithubPoliciesRequest calls the generic PostApiV1AuthOidcGithubPolicies builder with application/json body
 func NewPostApiV1AuthOidcGithubPoliciesRequest(server string, body PostApiV1AuthOidcGithubPoliciesJSONRequestBody) (*http.Request, error) {
 	var bodyReader io.Reader
@@ -3419,6 +6165,522 @@ func NewPostApiV1AuthOidcGithubPoliciesRequestWithBody(server string, contentTyp
 	}
 
 	operationPath := fmt.Sprintf("/api/v1/auth/oidc/github/policies")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewDeleteApiV1AuthOidcGithubPoliciesIdRequest generates requests for DeleteApiV1AuthOidcGithubPoliciesId
+func NewDeleteApiV1AuthOidcGithubPoliciesIdRequest(server string, id string) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "id", runtime.ParamLocationPath, id)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/auth/oidc/github/policies/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("DELETE", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewGetApiV1AuthOidcGithubPoliciesIdRequest generates requests for GetApiV1AuthOidcGithubPoliciesId
+func NewGetApiV1AuthOidcGithubPoliciesIdRequest(server string, id string) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "id", runtime.ParamLocationPath, id)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/auth/oidc/github/policies/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewPutApiV1AuthOidcGithubPoliciesIdRequest calls the generic PutApiV1AuthOidcGithubPoliciesId builder with application/json body
+func NewPutApiV1AuthOidcGithubPoliciesIdRequest(server string, id string, body PutApiV1AuthOidcGithubPoliciesIdJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewPutApiV1AuthOidcGithubPoliciesIdRequestWithBody(server, id, "application/json", bodyReader)
+}
+
+// NewPutApiV1AuthOidcGithubPoliciesIdRequestWithBody generates requests for PutApiV1AuthOidcGithubPoliciesId with any type of body
+func NewPutApiV1AuthOidcGithubPoliciesIdRequestWithBody(server string, id string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "id", runtime.ParamLocationPath, id)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/auth/oidc/github/policies/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("PUT", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewPostApiV1AuthOnboardBeginRequest calls the generic PostApiV1AuthOnboardBegin builder with application/json body
+func NewPostApiV1AuthOnboardBeginRequest(server string, body PostApiV1AuthOnboardBeginJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewPostApiV1AuthOnboardBeginRequestWithBody(server, "application/json", bodyReader)
+}
+
+// NewPostApiV1AuthOnboardBeginRequestWithBody generates requests for PostApiV1AuthOnboardBegin with any type of body
+func NewPostApiV1AuthOnboardBeginRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/auth/onboard/begin")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewPostApiV1AuthOnboardCompleteRequest calls the generic PostApiV1AuthOnboardComplete builder with application/json body
+func NewPostApiV1AuthOnboardCompleteRequest(server string, body PostApiV1AuthOnboardCompleteJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewPostApiV1AuthOnboardCompleteRequestWithBody(server, "application/json", bodyReader)
+}
+
+// NewPostApiV1AuthOnboardCompleteRequestWithBody generates requests for PostApiV1AuthOnboardComplete with any type of body
+func NewPostApiV1AuthOnboardCompleteRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/auth/onboard/complete")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewPostApiV1AuthRecoveryCodesGenerateRequest generates requests for PostApiV1AuthRecoveryCodesGenerate
+func NewPostApiV1AuthRecoveryCodesGenerateRequest(server string) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/auth/recovery/codes/generate")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewPostApiV1AuthRecoveryInitRequest calls the generic PostApiV1AuthRecoveryInit builder with application/json body
+func NewPostApiV1AuthRecoveryInitRequest(server string, body PostApiV1AuthRecoveryInitJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewPostApiV1AuthRecoveryInitRequestWithBody(server, "application/json", bodyReader)
+}
+
+// NewPostApiV1AuthRecoveryInitRequestWithBody generates requests for PostApiV1AuthRecoveryInit with any type of body
+func NewPostApiV1AuthRecoveryInitRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/auth/recovery/init")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewPostApiV1AuthRecoveryRegisterBeginRequest calls the generic PostApiV1AuthRecoveryRegisterBegin builder with application/json body
+func NewPostApiV1AuthRecoveryRegisterBeginRequest(server string, body PostApiV1AuthRecoveryRegisterBeginJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewPostApiV1AuthRecoveryRegisterBeginRequestWithBody(server, "application/json", bodyReader)
+}
+
+// NewPostApiV1AuthRecoveryRegisterBeginRequestWithBody generates requests for PostApiV1AuthRecoveryRegisterBegin with any type of body
+func NewPostApiV1AuthRecoveryRegisterBeginRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/auth/recovery/register/begin")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewPostApiV1AuthRecoveryRegisterCompleteRequest calls the generic PostApiV1AuthRecoveryRegisterComplete builder with application/json body
+func NewPostApiV1AuthRecoveryRegisterCompleteRequest(server string, body PostApiV1AuthRecoveryRegisterCompleteJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewPostApiV1AuthRecoveryRegisterCompleteRequestWithBody(server, "application/json", bodyReader)
+}
+
+// NewPostApiV1AuthRecoveryRegisterCompleteRequestWithBody generates requests for PostApiV1AuthRecoveryRegisterComplete with any type of body
+func NewPostApiV1AuthRecoveryRegisterCompleteRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/auth/recovery/register/complete")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewPostApiV1AuthRecoveryVerifyRequest calls the generic PostApiV1AuthRecoveryVerify builder with application/json body
+func NewPostApiV1AuthRecoveryVerifyRequest(server string, body PostApiV1AuthRecoveryVerifyJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewPostApiV1AuthRecoveryVerifyRequestWithBody(server, "application/json", bodyReader)
+}
+
+// NewPostApiV1AuthRecoveryVerifyRequestWithBody generates requests for PostApiV1AuthRecoveryVerify with any type of body
+func NewPostApiV1AuthRecoveryVerifyRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/auth/recovery/verify")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewPostApiV1AuthRefreshRequest calls the generic PostApiV1AuthRefresh builder with application/json body
+func NewPostApiV1AuthRefreshRequest(server string, body PostApiV1AuthRefreshJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewPostApiV1AuthRefreshRequestWithBody(server, "application/json", bodyReader)
+}
+
+// NewPostApiV1AuthRefreshRequestWithBody generates requests for PostApiV1AuthRefresh with any type of body
+func NewPostApiV1AuthRefreshRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/auth/refresh")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewGetApiV1AuthSessionRequest generates requests for GetApiV1AuthSession
+func NewGetApiV1AuthSessionRequest(server string) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/auth/session")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewPostApiV1AuthStepUpBeginRequest generates requests for PostApiV1AuthStepUpBegin
+func NewPostApiV1AuthStepUpBeginRequest(server string) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/auth/step-up/begin")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewPostApiV1AuthStepUpCompleteRequest calls the generic PostApiV1AuthStepUpComplete builder with application/json body
+func NewPostApiV1AuthStepUpCompleteRequest(server string, body PostApiV1AuthStepUpCompleteJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewPostApiV1AuthStepUpCompleteRequestWithBody(server, "application/json", bodyReader)
+}
+
+// NewPostApiV1AuthStepUpCompleteRequestWithBody generates requests for PostApiV1AuthStepUpComplete with any type of body
+func NewPostApiV1AuthStepUpCompleteRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/auth/step-up/complete")
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -6495,6 +9757,42 @@ type ClientWithResponsesInterface interface {
 
 	GetWellKnownJwksJsonWithResponse(ctx context.Context, body GetWellKnownJwksJsonJSONRequestBody, reqEditors ...RequestEditorFn) (*GetWellKnownJwksJsonResp, error)
 
+	// GetApiV1AdminAccessRequestsWithResponse request
+	GetApiV1AdminAccessRequestsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetApiV1AdminAccessRequestsResp, error)
+
+	// PatchApiV1AdminAccessRequestsIdWithBodyWithResponse request with any body
+	PatchApiV1AdminAccessRequestsIdWithBodyWithResponse(ctx context.Context, id string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PatchApiV1AdminAccessRequestsIdResp, error)
+
+	PatchApiV1AdminAccessRequestsIdWithResponse(ctx context.Context, id string, body PatchApiV1AdminAccessRequestsIdJSONRequestBody, reqEditors ...RequestEditorFn) (*PatchApiV1AdminAccessRequestsIdResp, error)
+
+	// GetApiV1AdminAuditWithResponse request
+	GetApiV1AdminAuditWithResponse(ctx context.Context, params *GetApiV1AdminAuditParams, reqEditors ...RequestEditorFn) (*GetApiV1AdminAuditResp, error)
+
+	// PostApiV1AdminInvitesWithBodyWithResponse request with any body
+	PostApiV1AdminInvitesWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostApiV1AdminInvitesResp, error)
+
+	PostApiV1AdminInvitesWithResponse(ctx context.Context, body PostApiV1AdminInvitesJSONRequestBody, reqEditors ...RequestEditorFn) (*PostApiV1AdminInvitesResp, error)
+
+	// GetApiV1AdminInvitesPreviewWithResponse request
+	GetApiV1AdminInvitesPreviewWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetApiV1AdminInvitesPreviewResp, error)
+
+	// GetApiV1AdminUsersWithResponse request
+	GetApiV1AdminUsersWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetApiV1AdminUsersResp, error)
+
+	// DeleteApiV1AdminUsersIdWithResponse request
+	DeleteApiV1AdminUsersIdWithResponse(ctx context.Context, id string, reqEditors ...RequestEditorFn) (*DeleteApiV1AdminUsersIdResp, error)
+
+	// PatchApiV1AdminUsersIdWithBodyWithResponse request with any body
+	PatchApiV1AdminUsersIdWithBodyWithResponse(ctx context.Context, id string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PatchApiV1AdminUsersIdResp, error)
+
+	PatchApiV1AdminUsersIdWithResponse(ctx context.Context, id string, body PatchApiV1AdminUsersIdJSONRequestBody, reqEditors ...RequestEditorFn) (*PatchApiV1AdminUsersIdResp, error)
+
+	// GetApiV1AdminUsersIdCredentialsWithResponse request
+	GetApiV1AdminUsersIdCredentialsWithResponse(ctx context.Context, id string, reqEditors ...RequestEditorFn) (*GetApiV1AdminUsersIdCredentialsResp, error)
+
+	// PostApiV1AdminUsersIdRecoveryCodesGenerateWithResponse request
+	PostApiV1AdminUsersIdRecoveryCodesGenerateWithResponse(ctx context.Context, id string, reqEditors ...RequestEditorFn) (*PostApiV1AdminUsersIdRecoveryCodesGenerateResp, error)
+
 	// GetApiV1ArtifactsWithBodyWithResponse request with any body
 	GetApiV1ArtifactsWithBodyWithResponse(ctx context.Context, params *GetApiV1ArtifactsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*GetApiV1ArtifactsResp, error)
 
@@ -6525,10 +9823,161 @@ type ClientWithResponsesInterface interface {
 
 	PatchApiV1ArtifactsIdWithResponse(ctx context.Context, id string, body PatchApiV1ArtifactsIdJSONRequestBody, reqEditors ...RequestEditorFn) (*PatchApiV1ArtifactsIdResp, error)
 
+	// PostApiV1AuthBootstrapWithBodyWithResponse request with any body
+	PostApiV1AuthBootstrapWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostApiV1AuthBootstrapResp, error)
+
+	PostApiV1AuthBootstrapWithResponse(ctx context.Context, body PostApiV1AuthBootstrapJSONRequestBody, reqEditors ...RequestEditorFn) (*PostApiV1AuthBootstrapResp, error)
+
+	// GetApiV1AuthCredentialsWithResponse request
+	GetApiV1AuthCredentialsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetApiV1AuthCredentialsResp, error)
+
+	// PostApiV1AuthCredentialsAddBeginWithBodyWithResponse request with any body
+	PostApiV1AuthCredentialsAddBeginWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostApiV1AuthCredentialsAddBeginResp, error)
+
+	PostApiV1AuthCredentialsAddBeginWithResponse(ctx context.Context, body PostApiV1AuthCredentialsAddBeginJSONRequestBody, reqEditors ...RequestEditorFn) (*PostApiV1AuthCredentialsAddBeginResp, error)
+
+	// PostApiV1AuthCredentialsAddCompleteWithBodyWithResponse request with any body
+	PostApiV1AuthCredentialsAddCompleteWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostApiV1AuthCredentialsAddCompleteResp, error)
+
+	PostApiV1AuthCredentialsAddCompleteWithResponse(ctx context.Context, body PostApiV1AuthCredentialsAddCompleteJSONRequestBody, reqEditors ...RequestEditorFn) (*PostApiV1AuthCredentialsAddCompleteResp, error)
+
+	// DeleteApiV1AuthCredentialsCredentialIdWithResponse request
+	DeleteApiV1AuthCredentialsCredentialIdWithResponse(ctx context.Context, credentialId string, reqEditors ...RequestEditorFn) (*DeleteApiV1AuthCredentialsCredentialIdResp, error)
+
+	// PatchApiV1AuthCredentialsIdWithBodyWithResponse request with any body
+	PatchApiV1AuthCredentialsIdWithBodyWithResponse(ctx context.Context, id string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PatchApiV1AuthCredentialsIdResp, error)
+
+	PatchApiV1AuthCredentialsIdWithResponse(ctx context.Context, id string, body PatchApiV1AuthCredentialsIdJSONRequestBody, reqEditors ...RequestEditorFn) (*PatchApiV1AuthCredentialsIdResp, error)
+
+	// PostApiV1AuthDeviceLinkAuthorizeWithBodyWithResponse request with any body
+	PostApiV1AuthDeviceLinkAuthorizeWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostApiV1AuthDeviceLinkAuthorizeResp, error)
+
+	PostApiV1AuthDeviceLinkAuthorizeWithResponse(ctx context.Context, body PostApiV1AuthDeviceLinkAuthorizeJSONRequestBody, reqEditors ...RequestEditorFn) (*PostApiV1AuthDeviceLinkAuthorizeResp, error)
+
+	// PostApiV1AuthDeviceLinkBeginWithBodyWithResponse request with any body
+	PostApiV1AuthDeviceLinkBeginWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostApiV1AuthDeviceLinkBeginResp, error)
+
+	PostApiV1AuthDeviceLinkBeginWithResponse(ctx context.Context, body PostApiV1AuthDeviceLinkBeginJSONRequestBody, reqEditors ...RequestEditorFn) (*PostApiV1AuthDeviceLinkBeginResp, error)
+
+	// PostApiV1AuthDeviceLinkExchangeWithBodyWithResponse request with any body
+	PostApiV1AuthDeviceLinkExchangeWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostApiV1AuthDeviceLinkExchangeResp, error)
+
+	PostApiV1AuthDeviceLinkExchangeWithResponse(ctx context.Context, body PostApiV1AuthDeviceLinkExchangeJSONRequestBody, reqEditors ...RequestEditorFn) (*PostApiV1AuthDeviceLinkExchangeResp, error)
+
+	// GetApiV1AuthDeviceLinkVerifyWithBodyWithResponse request with any body
+	GetApiV1AuthDeviceLinkVerifyWithBodyWithResponse(ctx context.Context, params *GetApiV1AuthDeviceLinkVerifyParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*GetApiV1AuthDeviceLinkVerifyResp, error)
+
+	GetApiV1AuthDeviceLinkVerifyWithResponse(ctx context.Context, params *GetApiV1AuthDeviceLinkVerifyParams, body GetApiV1AuthDeviceLinkVerifyJSONRequestBody, reqEditors ...RequestEditorFn) (*GetApiV1AuthDeviceLinkVerifyResp, error)
+
+	// GetApiV1AuthDevicesWithBodyWithResponse request with any body
+	GetApiV1AuthDevicesWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*GetApiV1AuthDevicesResp, error)
+
+	GetApiV1AuthDevicesWithResponse(ctx context.Context, body GetApiV1AuthDevicesJSONRequestBody, reqEditors ...RequestEditorFn) (*GetApiV1AuthDevicesResp, error)
+
+	// DeleteApiV1AuthDevicesIdWithBodyWithResponse request with any body
+	DeleteApiV1AuthDevicesIdWithBodyWithResponse(ctx context.Context, id string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*DeleteApiV1AuthDevicesIdResp, error)
+
+	DeleteApiV1AuthDevicesIdWithResponse(ctx context.Context, id string, body DeleteApiV1AuthDevicesIdJSONRequestBody, reqEditors ...RequestEditorFn) (*DeleteApiV1AuthDevicesIdResp, error)
+
+	// GetApiV1AuthDevicesIdWithBodyWithResponse request with any body
+	GetApiV1AuthDevicesIdWithBodyWithResponse(ctx context.Context, id string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*GetApiV1AuthDevicesIdResp, error)
+
+	GetApiV1AuthDevicesIdWithResponse(ctx context.Context, id string, body GetApiV1AuthDevicesIdJSONRequestBody, reqEditors ...RequestEditorFn) (*GetApiV1AuthDevicesIdResp, error)
+
+	// PostApiV1AuthLoginBeginWithResponse request
+	PostApiV1AuthLoginBeginWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*PostApiV1AuthLoginBeginResp, error)
+
+	// PostApiV1AuthLoginCompleteWithBodyWithResponse request with any body
+	PostApiV1AuthLoginCompleteWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostApiV1AuthLoginCompleteResp, error)
+
+	PostApiV1AuthLoginCompleteWithResponse(ctx context.Context, body PostApiV1AuthLoginCompleteJSONRequestBody, reqEditors ...RequestEditorFn) (*PostApiV1AuthLoginCompleteResp, error)
+
+	// PostApiV1AuthLogoutWithResponse request
+	PostApiV1AuthLogoutWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*PostApiV1AuthLogoutResp, error)
+
+	// PostApiV1AuthLogoutAllWithResponse request
+	PostApiV1AuthLogoutAllWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*PostApiV1AuthLogoutAllResp, error)
+
+	// GetApiV1AuthMeWithResponse request
+	GetApiV1AuthMeWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetApiV1AuthMeResp, error)
+
+	// PatchApiV1AuthMeWithBodyWithResponse request with any body
+	PatchApiV1AuthMeWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PatchApiV1AuthMeResp, error)
+
+	PatchApiV1AuthMeWithResponse(ctx context.Context, body PatchApiV1AuthMeJSONRequestBody, reqEditors ...RequestEditorFn) (*PatchApiV1AuthMeResp, error)
+
+	// PostApiV1AuthOidcGithubExchangeWithBodyWithResponse request with any body
+	PostApiV1AuthOidcGithubExchangeWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostApiV1AuthOidcGithubExchangeResp, error)
+
+	PostApiV1AuthOidcGithubExchangeWithResponse(ctx context.Context, body PostApiV1AuthOidcGithubExchangeJSONRequestBody, reqEditors ...RequestEditorFn) (*PostApiV1AuthOidcGithubExchangeResp, error)
+
+	// GetApiV1AuthOidcGithubPoliciesWithResponse request
+	GetApiV1AuthOidcGithubPoliciesWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetApiV1AuthOidcGithubPoliciesResp, error)
+
 	// PostApiV1AuthOidcGithubPoliciesWithBodyWithResponse request with any body
 	PostApiV1AuthOidcGithubPoliciesWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostApiV1AuthOidcGithubPoliciesResp, error)
 
 	PostApiV1AuthOidcGithubPoliciesWithResponse(ctx context.Context, body PostApiV1AuthOidcGithubPoliciesJSONRequestBody, reqEditors ...RequestEditorFn) (*PostApiV1AuthOidcGithubPoliciesResp, error)
+
+	// DeleteApiV1AuthOidcGithubPoliciesIdWithResponse request
+	DeleteApiV1AuthOidcGithubPoliciesIdWithResponse(ctx context.Context, id string, reqEditors ...RequestEditorFn) (*DeleteApiV1AuthOidcGithubPoliciesIdResp, error)
+
+	// GetApiV1AuthOidcGithubPoliciesIdWithResponse request
+	GetApiV1AuthOidcGithubPoliciesIdWithResponse(ctx context.Context, id string, reqEditors ...RequestEditorFn) (*GetApiV1AuthOidcGithubPoliciesIdResp, error)
+
+	// PutApiV1AuthOidcGithubPoliciesIdWithBodyWithResponse request with any body
+	PutApiV1AuthOidcGithubPoliciesIdWithBodyWithResponse(ctx context.Context, id string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PutApiV1AuthOidcGithubPoliciesIdResp, error)
+
+	PutApiV1AuthOidcGithubPoliciesIdWithResponse(ctx context.Context, id string, body PutApiV1AuthOidcGithubPoliciesIdJSONRequestBody, reqEditors ...RequestEditorFn) (*PutApiV1AuthOidcGithubPoliciesIdResp, error)
+
+	// PostApiV1AuthOnboardBeginWithBodyWithResponse request with any body
+	PostApiV1AuthOnboardBeginWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostApiV1AuthOnboardBeginResp, error)
+
+	PostApiV1AuthOnboardBeginWithResponse(ctx context.Context, body PostApiV1AuthOnboardBeginJSONRequestBody, reqEditors ...RequestEditorFn) (*PostApiV1AuthOnboardBeginResp, error)
+
+	// PostApiV1AuthOnboardCompleteWithBodyWithResponse request with any body
+	PostApiV1AuthOnboardCompleteWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostApiV1AuthOnboardCompleteResp, error)
+
+	PostApiV1AuthOnboardCompleteWithResponse(ctx context.Context, body PostApiV1AuthOnboardCompleteJSONRequestBody, reqEditors ...RequestEditorFn) (*PostApiV1AuthOnboardCompleteResp, error)
+
+	// PostApiV1AuthRecoveryCodesGenerateWithResponse request
+	PostApiV1AuthRecoveryCodesGenerateWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*PostApiV1AuthRecoveryCodesGenerateResp, error)
+
+	// PostApiV1AuthRecoveryInitWithBodyWithResponse request with any body
+	PostApiV1AuthRecoveryInitWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostApiV1AuthRecoveryInitResp, error)
+
+	PostApiV1AuthRecoveryInitWithResponse(ctx context.Context, body PostApiV1AuthRecoveryInitJSONRequestBody, reqEditors ...RequestEditorFn) (*PostApiV1AuthRecoveryInitResp, error)
+
+	// PostApiV1AuthRecoveryRegisterBeginWithBodyWithResponse request with any body
+	PostApiV1AuthRecoveryRegisterBeginWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostApiV1AuthRecoveryRegisterBeginResp, error)
+
+	PostApiV1AuthRecoveryRegisterBeginWithResponse(ctx context.Context, body PostApiV1AuthRecoveryRegisterBeginJSONRequestBody, reqEditors ...RequestEditorFn) (*PostApiV1AuthRecoveryRegisterBeginResp, error)
+
+	// PostApiV1AuthRecoveryRegisterCompleteWithBodyWithResponse request with any body
+	PostApiV1AuthRecoveryRegisterCompleteWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostApiV1AuthRecoveryRegisterCompleteResp, error)
+
+	PostApiV1AuthRecoveryRegisterCompleteWithResponse(ctx context.Context, body PostApiV1AuthRecoveryRegisterCompleteJSONRequestBody, reqEditors ...RequestEditorFn) (*PostApiV1AuthRecoveryRegisterCompleteResp, error)
+
+	// PostApiV1AuthRecoveryVerifyWithBodyWithResponse request with any body
+	PostApiV1AuthRecoveryVerifyWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostApiV1AuthRecoveryVerifyResp, error)
+
+	PostApiV1AuthRecoveryVerifyWithResponse(ctx context.Context, body PostApiV1AuthRecoveryVerifyJSONRequestBody, reqEditors ...RequestEditorFn) (*PostApiV1AuthRecoveryVerifyResp, error)
+
+	// PostApiV1AuthRefreshWithBodyWithResponse request with any body
+	PostApiV1AuthRefreshWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostApiV1AuthRefreshResp, error)
+
+	PostApiV1AuthRefreshWithResponse(ctx context.Context, body PostApiV1AuthRefreshJSONRequestBody, reqEditors ...RequestEditorFn) (*PostApiV1AuthRefreshResp, error)
+
+	// GetApiV1AuthSessionWithResponse request
+	GetApiV1AuthSessionWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetApiV1AuthSessionResp, error)
+
+	// PostApiV1AuthStepUpBeginWithResponse request
+	PostApiV1AuthStepUpBeginWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*PostApiV1AuthStepUpBeginResp, error)
+
+	// PostApiV1AuthStepUpCompleteWithBodyWithResponse request with any body
+	PostApiV1AuthStepUpCompleteWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostApiV1AuthStepUpCompleteResp, error)
+
+	PostApiV1AuthStepUpCompleteWithResponse(ctx context.Context, body PostApiV1AuthStepUpCompleteJSONRequestBody, reqEditors ...RequestEditorFn) (*PostApiV1AuthStepUpCompleteResp, error)
 
 	// GetApiV1BuildsWithBodyWithResponse request with any body
 	GetApiV1BuildsWithBodyWithResponse(ctx context.Context, params *GetApiV1BuildsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*GetApiV1BuildsResp, error)
@@ -6781,6 +10230,223 @@ func (r GetWellKnownJwksJsonResp) StatusCode() int {
 	return 0
 }
 
+type GetApiV1AdminAccessRequestsResp struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *AuthAccessRequestListResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r GetApiV1AdminAccessRequestsResp) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetApiV1AdminAccessRequestsResp) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type PatchApiV1AdminAccessRequestsIdResp struct {
+	Body         []byte
+	HTTPResponse *http.Response
+}
+
+// Status returns HTTPResponse.Status
+func (r PatchApiV1AdminAccessRequestsIdResp) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r PatchApiV1AdminAccessRequestsIdResp) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type GetApiV1AdminAuditResp struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *AuthAuditListResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r GetApiV1AdminAuditResp) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetApiV1AdminAuditResp) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type PostApiV1AdminInvitesResp struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON201      *AuthAdminInviteCreateResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r PostApiV1AdminInvitesResp) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r PostApiV1AdminInvitesResp) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type GetApiV1AdminInvitesPreviewResp struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *AuthInvitePreviewResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r GetApiV1AdminInvitesPreviewResp) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetApiV1AdminInvitesPreviewResp) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type GetApiV1AdminUsersResp struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *AuthAdminUsersListResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r GetApiV1AdminUsersResp) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetApiV1AdminUsersResp) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type DeleteApiV1AdminUsersIdResp struct {
+	Body         []byte
+	HTTPResponse *http.Response
+}
+
+// Status returns HTTPResponse.Status
+func (r DeleteApiV1AdminUsersIdResp) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r DeleteApiV1AdminUsersIdResp) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type PatchApiV1AdminUsersIdResp struct {
+	Body         []byte
+	HTTPResponse *http.Response
+}
+
+// Status returns HTTPResponse.Status
+func (r PatchApiV1AdminUsersIdResp) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r PatchApiV1AdminUsersIdResp) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type GetApiV1AdminUsersIdCredentialsResp struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *AuthCredentialsListResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r GetApiV1AdminUsersIdCredentialsResp) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetApiV1AdminUsersIdCredentialsResp) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type PostApiV1AdminUsersIdRecoveryCodesGenerateResp struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *AuthRecoveryGenerateResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r PostApiV1AdminUsersIdRecoveryCodesGenerateResp) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r PostApiV1AdminUsersIdRecoveryCodesGenerateResp) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
 type GetApiV1ArtifactsResp struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -6930,6 +10596,461 @@ func (r PatchApiV1ArtifactsIdResp) StatusCode() int {
 	return 0
 }
 
+type PostApiV1AuthBootstrapResp struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON201      *AuthBootstrapResponse
+	JSON404      *map[string]interface{}
+}
+
+// Status returns HTTPResponse.Status
+func (r PostApiV1AuthBootstrapResp) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r PostApiV1AuthBootstrapResp) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type GetApiV1AuthCredentialsResp struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *AuthCredentialsListResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r GetApiV1AuthCredentialsResp) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetApiV1AuthCredentialsResp) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type PostApiV1AuthCredentialsAddBeginResp struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *AuthPublicKeyOptionsResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r PostApiV1AuthCredentialsAddBeginResp) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r PostApiV1AuthCredentialsAddBeginResp) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type PostApiV1AuthCredentialsAddCompleteResp struct {
+	Body         []byte
+	HTTPResponse *http.Response
+}
+
+// Status returns HTTPResponse.Status
+func (r PostApiV1AuthCredentialsAddCompleteResp) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r PostApiV1AuthCredentialsAddCompleteResp) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type DeleteApiV1AuthCredentialsCredentialIdResp struct {
+	Body         []byte
+	HTTPResponse *http.Response
+}
+
+// Status returns HTTPResponse.Status
+func (r DeleteApiV1AuthCredentialsCredentialIdResp) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r DeleteApiV1AuthCredentialsCredentialIdResp) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type PatchApiV1AuthCredentialsIdResp struct {
+	Body         []byte
+	HTTPResponse *http.Response
+}
+
+// Status returns HTTPResponse.Status
+func (r PatchApiV1AuthCredentialsIdResp) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r PatchApiV1AuthCredentialsIdResp) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type PostApiV1AuthDeviceLinkAuthorizeResp struct {
+	Body         []byte
+	HTTPResponse *http.Response
+}
+
+// Status returns HTTPResponse.Status
+func (r PostApiV1AuthDeviceLinkAuthorizeResp) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r PostApiV1AuthDeviceLinkAuthorizeResp) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type PostApiV1AuthDeviceLinkBeginResp struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *ServiceDeviceLinkResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r PostApiV1AuthDeviceLinkBeginResp) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r PostApiV1AuthDeviceLinkBeginResp) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type PostApiV1AuthDeviceLinkExchangeResp struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *ServiceExchangeResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r PostApiV1AuthDeviceLinkExchangeResp) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r PostApiV1AuthDeviceLinkExchangeResp) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type GetApiV1AuthDeviceLinkVerifyResp struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *AuthDeviceLinkVerificationResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r GetApiV1AuthDeviceLinkVerifyResp) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetApiV1AuthDeviceLinkVerifyResp) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type GetApiV1AuthDevicesResp struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *AuthDeviceListResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r GetApiV1AuthDevicesResp) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetApiV1AuthDevicesResp) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type DeleteApiV1AuthDevicesIdResp struct {
+	Body         []byte
+	HTTPResponse *http.Response
+}
+
+// Status returns HTTPResponse.Status
+func (r DeleteApiV1AuthDevicesIdResp) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r DeleteApiV1AuthDevicesIdResp) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type GetApiV1AuthDevicesIdResp struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *AuthDeviceResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r GetApiV1AuthDevicesIdResp) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetApiV1AuthDevicesIdResp) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type PostApiV1AuthLoginBeginResp struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *AuthPublicKeyOptionsResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r PostApiV1AuthLoginBeginResp) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r PostApiV1AuthLoginBeginResp) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type PostApiV1AuthLoginCompleteResp struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *AuthLoginCompleteResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r PostApiV1AuthLoginCompleteResp) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r PostApiV1AuthLoginCompleteResp) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type PostApiV1AuthLogoutResp struct {
+	Body         []byte
+	HTTPResponse *http.Response
+}
+
+// Status returns HTTPResponse.Status
+func (r PostApiV1AuthLogoutResp) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r PostApiV1AuthLogoutResp) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type PostApiV1AuthLogoutAllResp struct {
+	Body         []byte
+	HTTPResponse *http.Response
+}
+
+// Status returns HTTPResponse.Status
+func (r PostApiV1AuthLogoutAllResp) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r PostApiV1AuthLogoutAllResp) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type GetApiV1AuthMeResp struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *AuthMeResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r GetApiV1AuthMeResp) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetApiV1AuthMeResp) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type PatchApiV1AuthMeResp struct {
+	Body         []byte
+	HTTPResponse *http.Response
+}
+
+// Status returns HTTPResponse.Status
+func (r PatchApiV1AuthMeResp) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r PatchApiV1AuthMeResp) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type PostApiV1AuthOidcGithubExchangeResp struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *map[string]interface{}
+}
+
+// Status returns HTTPResponse.Status
+func (r PostApiV1AuthOidcGithubExchangeResp) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r PostApiV1AuthOidcGithubExchangeResp) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type GetApiV1AuthOidcGithubPoliciesResp struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *[]AuthGithubPolicyResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r GetApiV1AuthOidcGithubPoliciesResp) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetApiV1AuthOidcGithubPoliciesResp) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
 type PostApiV1AuthOidcGithubPoliciesResp struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -6946,6 +11067,311 @@ func (r PostApiV1AuthOidcGithubPoliciesResp) Status() string {
 
 // StatusCode returns HTTPResponse.StatusCode
 func (r PostApiV1AuthOidcGithubPoliciesResp) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type DeleteApiV1AuthOidcGithubPoliciesIdResp struct {
+	Body         []byte
+	HTTPResponse *http.Response
+}
+
+// Status returns HTTPResponse.Status
+func (r DeleteApiV1AuthOidcGithubPoliciesIdResp) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r DeleteApiV1AuthOidcGithubPoliciesIdResp) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type GetApiV1AuthOidcGithubPoliciesIdResp struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *AuthGithubPolicyResponse
+	JSON404      *map[string]interface{}
+}
+
+// Status returns HTTPResponse.Status
+func (r GetApiV1AuthOidcGithubPoliciesIdResp) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetApiV1AuthOidcGithubPoliciesIdResp) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type PutApiV1AuthOidcGithubPoliciesIdResp struct {
+	Body         []byte
+	HTTPResponse *http.Response
+}
+
+// Status returns HTTPResponse.Status
+func (r PutApiV1AuthOidcGithubPoliciesIdResp) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r PutApiV1AuthOidcGithubPoliciesIdResp) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type PostApiV1AuthOnboardBeginResp struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *AuthOnboardBeginResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r PostApiV1AuthOnboardBeginResp) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r PostApiV1AuthOnboardBeginResp) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type PostApiV1AuthOnboardCompleteResp struct {
+	Body         []byte
+	HTTPResponse *http.Response
+}
+
+// Status returns HTTPResponse.Status
+func (r PostApiV1AuthOnboardCompleteResp) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r PostApiV1AuthOnboardCompleteResp) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type PostApiV1AuthRecoveryCodesGenerateResp struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *AuthRecoveryGenerateResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r PostApiV1AuthRecoveryCodesGenerateResp) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r PostApiV1AuthRecoveryCodesGenerateResp) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type PostApiV1AuthRecoveryInitResp struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *AuthRecoveryInitResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r PostApiV1AuthRecoveryInitResp) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r PostApiV1AuthRecoveryInitResp) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type PostApiV1AuthRecoveryRegisterBeginResp struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *AuthPublicKeyOptionsResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r PostApiV1AuthRecoveryRegisterBeginResp) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r PostApiV1AuthRecoveryRegisterBeginResp) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type PostApiV1AuthRecoveryRegisterCompleteResp struct {
+	Body         []byte
+	HTTPResponse *http.Response
+}
+
+// Status returns HTTPResponse.Status
+func (r PostApiV1AuthRecoveryRegisterCompleteResp) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r PostApiV1AuthRecoveryRegisterCompleteResp) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type PostApiV1AuthRecoveryVerifyResp struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *AuthRecoveryVerifyResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r PostApiV1AuthRecoveryVerifyResp) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r PostApiV1AuthRecoveryVerifyResp) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type PostApiV1AuthRefreshResp struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *AuthAccessTokenResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r PostApiV1AuthRefreshResp) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r PostApiV1AuthRefreshResp) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type GetApiV1AuthSessionResp struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *AuthSessionResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r GetApiV1AuthSessionResp) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetApiV1AuthSessionResp) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type PostApiV1AuthStepUpBeginResp struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *AuthPublicKeyOptionsResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r PostApiV1AuthStepUpBeginResp) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r PostApiV1AuthStepUpBeginResp) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type PostApiV1AuthStepUpCompleteResp struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *AuthAccessTokenResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r PostApiV1AuthStepUpCompleteResp) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r PostApiV1AuthStepUpCompleteResp) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -8116,6 +12542,120 @@ func (c *ClientWithResponses) GetWellKnownJwksJsonWithResponse(ctx context.Conte
 	return ParseGetWellKnownJwksJsonResp(rsp)
 }
 
+// GetApiV1AdminAccessRequestsWithResponse request returning *GetApiV1AdminAccessRequestsResp
+func (c *ClientWithResponses) GetApiV1AdminAccessRequestsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetApiV1AdminAccessRequestsResp, error) {
+	rsp, err := c.GetApiV1AdminAccessRequests(ctx, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetApiV1AdminAccessRequestsResp(rsp)
+}
+
+// PatchApiV1AdminAccessRequestsIdWithBodyWithResponse request with arbitrary body returning *PatchApiV1AdminAccessRequestsIdResp
+func (c *ClientWithResponses) PatchApiV1AdminAccessRequestsIdWithBodyWithResponse(ctx context.Context, id string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PatchApiV1AdminAccessRequestsIdResp, error) {
+	rsp, err := c.PatchApiV1AdminAccessRequestsIdWithBody(ctx, id, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePatchApiV1AdminAccessRequestsIdResp(rsp)
+}
+
+func (c *ClientWithResponses) PatchApiV1AdminAccessRequestsIdWithResponse(ctx context.Context, id string, body PatchApiV1AdminAccessRequestsIdJSONRequestBody, reqEditors ...RequestEditorFn) (*PatchApiV1AdminAccessRequestsIdResp, error) {
+	rsp, err := c.PatchApiV1AdminAccessRequestsId(ctx, id, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePatchApiV1AdminAccessRequestsIdResp(rsp)
+}
+
+// GetApiV1AdminAuditWithResponse request returning *GetApiV1AdminAuditResp
+func (c *ClientWithResponses) GetApiV1AdminAuditWithResponse(ctx context.Context, params *GetApiV1AdminAuditParams, reqEditors ...RequestEditorFn) (*GetApiV1AdminAuditResp, error) {
+	rsp, err := c.GetApiV1AdminAudit(ctx, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetApiV1AdminAuditResp(rsp)
+}
+
+// PostApiV1AdminInvitesWithBodyWithResponse request with arbitrary body returning *PostApiV1AdminInvitesResp
+func (c *ClientWithResponses) PostApiV1AdminInvitesWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostApiV1AdminInvitesResp, error) {
+	rsp, err := c.PostApiV1AdminInvitesWithBody(ctx, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePostApiV1AdminInvitesResp(rsp)
+}
+
+func (c *ClientWithResponses) PostApiV1AdminInvitesWithResponse(ctx context.Context, body PostApiV1AdminInvitesJSONRequestBody, reqEditors ...RequestEditorFn) (*PostApiV1AdminInvitesResp, error) {
+	rsp, err := c.PostApiV1AdminInvites(ctx, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePostApiV1AdminInvitesResp(rsp)
+}
+
+// GetApiV1AdminInvitesPreviewWithResponse request returning *GetApiV1AdminInvitesPreviewResp
+func (c *ClientWithResponses) GetApiV1AdminInvitesPreviewWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetApiV1AdminInvitesPreviewResp, error) {
+	rsp, err := c.GetApiV1AdminInvitesPreview(ctx, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetApiV1AdminInvitesPreviewResp(rsp)
+}
+
+// GetApiV1AdminUsersWithResponse request returning *GetApiV1AdminUsersResp
+func (c *ClientWithResponses) GetApiV1AdminUsersWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetApiV1AdminUsersResp, error) {
+	rsp, err := c.GetApiV1AdminUsers(ctx, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetApiV1AdminUsersResp(rsp)
+}
+
+// DeleteApiV1AdminUsersIdWithResponse request returning *DeleteApiV1AdminUsersIdResp
+func (c *ClientWithResponses) DeleteApiV1AdminUsersIdWithResponse(ctx context.Context, id string, reqEditors ...RequestEditorFn) (*DeleteApiV1AdminUsersIdResp, error) {
+	rsp, err := c.DeleteApiV1AdminUsersId(ctx, id, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseDeleteApiV1AdminUsersIdResp(rsp)
+}
+
+// PatchApiV1AdminUsersIdWithBodyWithResponse request with arbitrary body returning *PatchApiV1AdminUsersIdResp
+func (c *ClientWithResponses) PatchApiV1AdminUsersIdWithBodyWithResponse(ctx context.Context, id string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PatchApiV1AdminUsersIdResp, error) {
+	rsp, err := c.PatchApiV1AdminUsersIdWithBody(ctx, id, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePatchApiV1AdminUsersIdResp(rsp)
+}
+
+func (c *ClientWithResponses) PatchApiV1AdminUsersIdWithResponse(ctx context.Context, id string, body PatchApiV1AdminUsersIdJSONRequestBody, reqEditors ...RequestEditorFn) (*PatchApiV1AdminUsersIdResp, error) {
+	rsp, err := c.PatchApiV1AdminUsersId(ctx, id, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePatchApiV1AdminUsersIdResp(rsp)
+}
+
+// GetApiV1AdminUsersIdCredentialsWithResponse request returning *GetApiV1AdminUsersIdCredentialsResp
+func (c *ClientWithResponses) GetApiV1AdminUsersIdCredentialsWithResponse(ctx context.Context, id string, reqEditors ...RequestEditorFn) (*GetApiV1AdminUsersIdCredentialsResp, error) {
+	rsp, err := c.GetApiV1AdminUsersIdCredentials(ctx, id, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetApiV1AdminUsersIdCredentialsResp(rsp)
+}
+
+// PostApiV1AdminUsersIdRecoveryCodesGenerateWithResponse request returning *PostApiV1AdminUsersIdRecoveryCodesGenerateResp
+func (c *ClientWithResponses) PostApiV1AdminUsersIdRecoveryCodesGenerateWithResponse(ctx context.Context, id string, reqEditors ...RequestEditorFn) (*PostApiV1AdminUsersIdRecoveryCodesGenerateResp, error) {
+	rsp, err := c.PostApiV1AdminUsersIdRecoveryCodesGenerate(ctx, id, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePostApiV1AdminUsersIdRecoveryCodesGenerateResp(rsp)
+}
+
 // GetApiV1ArtifactsWithBodyWithResponse request with arbitrary body returning *GetApiV1ArtifactsResp
 func (c *ClientWithResponses) GetApiV1ArtifactsWithBodyWithResponse(ctx context.Context, params *GetApiV1ArtifactsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*GetApiV1ArtifactsResp, error) {
 	rsp, err := c.GetApiV1ArtifactsWithBody(ctx, params, contentType, body, reqEditors...)
@@ -8218,6 +12758,307 @@ func (c *ClientWithResponses) PatchApiV1ArtifactsIdWithResponse(ctx context.Cont
 	return ParsePatchApiV1ArtifactsIdResp(rsp)
 }
 
+// PostApiV1AuthBootstrapWithBodyWithResponse request with arbitrary body returning *PostApiV1AuthBootstrapResp
+func (c *ClientWithResponses) PostApiV1AuthBootstrapWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostApiV1AuthBootstrapResp, error) {
+	rsp, err := c.PostApiV1AuthBootstrapWithBody(ctx, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePostApiV1AuthBootstrapResp(rsp)
+}
+
+func (c *ClientWithResponses) PostApiV1AuthBootstrapWithResponse(ctx context.Context, body PostApiV1AuthBootstrapJSONRequestBody, reqEditors ...RequestEditorFn) (*PostApiV1AuthBootstrapResp, error) {
+	rsp, err := c.PostApiV1AuthBootstrap(ctx, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePostApiV1AuthBootstrapResp(rsp)
+}
+
+// GetApiV1AuthCredentialsWithResponse request returning *GetApiV1AuthCredentialsResp
+func (c *ClientWithResponses) GetApiV1AuthCredentialsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetApiV1AuthCredentialsResp, error) {
+	rsp, err := c.GetApiV1AuthCredentials(ctx, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetApiV1AuthCredentialsResp(rsp)
+}
+
+// PostApiV1AuthCredentialsAddBeginWithBodyWithResponse request with arbitrary body returning *PostApiV1AuthCredentialsAddBeginResp
+func (c *ClientWithResponses) PostApiV1AuthCredentialsAddBeginWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostApiV1AuthCredentialsAddBeginResp, error) {
+	rsp, err := c.PostApiV1AuthCredentialsAddBeginWithBody(ctx, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePostApiV1AuthCredentialsAddBeginResp(rsp)
+}
+
+func (c *ClientWithResponses) PostApiV1AuthCredentialsAddBeginWithResponse(ctx context.Context, body PostApiV1AuthCredentialsAddBeginJSONRequestBody, reqEditors ...RequestEditorFn) (*PostApiV1AuthCredentialsAddBeginResp, error) {
+	rsp, err := c.PostApiV1AuthCredentialsAddBegin(ctx, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePostApiV1AuthCredentialsAddBeginResp(rsp)
+}
+
+// PostApiV1AuthCredentialsAddCompleteWithBodyWithResponse request with arbitrary body returning *PostApiV1AuthCredentialsAddCompleteResp
+func (c *ClientWithResponses) PostApiV1AuthCredentialsAddCompleteWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostApiV1AuthCredentialsAddCompleteResp, error) {
+	rsp, err := c.PostApiV1AuthCredentialsAddCompleteWithBody(ctx, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePostApiV1AuthCredentialsAddCompleteResp(rsp)
+}
+
+func (c *ClientWithResponses) PostApiV1AuthCredentialsAddCompleteWithResponse(ctx context.Context, body PostApiV1AuthCredentialsAddCompleteJSONRequestBody, reqEditors ...RequestEditorFn) (*PostApiV1AuthCredentialsAddCompleteResp, error) {
+	rsp, err := c.PostApiV1AuthCredentialsAddComplete(ctx, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePostApiV1AuthCredentialsAddCompleteResp(rsp)
+}
+
+// DeleteApiV1AuthCredentialsCredentialIdWithResponse request returning *DeleteApiV1AuthCredentialsCredentialIdResp
+func (c *ClientWithResponses) DeleteApiV1AuthCredentialsCredentialIdWithResponse(ctx context.Context, credentialId string, reqEditors ...RequestEditorFn) (*DeleteApiV1AuthCredentialsCredentialIdResp, error) {
+	rsp, err := c.DeleteApiV1AuthCredentialsCredentialId(ctx, credentialId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseDeleteApiV1AuthCredentialsCredentialIdResp(rsp)
+}
+
+// PatchApiV1AuthCredentialsIdWithBodyWithResponse request with arbitrary body returning *PatchApiV1AuthCredentialsIdResp
+func (c *ClientWithResponses) PatchApiV1AuthCredentialsIdWithBodyWithResponse(ctx context.Context, id string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PatchApiV1AuthCredentialsIdResp, error) {
+	rsp, err := c.PatchApiV1AuthCredentialsIdWithBody(ctx, id, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePatchApiV1AuthCredentialsIdResp(rsp)
+}
+
+func (c *ClientWithResponses) PatchApiV1AuthCredentialsIdWithResponse(ctx context.Context, id string, body PatchApiV1AuthCredentialsIdJSONRequestBody, reqEditors ...RequestEditorFn) (*PatchApiV1AuthCredentialsIdResp, error) {
+	rsp, err := c.PatchApiV1AuthCredentialsId(ctx, id, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePatchApiV1AuthCredentialsIdResp(rsp)
+}
+
+// PostApiV1AuthDeviceLinkAuthorizeWithBodyWithResponse request with arbitrary body returning *PostApiV1AuthDeviceLinkAuthorizeResp
+func (c *ClientWithResponses) PostApiV1AuthDeviceLinkAuthorizeWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostApiV1AuthDeviceLinkAuthorizeResp, error) {
+	rsp, err := c.PostApiV1AuthDeviceLinkAuthorizeWithBody(ctx, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePostApiV1AuthDeviceLinkAuthorizeResp(rsp)
+}
+
+func (c *ClientWithResponses) PostApiV1AuthDeviceLinkAuthorizeWithResponse(ctx context.Context, body PostApiV1AuthDeviceLinkAuthorizeJSONRequestBody, reqEditors ...RequestEditorFn) (*PostApiV1AuthDeviceLinkAuthorizeResp, error) {
+	rsp, err := c.PostApiV1AuthDeviceLinkAuthorize(ctx, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePostApiV1AuthDeviceLinkAuthorizeResp(rsp)
+}
+
+// PostApiV1AuthDeviceLinkBeginWithBodyWithResponse request with arbitrary body returning *PostApiV1AuthDeviceLinkBeginResp
+func (c *ClientWithResponses) PostApiV1AuthDeviceLinkBeginWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostApiV1AuthDeviceLinkBeginResp, error) {
+	rsp, err := c.PostApiV1AuthDeviceLinkBeginWithBody(ctx, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePostApiV1AuthDeviceLinkBeginResp(rsp)
+}
+
+func (c *ClientWithResponses) PostApiV1AuthDeviceLinkBeginWithResponse(ctx context.Context, body PostApiV1AuthDeviceLinkBeginJSONRequestBody, reqEditors ...RequestEditorFn) (*PostApiV1AuthDeviceLinkBeginResp, error) {
+	rsp, err := c.PostApiV1AuthDeviceLinkBegin(ctx, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePostApiV1AuthDeviceLinkBeginResp(rsp)
+}
+
+// PostApiV1AuthDeviceLinkExchangeWithBodyWithResponse request with arbitrary body returning *PostApiV1AuthDeviceLinkExchangeResp
+func (c *ClientWithResponses) PostApiV1AuthDeviceLinkExchangeWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostApiV1AuthDeviceLinkExchangeResp, error) {
+	rsp, err := c.PostApiV1AuthDeviceLinkExchangeWithBody(ctx, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePostApiV1AuthDeviceLinkExchangeResp(rsp)
+}
+
+func (c *ClientWithResponses) PostApiV1AuthDeviceLinkExchangeWithResponse(ctx context.Context, body PostApiV1AuthDeviceLinkExchangeJSONRequestBody, reqEditors ...RequestEditorFn) (*PostApiV1AuthDeviceLinkExchangeResp, error) {
+	rsp, err := c.PostApiV1AuthDeviceLinkExchange(ctx, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePostApiV1AuthDeviceLinkExchangeResp(rsp)
+}
+
+// GetApiV1AuthDeviceLinkVerifyWithBodyWithResponse request with arbitrary body returning *GetApiV1AuthDeviceLinkVerifyResp
+func (c *ClientWithResponses) GetApiV1AuthDeviceLinkVerifyWithBodyWithResponse(ctx context.Context, params *GetApiV1AuthDeviceLinkVerifyParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*GetApiV1AuthDeviceLinkVerifyResp, error) {
+	rsp, err := c.GetApiV1AuthDeviceLinkVerifyWithBody(ctx, params, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetApiV1AuthDeviceLinkVerifyResp(rsp)
+}
+
+func (c *ClientWithResponses) GetApiV1AuthDeviceLinkVerifyWithResponse(ctx context.Context, params *GetApiV1AuthDeviceLinkVerifyParams, body GetApiV1AuthDeviceLinkVerifyJSONRequestBody, reqEditors ...RequestEditorFn) (*GetApiV1AuthDeviceLinkVerifyResp, error) {
+	rsp, err := c.GetApiV1AuthDeviceLinkVerify(ctx, params, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetApiV1AuthDeviceLinkVerifyResp(rsp)
+}
+
+// GetApiV1AuthDevicesWithBodyWithResponse request with arbitrary body returning *GetApiV1AuthDevicesResp
+func (c *ClientWithResponses) GetApiV1AuthDevicesWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*GetApiV1AuthDevicesResp, error) {
+	rsp, err := c.GetApiV1AuthDevicesWithBody(ctx, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetApiV1AuthDevicesResp(rsp)
+}
+
+func (c *ClientWithResponses) GetApiV1AuthDevicesWithResponse(ctx context.Context, body GetApiV1AuthDevicesJSONRequestBody, reqEditors ...RequestEditorFn) (*GetApiV1AuthDevicesResp, error) {
+	rsp, err := c.GetApiV1AuthDevices(ctx, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetApiV1AuthDevicesResp(rsp)
+}
+
+// DeleteApiV1AuthDevicesIdWithBodyWithResponse request with arbitrary body returning *DeleteApiV1AuthDevicesIdResp
+func (c *ClientWithResponses) DeleteApiV1AuthDevicesIdWithBodyWithResponse(ctx context.Context, id string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*DeleteApiV1AuthDevicesIdResp, error) {
+	rsp, err := c.DeleteApiV1AuthDevicesIdWithBody(ctx, id, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseDeleteApiV1AuthDevicesIdResp(rsp)
+}
+
+func (c *ClientWithResponses) DeleteApiV1AuthDevicesIdWithResponse(ctx context.Context, id string, body DeleteApiV1AuthDevicesIdJSONRequestBody, reqEditors ...RequestEditorFn) (*DeleteApiV1AuthDevicesIdResp, error) {
+	rsp, err := c.DeleteApiV1AuthDevicesId(ctx, id, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseDeleteApiV1AuthDevicesIdResp(rsp)
+}
+
+// GetApiV1AuthDevicesIdWithBodyWithResponse request with arbitrary body returning *GetApiV1AuthDevicesIdResp
+func (c *ClientWithResponses) GetApiV1AuthDevicesIdWithBodyWithResponse(ctx context.Context, id string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*GetApiV1AuthDevicesIdResp, error) {
+	rsp, err := c.GetApiV1AuthDevicesIdWithBody(ctx, id, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetApiV1AuthDevicesIdResp(rsp)
+}
+
+func (c *ClientWithResponses) GetApiV1AuthDevicesIdWithResponse(ctx context.Context, id string, body GetApiV1AuthDevicesIdJSONRequestBody, reqEditors ...RequestEditorFn) (*GetApiV1AuthDevicesIdResp, error) {
+	rsp, err := c.GetApiV1AuthDevicesId(ctx, id, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetApiV1AuthDevicesIdResp(rsp)
+}
+
+// PostApiV1AuthLoginBeginWithResponse request returning *PostApiV1AuthLoginBeginResp
+func (c *ClientWithResponses) PostApiV1AuthLoginBeginWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*PostApiV1AuthLoginBeginResp, error) {
+	rsp, err := c.PostApiV1AuthLoginBegin(ctx, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePostApiV1AuthLoginBeginResp(rsp)
+}
+
+// PostApiV1AuthLoginCompleteWithBodyWithResponse request with arbitrary body returning *PostApiV1AuthLoginCompleteResp
+func (c *ClientWithResponses) PostApiV1AuthLoginCompleteWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostApiV1AuthLoginCompleteResp, error) {
+	rsp, err := c.PostApiV1AuthLoginCompleteWithBody(ctx, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePostApiV1AuthLoginCompleteResp(rsp)
+}
+
+func (c *ClientWithResponses) PostApiV1AuthLoginCompleteWithResponse(ctx context.Context, body PostApiV1AuthLoginCompleteJSONRequestBody, reqEditors ...RequestEditorFn) (*PostApiV1AuthLoginCompleteResp, error) {
+	rsp, err := c.PostApiV1AuthLoginComplete(ctx, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePostApiV1AuthLoginCompleteResp(rsp)
+}
+
+// PostApiV1AuthLogoutWithResponse request returning *PostApiV1AuthLogoutResp
+func (c *ClientWithResponses) PostApiV1AuthLogoutWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*PostApiV1AuthLogoutResp, error) {
+	rsp, err := c.PostApiV1AuthLogout(ctx, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePostApiV1AuthLogoutResp(rsp)
+}
+
+// PostApiV1AuthLogoutAllWithResponse request returning *PostApiV1AuthLogoutAllResp
+func (c *ClientWithResponses) PostApiV1AuthLogoutAllWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*PostApiV1AuthLogoutAllResp, error) {
+	rsp, err := c.PostApiV1AuthLogoutAll(ctx, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePostApiV1AuthLogoutAllResp(rsp)
+}
+
+// GetApiV1AuthMeWithResponse request returning *GetApiV1AuthMeResp
+func (c *ClientWithResponses) GetApiV1AuthMeWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetApiV1AuthMeResp, error) {
+	rsp, err := c.GetApiV1AuthMe(ctx, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetApiV1AuthMeResp(rsp)
+}
+
+// PatchApiV1AuthMeWithBodyWithResponse request with arbitrary body returning *PatchApiV1AuthMeResp
+func (c *ClientWithResponses) PatchApiV1AuthMeWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PatchApiV1AuthMeResp, error) {
+	rsp, err := c.PatchApiV1AuthMeWithBody(ctx, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePatchApiV1AuthMeResp(rsp)
+}
+
+func (c *ClientWithResponses) PatchApiV1AuthMeWithResponse(ctx context.Context, body PatchApiV1AuthMeJSONRequestBody, reqEditors ...RequestEditorFn) (*PatchApiV1AuthMeResp, error) {
+	rsp, err := c.PatchApiV1AuthMe(ctx, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePatchApiV1AuthMeResp(rsp)
+}
+
+// PostApiV1AuthOidcGithubExchangeWithBodyWithResponse request with arbitrary body returning *PostApiV1AuthOidcGithubExchangeResp
+func (c *ClientWithResponses) PostApiV1AuthOidcGithubExchangeWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostApiV1AuthOidcGithubExchangeResp, error) {
+	rsp, err := c.PostApiV1AuthOidcGithubExchangeWithBody(ctx, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePostApiV1AuthOidcGithubExchangeResp(rsp)
+}
+
+func (c *ClientWithResponses) PostApiV1AuthOidcGithubExchangeWithResponse(ctx context.Context, body PostApiV1AuthOidcGithubExchangeJSONRequestBody, reqEditors ...RequestEditorFn) (*PostApiV1AuthOidcGithubExchangeResp, error) {
+	rsp, err := c.PostApiV1AuthOidcGithubExchange(ctx, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePostApiV1AuthOidcGithubExchangeResp(rsp)
+}
+
+// GetApiV1AuthOidcGithubPoliciesWithResponse request returning *GetApiV1AuthOidcGithubPoliciesResp
+func (c *ClientWithResponses) GetApiV1AuthOidcGithubPoliciesWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetApiV1AuthOidcGithubPoliciesResp, error) {
+	rsp, err := c.GetApiV1AuthOidcGithubPolicies(ctx, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetApiV1AuthOidcGithubPoliciesResp(rsp)
+}
+
 // PostApiV1AuthOidcGithubPoliciesWithBodyWithResponse request with arbitrary body returning *PostApiV1AuthOidcGithubPoliciesResp
 func (c *ClientWithResponses) PostApiV1AuthOidcGithubPoliciesWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostApiV1AuthOidcGithubPoliciesResp, error) {
 	rsp, err := c.PostApiV1AuthOidcGithubPoliciesWithBody(ctx, contentType, body, reqEditors...)
@@ -8233,6 +13074,204 @@ func (c *ClientWithResponses) PostApiV1AuthOidcGithubPoliciesWithResponse(ctx co
 		return nil, err
 	}
 	return ParsePostApiV1AuthOidcGithubPoliciesResp(rsp)
+}
+
+// DeleteApiV1AuthOidcGithubPoliciesIdWithResponse request returning *DeleteApiV1AuthOidcGithubPoliciesIdResp
+func (c *ClientWithResponses) DeleteApiV1AuthOidcGithubPoliciesIdWithResponse(ctx context.Context, id string, reqEditors ...RequestEditorFn) (*DeleteApiV1AuthOidcGithubPoliciesIdResp, error) {
+	rsp, err := c.DeleteApiV1AuthOidcGithubPoliciesId(ctx, id, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseDeleteApiV1AuthOidcGithubPoliciesIdResp(rsp)
+}
+
+// GetApiV1AuthOidcGithubPoliciesIdWithResponse request returning *GetApiV1AuthOidcGithubPoliciesIdResp
+func (c *ClientWithResponses) GetApiV1AuthOidcGithubPoliciesIdWithResponse(ctx context.Context, id string, reqEditors ...RequestEditorFn) (*GetApiV1AuthOidcGithubPoliciesIdResp, error) {
+	rsp, err := c.GetApiV1AuthOidcGithubPoliciesId(ctx, id, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetApiV1AuthOidcGithubPoliciesIdResp(rsp)
+}
+
+// PutApiV1AuthOidcGithubPoliciesIdWithBodyWithResponse request with arbitrary body returning *PutApiV1AuthOidcGithubPoliciesIdResp
+func (c *ClientWithResponses) PutApiV1AuthOidcGithubPoliciesIdWithBodyWithResponse(ctx context.Context, id string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PutApiV1AuthOidcGithubPoliciesIdResp, error) {
+	rsp, err := c.PutApiV1AuthOidcGithubPoliciesIdWithBody(ctx, id, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePutApiV1AuthOidcGithubPoliciesIdResp(rsp)
+}
+
+func (c *ClientWithResponses) PutApiV1AuthOidcGithubPoliciesIdWithResponse(ctx context.Context, id string, body PutApiV1AuthOidcGithubPoliciesIdJSONRequestBody, reqEditors ...RequestEditorFn) (*PutApiV1AuthOidcGithubPoliciesIdResp, error) {
+	rsp, err := c.PutApiV1AuthOidcGithubPoliciesId(ctx, id, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePutApiV1AuthOidcGithubPoliciesIdResp(rsp)
+}
+
+// PostApiV1AuthOnboardBeginWithBodyWithResponse request with arbitrary body returning *PostApiV1AuthOnboardBeginResp
+func (c *ClientWithResponses) PostApiV1AuthOnboardBeginWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostApiV1AuthOnboardBeginResp, error) {
+	rsp, err := c.PostApiV1AuthOnboardBeginWithBody(ctx, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePostApiV1AuthOnboardBeginResp(rsp)
+}
+
+func (c *ClientWithResponses) PostApiV1AuthOnboardBeginWithResponse(ctx context.Context, body PostApiV1AuthOnboardBeginJSONRequestBody, reqEditors ...RequestEditorFn) (*PostApiV1AuthOnboardBeginResp, error) {
+	rsp, err := c.PostApiV1AuthOnboardBegin(ctx, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePostApiV1AuthOnboardBeginResp(rsp)
+}
+
+// PostApiV1AuthOnboardCompleteWithBodyWithResponse request with arbitrary body returning *PostApiV1AuthOnboardCompleteResp
+func (c *ClientWithResponses) PostApiV1AuthOnboardCompleteWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostApiV1AuthOnboardCompleteResp, error) {
+	rsp, err := c.PostApiV1AuthOnboardCompleteWithBody(ctx, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePostApiV1AuthOnboardCompleteResp(rsp)
+}
+
+func (c *ClientWithResponses) PostApiV1AuthOnboardCompleteWithResponse(ctx context.Context, body PostApiV1AuthOnboardCompleteJSONRequestBody, reqEditors ...RequestEditorFn) (*PostApiV1AuthOnboardCompleteResp, error) {
+	rsp, err := c.PostApiV1AuthOnboardComplete(ctx, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePostApiV1AuthOnboardCompleteResp(rsp)
+}
+
+// PostApiV1AuthRecoveryCodesGenerateWithResponse request returning *PostApiV1AuthRecoveryCodesGenerateResp
+func (c *ClientWithResponses) PostApiV1AuthRecoveryCodesGenerateWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*PostApiV1AuthRecoveryCodesGenerateResp, error) {
+	rsp, err := c.PostApiV1AuthRecoveryCodesGenerate(ctx, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePostApiV1AuthRecoveryCodesGenerateResp(rsp)
+}
+
+// PostApiV1AuthRecoveryInitWithBodyWithResponse request with arbitrary body returning *PostApiV1AuthRecoveryInitResp
+func (c *ClientWithResponses) PostApiV1AuthRecoveryInitWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostApiV1AuthRecoveryInitResp, error) {
+	rsp, err := c.PostApiV1AuthRecoveryInitWithBody(ctx, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePostApiV1AuthRecoveryInitResp(rsp)
+}
+
+func (c *ClientWithResponses) PostApiV1AuthRecoveryInitWithResponse(ctx context.Context, body PostApiV1AuthRecoveryInitJSONRequestBody, reqEditors ...RequestEditorFn) (*PostApiV1AuthRecoveryInitResp, error) {
+	rsp, err := c.PostApiV1AuthRecoveryInit(ctx, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePostApiV1AuthRecoveryInitResp(rsp)
+}
+
+// PostApiV1AuthRecoveryRegisterBeginWithBodyWithResponse request with arbitrary body returning *PostApiV1AuthRecoveryRegisterBeginResp
+func (c *ClientWithResponses) PostApiV1AuthRecoveryRegisterBeginWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostApiV1AuthRecoveryRegisterBeginResp, error) {
+	rsp, err := c.PostApiV1AuthRecoveryRegisterBeginWithBody(ctx, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePostApiV1AuthRecoveryRegisterBeginResp(rsp)
+}
+
+func (c *ClientWithResponses) PostApiV1AuthRecoveryRegisterBeginWithResponse(ctx context.Context, body PostApiV1AuthRecoveryRegisterBeginJSONRequestBody, reqEditors ...RequestEditorFn) (*PostApiV1AuthRecoveryRegisterBeginResp, error) {
+	rsp, err := c.PostApiV1AuthRecoveryRegisterBegin(ctx, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePostApiV1AuthRecoveryRegisterBeginResp(rsp)
+}
+
+// PostApiV1AuthRecoveryRegisterCompleteWithBodyWithResponse request with arbitrary body returning *PostApiV1AuthRecoveryRegisterCompleteResp
+func (c *ClientWithResponses) PostApiV1AuthRecoveryRegisterCompleteWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostApiV1AuthRecoveryRegisterCompleteResp, error) {
+	rsp, err := c.PostApiV1AuthRecoveryRegisterCompleteWithBody(ctx, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePostApiV1AuthRecoveryRegisterCompleteResp(rsp)
+}
+
+func (c *ClientWithResponses) PostApiV1AuthRecoveryRegisterCompleteWithResponse(ctx context.Context, body PostApiV1AuthRecoveryRegisterCompleteJSONRequestBody, reqEditors ...RequestEditorFn) (*PostApiV1AuthRecoveryRegisterCompleteResp, error) {
+	rsp, err := c.PostApiV1AuthRecoveryRegisterComplete(ctx, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePostApiV1AuthRecoveryRegisterCompleteResp(rsp)
+}
+
+// PostApiV1AuthRecoveryVerifyWithBodyWithResponse request with arbitrary body returning *PostApiV1AuthRecoveryVerifyResp
+func (c *ClientWithResponses) PostApiV1AuthRecoveryVerifyWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostApiV1AuthRecoveryVerifyResp, error) {
+	rsp, err := c.PostApiV1AuthRecoveryVerifyWithBody(ctx, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePostApiV1AuthRecoveryVerifyResp(rsp)
+}
+
+func (c *ClientWithResponses) PostApiV1AuthRecoveryVerifyWithResponse(ctx context.Context, body PostApiV1AuthRecoveryVerifyJSONRequestBody, reqEditors ...RequestEditorFn) (*PostApiV1AuthRecoveryVerifyResp, error) {
+	rsp, err := c.PostApiV1AuthRecoveryVerify(ctx, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePostApiV1AuthRecoveryVerifyResp(rsp)
+}
+
+// PostApiV1AuthRefreshWithBodyWithResponse request with arbitrary body returning *PostApiV1AuthRefreshResp
+func (c *ClientWithResponses) PostApiV1AuthRefreshWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostApiV1AuthRefreshResp, error) {
+	rsp, err := c.PostApiV1AuthRefreshWithBody(ctx, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePostApiV1AuthRefreshResp(rsp)
+}
+
+func (c *ClientWithResponses) PostApiV1AuthRefreshWithResponse(ctx context.Context, body PostApiV1AuthRefreshJSONRequestBody, reqEditors ...RequestEditorFn) (*PostApiV1AuthRefreshResp, error) {
+	rsp, err := c.PostApiV1AuthRefresh(ctx, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePostApiV1AuthRefreshResp(rsp)
+}
+
+// GetApiV1AuthSessionWithResponse request returning *GetApiV1AuthSessionResp
+func (c *ClientWithResponses) GetApiV1AuthSessionWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetApiV1AuthSessionResp, error) {
+	rsp, err := c.GetApiV1AuthSession(ctx, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetApiV1AuthSessionResp(rsp)
+}
+
+// PostApiV1AuthStepUpBeginWithResponse request returning *PostApiV1AuthStepUpBeginResp
+func (c *ClientWithResponses) PostApiV1AuthStepUpBeginWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*PostApiV1AuthStepUpBeginResp, error) {
+	rsp, err := c.PostApiV1AuthStepUpBegin(ctx, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePostApiV1AuthStepUpBeginResp(rsp)
+}
+
+// PostApiV1AuthStepUpCompleteWithBodyWithResponse request with arbitrary body returning *PostApiV1AuthStepUpCompleteResp
+func (c *ClientWithResponses) PostApiV1AuthStepUpCompleteWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostApiV1AuthStepUpCompleteResp, error) {
+	rsp, err := c.PostApiV1AuthStepUpCompleteWithBody(ctx, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePostApiV1AuthStepUpCompleteResp(rsp)
+}
+
+func (c *ClientWithResponses) PostApiV1AuthStepUpCompleteWithResponse(ctx context.Context, body PostApiV1AuthStepUpCompleteJSONRequestBody, reqEditors ...RequestEditorFn) (*PostApiV1AuthStepUpCompleteResp, error) {
+	rsp, err := c.PostApiV1AuthStepUpComplete(ctx, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePostApiV1AuthStepUpCompleteResp(rsp)
 }
 
 // GetApiV1BuildsWithBodyWithResponse request with arbitrary body returning *GetApiV1BuildsResp
@@ -9035,6 +14074,236 @@ func ParseGetWellKnownJwksJsonResp(rsp *http.Response) (*GetWellKnownJwksJsonRes
 	return response, nil
 }
 
+// ParseGetApiV1AdminAccessRequestsResp parses an HTTP response from a GetApiV1AdminAccessRequestsWithResponse call
+func ParseGetApiV1AdminAccessRequestsResp(rsp *http.Response) (*GetApiV1AdminAccessRequestsResp, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetApiV1AdminAccessRequestsResp{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest AuthAccessRequestListResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParsePatchApiV1AdminAccessRequestsIdResp parses an HTTP response from a PatchApiV1AdminAccessRequestsIdWithResponse call
+func ParsePatchApiV1AdminAccessRequestsIdResp(rsp *http.Response) (*PatchApiV1AdminAccessRequestsIdResp, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &PatchApiV1AdminAccessRequestsIdResp{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	return response, nil
+}
+
+// ParseGetApiV1AdminAuditResp parses an HTTP response from a GetApiV1AdminAuditWithResponse call
+func ParseGetApiV1AdminAuditResp(rsp *http.Response) (*GetApiV1AdminAuditResp, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetApiV1AdminAuditResp{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest AuthAuditListResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParsePostApiV1AdminInvitesResp parses an HTTP response from a PostApiV1AdminInvitesWithResponse call
+func ParsePostApiV1AdminInvitesResp(rsp *http.Response) (*PostApiV1AdminInvitesResp, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &PostApiV1AdminInvitesResp{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
+		var dest AuthAdminInviteCreateResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON201 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetApiV1AdminInvitesPreviewResp parses an HTTP response from a GetApiV1AdminInvitesPreviewWithResponse call
+func ParseGetApiV1AdminInvitesPreviewResp(rsp *http.Response) (*GetApiV1AdminInvitesPreviewResp, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetApiV1AdminInvitesPreviewResp{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest AuthInvitePreviewResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetApiV1AdminUsersResp parses an HTTP response from a GetApiV1AdminUsersWithResponse call
+func ParseGetApiV1AdminUsersResp(rsp *http.Response) (*GetApiV1AdminUsersResp, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetApiV1AdminUsersResp{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest AuthAdminUsersListResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseDeleteApiV1AdminUsersIdResp parses an HTTP response from a DeleteApiV1AdminUsersIdWithResponse call
+func ParseDeleteApiV1AdminUsersIdResp(rsp *http.Response) (*DeleteApiV1AdminUsersIdResp, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &DeleteApiV1AdminUsersIdResp{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	return response, nil
+}
+
+// ParsePatchApiV1AdminUsersIdResp parses an HTTP response from a PatchApiV1AdminUsersIdWithResponse call
+func ParsePatchApiV1AdminUsersIdResp(rsp *http.Response) (*PatchApiV1AdminUsersIdResp, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &PatchApiV1AdminUsersIdResp{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	return response, nil
+}
+
+// ParseGetApiV1AdminUsersIdCredentialsResp parses an HTTP response from a GetApiV1AdminUsersIdCredentialsWithResponse call
+func ParseGetApiV1AdminUsersIdCredentialsResp(rsp *http.Response) (*GetApiV1AdminUsersIdCredentialsResp, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetApiV1AdminUsersIdCredentialsResp{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest AuthCredentialsListResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParsePostApiV1AdminUsersIdRecoveryCodesGenerateResp parses an HTTP response from a PostApiV1AdminUsersIdRecoveryCodesGenerateWithResponse call
+func ParsePostApiV1AdminUsersIdRecoveryCodesGenerateResp(rsp *http.Response) (*PostApiV1AdminUsersIdRecoveryCodesGenerateResp, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &PostApiV1AdminUsersIdRecoveryCodesGenerateResp{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest AuthRecoveryGenerateResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	}
+
+	return response, nil
+}
+
 // ParseGetApiV1ArtifactsResp parses an HTTP response from a GetApiV1ArtifactsWithResponse call
 func ParseGetApiV1ArtifactsResp(rsp *http.Response) (*GetApiV1ArtifactsResp, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -9310,6 +14579,479 @@ func ParsePatchApiV1ArtifactsIdResp(rsp *http.Response) (*PatchApiV1ArtifactsIdR
 	return response, nil
 }
 
+// ParsePostApiV1AuthBootstrapResp parses an HTTP response from a PostApiV1AuthBootstrapWithResponse call
+func ParsePostApiV1AuthBootstrapResp(rsp *http.Response) (*PostApiV1AuthBootstrapResp, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &PostApiV1AuthBootstrapResp{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
+		var dest AuthBootstrapResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON201 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest map[string]interface{}
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetApiV1AuthCredentialsResp parses an HTTP response from a GetApiV1AuthCredentialsWithResponse call
+func ParseGetApiV1AuthCredentialsResp(rsp *http.Response) (*GetApiV1AuthCredentialsResp, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetApiV1AuthCredentialsResp{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest AuthCredentialsListResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParsePostApiV1AuthCredentialsAddBeginResp parses an HTTP response from a PostApiV1AuthCredentialsAddBeginWithResponse call
+func ParsePostApiV1AuthCredentialsAddBeginResp(rsp *http.Response) (*PostApiV1AuthCredentialsAddBeginResp, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &PostApiV1AuthCredentialsAddBeginResp{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest AuthPublicKeyOptionsResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParsePostApiV1AuthCredentialsAddCompleteResp parses an HTTP response from a PostApiV1AuthCredentialsAddCompleteWithResponse call
+func ParsePostApiV1AuthCredentialsAddCompleteResp(rsp *http.Response) (*PostApiV1AuthCredentialsAddCompleteResp, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &PostApiV1AuthCredentialsAddCompleteResp{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	return response, nil
+}
+
+// ParseDeleteApiV1AuthCredentialsCredentialIdResp parses an HTTP response from a DeleteApiV1AuthCredentialsCredentialIdWithResponse call
+func ParseDeleteApiV1AuthCredentialsCredentialIdResp(rsp *http.Response) (*DeleteApiV1AuthCredentialsCredentialIdResp, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &DeleteApiV1AuthCredentialsCredentialIdResp{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	return response, nil
+}
+
+// ParsePatchApiV1AuthCredentialsIdResp parses an HTTP response from a PatchApiV1AuthCredentialsIdWithResponse call
+func ParsePatchApiV1AuthCredentialsIdResp(rsp *http.Response) (*PatchApiV1AuthCredentialsIdResp, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &PatchApiV1AuthCredentialsIdResp{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	return response, nil
+}
+
+// ParsePostApiV1AuthDeviceLinkAuthorizeResp parses an HTTP response from a PostApiV1AuthDeviceLinkAuthorizeWithResponse call
+func ParsePostApiV1AuthDeviceLinkAuthorizeResp(rsp *http.Response) (*PostApiV1AuthDeviceLinkAuthorizeResp, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &PostApiV1AuthDeviceLinkAuthorizeResp{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	return response, nil
+}
+
+// ParsePostApiV1AuthDeviceLinkBeginResp parses an HTTP response from a PostApiV1AuthDeviceLinkBeginWithResponse call
+func ParsePostApiV1AuthDeviceLinkBeginResp(rsp *http.Response) (*PostApiV1AuthDeviceLinkBeginResp, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &PostApiV1AuthDeviceLinkBeginResp{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest ServiceDeviceLinkResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParsePostApiV1AuthDeviceLinkExchangeResp parses an HTTP response from a PostApiV1AuthDeviceLinkExchangeWithResponse call
+func ParsePostApiV1AuthDeviceLinkExchangeResp(rsp *http.Response) (*PostApiV1AuthDeviceLinkExchangeResp, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &PostApiV1AuthDeviceLinkExchangeResp{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest ServiceExchangeResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetApiV1AuthDeviceLinkVerifyResp parses an HTTP response from a GetApiV1AuthDeviceLinkVerifyWithResponse call
+func ParseGetApiV1AuthDeviceLinkVerifyResp(rsp *http.Response) (*GetApiV1AuthDeviceLinkVerifyResp, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetApiV1AuthDeviceLinkVerifyResp{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest AuthDeviceLinkVerificationResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetApiV1AuthDevicesResp parses an HTTP response from a GetApiV1AuthDevicesWithResponse call
+func ParseGetApiV1AuthDevicesResp(rsp *http.Response) (*GetApiV1AuthDevicesResp, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetApiV1AuthDevicesResp{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest AuthDeviceListResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseDeleteApiV1AuthDevicesIdResp parses an HTTP response from a DeleteApiV1AuthDevicesIdWithResponse call
+func ParseDeleteApiV1AuthDevicesIdResp(rsp *http.Response) (*DeleteApiV1AuthDevicesIdResp, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &DeleteApiV1AuthDevicesIdResp{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	return response, nil
+}
+
+// ParseGetApiV1AuthDevicesIdResp parses an HTTP response from a GetApiV1AuthDevicesIdWithResponse call
+func ParseGetApiV1AuthDevicesIdResp(rsp *http.Response) (*GetApiV1AuthDevicesIdResp, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetApiV1AuthDevicesIdResp{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest AuthDeviceResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParsePostApiV1AuthLoginBeginResp parses an HTTP response from a PostApiV1AuthLoginBeginWithResponse call
+func ParsePostApiV1AuthLoginBeginResp(rsp *http.Response) (*PostApiV1AuthLoginBeginResp, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &PostApiV1AuthLoginBeginResp{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest AuthPublicKeyOptionsResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParsePostApiV1AuthLoginCompleteResp parses an HTTP response from a PostApiV1AuthLoginCompleteWithResponse call
+func ParsePostApiV1AuthLoginCompleteResp(rsp *http.Response) (*PostApiV1AuthLoginCompleteResp, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &PostApiV1AuthLoginCompleteResp{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest AuthLoginCompleteResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParsePostApiV1AuthLogoutResp parses an HTTP response from a PostApiV1AuthLogoutWithResponse call
+func ParsePostApiV1AuthLogoutResp(rsp *http.Response) (*PostApiV1AuthLogoutResp, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &PostApiV1AuthLogoutResp{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	return response, nil
+}
+
+// ParsePostApiV1AuthLogoutAllResp parses an HTTP response from a PostApiV1AuthLogoutAllWithResponse call
+func ParsePostApiV1AuthLogoutAllResp(rsp *http.Response) (*PostApiV1AuthLogoutAllResp, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &PostApiV1AuthLogoutAllResp{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	return response, nil
+}
+
+// ParseGetApiV1AuthMeResp parses an HTTP response from a GetApiV1AuthMeWithResponse call
+func ParseGetApiV1AuthMeResp(rsp *http.Response) (*GetApiV1AuthMeResp, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetApiV1AuthMeResp{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest AuthMeResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParsePatchApiV1AuthMeResp parses an HTTP response from a PatchApiV1AuthMeWithResponse call
+func ParsePatchApiV1AuthMeResp(rsp *http.Response) (*PatchApiV1AuthMeResp, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &PatchApiV1AuthMeResp{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	return response, nil
+}
+
+// ParsePostApiV1AuthOidcGithubExchangeResp parses an HTTP response from a PostApiV1AuthOidcGithubExchangeWithResponse call
+func ParsePostApiV1AuthOidcGithubExchangeResp(rsp *http.Response) (*PostApiV1AuthOidcGithubExchangeResp, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &PostApiV1AuthOidcGithubExchangeResp{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest map[string]interface{}
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetApiV1AuthOidcGithubPoliciesResp parses an HTTP response from a GetApiV1AuthOidcGithubPoliciesWithResponse call
+func ParseGetApiV1AuthOidcGithubPoliciesResp(rsp *http.Response) (*GetApiV1AuthOidcGithubPoliciesResp, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetApiV1AuthOidcGithubPoliciesResp{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest []AuthGithubPolicyResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	}
+
+	return response, nil
+}
+
 // ParsePostApiV1AuthOidcGithubPoliciesResp parses an HTTP response from a PostApiV1AuthOidcGithubPoliciesWithResponse call
 func ParsePostApiV1AuthOidcGithubPoliciesResp(rsp *http.Response) (*PostApiV1AuthOidcGithubPoliciesResp, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -9330,6 +15072,337 @@ func ParsePostApiV1AuthOidcGithubPoliciesResp(rsp *http.Response) (*PostApiV1Aut
 			return nil, err
 		}
 		response.JSON201 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseDeleteApiV1AuthOidcGithubPoliciesIdResp parses an HTTP response from a DeleteApiV1AuthOidcGithubPoliciesIdWithResponse call
+func ParseDeleteApiV1AuthOidcGithubPoliciesIdResp(rsp *http.Response) (*DeleteApiV1AuthOidcGithubPoliciesIdResp, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &DeleteApiV1AuthOidcGithubPoliciesIdResp{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	return response, nil
+}
+
+// ParseGetApiV1AuthOidcGithubPoliciesIdResp parses an HTTP response from a GetApiV1AuthOidcGithubPoliciesIdWithResponse call
+func ParseGetApiV1AuthOidcGithubPoliciesIdResp(rsp *http.Response) (*GetApiV1AuthOidcGithubPoliciesIdResp, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetApiV1AuthOidcGithubPoliciesIdResp{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest AuthGithubPolicyResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest map[string]interface{}
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParsePutApiV1AuthOidcGithubPoliciesIdResp parses an HTTP response from a PutApiV1AuthOidcGithubPoliciesIdWithResponse call
+func ParsePutApiV1AuthOidcGithubPoliciesIdResp(rsp *http.Response) (*PutApiV1AuthOidcGithubPoliciesIdResp, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &PutApiV1AuthOidcGithubPoliciesIdResp{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	return response, nil
+}
+
+// ParsePostApiV1AuthOnboardBeginResp parses an HTTP response from a PostApiV1AuthOnboardBeginWithResponse call
+func ParsePostApiV1AuthOnboardBeginResp(rsp *http.Response) (*PostApiV1AuthOnboardBeginResp, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &PostApiV1AuthOnboardBeginResp{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest AuthOnboardBeginResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParsePostApiV1AuthOnboardCompleteResp parses an HTTP response from a PostApiV1AuthOnboardCompleteWithResponse call
+func ParsePostApiV1AuthOnboardCompleteResp(rsp *http.Response) (*PostApiV1AuthOnboardCompleteResp, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &PostApiV1AuthOnboardCompleteResp{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	return response, nil
+}
+
+// ParsePostApiV1AuthRecoveryCodesGenerateResp parses an HTTP response from a PostApiV1AuthRecoveryCodesGenerateWithResponse call
+func ParsePostApiV1AuthRecoveryCodesGenerateResp(rsp *http.Response) (*PostApiV1AuthRecoveryCodesGenerateResp, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &PostApiV1AuthRecoveryCodesGenerateResp{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest AuthRecoveryGenerateResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParsePostApiV1AuthRecoveryInitResp parses an HTTP response from a PostApiV1AuthRecoveryInitWithResponse call
+func ParsePostApiV1AuthRecoveryInitResp(rsp *http.Response) (*PostApiV1AuthRecoveryInitResp, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &PostApiV1AuthRecoveryInitResp{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest AuthRecoveryInitResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParsePostApiV1AuthRecoveryRegisterBeginResp parses an HTTP response from a PostApiV1AuthRecoveryRegisterBeginWithResponse call
+func ParsePostApiV1AuthRecoveryRegisterBeginResp(rsp *http.Response) (*PostApiV1AuthRecoveryRegisterBeginResp, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &PostApiV1AuthRecoveryRegisterBeginResp{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest AuthPublicKeyOptionsResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParsePostApiV1AuthRecoveryRegisterCompleteResp parses an HTTP response from a PostApiV1AuthRecoveryRegisterCompleteWithResponse call
+func ParsePostApiV1AuthRecoveryRegisterCompleteResp(rsp *http.Response) (*PostApiV1AuthRecoveryRegisterCompleteResp, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &PostApiV1AuthRecoveryRegisterCompleteResp{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	return response, nil
+}
+
+// ParsePostApiV1AuthRecoveryVerifyResp parses an HTTP response from a PostApiV1AuthRecoveryVerifyWithResponse call
+func ParsePostApiV1AuthRecoveryVerifyResp(rsp *http.Response) (*PostApiV1AuthRecoveryVerifyResp, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &PostApiV1AuthRecoveryVerifyResp{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest AuthRecoveryVerifyResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParsePostApiV1AuthRefreshResp parses an HTTP response from a PostApiV1AuthRefreshWithResponse call
+func ParsePostApiV1AuthRefreshResp(rsp *http.Response) (*PostApiV1AuthRefreshResp, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &PostApiV1AuthRefreshResp{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest AuthAccessTokenResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetApiV1AuthSessionResp parses an HTTP response from a GetApiV1AuthSessionWithResponse call
+func ParseGetApiV1AuthSessionResp(rsp *http.Response) (*GetApiV1AuthSessionResp, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetApiV1AuthSessionResp{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest AuthSessionResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParsePostApiV1AuthStepUpBeginResp parses an HTTP response from a PostApiV1AuthStepUpBeginWithResponse call
+func ParsePostApiV1AuthStepUpBeginResp(rsp *http.Response) (*PostApiV1AuthStepUpBeginResp, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &PostApiV1AuthStepUpBeginResp{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest AuthPublicKeyOptionsResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParsePostApiV1AuthStepUpCompleteResp parses an HTTP response from a PostApiV1AuthStepUpCompleteWithResponse call
+func ParsePostApiV1AuthStepUpCompleteResp(rsp *http.Response) (*PostApiV1AuthStepUpCompleteResp, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &PostApiV1AuthStepUpCompleteResp{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest AuthAccessTokenResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
 
 	}
 

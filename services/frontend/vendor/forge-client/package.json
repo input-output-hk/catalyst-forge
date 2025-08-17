@@ -1,0 +1,6 @@
+{
+  "type": "module",
+  "name": "forge-client",
+  "private": true,
+  "types": "./index.d.ts"
+}

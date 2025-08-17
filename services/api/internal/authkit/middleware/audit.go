@@ -3,21 +3,25 @@ package middleware
 import (
 	"bytes"
 	"context"
+	"encoding/base64"
 	"io"
 	"net/http"
 	"strings"
 	"time"
 
-	akauth "github.com/input-output-hk/catalyst-forge/services/api/internal/authkit/authkit"
-	"github.com/input-output-hk/catalyst-forge/services/api/internal/authkit/domain"
-	"github.com/input-output-hk/catalyst-forge/services/api/internal/authkit/store"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	akauth "github.com/input-output-hk/catalyst-forge/services/api/internal/authkit/authkit"
+	"github.com/input-output-hk/catalyst-forge/services/api/internal/authkit/crypto"
+	"github.com/input-output-hk/catalyst-forge/services/api/internal/authkit/domain"
+	httpkit "github.com/input-output-hk/catalyst-forge/services/api/internal/authkit/httpkit"
+	"github.com/input-output-hk/catalyst-forge/services/api/internal/authkit/store"
 )
 
 // AuditLogger provides audit logging middleware.
 type AuditLogger struct {
-	auditStore store.AuditStore
+	auditStore   store.AuditStore
+	refreshStore store.RefreshStore
 }
 
 // NewAuditLogger creates a new audit logging middleware.
@@ -25,6 +29,12 @@ func NewAuditLogger(auditStore store.AuditStore) *AuditLogger {
 	return &AuditLogger{
 		auditStore: auditStore,
 	}
+}
+
+// WithRefreshStore allows resolving actor for refresh events when auth context is missing.
+func (al *AuditLogger) WithRefreshStore(refresh store.RefreshStore) *AuditLogger {
+	al.refreshStore = refresh
+	return al
 }
 
 // LogAuthEvents creates middleware that logs authentication-related events.
@@ -82,6 +92,18 @@ func (al *AuditLogger) buildAuditEvent(c *gin.Context, statusCode int, requestBo
 	var userID *uuid.UUID
 	if ctx, ok := akauth.From(c); ok && ctx.IsAuthenticated() {
 		userID = &ctx.UserID
+	}
+	// Fallback for refresh endpoint when context is missing
+	if userID == nil && c.Request.URL.Path == "/auth/refresh" && al.refreshStore != nil {
+		if cookie, err := httpkit.GetRefreshCookie(c.Request); err == nil && cookie != "" {
+			if raw, err := base64.RawURLEncoding.DecodeString(cookie); err == nil && len(raw) == 32 {
+				hash := crypto.HashSHA256(raw)
+				if tok, err := al.refreshStore.GetByHash(c.Request.Context(), hash); err == nil && tok != nil {
+					uid := tok.UserID
+					userID = &uid
+				}
+			}
+		}
 	}
 
 	// Get client IP

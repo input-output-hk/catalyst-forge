@@ -15,6 +15,7 @@ const contextKey = "auth_context"
 type AuthContext struct {
 	UserID           uuid.UUID  // User's unique identifier
 	Email            string     // User's email address
+	FullName         string     // User's display name
 	Roles            []string   // User's roles
 	Permissions      []string   // User's permissions (optional, derived from roles)
 	SessionVersion   int64      // Session version for invalidation

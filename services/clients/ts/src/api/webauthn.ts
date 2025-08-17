@@ -1,6 +1,6 @@
 import type { Client } from 'openapi-fetch';
 import type { paths } from './schema';
-import { FoundryClient } from './client';
+import { ForgeClient } from './client';
 
 // Minimal base64url helpers to avoid extra deps
 function b64urlToBuf(value: string): ArrayBuffer {
@@ -23,7 +23,8 @@ function bufToB64url(buf: ArrayBuffer): string {
 
 // Convert server-provided publicKey options into WebAuthn-friendly structures
 function decodeRequestOptions(options: any): PublicKeyCredentialRequestOptions {
-  const out: any = { ...options };
+  const src: any = options?.publicKey ?? options; // accept nested { publicKey }
+  const out: any = { ...src };
   if (Array.isArray(out.allowCredentials)) {
     out.allowCredentials = out.allowCredentials.map((c: any) => ({
       ...c,
@@ -35,7 +36,8 @@ function decodeRequestOptions(options: any): PublicKeyCredentialRequestOptions {
 }
 
 function decodeCreationOptions(options: any): PublicKeyCredentialCreationOptions {
-  const out: any = { ...options };
+  const src: any = options?.publicKey ?? options; // accept nested { publicKey }
+  const out: any = { ...src };
   if (typeof out.challenge === 'string') out.challenge = b64urlToBuf(out.challenge);
   if (out.user && typeof out.user.id === 'string') out.user = { ...out.user, id: b64urlToBuf(out.user.id) };
   if (Array.isArray(out.excludeCredentials)) {
@@ -78,9 +80,9 @@ function encodeAttestation(cred: PublicKeyCredential): any {
   };
 }
 
-export async function login(client: FoundryClient): Promise<void> {
+export async function login(client: ForgeClient): Promise<void> {
   if (typeof navigator === 'undefined' || !navigator.credentials) throw new Error('WebAuthn not available');
-  const raw = client.raw as Client<paths>;
+  const raw: any = client.raw as unknown;
   const begin = await raw.POST('/api/v1/auth/login/begin');
   if (!begin.response.ok) throw new Error('login begin failed');
   const { publicKey, session_key } = (begin.data as any) || {};
@@ -91,7 +93,7 @@ export async function login(client: FoundryClient): Promise<void> {
   if (!complete.response.ok) throw new Error('login complete failed');
 }
 
-export async function registerCredential(client: FoundryClient, deviceName: string): Promise<void> {
+export async function registerCredential(client: ForgeClient, deviceName: string): Promise<void> {
   if (typeof navigator === 'undefined' || !navigator.credentials) throw new Error('WebAuthn not available');
   const raw = client.raw as Client<paths>;
   const begin = await raw.POST('/api/v1/auth/credentials/add/begin', { body: { device_name: deviceName } as any });
@@ -104,7 +106,7 @@ export async function registerCredential(client: FoundryClient, deviceName: stri
   if (!complete.response.ok) throw new Error('register complete failed');
 }
 
-export async function stepUp(client: FoundryClient): Promise<void> {
+export async function stepUp(client: ForgeClient): Promise<void> {
   if (typeof navigator === 'undefined' || !navigator.credentials) throw new Error('WebAuthn not available');
   const raw = client.raw as Client<paths>;
   const begin = await raw.POST('/api/v1/auth/step-up/begin');

@@ -1,6 +1,8 @@
 package auth
 
 import (
+	"encoding/json"
+	"fmt"
 	"net/http"
 
 	basehttp "github.com/catalystgo/catalyst-forge/lib/foundry/httpkit"
@@ -71,14 +73,15 @@ func RegisterCredentialsAdd(r *gin.Engine, deps CredentialsAddDeps) {
 			return
 		}
 		var in struct {
-			SessionKey string      `json:"session_key"`
-			Credential interface{} `json:"credential"`
+			SessionKey string          `json:"session_key"`
+			Credential json.RawMessage `json:"credential"`
 		}
 		if err := basehttp.ParseJSON(c.Writer, c.Request, &in); err != nil {
 			return
 		}
 		if _, err := deps.WebAuthn.FinishRegistration(c.Request.Context(), in.SessionKey, in.Credential); err != nil {
-			_ = basehttp.NewBadRequestError("registration failed").Write(c.Writer)
+			// Include error detail during development to diagnose 400s from WebAuthn verification
+			_ = basehttp.NewBadRequestError(fmt.Sprintf("registration failed: %v", err)).Write(c.Writer)
 			return
 		}
 		c.Status(http.StatusNoContent)

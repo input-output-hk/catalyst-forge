@@ -9,19 +9,22 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useAppStore } from "@/store/app-store";
 import { User, LogOut } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
+import { logoutEverywhere } from "@/lib/api";
 
 export const ProfileDropdown = () => {
   const { state, actions } = useAppStore();
+  const navigate = useNavigate();
+  const location = useLocation();
 
   const userInitials = state.session.user
     ? state.session.user
-        .split("@")[0]
-        .split(".")
-        .map((part) => part[0])
-        .join("")
-        .toUpperCase()
-        .slice(0, 2)
+      .split("@")[0]
+      .split(".")
+      .map((part) => part[0])
+      .join("")
+      .toUpperCase()
+      .slice(0, 2)
     : "U";
 
   return (
@@ -50,7 +53,15 @@ export const ProfileDropdown = () => {
           </Link>
         </DropdownMenuItem>
         <DropdownMenuSeparator />
-        <DropdownMenuItem onClick={actions.logout} className="cursor-pointer">
+        <DropdownMenuItem
+          onClick={async () => {
+            await logoutEverywhere();
+            actions.logout();
+            const from = (location.state as any)?.from as string | undefined;
+            navigate("/welcome", { replace: true, state: { from } });
+          }}
+          className="cursor-pointer"
+        >
           <LogOut className="mr-2 h-4 w-4" />
           Log out
         </DropdownMenuItem>

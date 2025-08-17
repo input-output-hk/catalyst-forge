@@ -29,6 +29,7 @@ type Stores struct {
 	Users          store.UserStore
 	Credentials    store.CredentialStore
 	Invites        store.InviteStore
+	Access         store.AccessRequestStore
 	RecoveryCodes  store.RecoveryCodeStore
 	Refresh        store.RefreshStore
 	Audit          store.AuditStore

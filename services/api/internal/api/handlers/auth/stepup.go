@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"encoding/json"
 	"net/http"
 	"time"
 
@@ -8,6 +9,7 @@ import (
 	"github.com/gin-gonic/gin"
 	apimodels "github.com/input-output-hk/catalyst-forge/services/api/internal/api/models/auth"
 	akauth "github.com/input-output-hk/catalyst-forge/services/api/internal/authkit/authkit"
+	authhttp "github.com/input-output-hk/catalyst-forge/services/api/internal/authkit/httpkit"
 	akservice "github.com/input-output-hk/catalyst-forge/services/api/internal/authkit/service"
 	akstore "github.com/input-output-hk/catalyst-forge/services/api/internal/authkit/store"
 )
@@ -59,8 +61,8 @@ func RegisterStepUpComplete(r *gin.Engine, wa akservice.WebAuthnService, tokens 
 			return
 		}
 		var in struct {
-			SessionKey string      `json:"session_key"`
-			Credential interface{} `json:"credential"`
+			SessionKey string          `json:"session_key"`
+			Credential json.RawMessage `json:"credential"`
 		}
 		if err := basehttp.ParseJSON(c.Writer, c.Request, &in); err != nil {
 			return
@@ -77,6 +79,8 @@ func RegisterStepUpComplete(r *gin.Engine, wa akservice.WebAuthnService, tokens 
 			_ = basehttp.NewInternalError().Write(c.Writer)
 			return
 		}
+
+		authhttp.SetAccessCookie(c.Writer, access, 30*time.Minute, basehttp.DefaultCookieConfig())
 		_ = basehttp.WriteJSON(c.Writer, http.StatusOK, apimodels.AccessTokenResponse{AccessToken: access})
 	})
 }

@@ -1,10 +1,12 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { 
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -27,31 +29,27 @@ import { useAppStore } from "@/store/app-store";
 import { usePageTitle } from "@/hooks/usePageTitle";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
-import { Key, Monitor, RotateCcw, Trash2, MoreVertical, Edit, LogOut, Info } from "lucide-react";
-import { format } from "date-fns";
+import { Key, Monitor, RotateCcw, Trash2, MoreVertical, Edit, LogOut, Info, Terminal, Check } from "lucide-react";
+import { format, formatDistanceToNow } from "date-fns";
 import { generateRecoveryKeys, keysToText } from "@/lib/recovery";
+import { apiFetch, getApiBaseUrl } from "@/lib/api";
+import { forge } from "@/lib/client";
+import { Skeleton } from "@/components/ui/skeleton";
 
-// Mock session data
-const mockSessions = [
-  {
-    id: "sess_1",
-    browser: "Chrome 120.0.6099.234",
-    os: "macOS 14.2.1",
-    location: "San Francisco, CA",
-    lastActivity: "2 minutes ago",
-    loginDate: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(),
-    current: true,
-  },
-  {
-    id: "sess_2", 
-    browser: "Safari 17.2",
-    os: "iOS 17.2.1",
-    location: "San Francisco, CA",
-    lastActivity: "1 hour ago",
-    loginDate: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(),
-    current: false,
-  },
-];
+// Session item shaped for UI
+type UISession = {
+  id: string;
+  browser: string;
+  os: string;
+  location: string;
+  lastActivity: string;
+  loginDate: string;
+  current: boolean;
+  userAgent?: string;
+  ipAddress?: string;
+  amr?: string;
+  lastActivityAtMs: number;
+};
 
 const Profile = () => {
   const { state, actions } = useAppStore();
@@ -62,63 +60,250 @@ const Profile = () => {
     state.session.user ? state.session.user.split("@")[0].replace(".", " ") : ""
   );
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [sessions, setSessions] = useState(mockSessions);
+  const [sessions, setSessions] = useState<UISession[]>([]);
+  type CredentialItem = { id: string; aaguid: string; device_name: string; sign_count: number; last_used_at?: string | null };
+  const [credentials, setCredentials] = useState<CredentialItem[]>([]);
+  const [loadingCreds, setLoadingCreds] = useState(false);
   const [recoveryKeysGenerated, setRecoveryKeysGenerated] = useState(true);
   const [lastRecoveryDate] = useState(new Date(Date.now() - 1000 * 60 * 60 * 24 * 30));
 
+  // Rename device dialog state
+  const [renameOpen, setRenameOpen] = useState(false);
+  const [renameTarget, setRenameTarget] = useState<CredentialItem | null>(null);
+  const [renameValue, setRenameValue] = useState("");
+  const [copiedSessionId, setCopiedSessionId] = useState<string | null>(null);
+
   const userInitials = state.session.user
     ? state.session.user
-        .split("@")[0]
-        .split(".")
-        .map((part) => part[0])
-        .join("")
-        .toUpperCase()
-        .slice(0, 2)
+      .split("@")[0]
+      .split(".")
+      .map((part) => part[0])
+      .join("")
+      .toUpperCase()
+      .slice(0, 2)
     : "U";
 
   const handleSave = async (newName: string) => {
-    setFullName(newName);
-    toast({ title: "Profile updated successfully" });
+    try {
+      const res = await forge.raw.PATCH('/api/v1/auth/me', {
+        body: { full_name: newName } as any,
+      });
+      if (res.response.status === 204) {
+        setFullName(newName);
+        toast({ title: "Profile updated successfully" });
+      } else {
+        const text = await res.response.text().catch(() => "");
+        toast({ title: "Failed to update profile", description: text || `${res.response.status}`, variant: "destructive" });
+      }
+    } catch {
+      toast({ title: "Failed to update profile", variant: "destructive" });
+    }
   };
 
-  const handleLogoutAllDevices = () => {
-    toast({ title: "Logged out of all devices" });
+  const refreshCredentials = async () => {
+    setLoadingCreds(true);
+    try {
+      const res = await apiFetch(new URL("/api/v1/auth/credentials", getApiBaseUrl()).toString());
+      if (res.ok) {
+        const json = await res.json().catch(() => null as any);
+        setCredentials(Array.isArray(json?.credentials) ? json.credentials : []);
+      }
+    } finally {
+      setLoadingCreds(false);
+    }
   };
 
-  const handleRegenerateKeys = () => {
-    const newKeys = generateRecoveryKeys(8);
-    actions.startRecoveryGate(newKeys);
-    setRecoveryKeysGenerated(true);
-    toast({ title: "Recovery keys regenerated", description: "Make sure to save them securely." });
+  useEffect(() => {
+    void refreshCredentials();
+    void refreshSessions();
+    // Sync display name from server on load to avoid stale cache
+    (async () => {
+      try {
+        const res = await forge.raw.GET('/api/v1/auth/me');
+        if (res.response.ok) {
+          const me = res.data as any;
+          if (me && typeof me.full_name === "string" && me.full_name.trim().length > 0) {
+            setFullName(me.full_name.trim());
+          }
+        }
+      } catch { /* ignore */ }
+    })();
+  }, []);
+
+  const handleLogoutAllDevices = async () => {
+    try {
+      await apiFetch(new URL("/api/v1/auth/logout-all", getApiBaseUrl()).toString(), {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: "{}",
+      });
+      toast({ title: "Logged out of all devices" });
+      void refreshCredentials();
+      void refreshSessions();
+    } catch {
+      toast({ title: "Failed to log out of all devices" });
+    }
+  };
+
+  const handleRegenerateKeys = async () => {
+    try {
+      const res = await apiFetch(new URL("/api/v1/auth/recovery/codes/generate", getApiBaseUrl()).toString(), {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: "{}",
+      });
+      if (!res.ok) {
+        const text = await res.text().catch(() => "");
+        toast({ title: "Failed to regenerate recovery keys", description: text || `${res.status}`, variant: "destructive" });
+        return;
+      }
+      const json = await res.json().catch(() => null as any);
+      const codes = Array.isArray(json?.codes) ? (json.codes as string[]) : generateRecoveryKeys(8);
+      actions.startRecoveryGate(codes, "/profile");
+      setRecoveryKeysGenerated(true);
+      toast({ title: "Recovery keys regenerated", description: "Make sure to save them securely." });
+    } catch { }
   };
 
 
-  const handleEndSession = (sessionId: string) => {
-    setSessions(prev => prev.filter(s => s.id !== sessionId));
-    toast({ title: "Session terminated" });
+  const handleEndSession = async (sessionId: string) => {
+    try {
+      const res = await apiFetch(new URL(`/api/v1/auth/sessions/${sessionId}`, getApiBaseUrl()).toString(), { method: "DELETE" });
+      if (res.status === 204) {
+        toast({ title: "Session terminated" });
+      } else {
+        const text = await res.text().catch(() => "");
+        toast({ title: "Failed to terminate session", description: text || `${res.status}`, variant: "destructive" });
+      }
+    } catch {
+      toast({ title: "Failed to terminate session", variant: "destructive" });
+    } finally {
+      void refreshSessions();
+    }
   };
 
-  const handleTerminateAllSessions = () => {
-    setSessions(prev => prev.filter(s => s.current));
-    toast({ title: "All other sessions terminated" });
+  const handleTerminateAllSessions = async () => {
+    try {
+      const targets = sessions.filter(s => !s.current).map(s => s.id);
+      await Promise.allSettled(targets.map(id => apiFetch(new URL(`/api/v1/auth/sessions/${id}`, getApiBaseUrl()).toString(), { method: "DELETE" })));
+      toast({ title: "All other sessions terminated" });
+    } catch {
+      toast({ title: "Failed to terminate all other sessions", variant: "destructive" });
+    } finally {
+      void refreshSessions();
+    }
+  };
+
+  const refreshSessions = async () => {
+    try {
+      const res = await apiFetch(new URL("/api/v1/auth/sessions", getApiBaseUrl()).toString());
+      if (!res.ok) return;
+      const json = await res.json().catch(() => null as any);
+      const items: Array<{ id: string; current: boolean; amr: string; device_id?: string | null; device_name?: string | null; created_at: string; last_activity_at: string; expires_at: string; user_agent?: string; ip_address?: string; }> = json?.sessions ?? [];
+      const mapped: UISession[] = items.map((s) => {
+        const amrLabel = s.amr === "device_link" ? `CLI device${s.device_name ? ` • ${s.device_name}` : ""}` : s.current ? "This browser" : "Passkey session";
+        return {
+          id: s.id,
+          browser: amrLabel,
+          amr: s.amr,
+          os: "",
+          location: "",
+          lastActivity: formatLastUsedLabel(s.last_activity_at),
+          loginDate: s.created_at,
+          current: !!s.current,
+          userAgent: s.user_agent || (json?.sessions?.find((x: any) => x.id === s.id)?.user_agent as string) || "",
+          ipAddress: s.ip_address || (json?.sessions?.find((x: any) => x.id === s.id)?.ip_address as string) || "",
+          lastActivityAtMs: new Date(s.last_activity_at).getTime() || 0,
+        };
+      });
+      mapped.sort((a, b) => {
+        if (a.current !== b.current) return a.current ? -1 : 1;
+        return b.lastActivityAtMs - a.lastActivityAtMs;
+      });
+      setSessions(mapped);
+    } catch {
+      // ignore
+    }
   };
 
   const handleDeleteAccount = () => {
     toast({ title: "Account deletion initiated", description: "Your account will be deleted within 24 hours." });
   };
 
+  const openRenameDialog = (cred: CredentialItem) => {
+    setRenameTarget(cred);
+    setRenameValue(cred.device_name ?? "");
+    setRenameOpen(true);
+  };
+
+  const formatLastUsedLabel = (iso?: string | null): string => {
+    if (!iso) return "—";
+    const d = new Date(iso);
+    const ms = Date.now() - d.getTime();
+    if (ms < 60 * 1000) return "Just now";
+    if (ms < 7 * 24 * 60 * 60 * 1000) {
+      return formatDistanceToNow(d, { addSuffix: true });
+    }
+    return format(d, "PP");
+  };
+
+  const isRecent = (iso?: string | null): boolean => {
+    if (!iso) return false;
+    return Date.now() - new Date(iso).getTime() < 24 * 60 * 60 * 1000;
+  };
+
+  const submitRename = async () => {
+    const target = renameTarget;
+    const newName = renameValue.trim();
+    if (!target || newName.length === 0 || newName === target.device_name) {
+      setRenameOpen(false);
+      return;
+    }
+    try {
+      const res = await apiFetch(new URL(`/api/v1/auth/credentials/${target.id}`, getApiBaseUrl()).toString(), {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ device_name: newName }),
+      });
+      if (res.status === 204) {
+        toast({ title: "Device renamed" });
+        setRenameOpen(false);
+        setRenameTarget(null);
+        setRenameValue("");
+        void refreshCredentials();
+      } else {
+        const text = await res.text().catch(() => "");
+        toast({ title: "Failed to rename device", description: text || `${res.status}`, variant: "destructive" });
+      }
+    } catch {
+      toast({ title: "Failed to rename device", variant: "destructive" });
+    }
+  };
+
   return (
     <div className="container mx-auto py-6 max-w-6xl">
       {helmet}
-      
+
       <div className="space-y-8">
         {/* Header */}
-        <section className="flex items-center justify-between gap-4 pb-6 border-b border-border/40">
+        <section className="flex items-center justify-between gap-4 pb-4 border-b border-border/50">
           <div className="flex items-center gap-4 min-w-0">
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Avatar className="h-12 w-12 shrink-0 cursor-pointer hover:opacity-80 transition-opacity">
+                  <Avatar
+                    className="h-12 w-12 shrink-0 cursor-pointer hover:opacity-80 transition-opacity rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                    role="button"
+                    tabIndex={0}
+                    aria-label="Edit profile"
+                    onClick={() => setIsEditDialogOpen(true)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        setIsEditDialogOpen(true);
+                      }
+                    }}
+                  >
                     <AvatarFallback className="bg-primary/10 text-primary font-medium">
                       {userInitials}
                     </AvatarFallback>
@@ -132,10 +317,14 @@ const Profile = () => {
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2">
                 <h1 className="truncate text-xl font-semibold">{fullName || state.session.user}</h1>
-                <span className="rounded-full bg-foreground/10 px-2 py-0.5 text-xs">Administrator</span>
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
+                {Array.isArray(state.session.roles) && state.session.roles.includes("admin") ? (
+                  <span className="rounded-full bg-muted px-2.5 py-0.5 text-[11px] font-medium text-muted-foreground">Administrator</span>
+                ) : (
+                  <span className="rounded-full bg-muted px-2.5 py-0.5 text-[11px] font-medium text-muted-foreground">Member</span>
+                )}
+                <Button
+                  variant="ghost"
+                  size="sm"
                   onClick={() => setIsEditDialogOpen(true)}
                   className="text-muted-foreground hover:text-foreground p-1 h-auto"
                   aria-label="Edit profile name"
@@ -169,31 +358,23 @@ const Profile = () => {
 
         {/* Grid */}
         <div className="mt-16 grid grid-cols-1 gap-6 lg:grid-cols-2">
-          {/* Authenticated Devices */}
+          {/* Passkeys & Security Keys */}
           <section className="space-y-4">
             <div className="flex items-baseline justify-between flex-wrap gap-2">
-              <h2 className="text-xl font-bold">Authenticated Devices</h2>
+              <h2 className="text-xl font-bold">Passkeys & Security Keys</h2>
               <div className="flex gap-2">
-                <Button 
-                  size="sm"
-                  onClick={() => {
-                    actions.addDevice("New Device");
-                    toast({ title: "Device added successfully", description: "The new device has been registered to your account." });
-                  }}
-                >
-                  + Add device
-                </Button>
+                <Button size="sm" onClick={() => toast({ title: "Register a new passkey from your browser (coming soon)" })}>+ Register passkey</Button>
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
                     <Button size="sm" variant="outline" className="text-destructive">
-                      Log out of all devices
+                      Log out of all sessions
                     </Button>
                   </AlertDialogTrigger>
                   <AlertDialogContent>
                     <AlertDialogHeader>
-                      <AlertDialogTitle>Log out of all devices?</AlertDialogTitle>
+                      <AlertDialogTitle>Log out of all sessions?</AlertDialogTitle>
                       <AlertDialogDescription>
-                        This will sign you out of all devices and sessions. You'll need to sign in again on each device.
+                        This will sign you out everywhere. You'll need to sign in again.
                       </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
@@ -207,42 +388,112 @@ const Profile = () => {
               </div>
             </div>
             <ul className="divide-y divide-border/40 rounded-lg border border-border/40">
-              {state.devices.length === 0 ? (
-                <li className="py-6 px-3 text-sm text-muted-foreground">No devices yet.</li>
+              {loadingCreds ? (
+                <>
+                  {[0, 1, 2].map(i => (
+                    <li key={i} className="py-3 px-3">
+                      <div className="flex items-center gap-3">
+                        <Skeleton className="h-4 w-4 rounded-full" />
+                        <div className="min-w-0 flex-1 space-y-1.5">
+                          <Skeleton className="h-4 w-40" />
+                          <Skeleton className="h-3 w-64" />
+                        </div>
+                      </div>
+                    </li>
+                  ))}
+                </>
+              ) : credentials.length === 0 ? (
+                <li className="py-6 px-3 text-sm text-muted-foreground">No passkeys yet.</li>
               ) : (
-                state.devices.map((device) => (
-                  <li key={device.id} className="flex items-center justify-between py-3 px-3">
+                [...credentials].sort((a, b) => {
+                  const ta = a.last_used_at ? new Date(a.last_used_at).getTime() : 0;
+                  const tb = b.last_used_at ? new Date(b.last_used_at).getTime() : 0;
+                  return tb - ta;
+                }).map((cred) => (
+                  <li key={cred.id} className="flex items-center justify-between py-3.5 px-3 hover:bg-accent/40 rounded-md transition-colors">
                     <div className="min-w-0 flex items-center gap-3">
                       <Key className="h-4 w-4 text-muted-foreground shrink-0" />
                       <div className="min-w-0">
-                        <div className="font-medium">{device.label}</div>
-                        <div className="text-xs text-muted-foreground">Added {format(new Date(device.addedAt), "PP")}</div>
+                        <div className="flex items-center gap-2">
+                          <div className="font-medium truncate">{cred.device_name}</div>
+                          {isRecent(cred.last_used_at) && (
+                            <span className="rounded-full bg-info/15 text-info px-2 py-0.5 text-[10px]">Recent</span>
+                          )}
+                        </div>
+                        <div className="text-xs text-muted-foreground space-y-0.5 leading-5">
+                          <div>Sign count {cred.sign_count}</div>
+                          <div>Last used {formatLastUsedLabel(cred.last_used_at)}</div>
+                        </div>
                       </div>
                     </div>
                     <div className="flex gap-2">
-                      <Button size="sm" variant="ghost" aria-label={`Rename ${device.label}`}>Rename</Button>
-                      <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                          <Button size="sm" variant="ghost" className="text-destructive" aria-label={`Delete ${device.label}`}>Delete</Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                          <AlertDialogHeader>
-                            <AlertDialogTitle>Remove device?</AlertDialogTitle>
-                            <AlertDialogDescription>
-                              This will remove "{device.label}" from your account. You'll need to re-authenticate if you want to use this device again.
-                            </AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <AlertDialogFooter>
-                            <AlertDialogCancel>Cancel</AlertDialogCancel>
-                            <AlertDialogAction 
-                              onClick={() => actions.removeDevice(device.id)}
-                              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                      <Button size="sm" variant="ghost" className="text-foreground/80 hover:text-foreground" aria-label={`Rename ${cred.device_name}`} onClick={() => openRenameDialog(cred)}>Rename</Button>
+                      {credentials.length <= 1 ? (
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <span className="inline-flex">
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  className="text-destructive"
+                                  aria-label={`Delete ${cred.device_name}`}
+                                  disabled
+                                >
+                                  Delete
+                                </Button>
+                              </span>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              You must keep at least one passkey
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      ) : (
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="text-destructive hover:text-destructive hover:bg-destructive/5"
+                              aria-label={`Delete ${cred.device_name}`}
                             >
-                              Remove
-                            </AlertDialogAction>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
+                              Delete
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Remove device?</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                This will remove "{cred.device_name}" from your account. You must have at least one passkey; the last one cannot be removed.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction
+                                onClick={async () => {
+                                  try {
+                                    const res = await forge.raw.DELETE(`/api/v1/auth/credentials/${cred.id}`);
+                                    if (res.response.status === 204) {
+                                      toast({ title: "Passkey removed" });
+                                    } else {
+                                      const text = await res.response.text().catch(() => "");
+                                      toast({ title: "Failed to remove passkey", description: text || `${res.response.status}` });
+                                    }
+                                  } catch {
+                                    toast({ title: "Failed to remove passkey" });
+                                  } finally {
+                                    void refreshCredentials();
+                                  }
+                                }}
+                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                              >
+                                Remove
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      )}
                     </div>
                   </li>
                 ))
@@ -269,7 +520,7 @@ const Profile = () => {
                   </AlertDialogHeader>
                   <AlertDialogFooter>
                     <AlertDialogCancel>Cancel</AlertDialogCancel>
-                    <AlertDialogAction 
+                    <AlertDialogAction
                       onClick={handleTerminateAllSessions}
                       className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                     >
@@ -284,29 +535,98 @@ const Profile = () => {
                 <li className="py-6 px-3 text-sm text-muted-foreground">No active sessions.</li>
               ) : (
                 sessions.map((session) => (
-                  <li key={session.id} className="grid grid-cols-[1fr_auto] items-center gap-3 py-3 px-3">
-                    <div className="min-w-0 flex items-center gap-3">
-                      <Monitor className="h-4 w-4 text-muted-foreground shrink-0" />
-                      <div className="min-w-0">
+                  <li
+                    key={session.id}
+                    className={cn(
+                      "grid grid-cols-[1fr_auto] items-start gap-3 py-4 px-4 hover:bg-accent/40 rounded-md transition-colors",
+                      session.current && "bg-success/5 ring-1 ring-success/20"
+                    )}
+                  >
+                    <div className="min-w-0 flex items-start gap-3">
+                      {session.amr === "device_link" ? (
+                        <Terminal className="mt-0.5 h-4 w-4 text-muted-foreground shrink-0" />
+                      ) : (
+                        <Monitor className="mt-0.5 h-4 w-4 text-muted-foreground shrink-0" />
+                      )}
+                      <div className="min-w-0 space-y-1">
                         <div className="flex items-center gap-2">
                           <div className="font-medium truncate">{session.browser}</div>
-                          {session.current && <span className="rounded-full bg-foreground/10 px-2 py-0.5 text-[10px]">Current</span>}
+                          {session.current && (
+                            <span className="rounded-full bg-success/15 text-success px-2.5 py-0.5 text-[11px] font-medium">Current</span>
+                          )}
                         </div>
-                        <div className="text-xs text-muted-foreground truncate">
-                          {session.os} • {session.location} • Last activity {session.lastActivity}
+                        <div className="mt-1 grid grid-cols-[auto,1fr] gap-x-3 gap-y-1 text-sm text-muted-foreground">
+                          {session.lastActivity && (
+                            <>
+                              <div className="text-muted-foreground/80">Last activity</div>
+                              <div className="truncate pl-1.5">{session.lastActivity}</div>
+                            </>
+                          )}
+                          {session.ipAddress && (
+                            <>
+                              <div className="text-muted-foreground/80">IP</div>
+                              <div className="truncate">
+                                {(() => {
+                                  const copied = copiedSessionId === session.id;
+                                  return (
+                                    <button
+                                      type="button"
+                                      onClick={async () => {
+                                        await navigator.clipboard.writeText(session.ipAddress!);
+                                        setCopiedSessionId(session.id);
+                                        window.setTimeout(() => setCopiedSessionId(null), 1500);
+                                      }}
+                                      className={cn(
+                                        "inline-flex items-center gap-1 rounded px-1.5 py-0.5 font-mono focus:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                                        copied ? "bg-success/15 text-success ring-1 ring-success/30" : "bg-muted/70 hover:bg-muted"
+                                      )}
+                                      aria-live="polite"
+                                      aria-label={copied ? "Copied" : `Copy IP ${session.ipAddress}`}
+                                      title={copied ? "Copied!" : "Copy IP"}
+                                    >
+                                      {copied ? (
+                                        <>
+                                          <Check className="h-3 w-3" /> Copied
+                                        </>
+                                      ) : (
+                                        session.ipAddress
+                                      )}
+                                    </button>
+                                  );
+                                })()}
+                              </div>
+                            </>
+                          )}
+                          {session.userAgent && (
+                            <>
+                              <div className="text-muted-foreground/80">User agent</div>
+                              <div className="truncate pl-1.5">
+                                <TooltipProvider>
+                                  <Tooltip>
+                                    <TooltipTrigger className="underline decoration-dotted">View</TooltipTrigger>
+                                    <TooltipContent className="max-w-xs break-words">
+                                      {session.userAgent}
+                                    </TooltipContent>
+                                  </Tooltip>
+                                </TooltipProvider>
+                              </div>
+                            </>
+                          )}
                         </div>
                       </div>
                     </div>
                     {!session.current && (
-                      <Button 
-                        size="sm" 
-                        variant="ghost" 
-                        className="justify-self-end"
-                        onClick={() => handleEndSession(session.id)}
-                        aria-label={`End session on ${session.browser}`}
-                      >
-                        End session
-                      </Button>
+                      <div className="self-center">
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="min-w-[7.5rem] justify-center"
+                          onClick={() => handleEndSession(session.id)}
+                          aria-label={`End session on ${session.browser}`}
+                        >
+                          End session
+                        </Button>
+                      </div>
                     )}
                   </li>
                 ))
@@ -335,7 +655,7 @@ const Profile = () => {
                 </AlertDialogHeader>
                 <AlertDialogFooter>
                   <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction 
+                  <AlertDialogAction
                     onClick={handleRegenerateKeys}
                     className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                   >
@@ -347,7 +667,7 @@ const Profile = () => {
           </div>
           <div className="flex items-center gap-2">
             <p className="text-sm text-muted-foreground/70">
-              {recoveryKeysGenerated 
+              {recoveryKeysGenerated
                 ? `Last regenerated ${format(lastRecoveryDate, "PP")}`
                 : "Never generated"
               }
@@ -363,9 +683,9 @@ const Profile = () => {
               </Tooltip>
             </TooltipProvider>
           </div>
-          <div className="flex items-center gap-2 p-3 rounded-lg bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800">
-            <Info className="h-4 w-4 text-blue-600 dark:text-blue-400 shrink-0" />
-            <p className="text-sm text-blue-800 dark:text-blue-200">
+          <div className="flex items-center gap-2 p-3 rounded-lg bg-info/10 border border-info/30">
+            <Info className="h-4 w-4 text-info shrink-0" />
+            <p className="text-sm text-foreground">
               Your recovery keys can only be viewed right after they're generated. If you've lost them, regenerate to create new keys.
             </p>
           </div>
@@ -393,7 +713,7 @@ const Profile = () => {
               </AlertDialogHeader>
               <AlertDialogFooter>
                 <AlertDialogCancel>Cancel</AlertDialogCancel>
-                <AlertDialogAction 
+                <AlertDialogAction
                   onClick={handleDeleteAccount}
                   className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                 >
@@ -411,6 +731,36 @@ const Profile = () => {
         currentName={fullName}
         onSave={handleSave}
       />
+
+      {/* Rename device dialog */}
+      <Dialog open={renameOpen} onOpenChange={setRenameOpen}>
+        <DialogContent className="sm:max-w-[400px]">
+          <DialogHeader>
+            <DialogTitle>Rename device</DialogTitle>
+            <DialogDescription id="rename-device-description">
+              Update the display name for this passkey.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3 pt-2">
+            <Input
+              value={renameValue}
+              onChange={(e) => setRenameValue(e.target.value)}
+              placeholder="Device name"
+              autoFocus
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  void submitRename();
+                }
+              }}
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setRenameOpen(false)}>Cancel</Button>
+            <Button onClick={() => void submitRename()} disabled={renameValue.trim().length === 0 || (renameTarget && renameValue.trim() === renameTarget.device_name)}>Save</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

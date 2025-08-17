@@ -94,16 +94,9 @@ func (h *BuildHandler) Create(c *gin.Context) {
 // @Failure 500 {object} contracts.ErrorResponse "Internal server error"
 // @Router /api/v1/builds/{id} [get]
 func (h *BuildHandler) GetByID(c *gin.Context) {
-	type pathParam struct {
-		BuildID string `uri:"build_id" binding:"required,uuid4"`
-	}
-	var p pathParam
-	if err := c.ShouldBindUri(&p); err != nil {
-		h.RespondWithValidationError(c, err)
-		return
-	}
+	idStr := c.Param("build_id")
 
-	id, err := h.ParseUUID(p.BuildID)
+	id, err := h.ParseUUID(idStr)
 	if err != nil {
 		h.RespondWithValidationError(c, err)
 		return
@@ -222,14 +215,7 @@ func (h *BuildHandler) List(c *gin.Context) {
 // @Failure 500 {object} contracts.ErrorResponse "Internal server error"
 // @Router /api/v1/builds/{id} [patch]
 func (h *BuildHandler) Update(c *gin.Context) {
-	type pathParam struct {
-		BuildID string `uri:"build_id" binding:"required,uuid4"`
-	}
-	var p pathParam
-	if err := c.ShouldBindUri(&p); err != nil {
-		h.RespondWithValidationError(c, err)
-		return
-	}
+	idStr := c.Param("build_id")
 
 	var req contracts.BuildUpdate
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -249,7 +235,7 @@ func (h *BuildHandler) Update(c *gin.Context) {
 		svcReq.Status = &status
 	}
 
-	id, err := h.ParseUUID(p.BuildID)
+	id, err := h.ParseUUID(idStr)
 	if err != nil {
 		h.RespondWithValidationError(c, err)
 		return
@@ -287,14 +273,7 @@ func (h *BuildHandler) Update(c *gin.Context) {
 // @Failure 500 {object} contracts.ErrorResponse "Internal server error"
 // @Router /api/v1/builds/{id}/status [patch]
 func (h *BuildHandler) UpdateStatus(c *gin.Context) {
-	type pathParam struct {
-		BuildID string `uri:"build_id" binding:"required,uuid4"`
-	}
-	var p pathParam
-	if err := c.ShouldBindUri(&p); err != nil {
-		h.RespondWithValidationError(c, err)
-		return
-	}
+	idStr := c.Param("build_id")
 
 	var req contracts.BuildStatusUpdate
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -304,7 +283,7 @@ func (h *BuildHandler) UpdateStatus(c *gin.Context) {
 
 	status := enums.BuildStatus(req.Status)
 
-	id, err := h.ParseUUID(p.BuildID)
+	id, err := h.ParseUUID(idStr)
 	if err != nil {
 		h.RespondWithValidationError(c, err)
 		return

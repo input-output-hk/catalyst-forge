@@ -1,0 +1,15 @@
+:80 {
+	encode zstd gzip
+
+	# Proxy API requests to the API service to avoid CORS in dev
+	handle_path /api/* {
+		reverse_proxy http://api:5050
+	}
+
+	# Static SPA
+	root * /usr/share/caddy
+	file_server
+	try_files {path} /index.html
+}
+
+

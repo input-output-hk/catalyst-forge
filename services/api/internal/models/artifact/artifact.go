@@ -35,17 +35,21 @@ func (j *JSONB) Scan(value any) error {
 
 // Artifact represents outputs produced by builds (images, indices, assets, sboms)
 type Artifact struct {
-	ID        uuid.UUID  `gorm:"type:uuid;primaryKey;default:gen_random_uuid()" json:"id"`
-	BuildID   uuid.UUID  `gorm:"type:uuid;not null" json:"build_id"`
-	Kind      string     `gorm:"not null" json:"kind"` // e.g., 'oci-image','oci-index','github-asset','s3-object','sbom'
-	Name      *string    `json:"name,omitempty"`        // display name/repository/filename
-	URI       *string    `json:"uri,omitempty"`
-	MediaType *string    `json:"media_type,omitempty"`
-	Digest    *string    `gorm:"uniqueIndex:ux_artifact_digest,where:digest IS NOT NULL" json:"digest,omitempty"`
-	SizeBytes *int64     `json:"size_bytes,omitempty"`
-	Labels    JSONB      `gorm:"type:jsonb" json:"labels,omitempty"`
-	Metadata  JSONB      `gorm:"type:jsonb" json:"metadata,omitempty"`
-	CreatedAt time.Time  `gorm:"not null;default:now()" json:"created_at"`
+	ID                  uuid.UUID  `gorm:"type:uuid;primaryKey;default:gen_random_uuid()" json:"id"`
+	BuildID             uuid.UUID  `gorm:"type:uuid;not null" json:"build_id"`
+	Kind                string     `gorm:"not null" json:"kind"` // e.g., 'oci-image','oci-index','github-asset','s3-object','sbom'
+	Name                *string    `json:"name,omitempty"`       // display name/repository/filename
+	URI                 *string    `json:"uri,omitempty"`
+	MediaType           *string    `json:"media_type,omitempty"`
+	Digest              *string    `gorm:"uniqueIndex:ux_artifact_digest,where:digest IS NOT NULL" json:"digest,omitempty"`
+	SizeBytes           *int64     `json:"size_bytes,omitempty"`
+	Labels              JSONB      `gorm:"type:jsonb" json:"labels,omitempty"`
+	Metadata            JSONB      `gorm:"type:jsonb" json:"metadata,omitempty"`
+	Signed              bool       `gorm:"not null;default:false" json:"signed"`
+	SigIssuer           *string    `json:"sig_issuer,omitempty"`
+	SigSubject          *string    `json:"sig_subject,omitempty"`
+	SignatureVerifiedAt *time.Time `json:"signature_verified_at,omitempty"`
+	CreatedAt           time.Time  `gorm:"not null;default:now()" json:"created_at"`
 }
 
 // TableName specifies the table name

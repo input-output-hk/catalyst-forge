@@ -1,15 +1,16 @@
 package middleware
 
 import (
-    "net/http"
-    "time"
+	"net/http"
+	"time"
 
-    "github.com/input-output-hk/catalyst-forge/services/api/internal/authkit/authkit"
-    basehttpkit "github.com/catalystgo/catalyst-forge/lib/foundry/httpkit"
-    "github.com/input-output-hk/catalyst-forge/services/api/internal/authkit/service"
-    "github.com/input-output-hk/catalyst-forge/services/api/internal/authkit/store"
-    "github.com/gin-gonic/gin"
-    "github.com/google/uuid"
+	basehttpkit "github.com/catalystgo/catalyst-forge/lib/foundry/httpkit"
+	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
+	"github.com/input-output-hk/catalyst-forge/services/api/internal/authkit/authkit"
+	authhttp "github.com/input-output-hk/catalyst-forge/services/api/internal/authkit/httpkit"
+	"github.com/input-output-hk/catalyst-forge/services/api/internal/authkit/service"
+	"github.com/input-output-hk/catalyst-forge/services/api/internal/authkit/store"
 )
 
 // Authenticator provides JWT authentication middleware.
@@ -41,11 +42,16 @@ func NewAuthenticator(tokenService service.TokenService, userStore store.UserSto
 func (a *Authenticator) Authenticate() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// Extract bearer token
-        token, err := basehttpkit.GetBearerToken(c.Request)
+		token, err := basehttpkit.GetBearerToken(c.Request)
 		if err != nil || token == "" {
-			// No token provided, continue without auth
-			c.Next()
-			return
+			// Try cookie-based access token (browser flow)
+			if v, cerr := authhttp.GetAccessCookie(c.Request); cerr == nil && v != "" {
+				token = v
+			} else {
+				// No token provided, continue without auth
+				c.Next()
+				return
+			}
 		}
 
 		// Verify the JWT
@@ -101,6 +107,7 @@ func (a *Authenticator) Authenticate() gin.HandlerFunc {
 		authCtx := authkit.AuthContext{
 			UserID:           userID,
 			Email:            user.Email,
+			FullName:         user.FullName,
 			Roles:            user.Roles,
 			Permissions:      user.Permissions,
 			SessionVersion:   user.SessionVersion,
@@ -124,7 +131,7 @@ func RequireAuth() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		ctx, ok := authkit.From(c)
 		if !ok || !ctx.IsAuthenticated() {
-            basehttpkit.ErrorResponse(c.Writer, http.StatusUnauthorized, "unauthorized", "Authentication required")
+			basehttpkit.ErrorResponse(c.Writer, http.StatusUnauthorized, "unauthorized", "Authentication required")
 			c.Abort()
 			return
 		}
@@ -139,14 +146,14 @@ func RequireStepUp() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		ctx, ok := authkit.From(c)
 		if !ok || !ctx.IsAuthenticated() {
-            basehttpkit.ErrorResponse(c.Writer, http.StatusUnauthorized, "unauthorized", "Authentication required")
+			basehttpkit.ErrorResponse(c.Writer, http.StatusUnauthorized, "unauthorized", "Authentication required")
 			c.Abort()
 			return
 		}
 
 		// Check if step-up is still valid
 		if ctx.RequiresStepUp(time.Now().UTC()) {
-            basehttpkit.ErrorResponse(c.Writer, http.StatusPreconditionRequired, "step_up_required", "Step-up authentication required")
+			basehttpkit.ErrorResponse(c.Writer, http.StatusPreconditionRequired, "step_up_required", "Step-up authentication required")
 			c.Abort()
 			return
 		}
@@ -154,7 +161,6 @@ func RequireStepUp() gin.HandlerFunc {
 		c.Next()
 	}
 }
-
 
 // OptionalAuth is an alias for Authenticate that makes the intent clearer.
 //

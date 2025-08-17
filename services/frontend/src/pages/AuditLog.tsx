@@ -1,49 +1,80 @@
-import { useAppStore } from "@/store/app-store";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { usePageTitle } from "@/hooks/usePageTitle";
+import { forge } from "@/lib/client";
+import type { paths } from "forge-client";
 
 const AuditLog = () => {
-  const { state } = useAppStore();
+  const [rows, setRows] = useState<Array<{ id: string; type: string; actor_id?: string; user_id?: string; metadata?: Record<string, unknown>; created_at: string }>>([]);
+  const [loading, setLoading] = useState(false);
   const [actor, setActor] = useState("");
-  const [action, setAction] = useState("");
-  const [resource, setResource] = useState("");
+  const [types, setTypes] = useState("");
   const helmet = usePageTitle("Audit Log – Catalyst Forge", "Filterable timeline of actions.", "/audit");
 
-  const rows = useMemo(() => state.audit.filter((e) =>
-    (!actor || e.actor.includes(actor)) && (!action || e.action.includes(action)) && (!resource || e.resource.includes(resource))
-  ), [state.audit, actor, action, resource]);
+  const filtered = useMemo(() => rows.filter((e) =>
+    (!actor || (e.actor_id || "").includes(actor)) && (!types || types.split(",").some(t => e.type.includes(t.trim())))
+  ), [rows, actor, types]);
+
+  useEffect(() => {
+    (async () => {
+      setLoading(true);
+      try {
+        const res = await forge.raw.GET('/api/v1/admin/audit', {
+          params: {
+            query: {
+              actor_id: actor.trim() || undefined,
+              types: types.trim() || undefined,
+              limit: 200,
+            },
+          },
+        });
+        if (!res.response.ok) return;
+        type AuditResponse = paths["/api/v1/admin/audit"]["get"]["responses"][200]["content"]["application/json"];
+        const data = res.data as AuditResponse | undefined;
+        setRows((data?.events || []).map(e => ({
+          id: e.id || "",
+          type: e.type || "",
+          actor_id: e.actor_id,
+          user_id: e.user_id,
+          metadata: (e.metadata as Record<string, unknown>) || undefined,
+          created_at: e.created_at || "",
+        })));
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, [actor, types]);
 
   return (
     <section className="container py-8">
       {helmet}
       <h1 className="text-2xl font-bold mb-1">Audit Log</h1>
       <span className="forge-arc mt-1 mb-4 block" aria-hidden />
-      <div className="grid md:grid-cols-4 gap-2 mb-4">
-        <Input placeholder="Actor" value={actor} onChange={(e) => setActor(e.target.value)} />
-        <Input placeholder="Action" value={action} onChange={(e) => setAction(e.target.value)} />
-        <Input placeholder="Resource" value={resource} onChange={(e) => setResource(e.target.value)} />
+      <div className="grid md:grid-cols-3 gap-2 mb-4">
+        <Input placeholder="Actor ID" value={actor} onChange={(e) => setActor(e.target.value)} />
+        <Input placeholder="Types (comma-separated)" value={types} onChange={(e) => setTypes(e.target.value)} />
+        <Input readOnly value={loading ? "Loading…" : `${filtered.length} events`} />
       </div>
       <Table>
         <TableHeader>
           <TableRow>
             <TableHead>Time</TableHead>
             <TableHead>Actor</TableHead>
-            <TableHead>Action</TableHead>
-            <TableHead>Resource</TableHead>
+            <TableHead>Type</TableHead>
+            <TableHead>Meta</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
-          {rows.map((e) => (
+          {filtered.map((e) => (
             <TableRow key={e.id}>
-              <TableCell>{new Date(e.timestamp).toLocaleString()}</TableCell>
-              <TableCell>{e.actor}</TableCell>
-              <TableCell>{e.action}</TableCell>
-              <TableCell>{e.resource}</TableCell>
+              <TableCell>{new Date(e.created_at).toLocaleString()}</TableCell>
+              <TableCell>{e.actor_id || ""}</TableCell>
+              <TableCell>{e.type}</TableCell>
+              <TableCell className="max-w-[420px] truncate">{e.metadata ? JSON.stringify(e.metadata) : ""}</TableCell>
             </TableRow>
           ))}
-          {rows.length === 0 && (
+          {filtered.length === 0 && (
             <TableRow>
               <TableCell colSpan={4} className="text-muted-foreground">No results</TableCell>
             </TableRow>

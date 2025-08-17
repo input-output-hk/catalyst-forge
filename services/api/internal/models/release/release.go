@@ -41,6 +41,8 @@ type Release struct {
 	ID                  uuid.UUID           `gorm:"type:uuid;primaryKey;default:gen_random_uuid()" json:"id"`
 	ProjectID           uuid.UUID           `gorm:"type:uuid;not null" json:"project_id"`
 	ReleaseKey          string              `gorm:"not null;uniqueIndex:ux_release_project_key,priority:2" json:"release_key"`
+	Alias               *string             `json:"alias,omitempty"`
+	Semver              *string             `json:"semver,omitempty"`
 	TraceID             *uuid.UUID          `gorm:"type:uuid" json:"trace_id,omitempty"`
 	SourceCommit        string              `gorm:"not null" json:"source_commit"`
 	SourceBranch        *string             `json:"source_branch,omitempty"`

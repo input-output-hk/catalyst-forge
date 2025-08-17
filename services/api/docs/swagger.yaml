@@ -1,5 +1,264 @@
 components:
   schemas:
+    auth.AccessRequest:
+      properties:
+        attempts:
+          type: integer
+        created_at:
+          type: string
+        decided_at:
+          type: string
+        email:
+          type: string
+        id:
+          type: string
+        reason:
+          type: string
+        status:
+          type: string
+      type: object
+    auth.AccessRequestDecideRequest:
+      properties:
+        approve:
+          type: boolean
+        note:
+          type: string
+      type: object
+    auth.AccessRequestListResponse:
+      properties:
+        requests:
+          items:
+            $ref: '#/components/schemas/auth.AccessRequest'
+          type: array
+          uniqueItems: false
+        total:
+          type: integer
+      type: object
+    auth.AccessTokenResponse:
+      properties:
+        access_token:
+          type: string
+      type: object
+    auth.AdminInviteCreateRequest:
+      properties:
+        days_to_expire:
+          type: integer
+        email:
+          type: string
+        email_user:
+          type: boolean
+        roles:
+          items:
+            type: string
+          type: array
+          uniqueItems: false
+      type: object
+    auth.AdminInviteCreateResponse:
+      properties:
+        expires_at:
+          type: string
+        invite_id:
+          type: string
+        invite_link:
+          type: string
+      type: object
+    auth.AdminUser:
+      properties:
+        active_sessions:
+          type: integer
+        created_at:
+          type: string
+        email:
+          type: string
+        id:
+          type: string
+        last_activity_at:
+          type: string
+        roles:
+          items:
+            type: string
+          type: array
+          uniqueItems: false
+        updated_at:
+          type: string
+      type: object
+    auth.AdminUsersListResponse:
+      properties:
+        users:
+          items:
+            $ref: '#/components/schemas/auth.AdminUser'
+          type: array
+          uniqueItems: false
+      type: object
+    auth.AuditEvent:
+      properties:
+        actor_id:
+          type: string
+        created_at:
+          type: string
+        id:
+          type: string
+        ip_address:
+          type: string
+        metadata:
+          additionalProperties: {}
+          type: object
+        type:
+          type: string
+        user_agent:
+          type: string
+        user_id:
+          type: string
+      type: object
+    auth.AuditListResponse:
+      properties:
+        events:
+          items:
+            $ref: '#/components/schemas/auth.AuditEvent'
+          type: array
+          uniqueItems: false
+        total:
+          type: integer
+      type: object
+    auth.AuthorizeDeviceLinkRequest:
+      properties:
+        user_code:
+          example: ABCD-123
+          type: string
+      required:
+      - user_code
+      type: object
+    auth.BeginDeviceLinkRequest:
+      properties:
+        device_name:
+          example: My CLI
+          type: string
+        purpose:
+          enum:
+          - login
+          - step_up
+          example: login
+          type: string
+      type: object
+    auth.BootstrapRequest:
+      properties:
+        bootstrap_token:
+          type: string
+        email:
+          type: string
+      type: object
+    auth.BootstrapResponse:
+      properties:
+        email:
+          type: string
+        token_hash:
+          type: string
+        user_id:
+          type: string
+      type: object
+    auth.CredentialSummary:
+      properties:
+        aaguid:
+          type: string
+        device_name:
+          type: string
+        id:
+          type: string
+        last_used_at:
+          type: string
+        sign_count:
+          type: integer
+      type: object
+    auth.CredentialsAddBeginRequest:
+      properties:
+        device_name:
+          type: string
+      type: object
+    auth.CredentialsAddCompleteRequest:
+      properties:
+        credential:
+          type: object
+        session_key:
+          type: string
+      type: object
+    auth.CredentialsListResponse:
+      properties:
+        credentials:
+          items:
+            $ref: '#/components/schemas/auth.CredentialSummary'
+          type: array
+          uniqueItems: false
+      type: object
+    auth.DeviceInfo:
+      properties:
+        created_at:
+          example: "2024-01-01T00:00:00Z"
+          type: string
+        device_name:
+          example: My CLI
+          type: string
+        id:
+          example: 550e8400-e29b-41d4-a716-446655440000
+          type: string
+        is_current:
+          example: false
+          type: boolean
+        last_used_at:
+          example: "2024-01-02T15:04:05Z"
+          type: string
+      type: object
+    auth.DeviceLinkVerificationResponse:
+      properties:
+        authorized:
+          example: false
+          type: boolean
+        device_name:
+          example: My CLI
+          type: string
+        expires_at:
+          example: "2024-01-02T15:04:05Z"
+          type: string
+        purpose:
+          enum:
+          - login
+          - step_up
+          example: login
+          type: string
+      type: object
+    auth.DeviceListResponse:
+      properties:
+        devices:
+          items:
+            $ref: '#/components/schemas/auth.DeviceInfo'
+          type: array
+          uniqueItems: false
+      type: object
+    auth.DeviceResponse:
+      properties:
+        created_at:
+          example: "2024-01-01T00:00:00Z"
+          type: string
+        device_name:
+          example: My CLI
+          type: string
+        id:
+          example: 550e8400-e29b-41d4-a716-446655440000
+          type: string
+        is_current:
+          example: false
+          type: boolean
+        last_used_at:
+          example: "2024-01-02T15:04:05Z"
+          type: string
+      type: object
+    auth.ExchangeDeviceCodeRequest:
+      properties:
+        device_code:
+          example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+          type: string
+      required:
+      - device_code
+      type: object
     auth.GithubPolicyCreateRequest:
       properties:
         enabled:
@@ -58,6 +317,193 @@ components:
             type: string
           type: array
           uniqueItems: false
+      type: object
+    auth.GithubPolicyUpdateRequest:
+      properties:
+        enabled:
+          type: boolean
+        environments:
+          items:
+            type: string
+          type: array
+          uniqueItems: false
+        refs:
+          items:
+            type: string
+          type: array
+          uniqueItems: false
+        roles:
+          items:
+            type: string
+          type: array
+          uniqueItems: false
+        workflows:
+          items:
+            type: string
+          type: array
+          uniqueItems: false
+      required:
+      - roles
+      type: object
+    auth.InvitePreviewResponse:
+      properties:
+        email:
+          type: string
+        expires_at:
+          type: string
+        reason:
+          type: string
+        valid:
+          type: boolean
+      type: object
+    auth.LoginCompleteRequest:
+      properties:
+        credential:
+          type: object
+        session_key:
+          type: string
+      type: object
+    auth.LoginCompleteResponse:
+      properties:
+        access_token:
+          type: string
+        user:
+          $ref: '#/components/schemas/auth.UserSummary'
+      type: object
+    auth.MeResponse:
+      properties:
+        email:
+          type: string
+        full_name:
+          type: string
+        id:
+          type: string
+        roles:
+          items:
+            type: string
+          type: array
+          uniqueItems: false
+      type: object
+    auth.OnboardBeginRequest:
+      properties:
+        device_name:
+          type: string
+        invite_id:
+          type: string
+        token:
+          type: string
+      type: object
+    auth.OnboardBeginResponse:
+      properties:
+        publicKey:
+          type: object
+        session_key:
+          type: string
+        user_id:
+          type: string
+      type: object
+    auth.OnboardCompleteRequest:
+      properties:
+        credential:
+          type: object
+        invite_id:
+          type: string
+        session_key:
+          type: string
+      type: object
+    auth.PublicKeyOptionsResponse:
+      properties:
+        publicKey:
+          type: object
+        session_key:
+          type: string
+      type: object
+    auth.RecoveryGenerateResponse:
+      properties:
+        codes:
+          items:
+            type: string
+          type: array
+          uniqueItems: false
+      type: object
+    auth.RecoveryInitRequest:
+      properties:
+        email:
+          type: string
+      type: object
+    auth.RecoveryInitResponse:
+      properties:
+        flow_id:
+          type: string
+      type: object
+    auth.RecoveryRegisterBeginRequest:
+      properties:
+        device_name:
+          type: string
+        flow_id:
+          type: string
+      type: object
+    auth.RecoveryRegisterCompleteRequest:
+      properties:
+        credential:
+          type: object
+        flow_id:
+          type: string
+        session_key:
+          type: string
+      type: object
+    auth.RecoveryVerifyRequest:
+      properties:
+        code:
+          type: string
+        flow_id:
+          type: string
+      type: object
+    auth.RecoveryVerifyResponse:
+      properties:
+        flow_id:
+          type: string
+        user_id:
+          type: string
+      type: object
+    auth.SessionResponse:
+      properties:
+        session_version:
+          type: integer
+        step_up_required:
+          type: boolean
+        step_up_until:
+          type: string
+        valid:
+          type: boolean
+      type: object
+    auth.StepUpCompleteRequest:
+      properties:
+        credential:
+          type: object
+        session_key:
+          type: string
+      type: object
+    auth.UserSummary:
+      properties:
+        email:
+          type: string
+        full_name:
+          type: string
+        id:
+          type: string
+        roles:
+          items:
+            type: string
+          type: array
+          uniqueItems: false
+      type: object
+    auth.ghaExchangeRequest:
+      properties:
+        id_token:
+          type: string
+      required:
+      - id_token
       type: object
     contracts.ArtifactCreate:
       properties:
@@ -294,10 +740,13 @@ components:
         status:
           enum:
           - pending
-          - submitted
+          - rendered
+          - pushed
+          - reconciling
+          - healthy
+          - degraded
           - failed
-          - succeeded
-          - canceled
+          - rolled_back
           type: string
         status_reason:
           type: string
@@ -349,10 +798,13 @@ components:
         status:
           enum:
           - pending
-          - submitted
+          - rendered
+          - pushed
+          - reconciling
+          - healthy
+          - degraded
           - failed
-          - succeeded
-          - canceled
+          - rolled_back
           type: string
         status_reason:
           type: string
@@ -800,8 +1252,6 @@ components:
       properties:
         bundle_hash:
           type: string
-        deployment_id:
-          type: string
         module_versions:
           items:
             $ref: '#/components/schemas/contracts.ModuleVersion'
@@ -809,8 +1259,6 @@ components:
           uniqueItems: false
         renderer_version:
           type: string
-      required:
-      - deployment_id
       type: object
     contracts.RenderJobResponse:
       properties:
@@ -1029,6 +1477,51 @@ components:
           example: "123456789"
           type: string
       type: object
+    service.DeviceLinkResponse:
+      properties:
+        device_code:
+          type: string
+        expires_in:
+          type: integer
+        interval:
+          type: integer
+        user_code:
+          type: string
+        verification_uri:
+          type: string
+        verification_uri_complete:
+          type: string
+      type: object
+    service.ExchangeResponse:
+      properties:
+        access_token:
+          type: string
+        device_id:
+          type: string
+        expires_in:
+          type: integer
+        refresh_expires_in:
+          type: integer
+        refresh_token:
+          type: string
+        status:
+          description: '"authorization_pending", "slow_down", "expired_token"'
+          type: string
+        user:
+          $ref: '#/components/schemas/service.UserInfo'
+      type: object
+    service.UserInfo:
+      properties:
+        email:
+          type: string
+        id:
+          type: string
+        roles:
+          items:
+            type: string
+          type: array
+          uniqueItems: false
+      type: object
 externalDocs:
   description: ""
   url: ""
@@ -1056,6 +1549,216 @@ paths:
       summary: Get JWKS
       tags:
       - auth
+  /api/v1/admin/access-requests:
+    get:
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/auth.AccessRequestListResponse'
+          description: OK
+      summary: List access requests (admin)
+      tags:
+      - admin
+  /api/v1/admin/access-requests/{id}:
+    patch:
+      parameters:
+      - description: Access Request ID
+        in: path
+        name: id
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/auth.AccessRequestDecideRequest'
+        description: Decision
+        required: true
+      responses:
+        "204":
+          description: No Content
+      summary: Decide access request (admin)
+      tags:
+      - admin
+  /api/v1/admin/audit:
+    get:
+      parameters:
+      - description: Filter by actor ID (UUID)
+        in: query
+        name: actor_id
+        schema:
+          type: string
+      - description: Filter by user ID (UUID)
+        in: query
+        name: user_id
+        schema:
+          type: string
+      - description: Comma-separated event types
+        in: query
+        name: types
+        schema:
+          type: string
+      - description: Filter events created at or after this RFC3339 timestamp
+        in: query
+        name: since
+        schema:
+          type: string
+      - description: Filter events created before this RFC3339 timestamp
+        in: query
+        name: until
+        schema:
+          type: string
+      - description: Max results (1-200)
+        in: query
+        name: limit
+        schema:
+          default: 50
+          type: integer
+      - description: Offset for pagination
+        in: query
+        name: offset
+        schema:
+          default: 0
+          type: integer
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/auth.AuditListResponse'
+          description: OK
+      summary: List audit events (admin)
+      tags:
+      - admin
+  /api/v1/admin/invites:
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/auth.AdminInviteCreateRequest'
+        description: Invite create request
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/auth.AdminInviteCreateResponse'
+          description: Created
+      summary: Create invite (admin)
+      tags:
+      - admin
+  /api/v1/admin/invites/preview:
+    get:
+      parameters:
+      - description: Invite token (base64url)
+        in: query
+        name: token
+        schema:
+          type: string
+      - description: Invite ID (UUID)
+        in: query
+        name: id
+        schema:
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/auth.InvitePreviewResponse'
+          description: OK
+      summary: Preview invite (public)
+      tags:
+      - admin
+  /api/v1/admin/users:
+    get:
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/auth.AdminUsersListResponse'
+          description: OK
+      summary: List users (admin)
+      tags:
+      - admin
+  /api/v1/admin/users/{id}:
+    delete:
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        schema:
+          type: string
+      responses:
+        "204":
+          description: No Content
+      summary: Delete a user (admin)
+      tags:
+      - admin
+    patch:
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        "204":
+          description: No Content
+      summary: Update a user (admin)
+      tags:
+      - admin
+  /api/v1/admin/users/{id}/credentials:
+    get:
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/auth.CredentialsListResponse'
+          description: OK
+      summary: List user credentials (admin)
+      tags:
+      - admin
+  /api/v1/admin/users/{id}/recovery/codes/generate:
+    post:
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/auth.RecoveryGenerateResponse'
+          description: OK
+      summary: Generate recovery codes for a user (admin)
+      tags:
+      - admin
   /api/v1/artifacts:
     get:
       description: List artifacts with optional filtering and pagination
@@ -1368,7 +2071,363 @@ paths:
       summary: Get an artifact by digest
       tags:
       - artifacts
+  /api/v1/auth/bootstrap:
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/auth.BootstrapRequest'
+        description: Bootstrap request
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/auth.BootstrapResponse'
+          description: Created
+        "404":
+          content:
+            application/json:
+              schema:
+                additionalProperties: {}
+                type: object
+          description: Not Found
+      summary: Admin bootstrap
+      tags:
+      - auth
+  /api/v1/auth/credentials:
+    get:
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/auth.CredentialsListResponse'
+          description: OK
+      summary: List credentials
+      tags:
+      - auth
+  /api/v1/auth/credentials/{credentialId}:
+    delete:
+      parameters:
+      - description: Credential ID
+        in: path
+        name: credentialId
+        required: true
+        schema:
+          type: string
+      responses:
+        "204":
+          description: No Content
+      summary: Delete credential
+      tags:
+      - auth
+  /api/v1/auth/credentials/{id}:
+    patch:
+      parameters:
+      - description: Credential ID (base64url)
+        in: path
+        name: id
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        "204":
+          description: No Content
+      summary: Update credential device name
+      tags:
+      - auth
+  /api/v1/auth/credentials/add/begin:
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/auth.CredentialsAddBeginRequest'
+        description: Begin credential add
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/auth.PublicKeyOptionsResponse'
+          description: OK
+      summary: Add credential (begin)
+      tags:
+      - auth
+  /api/v1/auth/credentials/add/complete:
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/auth.CredentialsAddCompleteRequest'
+        description: Complete credential add
+        required: true
+      responses:
+        "204":
+          description: No Content
+      summary: Add credential (complete)
+      tags:
+      - auth
+  /api/v1/auth/device-link/authorize:
+    post:
+      description: Authorizes a pending device link request (requires authentication
+        and step-up)
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/auth.AuthorizeDeviceLinkRequest'
+        description: Authorization request
+        required: true
+      responses:
+        "204":
+          description: No Content
+      summary: Authorize device link
+      tags:
+      - auth
+  /api/v1/auth/device-link/begin:
+    post:
+      description: Initiates a device authorization flow for CLI/device authentication
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/auth.BeginDeviceLinkRequest'
+        description: Device link request
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/service.DeviceLinkResponse'
+          description: OK
+      summary: Begin device link flow
+      tags:
+      - auth
+  /api/v1/auth/device-link/exchange:
+    post:
+      description: Exchanges a device code for access and refresh tokens (polling
+        endpoint)
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/auth.ExchangeDeviceCodeRequest'
+        description: Exchange request
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/service.ExchangeResponse'
+          description: OK
+      summary: Exchange device code for tokens
+      tags:
+      - auth
+  /api/v1/auth/device-link/verify:
+    get:
+      description: Verifies a user code and returns device information for display
+        in the browser UI
+      parameters:
+      - description: User code to verify
+        in: query
+        name: code
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/auth.DeviceLinkVerificationResponse'
+          description: OK
+      summary: Verify device link code
+      tags:
+      - auth
+  /api/v1/auth/devices:
+    get:
+      description: Lists all devices registered for the authenticated user
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/auth.DeviceListResponse'
+          description: OK
+      summary: List user devices
+      tags:
+      - auth
+  /api/v1/auth/devices/{id}:
+    delete:
+      description: Revokes a device and all associated refresh tokens
+      parameters:
+      - description: Device ID
+        in: path
+        name: id
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        "204":
+          description: No Content
+      summary: Revoke device
+      tags:
+      - auth
+    get:
+      description: Gets details of a specific device
+      parameters:
+      - description: Device ID
+        in: path
+        name: id
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/auth.DeviceResponse'
+          description: OK
+      summary: Get device details
+      tags:
+      - auth
+  /api/v1/auth/login/begin:
+    post:
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/auth.PublicKeyOptionsResponse'
+          description: OK
+      summary: Begin login
+      tags:
+      - auth
+  /api/v1/auth/login/complete:
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/auth.LoginCompleteRequest'
+        description: Login complete request
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/auth.LoginCompleteResponse'
+          description: OK
+      summary: Complete login
+      tags:
+      - auth
+  /api/v1/auth/logout:
+    post:
+      responses:
+        "204":
+          description: No Content
+      summary: Logout current session
+      tags:
+      - auth
+  /api/v1/auth/logout-all:
+    post:
+      responses:
+        "204":
+          description: No Content
+      summary: Logout all sessions
+      tags:
+      - auth
+  /api/v1/auth/me:
+    get:
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/auth.MeResponse'
+          description: OK
+      summary: Me
+      tags:
+      - auth
+    patch:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+      responses: {}
+      summary: Update profile (full name)
+      tags:
+      - auth
+  /api/v1/auth/oidc/github/exchange:
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/auth.ghaExchangeRequest'
+        description: GitHub OIDC exchange request
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                additionalProperties: {}
+                type: object
+          description: OK
+      summary: Exchange GitHub OIDC token
+      tags:
+      - auth
   /api/v1/auth/oidc/github/policies:
+    get:
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/auth.GithubPolicyResponse'
+                type: array
+          description: OK
+      summary: List GitHub policies
+      tags:
+      - auth
     post:
       requestBody:
         content:
@@ -1385,6 +2444,245 @@ paths:
                 $ref: '#/components/schemas/auth.GithubPolicyResponse'
           description: Created
       summary: Create GitHub policy
+      tags:
+      - auth
+  /api/v1/auth/oidc/github/policies/{id}:
+    delete:
+      parameters:
+      - description: Policy ID
+        in: path
+        name: id
+        required: true
+        schema:
+          type: string
+      responses:
+        "204":
+          description: No Content
+      summary: Delete GitHub policy
+      tags:
+      - auth
+    get:
+      parameters:
+      - description: Policy ID
+        in: path
+        name: id
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/auth.GithubPolicyResponse'
+          description: OK
+        "404":
+          content:
+            application/json:
+              schema:
+                additionalProperties: {}
+                type: object
+          description: Not Found
+      summary: Get GitHub policy
+      tags:
+      - auth
+    put:
+      parameters:
+      - description: Policy ID
+        in: path
+        name: id
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/auth.GithubPolicyUpdateRequest'
+        description: Update policy
+        required: true
+      responses:
+        "204":
+          description: No Content
+      summary: Update GitHub policy
+      tags:
+      - auth
+  /api/v1/auth/onboard/begin:
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/auth.OnboardBeginRequest'
+        description: Onboard begin request
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/auth.OnboardBeginResponse'
+          description: OK
+      summary: Onboard begin
+      tags:
+      - auth
+  /api/v1/auth/onboard/complete:
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/auth.OnboardCompleteRequest'
+        description: Onboard complete request
+        required: true
+      responses:
+        "204":
+          description: No Content
+      summary: Onboard complete
+      tags:
+      - auth
+  /api/v1/auth/recovery/codes/generate:
+    post:
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/auth.RecoveryGenerateResponse'
+          description: OK
+      summary: Generate new recovery codes (one-time view)
+      tags:
+      - auth
+  /api/v1/auth/recovery/init:
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/auth.RecoveryInitRequest'
+        description: Recovery init request
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/auth.RecoveryInitResponse'
+          description: OK
+      summary: Recovery init
+      tags:
+      - auth
+  /api/v1/auth/recovery/register/begin:
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/auth.RecoveryRegisterBeginRequest'
+        description: Recovery register begin request
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/auth.PublicKeyOptionsResponse'
+          description: OK
+      summary: Recovery register begin
+      tags:
+      - auth
+  /api/v1/auth/recovery/register/complete:
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/auth.RecoveryRegisterCompleteRequest'
+        description: Recovery register complete request
+        required: true
+      responses:
+        "204":
+          description: No Content
+      summary: Recovery register complete
+      tags:
+      - auth
+  /api/v1/auth/recovery/verify:
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/auth.RecoveryVerifyRequest'
+        description: Recovery verify request
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/auth.RecoveryVerifyResponse'
+          description: OK
+      summary: Recovery verify
+      tags:
+      - auth
+  /api/v1/auth/refresh:
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/auth.AccessTokenResponse'
+          description: OK
+      summary: Refresh access token
+      tags:
+      - auth
+  /api/v1/auth/session:
+    get:
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/auth.SessionResponse'
+          description: OK
+      summary: Session
+      tags:
+      - auth
+  /api/v1/auth/step-up/begin:
+    post:
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/auth.PublicKeyOptionsResponse'
+          description: OK
+      summary: Step-up (begin)
+      tags:
+      - auth
+  /api/v1/auth/step-up/complete:
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/auth.StepUpCompleteRequest'
+        description: Step-up complete request
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/auth.AccessTokenResponse'
+          description: OK
+      summary: Step-up (complete)
       tags:
       - auth
   /api/v1/builds:

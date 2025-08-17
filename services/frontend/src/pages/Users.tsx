@@ -17,6 +17,7 @@ import { Pagination, PaginationContent, PaginationItem, PaginationLink, Paginati
 import { format, formatDistanceToNow } from "date-fns";
 import { Download, Loader2, MoreVertical, Search, Trash2, Upload, Users, X, LogOut, Eye, Power, CheckCircle2, Slash, Mail, Clock, Rows3, List, ChevronsLeft, ChevronsRight, Copy, Laptop, Key, Pencil } from "lucide-react";
 import { withLatency } from "@/mocks/latency";
+import { forgeFetch } from "@/lib/client";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 import EmptyState from "@/components/EmptyState";
@@ -169,20 +170,58 @@ export default function UsersPage() {
   const [sort, setSort] = useState<{ key: "name" | "lastActivityAt" | "createdAt"; dir: "asc" | "desc" }>({ key: "name", dir: "asc" });
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(25);
+  const [serverTotal, setServerTotal] = useState<number | null>(null);
   const searchRef = useRef<HTMLInputElement>(null);
   const requestsSearchRef = useRef<HTMLInputElement>(null);
   const [activeTab, setActiveTab] = useState<"directory" | "requests">("directory");
   const { toast } = useToast();
   const { state } = useAppStore();
-  
-  // Seed data
+  const currentUserEmail = state.session.user || "";
+
+  // Admin: open user credentials
+  type APICred = { id: string; device_name: string; sign_count: number; last_used_at?: string };
+  const [openUserCreds, setOpenUserCreds] = useState<APICred[]>([]);
+  const [loadingOpenCreds, setLoadingOpenCreds] = useState(false);
+  const [openUserAudit, setOpenUserAudit] = useState<Array<{ id: string; type: string; actor_id?: string; created_at: string }>>([]);
+
+  // Load users from API with filters/paging (fallback to mock seed on error for now)
   useEffect(() => {
     (async () => {
-      await withLatency(350, 700);
-      setUsers(seedUsers(120));
-      setLoading(false);
+      setLoading(true);
+      try {
+        const params = new URLSearchParams();
+        if (search.trim()) params.set("q", search.trim());
+        if (roleFilter !== "all") params.set("role", roleFilter);
+        const offset = (page - 1) * pageSize;
+        params.set("limit", String(pageSize));
+        params.set("offset", String(offset));
+        const res = await forgeFetch(`/api/v1/admin/users?${params.toString()}`);
+        const totalHdr = res.headers.get("X-Total-Count");
+        if (totalHdr) setServerTotal(parseInt(totalHdr, 10));
+        const data = await res.json() as { users: Array<{ id: string; email: string; roles: string[]; active_sessions?: number; created_at: string; updated_at: string; last_activity_at?: string | null; }> };
+        const mapped: User[] = data.users.map((u) => ({
+          id: u.id,
+          name: u.email,
+          email: u.email,
+          role: (u.roles || []).includes("admin") ? "admin" : "member",
+          status: "active",
+          createdAt: u.created_at,
+          lastActivityAt: u.last_activity_at || undefined,
+          sessions: (u as any).active_sessions ?? 0,
+          credentials: [],
+          invites: null,
+          requests: [],
+        }));
+        setUsers(mapped);
+      } catch {
+        await withLatency(350, 700);
+        setUsers(seedUsers(120));
+        setServerTotal(null);
+      } finally {
+        setLoading(false);
+      }
     })();
-  }, []);
+  }, [search, roleFilter, page, pageSize]);
 
   // Persist density preference
   useEffect(() => {
@@ -257,13 +296,13 @@ export default function UsersPage() {
     return sorted;
   }, [users, search, statusFilter, roleFilter, activityFilter, sort]);
 
-  const total = filtered.length;
-  const totalAll = users.length;
+  const total = serverTotal ?? filtered.length;
+  const totalAll = serverTotal ?? users.length;
   const pageCount = Math.max(1, Math.ceil(total / pageSize));
   const startIdx = (page - 1) * pageSize;
   const endIdx = Math.min(startIdx + pageSize, total);
-  const visible = filtered.slice(startIdx, endIdx);
-  const hiddenCount = Math.max(0, users.length - total);
+  const visible = serverTotal != null ? users : filtered.slice(startIdx, endIdx);
+  const hiddenCount = Math.max(0, (serverTotal != null ? serverTotal : users.length) - total);
   const showFilterBanner = users.length > 0 && total > 0 && hiddenCount / users.length > 0.8;
 
   useEffect(() => {
@@ -297,9 +336,23 @@ export default function UsersPage() {
     setSelected({});
   };
   const bulkDelete = () => {
-    setUsers((prev) => prev.filter((u) => !selected[u.id]));
-    toast({ title: `${selectedIds.length} users deleted.` });
-    setSelected({});
+    (async () => {
+      const ids = Object.entries(selected).filter(([, v]) => v).map(([id]) => id);
+      for (const id of ids) {
+        try {
+          const res = await forgeFetch(`/api/v1/admin/users/${id}`, { method: "DELETE" });
+          if (!res.ok) {
+            const t = await res.text().catch(() => "");
+            toast({ title: `Failed deleting ${id}`, description: t || `${res.status}`, variant: "destructive" });
+          }
+        } catch {
+          toast({ title: `Network error deleting ${id}`, variant: "destructive" });
+        }
+      }
+      setUsers((prev) => prev.filter((u) => !selected[u.id]));
+      toast({ title: `${ids.length} users deleted.` });
+      setSelected({});
+    })();
   };
   const changeRoleBulk = (role: User["role"]) => {
     setUsers((prev) => prev.map((u) => (selected[u.id] ? { ...u, role } : u)));
@@ -336,38 +389,98 @@ export default function UsersPage() {
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteRole, setInviteRole] = useState<User["role"]>("member");
   const [inviteDays, setInviteDays] = useState("7");
+  const [inviteEmailUser, setInviteEmailUser] = useState(true);
+
+  // Listen for request-approval event to prefill and open invite dialog
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent).detail as { email?: string; role?: User["role"] };
+      if (detail?.email) setInviteEmail(detail.email);
+      if (detail?.role) setInviteRole(detail.role);
+      setInviteOpen(true);
+    };
+    window.addEventListener("cf:open-invite", handler as EventListener);
+    return () => window.removeEventListener("cf:open-invite", handler as EventListener);
+  }, []);
 
   const submitInvite = async () => {
     if (!inviteEmail) return;
-    const now = Date.now();
-    const newUser: User = {
-      id: makeId("usr"),
-      name: inviteEmail.split("@")[0].replace(/\./g, " ").replace(/\b\w/g, (c) => c.toUpperCase()) || "Pending User",
-      email: inviteEmail,
-      role: inviteRole,
-      status: "pending_invite",
-      createdAt: new Date(now).toISOString(),
-      lastActivityAt: undefined,
-      sessions: 0,
-      credentials: [],
-      invites: {
-        link: `https://app.example.com/invite/${makeId("inv")}`,
-        expiresAt: new Date(now + parseInt(inviteDays) * 24 * 60 * 60 * 1000).toISOString(),
-        lastSentAt: new Date(now).toISOString(),
-      },
-      requests: [],
-    };
-    setUsers((prev) => [newUser, ...prev]);
-    setInviteOpen(false);
-    setInviteEmail("");
-    toast({ title: `Invite sent to ${newUser.email}. Link copied to clipboard.` });
     try {
-      await navigator.clipboard.writeText(newUser.invites!.link);
-    } catch {}
+      const res = await forgeFetch(`/api/v1/admin/invites`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          email: inviteEmail,
+          roles: [inviteRole],
+          days_to_expire: parseInt(inviteDays) || 7,
+          email_user: !!inviteEmailUser,
+        }),
+      });
+      if (!res.ok) {
+        const text = await res.text().catch(() => "");
+        toast({ title: "Invite failed", description: text || `${res.status}`, variant: "destructive" });
+        return;
+      }
+      const out = await res.json().catch(() => ({} as any));
+      const link = out?.invite_link || "";
+      const exp = out?.expires_at || new Date(Date.now() + (parseInt(inviteDays) || 7) * 86400e3).toISOString();
+      const nowIso = new Date().toISOString();
+      const newUser: User = {
+        id: out?.invite_id || makeId("usr"),
+        name: inviteEmail.split("@")[0].replace(/\./g, " ").replace(/\b\w/g, (c) => c.toUpperCase()) || "Pending User",
+        email: inviteEmail,
+        role: inviteRole,
+        status: "pending_invite",
+        createdAt: nowIso,
+        lastActivityAt: undefined,
+        sessions: 0,
+        credentials: [],
+        invites: { link, expiresAt: exp, lastSentAt: nowIso },
+        requests: [],
+      };
+      setUsers((prev) => [newUser, ...prev]);
+      setInviteOpen(false);
+      setInviteEmail("");
+      toast({ title: `Invite sent to ${newUser.email}. Link copied to clipboard.` });
+      if (link) {
+        try { await navigator.clipboard.writeText(link); } catch { }
+      }
+    } catch {
+      toast({ title: "Network error", variant: "destructive" });
+    }
   };
 
   // User sheet data
   const openUser = users.find((u) => u.id === openUserId) || null;
+
+  // Load credentials when the sheet opens
+  useEffect(() => {
+    (async () => {
+      if (!openUserId) {
+        setOpenUserCreds([]);
+        setOpenUserAudit([]);
+        return;
+      }
+      try {
+        setLoadingOpenCreds(true);
+        const res = await forgeFetch(`/api/v1/admin/users/${openUserId}/credentials`);
+        const data = await res.json() as { credentials: Array<{ id: string; device_name: string; sign_count: number; last_used_at?: string }> };
+        setOpenUserCreds(data.credentials || []);
+        const ar = await forgeFetch(`/api/v1/admin/audit?user_id=${openUserId}&limit=10`);
+        if (ar.ok) {
+          const aj = await ar.json() as { events: Array<{ id: string; type: string; actor_id?: string; created_at: string }>; total: number };
+          setOpenUserAudit(aj.events || []);
+        } else {
+          setOpenUserAudit([]);
+        }
+      } catch {
+        setOpenUserCreds([]);
+        setOpenUserAudit([]);
+      } finally {
+        setLoadingOpenCreds(false);
+      }
+    })();
+  }, [openUserId]);
 
   return (
     <div className="p-4 md:p-6">
@@ -397,65 +510,65 @@ export default function UsersPage() {
       </header>
 
       <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)}>
-          <div className="flex items-center gap-3 flex-wrap">
-            <TabsList>
-              <TabsTrigger value="directory">Directory</TabsTrigger>
-              <TabsTrigger value="requests">Requests</TabsTrigger>
-            </TabsList>
-            <div className="hidden sm:block h-6 w-px bg-border/60" aria-hidden />
-            <ToggleGroup
-              type="single"
-              value={density}
-              onValueChange={(v) => v && setDensity(v as any)}
-              size="sm"
-              className="inline-flex rounded-lg border border-input bg-muted/30 p-0.5"
-            >
-              <TooltipProvider>
-                <div className="flex items-center gap-0">
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <ToggleGroupItem
-                        value="comfortable"
-                        aria-label="Comfortable view"
-                        variant="default"
-                        className={cn(
-                          "h-8 px-3 rounded-md text-sm inline-flex items-center gap-1.5",
-                          "text-muted-foreground border border-transparent",
-                          "hover:bg-accent hover:text-foreground",
-                          "data-[state=on]:bg-background data-[state=on]:text-foreground",
-                          "data-[state=on]:border-input data-[state=on]:shadow-sm"
-                        )}
-                      >
-                        <Rows3 className="h-4 w-4" />
-                        <span className="ml-1 hidden sm:inline">Comfortable</span>
-                      </ToggleGroupItem>
-                    </TooltipTrigger>
-                    <TooltipContent>Comfortable view</TooltipContent>
-                  </Tooltip>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <ToggleGroupItem
-                        value="compact"
-                        aria-label="Compact view"
-                        variant="default"
-                        className={cn(
-                          "h-8 px-3 rounded-md text-sm inline-flex items-center gap-1.5",
-                          "text-muted-foreground border border-transparent",
-                          "hover:bg-accent hover:text-foreground",
-                          "data-[state=on]:bg-background data-[state=on]:text-foreground",
-                          "data-[state=on]:border-input data-[state=on]:shadow-sm"
-                        )}
-                      >
-                        <List className="h-4 w-4" />
-                        <span className="ml-1 hidden sm:inline">Compact</span>
-                      </ToggleGroupItem>
-                    </TooltipTrigger>
-                    <TooltipContent>Compact view</TooltipContent>
-                  </Tooltip>
-                </div>
-              </TooltipProvider>
-            </ToggleGroup>
-          </div>
+        <div className="flex items-center gap-3 flex-wrap">
+          <TabsList>
+            <TabsTrigger value="directory">Directory</TabsTrigger>
+            <TabsTrigger value="requests">Requests</TabsTrigger>
+          </TabsList>
+          <div className="hidden sm:block h-6 w-px bg-border/60" aria-hidden />
+          <ToggleGroup
+            type="single"
+            value={density}
+            onValueChange={(v) => v && setDensity(v as any)}
+            size="sm"
+            className="inline-flex rounded-lg border border-input bg-muted/30 p-0.5"
+          >
+            <TooltipProvider>
+              <div className="flex items-center gap-0">
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <ToggleGroupItem
+                      value="comfortable"
+                      aria-label="Comfortable view"
+                      variant="default"
+                      className={cn(
+                        "h-8 px-3 rounded-md text-sm inline-flex items-center gap-1.5",
+                        "text-muted-foreground border border-transparent",
+                        "hover:bg-accent hover:text-foreground",
+                        "data-[state=on]:bg-background data-[state=on]:text-foreground",
+                        "data-[state=on]:border-input data-[state=on]:shadow-sm"
+                      )}
+                    >
+                      <Rows3 className="h-4 w-4" />
+                      <span className="ml-1 hidden sm:inline">Comfortable</span>
+                    </ToggleGroupItem>
+                  </TooltipTrigger>
+                  <TooltipContent>Comfortable view</TooltipContent>
+                </Tooltip>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <ToggleGroupItem
+                      value="compact"
+                      aria-label="Compact view"
+                      variant="default"
+                      className={cn(
+                        "h-8 px-3 rounded-md text-sm inline-flex items-center gap-1.5",
+                        "text-muted-foreground border border-transparent",
+                        "hover:bg-accent hover:text-foreground",
+                        "data-[state=on]:bg-background data-[state=on]:text-foreground",
+                        "data-[state=on]:border-input data-[state=on]:shadow-sm"
+                      )}
+                    >
+                      <List className="h-4 w-4" />
+                      <span className="ml-1 hidden sm:inline">Compact</span>
+                    </ToggleGroupItem>
+                  </TooltipTrigger>
+                  <TooltipContent>Compact view</TooltipContent>
+                </Tooltip>
+              </div>
+            </TooltipProvider>
+          </ToggleGroup>
+        </div>
         <TabsContent value="directory" className="mt-4">
           {/* Controls */}
           <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
@@ -542,7 +655,7 @@ export default function UsersPage() {
                     <DropdownMenuItem onClick={() => changeRoleBulk("member")}>Member</DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
-                <Confirm destructive label="Delete" onConfirm={bulkDelete} description="This removes selected users and their credentials (mock)." />
+                <Confirm destructive label="Delete" onConfirm={bulkDelete} description="This removes selected users and their credentials." />
               </div>
             </div>
           )}
@@ -616,7 +729,7 @@ export default function UsersPage() {
                           aria-label={`Select ${u.name}`}
                         />
                       </TableCell>
-                      <TableCell className={cn(density === "compact" && "py-1")}> 
+                      <TableCell className={cn(density === "compact" && "py-1")}>
                         <div className="flex items-center gap-3">
                           <Avatar className="h-9 w-9">
                             <AvatarFallback>{firstLast(u.name)}</AvatarFallback>
@@ -649,11 +762,28 @@ export default function UsersPage() {
                             </Tooltip>
                             <Tooltip>
                               <TooltipTrigger asChild>
-                                <Button variant="ghost" size="icon" aria-label={u.status === "disabled" ? "Re-enable" : "Disable"} onClick={() => setUsers((prev) => prev.map((x) => x.id === u.id ? { ...x, status: x.status === "disabled" ? "active" : "disabled", sessions: 0 } : x))}>
+                                <Button variant="ghost" size="icon" aria-label={u.status === "disabled" ? "Re-enable" : "Disable"} disabled={u.email === currentUserEmail || u.role === "admin"} onClick={async () => {
+                                  try {
+                                    const res = await forgeFetch(`/api/v1/admin/users/${u.id}`, {
+                                      method: "PATCH",
+                                      headers: { "content-type": "application/json" },
+                                      body: JSON.stringify({ suspend: u.status !== "disabled" })
+                                    });
+                                    if (res.status === 204) {
+                                      setUsers((prev) => prev.map((x) => x.id === u.id ? { ...x, status: u.status !== "disabled" ? "disabled" : "active", sessions: u.status !== "disabled" ? 0 : x.sessions } : x));
+                                      toast({ title: u.status !== "disabled" ? "User disabled" : "User re-enabled" });
+                                    } else {
+                                      const text = await res.text().catch(() => "");
+                                      toast({ title: "Failed", description: text || `${res.status}` });
+                                    }
+                                  } catch {
+                                    toast({ title: "Network error" });
+                                  }
+                                }}>
                                   <Power className="h-4 w-4" />
                                 </Button>
                               </TooltipTrigger>
-                              <TooltipContent>{u.status === "disabled" ? "Re-enable" : "Disable"}</TooltipContent>
+                              <TooltipContent>{u.email === currentUserEmail ? "You can’t disable yourself" : (u.role === "admin" ? "Admins cannot be disabled here" : (u.status === "disabled" ? "Re-enable" : "Disable"))}</TooltipContent>
                             </Tooltip>
                             <Tooltip>
                               <TooltipTrigger asChild>
@@ -678,7 +808,6 @@ export default function UsersPage() {
                                 {u.status === "pending_invite" && (
                                   <DropdownMenuItem onClick={() => toast({ title: `Invite resent to ${u.email}.` })}>Resend invite</DropdownMenuItem>
                                 )}
-                                <DropdownMenuItem onClick={() => setUsers((prev) => prev.map((x) => x.id === u.id ? { ...x, role: x.role === "admin" ? "member" : "admin" } : x))}>Toggle role</DropdownMenuItem>
                                 <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={() => setUsers((prev) => prev.filter((x) => x.id !== u.id))}><Trash2 className="h-4 w-4 mr-2" /> Delete</DropdownMenuItem>
                               </DropdownMenuContent>
                             </DropdownMenu>
@@ -792,6 +921,10 @@ export default function UsersPage() {
                 </Select>
               </div>
             </div>
+            <div className="flex items-center gap-2 pt-1">
+              <Checkbox id="invite-email-user" checked={inviteEmailUser} onCheckedChange={(v) => setInviteEmailUser(Boolean(v))} />
+              <label htmlFor="invite-email-user" className="text-sm select-none">Email user the invite link</label>
+            </div>
           </div>
           <AlertDialogFooter>
             <AlertDialogCancel onClick={() => setInviteOpen(false)}>Cancel</AlertDialogCancel>
@@ -849,7 +982,29 @@ export default function UsersPage() {
                               Enable
                             </DropdownMenuItem>
                           ) : (
-                            <DropdownMenuItem onClick={() => setUsers((prev) => prev.map((u) => u.id === openUser.id ? { ...u, status: "disabled", sessions: 0 } : u))}>
+                            <DropdownMenuItem
+                              disabled={openUser.email === currentUserEmail || openUser.role === "admin"}
+                              title={openUser.email === currentUserEmail ? "You can’t disable yourself" : (openUser.role === "admin" ? "Admins cannot be disabled here" : undefined)}
+                              onClick={async () => {
+                                if (openUser.email === currentUserEmail || openUser.role === "admin") return;
+                                try {
+                                  const res = await forgeFetch(`/api/v1/admin/users/${openUser.id}`, {
+                                    method: "PATCH",
+                                    headers: { "content-type": "application/json" },
+                                    body: JSON.stringify({ suspend: true })
+                                  });
+                                  if (res.status === 204) {
+                                    setUsers((prev) => prev.map((u) => u.id === openUser.id ? { ...u, status: "disabled", sessions: 0 } : u));
+                                    toast({ title: "User disabled" });
+                                  } else {
+                                    const text = await res.text().catch(() => "");
+                                    toast({ title: "Failed", description: text || `${res.status}` });
+                                  }
+                                } catch {
+                                  toast({ title: "Network error" });
+                                }
+                              }}
+                            >
                               Disable
                             </DropdownMenuItem>
                           )}
@@ -861,9 +1016,7 @@ export default function UsersPage() {
                               Resend invite
                             </DropdownMenuItem>
                           )}
-                          <DropdownMenuItem onClick={() => setUsers((prev) => prev.map((u) => u.id === openUser.id ? { ...u, role: u.role === "admin" ? "member" : "admin" } : u))}>
-                            Toggle role
-                          </DropdownMenuItem>
+
                           <DropdownMenuItem className="text-destructive" onClick={() => setUsers((prev) => prev.filter((u) => u.id !== openUser.id))}>
                             Delete
                           </DropdownMenuItem>
@@ -876,7 +1029,7 @@ export default function UsersPage() {
 
               <div className="flex-1 overflow-y-auto">
                 {/* Overview */}
-                <section className={cn("border-b border-white/[0.06]", density === "compact" ? "px-4 py-3" : "px-5 py-4")}> 
+                <section className={cn("border-b border-white/[0.06]", density === "compact" ? "px-4 py-3" : "px-5 py-4")}>
                   <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Overview</h3>
                   <HeaderUnderline />
                   <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
@@ -887,7 +1040,7 @@ export default function UsersPage() {
                         <TooltipProvider>
                           <Tooltip>
                             <TooltipTrigger asChild>
-                              <Button size="icon" variant="ghost" aria-label="Copy user ID" onClick={async () => { try { await navigator.clipboard.writeText(openUser.id); toast({ title: "Copied user ID" }); } catch {} }}>
+                              <Button size="icon" variant="ghost" aria-label="Copy user ID" onClick={async () => { try { await navigator.clipboard.writeText(openUser.id); toast({ title: "Copied user ID" }); } catch { } }}>
                                 <Copy className="h-4 w-4" />
                               </Button>
                             </TooltipTrigger>
@@ -916,69 +1069,71 @@ export default function UsersPage() {
                 </section>
 
                 {/* Credentials */}
-                <section className={cn("border-b border-white/[0.06]", density === "compact" ? "px-4 py-3" : "px-5 py-4")}> 
+                <section className={cn("border-b border-white/[0.06]", density === "compact" ? "px-4 py-3" : "px-5 py-4")}>
                   <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Credentials</h3>
                   <HeaderUnderline />
                   <div className="mt-3 space-y-2">
-                    {openUser.credentials.length === 0 ? (
+                    {loadingOpenCreds ? (
+                      <div className="text-sm text-muted-foreground">Loading…</div>
+                    ) : openUserCreds.length === 0 ? (
                       <div className="text-sm text-muted-foreground">No credentials added.</div>
                     ) : (
-                      openUser.credentials.map((c) => (
-                        <article key={c.id} className="flex items-center justify-between rounded-md border bg-background/[0.6] px-3 py-2">
-                          <div className="flex items-center gap-3">
-                            {c.platform === "platform" ? <Laptop className="h-4 w-4 text-muted-foreground" /> : <Key className="h-4 w-4 text-muted-foreground" />}
-                            <div className="text-sm">
-                              <div className="font-medium">{c.label}</div>
-                              <div className="text-xs text-muted-foreground">Added {format(new Date(c.addedAt), "PP")} • Last used {c.lastUsedAt ? format(new Date(c.lastUsedAt), "PP") : "—"} • {c.platform === "platform" ? "Platform" : "Security key"}</div>
+                      openUserCreds
+                        .slice()
+                        .sort((a, b) => {
+                          const ta = a.last_used_at ? new Date(a.last_used_at).getTime() : 0;
+                          const tb = b.last_used_at ? new Date(b.last_used_at).getTime() : 0;
+                          return tb - ta;
+                        })
+                        .map((c) => (
+                          <article key={c.id} className="flex items-center justify-between rounded-md border bg-background/[0.6] px-3 py-2">
+                            <div className="flex items-center gap-3">
+                              <Key className="h-4 w-4 text-muted-foreground" />
+                              <div className="text-sm">
+                                <div className="font-medium">{c.device_name}</div>
+                                <div className="text-xs text-muted-foreground">Sign count {c.sign_count} • Last used {c.last_used_at ? format(new Date(c.last_used_at), "PP") : "—"}</div>
+                              </div>
                             </div>
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <TooltipProvider>
-                              <Tooltip><TooltipTrigger asChild>
-                                <Button size="icon" variant="ghost" aria-label="Rename" onClick={() => toast({ title: "Rename (mock)", description: "Not implemented in mocks" })}>
-                                  <Pencil className="h-4 w-4" />
-                                </Button>
-                              </TooltipTrigger><TooltipContent>Rename</TooltipContent></Tooltip>
-                            </TooltipProvider>
-                            <TooltipProvider>
-                              <Tooltip><TooltipTrigger asChild>
-                                <Button size="icon" variant="ghost" aria-label="Remove" className="hover:text-destructive" onClick={() => setUsers((prev) => prev.map((u) => u.id === openUser.id ? { ...u, credentials: u.credentials.filter((x) => x.id !== c.id) } : u))}>
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
-                              </TooltipTrigger><TooltipContent>Remove</TooltipContent></Tooltip>
-                            </TooltipProvider>
-                          </div>
-                        </article>
-                      ))
+                          </article>
+                        ))
                     )}
-                    <Button size="sm" variant="outline" onClick={() => setUsers((prev) => prev.map((u) => u.id === openUser.id ? { ...u, credentials: [...u.credentials, { id: makeId("cred"), label: "New credential", addedAt: new Date().toISOString(), platform: "platform" }] } : u))}>+ Add credential</Button>
                   </div>
                 </section>
 
                 {/* Security */}
-                <section className={cn("border-b border-white/[0.06]", density === "compact" ? "px-4 py-3" : "px-5 py-4")}> 
+                <section className={cn("border-b border-white/[0.06]", density === "compact" ? "px-4 py-3" : "px-5 py-4")}>
                   <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Security</h3>
                   <HeaderUnderline />
                   <div className="mt-3 flex items-center justify-between">
-                    <div className="text-sm text-muted-foreground">Recovery keys: Regenerated {format(new Date(openUser.createdAt), "PP")} (mock)</div>
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <span>
-                            <Button size="sm" disabled={openUser.status === "disabled"} onClick={() => toast({ title: "Recovery keys regenerated (mock)" })}>
-                              Regenerate
-                            </Button>
-                          </span>
-                        </TooltipTrigger>
-                        {openUser.status === "disabled" && (<TooltipContent>Action not available while user is disabled</TooltipContent>)}
-                      </Tooltip>
-                    </TooltipProvider>
+                    <div className="text-sm text-muted-foreground">Recovery keys: Generate new one-time codes for this user.</div>
+                    <Button
+                      size="sm"
+                      onClick={async () => {
+                        try {
+                          const res = await forgeFetch(`/api/v1/admin/users/${openUser.id}/recovery/codes/generate`, { method: "POST" });
+                          if (!res.ok) {
+                            const text = await res.text().catch(() => "");
+                            toast({ title: "Failed to generate recovery keys", description: text || `${res.status}` });
+                            return;
+                          }
+                          const data = await res.json() as { codes: string[] };
+                          const filename = `recovery_codes_${openUser.email}_${format(new Date(), "yyyyMMdd_HHmmss")}.txt`;
+                          const { downloadRecoveryCodes } = await import("@/lib/recovery");
+                          downloadRecoveryCodes(filename, data.codes);
+                          toast({ title: "Recovery keys generated", description: "A .txt file was downloaded with the one-time codes." });
+                        } catch {
+                          toast({ title: "Failed to generate recovery keys" });
+                        }
+                      }}
+                    >
+                      Regenerate
+                    </Button>
                   </div>
                 </section>
 
 
                 {/* Audit */}
-                <section className={cn(density === "compact" ? "px-4 py-3" : "px-5 py-4")}> 
+                <section className={cn(density === "compact" ? "px-4 py-3" : "px-5 py-4")}>
                   <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Audit</h3>
                   <HeaderUnderline />
                   <div className="mt-3">
@@ -987,20 +1142,21 @@ export default function UsersPage() {
                         <thead>
                           <tr className="text-xs text-muted-foreground">
                             <th className="text-left font-normal">Actor</th>
-                            <th className="text-left font-normal">Action</th>
-                            <th className="text-left font-normal">Target</th>
+                            <th className="text-left font-normal">Type</th>
                             <th className="text-left font-normal">Date</th>
                           </tr>
                         </thead>
                         <tbody>
-                          {(state.audit.slice(0, 4)).map((evt) => (
+                          {(openUserAudit || []).slice(0, 4).map((evt) => (
                             <tr key={evt.id} className="border-t border-white/[0.06]">
-                              <td className="py-2">{evt.actor}</td>
-                              <td className="py-2">{evt.action}</td>
-                              <td className="py-2">{evt.resource}</td>
-                              <td className="py-2">{format(new Date(evt.timestamp), "PP")}</td>
+                              <td className="py-2">{evt.actor_id || ""}</td>
+                              <td className="py-2">{evt.type}</td>
+                              <td className="py-2">{format(new Date(evt.created_at), "PP")}</td>
                             </tr>
                           ))}
+                          {(!openUserAudit || openUserAudit.length === 0) && (
+                            <tr><td className="py-2 text-muted-foreground" colSpan={3}>No recent events</td></tr>
+                          )}
                         </tbody>
                       </table>
                     </div>
@@ -1068,35 +1224,62 @@ function Confirm({ label, description, destructive, onConfirm }: { label: string
 // Requests tab (polished mock)
 function RequestsTab({ users, setUsers, density, setDensity, searchRef }: { users: User[]; setUsers: React.Dispatch<React.SetStateAction<User[]>>; density: "comfortable" | "compact"; setDensity: (d: "comfortable" | "compact") => void; searchRef: React.RefObject<HTMLInputElement>; }) {
   const { toast } = useToast();
-  const base = users.filter((u) => u.status === "pending_approval");
+  type AccessRequest = { id: string; email: string; reason?: string; status: string; attempts: number; decided_at?: string | null; created_at: string };
   const [q, setQ] = useState("");
   const [selected, setSelected] = useState<Record<string, boolean>>({});
   const [rejectOpen, setRejectOpen] = useState(false);
-  const [rejectTarget, setRejectTarget] = useState<User | null>(null);
+  const [rejectTarget, setRejectTarget] = useState<AccessRequest | null>(null);
   const [rejectReason, setRejectReason] = useState("");
   const [notify, setNotify] = useState(true);
+  const [requests, setRequests] = useState<AccessRequest[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [page, setPage] = useState(1);
+  const pageSize = 25;
+  const [total, setTotal] = useState<number | null>(null);
 
-  const pending = useMemo(() => {
-    const s = q.trim().toLowerCase();
-    if (!s) return base;
-    return base.filter((u) => {
-      const reason = u.requests?.[0]?.reason || "";
-      return (
-        u.name.toLowerCase().includes(s) ||
-        u.email.toLowerCase().includes(s) ||
-        u.id.toLowerCase().includes(s) ||
-        reason.toLowerCase().includes(s)
-      );
-    });
-  }, [base, q]);
+  async function load() {
+    setLoading(true);
+    try {
+      const params = new URLSearchParams();
+      params.set("status", "pending");
+      if (q.trim()) params.set("q", q.trim());
+      params.set("limit", String(pageSize));
+      params.set("offset", String((page - 1) * pageSize));
+      const res = await forgeFetch(`/api/v1/admin/access-requests?${params.toString()}`);
+      if (!res.ok) {
+        throw new Error(`Failed to load requests (${res.status})`);
+      }
+      const data = (await res.json()) as { requests: AccessRequest[]; total?: number };
+      setRequests(data.requests || []);
+      setTotal(typeof data.total === "number" ? data.total : null);
+      setSelected({});
+    } catch (err) {
+      toast({ title: "Failed to load access requests", variant: "destructive" });
+    } finally {
+      setLoading(false);
+    }
+  }
 
-  const approveOne = (u: User) => {
-    setUsers((prev) => prev.map((x) => x.id === u.id ? { ...x, status: "pending_invite", invites: { link: `https://app.example.com/invite/${makeId("inv")}`, expiresAt: new Date(Date.now() + 7 * 86400e3).toISOString(), lastSentAt: new Date().toISOString() } } : x));
-    toast({ title: `Access granted to ${u.email}. Invitation sent.` });
+  useEffect(() => {
+    load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [q, page]);
+
+  // Open the parent-level invite dialog with prefilled email, default role "member"
+  const approveOne = (r: AccessRequest) => {
+    window.dispatchEvent(new CustomEvent("cf:open-invite", { detail: { email: r.email, role: "member" } }));
   };
-  const rejectOne = (u: User, reason?: string) => {
-    setUsers((prev) => prev.map((x) => x.id === u.id ? { ...x, status: "disabled", requests: [{ ...(x.requests?.[0] ?? { submittedAt: new Date().toISOString() }), status: "rejected", decidedAt: new Date().toISOString(), decidedBy: "admin", note: reason || "" }] } : x));
-    toast({ title: `Request rejected for ${u.email}.` });
+
+  const rejectOne = async (r: AccessRequest, reason?: string) => {
+    try {
+      const res = await forgeFetch(`/api/v1/admin/access-requests/${r.id}`, { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify({ approve: false, note: reason || "" }) });
+      if (!res.ok) throw new Error(String(res.status));
+      toast({ title: `Request rejected for ${r.email}.` });
+    } catch {
+      toast({ title: `Failed to reject ${r.email}`, variant: "destructive" });
+    } finally {
+      load();
+    }
   };
 
   const selectedIds = Object.keys(selected).filter((id) => selected[id]);
@@ -1106,7 +1289,7 @@ function RequestsTab({ users, setUsers, density, setDensity, searchRef }: { user
       <div className="mb-3 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <div className="relative flex-1 max-w-md">
           <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input ref={searchRef} value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search name, email, reason ( / )" className="pl-8" aria-label="Search requests" />
+          <Input ref={searchRef} value={q} onChange={(e) => { setPage(1); setQ(e.target.value); }} placeholder="Search email, reason ( / )" className="pl-8" aria-label="Search requests" />
         </div>
       </div>
 
@@ -1114,12 +1297,14 @@ function RequestsTab({ users, setUsers, density, setDensity, searchRef }: { user
         <div className="mb-2 flex items-center gap-2 text-xs">
           <span className="inline-flex items-center gap-1 rounded-full border border-muted-foreground/50 px-2 py-0.5">
             <span className="text-muted-foreground">Search: “{q}”</span>
-            <button className="hover:text-foreground" onClick={() => setQ("")} aria-label="Clear search">×</button>
+            <button className="hover:text-foreground" onClick={() => { setQ(""); setPage(1); }} aria-label="Clear search">×</button>
           </span>
         </div>
       )}
 
-      {base.length === 0 ? (
+      {loading ? (
+        <div className="rounded-md border p-10 text-center text-muted-foreground">Loading…</div>
+      ) : requests.length === 0 ? (
         <EmptyState
           icon={<Users className="mx-auto h-12 w-12" />}
           title="No access requests"
@@ -1131,48 +1316,49 @@ function RequestsTab({ users, setUsers, density, setDensity, searchRef }: { user
             <div className="sticky top-0 z-10 mb-3 flex items-center justify-between rounded-lg border border-white/5 bg-background/70 px-3 py-2 text-sm backdrop-blur">
               <div className="font-medium">{selectedIds.length} selected</div>
               <div className="flex items-center gap-2">
-                <Button size="sm" className="hover:scale-[1.01]" onClick={() => selectedIds.forEach((id) => approveOne(users.find(u => u.id === id)!))}>Approve</Button>
-                <Button size="sm" variant="outline" onClick={() => { setRejectTarget(null); setRejectOpen(true); }}>
+                <Button size="sm" className="hover:scale-[1.01]" onClick={() => selectedIds.forEach((id) => { const r = requests.find(x => x.id === id); if (r) approveOne(r); })}>Approve</Button>
+                <Button size="sm" variant="outline" onClick={async () => { setRejectTarget(null); setRejectOpen(true); }}>
                   Reject
                 </Button>
               </div>
             </div>
           )}
-          {pending.length === 0 ? (
-            <div className="rounded-md border p-10 text-center text-muted-foreground">
-              <div className="opacity-30 mb-1">No matching requests.</div>
-              <button className="text-sm story-link" onClick={() => setQ("")}>Clear search</button>
-            </div>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-[40px]"><Checkbox checked={pending.every((u) => selected[u.id])} onCheckedChange={(v) => { const next: Record<string, boolean> = { ...selected }; pending.forEach((u) => next[u.id] = Boolean(v)); setSelected(next); }} /></TableHead>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Email</TableHead>
-                  <TableHead>Submitted</TableHead>
-                  <TableHead>Reason</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="w-[40px]"><Checkbox checked={requests.every((r) => selected[r.id])} onCheckedChange={(v) => { const next: Record<string, boolean> = { ...selected }; requests.forEach((r) => next[r.id] = Boolean(v)); setSelected(next); }} /></TableHead>
+                <TableHead>Email</TableHead>
+                <TableHead>Submitted</TableHead>
+                <TableHead>Reason</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {requests.map((r) => (
+                <TableRow key={r.id} className={cn("odd:bg-foreground/[0.015] hover:bg-foreground/[0.03]", density === "compact" ? "h-11" : "h-14")}>
+                  <TableCell className={cn("w-[40px]", density === "compact" && "py-1")}><Checkbox checked={!!selected[r.id]} onCheckedChange={(v) => setSelected((prev) => ({ ...prev, [r.id]: Boolean(v) }))} /></TableCell>
+                  <TableCell className={cn(density === "compact" && "py-1")}>{r.email}</TableCell>
+                  <TableCell className={cn(density === "compact" && "py-1")}>{r.created_at ? formatDistanceToNow(new Date(r.created_at), { addSuffix: true }) : "—"}</TableCell>
+                  <TableCell className={cn("max-w-[280px] truncate", density === "compact" && "py-1")} title={r.reason || ""}>{r.reason || ""}</TableCell>
+                  <TableCell className={cn("text-right", density === "compact" && "py-1")}>
+                    <div className="flex justify-end gap-2">
+                      <Button size="sm" className="hover:scale-[1.01]" onClick={() => approveOne(r)}>Approve</Button>
+                      <Button size="sm" variant="outline" onClick={() => { setRejectTarget(r); setRejectReason(""); setNotify(true); setRejectOpen(true); }}>Reject</Button>
+                    </div>
+                  </TableCell>
                 </TableRow>
-              </TableHeader>
-              <TableBody>
-                {pending.map((u) => (
-                  <TableRow key={u.id} className={cn("odd:bg-foreground/[0.015] hover:bg-foreground/[0.03]", density === "compact" ? "h-11" : "h-14") }>
-                    <TableCell className={cn("w-[40px]", density === "compact" && "py-1") }><Checkbox checked={!!selected[u.id]} onCheckedChange={(v) => setSelected((prev) => ({ ...prev, [u.id]: Boolean(v) }))} /></TableCell>
-                    <TableCell className={cn(density === "compact" && "py-1")}>{u.name}</TableCell>
-                    <TableCell className={cn(density === "compact" && "py-1")}>{u.email}</TableCell>
-                    <TableCell className={cn(density === "compact" && "py-1")}>{u.requests?.[0]?.submittedAt ? formatDistanceToNow(new Date(u.requests[0].submittedAt), { addSuffix: true }) : "—"}</TableCell>
-                    <TableCell className={cn("max-w-[280px] truncate", density === "compact" && "py-1")} title={u.requests?.[0]?.reason || ""}>{u.requests?.[0]?.reason || ""}</TableCell>
-                    <TableCell className={cn("text-right", density === "compact" && "py-1")}>
-                      <div className="flex justify-end gap-2">
-                        <Button size="sm" className="hover:scale-[1.01]" onClick={() => approveOne(u)}>Approve</Button>
-                        <Button size="sm" variant="outline" onClick={() => { setRejectTarget(u); setRejectReason(""); setNotify(true); setRejectOpen(true); }}>Reject</Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+              ))}
+            </TableBody>
+          </Table>
+
+          {total !== null && total > pageSize && (
+            <div className="mt-3 flex items-center justify-between text-sm">
+              <div className="text-muted-foreground">Page {page} of {Math.ceil(total / pageSize)}</div>
+              <div className="flex items-center gap-2">
+                <Button size="sm" variant="ghost" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1}>Previous</Button>
+                <Button size="sm" variant="ghost" onClick={() => setPage((p) => (total ? (p * pageSize < total ? p + 1 : p) : p))} disabled={total ? (page * pageSize >= total) : true}>Next</Button>
+              </div>
+            </div>
           )}
 
           {/* Reject confirm modal */}
@@ -1191,13 +1377,17 @@ function RequestsTab({ users, setUsers, density, setDensity, searchRef }: { user
               </div>
               <AlertDialogFooter>
                 <AlertDialogCancel onClick={() => setRejectOpen(false)}>Cancel</AlertDialogCancel>
-                <AlertDialogAction onClick={() => {
-                  if (rejectTarget) {
-                    rejectOne(rejectTarget, rejectReason);
-                  } else {
-                    selectedIds.forEach((id) => rejectOne(users.find(u => u.id === id)!, rejectReason));
+                <AlertDialogAction onClick={async () => {
+                  try {
+                    if (rejectTarget) {
+                      await rejectOne(rejectTarget, rejectReason);
+                    } else {
+                      const items = requests.filter((r) => selectedIds.includes(r.id));
+                      for (const r of items) { await rejectOne(r, rejectReason); }
+                    }
+                  } finally {
+                    setRejectOpen(false);
                   }
-                  setRejectOpen(false);
                 }}>Reject</AlertDialogAction>
               </AlertDialogFooter>
             </AlertDialogContent>

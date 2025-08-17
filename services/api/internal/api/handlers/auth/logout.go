@@ -25,6 +25,7 @@ func RegisterLogout(r *gin.Engine, deps LogoutDeps) {
 			_ = deps.Service.RevokeCurrent(c.Request.Context(), cookie, "user logout")
 		}
 		authhttp.ClearRefreshCookie(c.Writer, deps.Cookie)
+		authhttp.ClearAccessCookie(c.Writer, deps.Cookie)
 		c.Status(204)
 	})
 }

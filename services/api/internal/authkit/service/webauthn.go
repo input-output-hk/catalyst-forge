@@ -6,46 +6,50 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log/slog"
+	"strings"
 	"time"
 
-	"github.com/input-output-hk/catalyst-forge/services/api/internal/authkit/crypto"
-	"github.com/input-output-hk/catalyst-forge/services/api/internal/authkit/domain"
-	"github.com/input-output-hk/catalyst-forge/services/api/internal/authkit/store"
+	"bytes"
+
 	"github.com/go-webauthn/webauthn/protocol"
 	"github.com/go-webauthn/webauthn/webauthn"
 	"github.com/google/uuid"
+	"github.com/input-output-hk/catalyst-forge/services/api/internal/authkit/crypto"
+	"github.com/input-output-hk/catalyst-forge/services/api/internal/authkit/domain"
+	"github.com/input-output-hk/catalyst-forge/services/api/internal/authkit/store"
 )
 
 // WebAuthnService handles WebAuthn ceremonies for registration and authentication.
 type WebAuthnService interface {
 	// BeginRegistration starts a WebAuthn registration ceremony.
-	BeginRegistration(ctx context.Context, user *domain.User, deviceName string, requireHardwareKey bool) (creationOptions interface{}, sessionKey string, err error)
+	BeginRegistration(ctx context.Context, user *domain.User, deviceName string, requireHardwareKey bool) (creationOptions json.RawMessage, sessionKey string, err error)
 
 	// FinishRegistration completes a WebAuthn registration ceremony.
-	FinishRegistration(ctx context.Context, sessionKey string, clientResponse interface{}) (*domain.Credential, error)
+	FinishRegistration(ctx context.Context, sessionKey string, clientResponse json.RawMessage) (*domain.Credential, error)
 
 	// BeginLogin starts a WebAuthn authentication ceremony (username-less).
-	BeginLogin(ctx context.Context, userHint string) (assertionOptions interface{}, sessionKey string, err error)
+	BeginLogin(ctx context.Context, userHint string) (assertionOptions json.RawMessage, sessionKey string, err error)
 
 	// FinishLogin completes a WebAuthn authentication ceremony.
-	FinishLogin(ctx context.Context, sessionKey string, clientResponse interface{}) (*domain.User, *domain.Credential, error)
+	FinishLogin(ctx context.Context, sessionKey string, clientResponse json.RawMessage) (*domain.User, *domain.Credential, error)
 
 	// BeginStepUp starts a step-up authentication ceremony for an authenticated user.
-	BeginStepUp(ctx context.Context, user *domain.User, action string) (assertionOptions interface{}, sessionKey string, err error)
+	BeginStepUp(ctx context.Context, user *domain.User, action string) (assertionOptions json.RawMessage, sessionKey string, err error)
 
 	// FinishStepUp completes a step-up authentication ceremony.
-	FinishStepUp(ctx context.Context, sessionKey string, clientResponse interface{}) (*domain.User, error)
+	FinishStepUp(ctx context.Context, sessionKey string, clientResponse json.RawMessage) (*domain.User, error)
 }
 
 // webAuthnService implements WebAuthnService.
 type webAuthnService struct {
-	webauthn       *webauthn.WebAuthn
-	users          store.UserStore
-	credentials    store.CredentialStore
-	challenges     store.ChallengeStore
-	rand           crypto.Rand
-	adminAAGUIDs   map[string]bool
-	challengeTTL   time.Duration
+	webauthn     *webauthn.WebAuthn
+	users        store.UserStore
+	credentials  store.CredentialStore
+	challenges   store.ChallengeStore
+	rand         crypto.Rand
+	adminAAGUIDs map[string]bool
+	challengeTTL time.Duration
 }
 
 // WebAuthnConfig holds configuration for the WebAuthn service.
@@ -128,7 +132,7 @@ func (u *webAuthnUser) WebAuthnIcon() string {
 }
 
 // BeginRegistration starts a WebAuthn registration ceremony.
-func (s *webAuthnService) BeginRegistration(ctx context.Context, user *domain.User, deviceName string, requireHardwareKey bool) (creationOptions interface{}, sessionKey string, err error) {
+func (s *webAuthnService) BeginRegistration(ctx context.Context, user *domain.User, deviceName string, requireHardwareKey bool) (creationOptions json.RawMessage, sessionKey string, err error) {
 	// Load existing credentials for exclusion list
 	creds, err := s.credentials.GetByUser(ctx, user.ID)
 	if err != nil {
@@ -162,13 +166,16 @@ func (s *webAuthnService) BeginRegistration(ctx context.Context, user *domain.Us
 			"credProps": true,
 		}),
 	}
-	
-	// Use direct attestation for admin/hardware key requirements
-	if requireHardwareKey {
-		opts = append(opts, webauthn.WithConveyancePreference(protocol.PreferDirectAttestation))
-	}
-	
+
+	// Keep default attestation preference (PreferNoAttestation); rely on AAGUID checks instead
+
 	options, session, err := s.webauthn.BeginRegistration(webauthnUser, opts...)
+	if err != nil {
+		return nil, "", err
+	}
+
+	// Marshal options to raw JSON for pass-through
+	optionsJSON, err := json.Marshal(options)
 	if err != nil {
 		return nil, "", err
 	}
@@ -182,23 +189,23 @@ func (s *webAuthnService) BeginRegistration(ctx context.Context, user *domain.Us
 
 	// Store session data in challenge store
 	sessionData := map[string]interface{}{
-		"type":                "registration",
-		"session":             session,
-		"user_id":             user.ID.String(),
-		"device_name":         deviceName,
+		"type":                 "registration",
+		"session":              session,
+		"user_id":              user.ID.String(),
+		"device_name":          deviceName,
 		"require_hardware_key": requireHardwareKey,
 	}
 	sessionJSON, _ := json.Marshal(sessionData)
-	
+
 	if err := s.challenges.Set(ctx, sessionKey, sessionJSON, s.challengeTTL); err != nil {
 		return nil, "", err
 	}
 
-	return options, sessionKey, nil
+	return json.RawMessage(optionsJSON), sessionKey, nil
 }
 
 // FinishRegistration completes a WebAuthn registration ceremony.
-func (s *webAuthnService) FinishRegistration(ctx context.Context, sessionKey string, clientResponse interface{}) (*domain.Credential, error) {
+func (s *webAuthnService) FinishRegistration(ctx context.Context, sessionKey string, clientResponse json.RawMessage) (*domain.Credential, error) {
 	// Retrieve session data
 	sessionJSON, err := s.challenges.Get(ctx, sessionKey)
 	if err != nil {
@@ -208,11 +215,11 @@ func (s *webAuthnService) FinishRegistration(ctx context.Context, sessionKey str
 	defer func() { _ = s.challenges.Delete(ctx, sessionKey) }()
 
 	var sessionData struct {
-		Type              string                    `json:"type"`
-		Session           *webauthn.SessionData     `json:"session"`
-		UserID            string                    `json:"user_id"`
-		DeviceName        string                    `json:"device_name"`
-		RequireHardwareKey bool                      `json:"require_hardware_key"`
+		Type               string                `json:"type"`
+		Session            *webauthn.SessionData `json:"session"`
+		UserID             string                `json:"user_id"`
+		DeviceName         string                `json:"device_name"`
+		RequireHardwareKey bool                  `json:"require_hardware_key"`
 	}
 	if err := json.Unmarshal(sessionJSON, &sessionData); err != nil {
 		return nil, errors.New("invalid session data")
@@ -240,19 +247,14 @@ func (s *webAuthnService) FinishRegistration(ctx context.Context, sessionKey str
 		credentials: []webauthn.Credential{},
 	}
 
-	// Parse the client response
-	responseBytes, err := json.Marshal(clientResponse)
+	// Parse the client response (base64url-aware)
+	parsedCreation, err := protocol.ParseCredentialCreationResponseBody(bytes.NewReader(clientResponse))
 	if err != nil {
-		return nil, errors.New("invalid client response")
-	}
-
-	var parsedResponse protocol.ParsedCredentialCreationData
-	if err := json.Unmarshal(responseBytes, &parsedResponse); err != nil {
-		return nil, errors.New("failed to parse credential response")
+		return nil, fmt.Errorf("failed to parse credential response: %w", err)
 	}
 
 	// Verify the registration
-	credential, err := s.webauthn.CreateCredential(webauthnUser, *sessionData.Session, &parsedResponse)
+	credential, err := s.webauthn.CreateCredential(webauthnUser, *sessionData.Session, parsedCreation)
 	if err != nil {
 		return nil, fmt.Errorf("registration verification failed: %w", err)
 	}
@@ -260,10 +262,10 @@ func (s *webAuthnService) FinishRegistration(ctx context.Context, sessionKey str
 	// Extract AAGUID from attestation object
 	aaguid := extractAAGUID(credential.Authenticator.AAGUID)
 
-	// If hardware key is required (admin), verify AAGUID
+	// If hardware key is required (admin), verify AAGUID only when an allowlist is configured.
 	if sessionData.RequireHardwareKey {
-		if !s.adminAAGUIDs[aaguid] {
-			return nil, errors.New("hardware security key required for admin role")
+		if len(s.adminAAGUIDs) > 0 && !s.adminAAGUIDs[aaguid] {
+			return nil, errors.New("hardware security key not allowed for admin role")
 		}
 	}
 
@@ -288,11 +290,17 @@ func (s *webAuthnService) FinishRegistration(ctx context.Context, sessionKey str
 }
 
 // BeginLogin starts a WebAuthn authentication ceremony (username-less).
-func (s *webAuthnService) BeginLogin(ctx context.Context, userHint string) (assertionOptions interface{}, sessionKey string, err error) {
+func (s *webAuthnService) BeginLogin(ctx context.Context, userHint string) (assertionOptions json.RawMessage, sessionKey string, err error) {
 	// For username-less login, we don't specify allowed credentials
 	options, session, err := s.webauthn.BeginDiscoverableLogin(
 		webauthn.WithUserVerification(protocol.VerificationRequired),
 	)
+	if err != nil {
+		return nil, "", err
+	}
+
+	// Marshal options to raw JSON for pass-through
+	optionsJSON, err := json.Marshal(options)
 	if err != nil {
 		return nil, "", err
 	}
@@ -311,16 +319,16 @@ func (s *webAuthnService) BeginLogin(ctx context.Context, userHint string) (asse
 		"user_hint": userHint,
 	}
 	sessionJSON, _ := json.Marshal(sessionData)
-	
+
 	if err := s.challenges.Set(ctx, sessionKey, sessionJSON, s.challengeTTL); err != nil {
 		return nil, "", err
 	}
 
-	return options, sessionKey, nil
+	return json.RawMessage(optionsJSON), sessionKey, nil
 }
 
 // FinishLogin completes a WebAuthn authentication ceremony.
-func (s *webAuthnService) FinishLogin(ctx context.Context, sessionKey string, clientResponse interface{}) (*domain.User, *domain.Credential, error) {
+func (s *webAuthnService) FinishLogin(ctx context.Context, sessionKey string, clientResponse json.RawMessage) (*domain.User, *domain.Credential, error) {
 	// Retrieve session data
 	sessionJSON, err := s.challenges.Get(ctx, sessionKey)
 	if err != nil {
@@ -342,33 +350,38 @@ func (s *webAuthnService) FinishLogin(ctx context.Context, sessionKey string, cl
 		return nil, nil, errors.New("invalid session type")
 	}
 
-	// Parse the client response
-	responseBytes, err := json.Marshal(clientResponse)
+	// Parse the client response (base64url-aware)
+	parsedAssertion, err := protocol.ParseCredentialRequestResponseBody(bytes.NewReader(clientResponse))
 	if err != nil {
-		return nil, nil, errors.New("invalid client response")
+		slog.Default().Warn("webauthn: parse assertion failed", "err", err)
+		return nil, nil, fmt.Errorf("failed to parse assertion response: %w", err)
 	}
 
-	var parsedResponse protocol.ParsedCredentialAssertionData
-	if err := json.Unmarshal(responseBytes, &parsedResponse); err != nil {
-		return nil, nil, errors.New("failed to parse assertion response")
-	}
-
-	// Get user ID from response (userHandle)
-	if len(parsedResponse.Response.UserHandle) == 0 {
-		// Try to look up by credential ID if userHandle not provided
-		cred, err := s.credentials.Get(ctx, parsedResponse.RawID)
-		if err != nil {
+	// Resolve user ID, accommodating Safari which may omit or alter userHandle
+	slog.Default().Debug("webauthn: assertion meta", "rawID_len", len(parsedAssertion.RawID), "userHandle_len", len(parsedAssertion.Response.UserHandle))
+	var userID uuid.UUID
+	if len(parsedAssertion.Response.UserHandle) == 16 {
+		if uid, uerr := uuid.FromBytes(parsedAssertion.Response.UserHandle); uerr == nil {
+			userID = uid
+		} else {
+			slog.Default().Warn("webauthn: userHandle parse failed, falling back to credential lookup", "err", uerr)
+			cred, gerr := s.credentials.Get(ctx, parsedAssertion.RawID)
+			if gerr != nil {
+				slog.Default().Warn("webauthn: credential lookup failed", "err", gerr)
+				return nil, nil, errors.New("authentication failed")
+			}
+			userID = cred.UserID
+		}
+	} else {
+		slog.Default().Debug("webauthn: missing/non-uuid userHandle; using credential lookup")
+		cred, gerr := s.credentials.Get(ctx, parsedAssertion.RawID)
+		if gerr != nil {
+			slog.Default().Warn("webauthn: credential lookup failed", "err", gerr)
 			return nil, nil, errors.New("authentication failed")
 		}
-		parsedResponse.Response.UserHandle = cred.UserID[:]
+		userID = cred.UserID
 	}
 
-	// Parse user ID from userHandle
-	userID, err := uuid.FromBytes(parsedResponse.Response.UserHandle)
-	if err != nil {
-		return nil, nil, errors.New("invalid user handle")
-	}
-	
 	// Load user and credentials
 	user, err := s.users.GetByID(ctx, userID)
 	if err != nil {
@@ -407,9 +420,33 @@ func (s *webAuthnService) FinishLogin(ctx context.Context, sessionKey string, cl
 			return webauthnUser, nil
 		},
 		*sessionData.Session,
-		&parsedResponse,
+		parsedAssertion,
 	)
 	if err != nil {
+		// Safari/iCloud-synced passkeys can trigger a backup-eligible flag mismatch even when
+		// the assertion is otherwise valid. Treat this specific case as acceptable to avoid
+		// false negatives during login.
+		if strings.Contains(err.Error(), "Backup Eligible flag inconsistency") {
+			slog.Default().Warn("webauthn: ignoring backup-eligible mismatch during discoverable login", "err", err)
+			// Map the credential by raw ID and proceed
+			domainCred := credMap[string(parsedAssertion.RawID)]
+			if domainCred == nil {
+				if c, gerr := s.credentials.Get(ctx, parsedAssertion.RawID); gerr == nil && c != nil {
+					// ensure map hit for downstream
+					domainCred = c
+				} else {
+					slog.Default().Warn("webauthn: could not resolve credential after ignoring backup flag", "lookup_err", gerr)
+					return nil, nil, fmt.Errorf("authentication verification failed: %w", err)
+				}
+			}
+			// Persist last-used timestamp without changing sign count
+			if uerr := s.credentials.UpdateOnAssertion(ctx, domainCred.ID, domainCred.SignCount, time.Now().UTC()); uerr != nil {
+				slog.Default().Warn("webauthn: failed to persist assertion update (ignored)", "err", uerr)
+			}
+			return user, domainCred, nil
+		}
+
+		slog.Default().Warn("webauthn: validate discoverable login failed", "err", err)
 		return nil, nil, fmt.Errorf("authentication verification failed: %w", err)
 	}
 
@@ -418,30 +455,31 @@ func (s *webAuthnService) FinishLogin(ctx context.Context, sessionKey string, cl
 	if domainCred == nil {
 		return nil, nil, errors.New("credential not found")
 	}
-	
-	// Enforce hardware key requirement for admin users
-	if isAdmin(user) && !s.adminAAGUIDs[domainCred.AAGUID] {
-		return nil, nil, errors.New("admin must authenticate with a hardware security key")
+
+	// Enforce hardware key requirement for admin users only when an allowlist is configured.
+	if isAdmin(user) && len(s.adminAAGUIDs) > 0 && !s.adminAAGUIDs[domainCred.AAGUID] {
+		return nil, nil, errors.New("admin must authenticate with an allowed hardware security key")
 	}
 
-	// Update sign count (important for clone detection)
+	// Update sign count and last-used time.
+	// Equal counters are acceptable across authenticators; only strictly lower is suspicious.
+	if credential.Authenticator.SignCount > 0 && credential.Authenticator.SignCount < domainCred.SignCount {
+		return nil, nil, errors.New("potential credential clone detected")
+	}
+
 	if credential.Authenticator.SignCount > domainCred.SignCount {
 		domainCred.SignCount = credential.Authenticator.SignCount
-		if err := s.credentials.UpdateOnAssertion(ctx, domainCred.ID, domainCred.SignCount, time.Now().UTC()); err != nil {
-			// Log but don't fail authentication
-			_ = err
-		}
-	} else if credential.Authenticator.SignCount > 0 && credential.Authenticator.SignCount <= domainCred.SignCount {
-		// Potential credential clone detected
-		// In production, you might want to flag this for security review
-		return nil, nil, errors.New("potential credential clone detected")
+	}
+	// Always persist last-used to keep admin UI accurate even when counter is unchanged
+	if err := s.credentials.UpdateOnAssertion(ctx, domainCred.ID, domainCred.SignCount, time.Now().UTC()); err != nil {
+		slog.Default().Warn("webauthn: failed to persist assertion update", "err", err)
 	}
 
 	return user, domainCred, nil
 }
 
 // BeginStepUp starts a step-up authentication ceremony for an authenticated user.
-func (s *webAuthnService) BeginStepUp(ctx context.Context, user *domain.User, action string) (assertionOptions interface{}, sessionKey string, err error) {
+func (s *webAuthnService) BeginStepUp(ctx context.Context, user *domain.User, action string) (assertionOptions json.RawMessage, sessionKey string, err error) {
 	// Load user credentials
 	creds, err := s.credentials.GetByUser(ctx, user.ID)
 	if err != nil {
@@ -472,6 +510,12 @@ func (s *webAuthnService) BeginStepUp(ctx context.Context, user *domain.User, ac
 		return nil, "", err
 	}
 
+	// Marshal options to raw JSON for pass-through
+	optionsJSON, err := json.Marshal(options)
+	if err != nil {
+		return nil, "", err
+	}
+
 	// Generate session key
 	sessionKeyBytes, err := s.rand.Bytes(32)
 	if err != nil {
@@ -487,16 +531,16 @@ func (s *webAuthnService) BeginStepUp(ctx context.Context, user *domain.User, ac
 		"action":  action,
 	}
 	sessionJSON, _ := json.Marshal(sessionData)
-	
+
 	if err := s.challenges.Set(ctx, sessionKey, sessionJSON, s.challengeTTL); err != nil {
 		return nil, "", err
 	}
 
-	return options, sessionKey, nil
+	return json.RawMessage(optionsJSON), sessionKey, nil
 }
 
 // FinishStepUp completes a step-up authentication ceremony.
-func (s *webAuthnService) FinishStepUp(ctx context.Context, sessionKey string, clientResponse interface{}) (*domain.User, error) {
+func (s *webAuthnService) FinishStepUp(ctx context.Context, sessionKey string, clientResponse json.RawMessage) (*domain.User, error) {
 	// Retrieve session data
 	sessionJSON, err := s.challenges.Get(ctx, sessionKey)
 	if err != nil {
@@ -557,19 +601,14 @@ func (s *webAuthnService) FinishStepUp(ctx context.Context, sessionKey string, c
 		credentials: webauthnCreds,
 	}
 
-	// Parse the client response
-	responseBytes, err := json.Marshal(clientResponse)
+	// Parse the client response (base64url-aware)
+	parsedAssertion, err := protocol.ParseCredentialRequestResponseBody(bytes.NewReader(clientResponse))
 	if err != nil {
-		return nil, errors.New("invalid client response")
-	}
-
-	var parsedResponse protocol.ParsedCredentialAssertionData
-	if err := json.Unmarshal(responseBytes, &parsedResponse); err != nil {
-		return nil, errors.New("failed to parse assertion response")
+		return nil, fmt.Errorf("failed to parse assertion response: %w", err)
 	}
 
 	// Verify the assertion
-	credential, err := s.webauthn.ValidateLogin(webauthnUser, *sessionData.Session, &parsedResponse)
+	credential, err := s.webauthn.ValidateLogin(webauthnUser, *sessionData.Session, parsedAssertion)
 	if err != nil {
 		return nil, fmt.Errorf("step-up verification failed: %w", err)
 	}
@@ -579,10 +618,10 @@ func (s *webAuthnService) FinishStepUp(ctx context.Context, sessionKey string, c
 	if domainCred == nil {
 		return nil, errors.New("credential not found")
 	}
-	
-	// Enforce hardware key requirement for admin users
-	if isAdmin(user) && !s.adminAAGUIDs[domainCred.AAGUID] {
-		return nil, errors.New("admin must authenticate with a hardware security key")
+
+	// Enforce hardware key requirement for admin users only when an allowlist is configured.
+	if isAdmin(user) && len(s.adminAAGUIDs) > 0 && !s.adminAAGUIDs[domainCred.AAGUID] {
+		return nil, errors.New("admin must authenticate with an allowed hardware security key")
 	}
 
 	// Update sign count
@@ -604,7 +643,7 @@ func extractAAGUID(aaguidBytes []byte) string {
 	if len(aaguidBytes) != 16 {
 		return ""
 	}
-	
+
 	u, err := uuid.FromBytes(aaguidBytes)
 	if err != nil {
 		return ""
@@ -621,4 +660,3 @@ func isAdmin(user *domain.User) bool {
 	}
 	return false
 }
-

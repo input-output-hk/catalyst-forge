@@ -1,12 +1,12 @@
 /**
- * Foundry TypeScript Client
+ * Forge TypeScript Client
  *
- * A fully-typed TypeScript client for the Foundry API, auto-generated from OpenAPI specifications.
+ * A fully-typed TypeScript client for the Forge API, auto-generated from OpenAPI specifications.
  */
 
 // Main client and auth providers
 export {
-  FoundryClient,
+  ForgeClient,
   BearerTokenProvider,
   ApiKeyProvider,
   BasicAuthProvider,
@@ -15,7 +15,7 @@ export {
 } from './api/client';
 
 // Types
-export type { FoundryClientOptions, AuthProvider } from './api/client';
+export type { ForgeClientOptions as ForgeClientOptions, AuthProvider } from './api/client';
 
 // Export all OpenAPI types
 export type { paths, components, operations } from './api/schema';

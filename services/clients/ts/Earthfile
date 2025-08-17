@@ -20,27 +20,39 @@ src:
 generate:
     FROM +src
 
-    # Use the API's generated swagger artifact
     COPY ../../api+swagger/docs /api/docs
-
-    # Generate TypeScript types from OpenAPI spec using project script
     RUN npm run generate
 
     SAVE ARTIFACT src/api/schema.d.ts AS LOCAL src/api/schema.d.ts
 
+bundle:
+    FROM +generate
+
+    RUN npm run build
+
+    SAVE ARTIFACT dist/index.mjs dist/index.mjs
+    SAVE ARTIFACT dist/index.d.ts dist/index.d.ts
+    SAVE ARTIFACT src/api/schema.d.ts src/api/schema.d.ts
+
+vendor:
+    FROM +bundle
+
+    RUN mkdir -p /out/forge-client \
+        && cp dist/index.mjs /out/forge-client/index.mjs \
+        && cp dist/index.d.ts /out/forge-client/index.d.ts \
+        && cp src/api/schema.d.ts /out/forge-client/schema.d.ts \
+        && printf '{\n  "type": "module",\n  "name": "forge-client",\n  "private": true,\n  "types": "./index.d.ts"\n}\n' > /out/forge-client/package.json \
+        && printf '\nexport type { paths } from "./schema";\n' >> /out/forge-client/index.d.ts
+
+    SAVE ARTIFACT /out/forge-client /forge-client
+
 check:
     FROM +src
 
-    # Ensure we are using the API's generated swagger artifact
     COPY ../../api+swagger/docs /api/docs
 
-    # Ensure generated types are up-to-date
     RUN npm run generate && git diff --exit-code src/api/schema.d.ts && echo "✓ OpenAPI types up-to-date"
-
-    # Type check
     RUN npm run typecheck && echo "✓ TypeScript type checking passed"
-
-    # Format check
     RUN npm run format:check && echo "✓ Code formatting check passed"
 
 

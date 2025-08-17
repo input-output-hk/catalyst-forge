@@ -2,7 +2,7 @@ import createClient, { type Middleware, type Client } from 'openapi-fetch';
 import { createAutoAuthFetch, InMemoryTokenStore, type TokenStore } from './autoAuth';
 import type { paths } from './schema';
 
-export type FoundryClientOptions = {
+export type ForgeClientOptions = {
   baseUrl: string;
   headers?: Record<string, string>;
   fetch?: typeof fetch;
@@ -34,10 +34,10 @@ export class BearerTokenProvider implements AuthProvider {
   /**
    * Create from environment variable
    */
-  static fromEnv(envVar = 'FOUNDRY_API_TOKEN'): BearerTokenProvider {
-    const token = process.env[envVar] || process.env.FOUNDRY_TOKEN;
+  static fromEnv(envVar = 'Forge_API_TOKEN'): BearerTokenProvider {
+    const token = process.env[envVar] || process.env.Forge_TOKEN;
     if (!token) {
-      throw new Error(`Environment variable ${envVar} or FOUNDRY_TOKEN not set`);
+      throw new Error(`Environment variable ${envVar} or Forge_TOKEN not set`);
     }
     return new BearerTokenProvider(token);
   }
@@ -66,7 +66,7 @@ export class ApiKeyProvider implements AuthProvider {
   /**
    * Create from environment variable
    */
-  static fromEnv(envVar = 'FOUNDRY_API_KEY', headerName = 'X-API-Key'): ApiKeyProvider {
+  static fromEnv(envVar = 'Forge_API_KEY', headerName = 'X-API-Key'): ApiKeyProvider {
     const apiKey = process.env[envVar];
     if (!apiKey) {
       throw new Error(`Environment variable ${envVar} not set`);
@@ -128,25 +128,25 @@ export const errorHandlingMiddleware: Middleware = {
  */
 export const loggingMiddleware: Middleware = {
   async onRequest({ request }) {
-    console.log(`[Foundry API] ${request.method} ${request.url}`);
+    console.log(`[Forge API] ${request.method} ${request.url}`);
     return request;
   },
   async onResponse({ response, request }) {
-    console.log(`[Foundry API] ${request.method} ${request.url} -> ${response.status}`);
+    console.log(`[Forge API] ${request.method} ${request.url} -> ${response.status}`);
     return response;
   },
 };
 
 /**
- * Main Foundry API client class
+ * Main Forge API client class
  */
-export class FoundryClient {
+export class ForgeClient {
   private client: Client<paths>;
   private tokenStore?: TokenStore;
   private httpFetch: typeof fetch;
   private baseUrl: string;
 
-  constructor(options: FoundryClientOptions) {
+  constructor(options: ForgeClientOptions) {
     const middleware = options.middleware || [];
 
     // Always add error handling middleware
@@ -154,7 +154,8 @@ export class FoundryClient {
 
     // Auto-auth fetch wrapper (browser-only by default)
     const enableAutoAuth = options.autoAuth ?? (typeof window !== 'undefined');
-    const tokenStore = options.tokenStore ?? new InMemoryTokenStore();
+    // Token store is optional now; when omitted we rely on cookies only
+    const tokenStore = options.tokenStore;
     this.tokenStore = enableAutoAuth ? tokenStore : undefined;
 
     const wrappedFetch = enableAutoAuth
@@ -162,6 +163,9 @@ export class FoundryClient {
         baseUrl: options.baseUrl,
         tokenStore,
         credentials: 'include',
+        // Refresh on any 401 (except the refresh call itself). This supports cookie-based auth
+        // where no Authorization header is present but a refresh should still occur on expiry.
+        refreshPolicy: 'always',
       })
       : (options.fetch ?? fetch);
 
@@ -204,10 +208,10 @@ export class FoundryClient {
   static withBearerToken(
     baseUrl: string,
     token: string,
-    options?: Partial<FoundryClientOptions>
-  ): FoundryClient {
+    options?: Partial<ForgeClientOptions>
+  ): ForgeClient {
     const authProvider = new BearerTokenProvider(token);
-    return new FoundryClient({
+    return new ForgeClient({
       baseUrl,
       ...options,
       middleware: [authProvider.middleware, ...(options?.middleware || [])],
@@ -221,10 +225,10 @@ export class FoundryClient {
     baseUrl: string,
     apiKey: string,
     headerName = 'X-API-Key',
-    options?: Partial<FoundryClientOptions>
-  ): FoundryClient {
+    options?: Partial<ForgeClientOptions>
+  ): ForgeClient {
     const authProvider = new ApiKeyProvider(apiKey, headerName);
-    return new FoundryClient({
+    return new ForgeClient({
       baseUrl,
       ...options,
       middleware: [authProvider.middleware, ...(options?.middleware || [])],
@@ -238,10 +242,10 @@ export class FoundryClient {
     baseUrl: string,
     username: string,
     password: string,
-    options?: Partial<FoundryClientOptions>
-  ): FoundryClient {
+    options?: Partial<ForgeClientOptions>
+  ): ForgeClient {
     const authProvider = new BasicAuthProvider(username, password);
-    return new FoundryClient({
+    return new ForgeClient({
       baseUrl,
       ...options,
       middleware: [authProvider.middleware, ...(options?.middleware || [])],
@@ -251,22 +255,22 @@ export class FoundryClient {
   /**
    * Create client from environment variables
    */
-  static fromEnv(options?: Partial<FoundryClientOptions>): FoundryClient {
-    const baseUrl = process.env.FOUNDRY_API_URL || 'https://api.foundry.example.com';
+  static fromEnv(options?: Partial<ForgeClientOptions>): ForgeClient {
+    const baseUrl = process.env.Forge_API_URL || 'https://api.Forge.example.com';
 
     // Try different auth methods in order of preference
-    if (process.env.FOUNDRY_API_TOKEN || process.env.FOUNDRY_TOKEN) {
+    if (process.env.Forge_API_TOKEN || process.env.Forge_TOKEN) {
       const authProvider = BearerTokenProvider.fromEnv();
-      return new FoundryClient({
+      return new ForgeClient({
         baseUrl,
         ...options,
         middleware: [authProvider.middleware, ...(options?.middleware || [])],
       });
     }
 
-    if (process.env.FOUNDRY_API_KEY) {
+    if (process.env.Forge_API_KEY) {
       const authProvider = ApiKeyProvider.fromEnv();
-      return new FoundryClient({
+      return new ForgeClient({
         baseUrl,
         ...options,
         middleware: [authProvider.middleware, ...(options?.middleware || [])],
@@ -274,7 +278,7 @@ export class FoundryClient {
     }
 
     // No auth configured
-    return new FoundryClient({
+    return new ForgeClient({
       baseUrl,
       ...options,
     });

@@ -95,13 +95,14 @@ func (h *EnvironmentHandler) Create(c *gin.Context) {
 // @Failure 500 {object} contracts.ErrorResponse "Internal server error"
 // @Router /api/v1/environments/{id} [get]
 func (h *EnvironmentHandler) GetByID(c *gin.Context) {
-	var param contracts.EnvironmentIDParam
-	if err := c.ShouldBindUri(&param); err != nil {
+	idStr := c.Param("environment_id")
+	envID, err := h.ParseUUID(idStr)
+	if err != nil {
 		h.RespondWithValidationError(c, err)
 		return
 	}
 
-	env, err := h.service.GetByID(c.Request.Context(), param.EnvironmentID)
+	env, err := h.service.GetByID(c.Request.Context(), envID)
 	if err != nil {
 		if errors.Is(err, environmentService.ErrEnvironmentNotFound) {
 			h.RespondWithNotFound(c, "Environment")
@@ -131,7 +132,7 @@ func (h *EnvironmentHandler) GetByID(c *gin.Context) {
 func (h *EnvironmentHandler) GetByProjectAndName(c *gin.Context) {
 	// Bind path params as strings to avoid tight coupling to uuid.UUID in transport
 	type envPathParam struct {
-		ProjectID string `uri:"project_id" binding:"required,uuid4"`
+		ProjectID string `uri:"project_id" binding:"required"`
 		Name      string `uri:"name" binding:"required"`
 	}
 	var param envPathParam
@@ -245,14 +246,7 @@ func (h *EnvironmentHandler) List(c *gin.Context) {
 // @Failure 500 {object} contracts.ErrorResponse "Internal server error"
 // @Router /api/v1/environments/{id} [patch]
 func (h *EnvironmentHandler) Update(c *gin.Context) {
-	type pathParam struct {
-		EnvironmentID string `uri:"environment_id" binding:"required,uuid4"`
-	}
-	var p pathParam
-	if err := c.ShouldBindUri(&p); err != nil {
-		h.RespondWithValidationError(c, err)
-		return
-	}
+	idStr := c.Param("environment_id")
 
 	var req contracts.EnvironmentUpdate
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -279,7 +273,7 @@ func (h *EnvironmentHandler) Update(c *gin.Context) {
 		svcReq.IsProtected = &isProtected
 	}
 
-	envID, err := h.ParseUUID(p.EnvironmentID)
+	envID, err := h.ParseUUID(idStr)
 	if err != nil {
 		h.RespondWithValidationError(c, err)
 		return
@@ -315,16 +309,9 @@ func (h *EnvironmentHandler) Update(c *gin.Context) {
 // @Failure 500 {object} contracts.ErrorResponse "Internal server error"
 // @Router /api/v1/environments/{id} [delete]
 func (h *EnvironmentHandler) Delete(c *gin.Context) {
-	type pathParam struct {
-		EnvironmentID string `uri:"environment_id" binding:"required,uuid4"`
-	}
-	var p pathParam
-	if err := c.ShouldBindUri(&p); err != nil {
-		h.RespondWithValidationError(c, err)
-		return
-	}
+	idStr := c.Param("environment_id")
 
-	envID, err := h.ParseUUID(p.EnvironmentID)
+	envID, err := h.ParseUUID(idStr)
 	if err != nil {
 		h.RespondWithValidationError(c, err)
 		return

@@ -57,11 +57,12 @@ export const RecoveryKeysGate = () => {
     actions.completeRecoveryGate();
     setInteracted(false);
     toast({ title: "Device registered successfully", description: "Recovery keys saved. You're all set." });
-    navigate("/");
+    const dest = state.recoveryGate.returnTo || window.location.pathname;
+    navigate(dest);
   };
 
   return (
-    <Dialog open={state.recoveryGate.open} onOpenChange={() => {}}>
+    <Dialog open={state.recoveryGate.open} onOpenChange={() => { }}>
       <DialogContent
         className="sm:max-w-3xl max-w-[calc(100vw-2rem)] overflow-x-hidden sm:max-h-[80vh] sm:overflow-y-auto [&>button.absolute.right-4.top-4]:hidden"
         aria-describedby="recovery-description"

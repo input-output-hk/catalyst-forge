@@ -8,6 +8,11 @@ func BuildPolicies() *libauth.PolicyRegistry {
 	// Require auth for listing credentials, logout, logout-all
 	reg.RequireAuth("GET", "/api/v1/auth/credentials")
 	reg.RequireAuth("POST", "/api/v1/auth/logout", "/api/v1/auth/logout-all")
+	// Sessions endpoints
+	reg.RequireAuth("GET", "/api/v1/auth/sessions")
+	reg.RequireAuth("DELETE", "/api/v1/auth/sessions/*")
+	// Recovery codes generation
+	reg.RequireAuth("POST", "/api/v1/auth/recovery/codes/generate")
 	// Step-up for sensitive operations can be added here as needed.
 	return reg
 }

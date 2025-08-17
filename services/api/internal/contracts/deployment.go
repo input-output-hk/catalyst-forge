@@ -10,7 +10,7 @@ import (
 type DeploymentCreate struct {
 	ReleaseID     string  `json:"release_id" binding:"required,uuid4"`
 	EnvironmentID string  `json:"environment_id" binding:"required,uuid4"`
-	Status        *string `json:"status,omitempty" binding:"omitempty,oneof=pending submitted failed succeeded canceled"`
+	Status        *string `json:"status,omitempty" binding:"omitempty,oneof=pending rendered pushed reconciling healthy degraded failed rolled_back"`
 	IntentDigest  *string `json:"intent_digest,omitempty"`
 	StatusReason  *string `json:"status_reason,omitempty"`
 	DeployedBy    *string `json:"deployed_by,omitempty"`
@@ -18,7 +18,7 @@ type DeploymentCreate struct {
 
 // DeploymentUpdate represents a request to update a deployment
 type DeploymentUpdate struct {
-	Status       *string    `json:"status,omitempty" binding:"omitempty,oneof=pending submitted failed succeeded canceled"`
+	Status       *string    `json:"status,omitempty" binding:"omitempty,oneof=pending rendered pushed reconciling healthy degraded failed rolled_back"`
 	StatusReason *string    `json:"status_reason,omitempty"`
 	DeployedAt   *time.Time `json:"deployed_at,omitempty"`
 }
@@ -41,7 +41,7 @@ type DeploymentResponse struct {
 type DeploymentListFilter struct {
 	ReleaseID     *string `json:"release_id,omitempty" form:"release_id" binding:"omitempty,uuid4"`
 	EnvironmentID *string `json:"environment_id,omitempty" form:"environment_id" binding:"omitempty,uuid4"`
-	Status        *string `json:"status,omitempty" form:"status" binding:"omitempty,oneof=pending submitted failed succeeded canceled"`
+	Status        *string `json:"status,omitempty" form:"status" binding:"omitempty,oneof=pending rendered pushed reconciling healthy degraded failed rolled_back"`
 	DeployedBy    *string `json:"deployed_by,omitempty" form:"deployed_by"`
 	TimeRange
 	Pagination
@@ -50,7 +50,7 @@ type DeploymentListFilter struct {
 
 // DeploymentIDParam represents a deployment ID parameter
 type DeploymentIDParam struct {
-	DeploymentID uuid.UUID `uri:"deployment_id" binding:"required,uuid4"`
+	DeploymentID string `uri:"deployment_id" binding:"required"`
 }
 
 // ModuleVersion represents a module version in render job
@@ -61,7 +61,6 @@ type ModuleVersion struct {
 
 // RenderJobCreate represents a request to create a render job
 type RenderJobCreate struct {
-	DeploymentID    string          `json:"deployment_id" binding:"required,uuid4"`
 	ModuleVersions  []ModuleVersion `json:"module_versions,omitempty"`
 	BundleHash      *string         `json:"bundle_hash,omitempty"`
 	RendererVersion *string         `json:"renderer_version,omitempty"`

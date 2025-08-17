@@ -53,6 +53,15 @@ type AuthConfig struct {
 	BootstrapToken string
 	JWKSRoute      bool
 
+	// Persistent signing keys (optional; if unset, ephemeral key is generated)
+	SigningKeyPath string // Path to PEM-encoded ES256 private key
+	SigningKeyPEM  string // Inline PEM-encoded ES256 private key
+	SigningKeyKID  string // Key ID to use for signing/JWKS
+
+	// CSRF secret (optional; if unset, random secret is generated on boot)
+	// Accepts raw string, base64 (std or raw-url) encoded bytes, or hex.
+	CSRFSecret string
+
 	// RBAC defaults seeding
 	RBACSeedDefaults bool
 

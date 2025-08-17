@@ -49,7 +49,7 @@ export function AppSidebar() {
   const activeItemCls = `${baseItemCls} text-primary font-semibold bg-primary/10 shadow-[inset_3px_0_0_0_hsl(var(--primary)/0.95)]`;
   const inactiveItemCls = `${baseItemCls} text-muted-foreground hover:bg-primary/5 hover:text-primary`;
 
-  
+
 
   return (
     <Sidebar className={`${collapsed ? "w-14" : "w-60"} group-data-[side=left]:border-transparent group-data-[side=right]:border-transparent`} collapsible="icon">
@@ -109,19 +109,25 @@ export function AppSidebar() {
           {openSecurity && (
             <SidebarGroupContent>
               <SidebarMenu>
-                {securityItems.map((item) => {
-                  const active = currentPath === item.url || currentPath.startsWith(item.url + "/");
-                  return (
-                    <SidebarMenuItem key={item.title}>
-                      <SidebarMenuButton asChild isActive={active} className={active ? activeItemCls : inactiveItemCls}>
-                        <NavLink to={item.url} end>
-                          <item.icon className="mr-2 h-[18px] w-[18px]" />
-                          {!collapsed && <span>{item.title}</span>}
-                        </NavLink>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  );
-                })}
+                {securityItems
+                  .filter((item) => {
+                    // Hide admin-only items for non-admins
+                    const adminOnly = item.url === "/users" || item.url === "/audit";
+                    return adminOnly ? app.session.roles?.includes("admin") : true;
+                  })
+                  .map((item) => {
+                    const active = currentPath === item.url || currentPath.startsWith(item.url + "/");
+                    return (
+                      <SidebarMenuItem key={item.title}>
+                        <SidebarMenuButton asChild isActive={active} className={active ? activeItemCls : inactiveItemCls}>
+                          <NavLink to={item.url} end>
+                            <item.icon className="mr-2 h-[18px] w-[18px]" />
+                            {!collapsed && <span>{item.title}</span>}
+                          </NavLink>
+                        </SidebarMenuButton>
+                      </SidebarMenuItem>
+                    );
+                  })}
               </SidebarMenu>
             </SidebarGroupContent>
           )}

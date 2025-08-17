@@ -3,6 +3,7 @@ import { Helmet } from "react-helmet-async";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { LogoMark } from "@/components/brand/LogoMark";
+import { ForgeAnimation } from "@/components/brand/ForgeAnimation";
 import { BRAND } from "@/lib/brand";
 import { preloadAuthFlows } from "@/lib/preloaders";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
@@ -16,6 +17,12 @@ import { Input } from "@/components/ui/input";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import { useToast } from "@/hooks/use-toast";
 import { useAppStore } from "@/store/app-store";
+// Using the vendored dist; types are not available in app, so import as any
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore
+import * as forgeClient from "forge-client";
+import { getApiBaseUrl } from "@/lib/api";
+import { loginWithWebAuthn } from "@/lib/webauthn";
 import { formatRecoveryKey, isValidRecoveryKey, normalizeRecoveryKeyInput } from "@/lib/recovery";
 import { cn } from "@/lib/utils";
 export default function Landing() {
@@ -88,7 +95,7 @@ export default function Landing() {
   const fieldError = recForm.formState.errors.key?.message;
 
   return (
-  <div className="relative min-h-screen bg-background text-foreground overflow-hidden">
+    <div className="relative min-h-screen bg-background text-foreground overflow-hidden">
       <Helmet>
         <title>Catalyst Forge – Developer Platform</title>
         <meta name="description" content="Developer platform landing: login, access request, and account recovery." />
@@ -106,6 +113,9 @@ export default function Landing() {
 
       {/* Vignette spotlight */}
       <div className="absolute inset-0 vignette-center" aria-hidden="true" />
+
+      {/* Animated forge background */}
+      <ForgeAnimation className="z-0" />
 
       <main className="relative z-10 flex min-h-screen items-center justify-center px-4">
         <section
@@ -135,7 +145,18 @@ export default function Landing() {
               onPointerEnter={preloadAuthFlows}
               onFocus={preloadAuthFlows}
               onTouchStart={preloadAuthFlows}
-              onClick={() => navigate("/auth-demo")}
+              onClick={async () => {
+                try {
+                  // Give immediate UI feedback so it doesn't feel inert
+                  toast({ title: "Authenticate", description: "Touch your security key or biometric sensor." });
+                  await loginWithWebAuthn();
+                  const from = (location.state as { from?: string } | null)?.from as string | undefined;
+                  navigate(from || "/", { replace: true });
+                } catch (err) {
+                  const msg = err instanceof Error ? err.message : "Login failed";
+                  toast({ title: "Login failed", description: msg, variant: "destructive" });
+                }
+              }}
             >
               Login with this device
             </Button>
@@ -221,27 +242,27 @@ export default function Landing() {
                     name="key"
                     render={({ field }) => (
                       <FormItem className="group">
-<FormLabel className="flex items-center gap-2">
-  <span>Recovery key</span>
-  <Popover>
-    <PopoverTrigger asChild>
-      <button
-        type="button"
-        className="inline-flex items-center text-muted-foreground hover:text-foreground focus:outline-none"
-        aria-label="Recovery key format information"
-      >
-        <Info className="h-4 w-4" aria-hidden="true" />
-      </button>
-    </PopoverTrigger>
-    <PopoverContent className="w-80">
-      <div className="space-y-2 text-sm">
-        <p>Use Base32 uppercase A–Z (excluding I, L, O) and digits 2–7.</p>
-        <p>Accepted lengths: 20, 25, or 26 characters.</p>
-        <p className="font-mono text-xs text-foreground/80">Example: ABCDE-FGHJK-MNPQR-STUVW-XYZ23</p>
-      </div>
-    </PopoverContent>
-  </Popover>
-</FormLabel>
+                        <FormLabel className="flex items-center gap-2">
+                          <span>Recovery key</span>
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <button
+                                type="button"
+                                className="inline-flex items-center text-muted-foreground hover:text-foreground focus:outline-none"
+                                aria-label="Recovery key format information"
+                              >
+                                <Info className="h-4 w-4" aria-hidden="true" />
+                              </button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-80">
+                              <div className="space-y-2 text-sm">
+                                <p>Use Base32 uppercase A–Z (excluding I, L, O) and digits 2–7.</p>
+                                <p>Accepted lengths: 20, 25, or 26 characters.</p>
+                                <p className="font-mono text-xs text-foreground/80">Example: ABCDE-FGHJK-MNPQR-STUVW-XYZ23</p>
+                              </div>
+                            </PopoverContent>
+                          </Popover>
+                        </FormLabel>
                         <FormControl>
                           <Input
                             {...field}
@@ -265,29 +286,29 @@ export default function Landing() {
                             }}
                           />
                         </FormControl>
-<FormMessage
-  role="status"
-  aria-live="polite"
-  className={cn(
-    "mt-1.5 flex items-start gap-2 text-[13px]",
-    !fieldError && status?.tone === "success" && "text-success",
-    !fieldError && status?.tone === "warning" && "text-warning"
-  )}
->
-  {fieldError ? (
-    <span className="fade-in-up">{fieldError}</span>
-  ) : status ? (
-    <>
-      {status.tone === "success" ? (
-        <CheckCircle2 className="h-4 w-4 mt-0.5" aria-hidden="true" />
-      ) : (
-        <AlertTriangle className="h-4 w-4 mt-0.5" aria-hidden="true" />
-      )}
-      <span key={`${status.tone}-${rawLen}`} className="fade-in-up">{status.msg}</span>
-    </>
-  ) : null}
-</FormMessage>
-                        </FormItem>
+                        <FormMessage
+                          role="status"
+                          aria-live="polite"
+                          className={cn(
+                            "mt-1.5 flex items-start gap-2 text-[13px]",
+                            !fieldError && status?.tone === "success" && "text-success",
+                            !fieldError && status?.tone === "warning" && "text-warning"
+                          )}
+                        >
+                          {fieldError ? (
+                            <span className="fade-in-up">{fieldError}</span>
+                          ) : status ? (
+                            <>
+                              {status.tone === "success" ? (
+                                <CheckCircle2 className="h-4 w-4 mt-0.5" aria-hidden="true" />
+                              ) : (
+                                <AlertTriangle className="h-4 w-4 mt-0.5" aria-hidden="true" />
+                              )}
+                              <span key={`${status.tone}-${rawLen}`} className="fade-in-up">{status.msg}</span>
+                            </>
+                          ) : null}
+                        </FormMessage>
+                      </FormItem>
                     )}
                   />
                   <div className="flex justify-end gap-2">

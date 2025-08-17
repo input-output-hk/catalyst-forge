@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"encoding/json"
 	"errors"
 	"log/slog"
 	"net/http"
@@ -101,15 +102,8 @@ func (h *DeploymentHandler) Create(c *gin.Context) {
 // @Failure 500 {object} contracts.ErrorResponse "Internal server error"
 // @Router /api/v1/deployments/{id} [get]
 func (h *DeploymentHandler) GetByID(c *gin.Context) {
-	type pathParam struct {
-		DeploymentID string `uri:"deployment_id" binding:"required,uuid4"`
-	}
-	var p pathParam
-	if err := c.ShouldBindUri(&p); err != nil {
-		h.RespondWithValidationError(c, err)
-		return
-	}
-	id, err := h.ParseUUID(p.DeploymentID)
+	idStr := c.Param("deployment_id")
+	id, err := h.ParseUUID(idStr)
 	if err != nil {
 		h.RespondWithValidationError(c, err)
 		return
@@ -359,13 +353,14 @@ func (h *DeploymentHandler) toResponse(d *deployment.Deployment) *contracts.Depl
 // @Failure 500 {object} contracts.ErrorResponse "Internal server error"
 // @Router /api/v1/deployments/{deployment_id}/render-job [get]
 func (h *DeploymentHandler) GetRenderJob(c *gin.Context) {
-	var param contracts.DeploymentIDParam
-	if err := c.ShouldBindUri(&param); err != nil {
+	idStr := c.Param("deployment_id")
+	depID, err := h.ParseUUID(idStr)
+	if err != nil {
 		h.RespondWithValidationError(c, err)
 		return
 	}
 
-	renderJob, err := h.renderService.GetByDeploymentID(c.Request.Context(), param.DeploymentID)
+	renderJob, err := h.renderService.GetByDeploymentID(c.Request.Context(), depID)
 	if err != nil {
 		if errors.Is(err, renderService.ErrRenderJobNotFound) {
 			h.RespondWithNotFound(c, "RenderJob")
@@ -393,21 +388,23 @@ func (h *DeploymentHandler) GetRenderJob(c *gin.Context) {
 // @Failure 500 {object} contracts.ErrorResponse "Internal server error"
 // @Router /api/v1/deployments/{deployment_id}/render-job [post]
 func (h *DeploymentHandler) CreateRenderJob(c *gin.Context) {
-	var param contracts.DeploymentIDParam
-	if err := c.ShouldBindUri(&param); err != nil {
+	idStr := c.Param("deployment_id")
+	depID, err := h.ParseUUID(idStr)
+	if err != nil {
 		h.RespondWithValidationError(c, err)
 		return
 	}
 
 	var req contracts.RenderJobCreate
-	if err := c.ShouldBindJSON(&req); err != nil {
+	dec := json.NewDecoder(c.Request.Body)
+	if err := dec.Decode(&req); err != nil {
 		h.RespondWithValidationError(c, err)
 		return
 	}
 
 	// Convert to service request
 	svcReq := renderService.CreateRequest{
-		DeploymentID:    param.DeploymentID,
+		DeploymentID:    depID,
 		ModuleVersions:  convertToModuleVersions(req.ModuleVersions),
 		BundleHash:      req.BundleHash,
 		RendererVersion: req.RendererVersion,
@@ -444,20 +441,22 @@ func (h *DeploymentHandler) CreateRenderJob(c *gin.Context) {
 // @Failure 500 {object} contracts.ErrorResponse "Internal server error"
 // @Router /api/v1/deployments/{deployment_id}/render-job [patch]
 func (h *DeploymentHandler) UpdateRenderJob(c *gin.Context) {
-	var param contracts.DeploymentIDParam
-	if err := c.ShouldBindUri(&param); err != nil {
+	idStr := c.Param("deployment_id")
+	depID, err := h.ParseUUID(idStr)
+	if err != nil {
 		h.RespondWithValidationError(c, err)
 		return
 	}
 
 	var req contracts.RenderJobUpdate
-	if err := c.ShouldBindJSON(&req); err != nil {
+	dec := json.NewDecoder(c.Request.Body)
+	if err := dec.Decode(&req); err != nil {
 		h.RespondWithValidationError(c, err)
 		return
 	}
 
 	// Get the render job by deployment ID first
-	renderJob, err := h.renderService.GetByDeploymentID(c.Request.Context(), param.DeploymentID)
+	renderJob, err := h.renderService.GetByDeploymentID(c.Request.Context(), depID)
 	if err != nil {
 		if errors.Is(err, renderService.ErrRenderJobNotFound) {
 			h.RespondWithNotFound(c, "RenderJob")

@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { HelmetProvider } from "react-helmet-async";
 import { AppStoreProvider } from "@/store/app-store";
+import { AppBootstrap } from "@/components/AppBootstrap";
 import { AppLayout } from "@/components/layout/AppLayout";
 import Dashboard from "@/pages/Dashboard";
 import Services from "@/pages/Services";
@@ -20,7 +21,9 @@ import NotFound from "./pages/NotFound";
 import { AppShell } from "@/components/layout/AppShell";
 import Landing from "@/pages/Landing";
 import InviteLanding from "@/pages/InviteLanding";
+import Bootstrap from "@/pages/Bootstrap";
 import { RecoveryKeysGate } from "@/components/auth/RecoveryKeysGate";
+import RequireAuth, { RequireAdmin } from "@/components/auth/RequireAuth";
 
 const queryClient = new QueryClient();
 
@@ -32,27 +35,31 @@ const App = () => (
         <AppStoreProvider>
           <Toaster />
           <Sonner />
-            <BrowserRouter>
-              <RecoveryKeysGate />
-              <Routes>
-                <Route path="/welcome" element={<Landing />} />
-                <Route path="/invite/:token" element={<InviteLanding />} />
+          <BrowserRouter>
+            <RecoveryKeysGate />
+            <AppBootstrap />
+            <Routes>
+              <Route path="/welcome" element={<Landing />} />
+              <Route path="/invite/:token" element={<InviteLanding />} />
+              <Route path="/bootstrap" element={<Bootstrap />} />
+              <Route element={<RequireAuth />}>
                 <Route element={<AppShell />}>
                   <Route path="/" element={<Dashboard />} />
                   <Route path="/services" element={<Services />} />
                   <Route path="/environments" element={<Environments />} />
                   <Route path="/jobs" element={<Jobs />} />
                   <Route path="/secrets" element={<Secrets />} />
-                  <Route path="/audit" element={<AuditLog />} />
-                  <Route path="/users" element={<Users />} />
+                  <Route path="/audit" element={<RequireAdmin><AuditLog /></RequireAdmin>} />
+                  <Route path="/users" element={<RequireAdmin><Users /></RequireAdmin>} />
                   <Route path="/profile" element={<Profile />} />
                   <Route path="/settings" element={<SettingsProfile />} />
                   <Route path="/auth-demo" element={<Suspense fallback={<div className="p-4 text-sm text-muted-foreground">Loading…</div>}><AuthFlows /></Suspense>} />
                 </Route>
-                {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-                <Route path="*" element={<NotFound />} />
-              </Routes>
-            </BrowserRouter>
+              </Route>
+              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </BrowserRouter>
         </AppStoreProvider>
       </TooltipProvider>
     </HelmetProvider>
