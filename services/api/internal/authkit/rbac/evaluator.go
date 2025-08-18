@@ -42,19 +42,23 @@ func (e *simpleEvaluator) Explain(ctx context.Context, subj Subject, action Perm
 }
 
 func (e *simpleEvaluator) evaluate(ctx context.Context, subj Subject, action PermissionKey, res ResourceRef, wantTrace bool) (Decision, Trace, error) {
-	// Super roles bypass
-	if e.isSuper(subj) {
-		tr := Trace{Subject: subj, Permission: action, Resource: res, Outcome: DecisionAllow}
-		if e.deps.Clock != nil {
-			tr.CheckedAt = e.deps.Clock.Now()
-		} else {
-			tr.CheckedAt = time.Now()
-		}
-		return DecisionAllow, tr, nil
-	}
-
 	// Intentionally skip reading principal cache here to ensure role changes are picked up
 	// without requiring a principal version bump. We still write the combined entries below.
+
+	// Plan scopes and derive IDs via configured planner
+	planner := e.cfg.Scopes
+	if planner == nil {
+		planner = NewDefaultPlanner()
+	}
+	var (
+		order []ScopeType
+		ids   map[ScopeType]string
+	)
+	if cp, ok := planner.(ContextualScopePlanner); ok {
+		order, ids = cp.ResolveWithMeta(res, ExtractRequestMeta(ctx))
+	} else {
+		order, ids = planner.Resolve(res)
+	}
 
 	// Gather bindings for subject
 	bindings, err := e.deps.Store.ListBindings(ctx, subj)
@@ -62,34 +66,18 @@ func (e *simpleEvaluator) evaluate(ctx context.Context, subj Subject, action Per
 		return DecisionDeny, Trace{}, err
 	}
 
-	// Determine resource ancestry
-	resID := res.ID
-	var projectID string
-	var orgID string
-	for p := &res; p != nil; p = p.Parent {
-		if p.Type == "project" && projectID == "" {
-			projectID = p.ID
-		}
-		if p.Type == "org" && orgID == "" {
-			orgID = p.ID
-		}
-		if p.Parent == nil {
-			break
-		}
-	}
-
-	var entriesRes, entriesProject, entriesOrg, entriesGlobal []RoleEntry
+	// Collect matching role entries per scope
+	buckets := make(map[ScopeType][]RoleEntry, 8)
 	for _, b := range bindings {
+		// Ignore unknown scopes for safety
+		if !IsKnownScope(b.ScopeType) {
+			continue
+		}
 		applies := false
-		switch b.ScopeType {
-		case ScopeGlobal:
+		if b.ScopeType == ScopeGlobal {
 			applies = true
-		case ScopeRes:
-			applies = b.ScopeID == resID
-		case ScopeProject:
-			applies = projectID != "" && b.ScopeID == projectID
-		case ScopeOrg:
-			applies = orgID != "" && b.ScopeID == orgID
+		} else if id, ok := ids[b.ScopeType]; ok {
+			applies = id == b.ScopeID
 		}
 		if !applies {
 			continue
@@ -111,16 +99,7 @@ func (e *simpleEvaluator) evaluate(ctx context.Context, subj Subject, action Per
 		for _, re := range compiled {
 			if strings.EqualFold(string(re.Permission), string(action)) {
 				if re.ResourceType == "" || strings.EqualFold(re.ResourceType, res.Type) {
-					switch b.ScopeType {
-					case ScopeRes:
-						entriesRes = append(entriesRes, re)
-					case ScopeProject:
-						entriesProject = append(entriesProject, re)
-					case ScopeOrg:
-						entriesOrg = append(entriesOrg, re)
-					case ScopeGlobal:
-						entriesGlobal = append(entriesGlobal, re)
-					}
+					buckets[b.ScopeType] = append(buckets[b.ScopeType], re)
 				}
 			}
 		}
@@ -130,11 +109,20 @@ func (e *simpleEvaluator) evaluate(ctx context.Context, subj Subject, action Per
 	if !wantTrace {
 		if pv, err := e.deps.Store.GetPrincipalVersion(ctx, subj); err == nil {
 			pKey := principalCacheKey(subj) + "|" + strconv.FormatInt(pv, 10) + "|" + string(action) + "|" + res.Type
-			combined := make([]RoleEntry, 0, len(entriesRes)+len(entriesProject)+len(entriesOrg)+len(entriesGlobal))
-			combined = append(combined, entriesRes...)
-			combined = append(combined, entriesProject...)
-			combined = append(combined, entriesOrg...)
-			combined = append(combined, entriesGlobal...)
+			// Combine in planner order then any remaining scopes
+			combined := make([]RoleEntry, 0, 16)
+			seen := map[ScopeType]struct{}{}
+			for _, s := range order {
+				if es := buckets[s]; len(es) > 0 {
+					combined = append(combined, es...)
+					seen[s] = struct{}{}
+				}
+			}
+			for s, es := range buckets {
+				if _, ok := seen[s]; !ok {
+					combined = append(combined, es...)
+				}
+			}
 			e.cache.SetPrincipal(pKey, combined, e.cfg.PrincipalCacheTTL)
 		}
 	}
@@ -147,13 +135,13 @@ func (e *simpleEvaluator) evaluate(ctx context.Context, subj Subject, action Per
 		tr.CheckedAt = time.Now()
 	}
 
-	// Deny across scopes first
-	for i, list := range [][]RoleEntry{entriesRes, entriesProject, entriesOrg, entriesGlobal} {
+	// Deny across scopes first (iterate buckets regardless of order)
+	for s, list := range buckets {
 		for _, re := range list {
 			if e.cfg.EnableDeny && re.Effect == Deny {
 				ok, condErr := e.conditionsPass(ctx, subj, res, re.Conditions)
 				if wantTrace {
-					tr.Steps = append(tr.Steps, TraceStep{Scope: scopeByIndex(i), ScopeID: scopeIDByIndex(i, resID, projectID, orgID), Entry: re, Conditions: e.buildConditionEvals(subj, res, re.Conditions)})
+					tr.Steps = append(tr.Steps, TraceStep{Scope: s, ScopeID: ids[s], Entry: re, Conditions: e.buildConditionEvals(subj, res, re.Conditions)})
 				}
 				if condErr != nil {
 					tr.Outcome = DecisionDeny
@@ -167,13 +155,14 @@ func (e *simpleEvaluator) evaluate(ctx context.Context, subj Subject, action Per
 		}
 	}
 
-	// Allows in specificity order
-	for i, list := range [][]RoleEntry{entriesRes, entriesProject, entriesOrg, entriesGlobal} {
+	// Allows in planner order
+	for _, s := range order {
+		list := buckets[s]
 		for _, re := range list {
 			if re.Effect == Allow {
 				ok, condErr := e.conditionsPass(ctx, subj, res, re.Conditions)
 				if wantTrace {
-					tr.Steps = append(tr.Steps, TraceStep{Scope: scopeByIndex(i), ScopeID: scopeIDByIndex(i, resID, projectID, orgID), Entry: re, Conditions: e.buildConditionEvals(subj, res, re.Conditions)})
+					tr.Steps = append(tr.Steps, TraceStep{Scope: s, ScopeID: ids[s], Entry: re, Conditions: e.buildConditionEvals(subj, res, re.Conditions)})
 				}
 				if condErr != nil {
 					tr.Outcome = DecisionDeny
@@ -223,30 +212,6 @@ func (e *simpleEvaluator) conditionsPass(ctx context.Context, subj Subject, res 
 	return true, nil
 }
 
-func (e *simpleEvaluator) isSuper(subj Subject) bool {
-	if len(e.cfg.SuperRoles) == 0 {
-		return false
-	}
-	if subj.Attrs == nil {
-		return false
-	}
-	// Expect a roles attribute for super roles check if present
-	if v, ok := subj.Attrs["roles"]; ok {
-		if roles, ok := v.([]string); ok {
-			for _, sr := range e.cfg.SuperRoles {
-				for _, have := range roles {
-					if strings.EqualFold(sr, have) {
-						return true
-					}
-				}
-			}
-		}
-	}
-	return false
-}
-
-func nilTrace(want bool) Trace { return Trace{} }
-
 func (e *simpleEvaluator) buildConditionEvals(subj Subject, res ResourceRef, conds []Condition) []ConditionEval {
 	ec := EvalContext{Subject: subj, Resource: res}
 	if e.deps.Clock != nil {
@@ -269,37 +234,11 @@ func (e *simpleEvaluator) buildConditionEvals(subj Subject, res ResourceRef, con
 	return evals
 }
 
-func scopeByIndex(i int) ScopeType {
-	switch i {
-	case 0:
-		return ScopeRes
-	case 1:
-		return ScopeProject
-	case 2:
-		return ScopeOrg
-	default:
-		return ScopeGlobal
-	}
-}
-
-func scopeIDByIndex(i int, resID, projectID, orgID string) string {
-	switch i {
-	case 0:
-		return resID
-	case 1:
-		return projectID
-	case 2:
-		return orgID
-	default:
-		return ""
-	}
-}
-
 // principalCacheKey builds a stable cache key from subject and optional org.
 func principalCacheKey(subj Subject) string {
 	h := sha1.New()
 	h.Write([]byte(string(subj.Type)))
-	h.Write([]byte{"|"[0]})
+	h.Write([]byte{'|'})
 	h.Write([]byte(subj.ID))
 	if subj.OrgID != nil {
 		h.Write([]byte("|" + subj.OrgID.String()))

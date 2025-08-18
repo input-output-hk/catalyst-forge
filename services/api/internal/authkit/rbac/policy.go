@@ -26,6 +26,7 @@ type RoleDef struct {
 	Slug        string
 	Name        string
 	Description string
+	Color       string
 	Entries     []RoleEntry
 	Version     int64
 }
@@ -46,15 +47,6 @@ type Binding struct {
 	OrgID     *uuid.UUID
 	CreatedAt time.Time
 }
-
-type ScopeType string
-
-const (
-	ScopeGlobal  ScopeType = "global"
-	ScopeOrg     ScopeType = "org"
-	ScopeProject ScopeType = "project"
-	ScopeRes     ScopeType = "resource"
-)
 
 type Decision string
 

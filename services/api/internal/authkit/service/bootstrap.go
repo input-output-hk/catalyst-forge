@@ -58,10 +58,12 @@ func (s *bootstrapService) Bootstrap(ctx context.Context, token string, email st
 		return nil, ErrBootstrapUsed
 	}
 
-	// Create admin user
+	// Create admin user (application-level role list is maintained here)
 	user, err := s.users.Create(ctx, email, []string{"admin"})
 	if err != nil {
 		return nil, fmt.Errorf("failed to create admin user: %w", err)
 	}
+	// Note: The RBAC role binding to the seeded admin RBAC role is handled via the
+	// RBAC admin API or future bootstrap enhancements.
 	return user, nil
 }

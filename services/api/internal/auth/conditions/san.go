@@ -1,8 +1,10 @@
-package rbac
+package conditions
 
 import (
 	"net"
 	"strings"
+
+	rbac "github.com/input-output-hk/catalyst-forge/services/api/internal/authkit/rbac"
 )
 
 // conditionDnsSANsSuffixIn ensures all DNS SANs end with one of the allowed suffixes.
@@ -11,7 +13,7 @@ type conditionDnsSANsSuffixIn struct{}
 
 func (conditionDnsSANsSuffixIn) Name() string { return "dns_sans_suffix_in" }
 
-func (conditionDnsSANsSuffixIn) Evaluate(ctx EvalContext, params map[string]any) (bool, string, error) {
+func (conditionDnsSANsSuffixIn) Evaluate(ctx rbac.EvalContext, params map[string]any) (bool, string, error) {
 	anySuffixes, _ := params["suffixes"].([]any)
 	var suffixes []string
 	for _, s := range anySuffixes {
@@ -64,7 +66,7 @@ type conditionURISANsPrefixIn struct{}
 
 func (conditionURISANsPrefixIn) Name() string { return "uri_sans_prefix_in" }
 
-func (conditionURISANsPrefixIn) Evaluate(ctx EvalContext, params map[string]any) (bool, string, error) {
+func (conditionURISANsPrefixIn) Evaluate(ctx rbac.EvalContext, params map[string]any) (bool, string, error) {
 	anyPrefixes, _ := params["prefixes"].([]any)
 	var prefixes []string
 	for _, s := range anyPrefixes {
@@ -110,7 +112,7 @@ type conditionIPSANsInCIDRs struct{}
 
 func (conditionIPSANsInCIDRs) Name() string { return "ip_sans_in_cidrs" }
 
-func (conditionIPSANsInCIDRs) Evaluate(ctx EvalContext, params map[string]any) (bool, string, error) {
+func (conditionIPSANsInCIDRs) Evaluate(ctx rbac.EvalContext, params map[string]any) (bool, string, error) {
 	anyCIDRs, _ := params["cidrs"].([]any)
 	var nets []*net.IPNet
 	for _, s := range anyCIDRs {
@@ -154,10 +156,4 @@ func (conditionIPSANsInCIDRs) Evaluate(ctx EvalContext, params map[string]any) (
 		}
 	}
 	return true, "ip sans allowed", nil
-}
-
-func init() {
-	RegisterCondition(conditionDnsSANsSuffixIn{})
-	RegisterCondition(conditionURISANsPrefixIn{})
-	RegisterCondition(conditionIPSANsInCIDRs{})
 }

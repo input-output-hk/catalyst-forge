@@ -9,6 +9,7 @@ import (
 	"github.com/input-output-hk/catalyst-forge/services/api/internal/api/handlers"
 	"github.com/input-output-hk/catalyst-forge/services/api/internal/api/middleware"
 	apiroutes "github.com/input-output-hk/catalyst-forge/services/api/internal/api/routes"
+	appconds "github.com/input-output-hk/catalyst-forge/services/api/internal/auth/conditions"
 	libauth "github.com/input-output-hk/catalyst-forge/services/api/internal/authkit/authkit"
 	certkit "github.com/input-output-hk/catalyst-forge/services/api/internal/certkit/certkit"
 	"github.com/input-output-hk/catalyst-forge/services/api/internal/config"
@@ -52,6 +53,8 @@ func SetupRouter(
 
 	// Routes
 	apiroutes.RegisterCertificates(r, apiroutes.CertificatesDeps{H: certificateHandler})
+	apiroutes.RegisterRBACAdmin(r, db, logger)
+
 	// Mount certkit under /pki when CA ARN is configured
 	if authConfig != nil && authConfig.Certs.PCAClientCAArn != "" {
 		var pcaCli certkit.PCAClient
@@ -96,6 +99,9 @@ func setupAuthKit(authConfig *config.Config, r *gin.Engine, db *gorm.DB, logger 
 		)
 	}
 	akDeps := apiauth.BuildDeps(context.Background(), authConfig, nil, db, nil, apiauth.NewLogger(logger))
+
+	// Register domain conditions with RBAC
+	appconds.Register()
 
 	if m, err := libauth.New(akCfg, akDeps); err == nil {
 		// Mount /.well-known/jwks.json using AuthKit

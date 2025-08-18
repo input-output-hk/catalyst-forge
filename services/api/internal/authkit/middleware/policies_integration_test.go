@@ -7,10 +7,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/input-output-hk/catalyst-forge/services/api/internal/authkit/authkit"
-	"github.com/input-output-hk/catalyst-forge/services/api/internal/authkit/rbac"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	"github.com/input-output-hk/catalyst-forge/services/api/internal/authkit/authkit"
+	"github.com/input-output-hk/catalyst-forge/services/api/internal/authkit/rbac"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -100,6 +100,10 @@ func TestPolicyEnforcer_RBAC_PermissionsAndStepUp(t *testing.T) {
 	subj := rbac.Subject{Type: rbac.SubjectUser, ID: userID.String()}
 	require.NoError(t, store.AddBinding(context.Background(), rbac.Binding{ID: uuid.New(), Subject: subj, RoleSlug: "ops", ScopeType: rbac.ScopeProject, ScopeID: "p1"}))
 
+	// Register resolver so RBAC can derive a project resource for /deploy
+	mgr.RegisterResolver("/deploy", func(c *gin.Context) (rbac.ResourceRef, error) {
+		return rbac.ResourceRef{Type: "project", ID: "p1"}, nil
+	})
 	// gin setup
 	gin.SetMode(gin.TestMode)
 	r := gin.New()
@@ -154,10 +158,10 @@ func TestPolicyEnforcer_RBAC_StepUpFromCondition(t *testing.T) {
 
 	gin.SetMode(gin.TestMode)
 	r := gin.New()
-	
+
 	// Missing step-up -> expect 428
 	r.Use(func(c *gin.Context) { authkit.AuthContext{UserID: userID}.Set(c); c.Next() })
-	
+
 	reg := authkit.NewPolicyRegistry().RequirePermissions([]string{"secure:write"}, "POST", "/secure")
 	enforcer := NewPolicyEnforcer(reg).WithRBAC(mgr)
 	r.POST("/secure", enforcer.EnforcePolicies(), func(c *gin.Context) { c.Status(http.StatusOK) })
@@ -177,11 +181,11 @@ func TestPolicyEnforcer_RBAC_ForbiddenOnMissingPermission(t *testing.T) {
 
 	gin.SetMode(gin.TestMode)
 	r := gin.New()
-	
+
 	// Authenticated user without permission/binding
 	userID := uuid.New()
 	r.Use(func(c *gin.Context) { authkit.AuthContext{UserID: userID}.Set(c); c.Next() })
-	
+
 	reg := authkit.NewPolicyRegistry().RequirePermissions([]string{"secret:read"}, "GET", "/secret")
 	enforcer := NewPolicyEnforcer(reg).WithRBAC(mgr)
 	r.GET("/secret", enforcer.EnforcePolicies(), func(c *gin.Context) { c.Status(http.StatusOK) })
@@ -196,7 +200,7 @@ func TestPolicyEnforcer_FallbackToAuthContextPermissions_WhenRBACNil(t *testing.
 	t.Parallel()
 
 	gin.SetMode(gin.TestMode)
-	
+
 	// Case 1: user has permission via AuthContext -> 200
 	userID := uuid.New()
 	r := gin.New()
@@ -207,7 +211,7 @@ func TestPolicyEnforcer_FallbackToAuthContextPermissions_WhenRBACNil(t *testing.
 	reg := authkit.NewPolicyRegistry().RequirePermissions([]string{"perm:x"}, "GET", "/x")
 	enforcer := NewPolicyEnforcer(reg) // RBAC manager not attached
 	r.GET("/x", enforcer.EnforcePolicies(), func(c *gin.Context) { c.Status(http.StatusOK) })
-	
+
 	w := httptest.NewRecorder()
 	req, _ := http.NewRequest("GET", "/x", nil)
 	r.ServeHTTP(w, req)

@@ -5,6 +5,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/input-output-hk/catalyst-forge/services/api/internal/api/handlers"
+	orghandlers "github.com/input-output-hk/catalyst-forge/services/api/internal/api/handlers"
 	base "github.com/input-output-hk/catalyst-forge/services/api/internal/repository"
 	argoRepo "github.com/input-output-hk/catalyst-forge/services/api/internal/repository/argo"
 	artifactRepo "github.com/input-output-hk/catalyst-forge/services/api/internal/repository/artifact"
@@ -12,6 +13,7 @@ import (
 	deploymentRepo "github.com/input-output-hk/catalyst-forge/services/api/internal/repository/deployment"
 	environmentRepo "github.com/input-output-hk/catalyst-forge/services/api/internal/repository/environment"
 	gitopsRepo "github.com/input-output-hk/catalyst-forge/services/api/internal/repository/gitops"
+	orgrepo "github.com/input-output-hk/catalyst-forge/services/api/internal/repository/org"
 	projectRepo "github.com/input-output-hk/catalyst-forge/services/api/internal/repository/project"
 	releaseRepo "github.com/input-output-hk/catalyst-forge/services/api/internal/repository/release"
 	repositoryRepo "github.com/input-output-hk/catalyst-forge/services/api/internal/repository/repository"
@@ -21,6 +23,7 @@ import (
 	deploymentService "github.com/input-output-hk/catalyst-forge/services/api/internal/service/deployment"
 	environmentService "github.com/input-output-hk/catalyst-forge/services/api/internal/service/environment"
 	gitopsService "github.com/input-output-hk/catalyst-forge/services/api/internal/service/gitops"
+	orgservice "github.com/input-output-hk/catalyst-forge/services/api/internal/service/org"
 	projectService "github.com/input-output-hk/catalyst-forge/services/api/internal/service/project"
 	releaseService "github.com/input-output-hk/catalyst-forge/services/api/internal/service/release"
 	renderService "github.com/input-output-hk/catalyst-forge/services/api/internal/service/render"
@@ -58,6 +61,9 @@ func RegisterDomainRoutes(r *gin.Engine, deps DomainDeps) {
 	RegisterRepositories(r, RepositoryDeps{H: handlers.Repository})
 	RegisterTraces(r, TraceDeps{H: handlers.Trace})
 	RegisterBuilds(r, BuildDeps{H: handlers.Build})
+
+	// Admin: organizations
+	RegisterOrgs(r, OrgDeps{H: handlers.Org})
 }
 
 // repositoryInstances holds all repository instances
@@ -76,6 +82,7 @@ type repositoryInstances struct {
 	ReleaseArtifact  releaseRepo.ArtifactRepository
 	Repository       repositoryRepo.Repository
 	Trace            traceRepo.Repository
+	Org              orgrepo.Repository
 }
 
 // serviceInstances holds all service instances
@@ -90,6 +97,7 @@ type serviceInstances struct {
 	Render      renderService.Service
 	Repository  repositoryService.Service
 	Trace       traceService.Service
+	Org         orgservice.Service
 }
 
 // handlerInstances holds all handler instances
@@ -102,6 +110,7 @@ type handlerInstances struct {
 	Repository  *handlers.RepositoryHandler
 	Trace       *handlers.TraceHandler
 	Build       *handlers.BuildHandler
+	Org         *orghandlers.OrgHandler
 }
 
 // initializeRepositories creates all repository instances
@@ -121,6 +130,7 @@ func initializeRepositories(db *gorm.DB) repositoryInstances {
 		ReleaseArtifact:  releaseRepo.NewArtifactRepository(db),
 		Repository:       repositoryRepo.NewRepository(db),
 		Trace:            traceRepo.NewRepository(db),
+		Org:              orgrepo.NewRepository(db),
 	}
 }
 
@@ -163,6 +173,7 @@ func initializeServices(txManager base.TxManager, repos repositoryInstances) ser
 		Render:      renderSvc,
 		Repository:  repositoryService.NewService(repos.Repository),
 		Trace:       traceService.NewService(repos.Trace),
+		Org:         orgservice.NewService(repos.Org),
 	}
 }
 
@@ -177,5 +188,6 @@ func initializeHandlers(services serviceInstances, logger *slog.Logger) handlerI
 		Repository:  handlers.NewRepositoryHandler(services.Repository, logger),
 		Trace:       handlers.NewTraceHandler(services.Trace, logger),
 		Build:       handlers.NewBuildHandler(services.Build, logger),
+		Org:         orghandlers.NewOrgHandler(services.Org),
 	}
 }

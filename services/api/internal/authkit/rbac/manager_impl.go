@@ -4,8 +4,8 @@ import (
 	"context"
 	"sync"
 
-	"github.com/input-output-hk/catalyst-forge/services/api/internal/authkit/authkit"
 	"github.com/gin-gonic/gin"
+	"github.com/input-output-hk/catalyst-forge/services/api/internal/authkit/authkit"
 )
 
 type manager struct {
@@ -17,6 +17,10 @@ type manager struct {
 }
 
 func newManager(cfg Config, deps Deps) *manager {
+	// Ensure a default scope planner is present for evaluator construction
+	if cfg.Scopes == nil {
+		cfg.Scopes = NewDefaultPlanner()
+	}
 	return &manager{
 		cfg:       cfg,
 		deps:      deps,

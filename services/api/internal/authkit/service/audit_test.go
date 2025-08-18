@@ -5,10 +5,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/input-output-hk/catalyst-forge/services/api/internal/authkit/domain"
 	"github.com/input-output-hk/catalyst-forge/services/api/internal/authkit/service"
 	"github.com/input-output-hk/catalyst-forge/services/api/internal/authkit/testing/inmemory"
-	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -17,28 +17,28 @@ func TestAuditLogger_LogUserCreated(t *testing.T) {
 	ctx := context.Background()
 	store := inmemory.NewAuditStore()
 	logger := service.NewAuditLogger(store)
-	
+
 	userID := uuid.New()
 	email := "user@example.com"
 	roles := []string{"user", "admin"}
-	
+
 	err := logger.LogUserCreated(ctx, userID, email, roles)
 	require.NoError(t, err)
-	
+
 	// Verify event was stored
 	events := store.GetEvents()
 	require.Len(t, events, 1)
-	
+
 	event := events[0]
 	assert.Equal(t, domain.EventUserCreated, event.Type)
 	assert.Equal(t, userID, *event.UserID)
 	assert.Equal(t, userID, *event.ActorID)
-	
+
 	// Verify metadata
 	metadata := event.Metadata
 	assert.Equal(t, "example.com", metadata["email_domain"])
 	assert.Equal(t, roles, metadata["roles"])
-	
+
 	// Ensure no PII (full email) is stored
 	assert.NotContains(t, metadata, "email")
 }
@@ -73,24 +73,24 @@ func TestAuditLogger_LogLoginAttempt(t *testing.T) {
 			wantEvent: domain.EventLoginFailed,
 		},
 	}
-	
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx := context.Background()
 			store := inmemory.NewAuditStore()
 			logger := service.NewAuditLogger(store)
-			
+
 			err := logger.LogLoginAttempt(ctx, tt.userID, tt.success, tt.reason)
 			require.NoError(t, err)
-			
+
 			events := store.GetEvents()
 			require.Len(t, events, 1)
-			
+
 			event := events[0]
 			assert.Equal(t, tt.wantEvent, event.Type)
 			assert.Equal(t, tt.userID, event.UserID)
 			assert.Equal(t, tt.success, event.Metadata["success"])
-			
+
 			if tt.reason != "" && !tt.success {
 				assert.Equal(t, tt.reason, event.Metadata["reason"])
 			}
@@ -100,9 +100,9 @@ func TestAuditLogger_LogLoginAttempt(t *testing.T) {
 
 func TestAuditLogger_LogCredentialUsed(t *testing.T) {
 	tests := []struct {
-		name               string
-		credentialID       []byte
-		expectedHexLength  int
+		name              string
+		credentialID      []byte
+		expectedHexLength int
 	}{
 		{
 			name:              "normal credential ID",
@@ -125,26 +125,26 @@ func TestAuditLogger_LogCredentialUsed(t *testing.T) {
 			expectedHexLength: 16, // 8 bytes as hex
 		},
 	}
-	
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx := context.Background()
 			store := inmemory.NewAuditStore()
 			logger := service.NewAuditLogger(store)
-			
+
 			userID := uuid.New()
 			deviceName := "MacBook Pro - Chrome"
-			
+
 			err := logger.LogCredentialUsed(ctx, userID, tt.credentialID, deviceName)
 			require.NoError(t, err)
-			
+
 			events := store.GetEvents()
 			require.Len(t, events, 1)
-			
+
 			event := events[0]
 			assert.Equal(t, domain.EventCredentialUsed, event.Type)
 			assert.Equal(t, userID, *event.UserID)
-			
+
 			// Verify only partial credential ID is stored (privacy)
 			metadata := event.Metadata
 			credID := metadata["credential_id"].(string)
@@ -161,16 +161,16 @@ func TestAuditLogger_LogTokenReplay(t *testing.T) {
 	ctx := context.Background()
 	store := inmemory.NewAuditStore()
 	logger := service.NewAuditLogger(store)
-	
+
 	userID := uuid.New()
 	familyID := uuid.New()
-	
+
 	err := logger.LogTokenReplay(ctx, userID, familyID)
 	require.NoError(t, err)
-	
+
 	events := store.GetEvents()
 	require.Len(t, events, 1)
-	
+
 	event := events[0]
 	assert.Equal(t, domain.EventTokenReplayDetected, event.Type)
 	assert.Equal(t, userID, *event.UserID)
@@ -210,30 +210,30 @@ func TestAuditLogger_LogWebAuthnAnomaly(t *testing.T) {
 			wantEvent:   domain.EventSuspiciousActivity,
 		},
 	}
-	
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx := context.Background()
 			store := inmemory.NewAuditStore()
 			logger := service.NewAuditLogger(store)
-			
+
 			userID := uuid.New()
 			details := map[string]interface{}{
 				"expected": "value1",
 				"actual":   "value2",
 				"password": "should-not-be-logged", // Sensitive field
 			}
-			
+
 			err := logger.LogWebAuthnAnomaly(ctx, userID, tt.anomalyType, details)
 			require.NoError(t, err)
-			
+
 			events := store.GetEvents()
 			require.Len(t, events, 1)
-			
+
 			event := events[0]
 			assert.Equal(t, tt.wantEvent, event.Type)
 			assert.Equal(t, userID, *event.UserID)
-			
+
 			// Verify sensitive data is not logged
 			metadata := event.Metadata
 			assert.Equal(t, tt.anomalyType, metadata["anomaly_type"])
@@ -246,61 +246,61 @@ func TestAuditLogger_LogWebAuthnAnomaly(t *testing.T) {
 
 func TestAuditLogger_LogInviteFailed(t *testing.T) {
 	tests := []struct {
-		name      string
-		attempts  int
-		wantEvent domain.EventType
+		name       string
+		attempts   int
+		wantEvent  domain.EventType
 		wantLocked bool
 	}{
 		{
-			name:      "first attempt",
-			attempts:  1,
-			wantEvent: domain.EventInviteFailed,
+			name:       "first attempt",
+			attempts:   1,
+			wantEvent:  domain.EventInviteFailed,
 			wantLocked: false,
 		},
 		{
-			name:      "fourth attempt",
-			attempts:  4,
-			wantEvent: domain.EventInviteFailed,
+			name:       "fourth attempt",
+			attempts:   4,
+			wantEvent:  domain.EventInviteFailed,
 			wantLocked: false,
 		},
 		{
-			name:      "fifth attempt - locked",
-			attempts:  5,
-			wantEvent: domain.EventInviteLocked,
+			name:       "fifth attempt - locked",
+			attempts:   5,
+			wantEvent:  domain.EventInviteLocked,
 			wantLocked: true,
 		},
 		{
-			name:      "beyond limit",
-			attempts:  10,
-			wantEvent: domain.EventInviteLocked,
+			name:       "beyond limit",
+			attempts:   10,
+			wantEvent:  domain.EventInviteLocked,
 			wantLocked: true,
 		},
 	}
-	
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx := context.Background()
 			store := inmemory.NewAuditStore()
 			logger := service.NewAuditLogger(store)
-			
+
 			inviteID := uuid.New()
 			reason := "invalid_token"
-			
+
 			err := logger.LogInviteFailed(ctx, inviteID, reason, tt.attempts)
 			require.NoError(t, err)
-			
+
 			events := store.GetEvents()
 			require.Len(t, events, 1)
-			
+
 			event := events[0]
 			assert.Equal(t, tt.wantEvent, event.Type)
 			assert.Nil(t, event.UserID)
-			
+
 			metadata := event.Metadata
 			assert.Equal(t, inviteID.String(), metadata["invite_id"])
 			assert.Equal(t, reason, metadata["reason"])
 			assert.Equal(t, tt.attempts, metadata["attempts"])
-			
+
 			if tt.wantLocked {
 				assert.Equal(t, true, metadata["locked"])
 			} else {
@@ -337,13 +337,13 @@ func TestAuditLogger_LogAdminAction(t *testing.T) {
 			wantEvent: domain.EventAdminAction,
 		},
 	}
-	
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx := context.Background()
 			store := inmemory.NewAuditStore()
 			logger := service.NewAuditLogger(store)
-			
+
 			actorID := uuid.New()
 			targetUserID := uuid.New()
 			details := map[string]interface{}{
@@ -351,25 +351,25 @@ func TestAuditLogger_LogAdminAction(t *testing.T) {
 				"secret":    "should-not-log", // Sensitive
 				"timestamp": time.Now().Unix(),
 			}
-			
+
 			err := logger.LogAdminAction(ctx, actorID, tt.action, &targetUserID, details)
 			require.NoError(t, err)
-			
+
 			events := store.GetEvents()
 			require.Len(t, events, 1)
-			
+
 			event := events[0]
 			assert.Equal(t, tt.wantEvent, event.Type)
 			assert.Equal(t, targetUserID, *event.UserID)
 			assert.Equal(t, actorID, *event.ActorID)
-			
+
 			// Verify metadata
 			metadata := event.Metadata
 			assert.Equal(t, tt.action, metadata["action"])
 			assert.Equal(t, targetUserID.String(), metadata["target_user_id"])
 			assert.Equal(t, "security_violation", metadata["reason"])
 			assert.Contains(t, metadata, "timestamp")
-			
+
 			// Ensure sensitive field is not logged
 			assert.NotContains(t, metadata, "secret")
 		})
@@ -381,29 +381,29 @@ func TestAuditLogger_NoPIILogged(t *testing.T) {
 	ctx := context.Background()
 	store := inmemory.NewAuditStore()
 	logger := service.NewAuditLogger(store)
-	
+
 	// Test various sensitive field names
 	sensitiveData := map[string]interface{}{
 		"password":          "secret123",
-		"token":            "jwt-token-here",
-		"secret":           "api-secret",
-		"private_key":      "-----BEGIN RSA PRIVATE KEY-----",
-		"clientDataJSON":   "webauthn-data",
+		"token":             "jwt-token-here",
+		"secret":            "api-secret",
+		"private_key":       "-----BEGIN RSA PRIVATE KEY-----",
+		"clientDataJSON":    "webauthn-data",
 		"authenticatorData": "more-webauthn",
-		"recovery_code":    "ABC123",
-		"hash":            "sha256:abcdef",
-		"Token":           "uppercase-token",
-		"PASSWORD":        "uppercase-password",
+		"recovery_code":     "ABC123",
+		"hash":              "sha256:abcdef",
+		"Token":             "uppercase-token",
+		"PASSWORD":          "uppercase-password",
 	}
-	
+
 	// Log with sensitive data
 	userID := uuid.New()
 	err := logger.LogWebAuthnAnomaly(ctx, userID, "test", sensitiveData)
 	require.NoError(t, err)
-	
+
 	events := store.GetEvents()
 	require.Len(t, events, 1)
-	
+
 	// Verify none of the sensitive fields are in metadata
 	metadata := events[0].Metadata
 	for key := range sensitiveData {
@@ -694,7 +694,7 @@ func TestAuditLogger_ConcurrentWrites(t *testing.T) {
 				case 4:
 					err = logger.LogStepUp(ctx, userID, true, "admin")
 				}
-				
+
 				if err != nil {
 					done <- err
 					return
@@ -777,7 +777,7 @@ func TestHelperFunctions(t *testing.T) {
 			expected string
 		}{
 			{"user@example.com", "example.com"},
-			{"USER@EXAMPLE.COM", "example.com"}, // Case normalization
+			{"USER@EXAMPLE.COM", "example.com"},     // Case normalization
 			{"  user@example.com  ", "example.com"}, // Whitespace handling
 			{"user@sub.example.com", "sub.example.com"},
 			{"invalid-email", "unknown"},
@@ -904,7 +904,9 @@ func (f *failingAuditStore) Record(ctx context.Context, event domain.Event) erro
 	return nil
 }
 
-// Helper function to create pointer
-func ptr[T any](v T) *T {
-	return &v
+func (f *failingAuditStore) List(_ context.Context, _ *uuid.UUID, _ *uuid.UUID, _ []string, _ *time.Time, _ *time.Time, _ int, _ int) ([]domain.Event, int64, error) {
+	return nil, 0, nil
 }
+
+// Helper function to create pointer
+func ptr[T any](v T) *T { return &v }

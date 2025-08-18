@@ -12,6 +12,7 @@ type Rule struct {
 	RequireStepUp bool     // Requires recent WebAuthn authentication
 	Roles         []string // Any-of semantics - user must have at least one role
 	Permissions   []string // Any-of semantics - user must have at least one permission
+	Explicit      bool     // This rule is explicitly declared (e.g., to allow anonymous)
 }
 
 // PolicyRegistry manages path-based authorization rules.
@@ -83,6 +84,15 @@ func NewPolicyRegistry() *PolicyRegistry {
 	}
 }
 
+// AllowAnonymous adds an explicit rule that a path is publicly accessible.
+// This is used when running in fail-closed mode so public routes are explicitly declared.
+func (r *PolicyRegistry) AllowAnonymous(method string, patterns ...string) *PolicyRegistry {
+	for _, pattern := range patterns {
+		r.addRule(method, pattern, Rule{Explicit: true})
+	}
+	return r
+}
+
 // RequireAuth adds a rule requiring authentication for the specified paths.
 func (r *PolicyRegistry) RequireAuth(method string, patterns ...string) *PolicyRegistry {
 	for _, pattern := range patterns {
@@ -144,6 +154,9 @@ func (r *PolicyRegistry) addRule(method string, pattern string, rule Rule) {
 		}
 		if len(rule.Permissions) > 0 {
 			existing.rule.Permissions = append(existing.rule.Permissions, rule.Permissions...)
+		}
+		if rule.Explicit {
+			existing.rule.Explicit = true
 		}
 	} else {
 		// Add new rule

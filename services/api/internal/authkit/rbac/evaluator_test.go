@@ -215,22 +215,6 @@ func TestEvaluator_RoleCacheInvalidation(t *testing.T) {
 	assert.Equal(t, DecisionAllow, dec2)
 }
 
-func TestEvaluator_SuperRoleBypass(t *testing.T) {
-	t.Parallel()
-
-	cfg := DefaultConfig()
-	cfg.SuperRoles = []string{"super"}
-	store := newFakeStore()
-	deps := Deps{Store: store, Clock: fakeClock{t: time.Date(2025, 1, 6, 12, 0, 0, 0, time.UTC)}, Logger: fakeLogger{}, Cache: NewMemoryCache()}
-	mgr := newManager(cfg, deps)
-
-	subj := Subject{Type: SubjectUser, ID: "u1", Attrs: map[string]any{"roles": []string{"super"}}}
-	res := ResourceRef{Type: "project", ID: "p1"}
-	dec, err := mgr.Check(context.Background(), subj, PermissionKey("anything"), res)
-	require.NoError(t, err)
-	assert.Equal(t, DecisionAllow, dec)
-}
-
 func TestEvaluator_ResourceAgnosticNoResolver(t *testing.T) {
 	t.Parallel()
 

@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"testing"
 	"time"
@@ -227,7 +228,7 @@ func TestWebAuthnService_BeginLogin(t *testing.T) {
 		{
 			name:     "ok/with_nonexistent_user_hint",
 			userHint: "nonexistent@example.com",
-			wantErr:  false,  // userHint is just a hint, not validated
+			wantErr:  false, // userHint is just a hint, not validated
 		},
 	}
 
@@ -366,8 +367,8 @@ func TestWebAuthnService_ChallengeExpiry(t *testing.T) {
 		"id":   "test",
 		"type": "public-key",
 	}
-
-	_, err = svc.FinishRegistration(ctx, sessionKey, response)
+	respBytes, _ := json.Marshal(response)
+	_, err = svc.FinishRegistration(ctx, sessionKey, json.RawMessage(respBytes))
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "expired")
 }

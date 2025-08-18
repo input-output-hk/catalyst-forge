@@ -39,15 +39,25 @@ func (pe *PolicyEnforcer) WithRBAC(m rbac.Manager) *PolicyEnforcer {
 // Returns appropriate HTTP status codes:
 //   - 401 Unauthorized: No authentication present when required
 //   - 403 Forbidden: Authenticated but lacks required roles/permissions
+//   - 404 Not Found: Route not declared in policy registry (fail-closed)
 //   - 428 Precondition Required: Step-up authentication needed
 func (pe *PolicyEnforcer) EnforcePolicies() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// Get all matching rules for this request
 		rules := pe.registry.GetRules(c.Request.Method, c.Request.URL.Path)
 		if len(rules) == 0 {
-			// No rules apply, allow the request
-			c.Next()
+			// No rules apply → fail closed
+			basehttpkit.ErrorResponse(c.Writer, http.StatusNotFound, "not_found", "Route not found")
+			c.Abort()
 			return
+		}
+
+		// If any rule is explicitly open (AllowAnonymous), allow
+		for _, r := range rules {
+			if !r.RequireAuth && !r.RequireStepUp && len(r.Roles) == 0 && len(r.Permissions) == 0 && r.Explicit {
+				c.Next()
+				return
+			}
 		}
 
 		// Merge all matching rules
@@ -63,16 +73,10 @@ func (pe *PolicyEnforcer) EnforcePolicies() gin.HandlerFunc {
 				return
 			}
 
-			// Check step-up requirement FIRST (admins must satisfy step-up too)
+			// Check step-up requirement FIRST
 			if rule.RequireStepUp && ctx.RequiresStepUp(time.Now().UTC()) {
 				basehttpkit.ErrorResponse(c.Writer, http.StatusPreconditionRequired, "step_up_required", "Step-up authentication required")
 				c.Abort()
-				return
-			}
-
-			// Admin superuser bypass for roles/permissions (but not step-up)
-			if ctx.HasRole("admin") {
-				c.Next()
 				return
 			}
 
@@ -97,8 +101,10 @@ func (pe *PolicyEnforcer) EnforcePolicies() gin.HandlerFunc {
 					// Resolve resource if a resolver was registered for exact path
 					res, _, _ := pe.rbacMgr.Resolve(c, c.Request.URL.Path)
 
+					// attach request meta for contextual planning
+					ctxWithMeta := rbac.WithRequestMeta(c.Request.Context(), c.FullPath(), c.Request.Method)
 					for _, p := range rule.Permissions {
-						dec, err := pe.rbacMgr.Check(c.Request.Context(), subj, rbac.PermissionKey(p), res)
+						dec, err := pe.rbacMgr.Check(ctxWithMeta, subj, rbac.PermissionKey(p), res)
 						if err == rbac.ErrConditionStepUpRequired {
 							basehttpkit.ErrorResponse(c.Writer, http.StatusPreconditionRequired, "step_up_required", "Step-up authentication required")
 							c.Abort()
@@ -133,16 +139,10 @@ func RequirePolicy(rule authkit.Rule) gin.HandlerFunc {
 				return
 			}
 
-			// Enforce step-up first; admin must satisfy step-up
+			// Enforce step-up first
 			if rule.RequireStepUp && ctx.RequiresStepUp(time.Now().UTC()) {
 				basehttpkit.ErrorResponse(c.Writer, http.StatusPreconditionRequired, "step_up_required", "Step-up authentication required")
 				c.Abort()
-				return
-			}
-
-			// Admin bypass for roles/permissions
-			if ctx.HasRole("admin") {
-				c.Next()
 				return
 			}
 
@@ -176,11 +176,6 @@ func RequireRoles(roles ...string) gin.HandlerFunc {
 			c.Abort()
 			return
 		}
-		// Admin bypass
-		if ctx.HasRole("admin") {
-			c.Next()
-			return
-		}
 		// Step-up not implied here; callers should layer RequirePolicy if needed
 		if !ctx.HasAnyRole(roles) {
 			basehttpkit.ErrorResponse(c.Writer, http.StatusForbidden, "forbidden", "Insufficient privileges")
@@ -200,11 +195,6 @@ func RequirePermissions(permissions ...string) gin.HandlerFunc {
 		if !ok || !ctx.IsAuthenticated() {
 			basehttpkit.ErrorResponse(c.Writer, http.StatusUnauthorized, "unauthorized", "Authentication required")
 			c.Abort()
-			return
-		}
-		// Admin bypass
-		if ctx.HasRole("admin") {
-			c.Next()
 			return
 		}
 		// Step-up not implied here; callers should layer RequirePolicy if needed

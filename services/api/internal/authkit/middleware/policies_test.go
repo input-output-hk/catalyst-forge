@@ -7,11 +7,11 @@ import (
 	"testing"
 	"time"
 
+	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"github.com/input-output-hk/catalyst-forge/services/api/internal/authkit/authkit"
 	"github.com/input-output-hk/catalyst-forge/services/api/internal/authkit/middleware"
 	"github.com/input-output-hk/catalyst-forge/services/api/internal/authkit/rbac"
-	"github.com/gin-gonic/gin"
-	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -81,7 +81,7 @@ func TestPolicyEnforcer_EnforcePolicies(t *testing.T) {
 		expectedStatus int
 	}{
 		{
-			name: "ok/no_rules_allow_request",
+			name: "ok/no_rules_returns_404_fail_closed",
 			setupRegistry: func() *authkit.PolicyRegistry {
 				return authkit.NewPolicyRegistry()
 			},
@@ -89,7 +89,7 @@ func TestPolicyEnforcer_EnforcePolicies(t *testing.T) {
 			setupRBAC:      func() *mockRBACManager { return nil },
 			method:         "GET",
 			path:           "/api/public",
-			expectedStatus: http.StatusOK,
+			expectedStatus: http.StatusNotFound,
 		},
 		{
 			name: "ok/authenticated_user_passes_auth_requirement",
@@ -687,37 +687,37 @@ func TestRequirePermissions(t *testing.T) {
 	userID := uuid.New()
 
 	tests := []struct {
-		name               string
+		name                string
 		requiredPermissions []string
 		userPermissions     []string
 		expectedStatus      int
 	}{
 		{
-			name:               "ok/user_has_required_permission",
+			name:                "ok/user_has_required_permission",
 			requiredPermissions: []string{"read:users"},
 			userPermissions:     []string{"read:users"},
 			expectedStatus:      http.StatusOK,
 		},
 		{
-			name:               "ok/user_has_one_of_multiple_required_permissions",
+			name:                "ok/user_has_one_of_multiple_required_permissions",
 			requiredPermissions: []string{"read:users", "write:users"},
 			userPermissions:     []string{"write:users"},
 			expectedStatus:      http.StatusOK,
 		},
 		{
-			name:               "ok/user_has_multiple_permissions_including_required",
+			name:                "ok/user_has_multiple_permissions_including_required",
 			requiredPermissions: []string{"read:users"},
 			userPermissions:     []string{"read", "read:users", "write"},
 			expectedStatus:      http.StatusOK,
 		},
 		{
-			name:               "error/user_missing_required_permission",
+			name:                "error/user_missing_required_permission",
 			requiredPermissions: []string{"write:users"},
 			userPermissions:     []string{"read:users"},
 			expectedStatus:      http.StatusForbidden,
 		},
 		{
-			name:               "error/user_has_no_matching_permissions",
+			name:                "error/user_has_no_matching_permissions",
 			requiredPermissions: []string{"admin:delete", "admin:create"},
 			userPermissions:     []string{"read", "write"},
 			expectedStatus:      http.StatusForbidden,
@@ -971,10 +971,10 @@ func TestPolicyEnforcer_PathMatching(t *testing.T) {
 	userID := uuid.New()
 
 	tests := []struct {
-		name          string
-		pattern       string
-		testPath      string
-		shouldMatch   bool
+		name        string
+		pattern     string
+		testPath    string
+		shouldMatch bool
 	}{
 		{
 			name:        "exact_match",
@@ -1058,8 +1058,12 @@ func TestPolicyEnforcer_PathMatching(t *testing.T) {
 			router.ServeHTTP(w, req)
 
 			// If the pattern should match, we expect 200 (auth provided)
-			// If the pattern shouldn't match, we expect 200 (no auth required)
-			assert.Equal(t, http.StatusOK, w.Code)
+			// If the pattern shouldn't match, we now fail closed with 404
+			if tc.shouldMatch {
+				assert.Equal(t, http.StatusOK, w.Code)
+			} else {
+				assert.Equal(t, http.StatusNotFound, w.Code)
+			}
 
 			// Now test without auth context when pattern should match
 			if tc.shouldMatch {

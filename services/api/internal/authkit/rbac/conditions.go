@@ -2,6 +2,7 @@ package rbac
 
 import (
 	"errors"
+	"sort"
 	"strings"
 	"sync"
 	"time"
@@ -24,6 +25,18 @@ func getCondition(name string) (ConditionEvaluator, bool) {
 	defer condMu.RUnlock()
 	e, ok := condRegs[strings.ToLower(name)]
 	return e, ok
+}
+
+// ListConditions returns the names of all registered conditions in sorted order.
+func ListConditions() []string {
+	condMu.RLock()
+	defer condMu.RUnlock()
+	names := make([]string, 0, len(condRegs))
+	for n := range condRegs {
+		names = append(names, n)
+	}
+	sort.Strings(names)
+	return names
 }
 
 // Built-in conditions

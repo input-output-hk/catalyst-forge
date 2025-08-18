@@ -8,12 +8,12 @@ import (
 	"testing"
 	"time"
 
+	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"github.com/input-output-hk/catalyst-forge/services/api/internal/authkit/authkit"
 	"github.com/input-output-hk/catalyst-forge/services/api/internal/authkit/domain"
 	"github.com/input-output-hk/catalyst-forge/services/api/internal/authkit/middleware"
 	"github.com/input-output-hk/catalyst-forge/services/api/internal/authkit/service"
-	"github.com/gin-gonic/gin"
-	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -67,28 +67,45 @@ func (m *mockUserStore) UpdateRoles(ctx context.Context, userID uuid.UUID, roles
 	return m.error
 }
 
+func (m *mockUserStore) UpdateFullName(ctx context.Context, userID uuid.UUID, fullName string) error {
+	return m.error
+}
+func (m *mockUserStore) List(ctx context.Context, limit, offset int) ([]*domain.User, error) {
+	return nil, m.error
+}
+func (m *mockUserStore) ListFiltered(ctx context.Context, q string, role string, limit, offset int) ([]*domain.User, error) {
+	return nil, m.error
+}
+func (m *mockUserStore) CountFiltered(ctx context.Context, q string, role string) (int64, error) {
+	return 0, m.error
+}
+func (m *mockUserStore) UpdateSuspended(ctx context.Context, userID uuid.UUID, suspended bool, at time.Time) error {
+	return m.error
+}
+func (m *mockUserStore) Delete(ctx context.Context, userID uuid.UUID) error { return m.error }
+
 func (m *mockUserStore) BumpSessionVersion(ctx context.Context, userID uuid.UUID) error {
 	return m.error
 }
 
 func TestNewAuthenticator(t *testing.T) {
 	t.Parallel()
-	
+
 	tokenService := &mockTokenService{}
 	userStore := &mockUserStore{}
 	issuer := "test-issuer"
-	
+
 	auth := middleware.NewAuthenticator(tokenService, userStore, issuer)
-	
+
 	assert.NotNil(t, auth)
 }
 
 func TestAuthenticator_Authenticate(t *testing.T) {
 	t.Parallel()
-	
+
 	userID := uuid.New()
 	tokenID := uuid.New().String()
-	
+
 	tests := []struct {
 		name           string
 		authHeader     string
@@ -275,24 +292,24 @@ func TestAuthenticator_Authenticate(t *testing.T) {
 			expectAuth: false,
 		},
 	}
-	
+
 	for _, tc := range tests {
 		tc := tc // capture range variable for parallel tests
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			
+
 			gin.SetMode(gin.TestMode)
-			
+
 			// Setup mocks
 			tokenService := &mockTokenService{}
 			userStore := &mockUserStore{}
 			tc.setupMocks(tokenService, userStore)
-			
+
 			// Create authenticator and router
 			auth := middleware.NewAuthenticator(tokenService, userStore, "test-issuer")
 			router := gin.New()
 			router.Use(auth.Authenticate())
-			
+
 			// Add a test endpoint that captures the auth context
 			var capturedAuth *authkit.AuthContext
 			var hasAuth bool
@@ -304,19 +321,19 @@ func TestAuthenticator_Authenticate(t *testing.T) {
 				}
 				c.Status(http.StatusOK)
 			})
-			
+
 			// Create request
 			req := httptest.NewRequest(http.MethodGet, "/test", nil)
 			if tc.authHeader != "" {
 				req.Header.Set("Authorization", tc.authHeader)
 			}
-			
+
 			w := httptest.NewRecorder()
 			router.ServeHTTP(w, req)
-			
+
 			// Verify response
 			assert.Equal(t, http.StatusOK, w.Code)
-			
+
 			// Check auth context
 			if tc.expectAuth {
 				require.True(t, hasAuth, "Auth context should be present")
@@ -328,7 +345,7 @@ func TestAuthenticator_Authenticate(t *testing.T) {
 				assert.Equal(t, tokenService.parseResult.Permissions, capturedAuth.Permissions)
 				assert.Equal(t, tokenService.parseResult.SessionVersion, capturedAuth.SessionVersion)
 				assert.Equal(t, tokenService.parseResult.JTI, capturedAuth.TokenID)
-				
+
 				// Check step-up if present
 				if tokenService.parseResult.StepUpUntil > 0 {
 					expectedStepUp := time.Unix(tokenService.parseResult.StepUpUntil, 0)
@@ -347,7 +364,7 @@ func TestAuthenticator_Authenticate(t *testing.T) {
 
 func TestRequireAuth(t *testing.T) {
 	t.Parallel()
-	
+
 	tests := []struct {
 		name           string
 		setupAuth      func() *authkit.AuthContext
@@ -382,15 +399,15 @@ func TestRequireAuth(t *testing.T) {
 			expectedStatus: http.StatusUnauthorized,
 		},
 	}
-	
+
 	for _, tc := range tests {
 		tc := tc // capture range variable for parallel tests
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			
+
 			gin.SetMode(gin.TestMode)
 			router := gin.New()
-			
+
 			// Set up auth context first if provided
 			if authCtx := tc.setupAuth(); authCtx != nil {
 				router.Use(func(c *gin.Context) {
@@ -398,20 +415,20 @@ func TestRequireAuth(t *testing.T) {
 					c.Next()
 				})
 			}
-			
+
 			// Then apply RequireAuth middleware
 			router.Use(middleware.RequireAuth())
-			
+
 			router.GET("/test", func(c *gin.Context) {
 				c.Status(http.StatusOK)
 			})
-			
+
 			// Setup request
 			req := httptest.NewRequest(http.MethodGet, "/test", nil)
-			
+
 			w := httptest.NewRecorder()
 			router.ServeHTTP(w, req)
-			
+
 			assert.Equal(t, tc.expectedStatus, w.Code)
 		})
 	}
@@ -419,9 +436,9 @@ func TestRequireAuth(t *testing.T) {
 
 func TestRequireStepUp(t *testing.T) {
 	t.Parallel()
-	
+
 	now := time.Now().UTC()
-	
+
 	tests := []struct {
 		name           string
 		setupAuth      func() *authkit.AuthContext
@@ -485,15 +502,15 @@ func TestRequireStepUp(t *testing.T) {
 			expectedStatus: http.StatusPreconditionRequired,
 		},
 	}
-	
+
 	for _, tc := range tests {
 		tc := tc // capture range variable for parallel tests
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			
+
 			gin.SetMode(gin.TestMode)
 			router := gin.New()
-			
+
 			// Set up auth context first if provided
 			if authCtx := tc.setupAuth(); authCtx != nil {
 				router.Use(func(c *gin.Context) {
@@ -501,19 +518,19 @@ func TestRequireStepUp(t *testing.T) {
 					c.Next()
 				})
 			}
-			
+
 			// Then apply RequireStepUp middleware
 			router.Use(middleware.RequireStepUp())
-			
+
 			router.GET("/test", func(c *gin.Context) {
 				c.Status(http.StatusOK)
 			})
-			
+
 			// Setup request
 			req := httptest.NewRequest(http.MethodGet, "/test", nil)
 			w := httptest.NewRecorder()
 			router.ServeHTTP(w, req)
-			
+
 			assert.Equal(t, tc.expectedStatus, w.Code)
 		})
 	}
@@ -521,14 +538,14 @@ func TestRequireStepUp(t *testing.T) {
 
 func TestOptionalAuth(t *testing.T) {
 	t.Parallel()
-	
+
 	// Setup mocks
 	tokenService := &mockTokenService{}
 	userStore := &mockUserStore{}
-	
+
 	// Create authenticator
 	auth := middleware.NewAuthenticator(tokenService, userStore, "test-issuer")
-	
+
 	// Verify OptionalAuth returns a handler
 	optionalHandler := auth.OptionalAuth()
 	assert.NotNil(t, optionalHandler)

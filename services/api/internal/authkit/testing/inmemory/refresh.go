@@ -6,8 +6,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/input-output-hk/catalyst-forge/services/api/internal/authkit/domain"
 	"github.com/google/uuid"
+	"github.com/input-output-hk/catalyst-forge/services/api/internal/authkit/domain"
 )
 
 // RefreshStore is an in-memory implementation of store.RefreshStore.
@@ -139,7 +139,7 @@ func (s *RefreshStore) Rotate(ctx context.Context, prevTokenID uuid.UUID, newHas
 	s.byHash[hashKey(newHash)] = newTokenID
 	s.byFamily[prevToken.FamilyID] = append(s.byFamily[prevToken.FamilyID], newTokenID)
 	s.byUser[prevToken.UserID] = append(s.byUser[prevToken.UserID], newTokenID)
-	
+
 	// Add to device index if device ID is present
 	if prevToken.DeviceID != nil {
 		s.byDevice[*prevToken.DeviceID] = append(s.byDevice[*prevToken.DeviceID], newTokenID)
@@ -267,4 +267,32 @@ func (s *RefreshStore) RevokeDeviceTokens(ctx context.Context, deviceID uuid.UUI
 	}
 
 	return nil
+}
+
+// ListActiveByUser returns all non-revoked, non-expired tokens for a user.
+func (s *RefreshStore) ListActiveByUser(ctx context.Context, userID uuid.UUID, now time.Time) ([]*domain.RefreshToken, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	ids := s.byUser[userID]
+	out := make([]*domain.RefreshToken, 0)
+	for _, id := range ids {
+		if t := s.tokens[id]; t != nil && t.RevokedAt == nil && (t.ExpiresAt.IsZero() || t.ExpiresAt.After(now)) {
+			cp := *t
+			out = append(out, &cp)
+		}
+	}
+	return out, nil
+}
+
+// GetAnyByFamily retrieves any token from a family.
+func (s *RefreshStore) GetAnyByFamily(_ context.Context, familyID uuid.UUID) (*domain.RefreshToken, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	ids := s.byFamily[familyID]
+	if len(ids) == 0 {
+		return nil, errors.New("token family not found")
+	}
+	t := s.tokens[ids[0]]
+	cp := *t
+	return &cp, nil
 }

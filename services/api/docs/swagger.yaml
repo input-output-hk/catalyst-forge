@@ -1510,6 +1510,278 @@ components:
           example: "123456789"
           type: string
       type: object
+    internal_api_models_rbac.Binding:
+      properties:
+        created_at:
+          type: string
+        id:
+          type: string
+        org_id:
+          type: string
+        role_slug:
+          type: string
+        scope_id:
+          type: string
+        scope_type:
+          type: string
+        subject_id:
+          type: string
+        subject_type:
+          type: string
+      type: object
+    internal_api_models_rbac.Condition:
+      properties:
+        name:
+          type: string
+        params:
+          additionalProperties: {}
+          type: object
+      type: object
+    internal_api_models_rbac.ResourceEndpointInfo:
+      properties:
+        id_field:
+          type: string
+        label_field:
+          type: string
+        method:
+          type: string
+        parent_filters:
+          items:
+            type: string
+          type: array
+          uniqueItems: false
+        path:
+          type: string
+        query_params:
+          items:
+            type: string
+          type: array
+          uniqueItems: false
+      type: object
+    internal_api_models_rbac.ResourceTypeCatalogItem:
+      properties:
+        endpoint:
+          $ref: '#/components/schemas/internal_api_models_rbac.ResourceEndpointInfo'
+        type:
+          type: string
+      type: object
+    internal_api_models_rbac.RoleEntry:
+      properties:
+        conditions:
+          items:
+            $ref: '#/components/schemas/internal_api_models_rbac.Condition'
+          type: array
+          uniqueItems: false
+        effect:
+          type: string
+        permission:
+          type: string
+        resource_type:
+          type: string
+      type: object
+    internal_authkit_rbac.Condition:
+      properties:
+        name:
+          type: string
+        params:
+          additionalProperties: {}
+          type: object
+      type: object
+    internal_authkit_rbac.RoleEntry:
+      properties:
+        conditions:
+          items:
+            $ref: '#/components/schemas/internal_authkit_rbac.Condition'
+          type: array
+        effect:
+          $ref: '#/components/schemas/rbac.Effect'
+        permission:
+          type: string
+        resourceType:
+          type: string
+      type: object
+    org.Organization:
+      properties:
+        created_at:
+          type: string
+        id:
+          type: string
+        is_default:
+          type: boolean
+        name:
+          type: string
+        updated_at:
+          type: string
+      type: object
+    rbac.BindingCreateRequest:
+      properties:
+        id:
+          type: string
+        org_id:
+          type: string
+        role_slug:
+          type: string
+        scope_id:
+          type: string
+        scope_type:
+          type: string
+        subject:
+          $ref: '#/components/schemas/rbac.SubjectRef'
+      type: object
+    rbac.BindingsListResponse:
+      properties:
+        bindings:
+          items:
+            $ref: '#/components/schemas/internal_api_models_rbac.Binding'
+          type: array
+          uniqueItems: false
+      type: object
+    rbac.ConditionsResponse:
+      properties:
+        conditions:
+          items:
+            type: string
+          type: array
+          uniqueItems: false
+      type: object
+    rbac.Effect:
+      enum:
+      - allow
+      - deny
+      type: string
+      x-enum-varnames:
+      - Allow
+      - Deny
+    rbac.ExplainRequest:
+      properties:
+        permission:
+          type: string
+        resource:
+          $ref: '#/components/schemas/rbac.ResourceInput'
+        subject:
+          $ref: '#/components/schemas/rbac.SubjectInput'
+      type: object
+    rbac.ExplainResponse:
+      properties:
+        decision:
+          type: string
+        trace: {}
+      type: object
+    rbac.PermissionInfo:
+      properties:
+        description:
+          type: string
+        domain:
+          type: string
+        key:
+          type: string
+        name:
+          type: string
+      type: object
+    rbac.PermissionsCatalogResponse:
+      properties:
+        permissions:
+          items:
+            $ref: '#/components/schemas/rbac.PermissionInfo'
+          type: array
+          uniqueItems: false
+      type: object
+    rbac.ResourceInput:
+      properties:
+        attrs:
+          additionalProperties: {}
+          type: object
+        id:
+          type: string
+        org_id:
+          type: string
+        parent:
+          $ref: '#/components/schemas/rbac.ResourceInput'
+        type:
+          type: string
+      type: object
+    rbac.ResourceTypeCatalogResponse:
+      properties:
+        types:
+          items:
+            $ref: '#/components/schemas/internal_api_models_rbac.ResourceTypeCatalogItem'
+          type: array
+          uniqueItems: false
+      type: object
+    rbac.ResourceTypesResponse:
+      properties:
+        types:
+          items:
+            type: string
+          type: array
+          uniqueItems: false
+      type: object
+    rbac.Role:
+      properties:
+        color:
+          type: string
+        description:
+          type: string
+        entries:
+          items:
+            $ref: '#/components/schemas/internal_api_models_rbac.RoleEntry'
+          type: array
+          uniqueItems: false
+        id:
+          type: string
+        name:
+          type: string
+        slug:
+          type: string
+        version:
+          type: integer
+      type: object
+    rbac.RoleDef:
+      properties:
+        color:
+          type: string
+        description:
+          type: string
+        entries:
+          items:
+            $ref: '#/components/schemas/internal_authkit_rbac.RoleEntry'
+          type: array
+        id:
+          type: string
+        name:
+          type: string
+        slug:
+          type: string
+        version:
+          type: integer
+      type: object
+    rbac.RolesListResponse:
+      properties:
+        roles:
+          items:
+            $ref: '#/components/schemas/rbac.Role'
+          type: array
+          uniqueItems: false
+      type: object
+    rbac.SubjectInput:
+      properties:
+        attrs:
+          additionalProperties: {}
+          type: object
+        id:
+          type: string
+        org_id:
+          type: string
+        type:
+          type: string
+      type: object
+    rbac.SubjectRef:
+      properties:
+        id:
+          type: string
+        type:
+          type: string
+      type: object
     service.DeviceLinkResponse:
       properties:
         device_code:
@@ -1729,6 +2001,82 @@ paths:
                 $ref: '#/components/schemas/auth.InvitePreviewResponse'
           description: OK
       summary: Preview invite (public)
+      tags:
+      - admin
+  /api/v1/admin/orgs:
+    get:
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                additionalProperties: {}
+                type: object
+          description: OK
+      summary: List organizations
+      tags:
+      - admin
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/org.Organization'
+          description: Created
+      summary: Create organization
+      tags:
+      - admin
+  /api/v1/admin/orgs/{id}:
+    get:
+      parameters:
+      - description: Organization ID
+        in: path
+        name: id
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/org.Organization'
+          description: OK
+        "404":
+          content:
+            application/json:
+              schema:
+                additionalProperties: {}
+                type: object
+          description: Not Found
+      summary: Get organization
+      tags:
+      - admin
+  /api/v1/admin/orgs/{id}/default:
+    patch:
+      responses:
+        "204":
+          description: No Content
+      summary: Set default organization
+      tags:
+      - admin
+  /api/v1/admin/orgs/{id}/name:
+    patch:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        "204":
+          description: No Content
+      summary: Rename organization
       tags:
       - admin
   /api/v1/admin/users:
@@ -3868,6 +4216,262 @@ paths:
       summary: Get an environment by project and name
       tags:
       - environments
+  /api/v1/rbac/bindings:
+    get:
+      parameters:
+      - description: Subject type (user|group|service)
+        in: query
+        name: subject_type
+        required: true
+        schema:
+          type: string
+      - description: Subject ID
+        in: query
+        name: subject_id
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rbac.BindingsListResponse'
+          description: OK
+      summary: List bindings for a subject
+      tags:
+      - rbac
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/rbac.BindingCreateRequest'
+        description: Binding
+        required: true
+      responses:
+        "201":
+          description: Created
+      summary: Create binding
+      tags:
+      - rbac
+  /api/v1/rbac/bindings/{id}:
+    delete:
+      parameters:
+      - description: Binding ID (UUID)
+        in: path
+        name: id
+        required: true
+        schema:
+          type: string
+      responses:
+        "204":
+          description: No Content
+      summary: Delete binding
+      tags:
+      - rbac
+  /api/v1/rbac/bindings/by-scope:
+    get:
+      parameters:
+      - description: Scope type (global|org|project|resource)
+        in: query
+        name: scope_type
+        required: true
+        schema:
+          type: string
+      - description: Scope ID
+        in: query
+        name: scope_id
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rbac.BindingsListResponse'
+          description: OK
+      summary: List bindings in a scope
+      tags:
+      - rbac
+  /api/v1/rbac/conditions:
+    get:
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rbac.ConditionsResponse'
+          description: OK
+      summary: List registered RBAC conditions
+      tags:
+      - rbac
+  /api/v1/rbac/explain:
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/rbac.ExplainRequest'
+        description: Explain request
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rbac.ExplainResponse'
+          description: OK
+        "428":
+          description: Precondition Required
+      summary: Explain decision
+      tags:
+      - rbac
+  /api/v1/rbac/permissions/catalog:
+    get:
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rbac.PermissionsCatalogResponse'
+          description: OK
+      summary: List permission catalog
+      tags:
+      - rbac
+  /api/v1/rbac/resource-types:
+    get:
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rbac.ResourceTypesResponse'
+          description: OK
+      summary: List canonical resource types
+      tags:
+      - rbac
+  /api/v1/rbac/resource-types/catalog:
+    get:
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rbac.ResourceTypeCatalogResponse'
+          description: OK
+      summary: Resource type catalog (endpoints for each type)
+      tags:
+      - rbac
+  /api/v1/rbac/roles:
+    get:
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rbac.RolesListResponse'
+          description: OK
+      summary: List roles
+      tags:
+      - rbac
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/rbac.RoleDef'
+        description: Role definition
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                type: object
+          description: Created
+      summary: Create role
+      tags:
+      - rbac
+  /api/v1/rbac/roles/{slug}:
+    get:
+      parameters:
+      - description: Role slug
+        in: path
+        name: slug
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rbac.Role'
+          description: OK
+        "404":
+          description: Not Found
+      summary: Get role
+      tags:
+      - rbac
+    put:
+      parameters:
+      - description: Role slug
+        in: path
+        name: slug
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/rbac.RoleDef'
+        description: Role definition
+        required: true
+      responses:
+        "204":
+          description: No Content
+      summary: Update role
+      tags:
+      - rbac
+  /api/v1/rbac/roles/{slug}/bump-version:
+    post:
+      parameters:
+      - description: Role slug
+        in: path
+        name: slug
+        required: true
+        schema:
+          type: string
+      responses:
+        "204":
+          description: No Content
+      summary: Bump role version
+      tags:
+      - rbac
+  /api/v1/rbac/subjects/{subject_type}/{subject_id}/bump-version:
+    post:
+      parameters:
+      - description: Subject type (user|group|service)
+        in: path
+        name: subject_type
+        required: true
+        schema:
+          type: string
+      - description: Subject ID
+        in: path
+        name: subject_id
+        required: true
+        schema:
+          type: string
+      responses:
+        "204":
+          description: No Content
+      summary: Bump principal version
+      tags:
+      - rbac
   /api/v1/releases:
     get:
       description: List releases with optional filtering and pagination

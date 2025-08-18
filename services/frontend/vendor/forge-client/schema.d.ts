@@ -3767,6 +3767,477 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/rbac/bindings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List bindings for a subject */
+        get: {
+            parameters: {
+                query: {
+                    /** @description Subject type (user|group|service) */
+                    subject_type: string;
+                    /** @description Subject ID */
+                    subject_id: string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["rbac.BindingsListResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        /** Create binding */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            /** @description Binding */
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["rbac.BindingCreateRequest"];
+                };
+            };
+            responses: {
+                /** @description Created */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/rbac/bindings/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete binding */
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Binding ID (UUID) */
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description No Content */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/rbac/bindings/by-scope": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List bindings in a scope */
+        get: {
+            parameters: {
+                query: {
+                    /** @description Scope type (global|org|project|resource) */
+                    scope_type: string;
+                    /** @description Scope ID */
+                    scope_id: string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["rbac.BindingsListResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/rbac/conditions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List registered RBAC conditions */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["rbac.ConditionsResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/rbac/explain": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Explain decision */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            /** @description Explain request */
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["rbac.ExplainRequest"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["rbac.ExplainResponse"];
+                    };
+                };
+                /** @description Precondition Required */
+                428: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/rbac/permissions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List registered permission keys */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["rbac.PermissionsResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/rbac/roles": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List roles */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["rbac.RolesListResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        /** Create role */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            /** @description Role definition */
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["rbac.RoleDef"];
+                };
+            };
+            responses: {
+                /** @description Created */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": Record<string, never>;
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/rbac/roles/{slug}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get role */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Role slug */
+                    slug: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["rbac.Role"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        /** Update role */
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Role slug */
+                    slug: string;
+                };
+                cookie?: never;
+            };
+            /** @description Role definition */
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["rbac.RoleDef"];
+                };
+            };
+            responses: {
+                /** @description No Content */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/rbac/roles/{slug}/bump-version": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Bump role version */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Role slug */
+                    slug: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description No Content */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/rbac/subjects/{subject_type}/{subject_id}/bump-version": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Bump principal version */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Subject type (user|group|service) */
+                    subject_type: string;
+                    /** @description Subject ID */
+                    subject_id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description No Content */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/releases": {
         parameters: {
             query?: never;
@@ -6327,6 +6798,109 @@ export interface components {
              * @example 123456789
              */
             serial_number?: string;
+        };
+        "internal_api_models_rbac.Binding": {
+            created_at?: string;
+            id?: string;
+            org_id?: string;
+            role_slug?: string;
+            scope_id?: string;
+            scope_type?: string;
+            subject_id?: string;
+            subject_type?: string;
+        };
+        "internal_api_models_rbac.Condition": {
+            name?: string;
+            params?: {
+                [key: string]: unknown;
+            };
+        };
+        "internal_api_models_rbac.RoleEntry": {
+            conditions?: components["schemas"]["internal_api_models_rbac.Condition"][];
+            effect?: string;
+            permission?: string;
+            resource_type?: string;
+        };
+        "internal_authkit_rbac.Condition": {
+            name?: string;
+            params?: {
+                [key: string]: unknown;
+            };
+        };
+        "internal_authkit_rbac.RoleEntry": {
+            conditions?: components["schemas"]["internal_authkit_rbac.Condition"][];
+            effect?: components["schemas"]["rbac.Effect"];
+            permission?: string;
+            resourceType?: string;
+        };
+        "rbac.BindingCreateRequest": {
+            id?: string;
+            org_id?: string;
+            role_slug?: string;
+            scope_id?: string;
+            scope_type?: string;
+            subject?: components["schemas"]["rbac.SubjectRef"];
+        };
+        "rbac.BindingsListResponse": {
+            bindings?: components["schemas"]["internal_api_models_rbac.Binding"][];
+        };
+        "rbac.ConditionsResponse": {
+            conditions?: string[];
+        };
+        /** @enum {string} */
+        "rbac.Effect": "allow" | "deny";
+        "rbac.ExplainRequest": {
+            permission?: string;
+            resource?: components["schemas"]["rbac.ResourceInput"];
+            subject?: components["schemas"]["rbac.SubjectInput"];
+        };
+        "rbac.ExplainResponse": {
+            decision?: string;
+            trace?: unknown;
+        };
+        "rbac.PermissionsResponse": {
+            permissions?: string[];
+        };
+        "rbac.ResourceInput": {
+            attrs?: {
+                [key: string]: unknown;
+            };
+            id?: string;
+            org_id?: string;
+            type?: string;
+        };
+        "rbac.Role": {
+            color?: string;
+            description?: string;
+            entries?: components["schemas"]["internal_api_models_rbac.RoleEntry"][];
+            id?: string;
+            name?: string;
+            slug?: string;
+            version?: number;
+        };
+        "rbac.RoleDef": {
+            color?: string;
+            description?: string;
+            entries?: components["schemas"]["internal_authkit_rbac.RoleEntry"][];
+            id?: string;
+            name?: string;
+            slug?: string;
+            version?: number;
+        };
+        "rbac.RolesListResponse": {
+            roles?: components["schemas"]["rbac.Role"][];
+        };
+        "rbac.SubjectInput": {
+            attrs?: {
+                [key: string]: unknown;
+            };
+            id?: string;
+            org_id?: string;
+            type?: string;
+        };
+        "rbac.SubjectRef": {
+            id?: string;
+            type?: string;
         };
         "service.DeviceLinkResponse": {
             device_code?: string;

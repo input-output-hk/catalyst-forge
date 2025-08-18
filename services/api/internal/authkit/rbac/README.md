@@ -51,7 +51,6 @@ rbac/
 ```go
 cfg := rbac.DefaultConfig()
 cfg.EnableDeny = true                  // explicit deny overrides allow
-cfg.SuperRoles = []string{"super"}     // optional bypass roles (from Subject.Attrs["roles"])
 cfg.RoleCacheTTL = 5 * time.Minute
 cfg.PrincipalCacheTTL = 2 * time.Minute
 

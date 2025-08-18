@@ -10,8 +10,8 @@ import (
 
 	"github.com/gin-gonic/gin"
 
+	authseed "github.com/input-output-hk/catalyst-forge/services/api/internal/auth"
 	rbacgorm "github.com/input-output-hk/catalyst-forge/services/api/internal/authkit/rbac/gormstore"
-	rbacseed "github.com/input-output-hk/catalyst-forge/services/api/internal/authkit/rbacseed"
 	akgormstore "github.com/input-output-hk/catalyst-forge/services/api/internal/authkit/store/gormstore"
 	"github.com/input-output-hk/catalyst-forge/services/api/internal/config"
 	argomodels "github.com/input-output-hk/catalyst-forge/services/api/internal/models/argo"
@@ -21,6 +21,7 @@ import (
 	deploymentmodels "github.com/input-output-hk/catalyst-forge/services/api/internal/models/deployment"
 	environmentmodels "github.com/input-output-hk/catalyst-forge/services/api/internal/models/environment"
 	gitopsmodels "github.com/input-output-hk/catalyst-forge/services/api/internal/models/gitops"
+	orgmodels "github.com/input-output-hk/catalyst-forge/services/api/internal/models/org"
 	projectmodels "github.com/input-output-hk/catalyst-forge/services/api/internal/models/project"
 	releasemodels "github.com/input-output-hk/catalyst-forge/services/api/internal/models/release"
 	repositorymodels "github.com/input-output-hk/catalyst-forge/services/api/internal/models/repository"
@@ -94,6 +95,8 @@ func openDB(cfg config.Config, logger *slog.Logger) (*gorm.DB, error) {
 func runMigrations(db *gorm.DB) error {
 	// Core API models - All new models from Phase 1-4 implementation
 	if err := db.AutoMigrate(
+		// Organizations
+		&orgmodels.Organization{},
 		// Audit models
 		&adm.Log{},
 
@@ -216,9 +219,17 @@ func initRBAC(ctx context.Context, db *gorm.DB, cfg config.Config, logger *slog.
 		}
 		return
 	}
+
+	// Ensure admin role always exists independently of other seeds
+	if err := authseed.EnsureAdminRole(ctx, store); err != nil {
+		if logger != nil {
+			logger.Error("RBAC admin role seeding failed", "error", err)
+		}
+	}
+
 	if !cfg.Auth.RBACSeedDefaults {
 		if logger != nil {
-			logger.Info("RBAC seeding skipped by config")
+			logger.Info("RBAC default role seeding skipped by config")
 		}
 		return
 	}
@@ -226,9 +237,9 @@ func initRBAC(ctx context.Context, db *gorm.DB, cfg config.Config, logger *slog.
 		logger.Info("Seeding default RBAC roles")
 	}
 	// Idempotent seeding; bump versions on change
-	if err := rbacseed.SeedDefaultRoles(ctx, store, true); err != nil {
+	if err := authseed.SeedDefaultRoles(ctx, store, true); err != nil {
 		if logger != nil {
-			logger.Error("RBAC seeding failed", "error", err)
+			logger.Error("RBAC default role seeding failed", "error", err)
 		}
 	}
 }

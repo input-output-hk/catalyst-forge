@@ -39,6 +39,7 @@ const securityItems = [
   { title: "Users", url: "/users", icon: Users },
   { title: "Secrets", url: "/secrets", icon: Lock },
   { title: "Audit Log", url: "/audit", icon: ListTree },
+  { title: "RBAC Admin", url: "/admin/rbac", icon: Lock },
 ];
 const platformItems = [
   { title: "Settings", url: "/settings", icon: Settings },
@@ -136,7 +137,7 @@ export function AppSidebar() {
                 {securityItems
                   .filter((item) => {
                     // Hide admin-only items for non-admins
-                    const adminOnly = item.url === "/users" || item.url === "/audit";
+                    const adminOnly = item.url === "/users" || item.url === "/audit" || item.url === "/admin/rbac";
                     return adminOnly ? app.session.roles?.includes("admin") : true;
                   })
                   .map((item) => {

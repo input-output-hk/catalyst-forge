@@ -119,7 +119,7 @@ func bindRunFlags() {
 	_ = viper.BindPFlag("auth.signingkeypem", runCmd.Flags().Lookup("auth-signing-key-pem"))
 	_ = viper.BindPFlag("auth.signingkeykid", runCmd.Flags().Lookup("auth-signing-key-kid"))
 	_ = viper.BindPFlag("auth.csrfsecret", runCmd.Flags().Lookup("auth-csrf-secret"))
-	// Intentionally avoid binding bootstrap-token to Viper to let ENV/Config take precedence
+	_ = viper.BindPFlag("auth.rbacseeddefaults", runCmd.Flags().Lookup("auth-rbac-seed-defaults"))
 
 	_ = viper.BindPFlag("auth.github.enabled", runCmd.Flags().Lookup("auth-github-enabled"))
 	_ = viper.BindPFlag("auth.github.issuer", runCmd.Flags().Lookup("auth-github-issuer"))

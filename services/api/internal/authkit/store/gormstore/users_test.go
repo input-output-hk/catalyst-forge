@@ -10,8 +10,8 @@ import (
 	"time"
 
 	"github.com/DATA-DOG/go-sqlmock"
-	"github.com/input-output-hk/catalyst-forge/services/api/internal/authkit/domain"
 	"github.com/google/uuid"
+	"github.com/input-output-hk/catalyst-forge/services/api/internal/authkit/domain"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"gorm.io/driver/postgres"
@@ -21,23 +21,23 @@ import (
 
 func setupTestDB(t *testing.T) (*gorm.DB, sqlmock.Sqlmock) {
 	t.Helper()
-	
+
 	sqlDB, mock, err := sqlmock.New()
 	require.NoError(t, err)
-	
+
 	gormDB, err := gorm.Open(postgres.New(postgres.Config{
 		Conn: sqlDB,
 	}), &gorm.Config{
 		Logger: logger.Default.LogMode(logger.Silent),
 	})
 	require.NoError(t, err)
-	
+
 	return gormDB, mock
 }
 
 func TestNewUserStore(t *testing.T) {
 	t.Parallel()
-	
+
 	db, _ := setupTestDB(t)
 	store := NewUserStore(db)
 	assert.NotNil(t, store)
@@ -46,16 +46,16 @@ func TestNewUserStore(t *testing.T) {
 
 func TestUserStore_Create(t *testing.T) {
 	t.Parallel()
-	
+
 	ctx := context.Background()
-	
+
 	tests := []struct {
-		name    string
-		email   string
-		roles   []string
-		setup   func(sqlmock.Sqlmock)
-		wantErr bool
-		errMsg  string
+		name     string
+		email    string
+		roles    []string
+		setup    func(sqlmock.Sqlmock)
+		wantErr  bool
+		errMsg   string
 		validate func(*testing.T, *domain.User)
 	}{
 		{
@@ -65,12 +65,14 @@ func TestUserStore_Create(t *testing.T) {
 			setup: func(mock sqlmock.Sqlmock) {
 				mock.ExpectBegin()
 				mock.ExpectExec(regexp.QuoteMeta(
-					`INSERT INTO "auth_users" ("id","email","roles","session_version","created_at","updated_at","deleted_at") VALUES ($1,$2,$3,$4,$5,$6,$7)`,
+					`INSERT INTO "auth_users" ("id","email","full_name","roles","session_version","suspended_at","created_at","updated_at","deleted_at") VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)`,
 				)).WithArgs(
 					sqlmock.AnyArg(), // ID (UUID)
 					"user@example.com",
+					sqlmock.AnyArg(), // full_name
 					`["user"]`,
 					int64(1),
+					nil,              // suspended_at
 					sqlmock.AnyArg(), // CreatedAt
 					sqlmock.AnyArg(), // UpdatedAt
 					nil,              // DeletedAt
@@ -92,12 +94,14 @@ func TestUserStore_Create(t *testing.T) {
 			setup: func(mock sqlmock.Sqlmock) {
 				mock.ExpectBegin()
 				mock.ExpectExec(regexp.QuoteMeta(
-					`INSERT INTO "auth_users" ("id","email","roles","session_version","created_at","updated_at","deleted_at") VALUES ($1,$2,$3,$4,$5,$6,$7)`,
+					`INSERT INTO "auth_users" ("id","email","full_name","roles","session_version","suspended_at","created_at","updated_at","deleted_at") VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)`,
 				)).WithArgs(
 					sqlmock.AnyArg(),
 					"admin@example.com",
+					sqlmock.AnyArg(), // full_name
 					`["user","admin"]`,
 					int64(1),
+					nil, // suspended_at
 					sqlmock.AnyArg(),
 					sqlmock.AnyArg(),
 					nil,
@@ -117,12 +121,14 @@ func TestUserStore_Create(t *testing.T) {
 			setup: func(mock sqlmock.Sqlmock) {
 				mock.ExpectBegin()
 				mock.ExpectExec(regexp.QuoteMeta(
-					`INSERT INTO "auth_users" ("id","email","roles","session_version","created_at","updated_at","deleted_at") VALUES ($1,$2,$3,$4,$5,$6,$7)`,
+					`INSERT INTO "auth_users" ("id","email","full_name","roles","session_version","suspended_at","created_at","updated_at","deleted_at") VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)`,
 				)).WithArgs(
 					sqlmock.AnyArg(),
 					"noroles@example.com",
+					sqlmock.AnyArg(), // full_name
 					`[]`,
 					int64(1),
+					nil, // suspended_at
 					sqlmock.AnyArg(),
 					sqlmock.AnyArg(),
 					nil,
@@ -141,12 +147,14 @@ func TestUserStore_Create(t *testing.T) {
 			setup: func(mock sqlmock.Sqlmock) {
 				mock.ExpectBegin()
 				mock.ExpectExec(regexp.QuoteMeta(
-					`INSERT INTO "auth_users" ("id","email","roles","session_version","created_at","updated_at","deleted_at") VALUES ($1,$2,$3,$4,$5,$6,$7)`,
+					`INSERT INTO "auth_users" ("id","email","full_name","roles","session_version","suspended_at","created_at","updated_at","deleted_at") VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)`,
 				)).WithArgs(
 					sqlmock.AnyArg(),
 					"duplicate@example.com",
+					sqlmock.AnyArg(), // full_name
 					`["user"]`,
 					int64(1),
+					nil, // suspended_at
 					sqlmock.AnyArg(),
 					sqlmock.AnyArg(),
 					nil,
@@ -163,12 +171,14 @@ func TestUserStore_Create(t *testing.T) {
 			setup: func(mock sqlmock.Sqlmock) {
 				mock.ExpectBegin()
 				mock.ExpectExec(regexp.QuoteMeta(
-					`INSERT INTO "auth_users" ("id","email","roles","session_version","created_at","updated_at","deleted_at") VALUES ($1,$2,$3,$4,$5,$6,$7)`,
+					`INSERT INTO "auth_users" ("id","email","full_name","roles","session_version","suspended_at","created_at","updated_at","deleted_at") VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)`,
 				)).WithArgs(
 					sqlmock.AnyArg(),
 					"error@example.com",
+					sqlmock.AnyArg(), // full_name
 					`["user"]`,
 					int64(1),
+					nil, // suspended_at
 					sqlmock.AnyArg(),
 					sqlmock.AnyArg(),
 					nil,
@@ -179,19 +189,19 @@ func TestUserStore_Create(t *testing.T) {
 			errMsg:  "database connection lost",
 		},
 	}
-	
+
 	for _, tc := range tests {
 		tc := tc // capture range variable for parallel tests
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			
+
 			db, mock := setupTestDB(t)
 			store := NewUserStore(db)
-			
+
 			tc.setup(mock)
-			
+
 			user, err := store.Create(ctx, tc.email, tc.roles)
-			
+
 			if tc.wantErr {
 				require.Error(t, err)
 				if tc.errMsg != "" {
@@ -201,12 +211,12 @@ func TestUserStore_Create(t *testing.T) {
 			} else {
 				require.NoError(t, err)
 				require.NotNil(t, user)
-				
+
 				if tc.validate != nil {
 					tc.validate(t, user)
 				}
 			}
-			
+
 			err = mock.ExpectationsWereMet()
 			assert.NoError(t, err)
 		})
@@ -215,17 +225,17 @@ func TestUserStore_Create(t *testing.T) {
 
 func TestUserStore_GetByEmail(t *testing.T) {
 	t.Parallel()
-	
+
 	ctx := context.Background()
 	userID := uuid.New()
 	now := time.Now()
-	
+
 	tests := []struct {
-		name    string
-		email   string
-		setup   func(sqlmock.Sqlmock)
-		wantErr bool
-		errMsg  string
+		name     string
+		email    string
+		setup    func(sqlmock.Sqlmock)
+		wantErr  bool
+		errMsg   string
 		validate func(*testing.T, *domain.User)
 	}{
 		{
@@ -237,7 +247,7 @@ func TestUserStore_GetByEmail(t *testing.T) {
 				}).AddRow(
 					userID, "user@example.com", `["user"]`, int64(1), now, now, nil,
 				)
-				
+
 				mock.ExpectQuery(regexp.QuoteMeta(
 					`SELECT * FROM "auth_users" WHERE email = $1 AND "auth_users"."deleted_at" IS NULL ORDER BY "auth_users"."id" LIMIT $2`,
 				)).WithArgs("user@example.com", 1).WillReturnRows(rows)
@@ -259,7 +269,7 @@ func TestUserStore_GetByEmail(t *testing.T) {
 				}).AddRow(
 					userID, "admin@example.com", `["user","admin"]`, int64(5), now, now, nil,
 				)
-				
+
 				mock.ExpectQuery(regexp.QuoteMeta(
 					`SELECT * FROM "auth_users" WHERE email = $1 AND "auth_users"."deleted_at" IS NULL ORDER BY "auth_users"."id" LIMIT $2`,
 				)).WithArgs("admin@example.com", 1).WillReturnRows(rows)
@@ -293,19 +303,19 @@ func TestUserStore_GetByEmail(t *testing.T) {
 			errMsg:  "connection timeout",
 		},
 	}
-	
+
 	for _, tc := range tests {
 		tc := tc // capture range variable for parallel tests
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			
+
 			db, mock := setupTestDB(t)
 			store := NewUserStore(db)
-			
+
 			tc.setup(mock)
-			
+
 			user, err := store.GetByEmail(ctx, tc.email)
-			
+
 			if tc.wantErr {
 				require.Error(t, err)
 				if tc.errMsg != "" {
@@ -315,12 +325,12 @@ func TestUserStore_GetByEmail(t *testing.T) {
 			} else {
 				require.NoError(t, err)
 				require.NotNil(t, user)
-				
+
 				if tc.validate != nil {
 					tc.validate(t, user)
 				}
 			}
-			
+
 			err = mock.ExpectationsWereMet()
 			assert.NoError(t, err)
 		})
@@ -329,17 +339,17 @@ func TestUserStore_GetByEmail(t *testing.T) {
 
 func TestUserStore_GetByID(t *testing.T) {
 	t.Parallel()
-	
+
 	ctx := context.Background()
 	userID := uuid.New()
 	now := time.Now()
-	
+
 	tests := []struct {
-		name    string
-		id      uuid.UUID
-		setup   func(sqlmock.Sqlmock)
-		wantErr bool
-		errMsg  string
+		name     string
+		id       uuid.UUID
+		setup    func(sqlmock.Sqlmock)
+		wantErr  bool
+		errMsg   string
 		validate func(*testing.T, *domain.User)
 	}{
 		{
@@ -351,7 +361,7 @@ func TestUserStore_GetByID(t *testing.T) {
 				}).AddRow(
 					userID, "user@example.com", `["user"]`, int64(2), now, now, nil,
 				)
-				
+
 				mock.ExpectQuery(regexp.QuoteMeta(
 					`SELECT * FROM "auth_users" WHERE id = $1 AND "auth_users"."deleted_at" IS NULL ORDER BY "auth_users"."id" LIMIT $2`,
 				)).WithArgs(userID, 1).WillReturnRows(rows)
@@ -386,19 +396,19 @@ func TestUserStore_GetByID(t *testing.T) {
 			errMsg:  "disk full",
 		},
 	}
-	
+
 	for _, tc := range tests {
 		tc := tc // capture range variable for parallel tests
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			
+
 			db, mock := setupTestDB(t)
 			store := NewUserStore(db)
-			
+
 			tc.setup(mock)
-			
+
 			user, err := store.GetByID(ctx, tc.id)
-			
+
 			if tc.wantErr {
 				require.Error(t, err)
 				if tc.errMsg != "" {
@@ -408,12 +418,12 @@ func TestUserStore_GetByID(t *testing.T) {
 			} else {
 				require.NoError(t, err)
 				require.NotNil(t, user)
-				
+
 				if tc.validate != nil {
 					tc.validate(t, user)
 				}
 			}
-			
+
 			err = mock.ExpectationsWereMet()
 			assert.NoError(t, err)
 		})
@@ -422,10 +432,10 @@ func TestUserStore_GetByID(t *testing.T) {
 
 func TestUserStore_UpdateRoles(t *testing.T) {
 	t.Parallel()
-	
+
 	ctx := context.Background()
 	userID := uuid.New()
-	
+
 	tests := []struct {
 		name    string
 		id      uuid.UUID
@@ -505,19 +515,19 @@ func TestUserStore_UpdateRoles(t *testing.T) {
 			errMsg:  "lock timeout",
 		},
 	}
-	
+
 	for _, tc := range tests {
 		tc := tc // capture range variable for parallel tests
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			
+
 			db, mock := setupTestDB(t)
 			store := NewUserStore(db)
-			
+
 			tc.setup(mock)
-			
+
 			err := store.UpdateRoles(ctx, tc.id, tc.roles)
-			
+
 			if tc.wantErr {
 				require.Error(t, err)
 				if tc.errMsg != "" {
@@ -526,7 +536,7 @@ func TestUserStore_UpdateRoles(t *testing.T) {
 			} else {
 				require.NoError(t, err)
 			}
-			
+
 			err = mock.ExpectationsWereMet()
 			assert.NoError(t, err)
 		})
@@ -535,10 +545,10 @@ func TestUserStore_UpdateRoles(t *testing.T) {
 
 func TestUserStore_BumpSessionVersion(t *testing.T) {
 	t.Parallel()
-	
+
 	ctx := context.Background()
 	userID := uuid.New()
-	
+
 	tests := []struct {
 		name    string
 		id      uuid.UUID
@@ -597,19 +607,19 @@ func TestUserStore_BumpSessionVersion(t *testing.T) {
 			errMsg:  "deadlock detected",
 		},
 	}
-	
+
 	for _, tc := range tests {
 		tc := tc // capture range variable for parallel tests
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			
+
 			db, mock := setupTestDB(t)
 			store := NewUserStore(db)
-			
+
 			tc.setup(mock)
-			
+
 			err := store.BumpSessionVersion(ctx, tc.id)
-			
+
 			if tc.wantErr {
 				require.Error(t, err)
 				if tc.errMsg != "" {
@@ -618,7 +628,7 @@ func TestUserStore_BumpSessionVersion(t *testing.T) {
 			} else {
 				require.NoError(t, err)
 			}
-			
+
 			err = mock.ExpectationsWereMet()
 			assert.NoError(t, err)
 		})
@@ -627,10 +637,10 @@ func TestUserStore_BumpSessionVersion(t *testing.T) {
 
 func TestUserStore_toDomain(t *testing.T) {
 	t.Parallel()
-	
+
 	userID := uuid.New()
 	now := time.Now()
-	
+
 	tests := []struct {
 		name    string
 		user    *User
@@ -725,17 +735,17 @@ func TestUserStore_toDomain(t *testing.T) {
 			errMsg:  "cannot unmarshal",
 		},
 	}
-	
+
 	for _, tc := range tests {
 		tc := tc // capture range variable for parallel tests
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			
+
 			db, _ := setupTestDB(t)
 			store := NewUserStore(db)
-			
+
 			got, err := store.toDomain(tc.user)
-			
+
 			if tc.wantErr {
 				require.Error(t, err)
 				if tc.errMsg != "" {
@@ -758,7 +768,7 @@ func TestUserStore_toDomain(t *testing.T) {
 
 func TestUserStore_RoleJSONMarshaling(t *testing.T) {
 	t.Parallel()
-	
+
 	tests := []struct {
 		name    string
 		roles   []string
@@ -796,20 +806,20 @@ func TestUserStore_RoleJSONMarshaling(t *testing.T) {
 			wantErr: false,
 		},
 	}
-	
+
 	for _, tc := range tests {
 		tc := tc // capture range variable for parallel tests
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			
+
 			got, err := json.Marshal(tc.roles)
-			
+
 			if tc.wantErr {
 				require.Error(t, err)
 			} else {
 				require.NoError(t, err)
 				assert.Equal(t, tc.want, string(got))
-				
+
 				// Test unmarshaling back
 				var roles []string
 				err = json.Unmarshal(got, &roles)
@@ -833,33 +843,35 @@ func TestUserStore_ConcurrentOperations(t *testing.T) {
 
 func TestUserStore_TransactionRollback(t *testing.T) {
 	t.Parallel()
-	
+
 	ctx := context.Background()
-	
+
 	t.Run("rollback_on_error", func(t *testing.T) {
 		t.Parallel()
-		
+
 		db, mock := setupTestDB(t)
 		store := NewUserStore(db)
-		
+
 		// Expect transaction to start, fail, and rollback
 		mock.ExpectBegin()
 		mock.ExpectExec(regexp.QuoteMeta(
-			`INSERT INTO "auth_users" ("id","email","roles","session_version","created_at","updated_at","deleted_at") VALUES ($1,$2,$3,$4,$5,$6,$7)`,
+			`INSERT INTO "auth_users" ("id","email","full_name","roles","session_version","suspended_at","created_at","updated_at","deleted_at") VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)`,
 		)).WithArgs(
 			sqlmock.AnyArg(),
 			"fail@example.com",
+			sqlmock.AnyArg(), // full_name
 			`["user"]`,
 			int64(1),
+			nil, // suspended_at
 			sqlmock.AnyArg(),
 			sqlmock.AnyArg(),
 			nil,
 		).WillReturnError(sql.ErrConnDone)
 		mock.ExpectRollback()
-		
+
 		_, err := store.Create(ctx, "fail@example.com", []string{"user"})
 		require.Error(t, err)
-		
+
 		err = mock.ExpectationsWereMet()
 		assert.NoError(t, err)
 	})

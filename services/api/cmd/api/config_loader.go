@@ -26,6 +26,7 @@ func initViper(cfgFile string) {
 	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
 	// Ensure critical keys resolve from environment during Unmarshal
 	_ = viper.BindEnv("auth.bootstraptoken")
+	_ = viper.BindEnv("auth.rbacseeddefaults")
 
 	if err := viper.ReadInConfig(); err == nil {
 		fmt.Println("Using config file:", viper.ConfigFileUsed())

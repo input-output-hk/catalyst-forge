@@ -12,6 +12,7 @@ type Role struct {
 	Slug        string    `gorm:"uniqueIndex"`
 	Name        string
 	Description string
+	Color       string
 	Version     int64 `gorm:"index"`
 	CreatedAt   time.Time
 	UpdatedAt   time.Time

@@ -16,6 +16,7 @@ import AuditLog from "@/pages/AuditLog";
 import SettingsProfile from "@/pages/SettingsProfile";
 import Profile from "@/pages/Profile";
 import Users from "@/pages/Users";
+import RBACAdmin from "@/pages/RBACAdmin";
 import { lazy, Suspense } from "react";
 import NotFound from "./pages/NotFound";
 import { AppShell } from "@/components/layout/AppShell";
@@ -49,6 +50,14 @@ const App = () => (
                   <Route path="/environments" element={<Environments />} />
                   <Route path="/jobs" element={<Jobs />} />
                   <Route path="/secrets" element={<Secrets />} />
+                  <Route
+                    path="/admin/rbac"
+                    element={
+                      <RequireAdmin>
+                        <RBACAdmin />
+                      </RequireAdmin>
+                    }
+                  />
                   <Route
                     path="/audit"
                     element={

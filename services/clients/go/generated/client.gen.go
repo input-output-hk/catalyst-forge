@@ -189,6 +189,12 @@ const (
 	Short     ContractsTraceCreateRetentionClass = "short"
 )
 
+// Defines values for RbacEffect.
+const (
+	Allow RbacEffect = "allow"
+	Deny  RbacEffect = "deny"
+)
+
 // AuthAccessRequest defines model for auth.AccessRequest.
 type AuthAccessRequest struct {
 	Attempts  int    `json:"attempts,omitempty"`
@@ -309,8 +315,8 @@ type AuthCredentialsAddBeginRequest struct {
 
 // AuthCredentialsAddCompleteRequest defines model for auth.CredentialsAddCompleteRequest.
 type AuthCredentialsAddCompleteRequest struct {
-	Credential interface{} `json:"credential,omitempty"`
-	SessionKey string      `json:"session_key,omitempty"`
+	Credential map[string]interface{} `json:"credential,omitempty"`
+	SessionKey string                 `json:"session_key,omitempty"`
 }
 
 // AuthCredentialsListResponse defines model for auth.CredentialsListResponse.
@@ -397,8 +403,8 @@ type AuthInvitePreviewResponse struct {
 
 // AuthLoginCompleteRequest defines model for auth.LoginCompleteRequest.
 type AuthLoginCompleteRequest struct {
-	Credential interface{} `json:"credential,omitempty"`
-	SessionKey string      `json:"session_key,omitempty"`
+	Credential map[string]interface{} `json:"credential,omitempty"`
+	SessionKey string                 `json:"session_key,omitempty"`
 }
 
 // AuthLoginCompleteResponse defines model for auth.LoginCompleteResponse.
@@ -424,22 +430,22 @@ type AuthOnboardBeginRequest struct {
 
 // AuthOnboardBeginResponse defines model for auth.OnboardBeginResponse.
 type AuthOnboardBeginResponse struct {
-	PublicKey  interface{} `json:"publicKey,omitempty"`
-	SessionKey string      `json:"session_key,omitempty"`
-	UserId     string      `json:"user_id,omitempty"`
+	PublicKey  map[string]interface{} `json:"publicKey,omitempty"`
+	SessionKey string                 `json:"session_key,omitempty"`
+	UserId     string                 `json:"user_id,omitempty"`
 }
 
 // AuthOnboardCompleteRequest defines model for auth.OnboardCompleteRequest.
 type AuthOnboardCompleteRequest struct {
-	Credential interface{} `json:"credential,omitempty"`
-	InviteId   string      `json:"invite_id,omitempty"`
-	SessionKey string      `json:"session_key,omitempty"`
+	Credential map[string]interface{} `json:"credential,omitempty"`
+	InviteId   string                 `json:"invite_id,omitempty"`
+	SessionKey string                 `json:"session_key,omitempty"`
 }
 
 // AuthPublicKeyOptionsResponse defines model for auth.PublicKeyOptionsResponse.
 type AuthPublicKeyOptionsResponse struct {
-	PublicKey  interface{} `json:"publicKey,omitempty"`
-	SessionKey string      `json:"session_key,omitempty"`
+	PublicKey  map[string]interface{} `json:"publicKey,omitempty"`
+	SessionKey string                 `json:"session_key,omitempty"`
 }
 
 // AuthRecoveryGenerateResponse defines model for auth.RecoveryGenerateResponse.
@@ -465,9 +471,9 @@ type AuthRecoveryRegisterBeginRequest struct {
 
 // AuthRecoveryRegisterCompleteRequest defines model for auth.RecoveryRegisterCompleteRequest.
 type AuthRecoveryRegisterCompleteRequest struct {
-	Credential interface{} `json:"credential,omitempty"`
-	FlowId     string      `json:"flow_id,omitempty"`
-	SessionKey string      `json:"session_key,omitempty"`
+	Credential map[string]interface{} `json:"credential,omitempty"`
+	FlowId     string                 `json:"flow_id,omitempty"`
+	SessionKey string                 `json:"session_key,omitempty"`
 }
 
 // AuthRecoveryVerifyRequest defines model for auth.RecoveryVerifyRequest.
@@ -490,10 +496,32 @@ type AuthSessionResponse struct {
 	Valid          bool   `json:"valid,omitempty"`
 }
 
+// AuthSessionSummary defines model for auth.SessionSummary.
+type AuthSessionSummary struct {
+	// Amr webauthn | device_link
+	Amr        string `json:"amr,omitempty"`
+	CreatedAt  string `json:"created_at,omitempty"`
+	Current    bool   `json:"current,omitempty"`
+	DeviceId   string `json:"device_id,omitempty"`
+	DeviceName string `json:"device_name,omitempty"`
+	ExpiresAt  string `json:"expires_at,omitempty"`
+
+	// Id family_id
+	Id             string `json:"id,omitempty"`
+	IpAddress      string `json:"ip_address,omitempty"`
+	LastActivityAt string `json:"last_activity_at,omitempty"`
+	UserAgent      string `json:"user_agent,omitempty"`
+}
+
+// AuthSessionsListResponse defines model for auth.SessionsListResponse.
+type AuthSessionsListResponse struct {
+	Sessions []AuthSessionSummary `json:"sessions,omitempty"`
+}
+
 // AuthStepUpCompleteRequest defines model for auth.StepUpCompleteRequest.
 type AuthStepUpCompleteRequest struct {
-	Credential interface{} `json:"credential,omitempty"`
-	SessionKey string      `json:"session_key,omitempty"`
+	Credential map[string]interface{} `json:"credential,omitempty"`
+	SessionKey string                 `json:"session_key,omitempty"`
 }
 
 // AuthUserSummary defines model for auth.UserSummary.
@@ -1057,6 +1085,136 @@ type HandlersCertificateSigningResponse struct {
 	SerialNumber string `json:"serial_number,omitempty"`
 }
 
+// InternalApiModelsRbacBinding defines model for internal_api_models_rbac.Binding.
+type InternalApiModelsRbacBinding struct {
+	CreatedAt   string `json:"created_at,omitempty"`
+	Id          string `json:"id,omitempty"`
+	OrgId       string `json:"org_id,omitempty"`
+	RoleSlug    string `json:"role_slug,omitempty"`
+	ScopeId     string `json:"scope_id,omitempty"`
+	ScopeType   string `json:"scope_type,omitempty"`
+	SubjectId   string `json:"subject_id,omitempty"`
+	SubjectType string `json:"subject_type,omitempty"`
+}
+
+// InternalApiModelsRbacCondition defines model for internal_api_models_rbac.Condition.
+type InternalApiModelsRbacCondition struct {
+	Name   string                 `json:"name,omitempty"`
+	Params map[string]interface{} `json:"params,omitempty"`
+}
+
+// InternalApiModelsRbacRoleEntry defines model for internal_api_models_rbac.RoleEntry.
+type InternalApiModelsRbacRoleEntry struct {
+	Conditions   []InternalApiModelsRbacCondition `json:"conditions,omitempty"`
+	Effect       string                           `json:"effect,omitempty"`
+	Permission   string                           `json:"permission,omitempty"`
+	ResourceType string                           `json:"resource_type,omitempty"`
+}
+
+// InternalAuthkitRbacCondition defines model for internal_authkit_rbac.Condition.
+type InternalAuthkitRbacCondition struct {
+	Name   string                 `json:"name,omitempty"`
+	Params map[string]interface{} `json:"params,omitempty"`
+}
+
+// InternalAuthkitRbacRoleEntry defines model for internal_authkit_rbac.RoleEntry.
+type InternalAuthkitRbacRoleEntry struct {
+	Conditions   []InternalAuthkitRbacCondition `json:"conditions,omitempty"`
+	Effect       RbacEffect                     `json:"effect,omitempty"`
+	Permission   string                         `json:"permission,omitempty"`
+	ResourceType string                         `json:"resourceType,omitempty"`
+}
+
+// RbacBindingCreateRequest defines model for rbac.BindingCreateRequest.
+type RbacBindingCreateRequest struct {
+	Id        string         `json:"id,omitempty"`
+	OrgId     string         `json:"org_id,omitempty"`
+	RoleSlug  string         `json:"role_slug,omitempty"`
+	ScopeId   string         `json:"scope_id,omitempty"`
+	ScopeType string         `json:"scope_type,omitempty"`
+	Subject   RbacSubjectRef `json:"subject,omitempty"`
+}
+
+// RbacBindingsListResponse defines model for rbac.BindingsListResponse.
+type RbacBindingsListResponse struct {
+	Bindings []InternalApiModelsRbacBinding `json:"bindings,omitempty"`
+}
+
+// RbacConditionsResponse defines model for rbac.ConditionsResponse.
+type RbacConditionsResponse struct {
+	Conditions []string `json:"conditions,omitempty"`
+}
+
+// RbacEffect defines model for rbac.Effect.
+type RbacEffect string
+
+// RbacExplainRequest defines model for rbac.ExplainRequest.
+type RbacExplainRequest struct {
+	Permission string            `json:"permission,omitempty"`
+	Resource   RbacResourceInput `json:"resource,omitempty"`
+	Subject    RbacSubjectInput  `json:"subject,omitempty"`
+}
+
+// RbacExplainResponse defines model for rbac.ExplainResponse.
+type RbacExplainResponse struct {
+	Decision string      `json:"decision,omitempty"`
+	Trace    interface{} `json:"trace,omitempty"`
+}
+
+// RbacPermissionsResponse defines model for rbac.PermissionsResponse.
+type RbacPermissionsResponse struct {
+	Permissions []string `json:"permissions,omitempty"`
+}
+
+// RbacResourceInput defines model for rbac.ResourceInput.
+type RbacResourceInput struct {
+	Attrs map[string]interface{} `json:"attrs,omitempty"`
+	Id    string                 `json:"id,omitempty"`
+	OrgId string                 `json:"org_id,omitempty"`
+	Type  string                 `json:"type,omitempty"`
+}
+
+// RbacRole defines model for rbac.Role.
+type RbacRole struct {
+	Color       string                           `json:"color,omitempty"`
+	Description string                           `json:"description,omitempty"`
+	Entries     []InternalApiModelsRbacRoleEntry `json:"entries,omitempty"`
+	Id          string                           `json:"id,omitempty"`
+	Name        string                           `json:"name,omitempty"`
+	Slug        string                           `json:"slug,omitempty"`
+	Version     int                              `json:"version,omitempty"`
+}
+
+// RbacRoleDef defines model for rbac.RoleDef.
+type RbacRoleDef struct {
+	Color       string                         `json:"color,omitempty"`
+	Description string                         `json:"description,omitempty"`
+	Entries     []InternalAuthkitRbacRoleEntry `json:"entries,omitempty"`
+	Id          string                         `json:"id,omitempty"`
+	Name        string                         `json:"name,omitempty"`
+	Slug        string                         `json:"slug,omitempty"`
+	Version     int                            `json:"version,omitempty"`
+}
+
+// RbacRolesListResponse defines model for rbac.RolesListResponse.
+type RbacRolesListResponse struct {
+	Roles []RbacRole `json:"roles,omitempty"`
+}
+
+// RbacSubjectInput defines model for rbac.SubjectInput.
+type RbacSubjectInput struct {
+	Attrs map[string]interface{} `json:"attrs,omitempty"`
+	Id    string                 `json:"id,omitempty"`
+	OrgId string                 `json:"org_id,omitempty"`
+	Type  string                 `json:"type,omitempty"`
+}
+
+// RbacSubjectRef defines model for rbac.SubjectRef.
+type RbacSubjectRef struct {
+	Id   string `json:"id,omitempty"`
+	Type string `json:"type,omitempty"`
+}
+
 // ServiceDeviceLinkResponse defines model for service.DeviceLinkResponse.
 type ServiceDeviceLinkResponse struct {
 	DeviceCode              string `json:"device_code,omitempty"`
@@ -1090,6 +1248,21 @@ type ServiceUserInfo struct {
 // GetWellKnownJwksJsonJSONBody defines parameters for GetWellKnownJwksJson.
 type GetWellKnownJwksJsonJSONBody = map[string]interface{}
 
+// GetApiV1AdminAccessRequestsParams defines parameters for GetApiV1AdminAccessRequests.
+type GetApiV1AdminAccessRequestsParams struct {
+	// Status Filter by status (pending|approved|rejected)
+	Status string `form:"status,omitempty" json:"status,omitempty"`
+
+	// Q Search query (email or reason)
+	Q string `form:"q,omitempty" json:"q,omitempty"`
+
+	// Limit Max results (1-200)
+	Limit int `form:"limit,omitempty" json:"limit,omitempty"`
+
+	// Offset Offset for pagination
+	Offset int `form:"offset,omitempty" json:"offset,omitempty"`
+}
+
 // GetApiV1AdminAuditParams defines parameters for GetApiV1AdminAudit.
 type GetApiV1AdminAuditParams struct {
 	// ActorId Filter by actor ID (UUID)
@@ -1106,6 +1279,30 @@ type GetApiV1AdminAuditParams struct {
 
 	// Until Filter events created before this RFC3339 timestamp
 	Until string `form:"until,omitempty" json:"until,omitempty"`
+
+	// Limit Max results (1-200)
+	Limit int `form:"limit,omitempty" json:"limit,omitempty"`
+
+	// Offset Offset for pagination
+	Offset int `form:"offset,omitempty" json:"offset,omitempty"`
+}
+
+// GetApiV1AdminInvitesPreviewParams defines parameters for GetApiV1AdminInvitesPreview.
+type GetApiV1AdminInvitesPreviewParams struct {
+	// Token Invite token (base64url)
+	Token string `form:"token,omitempty" json:"token,omitempty"`
+
+	// Id Invite ID (UUID)
+	Id string `form:"id,omitempty" json:"id,omitempty"`
+}
+
+// GetApiV1AdminUsersParams defines parameters for GetApiV1AdminUsers.
+type GetApiV1AdminUsersParams struct {
+	// Q Search query (email or ID)
+	Q string `form:"q,omitempty" json:"q,omitempty"`
+
+	// Role Filter by role (admin|member)
+	Role string `form:"role,omitempty" json:"role,omitempty"`
 
 	// Limit Max results (1-200)
 	Limit int `form:"limit,omitempty" json:"limit,omitempty"`
@@ -1371,6 +1568,24 @@ type GetApiV1ProjectsIdJSONBody = map[string]interface{}
 
 // GetApiV1ProjectsProjectIdEnvironmentsNameJSONBody defines parameters for GetApiV1ProjectsProjectIdEnvironmentsName.
 type GetApiV1ProjectsProjectIdEnvironmentsNameJSONBody = map[string]interface{}
+
+// GetApiV1RbacBindingsParams defines parameters for GetApiV1RbacBindings.
+type GetApiV1RbacBindingsParams struct {
+	// SubjectType Subject type (user|group|service)
+	SubjectType string `form:"subject_type" json:"subject_type"`
+
+	// SubjectId Subject ID
+	SubjectId string `form:"subject_id" json:"subject_id"`
+}
+
+// GetApiV1RbacBindingsByScopeParams defines parameters for GetApiV1RbacBindingsByScope.
+type GetApiV1RbacBindingsByScopeParams struct {
+	// ScopeType Scope type (global|org|project|resource)
+	ScopeType string `form:"scope_type" json:"scope_type"`
+
+	// ScopeId Scope ID
+	ScopeId string `form:"scope_id" json:"scope_id"`
+}
 
 // GetApiV1ReleasesJSONBody defines parameters for GetApiV1Releases.
 type GetApiV1ReleasesJSONBody = map[string]interface{}
@@ -1696,6 +1911,18 @@ type GetApiV1ProjectsIdJSONRequestBody = GetApiV1ProjectsIdJSONBody
 // GetApiV1ProjectsProjectIdEnvironmentsNameJSONRequestBody defines body for GetApiV1ProjectsProjectIdEnvironmentsName for application/json ContentType.
 type GetApiV1ProjectsProjectIdEnvironmentsNameJSONRequestBody = GetApiV1ProjectsProjectIdEnvironmentsNameJSONBody
 
+// PostApiV1RbacBindingsJSONRequestBody defines body for PostApiV1RbacBindings for application/json ContentType.
+type PostApiV1RbacBindingsJSONRequestBody = RbacBindingCreateRequest
+
+// PostApiV1RbacExplainJSONRequestBody defines body for PostApiV1RbacExplain for application/json ContentType.
+type PostApiV1RbacExplainJSONRequestBody = RbacExplainRequest
+
+// PostApiV1RbacRolesJSONRequestBody defines body for PostApiV1RbacRoles for application/json ContentType.
+type PostApiV1RbacRolesJSONRequestBody = RbacRoleDef
+
+// PutApiV1RbacRolesSlugJSONRequestBody defines body for PutApiV1RbacRolesSlug for application/json ContentType.
+type PutApiV1RbacRolesSlugJSONRequestBody = RbacRoleDef
+
 // GetApiV1ReleasesJSONRequestBody defines body for GetApiV1Releases for application/json ContentType.
 type GetApiV1ReleasesJSONRequestBody = GetApiV1ReleasesJSONBody
 
@@ -1847,7 +2074,7 @@ type ClientInterface interface {
 	GetWellKnownJwksJson(ctx context.Context, body GetWellKnownJwksJsonJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// GetApiV1AdminAccessRequests request
-	GetApiV1AdminAccessRequests(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+	GetApiV1AdminAccessRequests(ctx context.Context, params *GetApiV1AdminAccessRequestsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// PatchApiV1AdminAccessRequestsIdWithBody request with any body
 	PatchApiV1AdminAccessRequestsIdWithBody(ctx context.Context, id string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -1863,10 +2090,10 @@ type ClientInterface interface {
 	PostApiV1AdminInvites(ctx context.Context, body PostApiV1AdminInvitesJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// GetApiV1AdminInvitesPreview request
-	GetApiV1AdminInvitesPreview(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+	GetApiV1AdminInvitesPreview(ctx context.Context, params *GetApiV1AdminInvitesPreviewParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// GetApiV1AdminUsers request
-	GetApiV1AdminUsers(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+	GetApiV1AdminUsers(ctx context.Context, params *GetApiV1AdminUsersParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// DeleteApiV1AdminUsersId request
 	DeleteApiV1AdminUsersId(ctx context.Context, id string, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -2060,6 +2287,12 @@ type ClientInterface interface {
 	// GetApiV1AuthSession request
 	GetApiV1AuthSession(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// GetApiV1AuthSessions request
+	GetApiV1AuthSessions(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// DeleteApiV1AuthSessionsFamilyId request
+	DeleteApiV1AuthSessionsFamilyId(ctx context.Context, familyId string, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// PostApiV1AuthStepUpBegin request
 	PostApiV1AuthStepUpBegin(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -2172,6 +2405,53 @@ type ClientInterface interface {
 	GetApiV1ProjectsProjectIdEnvironmentsNameWithBody(ctx context.Context, projectId string, name string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	GetApiV1ProjectsProjectIdEnvironmentsName(ctx context.Context, projectId string, name string, body GetApiV1ProjectsProjectIdEnvironmentsNameJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetApiV1RbacBindings request
+	GetApiV1RbacBindings(ctx context.Context, params *GetApiV1RbacBindingsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// PostApiV1RbacBindingsWithBody request with any body
+	PostApiV1RbacBindingsWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	PostApiV1RbacBindings(ctx context.Context, body PostApiV1RbacBindingsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetApiV1RbacBindingsByScope request
+	GetApiV1RbacBindingsByScope(ctx context.Context, params *GetApiV1RbacBindingsByScopeParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// DeleteApiV1RbacBindingsId request
+	DeleteApiV1RbacBindingsId(ctx context.Context, id string, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetApiV1RbacConditions request
+	GetApiV1RbacConditions(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// PostApiV1RbacExplainWithBody request with any body
+	PostApiV1RbacExplainWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	PostApiV1RbacExplain(ctx context.Context, body PostApiV1RbacExplainJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetApiV1RbacPermissions request
+	GetApiV1RbacPermissions(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetApiV1RbacRoles request
+	GetApiV1RbacRoles(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// PostApiV1RbacRolesWithBody request with any body
+	PostApiV1RbacRolesWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	PostApiV1RbacRoles(ctx context.Context, body PostApiV1RbacRolesJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetApiV1RbacRolesSlug request
+	GetApiV1RbacRolesSlug(ctx context.Context, slug string, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// PutApiV1RbacRolesSlugWithBody request with any body
+	PutApiV1RbacRolesSlugWithBody(ctx context.Context, slug string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	PutApiV1RbacRolesSlug(ctx context.Context, slug string, body PutApiV1RbacRolesSlugJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// PostApiV1RbacRolesSlugBumpVersion request
+	PostApiV1RbacRolesSlugBumpVersion(ctx context.Context, slug string, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// PostApiV1RbacSubjectsSubjectTypeSubjectIdBumpVersion request
+	PostApiV1RbacSubjectsSubjectTypeSubjectIdBumpVersion(ctx context.Context, subjectType string, subjectId string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// GetApiV1ReleasesWithBody request with any body
 	GetApiV1ReleasesWithBody(ctx context.Context, params *GetApiV1ReleasesParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -2321,8 +2601,8 @@ func (c *Client) GetWellKnownJwksJson(ctx context.Context, body GetWellKnownJwks
 	return c.Client.Do(req)
 }
 
-func (c *Client) GetApiV1AdminAccessRequests(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewGetApiV1AdminAccessRequestsRequest(c.Server)
+func (c *Client) GetApiV1AdminAccessRequests(ctx context.Context, params *GetApiV1AdminAccessRequestsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetApiV1AdminAccessRequestsRequest(c.Server, params)
 	if err != nil {
 		return nil, err
 	}
@@ -2393,8 +2673,8 @@ func (c *Client) PostApiV1AdminInvites(ctx context.Context, body PostApiV1AdminI
 	return c.Client.Do(req)
 }
 
-func (c *Client) GetApiV1AdminInvitesPreview(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewGetApiV1AdminInvitesPreviewRequest(c.Server)
+func (c *Client) GetApiV1AdminInvitesPreview(ctx context.Context, params *GetApiV1AdminInvitesPreviewParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetApiV1AdminInvitesPreviewRequest(c.Server, params)
 	if err != nil {
 		return nil, err
 	}
@@ -2405,8 +2685,8 @@ func (c *Client) GetApiV1AdminInvitesPreview(ctx context.Context, reqEditors ...
 	return c.Client.Do(req)
 }
 
-func (c *Client) GetApiV1AdminUsers(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewGetApiV1AdminUsersRequest(c.Server)
+func (c *Client) GetApiV1AdminUsers(ctx context.Context, params *GetApiV1AdminUsersParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetApiV1AdminUsersRequest(c.Server, params)
 	if err != nil {
 		return nil, err
 	}
@@ -3305,6 +3585,30 @@ func (c *Client) GetApiV1AuthSession(ctx context.Context, reqEditors ...RequestE
 	return c.Client.Do(req)
 }
 
+func (c *Client) GetApiV1AuthSessions(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetApiV1AuthSessionsRequest(c.Server)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) DeleteApiV1AuthSessionsFamilyId(ctx context.Context, familyId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDeleteApiV1AuthSessionsFamilyIdRequest(c.Server, familyId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
 func (c *Client) PostApiV1AuthStepUpBegin(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewPostApiV1AuthStepUpBeginRequest(c.Server)
 	if err != nil {
@@ -3835,6 +4139,210 @@ func (c *Client) GetApiV1ProjectsProjectIdEnvironmentsNameWithBody(ctx context.C
 
 func (c *Client) GetApiV1ProjectsProjectIdEnvironmentsName(ctx context.Context, projectId string, name string, body GetApiV1ProjectsProjectIdEnvironmentsNameJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetApiV1ProjectsProjectIdEnvironmentsNameRequest(c.Server, projectId, name, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetApiV1RbacBindings(ctx context.Context, params *GetApiV1RbacBindingsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetApiV1RbacBindingsRequest(c.Server, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) PostApiV1RbacBindingsWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPostApiV1RbacBindingsRequestWithBody(c.Server, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) PostApiV1RbacBindings(ctx context.Context, body PostApiV1RbacBindingsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPostApiV1RbacBindingsRequest(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetApiV1RbacBindingsByScope(ctx context.Context, params *GetApiV1RbacBindingsByScopeParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetApiV1RbacBindingsByScopeRequest(c.Server, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) DeleteApiV1RbacBindingsId(ctx context.Context, id string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDeleteApiV1RbacBindingsIdRequest(c.Server, id)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetApiV1RbacConditions(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetApiV1RbacConditionsRequest(c.Server)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) PostApiV1RbacExplainWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPostApiV1RbacExplainRequestWithBody(c.Server, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) PostApiV1RbacExplain(ctx context.Context, body PostApiV1RbacExplainJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPostApiV1RbacExplainRequest(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetApiV1RbacPermissions(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetApiV1RbacPermissionsRequest(c.Server)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetApiV1RbacRoles(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetApiV1RbacRolesRequest(c.Server)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) PostApiV1RbacRolesWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPostApiV1RbacRolesRequestWithBody(c.Server, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) PostApiV1RbacRoles(ctx context.Context, body PostApiV1RbacRolesJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPostApiV1RbacRolesRequest(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetApiV1RbacRolesSlug(ctx context.Context, slug string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetApiV1RbacRolesSlugRequest(c.Server, slug)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) PutApiV1RbacRolesSlugWithBody(ctx context.Context, slug string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPutApiV1RbacRolesSlugRequestWithBody(c.Server, slug, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) PutApiV1RbacRolesSlug(ctx context.Context, slug string, body PutApiV1RbacRolesSlugJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPutApiV1RbacRolesSlugRequest(c.Server, slug, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) PostApiV1RbacRolesSlugBumpVersion(ctx context.Context, slug string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPostApiV1RbacRolesSlugBumpVersionRequest(c.Server, slug)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) PostApiV1RbacSubjectsSubjectTypeSubjectIdBumpVersion(ctx context.Context, subjectType string, subjectId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPostApiV1RbacSubjectsSubjectTypeSubjectIdBumpVersionRequest(c.Server, subjectType, subjectId)
 	if err != nil {
 		return nil, err
 	}
@@ -4474,7 +4982,7 @@ func NewGetWellKnownJwksJsonRequestWithBody(server string, contentType string, b
 }
 
 // NewGetApiV1AdminAccessRequestsRequest generates requests for GetApiV1AdminAccessRequests
-func NewGetApiV1AdminAccessRequestsRequest(server string) (*http.Request, error) {
+func NewGetApiV1AdminAccessRequestsRequest(server string, params *GetApiV1AdminAccessRequestsParams) (*http.Request, error) {
 	var err error
 
 	serverURL, err := url.Parse(server)
@@ -4490,6 +4998,60 @@ func NewGetApiV1AdminAccessRequestsRequest(server string) (*http.Request, error)
 	queryURL, err := serverURL.Parse(operationPath)
 	if err != nil {
 		return nil, err
+	}
+
+	if params != nil {
+		queryValues := queryURL.Query()
+
+		if queryFrag, err := runtime.StyleParamWithLocation("form", true, "status", runtime.ParamLocationQuery, params.Status); err != nil {
+			return nil, err
+		} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+			return nil, err
+		} else {
+			for k, v := range parsed {
+				for _, v2 := range v {
+					queryValues.Add(k, v2)
+				}
+			}
+		}
+
+		if queryFrag, err := runtime.StyleParamWithLocation("form", true, "q", runtime.ParamLocationQuery, params.Q); err != nil {
+			return nil, err
+		} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+			return nil, err
+		} else {
+			for k, v := range parsed {
+				for _, v2 := range v {
+					queryValues.Add(k, v2)
+				}
+			}
+		}
+
+		if queryFrag, err := runtime.StyleParamWithLocation("form", true, "limit", runtime.ParamLocationQuery, params.Limit); err != nil {
+			return nil, err
+		} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+			return nil, err
+		} else {
+			for k, v := range parsed {
+				for _, v2 := range v {
+					queryValues.Add(k, v2)
+				}
+			}
+		}
+
+		if queryFrag, err := runtime.StyleParamWithLocation("form", true, "offset", runtime.ParamLocationQuery, params.Offset); err != nil {
+			return nil, err
+		} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+			return nil, err
+		} else {
+			for k, v := range parsed {
+				for _, v2 := range v {
+					queryValues.Add(k, v2)
+				}
+			}
+		}
+
+		queryURL.RawQuery = queryValues.Encode()
 	}
 
 	req, err := http.NewRequest("GET", queryURL.String(), nil)
@@ -4705,7 +5267,7 @@ func NewPostApiV1AdminInvitesRequestWithBody(server string, contentType string, 
 }
 
 // NewGetApiV1AdminInvitesPreviewRequest generates requests for GetApiV1AdminInvitesPreview
-func NewGetApiV1AdminInvitesPreviewRequest(server string) (*http.Request, error) {
+func NewGetApiV1AdminInvitesPreviewRequest(server string, params *GetApiV1AdminInvitesPreviewParams) (*http.Request, error) {
 	var err error
 
 	serverURL, err := url.Parse(server)
@@ -4723,6 +5285,36 @@ func NewGetApiV1AdminInvitesPreviewRequest(server string) (*http.Request, error)
 		return nil, err
 	}
 
+	if params != nil {
+		queryValues := queryURL.Query()
+
+		if queryFrag, err := runtime.StyleParamWithLocation("form", true, "token", runtime.ParamLocationQuery, params.Token); err != nil {
+			return nil, err
+		} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+			return nil, err
+		} else {
+			for k, v := range parsed {
+				for _, v2 := range v {
+					queryValues.Add(k, v2)
+				}
+			}
+		}
+
+		if queryFrag, err := runtime.StyleParamWithLocation("form", true, "id", runtime.ParamLocationQuery, params.Id); err != nil {
+			return nil, err
+		} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+			return nil, err
+		} else {
+			for k, v := range parsed {
+				for _, v2 := range v {
+					queryValues.Add(k, v2)
+				}
+			}
+		}
+
+		queryURL.RawQuery = queryValues.Encode()
+	}
+
 	req, err := http.NewRequest("GET", queryURL.String(), nil)
 	if err != nil {
 		return nil, err
@@ -4732,7 +5324,7 @@ func NewGetApiV1AdminInvitesPreviewRequest(server string) (*http.Request, error)
 }
 
 // NewGetApiV1AdminUsersRequest generates requests for GetApiV1AdminUsers
-func NewGetApiV1AdminUsersRequest(server string) (*http.Request, error) {
+func NewGetApiV1AdminUsersRequest(server string, params *GetApiV1AdminUsersParams) (*http.Request, error) {
 	var err error
 
 	serverURL, err := url.Parse(server)
@@ -4748,6 +5340,60 @@ func NewGetApiV1AdminUsersRequest(server string) (*http.Request, error) {
 	queryURL, err := serverURL.Parse(operationPath)
 	if err != nil {
 		return nil, err
+	}
+
+	if params != nil {
+		queryValues := queryURL.Query()
+
+		if queryFrag, err := runtime.StyleParamWithLocation("form", true, "q", runtime.ParamLocationQuery, params.Q); err != nil {
+			return nil, err
+		} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+			return nil, err
+		} else {
+			for k, v := range parsed {
+				for _, v2 := range v {
+					queryValues.Add(k, v2)
+				}
+			}
+		}
+
+		if queryFrag, err := runtime.StyleParamWithLocation("form", true, "role", runtime.ParamLocationQuery, params.Role); err != nil {
+			return nil, err
+		} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+			return nil, err
+		} else {
+			for k, v := range parsed {
+				for _, v2 := range v {
+					queryValues.Add(k, v2)
+				}
+			}
+		}
+
+		if queryFrag, err := runtime.StyleParamWithLocation("form", true, "limit", runtime.ParamLocationQuery, params.Limit); err != nil {
+			return nil, err
+		} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+			return nil, err
+		} else {
+			for k, v := range parsed {
+				for _, v2 := range v {
+					queryValues.Add(k, v2)
+				}
+			}
+		}
+
+		if queryFrag, err := runtime.StyleParamWithLocation("form", true, "offset", runtime.ParamLocationQuery, params.Offset); err != nil {
+			return nil, err
+		} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+			return nil, err
+		} else {
+			for k, v := range parsed {
+				for _, v2 := range v {
+					queryValues.Add(k, v2)
+				}
+			}
+		}
+
+		queryURL.RawQuery = queryValues.Encode()
 	}
 
 	req, err := http.NewRequest("GET", queryURL.String(), nil)
@@ -6633,6 +7279,67 @@ func NewGetApiV1AuthSessionRequest(server string) (*http.Request, error) {
 	return req, nil
 }
 
+// NewGetApiV1AuthSessionsRequest generates requests for GetApiV1AuthSessions
+func NewGetApiV1AuthSessionsRequest(server string) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/auth/sessions")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewDeleteApiV1AuthSessionsFamilyIdRequest generates requests for DeleteApiV1AuthSessionsFamilyId
+func NewDeleteApiV1AuthSessionsFamilyIdRequest(server string, familyId string) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "family_id", runtime.ParamLocationPath, familyId)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/auth/sessions/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("DELETE", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
 // NewPostApiV1AuthStepUpBeginRequest generates requests for PostApiV1AuthStepUpBegin
 func NewPostApiV1AuthStepUpBeginRequest(server string) (*http.Request, error) {
 	var err error
@@ -8157,6 +8864,511 @@ func NewGetApiV1ProjectsProjectIdEnvironmentsNameRequestWithBody(server string, 
 	}
 
 	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewGetApiV1RbacBindingsRequest generates requests for GetApiV1RbacBindings
+func NewGetApiV1RbacBindingsRequest(server string, params *GetApiV1RbacBindingsParams) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/rbac/bindings")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		queryValues := queryURL.Query()
+
+		if queryFrag, err := runtime.StyleParamWithLocation("form", true, "subject_type", runtime.ParamLocationQuery, params.SubjectType); err != nil {
+			return nil, err
+		} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+			return nil, err
+		} else {
+			for k, v := range parsed {
+				for _, v2 := range v {
+					queryValues.Add(k, v2)
+				}
+			}
+		}
+
+		if queryFrag, err := runtime.StyleParamWithLocation("form", true, "subject_id", runtime.ParamLocationQuery, params.SubjectId); err != nil {
+			return nil, err
+		} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+			return nil, err
+		} else {
+			for k, v := range parsed {
+				for _, v2 := range v {
+					queryValues.Add(k, v2)
+				}
+			}
+		}
+
+		queryURL.RawQuery = queryValues.Encode()
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewPostApiV1RbacBindingsRequest calls the generic PostApiV1RbacBindings builder with application/json body
+func NewPostApiV1RbacBindingsRequest(server string, body PostApiV1RbacBindingsJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewPostApiV1RbacBindingsRequestWithBody(server, "application/json", bodyReader)
+}
+
+// NewPostApiV1RbacBindingsRequestWithBody generates requests for PostApiV1RbacBindings with any type of body
+func NewPostApiV1RbacBindingsRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/rbac/bindings")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewGetApiV1RbacBindingsByScopeRequest generates requests for GetApiV1RbacBindingsByScope
+func NewGetApiV1RbacBindingsByScopeRequest(server string, params *GetApiV1RbacBindingsByScopeParams) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/rbac/bindings/by-scope")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		queryValues := queryURL.Query()
+
+		if queryFrag, err := runtime.StyleParamWithLocation("form", true, "scope_type", runtime.ParamLocationQuery, params.ScopeType); err != nil {
+			return nil, err
+		} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+			return nil, err
+		} else {
+			for k, v := range parsed {
+				for _, v2 := range v {
+					queryValues.Add(k, v2)
+				}
+			}
+		}
+
+		if queryFrag, err := runtime.StyleParamWithLocation("form", true, "scope_id", runtime.ParamLocationQuery, params.ScopeId); err != nil {
+			return nil, err
+		} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+			return nil, err
+		} else {
+			for k, v := range parsed {
+				for _, v2 := range v {
+					queryValues.Add(k, v2)
+				}
+			}
+		}
+
+		queryURL.RawQuery = queryValues.Encode()
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewDeleteApiV1RbacBindingsIdRequest generates requests for DeleteApiV1RbacBindingsId
+func NewDeleteApiV1RbacBindingsIdRequest(server string, id string) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "id", runtime.ParamLocationPath, id)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/rbac/bindings/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("DELETE", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewGetApiV1RbacConditionsRequest generates requests for GetApiV1RbacConditions
+func NewGetApiV1RbacConditionsRequest(server string) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/rbac/conditions")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewPostApiV1RbacExplainRequest calls the generic PostApiV1RbacExplain builder with application/json body
+func NewPostApiV1RbacExplainRequest(server string, body PostApiV1RbacExplainJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewPostApiV1RbacExplainRequestWithBody(server, "application/json", bodyReader)
+}
+
+// NewPostApiV1RbacExplainRequestWithBody generates requests for PostApiV1RbacExplain with any type of body
+func NewPostApiV1RbacExplainRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/rbac/explain")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewGetApiV1RbacPermissionsRequest generates requests for GetApiV1RbacPermissions
+func NewGetApiV1RbacPermissionsRequest(server string) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/rbac/permissions")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewGetApiV1RbacRolesRequest generates requests for GetApiV1RbacRoles
+func NewGetApiV1RbacRolesRequest(server string) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/rbac/roles")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewPostApiV1RbacRolesRequest calls the generic PostApiV1RbacRoles builder with application/json body
+func NewPostApiV1RbacRolesRequest(server string, body PostApiV1RbacRolesJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewPostApiV1RbacRolesRequestWithBody(server, "application/json", bodyReader)
+}
+
+// NewPostApiV1RbacRolesRequestWithBody generates requests for PostApiV1RbacRoles with any type of body
+func NewPostApiV1RbacRolesRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/rbac/roles")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewGetApiV1RbacRolesSlugRequest generates requests for GetApiV1RbacRolesSlug
+func NewGetApiV1RbacRolesSlugRequest(server string, slug string) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "slug", runtime.ParamLocationPath, slug)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/rbac/roles/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewPutApiV1RbacRolesSlugRequest calls the generic PutApiV1RbacRolesSlug builder with application/json body
+func NewPutApiV1RbacRolesSlugRequest(server string, slug string, body PutApiV1RbacRolesSlugJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewPutApiV1RbacRolesSlugRequestWithBody(server, slug, "application/json", bodyReader)
+}
+
+// NewPutApiV1RbacRolesSlugRequestWithBody generates requests for PutApiV1RbacRolesSlug with any type of body
+func NewPutApiV1RbacRolesSlugRequestWithBody(server string, slug string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "slug", runtime.ParamLocationPath, slug)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/rbac/roles/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("PUT", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewPostApiV1RbacRolesSlugBumpVersionRequest generates requests for PostApiV1RbacRolesSlugBumpVersion
+func NewPostApiV1RbacRolesSlugBumpVersionRequest(server string, slug string) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "slug", runtime.ParamLocationPath, slug)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/rbac/roles/%s/bump-version", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewPostApiV1RbacSubjectsSubjectTypeSubjectIdBumpVersionRequest generates requests for PostApiV1RbacSubjectsSubjectTypeSubjectIdBumpVersion
+func NewPostApiV1RbacSubjectsSubjectTypeSubjectIdBumpVersionRequest(server string, subjectType string, subjectId string) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "subject_type", runtime.ParamLocationPath, subjectType)
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithLocation("simple", false, "subject_id", runtime.ParamLocationPath, subjectId)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/rbac/subjects/%s/%s/bump-version", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
 
 	return req, nil
 }
@@ -9758,7 +10970,7 @@ type ClientWithResponsesInterface interface {
 	GetWellKnownJwksJsonWithResponse(ctx context.Context, body GetWellKnownJwksJsonJSONRequestBody, reqEditors ...RequestEditorFn) (*GetWellKnownJwksJsonResp, error)
 
 	// GetApiV1AdminAccessRequestsWithResponse request
-	GetApiV1AdminAccessRequestsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetApiV1AdminAccessRequestsResp, error)
+	GetApiV1AdminAccessRequestsWithResponse(ctx context.Context, params *GetApiV1AdminAccessRequestsParams, reqEditors ...RequestEditorFn) (*GetApiV1AdminAccessRequestsResp, error)
 
 	// PatchApiV1AdminAccessRequestsIdWithBodyWithResponse request with any body
 	PatchApiV1AdminAccessRequestsIdWithBodyWithResponse(ctx context.Context, id string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PatchApiV1AdminAccessRequestsIdResp, error)
@@ -9774,10 +10986,10 @@ type ClientWithResponsesInterface interface {
 	PostApiV1AdminInvitesWithResponse(ctx context.Context, body PostApiV1AdminInvitesJSONRequestBody, reqEditors ...RequestEditorFn) (*PostApiV1AdminInvitesResp, error)
 
 	// GetApiV1AdminInvitesPreviewWithResponse request
-	GetApiV1AdminInvitesPreviewWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetApiV1AdminInvitesPreviewResp, error)
+	GetApiV1AdminInvitesPreviewWithResponse(ctx context.Context, params *GetApiV1AdminInvitesPreviewParams, reqEditors ...RequestEditorFn) (*GetApiV1AdminInvitesPreviewResp, error)
 
 	// GetApiV1AdminUsersWithResponse request
-	GetApiV1AdminUsersWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetApiV1AdminUsersResp, error)
+	GetApiV1AdminUsersWithResponse(ctx context.Context, params *GetApiV1AdminUsersParams, reqEditors ...RequestEditorFn) (*GetApiV1AdminUsersResp, error)
 
 	// DeleteApiV1AdminUsersIdWithResponse request
 	DeleteApiV1AdminUsersIdWithResponse(ctx context.Context, id string, reqEditors ...RequestEditorFn) (*DeleteApiV1AdminUsersIdResp, error)
@@ -9971,6 +11183,12 @@ type ClientWithResponsesInterface interface {
 	// GetApiV1AuthSessionWithResponse request
 	GetApiV1AuthSessionWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetApiV1AuthSessionResp, error)
 
+	// GetApiV1AuthSessionsWithResponse request
+	GetApiV1AuthSessionsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetApiV1AuthSessionsResp, error)
+
+	// DeleteApiV1AuthSessionsFamilyIdWithResponse request
+	DeleteApiV1AuthSessionsFamilyIdWithResponse(ctx context.Context, familyId string, reqEditors ...RequestEditorFn) (*DeleteApiV1AuthSessionsFamilyIdResp, error)
+
 	// PostApiV1AuthStepUpBeginWithResponse request
 	PostApiV1AuthStepUpBeginWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*PostApiV1AuthStepUpBeginResp, error)
 
@@ -10083,6 +11301,53 @@ type ClientWithResponsesInterface interface {
 	GetApiV1ProjectsProjectIdEnvironmentsNameWithBodyWithResponse(ctx context.Context, projectId string, name string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*GetApiV1ProjectsProjectIdEnvironmentsNameResp, error)
 
 	GetApiV1ProjectsProjectIdEnvironmentsNameWithResponse(ctx context.Context, projectId string, name string, body GetApiV1ProjectsProjectIdEnvironmentsNameJSONRequestBody, reqEditors ...RequestEditorFn) (*GetApiV1ProjectsProjectIdEnvironmentsNameResp, error)
+
+	// GetApiV1RbacBindingsWithResponse request
+	GetApiV1RbacBindingsWithResponse(ctx context.Context, params *GetApiV1RbacBindingsParams, reqEditors ...RequestEditorFn) (*GetApiV1RbacBindingsResp, error)
+
+	// PostApiV1RbacBindingsWithBodyWithResponse request with any body
+	PostApiV1RbacBindingsWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostApiV1RbacBindingsResp, error)
+
+	PostApiV1RbacBindingsWithResponse(ctx context.Context, body PostApiV1RbacBindingsJSONRequestBody, reqEditors ...RequestEditorFn) (*PostApiV1RbacBindingsResp, error)
+
+	// GetApiV1RbacBindingsByScopeWithResponse request
+	GetApiV1RbacBindingsByScopeWithResponse(ctx context.Context, params *GetApiV1RbacBindingsByScopeParams, reqEditors ...RequestEditorFn) (*GetApiV1RbacBindingsByScopeResp, error)
+
+	// DeleteApiV1RbacBindingsIdWithResponse request
+	DeleteApiV1RbacBindingsIdWithResponse(ctx context.Context, id string, reqEditors ...RequestEditorFn) (*DeleteApiV1RbacBindingsIdResp, error)
+
+	// GetApiV1RbacConditionsWithResponse request
+	GetApiV1RbacConditionsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetApiV1RbacConditionsResp, error)
+
+	// PostApiV1RbacExplainWithBodyWithResponse request with any body
+	PostApiV1RbacExplainWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostApiV1RbacExplainResp, error)
+
+	PostApiV1RbacExplainWithResponse(ctx context.Context, body PostApiV1RbacExplainJSONRequestBody, reqEditors ...RequestEditorFn) (*PostApiV1RbacExplainResp, error)
+
+	// GetApiV1RbacPermissionsWithResponse request
+	GetApiV1RbacPermissionsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetApiV1RbacPermissionsResp, error)
+
+	// GetApiV1RbacRolesWithResponse request
+	GetApiV1RbacRolesWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetApiV1RbacRolesResp, error)
+
+	// PostApiV1RbacRolesWithBodyWithResponse request with any body
+	PostApiV1RbacRolesWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostApiV1RbacRolesResp, error)
+
+	PostApiV1RbacRolesWithResponse(ctx context.Context, body PostApiV1RbacRolesJSONRequestBody, reqEditors ...RequestEditorFn) (*PostApiV1RbacRolesResp, error)
+
+	// GetApiV1RbacRolesSlugWithResponse request
+	GetApiV1RbacRolesSlugWithResponse(ctx context.Context, slug string, reqEditors ...RequestEditorFn) (*GetApiV1RbacRolesSlugResp, error)
+
+	// PutApiV1RbacRolesSlugWithBodyWithResponse request with any body
+	PutApiV1RbacRolesSlugWithBodyWithResponse(ctx context.Context, slug string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PutApiV1RbacRolesSlugResp, error)
+
+	PutApiV1RbacRolesSlugWithResponse(ctx context.Context, slug string, body PutApiV1RbacRolesSlugJSONRequestBody, reqEditors ...RequestEditorFn) (*PutApiV1RbacRolesSlugResp, error)
+
+	// PostApiV1RbacRolesSlugBumpVersionWithResponse request
+	PostApiV1RbacRolesSlugBumpVersionWithResponse(ctx context.Context, slug string, reqEditors ...RequestEditorFn) (*PostApiV1RbacRolesSlugBumpVersionResp, error)
+
+	// PostApiV1RbacSubjectsSubjectTypeSubjectIdBumpVersionWithResponse request
+	PostApiV1RbacSubjectsSubjectTypeSubjectIdBumpVersionWithResponse(ctx context.Context, subjectType string, subjectId string, reqEditors ...RequestEditorFn) (*PostApiV1RbacSubjectsSubjectTypeSubjectIdBumpVersionResp, error)
 
 	// GetApiV1ReleasesWithBodyWithResponse request with any body
 	GetApiV1ReleasesWithBodyWithResponse(ctx context.Context, params *GetApiV1ReleasesParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*GetApiV1ReleasesResp, error)
@@ -11334,6 +12599,49 @@ func (r GetApiV1AuthSessionResp) StatusCode() int {
 	return 0
 }
 
+type GetApiV1AuthSessionsResp struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *AuthSessionsListResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r GetApiV1AuthSessionsResp) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetApiV1AuthSessionsResp) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type DeleteApiV1AuthSessionsFamilyIdResp struct {
+	Body         []byte
+	HTTPResponse *http.Response
+}
+
+// Status returns HTTPResponse.Status
+func (r DeleteApiV1AuthSessionsFamilyIdResp) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r DeleteApiV1AuthSessionsFamilyIdResp) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
 type PostApiV1AuthStepUpBeginResp struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -11896,6 +13204,287 @@ func (r GetApiV1ProjectsProjectIdEnvironmentsNameResp) Status() string {
 
 // StatusCode returns HTTPResponse.StatusCode
 func (r GetApiV1ProjectsProjectIdEnvironmentsNameResp) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type GetApiV1RbacBindingsResp struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *RbacBindingsListResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r GetApiV1RbacBindingsResp) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetApiV1RbacBindingsResp) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type PostApiV1RbacBindingsResp struct {
+	Body         []byte
+	HTTPResponse *http.Response
+}
+
+// Status returns HTTPResponse.Status
+func (r PostApiV1RbacBindingsResp) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r PostApiV1RbacBindingsResp) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type GetApiV1RbacBindingsByScopeResp struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *RbacBindingsListResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r GetApiV1RbacBindingsByScopeResp) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetApiV1RbacBindingsByScopeResp) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type DeleteApiV1RbacBindingsIdResp struct {
+	Body         []byte
+	HTTPResponse *http.Response
+}
+
+// Status returns HTTPResponse.Status
+func (r DeleteApiV1RbacBindingsIdResp) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r DeleteApiV1RbacBindingsIdResp) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type GetApiV1RbacConditionsResp struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *RbacConditionsResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r GetApiV1RbacConditionsResp) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetApiV1RbacConditionsResp) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type PostApiV1RbacExplainResp struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *RbacExplainResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r PostApiV1RbacExplainResp) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r PostApiV1RbacExplainResp) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type GetApiV1RbacPermissionsResp struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *RbacPermissionsResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r GetApiV1RbacPermissionsResp) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetApiV1RbacPermissionsResp) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type GetApiV1RbacRolesResp struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *RbacRolesListResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r GetApiV1RbacRolesResp) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetApiV1RbacRolesResp) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type PostApiV1RbacRolesResp struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON201      *map[string]interface{}
+}
+
+// Status returns HTTPResponse.Status
+func (r PostApiV1RbacRolesResp) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r PostApiV1RbacRolesResp) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type GetApiV1RbacRolesSlugResp struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *RbacRole
+}
+
+// Status returns HTTPResponse.Status
+func (r GetApiV1RbacRolesSlugResp) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetApiV1RbacRolesSlugResp) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type PutApiV1RbacRolesSlugResp struct {
+	Body         []byte
+	HTTPResponse *http.Response
+}
+
+// Status returns HTTPResponse.Status
+func (r PutApiV1RbacRolesSlugResp) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r PutApiV1RbacRolesSlugResp) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type PostApiV1RbacRolesSlugBumpVersionResp struct {
+	Body         []byte
+	HTTPResponse *http.Response
+}
+
+// Status returns HTTPResponse.Status
+func (r PostApiV1RbacRolesSlugBumpVersionResp) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r PostApiV1RbacRolesSlugBumpVersionResp) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type PostApiV1RbacSubjectsSubjectTypeSubjectIdBumpVersionResp struct {
+	Body         []byte
+	HTTPResponse *http.Response
+}
+
+// Status returns HTTPResponse.Status
+func (r PostApiV1RbacSubjectsSubjectTypeSubjectIdBumpVersionResp) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r PostApiV1RbacSubjectsSubjectTypeSubjectIdBumpVersionResp) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -12543,8 +14132,8 @@ func (c *ClientWithResponses) GetWellKnownJwksJsonWithResponse(ctx context.Conte
 }
 
 // GetApiV1AdminAccessRequestsWithResponse request returning *GetApiV1AdminAccessRequestsResp
-func (c *ClientWithResponses) GetApiV1AdminAccessRequestsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetApiV1AdminAccessRequestsResp, error) {
-	rsp, err := c.GetApiV1AdminAccessRequests(ctx, reqEditors...)
+func (c *ClientWithResponses) GetApiV1AdminAccessRequestsWithResponse(ctx context.Context, params *GetApiV1AdminAccessRequestsParams, reqEditors ...RequestEditorFn) (*GetApiV1AdminAccessRequestsResp, error) {
+	rsp, err := c.GetApiV1AdminAccessRequests(ctx, params, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
@@ -12595,8 +14184,8 @@ func (c *ClientWithResponses) PostApiV1AdminInvitesWithResponse(ctx context.Cont
 }
 
 // GetApiV1AdminInvitesPreviewWithResponse request returning *GetApiV1AdminInvitesPreviewResp
-func (c *ClientWithResponses) GetApiV1AdminInvitesPreviewWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetApiV1AdminInvitesPreviewResp, error) {
-	rsp, err := c.GetApiV1AdminInvitesPreview(ctx, reqEditors...)
+func (c *ClientWithResponses) GetApiV1AdminInvitesPreviewWithResponse(ctx context.Context, params *GetApiV1AdminInvitesPreviewParams, reqEditors ...RequestEditorFn) (*GetApiV1AdminInvitesPreviewResp, error) {
+	rsp, err := c.GetApiV1AdminInvitesPreview(ctx, params, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
@@ -12604,8 +14193,8 @@ func (c *ClientWithResponses) GetApiV1AdminInvitesPreviewWithResponse(ctx contex
 }
 
 // GetApiV1AdminUsersWithResponse request returning *GetApiV1AdminUsersResp
-func (c *ClientWithResponses) GetApiV1AdminUsersWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetApiV1AdminUsersResp, error) {
-	rsp, err := c.GetApiV1AdminUsers(ctx, reqEditors...)
+func (c *ClientWithResponses) GetApiV1AdminUsersWithResponse(ctx context.Context, params *GetApiV1AdminUsersParams, reqEditors ...RequestEditorFn) (*GetApiV1AdminUsersResp, error) {
+	rsp, err := c.GetApiV1AdminUsers(ctx, params, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
@@ -13248,6 +14837,24 @@ func (c *ClientWithResponses) GetApiV1AuthSessionWithResponse(ctx context.Contex
 	return ParseGetApiV1AuthSessionResp(rsp)
 }
 
+// GetApiV1AuthSessionsWithResponse request returning *GetApiV1AuthSessionsResp
+func (c *ClientWithResponses) GetApiV1AuthSessionsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetApiV1AuthSessionsResp, error) {
+	rsp, err := c.GetApiV1AuthSessions(ctx, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetApiV1AuthSessionsResp(rsp)
+}
+
+// DeleteApiV1AuthSessionsFamilyIdWithResponse request returning *DeleteApiV1AuthSessionsFamilyIdResp
+func (c *ClientWithResponses) DeleteApiV1AuthSessionsFamilyIdWithResponse(ctx context.Context, familyId string, reqEditors ...RequestEditorFn) (*DeleteApiV1AuthSessionsFamilyIdResp, error) {
+	rsp, err := c.DeleteApiV1AuthSessionsFamilyId(ctx, familyId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseDeleteApiV1AuthSessionsFamilyIdResp(rsp)
+}
+
 // PostApiV1AuthStepUpBeginWithResponse request returning *PostApiV1AuthStepUpBeginResp
 func (c *ClientWithResponses) PostApiV1AuthStepUpBeginWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*PostApiV1AuthStepUpBeginResp, error) {
 	rsp, err := c.PostApiV1AuthStepUpBegin(ctx, reqEditors...)
@@ -13629,6 +15236,155 @@ func (c *ClientWithResponses) GetApiV1ProjectsProjectIdEnvironmentsNameWithRespo
 		return nil, err
 	}
 	return ParseGetApiV1ProjectsProjectIdEnvironmentsNameResp(rsp)
+}
+
+// GetApiV1RbacBindingsWithResponse request returning *GetApiV1RbacBindingsResp
+func (c *ClientWithResponses) GetApiV1RbacBindingsWithResponse(ctx context.Context, params *GetApiV1RbacBindingsParams, reqEditors ...RequestEditorFn) (*GetApiV1RbacBindingsResp, error) {
+	rsp, err := c.GetApiV1RbacBindings(ctx, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetApiV1RbacBindingsResp(rsp)
+}
+
+// PostApiV1RbacBindingsWithBodyWithResponse request with arbitrary body returning *PostApiV1RbacBindingsResp
+func (c *ClientWithResponses) PostApiV1RbacBindingsWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostApiV1RbacBindingsResp, error) {
+	rsp, err := c.PostApiV1RbacBindingsWithBody(ctx, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePostApiV1RbacBindingsResp(rsp)
+}
+
+func (c *ClientWithResponses) PostApiV1RbacBindingsWithResponse(ctx context.Context, body PostApiV1RbacBindingsJSONRequestBody, reqEditors ...RequestEditorFn) (*PostApiV1RbacBindingsResp, error) {
+	rsp, err := c.PostApiV1RbacBindings(ctx, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePostApiV1RbacBindingsResp(rsp)
+}
+
+// GetApiV1RbacBindingsByScopeWithResponse request returning *GetApiV1RbacBindingsByScopeResp
+func (c *ClientWithResponses) GetApiV1RbacBindingsByScopeWithResponse(ctx context.Context, params *GetApiV1RbacBindingsByScopeParams, reqEditors ...RequestEditorFn) (*GetApiV1RbacBindingsByScopeResp, error) {
+	rsp, err := c.GetApiV1RbacBindingsByScope(ctx, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetApiV1RbacBindingsByScopeResp(rsp)
+}
+
+// DeleteApiV1RbacBindingsIdWithResponse request returning *DeleteApiV1RbacBindingsIdResp
+func (c *ClientWithResponses) DeleteApiV1RbacBindingsIdWithResponse(ctx context.Context, id string, reqEditors ...RequestEditorFn) (*DeleteApiV1RbacBindingsIdResp, error) {
+	rsp, err := c.DeleteApiV1RbacBindingsId(ctx, id, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseDeleteApiV1RbacBindingsIdResp(rsp)
+}
+
+// GetApiV1RbacConditionsWithResponse request returning *GetApiV1RbacConditionsResp
+func (c *ClientWithResponses) GetApiV1RbacConditionsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetApiV1RbacConditionsResp, error) {
+	rsp, err := c.GetApiV1RbacConditions(ctx, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetApiV1RbacConditionsResp(rsp)
+}
+
+// PostApiV1RbacExplainWithBodyWithResponse request with arbitrary body returning *PostApiV1RbacExplainResp
+func (c *ClientWithResponses) PostApiV1RbacExplainWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostApiV1RbacExplainResp, error) {
+	rsp, err := c.PostApiV1RbacExplainWithBody(ctx, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePostApiV1RbacExplainResp(rsp)
+}
+
+func (c *ClientWithResponses) PostApiV1RbacExplainWithResponse(ctx context.Context, body PostApiV1RbacExplainJSONRequestBody, reqEditors ...RequestEditorFn) (*PostApiV1RbacExplainResp, error) {
+	rsp, err := c.PostApiV1RbacExplain(ctx, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePostApiV1RbacExplainResp(rsp)
+}
+
+// GetApiV1RbacPermissionsWithResponse request returning *GetApiV1RbacPermissionsResp
+func (c *ClientWithResponses) GetApiV1RbacPermissionsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetApiV1RbacPermissionsResp, error) {
+	rsp, err := c.GetApiV1RbacPermissions(ctx, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetApiV1RbacPermissionsResp(rsp)
+}
+
+// GetApiV1RbacRolesWithResponse request returning *GetApiV1RbacRolesResp
+func (c *ClientWithResponses) GetApiV1RbacRolesWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetApiV1RbacRolesResp, error) {
+	rsp, err := c.GetApiV1RbacRoles(ctx, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetApiV1RbacRolesResp(rsp)
+}
+
+// PostApiV1RbacRolesWithBodyWithResponse request with arbitrary body returning *PostApiV1RbacRolesResp
+func (c *ClientWithResponses) PostApiV1RbacRolesWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostApiV1RbacRolesResp, error) {
+	rsp, err := c.PostApiV1RbacRolesWithBody(ctx, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePostApiV1RbacRolesResp(rsp)
+}
+
+func (c *ClientWithResponses) PostApiV1RbacRolesWithResponse(ctx context.Context, body PostApiV1RbacRolesJSONRequestBody, reqEditors ...RequestEditorFn) (*PostApiV1RbacRolesResp, error) {
+	rsp, err := c.PostApiV1RbacRoles(ctx, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePostApiV1RbacRolesResp(rsp)
+}
+
+// GetApiV1RbacRolesSlugWithResponse request returning *GetApiV1RbacRolesSlugResp
+func (c *ClientWithResponses) GetApiV1RbacRolesSlugWithResponse(ctx context.Context, slug string, reqEditors ...RequestEditorFn) (*GetApiV1RbacRolesSlugResp, error) {
+	rsp, err := c.GetApiV1RbacRolesSlug(ctx, slug, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetApiV1RbacRolesSlugResp(rsp)
+}
+
+// PutApiV1RbacRolesSlugWithBodyWithResponse request with arbitrary body returning *PutApiV1RbacRolesSlugResp
+func (c *ClientWithResponses) PutApiV1RbacRolesSlugWithBodyWithResponse(ctx context.Context, slug string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PutApiV1RbacRolesSlugResp, error) {
+	rsp, err := c.PutApiV1RbacRolesSlugWithBody(ctx, slug, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePutApiV1RbacRolesSlugResp(rsp)
+}
+
+func (c *ClientWithResponses) PutApiV1RbacRolesSlugWithResponse(ctx context.Context, slug string, body PutApiV1RbacRolesSlugJSONRequestBody, reqEditors ...RequestEditorFn) (*PutApiV1RbacRolesSlugResp, error) {
+	rsp, err := c.PutApiV1RbacRolesSlug(ctx, slug, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePutApiV1RbacRolesSlugResp(rsp)
+}
+
+// PostApiV1RbacRolesSlugBumpVersionWithResponse request returning *PostApiV1RbacRolesSlugBumpVersionResp
+func (c *ClientWithResponses) PostApiV1RbacRolesSlugBumpVersionWithResponse(ctx context.Context, slug string, reqEditors ...RequestEditorFn) (*PostApiV1RbacRolesSlugBumpVersionResp, error) {
+	rsp, err := c.PostApiV1RbacRolesSlugBumpVersion(ctx, slug, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePostApiV1RbacRolesSlugBumpVersionResp(rsp)
+}
+
+// PostApiV1RbacSubjectsSubjectTypeSubjectIdBumpVersionWithResponse request returning *PostApiV1RbacSubjectsSubjectTypeSubjectIdBumpVersionResp
+func (c *ClientWithResponses) PostApiV1RbacSubjectsSubjectTypeSubjectIdBumpVersionWithResponse(ctx context.Context, subjectType string, subjectId string, reqEditors ...RequestEditorFn) (*PostApiV1RbacSubjectsSubjectTypeSubjectIdBumpVersionResp, error) {
+	rsp, err := c.PostApiV1RbacSubjectsSubjectTypeSubjectIdBumpVersion(ctx, subjectType, subjectId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePostApiV1RbacSubjectsSubjectTypeSubjectIdBumpVersionResp(rsp)
 }
 
 // GetApiV1ReleasesWithBodyWithResponse request with arbitrary body returning *GetApiV1ReleasesResp
@@ -15357,6 +17113,48 @@ func ParseGetApiV1AuthSessionResp(rsp *http.Response) (*GetApiV1AuthSessionResp,
 	return response, nil
 }
 
+// ParseGetApiV1AuthSessionsResp parses an HTTP response from a GetApiV1AuthSessionsWithResponse call
+func ParseGetApiV1AuthSessionsResp(rsp *http.Response) (*GetApiV1AuthSessionsResp, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetApiV1AuthSessionsResp{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest AuthSessionsListResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseDeleteApiV1AuthSessionsFamilyIdResp parses an HTTP response from a DeleteApiV1AuthSessionsFamilyIdWithResponse call
+func ParseDeleteApiV1AuthSessionsFamilyIdResp(rsp *http.Response) (*DeleteApiV1AuthSessionsFamilyIdResp, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &DeleteApiV1AuthSessionsFamilyIdResp{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	return response, nil
+}
+
 // ParsePostApiV1AuthStepUpBeginResp parses an HTTP response from a PostApiV1AuthStepUpBeginWithResponse call
 func ParsePostApiV1AuthStepUpBeginResp(rsp *http.Response) (*PostApiV1AuthStepUpBeginResp, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -16384,6 +18182,294 @@ func ParseGetApiV1ProjectsProjectIdEnvironmentsNameResp(rsp *http.Response) (*Ge
 		}
 		response.JSON500 = &dest
 
+	}
+
+	return response, nil
+}
+
+// ParseGetApiV1RbacBindingsResp parses an HTTP response from a GetApiV1RbacBindingsWithResponse call
+func ParseGetApiV1RbacBindingsResp(rsp *http.Response) (*GetApiV1RbacBindingsResp, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetApiV1RbacBindingsResp{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest RbacBindingsListResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParsePostApiV1RbacBindingsResp parses an HTTP response from a PostApiV1RbacBindingsWithResponse call
+func ParsePostApiV1RbacBindingsResp(rsp *http.Response) (*PostApiV1RbacBindingsResp, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &PostApiV1RbacBindingsResp{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	return response, nil
+}
+
+// ParseGetApiV1RbacBindingsByScopeResp parses an HTTP response from a GetApiV1RbacBindingsByScopeWithResponse call
+func ParseGetApiV1RbacBindingsByScopeResp(rsp *http.Response) (*GetApiV1RbacBindingsByScopeResp, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetApiV1RbacBindingsByScopeResp{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest RbacBindingsListResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseDeleteApiV1RbacBindingsIdResp parses an HTTP response from a DeleteApiV1RbacBindingsIdWithResponse call
+func ParseDeleteApiV1RbacBindingsIdResp(rsp *http.Response) (*DeleteApiV1RbacBindingsIdResp, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &DeleteApiV1RbacBindingsIdResp{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	return response, nil
+}
+
+// ParseGetApiV1RbacConditionsResp parses an HTTP response from a GetApiV1RbacConditionsWithResponse call
+func ParseGetApiV1RbacConditionsResp(rsp *http.Response) (*GetApiV1RbacConditionsResp, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetApiV1RbacConditionsResp{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest RbacConditionsResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParsePostApiV1RbacExplainResp parses an HTTP response from a PostApiV1RbacExplainWithResponse call
+func ParsePostApiV1RbacExplainResp(rsp *http.Response) (*PostApiV1RbacExplainResp, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &PostApiV1RbacExplainResp{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest RbacExplainResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetApiV1RbacPermissionsResp parses an HTTP response from a GetApiV1RbacPermissionsWithResponse call
+func ParseGetApiV1RbacPermissionsResp(rsp *http.Response) (*GetApiV1RbacPermissionsResp, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetApiV1RbacPermissionsResp{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest RbacPermissionsResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetApiV1RbacRolesResp parses an HTTP response from a GetApiV1RbacRolesWithResponse call
+func ParseGetApiV1RbacRolesResp(rsp *http.Response) (*GetApiV1RbacRolesResp, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetApiV1RbacRolesResp{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest RbacRolesListResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParsePostApiV1RbacRolesResp parses an HTTP response from a PostApiV1RbacRolesWithResponse call
+func ParsePostApiV1RbacRolesResp(rsp *http.Response) (*PostApiV1RbacRolesResp, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &PostApiV1RbacRolesResp{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
+		var dest map[string]interface{}
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON201 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetApiV1RbacRolesSlugResp parses an HTTP response from a GetApiV1RbacRolesSlugWithResponse call
+func ParseGetApiV1RbacRolesSlugResp(rsp *http.Response) (*GetApiV1RbacRolesSlugResp, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetApiV1RbacRolesSlugResp{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest RbacRole
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParsePutApiV1RbacRolesSlugResp parses an HTTP response from a PutApiV1RbacRolesSlugWithResponse call
+func ParsePutApiV1RbacRolesSlugResp(rsp *http.Response) (*PutApiV1RbacRolesSlugResp, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &PutApiV1RbacRolesSlugResp{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	return response, nil
+}
+
+// ParsePostApiV1RbacRolesSlugBumpVersionResp parses an HTTP response from a PostApiV1RbacRolesSlugBumpVersionWithResponse call
+func ParsePostApiV1RbacRolesSlugBumpVersionResp(rsp *http.Response) (*PostApiV1RbacRolesSlugBumpVersionResp, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &PostApiV1RbacRolesSlugBumpVersionResp{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	return response, nil
+}
+
+// ParsePostApiV1RbacSubjectsSubjectTypeSubjectIdBumpVersionResp parses an HTTP response from a PostApiV1RbacSubjectsSubjectTypeSubjectIdBumpVersionWithResponse call
+func ParsePostApiV1RbacSubjectsSubjectTypeSubjectIdBumpVersionResp(rsp *http.Response) (*PostApiV1RbacSubjectsSubjectTypeSubjectIdBumpVersionResp, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &PostApiV1RbacSubjectsSubjectTypeSubjectIdBumpVersionResp{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
 	}
 
 	return response, nil
