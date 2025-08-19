@@ -3,20 +3,22 @@ package routes
 import (
 	httpkit "github.com/catalystgo/catalyst-forge/lib/foundry/httpkit"
 	"github.com/gin-gonic/gin"
-	authpolicy "github.com/input-output-hk/catalyst-forge/services/api/internal/auth/policy"
 	apiauth "github.com/input-output-hk/catalyst-forge/services/api/internal/authkit"
-	libauth "github.com/input-output-hk/catalyst-forge/services/api/internal/authkit/authkit"
+	akmw "github.com/input-output-hk/catalyst-forge/services/api/internal/authkit/middleware"
 	akservice "github.com/input-output-hk/catalyst-forge/services/api/internal/authkit/service"
 )
 
 // RegisterAuthKit mounts AuthKit routes and auxiliary API-owned auth endpoints.
-func RegisterAuthKit(r *gin.Engine, m libauth.Manager, cfg libauth.Config) {
-	r.Use(m.Authenticate())
-	r.Use(m.EnforcePolicies(authpolicy.BuildRegistry()))
-
-	cookieCfg := httpkit.DefaultCookieConfig()
+func RegisterAuthKit(r *gin.Engine, cfg apiauth.Config, reg *apiauth.PolicyRegistry) {
 	deps := apiauth.BuildDepsCached()
 	tokenSvc := akservice.NewTokenService(deps.Keys, deps.Rand, cfg.Origin, cfg.AccessTokenTTL)
+	auth := akmw.NewAuthenticator(tokenSvc, deps.Stores.Users, cfg.Origin)
+	r.Use(auth.Authenticate())
+
+	pe := akmw.NewPolicyEnforcer(reg)
+	r.Use(pe.EnforcePolicies())
+
+	cookieCfg := httpkit.DefaultCookieConfig()
 	refreshSvc := akservice.NewRefreshService(akservice.RefreshServiceConfig{Store: deps.Stores.Refresh, UserStore: deps.Stores.Users, TokenSvc: tokenSvc, Rand: deps.Rand, TTL: cfg.RefreshTokenTTL, AuditStore: deps.Stores.Audit})
 	waSvc, _ := akservice.NewWebAuthnService(akservice.WebAuthnConfig{RPDisplayName: cfg.RPName, RPID: cfg.RPID, RPOrigins: []string{cfg.Origin}, Users: deps.Stores.Users, Credentials: deps.Stores.Credentials, Challenges: deps.Stores.Challenges, Rand: deps.Rand, AdminAAGUIDAllowlist: cfg.AdminAAGUIDAllowlist, ChallengeTTL: cfg.ChallengeTTL})
 

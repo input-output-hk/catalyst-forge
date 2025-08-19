@@ -1,16 +1,16 @@
 package middleware
 
 import (
-    "fmt"
-    "math"
-    "net/http"
-    "strconv"
-    "time"
+	"fmt"
+	"math"
+	"net/http"
+	"strconv"
+	"time"
 
-    "github.com/input-output-hk/catalyst-forge/services/api/internal/authkit/authkit"
-    basehttpkit "github.com/catalystgo/catalyst-forge/lib/foundry/httpkit"
-    "github.com/input-output-hk/catalyst-forge/services/api/internal/authkit/rate"
-    "github.com/gin-gonic/gin"
+	basehttpkit "github.com/catalystgo/catalyst-forge/lib/foundry/httpkit"
+	"github.com/gin-gonic/gin"
+	"github.com/input-output-hk/catalyst-forge/services/api/internal/authkit"
+	"github.com/input-output-hk/catalyst-forge/services/api/internal/authkit/rate"
 )
 
 // RateLimiter provides rate limiting middleware.
@@ -39,7 +39,7 @@ func (rl *RateLimiter) LimitByIP(requests int, window time.Duration) gin.Handler
 		}
 
 		key := fmt.Sprintf("ip:%s:%s:%s", clientIP, c.Request.Method, c.Request.URL.Path)
-		
+
 		allowed, remaining, reset, err := rl.limiter.Allow(c.Request.Context(), rate.Key(key), requests, window)
 		if err != nil {
 			// Error checking rate limit, allow the request
@@ -50,7 +50,7 @@ func (rl *RateLimiter) LimitByIP(requests int, window time.Duration) gin.Handler
 		c.Header("X-RateLimit-Limit", strconv.Itoa(requests))
 		c.Header("X-RateLimit-Remaining", strconv.Itoa(remaining))
 		c.Header("X-RateLimit-Reset", strconv.FormatInt(reset.Unix(), 10))
-		
+
 		if !allowed {
 			// Add Retry-After header (rounded up)
 			retryAfter := time.Until(reset)
@@ -59,11 +59,11 @@ func (rl *RateLimiter) LimitByIP(requests int, window time.Duration) gin.Handler
 				secs = 0
 			}
 			c.Header("Retry-After", strconv.Itoa(secs))
-			
-            basehttpkit.ErrorResponse(c.Writer, http.StatusTooManyRequests, "rate_limit_exceeded", "Too many requests")
-            c.Abort()
-            return
-        }
+
+			basehttpkit.ErrorResponse(c.Writer, http.StatusTooManyRequests, "rate_limit_exceeded", "Too many requests")
+			c.Abort()
+			return
+		}
 
 		c.Next()
 	}
@@ -81,7 +81,7 @@ func (rl *RateLimiter) LimitByUser(requests int, window time.Duration) gin.Handl
 		}
 
 		key := fmt.Sprintf("user:%s:%s:%s", ctx.UserID.String(), c.Request.Method, c.Request.URL.Path)
-		
+
 		allowed, remaining, reset, err := rl.limiter.Allow(c.Request.Context(), rate.Key(key), requests, window)
 		if err != nil {
 			// Error checking rate limit, allow the request
@@ -92,7 +92,7 @@ func (rl *RateLimiter) LimitByUser(requests int, window time.Duration) gin.Handl
 		c.Header("X-RateLimit-Limit", strconv.Itoa(requests))
 		c.Header("X-RateLimit-Remaining", strconv.Itoa(remaining))
 		c.Header("X-RateLimit-Reset", strconv.FormatInt(reset.Unix(), 10))
-		
+
 		if !allowed {
 			// Add Retry-After header (rounded up)
 			retryAfter := time.Until(reset)
@@ -101,11 +101,11 @@ func (rl *RateLimiter) LimitByUser(requests int, window time.Duration) gin.Handl
 				secs = 0
 			}
 			c.Header("Retry-After", strconv.Itoa(secs))
-			
-            basehttpkit.ErrorResponse(c.Writer, http.StatusTooManyRequests, "rate_limit_exceeded", "Too many requests")
-            c.Abort()
-            return
-        }
+
+			basehttpkit.ErrorResponse(c.Writer, http.StatusTooManyRequests, "rate_limit_exceeded", "Too many requests")
+			c.Abort()
+			return
+		}
 
 		c.Next()
 	}
@@ -131,7 +131,7 @@ func (rl *RateLimiter) LimitByKey(keyFunc func(*gin.Context) string, requests in
 		c.Header("X-RateLimit-Limit", strconv.Itoa(requests))
 		c.Header("X-RateLimit-Remaining", strconv.Itoa(remaining))
 		c.Header("X-RateLimit-Reset", strconv.FormatInt(reset.Unix(), 10))
-		
+
 		if !allowed {
 			// Add Retry-After header (rounded up)
 			retryAfter := time.Until(reset)
@@ -140,11 +140,11 @@ func (rl *RateLimiter) LimitByKey(keyFunc func(*gin.Context) string, requests in
 				secs = 0
 			}
 			c.Header("Retry-After", strconv.Itoa(secs))
-			
-            basehttpkit.ErrorResponse(c.Writer, http.StatusTooManyRequests, "rate_limit_exceeded", "Too many requests")
-            c.Abort()
-            return
-        }
+
+			basehttpkit.ErrorResponse(c.Writer, http.StatusTooManyRequests, "rate_limit_exceeded", "Too many requests")
+			c.Abort()
+			return
+		}
 
 		c.Next()
 	}
@@ -152,12 +152,12 @@ func (rl *RateLimiter) LimitByKey(keyFunc func(*gin.Context) string, requests in
 
 // AuthEndpointLimits provides standard rate limits for authentication endpoints.
 type AuthEndpointLimits struct {
-	Login           *RateLimit
-	InviteUse       *RateLimit
-	RecoveryInit    *RateLimit
-	RecoveryVerify  *RateLimit
-	Refresh         *RateLimit
-	CredentialsAdd  *RateLimit
+	Login          *RateLimit
+	InviteUse      *RateLimit
+	RecoveryInit   *RateLimit
+	RecoveryVerify *RateLimit
+	Refresh        *RateLimit
+	CredentialsAdd *RateLimit
 }
 
 // RateLimit defines a rate limit configuration.
@@ -235,7 +235,7 @@ func (rl *RateLimiter) GlobalRateLimit(requests int, window time.Duration) gin.H
 		// Use a single global key for true global limiting
 		// Optionally include method: key := fmt.Sprintf("global:%s", c.Request.Method)
 		key := "global"
-		
+
 		allowed, remaining, reset, err := rl.limiter.Allow(c.Request.Context(), rate.Key(key), requests, window)
 		if err != nil {
 			// Error checking rate limit, allow the request
@@ -246,7 +246,7 @@ func (rl *RateLimiter) GlobalRateLimit(requests int, window time.Duration) gin.H
 		c.Header("X-RateLimit-Limit", strconv.Itoa(requests))
 		c.Header("X-RateLimit-Remaining", strconv.Itoa(remaining))
 		c.Header("X-RateLimit-Reset", strconv.FormatInt(reset.Unix(), 10))
-		
+
 		if !allowed {
 			// Add Retry-After header (rounded up)
 			retryAfter := time.Until(reset)
@@ -255,8 +255,8 @@ func (rl *RateLimiter) GlobalRateLimit(requests int, window time.Duration) gin.H
 				secs = 0
 			}
 			c.Header("Retry-After", strconv.Itoa(secs))
-			
-                basehttpkit.ErrorResponse(c.Writer, http.StatusTooManyRequests, "rate_limit_exceeded", "Too many requests")
+
+			basehttpkit.ErrorResponse(c.Writer, http.StatusTooManyRequests, "rate_limit_exceeded", "Too many requests")
 			c.Abort()
 			return
 		}
@@ -272,7 +272,7 @@ func (rl *RateLimiter) GlobalRateLimit(requests int, window time.Duration) gin.H
 func (rl *RateLimiter) PerRouteGlobalRateLimit(requests int, window time.Duration) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		key := fmt.Sprintf("global:%s:%s", c.Request.Method, c.Request.URL.Path)
-		
+
 		allowed, remaining, reset, err := rl.limiter.Allow(c.Request.Context(), rate.Key(key), requests, window)
 		if err != nil {
 			// Error checking rate limit, allow the request
@@ -283,7 +283,7 @@ func (rl *RateLimiter) PerRouteGlobalRateLimit(requests int, window time.Duratio
 		c.Header("X-RateLimit-Limit", strconv.Itoa(requests))
 		c.Header("X-RateLimit-Remaining", strconv.Itoa(remaining))
 		c.Header("X-RateLimit-Reset", strconv.FormatInt(reset.Unix(), 10))
-		
+
 		if !allowed {
 			// Add Retry-After header (rounded up)
 			retryAfter := time.Until(reset)
@@ -292,8 +292,8 @@ func (rl *RateLimiter) PerRouteGlobalRateLimit(requests int, window time.Duratio
 				secs = 0
 			}
 			c.Header("Retry-After", strconv.Itoa(secs))
-			
-                basehttpkit.ErrorResponse(c.Writer, http.StatusTooManyRequests, "rate_limit_exceeded", "Too many requests")
+
+			basehttpkit.ErrorResponse(c.Writer, http.StatusTooManyRequests, "rate_limit_exceeded", "Too many requests")
 			c.Abort()
 			return
 		}

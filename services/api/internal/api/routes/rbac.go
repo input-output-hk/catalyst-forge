@@ -16,7 +16,6 @@ import (
 	appres "github.com/input-output-hk/catalyst-forge/services/api/internal/auth/resolvers"
 	resources "github.com/input-output-hk/catalyst-forge/services/api/internal/auth/resources"
 	apiauth "github.com/input-output-hk/catalyst-forge/services/api/internal/authkit"
-	libauth "github.com/input-output-hk/catalyst-forge/services/api/internal/authkit/authkit"
 	rbac "github.com/input-output-hk/catalyst-forge/services/api/internal/authkit/rbac"
 	rbacgorm "github.com/input-output-hk/catalyst-forge/services/api/internal/authkit/rbac/gormstore"
 	"gorm.io/gorm"
@@ -30,7 +29,7 @@ func RegisterRBACAdmin(r *gin.Engine, db *gorm.DB, logger *slog.Logger) {
 	cfg.Scopes = authplanner.Build()
 	mgr, _ := rbac.New(cfg, rbac.Deps{
 		Store:  store,
-		Clock:  libauth.DefaultClock(),
+		Clock:  apiauth.DefaultClock(),
 		Logger: apiauth.NewLogger(logger),
 		Cache:  rbac.NewMemoryCache(),
 	})

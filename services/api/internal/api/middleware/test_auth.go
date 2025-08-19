@@ -7,7 +7,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
-	authctx "github.com/input-output-hk/catalyst-forge/services/api/internal/authkit/authkit"
+	authctx "github.com/input-output-hk/catalyst-forge/services/api/internal/authkit"
 )
 
 // TestAuthBypass injects an AuthContext from headers when TEST_AUTH_BYPASS=1.

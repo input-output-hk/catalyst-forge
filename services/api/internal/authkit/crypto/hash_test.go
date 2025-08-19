@@ -12,7 +12,7 @@ import (
 
 func TestHashSHA256(t *testing.T) {
 	t.Parallel()
-	
+
 	// Test vectors from https://www.di-mgt.com.au/sha_testvectors.html
 	tests := []struct {
 		name     string
@@ -55,15 +55,15 @@ func TestHashSHA256(t *testing.T) {
 			expected: "6e340b9cffb37a989ca544e6bb780a2c78901d3fb33738768511a30617afa01d",
 		},
 	}
-	
+
 	for _, tc := range tests {
 		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			
+
 			result := HashSHA256(tc.input)
 			resultHex := hex.EncodeToString(result)
-			
+
 			assert.Equal(t, tc.expected, resultHex, "SHA256 hash mismatch for %s", tc.name)
 			assert.Len(t, result, 32, "SHA256 should always return 32 bytes")
 		})
@@ -72,21 +72,21 @@ func TestHashSHA256(t *testing.T) {
 
 func TestHashSHA256Hex(t *testing.T) {
 	t.Parallel()
-	
+
 	input := []byte("test message")
-	
+
 	// Test that hex function matches manual encoding
 	hashBytes := HashSHA256(input)
 	expectedHex := hex.EncodeToString(hashBytes)
-	
+
 	resultHex := HashSHA256Hex(input)
-	
+
 	assert.Equal(t, expectedHex, resultHex, "HashSHA256Hex should match manual hex encoding")
 }
 
 func TestHMACSHA256(t *testing.T) {
 	t.Parallel()
-	
+
 	// Test vectors from RFC 4231
 	tests := []struct {
 		name     string
@@ -102,7 +102,7 @@ func TestHMACSHA256(t *testing.T) {
 		},
 		{
 			name:     "rfc4231_test_2",
-			key:      "4a656665", // "Jefe"
+			key:      "4a656665",                                                 // "Jefe"
 			data:     "7768617420646f2079612077616e7420666f72206e6f7468696e673f", // "what do ya want for nothing?"
 			expected: "5bdcc146bf60754e6a042426089575c75a003f089d2739839dec58b964ec3843",
 		},
@@ -131,21 +131,21 @@ func TestHMACSHA256(t *testing.T) {
 			expected: "999a901219f032cd497cadb5e6051e97b6a29ab297bd6ae722bd6062a2f59542",
 		},
 	}
-	
+
 	for _, tc := range tests {
 		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			
+
 			key, err := hex.DecodeString(tc.key)
 			require.NoError(t, err, "failed to decode key")
-			
+
 			data, err := hex.DecodeString(tc.data)
 			require.NoError(t, err, "failed to decode data")
-			
+
 			result := HMACSHA256(key, data)
 			resultHex := hex.EncodeToString(result)
-			
+
 			assert.Equal(t, tc.expected, resultHex, "HMAC-SHA256 mismatch for %s", tc.name)
 			assert.Len(t, result, 32, "HMAC-SHA256 should always return 32 bytes")
 		})
@@ -154,22 +154,59 @@ func TestHMACSHA256(t *testing.T) {
 
 func TestHMACSHA256Hex(t *testing.T) {
 	t.Parallel()
-	
+
 	key := []byte("test key")
 	data := []byte("test data")
-	
+
 	// Test that hex function matches manual encoding
 	hmacBytes := HMACSHA256(key, data)
 	expectedHex := hex.EncodeToString(hmacBytes)
-	
+
 	resultHex := HMACSHA256Hex(key, data)
-	
+
 	assert.Equal(t, expectedHex, resultHex, "HMACSHA256Hex should match manual hex encoding")
+}
+
+func TestHashSHA256ArrayParity(t *testing.T) {
+	input := []byte("hello world")
+	slice := HashSHA256(input)
+	arr := HashSHA256Array(input)
+	assert.Equal(t, slice, arr[:], "slice and array variants should produce identical output")
+}
+
+func TestHMACSHA256ArrayParity(t *testing.T) {
+	key := []byte("secret-key")
+	data := []byte("payload")
+	slice := HMACSHA256(key, data)
+	arr := HMACSHA256Array(key, data)
+	assert.Equal(t, slice, arr[:], "slice and array HMAC variants should produce identical output")
+}
+
+func FuzzVerifyHMACSHA256(f *testing.F) {
+	// Seed corpus
+	f.Add([]byte("k"), []byte("d"))
+	f.Add([]byte("another-key"), []byte("some data"))
+
+	f.Fuzz(func(t *testing.T, key, data []byte) {
+		mac := HMACSHA256(key, data)
+		if !VerifyHMACSHA256(key, data, mac) {
+			t.Fatalf("verification failed for valid mac")
+		}
+		// Tamper and ensure verification fails
+		tampered := make([]byte, len(mac))
+		copy(tampered, mac)
+		if len(tampered) > 0 {
+			tampered[0] ^= 0x01
+			if VerifyHMACSHA256(key, data, tampered) {
+				t.Fatalf("verification succeeded for tampered mac")
+			}
+		}
+	})
 }
 
 func TestVerifyHMACSHA256(t *testing.T) {
 	t.Parallel()
-	
+
 	tests := []struct {
 		name        string
 		key         []byte
@@ -213,12 +250,12 @@ func TestVerifyHMACSHA256(t *testing.T) {
 			shouldMatch: false,
 		},
 	}
-	
+
 	for _, tc := range tests {
 		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			
+
 			// Compute expected MAC if not provided
 			if tc.expectedMAC == nil {
 				if tc.shouldMatch {
@@ -232,9 +269,9 @@ func TestVerifyHMACSHA256(t *testing.T) {
 					}
 				}
 			}
-			
+
 			result := VerifyHMACSHA256(tc.key, tc.data, tc.expectedMAC)
-			
+
 			if tc.shouldMatch {
 				assert.True(t, result, "HMAC verification should succeed for %s", tc.name)
 			} else {
@@ -246,12 +283,12 @@ func TestVerifyHMACSHA256(t *testing.T) {
 
 func TestSecureCompare(t *testing.T) {
 	t.Parallel()
-	
+
 	tests := []struct {
-		name   string
-		a      []byte
-		b      []byte
-		equal  bool
+		name  string
+		a     []byte
+		b     []byte
+		equal bool
 	}{
 		{
 			name:  "equal_empty",
@@ -308,14 +345,14 @@ func TestSecureCompare(t *testing.T) {
 			equal: false,
 		},
 	}
-	
+
 	for _, tc := range tests {
 		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			
+
 			result := SecureCompare(tc.a, tc.b)
-			
+
 			if tc.equal {
 				assert.True(t, result, "SecureCompare should return true for %s", tc.name)
 			} else {
@@ -327,7 +364,7 @@ func TestSecureCompare(t *testing.T) {
 
 func TestSecureCompareStrings(t *testing.T) {
 	t.Parallel()
-	
+
 	tests := []struct {
 		name  string
 		a     string
@@ -365,14 +402,14 @@ func TestSecureCompareStrings(t *testing.T) {
 			equal: false,
 		},
 	}
-	
+
 	for _, tc := range tests {
 		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			
+
 			result := SecureCompareStrings(tc.a, tc.b)
-			
+
 			if tc.equal {
 				assert.True(t, result, "SecureCompareStrings should return true for %s", tc.name)
 			} else {
@@ -384,47 +421,47 @@ func TestSecureCompareStrings(t *testing.T) {
 
 func TestConstantTimeComparison(t *testing.T) {
 	t.Parallel()
-	
+
 	// Test that comparison time is constant regardless of where the difference is
 	// This is a basic timing test - more sophisticated timing analysis would be needed
 	// for cryptographic validation
-	
+
 	data1 := bytes.Repeat([]byte("a"), 1000)
 	data2 := bytes.Repeat([]byte("a"), 1000)
 	data3 := bytes.Repeat([]byte("a"), 1000)
-	
+
 	// Modify at different positions
-	data2[0] = 'b'    // First byte different
-	data3[999] = 'b'  // Last byte different
-	
+	data2[0] = 'b'   // First byte different
+	data3[999] = 'b' // Last byte different
+
 	// Measure timing for comparisons
 	iterations := 10000
-	
+
 	// Equal comparison
 	start := time.Now()
 	for i := 0; i < iterations; i++ {
 		_ = SecureCompare(data1, data1)
 	}
 	equalTime := time.Since(start)
-	
+
 	// First byte different
 	start = time.Now()
 	for i := 0; i < iterations; i++ {
 		_ = SecureCompare(data1, data2)
 	}
 	firstDiffTime := time.Since(start)
-	
+
 	// Last byte different
 	start = time.Now()
 	for i := 0; i < iterations; i++ {
 		_ = SecureCompare(data1, data3)
 	}
 	lastDiffTime := time.Since(start)
-	
+
 	// Calculate ratios - should be close to 1.0 for constant time
 	firstRatio := float64(firstDiffTime) / float64(equalTime)
 	lastRatio := float64(lastDiffTime) / float64(equalTime)
-	
+
 	// These should be relatively close for constant-time comparison
 	// Allow for some variance due to system noise
 	assert.InDelta(t, 1.0, firstRatio, 0.5, "First byte difference timing should be similar")
@@ -434,17 +471,17 @@ func TestConstantTimeComparison(t *testing.T) {
 
 func TestHashConcurrency(t *testing.T) {
 	t.Parallel()
-	
+
 	// Test that hash functions are safe for concurrent use
 	data := []byte("concurrent test data")
 	key := []byte("concurrent key")
-	
+
 	expectedHash := HashSHA256(data)
 	expectedHMAC := HMACSHA256(key, data)
-	
+
 	// Run concurrent hash operations
 	done := make(chan bool, 4)
-	
+
 	// SHA256 concurrent calls
 	go func() {
 		for i := 0; i < 100; i++ {
@@ -453,7 +490,7 @@ func TestHashConcurrency(t *testing.T) {
 		}
 		done <- true
 	}()
-	
+
 	go func() {
 		for i := 0; i < 100; i++ {
 			result := HashSHA256(data)
@@ -461,7 +498,7 @@ func TestHashConcurrency(t *testing.T) {
 		}
 		done <- true
 	}()
-	
+
 	// HMAC concurrent calls
 	go func() {
 		for i := 0; i < 100; i++ {
@@ -470,7 +507,7 @@ func TestHashConcurrency(t *testing.T) {
 		}
 		done <- true
 	}()
-	
+
 	go func() {
 		for i := 0; i < 100; i++ {
 			result := HMACSHA256(key, data)
@@ -478,38 +515,9 @@ func TestHashConcurrency(t *testing.T) {
 		}
 		done <- true
 	}()
-	
+
 	// Wait for all goroutines
 	for i := 0; i < 4; i++ {
 		<-done
-	}
-}
-
-func BenchmarkHashSHA256(b *testing.B) {
-	data := bytes.Repeat([]byte("benchmark"), 100)
-	
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		_ = HashSHA256(data)
-	}
-}
-
-func BenchmarkHMACSHA256(b *testing.B) {
-	key := []byte("benchmark-key")
-	data := bytes.Repeat([]byte("benchmark"), 100)
-	
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		_ = HMACSHA256(key, data)
-	}
-}
-
-func BenchmarkSecureCompare(b *testing.B) {
-	data1 := bytes.Repeat([]byte("a"), 32)
-	data2 := bytes.Repeat([]byte("a"), 32)
-	
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		_ = SecureCompare(data1, data2)
 	}
 }

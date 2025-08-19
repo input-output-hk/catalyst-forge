@@ -16,7 +16,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	authctx "github.com/input-output-hk/catalyst-forge/services/api/internal/authkit/authkit"
+	authctx "github.com/input-output-hk/catalyst-forge/services/api/internal/authkit"
 	"github.com/input-output-hk/catalyst-forge/services/api/internal/authkit/rate"
 	rbac "github.com/input-output-hk/catalyst-forge/services/api/internal/authkit/rbac"
 	"github.com/input-output-hk/catalyst-forge/services/api/internal/certkit/certkit"

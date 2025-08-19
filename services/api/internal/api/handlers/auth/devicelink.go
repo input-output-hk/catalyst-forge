@@ -7,7 +7,7 @@ import (
 
 	"github.com/catalystgo/catalyst-forge/lib/foundry/httpkit"
 	"github.com/gin-gonic/gin"
-	"github.com/input-output-hk/catalyst-forge/services/api/internal/authkit/authkit"
+	"github.com/input-output-hk/catalyst-forge/services/api/internal/authkit"
 	"github.com/input-output-hk/catalyst-forge/services/api/internal/authkit/rate"
 	"github.com/input-output-hk/catalyst-forge/services/api/internal/authkit/service"
 	"github.com/input-output-hk/catalyst-forge/services/api/internal/authkit/store"
@@ -23,7 +23,7 @@ type DeviceLinkDeps struct {
 // RegisterDeviceLink registers all device-link endpoints.
 func RegisterDeviceLink(r *gin.Engine, deps DeviceLinkDeps) {
 	api := r.Group("/api/v1/auth/device-link")
-	
+
 	// @Summary Begin device link flow
 	// @Description Initiates a device authorization flow for CLI/device authentication
 	// @Tags auth
@@ -35,7 +35,7 @@ func RegisterDeviceLink(r *gin.Engine, deps DeviceLinkDeps) {
 	// @Failure 500 {object} httpkit.ErrorResponse "Internal server error"
 	// @Router /api/v1/auth/device-link/begin [post]
 	api.POST("/begin", beginDeviceLinkHandler(deps.DeviceLinkService, deps.RateLimiter))
-	
+
 	// @Summary Authorize device link
 	// @Description Authorizes a pending device link request (requires authentication and step-up)
 	// @Tags auth
@@ -49,7 +49,7 @@ func RegisterDeviceLink(r *gin.Engine, deps DeviceLinkDeps) {
 	// @Failure 428 {object} httpkit.ErrorResponse "Step-up authentication required"
 	// @Router /api/v1/auth/device-link/authorize [post]
 	api.POST("/authorize", authorizeDeviceLinkHandler(deps.DeviceLinkService))
-	
+
 	// @Summary Exchange device code for tokens
 	// @Description Exchanges a device code for access and refresh tokens (polling endpoint)
 	// @Tags auth
@@ -90,7 +90,7 @@ func beginDeviceLinkHandler(linkService service.DeviceLinkService, limiter rate.
 	return func(c *gin.Context) {
 		// Get client IP for rate limiting
 		clientIP := getClientIP(c)
-		
+
 		// Check rate limit
 		if limiter != nil {
 			allowed, err := limiter.AllowBegin(c.Request.Context(), clientIP)
@@ -99,33 +99,33 @@ func beginDeviceLinkHandler(linkService service.DeviceLinkService, limiter rate.
 				return
 			}
 		}
-		
+
 		var req struct {
 			DeviceName string `json:"device_name"`
 			Purpose    string `json:"purpose"` // "login" or "step_up"
 		}
-		
+
 		if err := httpkit.ParseJSON(c.Writer, c.Request, &req); err != nil {
 			return
 		}
-		
+
 		// Default device name if not provided
 		if req.DeviceName == "" {
 			req.DeviceName = "CLI Device"
 		}
-		
+
 		// Default purpose to login
 		if req.Purpose == "" {
 			req.Purpose = "login"
 		}
-		
+
 		// Begin the device link flow
 		resp, err := linkService.BeginDeviceLink(c.Request.Context(), req.DeviceName, req.Purpose)
 		if err != nil {
 			_ = httpkit.NewInternalError().Write(c.Writer)
 			return
 		}
-		
+
 		_ = httpkit.WriteJSON(c.Writer, http.StatusOK, resp)
 	}
 }
@@ -139,33 +139,33 @@ func authorizeDeviceLinkHandler(linkService service.DeviceLinkService) gin.Handl
 			_ = httpkit.NewUnauthorizedError("authentication required").Write(c.Writer)
 			return
 		}
-		
+
 		// Check for fresh step-up
 		if ctx.RequiresStepUp(time.Now().UTC()) {
 			httpkit.ErrorResponse(c.Writer, http.StatusPreconditionRequired, "step_up_required", "Fresh authentication required")
 			return
 		}
-		
+
 		var req struct {
 			UserCode string `json:"user_code"`
 		}
-		
+
 		if err := httpkit.ParseJSON(c.Writer, c.Request, &req); err != nil {
 			return
 		}
-		
+
 		if req.UserCode == "" {
 			_ = httpkit.NewBadRequestError("user_code is required").Write(c.Writer)
 			return
 		}
-		
+
 		// Authorize the device link
 		err := linkService.AuthorizeDeviceLink(c.Request.Context(), req.UserCode, ctx.UserID)
 		if err != nil {
 			_ = httpkit.NewBadRequestError("invalid or expired code").Write(c.Writer)
 			return
 		}
-		
+
 		c.Status(http.StatusNoContent)
 	}
 }
@@ -176,16 +176,16 @@ func exchangeDeviceCodeHandler(linkService service.DeviceLinkService, limiter ra
 		var req struct {
 			DeviceCode string `json:"device_code"`
 		}
-		
+
 		if err := httpkit.ParseJSON(c.Writer, c.Request, &req); err != nil {
 			return
 		}
-		
+
 		if req.DeviceCode == "" {
 			_ = httpkit.NewBadRequestError("device_code is required").Write(c.Writer)
 			return
 		}
-		
+
 		// Check rate limit
 		if limiter != nil {
 			allowed, err := limiter.AllowExchange(c.Request.Context(), req.DeviceCode)
@@ -193,7 +193,7 @@ func exchangeDeviceCodeHandler(linkService service.DeviceLinkService, limiter ra
 				// Check if it's a slow_down error
 				if err.Error() == "slow_down" {
 					_ = httpkit.WriteJSON(c.Writer, http.StatusBadRequest, map[string]string{
-						"error": "slow_down",
+						"error":             "slow_down",
 						"error_description": "You are polling too frequently",
 					})
 					return
@@ -202,37 +202,37 @@ func exchangeDeviceCodeHandler(linkService service.DeviceLinkService, limiter ra
 			if !allowed {
 				_ = limiter.RecordSlowDown(c.Request.Context(), req.DeviceCode)
 				_ = httpkit.WriteJSON(c.Writer, http.StatusBadRequest, map[string]string{
-					"error": "slow_down",
+					"error":             "slow_down",
 					"error_description": "You are polling too frequently",
 				})
 				return
 			}
 		}
-		
+
 		// Exchange the device code
 		resp, err := linkService.ExchangeDeviceCode(c.Request.Context(), req.DeviceCode)
 		if err != nil {
 			_ = httpkit.NewInternalError().Write(c.Writer)
 			return
 		}
-		
+
 		// Check status for pending/expired responses
 		if resp.Status != "" {
 			// Return status codes for polling clients
 			switch resp.Status {
 			case "authorization_pending":
 				_ = httpkit.WriteJSON(c.Writer, http.StatusBadRequest, map[string]string{
-					"error": "authorization_pending",
+					"error":             "authorization_pending",
 					"error_description": "The authorization request is still pending",
 				})
 			case "slow_down":
 				_ = httpkit.WriteJSON(c.Writer, http.StatusBadRequest, map[string]string{
-					"error": "slow_down",
+					"error":             "slow_down",
 					"error_description": "You are polling too frequently",
 				})
 			case "expired_token":
 				_ = httpkit.WriteJSON(c.Writer, http.StatusBadRequest, map[string]string{
-					"error": "expired_token",
+					"error":             "expired_token",
 					"error_description": "The device code has expired",
 				})
 			default:
@@ -240,7 +240,7 @@ func exchangeDeviceCodeHandler(linkService service.DeviceLinkService, limiter ra
 			}
 			return
 		}
-		
+
 		// Success - reset rate limit and return tokens
 		if limiter != nil {
 			_ = limiter.ResetExchange(c.Request.Context(), req.DeviceCode)
@@ -267,13 +267,13 @@ func RegisterDeviceLinkVerify(r *gin.Engine, linkStore store.DeviceLinkStore) {
 			_ = httpkit.NewBadRequestError("code parameter is required").Write(c.Writer)
 			return
 		}
-		
+
 		link, err := service.VerifyDeviceCode(c.Request.Context(), linkStore, userCode)
 		if err != nil {
 			_ = httpkit.NewBadRequestError("invalid or expired code").Write(c.Writer)
 			return
 		}
-		
+
 		_ = httpkit.WriteJSON(c.Writer, http.StatusOK, map[string]interface{}{
 			"device_name": link.DeviceName,
 			"purpose":     link.Purpose,
@@ -301,12 +301,12 @@ func getClientIP(c *gin.Context) string {
 		}
 		return strings.TrimSpace(xff)
 	}
-	
+
 	// Try X-Real-IP header
 	if xri := c.GetHeader("X-Real-IP"); xri != "" {
 		return xri
 	}
-	
+
 	// Fall back to remote address
 	return c.ClientIP()
 }

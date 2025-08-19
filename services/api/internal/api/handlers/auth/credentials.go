@@ -8,7 +8,7 @@ import (
 	basehttp "github.com/catalystgo/catalyst-forge/lib/foundry/httpkit"
 	"github.com/gin-gonic/gin"
 	apimodels "github.com/input-output-hk/catalyst-forge/services/api/internal/api/models/auth"
-	akauth "github.com/input-output-hk/catalyst-forge/services/api/internal/authkit/authkit"
+	akauth "github.com/input-output-hk/catalyst-forge/services/api/internal/authkit"
 	"github.com/input-output-hk/catalyst-forge/services/api/internal/authkit/store"
 )
 

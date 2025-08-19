@@ -3,7 +3,7 @@ package auth
 import (
 	"github.com/catalystgo/catalyst-forge/lib/foundry/httpkit"
 	"github.com/gin-gonic/gin"
-	akauth "github.com/input-output-hk/catalyst-forge/services/api/internal/authkit/authkit"
+	akauth "github.com/input-output-hk/catalyst-forge/services/api/internal/authkit"
 	authhttp "github.com/input-output-hk/catalyst-forge/services/api/internal/authkit/httpkit"
 	akservice "github.com/input-output-hk/catalyst-forge/services/api/internal/authkit/service"
 )

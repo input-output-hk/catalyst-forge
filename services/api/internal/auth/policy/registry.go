@@ -2,7 +2,7 @@ package policy
 
 import (
 	authperms "github.com/input-output-hk/catalyst-forge/services/api/internal/auth/permissions"
-	"github.com/input-output-hk/catalyst-forge/services/api/internal/authkit/authkit"
+	"github.com/input-output-hk/catalyst-forge/services/api/internal/authkit"
 )
 
 // BuildRegistry declares route-level policy requirements.

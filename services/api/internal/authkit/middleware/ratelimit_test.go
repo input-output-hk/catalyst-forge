@@ -9,11 +9,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/input-output-hk/catalyst-forge/services/api/internal/authkit/authkit"
-	"github.com/input-output-hk/catalyst-forge/services/api/internal/authkit/middleware"
-	"github.com/input-output-hk/catalyst-forge/services/api/internal/authkit/rate"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	"github.com/input-output-hk/catalyst-forge/services/api/internal/authkit"
+	"github.com/input-output-hk/catalyst-forge/services/api/internal/authkit/middleware"
+	"github.com/input-output-hk/catalyst-forge/services/api/internal/authkit/rate"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -48,14 +48,14 @@ func TestRateLimiter_LimitByIP(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
-		name             string
-		setupLimiter     func() *mockRateLimiter
-		clientIP         string
-		method           string
-		path             string
-		expectedStatus   int
-		expectHeaders    bool
-		expectedKey      string
+		name           string
+		setupLimiter   func() *mockRateLimiter
+		clientIP       string
+		method         string
+		path           string
+		expectedStatus int
+		expectHeaders  bool
+		expectedKey    string
 	}{
 		{
 			name: "ok/request_allowed",

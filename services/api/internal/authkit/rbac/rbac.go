@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/input-output-hk/catalyst-forge/services/api/internal/authkit/authkit"
 	"github.com/gin-gonic/gin"
+	"github.com/input-output-hk/catalyst-forge/services/api/internal/authkit"
 )
 
 // Deps bundles external dependencies required by RBAC.

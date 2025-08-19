@@ -9,8 +9,7 @@ import (
 	"github.com/input-output-hk/catalyst-forge/services/api/internal/api/handlers"
 	"github.com/input-output-hk/catalyst-forge/services/api/internal/api/middleware"
 	apiroutes "github.com/input-output-hk/catalyst-forge/services/api/internal/api/routes"
-	appconds "github.com/input-output-hk/catalyst-forge/services/api/internal/auth/conditions"
-	libauth "github.com/input-output-hk/catalyst-forge/services/api/internal/authkit/authkit"
+	libauth "github.com/input-output-hk/catalyst-forge/services/api/internal/authkit"
 	certkit "github.com/input-output-hk/catalyst-forge/services/api/internal/certkit/certkit"
 	"github.com/input-output-hk/catalyst-forge/services/api/internal/config"
 	emailsvc "github.com/input-output-hk/catalyst-forge/services/api/internal/service/email"
@@ -98,16 +97,17 @@ func setupAuthKit(authConfig *config.Config, r *gin.Engine, db *gorm.DB, logger 
 			"bootstrap_token_len", len(akCfg.BootstrapToken),
 		)
 	}
-	akDeps := apiauth.BuildDeps(context.Background(), authConfig, nil, db, nil, apiauth.NewLogger(logger))
+	// deps := apiauth.BuildDeps(context.Background(), authConfig, nil, db, nil, apiauth.NewLogger(logger))
 
-	// Register domain conditions with RBAC
-	appconds.Register()
+	reg := libauth.NewPolicyRegistry()
+	reg.AllowAnonymous("GET", "/health", "/swagger/*")
 
-	if m, err := libauth.New(akCfg, akDeps); err == nil {
-		// Mount /.well-known/jwks.json using AuthKit
-		m.RegisterJWKS(r.Group("/.well-known"))
-		apiroutes.RegisterAuthKit(r, m, akCfg)
-	} else {
-		logger.Warn("AuthKit not mounted (wip)", "error", err)
-	}
+	// TODO: Replace with a dedicated JWKS handler
+	// Mount JWKS via Manager; API binds its own /api/v1/auth routes
+	// if m, err := libauth.New(akCfg, deps); err == nil {
+	// 	m.RegisterJWKS(r.Group("/.well-known"))
+	// }
+
+	// Wire canonical middleware (auth + policy) and bind API's auth routes
+	apiroutes.RegisterAuthKit(r, akCfg, reg)
 }

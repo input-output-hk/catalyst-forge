@@ -12,7 +12,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
-	"github.com/input-output-hk/catalyst-forge/services/api/internal/authkit/authkit"
+	"github.com/input-output-hk/catalyst-forge/services/api/internal/authkit"
 	"github.com/input-output-hk/catalyst-forge/services/api/internal/authkit/domain"
 	"github.com/input-output-hk/catalyst-forge/services/api/internal/authkit/service"
 	"github.com/stretchr/testify/assert"
@@ -99,14 +99,14 @@ func TestBeginDeviceLinkHandler(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
 	tests := []struct {
-		name              string
-		requestBody       string
-		rateLimitAllowed  bool
-		serviceError      error
-		wantStatus        int
-		wantDeviceCode    string
-		wantUserCode      string
-		wantErrorKey      string
+		name             string
+		requestBody      string
+		rateLimitAllowed bool
+		serviceError     error
+		wantStatus       int
+		wantDeviceCode   string
+		wantUserCode     string
+		wantErrorKey     string
 	}{
 		{
 			name:             "ok/successful_begin",
@@ -144,7 +144,7 @@ func TestBeginDeviceLinkHandler(t *testing.T) {
 		tc := tc // capture range variable
 		t.Run(tc.name, func(t *testing.T) {
 			r := gin.New()
-			
+
 			linkService := &mockDeviceLinkService{
 				beginFunc: func(ctx context.Context, deviceName string, purpose string) (*service.DeviceLinkResponse, error) {
 					if tc.serviceError != nil {
@@ -160,13 +160,13 @@ func TestBeginDeviceLinkHandler(t *testing.T) {
 					}, nil
 				},
 			}
-			
+
 			limiter := &mockDeviceLinkLimiter{
 				allowBeginFunc: func(ctx context.Context, ip string) (bool, error) {
 					return tc.rateLimitAllowed, nil
 				},
 			}
-			
+
 			handler := beginDeviceLinkHandler(linkService, limiter)
 			r.POST("/begin", handler)
 
@@ -206,7 +206,7 @@ func TestAuthorizeDeviceLinkHandler(t *testing.T) {
 
 	t.Run("ok/successful_authorize", func(t *testing.T) {
 		r := gin.New()
-		
+
 		// Add authenticated context with valid step-up
 		r.Use(func(c *gin.Context) {
 			authCtx := authkit.AuthContext{
@@ -250,7 +250,7 @@ func TestAuthorizeDeviceLinkHandler(t *testing.T) {
 
 	t.Run("error/requires_step_up", func(t *testing.T) {
 		r := gin.New()
-		
+
 		// Add authenticated context without step-up
 		r.Use(func(c *gin.Context) {
 			authCtx := authkit.AuthContext{
@@ -278,7 +278,7 @@ func TestAuthorizeDeviceLinkHandler(t *testing.T) {
 
 	t.Run("error/missing_user_code", func(t *testing.T) {
 		r := gin.New()
-		
+
 		// Add authenticated context with valid step-up
 		r.Use(func(c *gin.Context) {
 			authCtx := authkit.AuthContext{
@@ -306,7 +306,7 @@ func TestAuthorizeDeviceLinkHandler(t *testing.T) {
 
 	t.Run("error/invalid_code", func(t *testing.T) {
 		r := gin.New()
-		
+
 		// Add authenticated context with valid step-up
 		r.Use(func(c *gin.Context) {
 			authCtx := authkit.AuthContext{
@@ -485,7 +485,7 @@ func TestRegisterDeviceLinkVerify(t *testing.T) {
 
 	t.Run("ok/valid_code", func(t *testing.T) {
 		r := gin.New()
-		
+
 		// Mock store
 		linkStore := &mockDeviceLinkStore{
 			getByUserCodeFunc: func(ctx context.Context, userCode string) (*domain.DeviceLink, error) {
@@ -498,7 +498,7 @@ func TestRegisterDeviceLinkVerify(t *testing.T) {
 				}, nil
 			},
 		}
-		
+
 		RegisterDeviceLinkVerify(r, linkStore)
 
 		req := httptest.NewRequest("GET", "/api/v1/auth/device-link/verify?code=TEST-123", nil)

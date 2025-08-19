@@ -6,7 +6,7 @@ import (
 
 	basehttp "github.com/catalystgo/catalyst-forge/lib/foundry/httpkit"
 	"github.com/gin-gonic/gin"
-	authctx "github.com/input-output-hk/catalyst-forge/services/api/internal/authkit/authkit"
+	authctx "github.com/input-output-hk/catalyst-forge/services/api/internal/authkit"
 	"github.com/input-output-hk/catalyst-forge/services/api/internal/authkit/rate"
 	"github.com/input-output-hk/catalyst-forge/services/api/internal/certkit/service"
 )

@@ -11,7 +11,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	apimodels "github.com/input-output-hk/catalyst-forge/services/api/internal/api/models/auth"
-	akauth "github.com/input-output-hk/catalyst-forge/services/api/internal/authkit/authkit"
+	akauth "github.com/input-output-hk/catalyst-forge/services/api/internal/authkit"
 	akcrypto "github.com/input-output-hk/catalyst-forge/services/api/internal/authkit/crypto"
 	"github.com/input-output-hk/catalyst-forge/services/api/internal/authkit/domain"
 	"github.com/input-output-hk/catalyst-forge/services/api/internal/authkit/store"

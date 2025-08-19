@@ -11,7 +11,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
-	"github.com/input-output-hk/catalyst-forge/services/api/internal/authkit/authkit"
+	"github.com/input-output-hk/catalyst-forge/services/api/internal/authkit"
 	"github.com/input-output-hk/catalyst-forge/services/api/internal/authkit/domain"
 	"github.com/input-output-hk/catalyst-forge/services/api/internal/authkit/testing/inmemory"
 	"github.com/stretchr/testify/assert"
@@ -28,7 +28,7 @@ func TestListDevicesHandler(t *testing.T) {
 
 	t.Run("ok/list_devices", func(t *testing.T) {
 		r := gin.New()
-		
+
 		// Add authenticated context with device ID
 		r.Use(func(c *gin.Context) {
 			authCtx := authkit.AuthContext{
@@ -43,7 +43,7 @@ func TestListDevicesHandler(t *testing.T) {
 		// Create device store with test data
 		deviceStore := inmemory.NewDeviceStore()
 		ctx := context.Background()
-		
+
 		// Add devices
 		device1 := &domain.Device{
 			ID:         deviceID1,
@@ -66,7 +66,7 @@ func TestListDevicesHandler(t *testing.T) {
 			CreatedAt:  time.Date(2025, 1, 10, 10, 0, 0, 0, time.UTC),
 			LastUsedAt: time.Date(2025, 1, 15, 12, 0, 0, 0, time.UTC),
 		}
-		
+
 		require.NoError(t, deviceStore.Create(ctx, device1))
 		require.NoError(t, deviceStore.Create(ctx, device2))
 		require.NoError(t, deviceStore.Create(ctx, currentDevice))
@@ -84,10 +84,10 @@ func TestListDevicesHandler(t *testing.T) {
 		var resp map[string]interface{}
 		err := json.Unmarshal(w.Body.Bytes(), &resp)
 		require.NoError(t, err)
-		
+
 		devices := resp["devices"].([]interface{})
 		assert.Len(t, devices, 3)
-		
+
 		// Check that one device is marked as current
 		var foundCurrent bool
 		for _, d := range devices {
@@ -102,7 +102,7 @@ func TestListDevicesHandler(t *testing.T) {
 
 	t.Run("ok/empty_list", func(t *testing.T) {
 		r := gin.New()
-		
+
 		// Add authenticated context
 		r.Use(func(c *gin.Context) {
 			authCtx := authkit.AuthContext{
@@ -127,7 +127,7 @@ func TestListDevicesHandler(t *testing.T) {
 		var resp map[string]interface{}
 		err := json.Unmarshal(w.Body.Bytes(), &resp)
 		require.NoError(t, err)
-		
+
 		devices := resp["devices"].([]interface{})
 		assert.Len(t, devices, 0)
 	})
@@ -156,7 +156,7 @@ func TestGetDeviceHandler(t *testing.T) {
 
 	t.Run("ok/get_device", func(t *testing.T) {
 		r := gin.New()
-		
+
 		// Add authenticated context
 		r.Use(func(c *gin.Context) {
 			authCtx := authkit.AuthContext{
@@ -171,7 +171,7 @@ func TestGetDeviceHandler(t *testing.T) {
 		// Create device store with test data
 		deviceStore := inmemory.NewDeviceStore()
 		ctx := context.Background()
-		
+
 		device := &domain.Device{
 			ID:         deviceID,
 			UserID:     userID,
@@ -215,7 +215,7 @@ func TestGetDeviceHandler(t *testing.T) {
 
 	t.Run("error/invalid_device_id", func(t *testing.T) {
 		r := gin.New()
-		
+
 		// Add authenticated context
 		r.Use(func(c *gin.Context) {
 			authCtx := authkit.AuthContext{
@@ -240,7 +240,7 @@ func TestGetDeviceHandler(t *testing.T) {
 
 	t.Run("error/device_not_found", func(t *testing.T) {
 		r := gin.New()
-		
+
 		// Add authenticated context
 		r.Use(func(c *gin.Context) {
 			authCtx := authkit.AuthContext{
@@ -265,7 +265,7 @@ func TestGetDeviceHandler(t *testing.T) {
 
 	t.Run("error/access_denied", func(t *testing.T) {
 		r := gin.New()
-		
+
 		// Add authenticated context as different user
 		r.Use(func(c *gin.Context) {
 			authCtx := authkit.AuthContext{
@@ -279,7 +279,7 @@ func TestGetDeviceHandler(t *testing.T) {
 		// Create device store with test data
 		deviceStore := inmemory.NewDeviceStore()
 		ctx := context.Background()
-		
+
 		device := &domain.Device{
 			ID:         deviceID,
 			UserID:     userID, // Different user owns this device
@@ -310,7 +310,7 @@ func TestRevokeDeviceHandler(t *testing.T) {
 
 	t.Run("ok/revoke_device", func(t *testing.T) {
 		r := gin.New()
-		
+
 		// Add authenticated context with device ID
 		r.Use(func(c *gin.Context) {
 			authCtx := authkit.AuthContext{
@@ -327,7 +327,7 @@ func TestRevokeDeviceHandler(t *testing.T) {
 		refreshStore := inmemory.NewRefreshStore()
 		auditStore := inmemory.NewAuditStore()
 		ctx := context.Background()
-		
+
 		// Add device to revoke
 		device := &domain.Device{
 			ID:         deviceID,
@@ -337,7 +337,7 @@ func TestRevokeDeviceHandler(t *testing.T) {
 			LastUsedAt: time.Date(2025, 1, 15, 10, 0, 0, 0, time.UTC),
 		}
 		require.NoError(t, deviceStore.Create(ctx, device))
-		
+
 		// Add refresh token for the device
 		tokenHash := []byte("test-token-hash")
 		_, _, err := refreshStore.CreateFamilyWithDevice(ctx, userID, deviceID, 1, tokenHash, time.Now().Add(time.Hour))
@@ -352,12 +352,12 @@ func TestRevokeDeviceHandler(t *testing.T) {
 		r.ServeHTTP(w, req)
 
 		assert.Equal(t, http.StatusNoContent, w.Code)
-		
+
 		// Verify device was revoked
 		revokedDevice, err := deviceStore.GetByID(ctx, deviceID)
 		assert.NoError(t, err)
 		assert.Nil(t, revokedDevice) // Should return nil for revoked devices
-		
+
 		// Verify audit event was recorded
 		events := auditStore.GetEvents()
 		require.Len(t, events, 1)
@@ -383,7 +383,7 @@ func TestRevokeDeviceHandler(t *testing.T) {
 
 	t.Run("error/invalid_device_id", func(t *testing.T) {
 		r := gin.New()
-		
+
 		// Add authenticated context
 		r.Use(func(c *gin.Context) {
 			authCtx := authkit.AuthContext{
@@ -410,7 +410,7 @@ func TestRevokeDeviceHandler(t *testing.T) {
 
 	t.Run("error/cannot_revoke_current_device", func(t *testing.T) {
 		r := gin.New()
-		
+
 		// Add authenticated context with same device ID
 		r.Use(func(c *gin.Context) {
 			authCtx := authkit.AuthContext{
@@ -427,7 +427,7 @@ func TestRevokeDeviceHandler(t *testing.T) {
 		refreshStore := inmemory.NewRefreshStore()
 		auditStore := inmemory.NewAuditStore()
 		ctx := context.Background()
-		
+
 		// Add current device
 		device := &domain.Device{
 			ID:         deviceID,
@@ -456,7 +456,7 @@ func TestRevokeDeviceHandler(t *testing.T) {
 
 	t.Run("error/device_not_found", func(t *testing.T) {
 		r := gin.New()
-		
+
 		// Add authenticated context
 		r.Use(func(c *gin.Context) {
 			authCtx := authkit.AuthContext{
@@ -484,9 +484,9 @@ func TestRevokeDeviceHandler(t *testing.T) {
 
 	t.Run("error/access_denied", func(t *testing.T) {
 		r := gin.New()
-		
+
 		otherUserID := uuid.New()
-		
+
 		// Add authenticated context as different user
 		r.Use(func(c *gin.Context) {
 			authCtx := authkit.AuthContext{
@@ -503,7 +503,7 @@ func TestRevokeDeviceHandler(t *testing.T) {
 		refreshStore := inmemory.NewRefreshStore()
 		auditStore := inmemory.NewAuditStore()
 		ctx := context.Background()
-		
+
 		// Add device owned by different user
 		device := &domain.Device{
 			ID:         deviceID,
@@ -572,7 +572,7 @@ func TestListDevicesHandler_WithMockError(t *testing.T) {
 
 	t.Run("error/service_error", func(t *testing.T) {
 		r := gin.New()
-		
+
 		// Add authenticated context
 		r.Use(func(c *gin.Context) {
 			authCtx := authkit.AuthContext{

@@ -481,15 +481,19 @@ func TestES256KeyManager_JWKS(t *testing.T) {
 		assert.True(t, hasX, "key should have x coordinate for key %d", i)
 		assert.True(t, hasY, "key should have y coordinate for key %d", i)
 
-		// Verify coordinates are valid base64url (no padding)
+		// Verify coordinates are valid base64url (no padding) and decode to 32 bytes
 		assert.NotContains(t, x, "=", "x coordinate should not have padding for key %d", i)
 		assert.NotContains(t, y, "=", "y coordinate should not have padding for key %d", i)
 
-		// Verify coordinate length (P-256 coordinates are 32 bytes, ~43 chars in base64)
-		assert.GreaterOrEqual(t, len(x), 42, "x coordinate too short for key %d", i)
-		assert.LessOrEqual(t, len(x), 44, "x coordinate too long for key %d", i)
-		assert.GreaterOrEqual(t, len(y), 42, "y coordinate too short for key %d", i)
-		assert.LessOrEqual(t, len(y), 44, "y coordinate too long for key %d", i)
+		xb, errX := base64.RawURLEncoding.DecodeString(x)
+		yb, errY := base64.RawURLEncoding.DecodeString(y)
+		require.NoError(t, errX, "x should be valid base64url for key %d", i)
+		require.NoError(t, errY, "y should be valid base64url for key %d", i)
+		assert.Equal(t, 32, len(xb), "decoded x must be 32 bytes for key %d", i)
+		assert.Equal(t, 32, len(yb), "decoded y must be 32 bytes for key %d", i)
+		// For 32-byte coordinates, base64url without padding should be exactly 43 chars
+		assert.Equal(t, 43, len(x), "x coordinate unexpected length for key %d", i)
+		assert.Equal(t, 43, len(y), "y coordinate unexpected length for key %d", i)
 	}
 }
 
@@ -550,4 +554,31 @@ func base64RawURLEncode(data []byte) string {
 	encoded := make([]byte, base64.RawURLEncoding.EncodedLen(len(data)))
 	base64.RawURLEncoding.Encode(encoded, data)
 	return string(encoded)
+}
+
+func TestStrictES256KeyManager_KIDReusePrevention(t *testing.T) {
+	t.Parallel()
+
+	// Generate a PEM-encoded key we can reuse for AddKey
+	key, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	require.NoError(t, err)
+	pemKey, err := EncodePrivateKeyPEM(key)
+	require.NoError(t, err)
+
+	// Using strict manager should prevent KID reuse for both GenerateKey and AddKey
+	sm := NewStrictES256KeyManager().(*StrictES256KeyManager)
+
+	// First GenerateKey should succeed
+	require.NoError(t, sm.GenerateKey("kid-1"))
+	// Second GenerateKey with same KID should fail
+	err = sm.GenerateKey("kid-1")
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "key ID already exists")
+
+	// AddKey with new KID should succeed
+	require.NoError(t, sm.AddKey("kid-2", pemKey))
+	// AddKey with duplicate KID should fail
+	err = sm.AddKey("kid-2", pemKey)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "key ID already exists")
 }

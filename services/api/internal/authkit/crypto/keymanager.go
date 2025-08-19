@@ -24,20 +24,22 @@ type es256KeyManager struct {
 	publicKeys map[string]*ecdsa.PublicKey
 }
 
-// NewES256KeyManager creates a new ES256 key manager.
+// NewES256KeyManager creates a new ES256 key manager without pre-generated keys.
+//
+// Thread-safety: the returned manager is safe for concurrent use. Call AddKey or
+// GenerateKey and optionally SetCurrentKID before signing.
 func NewES256KeyManager() KeyManager {
 	km := &es256KeyManager{
 		keys:       make(map[string]*ecdsa.PrivateKey),
 		publicKeys: make(map[string]*ecdsa.PublicKey),
 	}
-	// Generate a default key so signing works out of the box in dev/test
-	_ = km.GenerateKey("default")
 	return km
 }
 
 // AddKey adds a key to the manager.
 //
-// The key should be in PEM format (PKCS8 or SEC1).
+// The key should be PEM encoded in either SEC1 ("EC PRIVATE KEY") or PKCS#8
+// ("PRIVATE KEY") format, and MUST use the P-256 curve (ES256).
 func (m *es256KeyManager) AddKey(kid string, pemKey []byte) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
@@ -87,7 +89,8 @@ func (m *es256KeyManager) AddKey(kid string, pemKey []byte) error {
 	return nil
 }
 
-// GenerateKey generates a new ES256 key pair.
+// GenerateKey generates a new ES256 (P-256) key pair and makes it available for
+// verification and (if it is the first key) signing.
 func (m *es256KeyManager) GenerateKey(kid string) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
@@ -108,7 +111,7 @@ func (m *es256KeyManager) GenerateKey(kid string) error {
 	return nil
 }
 
-// SetCurrentKID sets the current key ID for signing.
+// SetCurrentKID sets the current key ID used for signing.
 func (m *es256KeyManager) SetCurrentKID(kid string) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
@@ -121,7 +124,8 @@ func (m *es256KeyManager) SetCurrentKID(kid string) error {
 	return nil
 }
 
-// SignJWT signs a JWT payload with the specified key ID.
+// SignJWT signs a JWT payload with the specified key ID (or the current key if
+// kid is empty). The token is signed with ES256 and includes the "kid" header.
 func (m *es256KeyManager) SignJWT(ctx context.Context, payload []byte, kid string) (string, error) {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
@@ -156,6 +160,9 @@ func (m *es256KeyManager) SignJWT(ctx context.Context, payload []byte, kid strin
 }
 
 // VerifyJWT verifies and parses a JWT token.
+//
+// Security: this rejects algorithm confusion by requiring ES256 explicitly and
+// requires a present and known "kid" header.
 func (m *es256KeyManager) VerifyJWT(ctx context.Context, tokenString string) (map[string]interface{}, error) {
 	// Parse the token
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
@@ -212,12 +219,22 @@ func (m *es256KeyManager) JWKS() interface{} {
 			"alg": "ES256",
 			"use": "sig",
 			"kid": kid,
-			"x":   base64.RawURLEncoding.EncodeToString(x),
-			"y":   base64.RawURLEncoding.EncodeToString(y),
+			"x":   base64.RawURLEncoding.EncodeToString(pad32(x)),
+			"y":   base64.RawURLEncoding.EncodeToString(pad32(y)),
 		})
 	}
 
 	return map[string]interface{}{"keys": keys}
+}
+
+// pad32 left-pads a big-endian integer byte slice to 32 bytes.
+func pad32(b []byte) []byte {
+	if len(b) >= 32 {
+		return b
+	}
+	out := make([]byte, 32)
+	copy(out[32-len(b):], b)
+	return out
 }
 
 // CurrentKID returns the current key ID for signing new tokens.

@@ -16,18 +16,32 @@ func GenerateES256KeyPair() (*ecdsa.PrivateKey, error) {
 	return ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 }
 
-// EncodePrivateKeyPEM encodes an ECDSA private key to PEM format.
+// EncodePrivateKeyPEM encodes an ECDSA private key to SEC1 (EC PRIVATE KEY) PEM format.
+// Use EncodePrivateKeyPEMPKCS8 to produce PKCS#8 if required by external tools.
 func EncodePrivateKeyPEM(key *ecdsa.PrivateKey) ([]byte, error) {
 	x509Encoded, err := x509.MarshalECPrivateKey(key)
 	if err != nil {
 		return nil, err
 	}
-	
+
 	pemBlock := &pem.Block{
 		Type:  "EC PRIVATE KEY",
 		Bytes: x509Encoded,
 	}
-	
+
+	return pem.EncodeToMemory(pemBlock), nil
+}
+
+// EncodePrivateKeyPEMPKCS8 encodes an ECDSA private key to PKCS#8 PEM format.
+func EncodePrivateKeyPEMPKCS8(key *ecdsa.PrivateKey) ([]byte, error) {
+	x509Encoded, err := x509.MarshalPKCS8PrivateKey(key)
+	if err != nil {
+		return nil, err
+	}
+	pemBlock := &pem.Block{
+		Type:  "PRIVATE KEY",
+		Bytes: x509Encoded,
+	}
 	return pem.EncodeToMemory(pemBlock), nil
 }
 
@@ -37,25 +51,32 @@ func EncodePublicKeyPEM(key *ecdsa.PublicKey) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	
+
 	pemBlock := &pem.Block{
 		Type:  "PUBLIC KEY",
 		Bytes: x509Encoded,
 	}
-	
+
 	return pem.EncodeToMemory(pemBlock), nil
 }
 
 // DecodePrivateKeyPEM decodes a PEM-encoded ECDSA private key.
+// Supports SEC1 (EC PRIVATE KEY) and PKCS#8 (PRIVATE KEY) formats.
+// Enforces ES256 by rejecting keys not on the P-256 curve.
 func DecodePrivateKeyPEM(pemData []byte) (*ecdsa.PrivateKey, error) {
 	block, _ := pem.Decode(pemData)
 	if block == nil {
 		return nil, errors.New("failed to parse PEM block")
 	}
-	
+
+	var k *ecdsa.PrivateKey
 	switch block.Type {
 	case "EC PRIVATE KEY":
-		return x509.ParseECPrivateKey(block.Bytes)
+		key, err := x509.ParseECPrivateKey(block.Bytes)
+		if err != nil {
+			return nil, err
+		}
+		k = key
 	case "PRIVATE KEY":
 		key, err := x509.ParsePKCS8PrivateKey(block.Bytes)
 		if err != nil {
@@ -65,44 +86,24 @@ func DecodePrivateKeyPEM(pemData []byte) (*ecdsa.PrivateKey, error) {
 		if !ok {
 			return nil, errors.New("not an ECDSA private key")
 		}
-		return ecKey, nil
+		k = ecKey
 	default:
 		return nil, fmt.Errorf("unsupported key type: %s", block.Type)
 	}
+	if k.Curve != elliptic.P256() {
+		return nil, errors.New("key must use P-256 curve for ES256")
+	}
+	return k, nil
 }
 
 // GenerateKeyID generates a key ID based on the current time.
-//
 // Format: YYYY-QN where N is the quarter number.
 func GenerateKeyID() string {
-	now := time.Now()
-	quarter := (now.Month()-1)/3 + 1
-	return fmt.Sprintf("%d-q%d", now.Year(), quarter)
+	return GenerateKeyIDAt(time.Now())
 }
 
-// CreateTestKeyManager creates a key manager with a test key for development.
-func CreateTestKeyManager() (KeyManager, error) {
-	manager := NewES256KeyManager()
-	
-	// Generate a test key
-	key, err := GenerateES256KeyPair()
-	if err != nil {
-		return nil, err
-	}
-	
-	// Encode to PEM
-	pemKey, err := EncodePrivateKeyPEM(key)
-	if err != nil {
-		return nil, err
-	}
-	
-	// Add to manager with a test KID
-	kid := GenerateKeyID()
-	if km, ok := manager.(*es256KeyManager); ok {
-		if err := km.AddKey(kid, pemKey); err != nil {
-			return nil, err
-		}
-	}
-	
-	return manager, nil
+// GenerateKeyIDAt is a testable variant that derives a key ID for the provided time.
+func GenerateKeyIDAt(t time.Time) string {
+	quarter := (t.Month()-1)/3 + 1
+	return fmt.Sprintf("%d-q%d", t.Year(), quarter)
 }

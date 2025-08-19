@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"sync/atomic"
 
-	libauth "github.com/input-output-hk/catalyst-forge/services/api/internal/authkit/authkit"
+	libauth "github.com/input-output-hk/catalyst-forge/services/api/internal/authkit"
 )
 
 // Provider implements libauth.PolicyProvider backed by an in-memory snapshot

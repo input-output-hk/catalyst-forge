@@ -7,7 +7,7 @@ import (
 	"github.com/catalystgo/catalyst-forge/lib/foundry/httpkit"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
-	"github.com/input-output-hk/catalyst-forge/services/api/internal/authkit/authkit"
+	"github.com/input-output-hk/catalyst-forge/services/api/internal/authkit"
 	"github.com/input-output-hk/catalyst-forge/services/api/internal/authkit/domain"
 	"github.com/input-output-hk/catalyst-forge/services/api/internal/authkit/store"
 )
@@ -45,7 +45,7 @@ type DeviceManagementDeps struct {
 // RegisterDeviceManagement registers device management endpoints.
 func RegisterDeviceManagement(r *gin.Engine, deps DeviceManagementDeps) {
 	api := r.Group("/api/v1/auth/devices")
-	
+
 	// @Summary List user devices
 	// @Description Lists all devices registered for the authenticated user
 	// @Tags auth
@@ -57,7 +57,7 @@ func RegisterDeviceManagement(r *gin.Engine, deps DeviceManagementDeps) {
 	// @Failure 500 {object} httpkit.ErrorResponse "Internal server error"
 	// @Router /api/v1/auth/devices [get]
 	api.GET("", listDevicesHandler(deps.DeviceStore))
-	
+
 	// @Summary Get device details
 	// @Description Gets details of a specific device
 	// @Tags auth
@@ -73,7 +73,7 @@ func RegisterDeviceManagement(r *gin.Engine, deps DeviceManagementDeps) {
 	// @Failure 500 {object} httpkit.ErrorResponse "Internal server error"
 	// @Router /api/v1/auth/devices/{id} [get]
 	api.GET("/:id", getDeviceHandler(deps.DeviceStore))
-	
+
 	// @Summary Revoke device
 	// @Description Revokes a device and all associated refresh tokens
 	// @Tags auth
@@ -100,14 +100,14 @@ func listDevicesHandler(deviceStore store.DeviceStore) gin.HandlerFunc {
 			_ = httpkit.NewUnauthorizedError("authentication required").Write(c.Writer)
 			return
 		}
-		
+
 		// Get user's devices
 		devices, err := deviceStore.GetByUser(c.Request.Context(), ctx.UserID)
 		if err != nil {
 			_ = httpkit.NewInternalError().Write(c.Writer)
 			return
 		}
-		
+
 		// Format response
 		deviceList := make([]map[string]interface{}, 0, len(devices))
 		for _, device := range devices {
@@ -119,7 +119,7 @@ func listDevicesHandler(deviceStore store.DeviceStore) gin.HandlerFunc {
 				"is_current":   isCurrentDevice(c, device.ID), // Check if this is the requesting device
 			})
 		}
-		
+
 		_ = httpkit.WriteJSON(c.Writer, http.StatusOK, map[string]interface{}{
 			"devices": deviceList,
 		})
@@ -135,7 +135,7 @@ func getDeviceHandler(deviceStore store.DeviceStore) gin.HandlerFunc {
 			_ = httpkit.NewUnauthorizedError("authentication required").Write(c.Writer)
 			return
 		}
-		
+
 		// Parse device ID
 		deviceIDStr := c.Param("id")
 		deviceID, err := uuid.Parse(deviceIDStr)
@@ -143,20 +143,20 @@ func getDeviceHandler(deviceStore store.DeviceStore) gin.HandlerFunc {
 			_ = httpkit.NewBadRequestError("invalid device ID").Write(c.Writer)
 			return
 		}
-		
+
 		// Get the device
 		device, err := deviceStore.GetByID(c.Request.Context(), deviceID)
 		if err != nil || device == nil {
 			_ = httpkit.NewNotFoundError("device not found").Write(c.Writer)
 			return
 		}
-		
+
 		// Check ownership
 		if device.UserID != ctx.UserID {
 			_ = httpkit.NewForbiddenError("access denied").Write(c.Writer)
 			return
 		}
-		
+
 		_ = httpkit.WriteJSON(c.Writer, http.StatusOK, map[string]interface{}{
 			"id":           device.ID.String(),
 			"device_name":  device.DeviceName,
@@ -176,7 +176,7 @@ func revokeDeviceHandler(deviceStore store.DeviceStore, refreshStore store.Refre
 			_ = httpkit.NewUnauthorizedError("authentication required").Write(c.Writer)
 			return
 		}
-		
+
 		// Parse device ID
 		deviceIDStr := c.Param("id")
 		deviceID, err := uuid.Parse(deviceIDStr)
@@ -184,40 +184,40 @@ func revokeDeviceHandler(deviceStore store.DeviceStore, refreshStore store.Refre
 			_ = httpkit.NewBadRequestError("invalid device ID").Write(c.Writer)
 			return
 		}
-		
+
 		// Get the device to verify ownership
 		device, err := deviceStore.GetByID(c.Request.Context(), deviceID)
 		if err != nil || device == nil {
 			_ = httpkit.NewNotFoundError("device not found").Write(c.Writer)
 			return
 		}
-		
+
 		// Check ownership
 		if device.UserID != ctx.UserID {
 			_ = httpkit.NewForbiddenError("access denied").Write(c.Writer)
 			return
 		}
-		
+
 		// Don't allow revoking the current device
 		if isCurrentDevice(c, deviceID) {
 			_ = httpkit.NewBadRequestError("cannot revoke current device").Write(c.Writer)
 			return
 		}
-		
+
 		now := time.Now().UTC()
-		
+
 		// Revoke all refresh tokens for this device
 		if err := refreshStore.RevokeDeviceTokens(c.Request.Context(), deviceID, "device revoked", now); err != nil {
 			_ = httpkit.NewInternalError().Write(c.Writer)
 			return
 		}
-		
+
 		// Mark device as revoked
 		if err := deviceStore.Revoke(c.Request.Context(), deviceID, now); err != nil {
 			_ = httpkit.NewInternalError().Write(c.Writer)
 			return
 		}
-		
+
 		// Audit the revocation
 		if auditStore != nil {
 			event := domain.Event{
@@ -233,7 +233,7 @@ func revokeDeviceHandler(deviceStore store.DeviceStore, refreshStore store.Refre
 			}
 			_ = auditStore.Record(c.Request.Context(), event)
 		}
-		
+
 		c.Status(http.StatusNoContent)
 	}
 }
@@ -245,11 +245,11 @@ func isCurrentDevice(c *gin.Context, deviceID uuid.UUID) bool {
 	if !ok {
 		return false
 	}
-	
+
 	// Check if the device ID matches
 	if ctx.DeviceID != nil && *ctx.DeviceID == deviceID {
 		return true
 	}
-	
+
 	return false
 }

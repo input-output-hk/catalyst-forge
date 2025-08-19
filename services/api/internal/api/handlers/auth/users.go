@@ -12,7 +12,6 @@ import (
 	"github.com/google/uuid"
 	apimodels "github.com/input-output-hk/catalyst-forge/services/api/internal/api/models/auth"
 	apiauth "github.com/input-output-hk/catalyst-forge/services/api/internal/authkit"
-	akauth "github.com/input-output-hk/catalyst-forge/services/api/internal/authkit/authkit"
 	"github.com/input-output-hk/catalyst-forge/services/api/internal/authkit/crypto"
 	"github.com/input-output-hk/catalyst-forge/services/api/internal/authkit/domain"
 	akservice "github.com/input-output-hk/catalyst-forge/services/api/internal/authkit/service"
@@ -75,7 +74,7 @@ func RegisterAdminUsers(r *gin.Engine, deps AdminUsersDeps) {
 	// @Success 201 {object} apimodels.AdminInviteCreateResponse
 	// @Router /api/v1/admin/invites [post]
 	g.POST("/invites", func(c *gin.Context) {
-		ctx, ok := akauth.From(c)
+		ctx, ok := apiauth.From(c)
 		if !ok || !ctx.IsAuthenticated() {
 			_ = basehttp.NewUnauthorizedError("").Write(c.Writer)
 			return
@@ -134,7 +133,7 @@ func RegisterAdminUsers(r *gin.Engine, deps AdminUsersDeps) {
 	// @Success 200 {object} apimodels.AdminUsersListResponse
 	// @Router /api/v1/admin/users [get]
 	g.GET("/users", func(c *gin.Context) {
-		ctx, ok := akauth.From(c)
+		ctx, ok := apiauth.From(c)
 		if !ok || !ctx.IsAuthenticated() {
 			_ = basehttp.NewUnauthorizedError("").Write(c.Writer)
 			return
@@ -206,7 +205,7 @@ func RegisterAdminUsers(r *gin.Engine, deps AdminUsersDeps) {
 	// @Success 200 {object} apimodels.CredentialsListResponse
 	// @Router /api/v1/admin/users/{id}/credentials [get]
 	g.GET("/users/:id/credentials", func(c *gin.Context) {
-		ctx, ok := akauth.From(c)
+		ctx, ok := apiauth.From(c)
 		if !ok || !ctx.IsAuthenticated() {
 			_ = basehttp.NewUnauthorizedError("").Write(c.Writer)
 			return
@@ -244,7 +243,7 @@ func RegisterAdminUsers(r *gin.Engine, deps AdminUsersDeps) {
 	// @Success 200 {object} apimodels.RecoveryGenerateResponse
 	// @Router /api/v1/admin/users/{id}/recovery/codes/generate [post]
 	g.POST("/users/:id/recovery/codes/generate", func(c *gin.Context) {
-		ctx, ok := akauth.From(c)
+		ctx, ok := apiauth.From(c)
 		if !ok || !ctx.IsAuthenticated() {
 			_ = basehttp.NewUnauthorizedError("").Write(c.Writer)
 			return
@@ -283,7 +282,7 @@ func RegisterAdminUsers(r *gin.Engine, deps AdminUsersDeps) {
 	// @Success 200 {object} apimodels.AuditListResponse
 	// @Router /api/v1/admin/audit [get]
 	g.GET("/audit", func(c *gin.Context) {
-		if _, ok := akauth.From(c); !ok {
+		if _, ok := apiauth.From(c); !ok {
 			_ = basehttp.NewUnauthorizedError("").Write(c.Writer)
 			return
 		}
@@ -372,7 +371,7 @@ func RegisterAdminUsers(r *gin.Engine, deps AdminUsersDeps) {
 	// @Success 200 {object} apimodels.AccessRequestListResponse
 	// @Router /api/v1/admin/access-requests [get]
 	g.GET("/access-requests", func(c *gin.Context) {
-		if _, ok := akauth.From(c); !ok {
+		if _, ok := apiauth.From(c); !ok {
 			_ = basehttp.NewUnauthorizedError("").Write(c.Writer)
 			return
 		}
@@ -423,7 +422,7 @@ func RegisterAdminUsers(r *gin.Engine, deps AdminUsersDeps) {
 	// @Success 204
 	// @Router /api/v1/admin/access-requests/{id} [patch]
 	g.PATCH("/access-requests/:id", func(c *gin.Context) {
-		ctx, ok := akauth.From(c)
+		ctx, ok := apiauth.From(c)
 		if !ok || !ctx.IsAuthenticated() {
 			_ = basehttp.NewUnauthorizedError("").Write(c.Writer)
 			return
@@ -451,7 +450,7 @@ func RegisterAdminUsers(r *gin.Engine, deps AdminUsersDeps) {
 	})
 
 	g.PATCH("/users/:id", func(c *gin.Context) {
-		if _, ok := akauth.From(c); !ok {
+		if _, ok := apiauth.From(c); !ok {
 			_ = basehttp.NewUnauthorizedError("").Write(c.Writer)
 			return
 		}
@@ -468,7 +467,7 @@ func RegisterAdminUsers(r *gin.Engine, deps AdminUsersDeps) {
 			return
 		}
 		if in.Suspend != nil {
-			if ctx, ok := akauth.From(c); ok && ctx.IsAuthenticated() && ctx.UserID.String() == uid.String() && *in.Suspend {
+			if ctx, ok := apiauth.From(c); ok && ctx.IsAuthenticated() && ctx.UserID.String() == uid.String() && *in.Suspend {
 				_ = basehttp.NewForbiddenError("cannot disable your own account").Write(c.Writer)
 				return
 			}
@@ -496,7 +495,7 @@ func RegisterAdminUsers(r *gin.Engine, deps AdminUsersDeps) {
 	// @Success 204
 	// @Router /api/v1/admin/users/{id} [delete]
 	g.DELETE("/users/:id", func(c *gin.Context) {
-		if _, ok := akauth.From(c); !ok {
+		if _, ok := apiauth.From(c); !ok {
 			_ = basehttp.NewUnauthorizedError("").Write(c.Writer)
 			return
 		}
@@ -506,7 +505,7 @@ func RegisterAdminUsers(r *gin.Engine, deps AdminUsersDeps) {
 			return
 		}
 		// Prevent self-delete via API to avoid lockout during tests
-		if ctx, ok := akauth.From(c); ok && ctx.IsAuthenticated() && ctx.UserID == uid {
+		if ctx, ok := apiauth.From(c); ok && ctx.IsAuthenticated() && ctx.UserID == uid {
 			_ = basehttp.NewForbiddenError("cannot delete your own account").Write(c.Writer)
 			return
 		}

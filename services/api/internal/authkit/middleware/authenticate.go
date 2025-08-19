@@ -7,7 +7,7 @@ import (
 	basehttpkit "github.com/catalystgo/catalyst-forge/lib/foundry/httpkit"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
-	"github.com/input-output-hk/catalyst-forge/services/api/internal/authkit/authkit"
+	"github.com/input-output-hk/catalyst-forge/services/api/internal/authkit"
 	authhttp "github.com/input-output-hk/catalyst-forge/services/api/internal/authkit/httpkit"
 	"github.com/input-output-hk/catalyst-forge/services/api/internal/authkit/service"
 	"github.com/input-output-hk/catalyst-forge/services/api/internal/authkit/store"

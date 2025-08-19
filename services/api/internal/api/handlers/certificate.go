@@ -12,7 +12,9 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	libauth "github.com/input-output-hk/catalyst-forge/services/api/internal/authkit/authkit"
+	"github.com/input-output-hk/catalyst-forge/lib/foundry/auth"
+	"github.com/input-output-hk/catalyst-forge/lib/foundry/auth/jwt/tokens"
+	libauth "github.com/input-output-hk/catalyst-forge/services/api/internal/authkit"
 	"github.com/input-output-hk/catalyst-forge/services/api/internal/ca"
 	metrics "github.com/input-output-hk/catalyst-forge/services/api/internal/metrics"
 	adm "github.com/input-output-hk/catalyst-forge/services/api/internal/models/audit"
@@ -20,8 +22,6 @@ import (
 	auditrepo "github.com/input-output-hk/catalyst-forge/services/api/internal/repository/audit"
 	pca "github.com/input-output-hk/catalyst-forge/services/api/internal/service/pca"
 	"github.com/input-output-hk/catalyst-forge/services/api/internal/utils"
-	"github.com/input-output-hk/catalyst-forge/lib/foundry/auth"
-	"github.com/input-output-hk/catalyst-forge/lib/foundry/auth/jwt/tokens"
 	"gorm.io/datatypes"
 )
 

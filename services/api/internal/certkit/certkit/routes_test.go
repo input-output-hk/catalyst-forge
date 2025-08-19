@@ -16,7 +16,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	authctx "github.com/input-output-hk/catalyst-forge/services/api/internal/authkit/authkit"
+	authctx "github.com/input-output-hk/catalyst-forge/services/api/internal/authkit"
 	rbac "github.com/input-output-hk/catalyst-forge/services/api/internal/authkit/rbac"
 	"github.com/stretchr/testify/require"
 )
