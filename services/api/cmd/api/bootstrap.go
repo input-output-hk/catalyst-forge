@@ -10,9 +10,6 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	authseed "github.com/input-output-hk/catalyst-forge/services/api/internal/auth"
-	rbacgorm "github.com/input-output-hk/catalyst-forge/services/api/internal/authkit/rbac/gormstore"
-	akgormstore "github.com/input-output-hk/catalyst-forge/services/api/internal/authkit/store/gormstore"
 	"github.com/input-output-hk/catalyst-forge/services/api/internal/config"
 	argomodels "github.com/input-output-hk/catalyst-forge/services/api/internal/models/argo"
 	artifactmodels "github.com/input-output-hk/catalyst-forge/services/api/internal/models/artifact"
@@ -21,12 +18,10 @@ import (
 	deploymentmodels "github.com/input-output-hk/catalyst-forge/services/api/internal/models/deployment"
 	environmentmodels "github.com/input-output-hk/catalyst-forge/services/api/internal/models/environment"
 	gitopsmodels "github.com/input-output-hk/catalyst-forge/services/api/internal/models/gitops"
-	orgmodels "github.com/input-output-hk/catalyst-forge/services/api/internal/models/org"
 	projectmodels "github.com/input-output-hk/catalyst-forge/services/api/internal/models/project"
 	releasemodels "github.com/input-output-hk/catalyst-forge/services/api/internal/models/release"
 	repositorymodels "github.com/input-output-hk/catalyst-forge/services/api/internal/models/repository"
 	tracemodels "github.com/input-output-hk/catalyst-forge/services/api/internal/models/trace"
-	policy "github.com/input-output-hk/catalyst-forge/services/api/internal/policy"
 	emailsvc "github.com/input-output-hk/catalyst-forge/services/api/internal/service/email"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -95,8 +90,6 @@ func openDB(cfg config.Config, logger *slog.Logger) (*gorm.DB, error) {
 func runMigrations(db *gorm.DB) error {
 	// Core API models - All new models from Phase 1-4 implementation
 	if err := db.AutoMigrate(
-		// Organizations
-		&orgmodels.Organization{},
 		// Audit models
 		&adm.Log{},
 
@@ -109,9 +102,6 @@ func runMigrations(db *gorm.DB) error {
 
 		// Build models
 		&buildmodels.Build{},
-		&buildmodels.ServiceAccount{},
-		&buildmodels.ServiceAccountKey{},
-		&buildmodels.BuildSession{},
 
 		// Artifact models
 		&artifactmodels.Artifact{},
@@ -119,23 +109,35 @@ func runMigrations(db *gorm.DB) error {
 		// Release models
 		&releasemodels.Release{},
 		&releasemodels.ReleaseModule{},
-		&releasemodels.ReleaseInjection{},
 		&releasemodels.ReleaseArtifact{},
+		&releasemodels.RenderedRelease{},
 
 		// Environment models
 		&environmentmodels.Environment{},
 
 		// Deployment models
 		&deploymentmodels.Deployment{},
-		&deploymentmodels.RenderJob{},
+		&deploymentmodels.Promotion{},
 
 		// GitOps models
 		&gitopsmodels.GitOpsChange{},
 
-		// Argo models
-		&argomodels.ArgoSync{},
+		// GitOps sync models
+		&argomodels.GitOpsSync{},
 	); err != nil {
 		return err
+	}
+	// Ensure indexes for promotions
+	if db.Migrator().HasTable("promotions") {
+		if err := db.Exec(`CREATE INDEX IF NOT EXISTS ix_promotions_proj_env ON promotions(project_id, environment_id, created_at DESC)`).Error; err != nil {
+			return err
+		}
+		if err := db.Exec(`CREATE INDEX IF NOT EXISTS ix_promotions_release ON promotions(release_id)`).Error; err != nil {
+			return err
+		}
+		if err := db.Exec(`CREATE INDEX IF NOT EXISTS ix_promotions_status ON promotions(status)`).Error; err != nil {
+			return err
+		}
 	}
 
 	// Ensure conditional indexes exist for nullable digest columns
@@ -144,21 +146,7 @@ func runMigrations(db *gorm.DB) error {
 			return err
 		}
 	}
-	if db.Migrator().HasTable("render_job") {
-		if err := db.Exec(`CREATE INDEX IF NOT EXISTS ix_render_job_oci_digest ON render_job (oci_digest) WHERE oci_digest IS NOT NULL`).Error; err != nil {
-			return err
-		}
-	}
 
-	// AuthKit models
-	if err := akgormstore.AutoMigrate(db); err != nil {
-		return err
-	}
-
-	// Dynamic policy models
-	if err := policy.AutoMigrate(db); err != nil {
-		return err
-	}
 	return nil
 }
 
@@ -208,38 +196,4 @@ func injectDefaultContext(r *gin.Engine, cfg config.Config, emailSvc emailsvc.Se
 		c.Set("certs_pca_signing_algo_server", cfg.Certs.PCASigningAlgoServer)
 		c.Next()
 	})
-}
-
-// initRBAC migrates and seeds default RBAC roles if enabled via config.
-func initRBAC(ctx context.Context, db *gorm.DB, cfg config.Config, logger *slog.Logger) {
-	store := rbacgorm.New(db)
-	if err := store.AutoMigrate(); err != nil {
-		if logger != nil {
-			logger.Error("RBAC automigrate failed", "error", err)
-		}
-		return
-	}
-
-	// Ensure admin role always exists independently of other seeds
-	if err := authseed.EnsureAdminRole(ctx, store); err != nil {
-		if logger != nil {
-			logger.Error("RBAC admin role seeding failed", "error", err)
-		}
-	}
-
-	if !cfg.Auth.RBACSeedDefaults {
-		if logger != nil {
-			logger.Info("RBAC default role seeding skipped by config")
-		}
-		return
-	}
-	if logger != nil {
-		logger.Info("Seeding default RBAC roles")
-	}
-	// Idempotent seeding; bump versions on change
-	if err := authseed.SeedDefaultRoles(ctx, store, true); err != nil {
-		if logger != nil {
-			logger.Error("RBAC default role seeding failed", "error", err)
-		}
-	}
 }

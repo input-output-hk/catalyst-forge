@@ -18,27 +18,21 @@ import { useAppStore } from "@/store/app-store";
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { forge } from "@/lib/client";
 import type { paths } from "forge-client";
-import { createCredentialFromServerPublicKey, encodeAttestation } from "@/lib/webauthn";
+// legacy webauthn helpers removed
 import { extractErrorMessage, readResponseError, refreshAccessToken } from "@/lib/api";
 
 // Type definitions for API endpoints
 type BootstrapRequestBody =
   paths["/api/v1/auth/bootstrap"]["post"]["requestBody"]["content"]["application/json"];
-type BeginCredentialRequestBody =
-  paths["/api/v1/auth/credentials/add/begin"]["post"]["requestBody"]["content"]["application/json"];
-type BeginCredentialResponse =
-  paths["/api/v1/auth/credentials/add/begin"]["post"]["responses"][200]["content"]["application/json"];
-type CompleteCredentialRequestBody =
-  paths["/api/v1/auth/credentials/add/complete"]["post"]["requestBody"]["content"]["application/json"];
+type BeginCredentialRequestBody = never;
+type BeginCredentialResponse = never;
+type CompleteCredentialRequestBody = never;
 type MeResponse = paths["/api/v1/auth/me"]["get"]["responses"][200]["content"]["application/json"];
 
 // WebAuthn response shape from server
-interface WebAuthnServerResponse {
-  publicKey?: any;
-  session_key?: string;
-}
+interface WebAuthnServerResponse { }
 
-// (moved helpers to @/lib/webauthn)
+// legacy removed
 
 const schema = z.object({
   email: z.string().email(),
@@ -96,56 +90,7 @@ export default function Bootstrap() {
         /* ignore */
       }
 
-      // Step 2: Register WebAuthn credentials
-      try {
-        // Begin credential registration
-        const beginCredentialBody: BeginCredentialRequestBody = {
-          device_name: values.device_name,
-        };
-
-        const beginResponse = await forge.raw.POST("/api/v1/auth/credentials/add/begin", {
-          body: beginCredentialBody,
-        });
-
-        if (!beginResponse.response.ok) {
-          const txt = await readResponseError(beginResponse, "register begin failed");
-          throw new Error(txt);
-        }
-
-        // Extract WebAuthn options from response
-        const beginData =
-          (beginResponse.data as BeginCredentialResponse) || ({} as BeginCredentialResponse);
-        const serverResponse = beginData as unknown as WebAuthnServerResponse;
-        const sessionKey = serverResponse.session_key as string;
-
-        // Create the credential using shared helper (handles nested formats + decoding)
-        const publicKeyCredential = await createCredentialFromServerPublicKey(
-          serverResponse.publicKey
-        );
-
-        // Encode the attestation for server
-        const encodedAttestation = encodeAttestation(publicKeyCredential);
-
-        // Complete the credential registration
-        const completeCredentialBody: CompleteCredentialRequestBody = {
-          session_key: sessionKey,
-          credential: encodedAttestation,
-        };
-
-        const completeResponse = await forge.raw.POST("/api/v1/auth/credentials/add/complete", {
-          body: completeCredentialBody,
-        });
-
-        if (!completeResponse.response.ok) {
-          const txt = await readResponseError(completeResponse, "register complete failed");
-          throw new Error(txt);
-        }
-      } catch (webAuthnError: unknown) {
-        const errorMessage = extractErrorMessage(webAuthnError, "WebAuthn registration failed");
-        setError(errorMessage);
-        setSubmitting(false);
-        return;
-      }
+      // Step 2 removed: legacy WebAuthn registration
 
       // Step 3: Fetch user profile to initialize UI session
       const profileResponse = await forge.raw.GET("/api/v1/auth/me");

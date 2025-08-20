@@ -16,8 +16,6 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	authctx "github.com/input-output-hk/catalyst-forge/services/api/internal/authkit"
-	rbac "github.com/input-output-hk/catalyst-forge/services/api/internal/authkit/rbac"
 	"github.com/stretchr/testify/require"
 )
 
@@ -41,20 +39,6 @@ func (p *httpTestPCA) GetCACertificate(ctx context.Context, caArn string) (strin
 	return "-----BEGIN CERTIFICATE-----\nFAKE-CA\n-----END CERTIFICATE-----\n", "", nil
 }
 
-type fakeRBAC struct{ dec rbac.Decision }
-
-func (f fakeRBAC) WithPolicyRegistry(reg *authctx.PolicyRegistry) *authctx.PolicyRegistry { return reg }
-func (f fakeRBAC) RegisterResolver(pattern string, resolver rbac.ResourceResolver)        {}
-func (f fakeRBAC) Check(ctx context.Context, subj rbac.Subject, action rbac.PermissionKey, res rbac.ResourceRef) (rbac.Decision, error) {
-	return f.dec, nil
-}
-func (f fakeRBAC) Explain(ctx context.Context, subj rbac.Subject, action rbac.PermissionKey, res rbac.ResourceRef) (rbac.Decision, rbac.Trace, error) {
-	return f.dec, rbac.Trace{}, nil
-}
-func (f fakeRBAC) Resolve(_ *gin.Context, _ string) (rbac.ResourceRef, bool, error) {
-	return rbac.ResourceRef{}, false, nil
-}
-
 func genCSR(t *testing.T, cn string, dns []string) string {
 	key, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 	require.NoError(t, err)
@@ -72,7 +56,7 @@ func TestRoutes_Sign_Success(t *testing.T) {
 	cfg.PollInterval = 10 * time.Millisecond
 	cfg.MaxWait = 250 * time.Millisecond
 
-	deps := Deps{PCA: pca, Clock: sysClock{}, RBAC: fakeRBAC{dec: rbac.DecisionAllow}}
+	deps := Deps{PCA: pca, Clock: sysClock{}}
 	mgr, err := New(cfg, deps)
 	require.NoError(t, err)
 
@@ -99,7 +83,7 @@ func TestRoutes_Sign_Denied(t *testing.T) {
 	cfg.PollInterval = 10 * time.Millisecond
 	cfg.MaxWait = 50 * time.Millisecond
 
-	deps := Deps{PCA: pca, Clock: sysClock{}, RBAC: fakeRBAC{dec: rbac.DecisionDeny}}
+	deps := Deps{PCA: pca, Clock: sysClock{}}
 	mgr, err := New(cfg, deps)
 	require.NoError(t, err)
 

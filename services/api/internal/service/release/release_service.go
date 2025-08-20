@@ -40,11 +40,6 @@ type Service interface {
 	UpdateModule(ctx context.Context, releaseID uuid.UUID, moduleKey string, req ModuleRequest) error
 	DeleteModule(ctx context.Context, releaseID uuid.UUID, moduleKey string) error
 
-	// Injection operations
-	ListInjections(ctx context.Context, releaseID uuid.UUID) ([]release.ReleaseInjection, error)
-	CreateInjections(ctx context.Context, releaseID uuid.UUID, injections []InjectionRequest) error
-	DeleteInjection(ctx context.Context, releaseID uuid.UUID, injectionID uuid.UUID) error
-
 	// Artifact operations
 	ListArtifacts(ctx context.Context, releaseID uuid.UUID) ([]release.ReleaseArtifact, error)
 	AttachArtifact(ctx context.Context, releaseID uuid.UUID, req ArtifactLinkRequest) error
@@ -67,7 +62,6 @@ type CreateRequest struct {
 	ContentHash    *string                `json:"content_hash,omitempty"`
 	CreatedBy      *string                `json:"created_by,omitempty"`
 	Modules        []ModuleRequest        `json:"modules,omitempty"`
-	Injections     []InjectionRequest     `json:"injections,omitempty"`
 	Artifacts      []ArtifactLinkRequest  `json:"artifacts,omitempty"`
 }
 
@@ -110,15 +104,6 @@ type ModuleRequest struct {
 	Path       *string `json:"path,omitempty"`
 }
 
-// InjectionRequest represents a request to create an injection
-type InjectionRequest struct {
-	JSONPointer   string  `json:"json_pointer"`
-	ArtifactKey   string  `json:"artifact_key"`
-	ArtifactField string  `json:"artifact_field"`
-	ModuleKey     *string `json:"module_key,omitempty"`
-	ModuleName    *string `json:"module_name,omitempty"`
-}
-
 // ArtifactLinkRequest represents a request to link an artifact
 type ArtifactLinkRequest struct {
 	ArtifactID  uuid.UUID `json:"artifact_id"`
@@ -131,7 +116,6 @@ type serviceImpl struct {
 	txManager           base.TxManager
 	releaseRepo         releaseRepo.Repository
 	moduleRepo          releaseRepo.ModuleRepository
-	injectionRepo       releaseRepo.InjectionRepository
 	releaseArtifactRepo releaseRepo.ArtifactRepository
 	artifactRepo        artifactRepo.Repository
 }
@@ -141,7 +125,6 @@ func NewService(
 	txManager base.TxManager,
 	releaseRepo releaseRepo.Repository,
 	moduleRepo releaseRepo.ModuleRepository,
-	injectionRepo releaseRepo.InjectionRepository,
 	releaseArtifactRepo releaseRepo.ArtifactRepository,
 	artifactRepo artifactRepo.Repository,
 ) Service {
@@ -149,13 +132,12 @@ func NewService(
 		txManager:           txManager,
 		releaseRepo:         releaseRepo,
 		moduleRepo:          moduleRepo,
-		injectionRepo:       injectionRepo,
 		releaseArtifactRepo: releaseArtifactRepo,
 		artifactRepo:        artifactRepo,
 	}
 }
 
-// Create creates a new release with modules, injections, and artifacts
+// Create creates a new release with modules and artifacts
 func (s *serviceImpl) Create(ctx context.Context, req CreateRequest) (*release.Release, error) {
 	var createdRelease *release.Release
 
@@ -207,28 +189,6 @@ func (s *serviceImpl) Create(ctx context.Context, req CreateRequest) (*release.R
 				}
 			}
 			if err := s.moduleRepo.CreateBulk(ctx, modules); err != nil {
-				return err
-			}
-		}
-
-		// Create injections if provided
-		if len(req.Injections) > 0 {
-			if err := s.validateInjections(req.Injections); err != nil {
-				return err
-			}
-
-			injections := make([]release.ReleaseInjection, len(req.Injections))
-			for i, inj := range req.Injections {
-				injections[i] = release.ReleaseInjection{
-					ReleaseID:     rel.ID,
-					JSONPointer:   inj.JSONPointer,
-					ArtifactKey:   inj.ArtifactKey,
-					ArtifactField: release.ArtifactField(inj.ArtifactField),
-					ModuleKey:     inj.ModuleKey,
-					ModuleName:    inj.ModuleName,
-				}
-			}
-			if err := s.injectionRepo.CreateBulk(ctx, injections); err != nil {
 				return err
 			}
 		}
@@ -457,55 +417,6 @@ func (s *serviceImpl) DeleteModule(ctx context.Context, releaseID uuid.UUID, mod
 	return s.moduleRepo.Delete(ctx, releaseID, moduleKey)
 }
 
-// ListInjections lists all injections for a release
-func (s *serviceImpl) ListInjections(ctx context.Context, releaseID uuid.UUID) ([]release.ReleaseInjection, error) {
-	return s.injectionRepo.ListByRelease(ctx, releaseID)
-}
-
-// CreateInjections creates injections for a release
-func (s *serviceImpl) CreateInjections(ctx context.Context, releaseID uuid.UUID, injections []InjectionRequest) error {
-	// Check if release is sealed
-	sealed, err := s.releaseRepo.IsSealed(ctx, releaseID)
-	if err != nil {
-		return err
-	}
-	if sealed {
-		return ErrReleaseSealed
-	}
-
-	if err := s.validateInjections(injections); err != nil {
-		return err
-	}
-
-	releaseInjections := make([]release.ReleaseInjection, len(injections))
-	for i, inj := range injections {
-		releaseInjections[i] = release.ReleaseInjection{
-			ReleaseID:     releaseID,
-			JSONPointer:   inj.JSONPointer,
-			ArtifactKey:   inj.ArtifactKey,
-			ArtifactField: release.ArtifactField(inj.ArtifactField),
-			ModuleKey:     inj.ModuleKey,
-			ModuleName:    inj.ModuleName,
-		}
-	}
-
-	return s.injectionRepo.CreateBulk(ctx, releaseInjections)
-}
-
-// DeleteInjection deletes an injection
-func (s *serviceImpl) DeleteInjection(ctx context.Context, releaseID uuid.UUID, injectionID uuid.UUID) error {
-	// Check if release is sealed
-	sealed, err := s.releaseRepo.IsSealed(ctx, releaseID)
-	if err != nil {
-		return err
-	}
-	if sealed {
-		return ErrReleaseSealed
-	}
-
-	return s.injectionRepo.Delete(ctx, injectionID)
-}
-
 // ListArtifacts lists all artifacts for a release
 func (s *serviceImpl) ListArtifacts(ctx context.Context, releaseID uuid.UUID) ([]release.ReleaseArtifact, error) {
 	return s.releaseArtifactRepo.ListByRelease(ctx, releaseID)
@@ -553,22 +464,4 @@ func (s *serviceImpl) DetachArtifact(ctx context.Context, releaseID uuid.UUID, a
 	}
 
 	return s.releaseArtifactRepo.Delete(ctx, releaseID, artifactID, role)
-}
-
-// validateInjections validates injection requests
-func (s *serviceImpl) validateInjections(injections []InjectionRequest) error {
-	validFields := map[string]bool{
-		"image_name":   true,
-		"image_digest": true,
-		"tag":          true,
-		"repo":         true,
-	}
-
-	for _, inj := range injections {
-		if !validFields[inj.ArtifactField] {
-			return fmt.Errorf("%w: %s", ErrInvalidArtifactField, inj.ArtifactField)
-		}
-	}
-
-	return nil
 }

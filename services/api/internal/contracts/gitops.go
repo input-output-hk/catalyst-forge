@@ -69,21 +69,21 @@ type GitOpsChangeIDParam struct {
 	GitOpsChangeID uuid.UUID `uri:"gitops_change_id" binding:"required,uuid4"`
 }
 
-// ArgoSyncCreate represents a request to create an Argo sync status
-type ArgoSyncCreate struct {
-	DeploymentID  string     `json:"deployment_id" binding:"required,uuid4"`
-	AppName       string     `json:"app_name" binding:"required"`
-	AppNamespace  string     `json:"app_namespace" binding:"required"`
-	SyncStatus    string     `json:"sync_status" binding:"required,oneof=synced out_of_sync unknown"`
-	HealthStatus  string     `json:"health_status" binding:"required,oneof=healthy progressing degraded suspended missing unknown"`
-	Revision      string     `json:"revision" binding:"required"`
-	Message       *string    `json:"message,omitempty"`
-	SyncStartedAt *time.Time `json:"sync_started_at,omitempty"`
+// GitOpsSyncCreate represents a request to create a GitOps sync status
+type GitOpsSyncCreate struct {
+	DeploymentID   string     `json:"deployment_id" binding:"required,uuid4"`
+	AppName        string     `json:"app_name" binding:"required"`
+	AppNamespace   string     `json:"app_namespace" binding:"required"`
+	SyncStatus     string     `json:"sync_status" binding:"required,oneof=synced out_of_sync unknown"`
+	HealthStatus   string     `json:"health_status" binding:"required,oneof=healthy progressing degraded suspended missing unknown"`
+	Revision       string     `json:"revision" binding:"required"`
+	Message        *string    `json:"message,omitempty"`
+	SyncStartedAt  *time.Time `json:"sync_started_at,omitempty"`
 	SyncFinishedAt *time.Time `json:"sync_finished_at,omitempty"`
 }
 
-// ArgoSyncUpdate represents a request to update an Argo sync status
-type ArgoSyncUpdate struct {
+// GitOpsSyncUpdate represents a request to update a GitOps sync status
+type GitOpsSyncUpdate struct {
 	SyncStatus     *string    `json:"sync_status,omitempty" binding:"omitempty,oneof=synced out_of_sync unknown"`
 	HealthStatus   *string    `json:"health_status,omitempty" binding:"omitempty,oneof=healthy progressing degraded suspended missing unknown"`
 	Revision       *string    `json:"revision,omitempty"`
@@ -92,8 +92,8 @@ type ArgoSyncUpdate struct {
 	SyncFinishedAt *time.Time `json:"sync_finished_at,omitempty"`
 }
 
-// ArgoSyncResponse represents an Argo sync status response
-type ArgoSyncResponse struct {
+// GitOpsSyncResponse represents a GitOps sync status response
+type GitOpsSyncResponse struct {
 	ID             string     `json:"id"`
 	DeploymentID   string     `json:"deployment_id"`
 	AppName        string     `json:"app_name"`
@@ -108,8 +108,8 @@ type ArgoSyncResponse struct {
 	UpdatedAt      time.Time  `json:"updated_at"`
 }
 
-// ArgoSyncListFilter represents filters for listing Argo sync statuses
-type ArgoSyncListFilter struct {
+// GitOpsSyncListFilter represents filters for listing GitOps sync statuses
+type GitOpsSyncListFilter struct {
 	DeploymentID *string `json:"deployment_id,omitempty" form:"deployment_id" binding:"omitempty,uuid4"`
 	AppName      *string `json:"app_name,omitempty" form:"app_name"`
 	AppNamespace *string `json:"app_namespace,omitempty" form:"app_namespace"`
@@ -120,7 +120,7 @@ type ArgoSyncListFilter struct {
 	Sort
 }
 
-// ArgoSyncIDParam represents an Argo sync ID parameter
-type ArgoSyncIDParam struct {
-	ArgoSyncID uuid.UUID `uri:"argo_sync_id" binding:"required,uuid4"`
+// GitOpsSyncIDParam represents a GitOps sync ID parameter
+type GitOpsSyncIDParam struct {
+	GitOpsSyncID uuid.UUID `uri:"gitops_sync_id" binding:"required,uuid4"`
 }

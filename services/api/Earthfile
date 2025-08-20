@@ -16,10 +16,7 @@ deps:
 
     # Copy local deps
     COPY ../clients/go+src/src /clients/go
-    COPY ../../lib/foundry/auth+src/src /lib/foundry/auth
-    COPY ../../lib/foundry/client+src/src /lib/foundry/client
     COPY ../../lib/tools+src/src /lib/tools
-    COPY ../../lib/foundry/httpkit+src/src /lib/foundry/httpkit
     COPY ../../lib/foundry/db+src/src /lib/foundry/db
 
     COPY go.mod go.sum .

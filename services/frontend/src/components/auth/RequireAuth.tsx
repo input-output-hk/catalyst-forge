@@ -1,9 +1,7 @@
 import { useEffect, useState } from "react";
 import { Outlet, useLocation, Navigate } from "react-router-dom";
-import { authApi } from "@/features/auth/api/queries";
-// Import OpenAPI types from vendored client types
-import type { paths } from "forge-client";
 import { useAppStore } from "@/store/app-store";
+import { sendEmailVerificationIfNeeded } from "@/lib/auth/verification";
 
 export default function RequireAuth() {
   const { state, actions } = useAppStore();
@@ -15,14 +13,28 @@ export default function RequireAuth() {
     async function ensure() {
       try {
         if (!state.session.authed) {
-          const res = await authApi.me();
-          if (res.response.ok && res.data) {
-            type MeResponse =
-              paths["/api/v1/auth/me"]["get"]["responses"][200]["content"]["application/json"];
-            const me: MeResponse = res.data as MeResponse;
-            const email = me.email || "user";
-            const roles: string[] = Array.isArray(me.roles) ? (me.roles as string[]) : [];
-            actions.login(email, roles);
+          async function tryWhoAmI(): Promise<boolean> {
+            const whoami = await fetch("/.ory/kratos/public/sessions/whoami", {
+              credentials: "include",
+            });
+            if (whoami.ok) {
+              const data = await whoami.json();
+              const email = data?.identity?.traits?.email ?? "user";
+              // Roles now come from authorization (Keto / Oathkeeper), not Kratos session.
+              actions.login(email, Array.isArray(state.session.roles) ? state.session.roles : []);
+              // Fire-and-forget: if email is unverified, trigger verification email
+              void sendEmailVerificationIfNeeded(data?.identity);
+              return true;
+            }
+            return false;
+          }
+
+          let ok = await tryWhoAmI();
+          if (!ok && !cancelled) {
+            await new Promise((r) => setTimeout(r, 500));
+            if (!cancelled) {
+              ok = await tryWhoAmI();
+            }
           }
         }
       } finally {
@@ -33,7 +45,7 @@ export default function RequireAuth() {
     return () => {
       cancelled = true;
     };
-  }, [state.session.authed, actions]);
+  }, [state.session.authed, state.session.roles, actions]);
 
   if (checking) return null;
 

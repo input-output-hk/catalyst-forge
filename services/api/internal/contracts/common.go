@@ -71,6 +71,14 @@ type ReleasePageResult struct {
 	Total    int64             `json:"total"`
 }
 
+// RenderedReleasePageResult represents a paginated list of rendered releases
+type RenderedReleasePageResult struct {
+	Items    []RenderedReleaseResponse `json:"items"`
+	Page     int                       `json:"page"`
+	PageSize int                       `json:"page_size"`
+	Total    int64                     `json:"total"`
+}
+
 // RepositoryPageResult represents a paginated list of repositories
 type RepositoryPageResult struct {
 	Items    []RepositoryResponse `json:"items"`

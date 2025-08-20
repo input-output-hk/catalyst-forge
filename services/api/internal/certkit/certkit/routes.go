@@ -6,8 +6,6 @@ import (
 
 	basehttp "github.com/catalystgo/catalyst-forge/lib/foundry/httpkit"
 	"github.com/gin-gonic/gin"
-	authctx "github.com/input-output-hk/catalyst-forge/services/api/internal/authkit"
-	"github.com/input-output-hk/catalyst-forge/services/api/internal/authkit/rate"
 	"github.com/input-output-hk/catalyst-forge/services/api/internal/certkit/service"
 )
 
@@ -53,7 +51,6 @@ func registerRoutes(rg *gin.RouterGroup, cfg Config, deps Deps) {
 		iss := &service.Issuer{
 			CAArn:            cfg.CAArn,
 			PCA:              pcaAdapter{inner: deps.PCA},
-			RBAC:             deps.RBAC,
 			Clock:            clk,
 			AllowedTemplates: cfg.AllowedTemplates,
 			MaxTTL:           cfg.MaxTTL,
@@ -62,21 +59,6 @@ func registerRoutes(rg *gin.RouterGroup, cfg Config, deps Deps) {
 		}
 		// Requestor from auth context if present
 		reqBy := ""
-		if ac, ok := authctx.From(c); ok && ac.IsAuthenticated() {
-			reqBy = ac.UserID.String()
-		}
-		// Rate limit if limiter present
-		if deps.Limiter != nil {
-			key := rate.Key("pki:sign:" + reqBy)
-			if ok, _, reset, _ := deps.Limiter.Allow(c.Request.Context(), key, 1, time.Minute); !ok {
-				retry := int(reset.Sub(time.Now().UTC()).Seconds())
-				if retry < 0 {
-					retry = 0
-				}
-				_ = basehttp.NewRateLimitError(retry).Write(c.Writer)
-				return
-			}
-		}
 
 		ttl := cfg.DefaultTTL
 		if in.TTL != "" {

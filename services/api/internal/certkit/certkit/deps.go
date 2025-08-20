@@ -3,8 +3,7 @@ package certkit
 import (
 	"time"
 
-	"github.com/input-output-hk/catalyst-forge/services/api/internal/authkit/rate"
-	rbac "github.com/input-output-hk/catalyst-forge/services/api/internal/authkit/rbac"
+	"github.com/input-output-hk/catalyst-forge/services/api/internal/rate"
 )
 
 // Clock provides time operations (mockable for testing).
@@ -24,5 +23,4 @@ type Deps struct {
 	Limiter rate.Limiter // optional; reuse authkit rate limiter shape
 	Clock   Clock
 	Logger  Logger
-	RBAC    rbac.Manager // optional; for programmatic SAN checks
 }

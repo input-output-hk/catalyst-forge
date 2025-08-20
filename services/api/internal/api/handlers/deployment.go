@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"encoding/json"
 	"errors"
 	"log/slog"
 	"net/http"
@@ -13,22 +12,19 @@ import (
 	"github.com/input-output-hk/catalyst-forge/services/api/internal/models/deployment"
 	"github.com/input-output-hk/catalyst-forge/services/api/internal/models/enums"
 	deploymentService "github.com/input-output-hk/catalyst-forge/services/api/internal/service/deployment"
-	renderService "github.com/input-output-hk/catalyst-forge/services/api/internal/service/render"
 )
 
 // DeploymentHandler handles deployment-related endpoints
 type DeploymentHandler struct {
 	*BaseHandler
-	service       deploymentService.Service
-	renderService renderService.Service
+	service deploymentService.Service
 }
 
 // NewDeploymentHandler creates a new deployment handler
-func NewDeploymentHandler(service deploymentService.Service, renderService renderService.Service, logger *slog.Logger) *DeploymentHandler {
+func NewDeploymentHandler(service deploymentService.Service, _ interface{}, logger *slog.Logger) *DeploymentHandler {
 	return &DeploymentHandler{
-		BaseHandler:   NewBaseHandler(logger),
-		service:       service,
-		renderService: renderService,
+		BaseHandler: NewBaseHandler(logger),
+		service:     service,
 	}
 }
 
@@ -338,214 +334,4 @@ func (h *DeploymentHandler) toResponse(d *deployment.Deployment) *contracts.Depl
 	}
 
 	return resp
-}
-
-// GetRenderJob handles GET /api/v1/deployments/:deployment_id/render-job
-// @Summary Get render job for a deployment
-// @Description Retrieve the render job associated with a deployment
-// @Tags deployments
-// @Accept json
-// @Produce json
-// @Param deployment_id path string true "Deployment ID (UUID)"
-// @Success 200 {object} contracts.RenderJobResponse "Render job details"
-// @Failure 400 {object} contracts.ErrorResponse "Invalid deployment ID"
-// @Failure 404 {object} contracts.ErrorResponse "Render job not found"
-// @Failure 500 {object} contracts.ErrorResponse "Internal server error"
-// @Router /api/v1/deployments/{deployment_id}/render-job [get]
-func (h *DeploymentHandler) GetRenderJob(c *gin.Context) {
-	idStr := c.Param("deployment_id")
-	depID, err := h.ParseUUID(idStr)
-	if err != nil {
-		h.RespondWithValidationError(c, err)
-		return
-	}
-
-	renderJob, err := h.renderService.GetByDeploymentID(c.Request.Context(), depID)
-	if err != nil {
-		if errors.Is(err, renderService.ErrRenderJobNotFound) {
-			h.RespondWithNotFound(c, "RenderJob")
-			return
-		}
-		h.RespondWithInternalError(c, err)
-		return
-	}
-
-	h.RespondWithSuccess(c, http.StatusOK, h.toRenderJobResponse(renderJob))
-}
-
-// CreateRenderJob handles POST /api/v1/deployments/:deployment_id/render-job
-// @Summary Create a render job for a deployment
-// @Description Create a new render job for an existing deployment
-// @Tags deployments
-// @Accept json
-// @Produce json
-// @Param deployment_id path string true "Deployment ID (UUID)"
-// @Param render_job body contracts.RenderJobCreate true "Render job creation request"
-// @Success 201 {object} contracts.RenderJobResponse "Created render job"
-// @Failure 400 {object} contracts.ErrorResponse "Invalid request"
-// @Failure 404 {object} contracts.ErrorResponse "Deployment not found"
-// @Failure 409 {object} contracts.ErrorResponse "Render job already exists for this deployment"
-// @Failure 500 {object} contracts.ErrorResponse "Internal server error"
-// @Router /api/v1/deployments/{deployment_id}/render-job [post]
-func (h *DeploymentHandler) CreateRenderJob(c *gin.Context) {
-	idStr := c.Param("deployment_id")
-	depID, err := h.ParseUUID(idStr)
-	if err != nil {
-		h.RespondWithValidationError(c, err)
-		return
-	}
-
-	var req contracts.RenderJobCreate
-	dec := json.NewDecoder(c.Request.Body)
-	if err := dec.Decode(&req); err != nil {
-		h.RespondWithValidationError(c, err)
-		return
-	}
-
-	// Convert to service request
-	svcReq := renderService.CreateRequest{
-		DeploymentID:    depID,
-		ModuleVersions:  convertToModuleVersions(req.ModuleVersions),
-		BundleHash:      req.BundleHash,
-		RendererVersion: req.RendererVersion,
-	}
-
-	renderJob, err := h.renderService.Create(c.Request.Context(), svcReq)
-	if err != nil {
-		if errors.Is(err, renderService.ErrDeploymentNotFound) {
-			h.RespondWithNotFound(c, "Deployment")
-			return
-		}
-		if errors.Is(err, renderService.ErrRenderJobExists) {
-			h.RespondWithConflict(c, "Render job already exists for this deployment")
-			return
-		}
-		h.RespondWithInternalError(c, err)
-		return
-	}
-
-	h.RespondWithSuccess(c, http.StatusCreated, h.toRenderJobResponse(renderJob))
-}
-
-// UpdateRenderJob handles PATCH /api/v1/deployments/:deployment_id/render-job
-// @Summary Update a render job
-// @Description Update the render job associated with a deployment
-// @Tags deployments
-// @Accept json
-// @Produce json
-// @Param deployment_id path string true "Deployment ID (UUID)"
-// @Param render_job body contracts.RenderJobUpdate true "Render job update request"
-// @Success 200 {object} contracts.RenderJobResponse "Updated render job"
-// @Failure 400 {object} contracts.ErrorResponse "Invalid request"
-// @Failure 404 {object} contracts.ErrorResponse "Render job not found"
-// @Failure 500 {object} contracts.ErrorResponse "Internal server error"
-// @Router /api/v1/deployments/{deployment_id}/render-job [patch]
-func (h *DeploymentHandler) UpdateRenderJob(c *gin.Context) {
-	idStr := c.Param("deployment_id")
-	depID, err := h.ParseUUID(idStr)
-	if err != nil {
-		h.RespondWithValidationError(c, err)
-		return
-	}
-
-	var req contracts.RenderJobUpdate
-	dec := json.NewDecoder(c.Request.Body)
-	if err := dec.Decode(&req); err != nil {
-		h.RespondWithValidationError(c, err)
-		return
-	}
-
-	// Get the render job by deployment ID first
-	renderJob, err := h.renderService.GetByDeploymentID(c.Request.Context(), depID)
-	if err != nil {
-		if errors.Is(err, renderService.ErrRenderJobNotFound) {
-			h.RespondWithNotFound(c, "RenderJob")
-			return
-		}
-		h.RespondWithInternalError(c, err)
-		return
-	}
-
-	// Convert to service request
-	svcReq := renderService.UpdateRequest{
-		Status:              (*enums.RenderJobStatus)(req.Status),
-		ModuleVersions:      convertToModuleVersions(req.ModuleVersions),
-		BundleHash:          req.BundleHash,
-		OutputHash:          req.OutputHash,
-		StorageURI:          req.StorageURI,
-		RendererVersion:     req.RendererVersion,
-		OCIRef:              req.OCIRef,
-		OCIDigest:           req.OCIDigest,
-		Signed:              req.Signed,
-		SignatureVerifiedAt: req.SignatureVerifiedAt,
-		FinishedAt:          req.FinishedAt,
-	}
-
-	renderJob, err = h.renderService.Update(c.Request.Context(), renderJob.ID, svcReq)
-	if err != nil {
-		if errors.Is(err, renderService.ErrRenderJobNotFound) {
-			h.RespondWithNotFound(c, "RenderJob")
-			return
-		}
-		h.RespondWithInternalError(c, err)
-		return
-	}
-
-	h.RespondWithSuccess(c, http.StatusOK, h.toRenderJobResponse(renderJob))
-}
-
-// toRenderJobResponse converts a render job model to response DTO
-func (h *DeploymentHandler) toRenderJobResponse(r *deployment.RenderJob) *contracts.RenderJobResponse {
-	resp := &contracts.RenderJobResponse{
-		ID:                  r.ID.String(),
-		DeploymentID:        r.DeploymentID.String(),
-		Status:              string(r.Status),
-		BundleHash:          r.BundleHash,
-		OutputHash:          r.OutputHash,
-		StorageURI:          r.StorageURI,
-		RendererVersion:     r.RendererVersion,
-		OCIRef:              r.OCIRef,
-		OCIDigest:           r.OCIDigest,
-		Signed:              r.Signed,
-		SignatureVerifiedAt: r.SignatureVerifiedAt,
-		StartedAt:           r.StartedAt,
-		FinishedAt:          r.FinishedAt,
-	}
-
-	// Convert module versions from JSONB to response format
-	if r.ModuleVersions != nil {
-		var moduleVersions []contracts.ModuleVersion
-		if modules, ok := r.ModuleVersions["modules"]; ok {
-			if mvs, ok := modules.([]interface{}); ok {
-				for _, mv := range mvs {
-					if mvMap, ok := mv.(map[string]interface{}); ok {
-						moduleVersion := contracts.ModuleVersion{
-							Name:    mvMap["name"].(string),
-							Version: mvMap["version"].(string),
-						}
-						moduleVersions = append(moduleVersions, moduleVersion)
-					}
-				}
-				resp.ModuleVersions = moduleVersions
-			}
-		}
-	}
-
-	return resp
-}
-
-// convertToModuleVersions converts DTO module versions to service module versions
-func convertToModuleVersions(dtoVersions []contracts.ModuleVersion) []renderService.ModuleVersion {
-	if dtoVersions == nil {
-		return nil
-	}
-
-	result := make([]renderService.ModuleVersion, len(dtoVersions))
-	for i, mv := range dtoVersions {
-		result[i] = renderService.ModuleVersion{
-			Name:    mv.Name,
-			Version: mv.Version,
-		}
-	}
-	return result
 }

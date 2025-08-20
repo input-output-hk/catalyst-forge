@@ -62,9 +62,9 @@ type Release struct {
 	UpdatedAt           time.Time           `gorm:"not null;default:now()" json:"updated_at"`
 
 	// Relationships
-	Modules    []ReleaseModule    `gorm:"foreignKey:ReleaseID" json:"modules,omitempty"`
-	Injections []ReleaseInjection `gorm:"foreignKey:ReleaseID" json:"injections,omitempty"`
-	Artifacts  []ReleaseArtifact  `gorm:"foreignKey:ReleaseID" json:"artifacts,omitempty"`
+	Modules []ReleaseModule `gorm:"foreignKey:ReleaseID" json:"modules,omitempty"`
+	// Injections removed in v2
+	Artifacts []ReleaseArtifact `gorm:"foreignKey:ReleaseID" json:"artifacts,omitempty"`
 }
 
 // TableName specifies the table name

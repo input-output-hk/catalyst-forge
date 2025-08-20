@@ -1,0 +1,14 @@
+{
+  "name": "keto",
+  "version": "1.0.0",
+  "description": "Keto permission structure (OPL) for Catalyst Forge",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Project Catalyst",
+  "license": "MIT",
+  "dependencies": {
+    "@ory/keto-namespace-types": "^0.13.0-alpha.0"
+  }
+}

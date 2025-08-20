@@ -6,7 +6,6 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { HelmetProvider } from "react-helmet-async";
 import { AppStoreProvider } from "@/store/app-store";
 import { AppBootstrap } from "@/components/AppBootstrap";
-import { AppLayout } from "@/components/layout/AppLayout";
 import Dashboard from "@/pages/Dashboard";
 import Services from "@/pages/Services";
 import Environments from "@/pages/Environments";
@@ -16,19 +15,15 @@ import AuditLog from "@/pages/AuditLog";
 import SettingsProfile from "@/pages/SettingsProfile";
 import Profile from "@/pages/Profile";
 import Users from "@/pages/Users";
-import RBACAdmin from "@/pages/RBACAdmin";
-import { lazy, Suspense } from "react";
 import NotFound from "./pages/NotFound";
 import { AppShell } from "@/components/layout/AppShell";
 import Landing from "@/pages/Landing";
-import InviteLanding from "@/pages/InviteLanding";
-import Bootstrap from "@/pages/Bootstrap";
-import { RecoveryKeysGate } from "@/components/auth/RecoveryKeysGate";
 import RequireAuth, { RequireAdmin } from "@/components/auth/RequireAuth";
+import KratosLogout from "@/pages/kratos/Logout";
+import KratosError from "@/pages/kratos/Error";
 
 const queryClient = new QueryClient();
 
-const AuthFlows = lazy(() => import("@/pages/AuthFlows"));
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <HelmetProvider>
@@ -37,12 +32,11 @@ const App = () => (
           <Toaster />
           <Sonner />
           <BrowserRouter>
-            <RecoveryKeysGate />
             <AppBootstrap />
             <Routes>
               <Route path="/welcome" element={<Landing />} />
-              <Route path="/invite/:token" element={<InviteLanding />} />
-              <Route path="/bootstrap" element={<Bootstrap />} />
+              <Route path="/auth/logout" element={<KratosLogout />} />
+              <Route path="/auth/error" element={<KratosError />} />
               <Route element={<RequireAuth />}>
                 <Route element={<AppShell />}>
                   <Route path="/" element={<Dashboard />} />
@@ -50,14 +44,6 @@ const App = () => (
                   <Route path="/environments" element={<Environments />} />
                   <Route path="/jobs" element={<Jobs />} />
                   <Route path="/secrets" element={<Secrets />} />
-                  <Route
-                    path="/admin/rbac"
-                    element={
-                      <RequireAdmin>
-                        <RBACAdmin />
-                      </RequireAdmin>
-                    }
-                  />
                   <Route
                     path="/audit"
                     element={
@@ -76,19 +62,8 @@ const App = () => (
                   />
                   <Route path="/profile" element={<Profile />} />
                   <Route path="/settings" element={<SettingsProfile />} />
-                  <Route
-                    path="/auth-demo"
-                    element={
-                      <Suspense
-                        fallback={<div className="p-4 text-sm text-muted-foreground">Loading…</div>}
-                      >
-                        <AuthFlows />
-                      </Suspense>
-                    }
-                  />
                 </Route>
               </Route>
-              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>

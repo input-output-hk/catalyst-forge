@@ -11,7 +11,6 @@ import (
 	"testing"
 	"time"
 
-	rbac "github.com/input-output-hk/catalyst-forge/services/api/internal/authkit/rbac"
 	"github.com/stretchr/testify/require"
 )
 
@@ -35,12 +34,6 @@ func (p *testPCA) Issue(ctx context.Context, in IssueInput) (string, error) {
 func (p *testPCA) GetCertificate(ctx context.Context, caArn, certArn string) (string, string, error) {
 	c := p.certs[certArn]
 	return c[0], c[1], nil
-}
-
-type allowRBAC struct{ dec rbac.Decision }
-
-func (a allowRBAC) Check(ctx context.Context, subj rbac.Subject, action rbac.PermissionKey, res rbac.ResourceRef) (rbac.Decision, error) {
-	return a.dec, nil
 }
 
 func genCSRWithDNS(t *testing.T, names []string) []byte {
@@ -74,7 +67,6 @@ func TestIssuer_SignCSR_Allows(t *testing.T) {
 	iss := &Issuer{
 		CAArn:            "arn:ca:test",
 		PCA:              newTestPCA(),
-		RBAC:             allowRBAC{dec: rbac.DecisionAllow},
 		Clock:            testClock{},
 		AllowedTemplates: map[string]string{"end-entity": "arn:aws:acm-pca:::template/EndEntityCertificate/V1"},
 		MaxTTL:           24 * time.Hour,
@@ -97,7 +89,6 @@ func TestIssuer_SignCSR_DeniedByRBAC(t *testing.T) {
 	iss := &Issuer{
 		CAArn:            "arn:ca:test",
 		PCA:              newTestPCA(),
-		RBAC:             allowRBAC{dec: rbac.DecisionDeny},
 		Clock:            testClock{},
 		AllowedTemplates: map[string]string{"end-entity": "arn:aws:acm-pca:::template/EndEntityCertificate/V1"},
 		MaxTTL:           24 * time.Hour,

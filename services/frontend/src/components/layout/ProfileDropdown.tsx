@@ -19,12 +19,12 @@ export const ProfileDropdown = () => {
 
   const userInitials = state.session.user
     ? state.session.user
-        .split("@")[0]
-        .split(".")
-        .map((part) => part[0])
-        .join("")
-        .toUpperCase()
-        .slice(0, 2)
+      .split("@")[0]
+      .split(".")
+      .map((part) => part[0])
+      .join("")
+      .toUpperCase()
+      .slice(0, 2)
     : "U";
 
   return (
@@ -53,17 +53,11 @@ export const ProfileDropdown = () => {
           </Link>
         </DropdownMenuItem>
         <DropdownMenuSeparator />
-        <DropdownMenuItem
-          onClick={async () => {
-            await logoutEverywhere();
-            actions.logout();
-            const from = (location.state as { from?: string })?.from;
-            navigate("/welcome", { replace: true, state: { from } });
-          }}
-          className="cursor-pointer"
-        >
-          <LogOut className="mr-2 h-4 w-4" />
-          Log out
+        <DropdownMenuItem asChild className="cursor-pointer">
+          <Link to="/auth/logout">
+            <LogOut className="mr-2 h-4 w-4" />
+            Log out
+          </Link>
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

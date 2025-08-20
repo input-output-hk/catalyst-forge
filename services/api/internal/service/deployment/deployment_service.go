@@ -21,17 +21,16 @@ import (
 )
 
 var (
-	ErrDeploymentNotFound = errors.New("deployment not found")
-	ErrReleaseNotFound    = errors.New("release not found")
+	ErrDeploymentNotFound  = errors.New("deployment not found")
+	ErrReleaseNotFound     = errors.New("release not found")
 	ErrEnvironmentNotFound = errors.New("environment not found")
-	ErrInvalidStatus      = errors.New("invalid deployment status")
+	ErrInvalidStatus       = errors.New("invalid deployment status")
 )
 
 // Service defines the interface for deployment business logic
 type Service interface {
 	Create(ctx context.Context, req CreateRequest) (*deployment.Deployment, error)
 	GetByID(ctx context.Context, id uuid.UUID) (*deployment.Deployment, error)
-	GetWithRenderJob(ctx context.Context, id uuid.UUID) (*deployment.Deployment, error)
 	List(ctx context.Context, filter ListFilter) ([]deployment.Deployment, int64, error)
 	Update(ctx context.Context, id uuid.UUID, req UpdateRequest) (*deployment.Deployment, error)
 	UpdateStatus(ctx context.Context, id uuid.UUID, status enums.DeploymentStatus, lastError *string) error
@@ -77,7 +76,6 @@ type serviceImpl struct {
 	deploymentRepo deploymentRepo.Repository
 	releaseRepo    releaseRepo.Repository
 	envRepo        envRepo.Repository
-	renderJobRepo  deploymentRepo.RenderJobRepository
 }
 
 // NewService creates a new deployment service
@@ -86,14 +84,12 @@ func NewService(
 	deploymentRepo deploymentRepo.Repository,
 	releaseRepo releaseRepo.Repository,
 	envRepo envRepo.Repository,
-	renderJobRepo deploymentRepo.RenderJobRepository,
 ) Service {
 	return &serviceImpl{
 		txManager:      txManager,
 		deploymentRepo: deploymentRepo,
 		releaseRepo:    releaseRepo,
 		envRepo:        envRepo,
-		renderJobRepo:  renderJobRepo,
 	}
 }
 
@@ -107,7 +103,7 @@ func (s *serviceImpl) Create(ctx context.Context, req CreateRequest) (*deploymen
 		}
 		return nil, err
 	}
-	
+
 	// Validate environment exists
 	env, err := s.envRepo.GetByID(ctx, req.EnvID)
 	if err != nil {
@@ -116,7 +112,7 @@ func (s *serviceImpl) Create(ctx context.Context, req CreateRequest) (*deploymen
 		}
 		return nil, err
 	}
-	
+
 	// Create deployment
 	d := &deployment.Deployment{
 		TraceID:   req.TraceID,
@@ -126,10 +122,10 @@ func (s *serviceImpl) Create(ctx context.Context, req CreateRequest) (*deploymen
 		Status:    enums.DeploymentStatusPending,
 		CreatedBy: req.CreatedBy,
 	}
-	
+
 	if req.IntentJSON != nil {
 		d.IntentJSON = deployment.JSONB(req.IntentJSON)
-		
+
 		// Calculate intent digest
 		digest, err := s.calculateIntentDigestFromJSON(req.IntentJSON, rel, env)
 		if err != nil {
@@ -137,11 +133,11 @@ func (s *serviceImpl) Create(ctx context.Context, req CreateRequest) (*deploymen
 		}
 		d.IntentDigest = &digest
 	}
-	
+
 	if err := s.deploymentRepo.Create(ctx, d); err != nil {
 		return nil, err
 	}
-	
+
 	return d, nil
 }
 
@@ -154,20 +150,7 @@ func (s *serviceImpl) GetByID(ctx context.Context, id uuid.UUID) (*deployment.De
 		}
 		return nil, err
 	}
-	
-	return d, nil
-}
 
-// GetWithRenderJob retrieves a deployment with its render job
-func (s *serviceImpl) GetWithRenderJob(ctx context.Context, id uuid.UUID) (*deployment.Deployment, error) {
-	d, err := s.deploymentRepo.GetWithRenderJob(ctx, id)
-	if err != nil {
-		if errors.Is(err, deploymentRepo.ErrDeploymentNotFound) {
-			return nil, ErrDeploymentNotFound
-		}
-		return nil, err
-	}
-	
 	return d, nil
 }
 
@@ -184,7 +167,7 @@ func (s *serviceImpl) List(ctx context.Context, filter ListFilter) ([]deployment
 		Pagination: filter.Pagination,
 		Sort:       filter.Sort,
 	}
-	
+
 	return s.deploymentRepo.List(ctx, repoFilter)
 }
 
@@ -197,7 +180,7 @@ func (s *serviceImpl) Update(ctx context.Context, id uuid.UUID, req UpdateReques
 		}
 		return nil, err
 	}
-	
+
 	// Apply updates
 	if req.Status != nil {
 		if err := s.validateStatusTransition(d.Status, *req.Status); err != nil {
@@ -205,27 +188,27 @@ func (s *serviceImpl) Update(ctx context.Context, id uuid.UUID, req UpdateReques
 		}
 		d.Status = *req.Status
 	}
-	
+
 	if req.IntentRevision != nil {
 		d.IntentRevision = req.IntentRevision
 	}
-	
+
 	if req.IntentDigest != nil {
 		d.IntentDigest = req.IntentDigest
 	}
-	
+
 	if req.IntentJSON != nil {
 		d.IntentJSON = deployment.JSONB(req.IntentJSON)
 	}
-	
+
 	if req.LastError != nil {
 		d.LastError = req.LastError
 	}
-	
+
 	if err := s.deploymentRepo.Update(ctx, d); err != nil {
 		return nil, err
 	}
-	
+
 	return d, nil
 }
 
@@ -239,11 +222,11 @@ func (s *serviceImpl) UpdateStatus(ctx context.Context, id uuid.UUID, status enu
 		}
 		return err
 	}
-	
+
 	if err := s.validateStatusTransition(d.Status, status); err != nil {
 		return err
 	}
-	
+
 	return s.deploymentRepo.UpdateStatus(ctx, id, status, lastError)
 }
 
@@ -256,7 +239,7 @@ func (s *serviceImpl) Delete(ctx context.Context, id uuid.UUID) error {
 		}
 		return err
 	}
-	
+
 	return nil
 }
 
@@ -266,17 +249,17 @@ func (s *serviceImpl) CalculateIntentDigest(ctx context.Context, deploymentID uu
 	if err != nil {
 		return "", err
 	}
-	
+
 	rel, err := s.releaseRepo.GetByID(ctx, d.ReleaseID)
 	if err != nil {
 		return "", err
 	}
-	
+
 	env, err := s.envRepo.GetByID(ctx, d.EnvID)
 	if err != nil {
 		return "", err
 	}
-	
+
 	// Create intent structure
 	intent := map[string]interface{}{
 		"release_id":      d.ReleaseID.String(),
@@ -286,20 +269,13 @@ func (s *serviceImpl) CalculateIntentDigest(ctx context.Context, deploymentID uu
 		"env_name":        env.Name,
 		"env_cluster":     env.Cluster,
 	}
-	
-	// Add render job info if exists
-	renderJob, err := s.renderJobRepo.GetByDeploymentID(ctx, deploymentID)
-	if err == nil && renderJob != nil {
-		intent["renderer_version"] = renderJob.RendererVersion
-		intent["module_versions"] = renderJob.ModuleVersions
-	}
-	
+
 	// Calculate hash
 	jsonBytes, err := json.Marshal(intent)
 	if err != nil {
 		return "", err
 	}
-	
+
 	hash := sha256.Sum256(jsonBytes)
 	return fmt.Sprintf("%x", hash), nil
 }
@@ -321,12 +297,12 @@ func (s *serviceImpl) calculateIntentDigestFromJSON(intentJSON map[string]interf
 		},
 		"intent": intentJSON,
 	}
-	
+
 	jsonBytes, err := json.Marshal(combined)
 	if err != nil {
 		return "", err
 	}
-	
+
 	hash := sha256.Sum256(jsonBytes)
 	return fmt.Sprintf("%x", hash), nil
 }
@@ -370,17 +346,17 @@ func (s *serviceImpl) validateStatusTransition(from, to enums.DeploymentStatus) 
 			// Terminal state
 		},
 	}
-	
+
 	allowed, exists := validTransitions[from]
 	if !exists {
 		return fmt.Errorf("%w: unknown status %s", ErrInvalidStatus, from)
 	}
-	
+
 	for _, validTo := range allowed {
 		if validTo == to {
 			return nil
 		}
 	}
-	
+
 	return fmt.Errorf("%w: cannot transition from %s to %s", ErrInvalidStatus, from, to)
 }

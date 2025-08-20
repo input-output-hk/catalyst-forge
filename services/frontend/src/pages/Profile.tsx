@@ -34,6 +34,7 @@ import { useAppStore } from "@/store/app-store";
 import { usePageTitle } from "@/hooks/usePageTitle";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
+import PasskeysCard from "@/components/auth/PasskeysCard";
 import {
   Key,
   Monitor,
@@ -47,20 +48,9 @@ import {
   Check,
 } from "lucide-react";
 import { format, formatDistanceToNow } from "date-fns";
-import { generateRecoveryKeys } from "@/lib/auth/recovery";
-import { extractErrorMessage, readResponseError } from "@/lib/api";
-import { forge } from "@/lib/client";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { components } from "forge-client";
-import { listCredentials, renameCredential, deleteCredential } from "@/lib/auth/credentials";
-import {
-  listSessions,
-  deleteSession,
-  deleteSessions,
-  logoutAllSessions,
-} from "@/lib/auth/sessions";
-import { updateFullName } from "@/lib/auth/profile";
-import { regenerateRecoveryCodes } from "@/lib/auth/recovery";
+import { deleteMySession, listMySessions, whoAmI, disableMyOtherSessions, logoutEverywhere } from "@/lib/auth/kratosSessions";
 
 // Type definitions
 type RecoveryGenerateResponse = components["schemas"]["auth.RecoveryGenerateResponse"];
@@ -102,8 +92,6 @@ const Profile = () => {
   type CredentialItem = components["schemas"]["auth.CredentialSummary"];
   const [credentials, setCredentials] = useState<CredentialItem[]>([]);
   const [loadingCreds, setLoadingCreds] = useState(false);
-  const [recoveryKeysGenerated, setRecoveryKeysGenerated] = useState(true);
-  const [lastRecoveryDate] = useState(new Date(Date.now() - 1000 * 60 * 60 * 24 * 30));
 
   // Rename device dialog state
   const [renameOpen, setRenameOpen] = useState(false);
@@ -113,12 +101,12 @@ const Profile = () => {
 
   const userInitials = state.session.user
     ? state.session.user
-        .split("@")[0]
-        .split(".")
-        .map((part) => part[0])
-        .join("")
-        .toUpperCase()
-        .slice(0, 2)
+      .split("@")[0]
+      .split(".")
+      .map((part) => part[0])
+      .join("")
+      .toUpperCase()
+      .slice(0, 2)
     : "U";
 
   /**
@@ -126,34 +114,16 @@ const Profile = () => {
    * @param newName - The new display name for the user
    */
   const handleSave = async (newName: string) => {
-    try {
-      await updateFullName(newName);
-      {
-        setFullName(newName);
-        toast({ title: "Profile updated successfully" });
-      }
-    } catch {
-      toast({
-        title: "Failed to update profile",
-        variant: "destructive",
-      });
-    }
+    setFullName(newName);
+    toast({ title: "Profile updated" });
   };
 
   /**
    * Refreshes the list of user credentials (passkeys).
    */
   const refreshCredentials = useCallback(async () => {
-    setLoadingCreds(true);
-
-    try {
-      const data = await listCredentials();
-      const credentialsList = data?.credentials || [];
-      const typedCredentials = credentialsList as unknown as CredentialItem[];
-      setCredentials(typedCredentials);
-    } finally {
-      setLoadingCreds(false);
-    }
+    setLoadingCreds(false);
+    setCredentials([]);
   }, []);
 
   useEffect(() => {
@@ -165,47 +135,19 @@ const Profile = () => {
    */
   const handleLogoutAllDevices = async () => {
     try {
-      await logoutAllSessions();
-
-      toast({ title: "Logged out of all devices" });
-
-      // Refresh both credentials and sessions
-      void refreshCredentials();
-      void refreshSessions();
+      await disableMyOtherSessions();
+      toast({ title: "All other sessions revoked" });
     } catch {
-      toast({ title: "Failed to log out of all devices" });
-    }
-  };
-
-  /**
-   * Regenerates recovery keys for account recovery.
-   */
-  const handleRegenerateKeys = async () => {
-    try {
-      const codes = await regenerateRecoveryCodes();
-      actions.startRecoveryGate(codes, "/profile");
-      setRecoveryKeysGenerated(true);
-
-      toast({
-        title: "Recovery keys regenerated",
-        description: "Make sure to save them securely.",
-      });
-    } catch (error) {
-      const errorMessage = extractErrorMessage(error);
-      toast({
-        title: "Failed to regenerate recovery keys",
-        description: errorMessage,
-        variant: "destructive",
-      });
+      toast({ title: "Failed to revoke other sessions", variant: "destructive" });
+    } finally {
+      void refreshSessions();
     }
   };
 
   const handleEndSession = async (sessionId: string) => {
     try {
-      await deleteSession(sessionId);
-      {
-        toast({ title: "Session terminated" });
-      }
+      await deleteMySession(sessionId);
+      toast({ title: "Session terminated" });
     } catch {
       toast({ title: "Failed to terminate session", variant: "destructive" });
     } finally {
@@ -216,7 +158,7 @@ const Profile = () => {
   const handleTerminateAllSessions = async () => {
     try {
       const targets = sessions.filter((s) => !s.current).map((s) => s.id);
-      await deleteSessions(targets);
+      await Promise.allSettled(targets.map((id) => deleteMySession(id)));
       toast({ title: "All other sessions terminated" });
     } catch {
       toast({ title: "Failed to terminate all other sessions", variant: "destructive" });
@@ -230,54 +172,59 @@ const Profile = () => {
    */
   const refreshSessions = useCallback(async () => {
     try {
-      const data = await listSessions();
-      const sessionItems = data?.sessions || [];
+      const [me, list] = await Promise.all([whoAmI(), listMySessions({ active: true })]);
 
-      // Map sessions to UI format
-      const mappedSessions: UISession[] = sessionItems.map((session) => {
-        const isCliDevice = session.amr === "device_link";
-        const deviceName = session.device_name || "";
-        const cliLabel = `CLI device${deviceName ? ` • ${deviceName}` : ""}`;
+      const sessionsUi: UISession[] = [];
 
-        const browserLabel = isCliDevice
-          ? cliLabel
-          : session.current
-            ? "This browser"
-            : "Passkey session";
-
-        const lastActivityTime = session.last_activity_at
-          ? new Date(session.last_activity_at).getTime()
-          : 0;
-
-        return {
-          id: session.id,
-          browser: browserLabel,
-          amr: session.amr,
+      // Add current session explicitly (not included in /sessions list)
+      const meId = (me as unknown as { id?: string })?.id ?? null;
+      if (meId) {
+        const meAsUi: UISession = {
+          id: meId,
+          browser: "This browser",
           os: "",
           location: "",
-          lastActivity: formatLastUsedLabel(session.last_activity_at),
-          loginDate: session.created_at,
-          current: !!session.current,
-          userAgent: session.user_agent || "",
-          ipAddress: session.ip_address || "",
-          lastActivityAtMs: lastActivityTime,
+          lastActivity: formatLastUsedLabel((me as unknown as { authenticated_at?: string })?.authenticated_at),
+          loginDate: (me as unknown as { issued_at?: string })?.issued_at || "",
+          current: true,
+          userAgent: (me as unknown as { user_agent?: string })?.user_agent || "",
+          ipAddress: (me as unknown as { ip_address?: string })?.ip_address || "",
+          amr: "",
+          lastActivityAtMs: ((): number => {
+            const iso = (me as unknown as { authenticated_at?: string })?.authenticated_at || null;
+            return iso ? new Date(iso).getTime() : 0;
+          })(),
         };
+        sessionsUi.push(meAsUi);
+      }
+
+      // Map other active sessions
+      for (const s of list || []) {
+        const lastISO = s.authenticated_at || s.issued_at || s.expires_at || null;
+        const lastMs = lastISO ? new Date(lastISO).getTime() : 0;
+        sessionsUi.push({
+          id: s.id,
+          browser: "Session",
+          os: "",
+          location: "",
+          lastActivity: formatLastUsedLabel(lastISO),
+          loginDate: s.issued_at || "",
+          current: false,
+          userAgent: s.user_agent || "",
+          ipAddress: s.ip_address || "",
+          amr: "",
+          lastActivityAtMs: lastMs,
+        });
+      }
+
+      sessionsUi.sort((a, b) => {
+        const d = Number(b.current) - Number(a.current);
+        return d !== 0 ? d : b.lastActivityAtMs - a.lastActivityAtMs;
       });
 
-      // Sort sessions: current first, then by activity
-      mappedSessions.sort((a, b) => {
-        const currentDifference = Number(b.current) - Number(a.current);
-
-        if (currentDifference !== 0) {
-          return currentDifference;
-        }
-
-        return b.lastActivityAtMs - a.lastActivityAtMs;
-      });
-
-      setSessions(mappedSessions);
+      setSessions(sessionsUi);
     } catch {
-      // Silently ignore errors
+      setSessions([]);
     }
   }, []);
 
@@ -322,18 +269,8 @@ const Profile = () => {
       setRenameOpen(false);
       return;
     }
-    try {
-      await renameCredential(target.id!, newName);
-      {
-        toast({ title: "Device renamed" });
-        setRenameOpen(false);
-        setRenameTarget(null);
-        setRenameValue("");
-        void refreshCredentials();
-      }
-    } catch {
-      toast({ title: "Failed to rename device", variant: "destructive" });
-    }
+    setRenameOpen(false);
+    toast({ title: "Rename not available (legacy)" });
   };
 
   return (
@@ -422,14 +359,6 @@ const Profile = () => {
             <div className="flex items-baseline justify-between flex-wrap gap-2">
               <h2 className="text-xl font-bold">Passkeys & Security Keys</h2>
               <div className="flex gap-2">
-                <Button
-                  size="sm"
-                  onClick={() =>
-                    toast({ title: "Register a new passkey from your browser (coming soon)" })
-                  }
-                >
-                  + Register passkey
-                </Button>
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
                     <Button size="sm" variant="outline" className="text-destructive">
@@ -456,128 +385,7 @@ const Profile = () => {
                 </AlertDialog>
               </div>
             </div>
-            <ul className="divide-y divide-border/40 rounded-lg border border-border/40">
-              {loadingCreds ? (
-                <>
-                  {[0, 1, 2].map((i) => (
-                    <li key={i} className="py-3 px-3">
-                      <div className="flex items-center gap-3">
-                        <Skeleton className="h-4 w-4 rounded-full" />
-                        <div className="min-w-0 flex-1 space-y-1.5">
-                          <Skeleton className="h-4 w-40" />
-                          <Skeleton className="h-3 w-64" />
-                        </div>
-                      </div>
-                    </li>
-                  ))}
-                </>
-              ) : credentials.length === 0 ? (
-                <li className="py-6 px-3 text-sm text-muted-foreground">No passkeys yet.</li>
-              ) : (
-                [...credentials]
-                  .sort((a, b) => {
-                    const timeA = a.last_used_at ? new Date(a.last_used_at).getTime() : 0;
-                    const timeB = b.last_used_at ? new Date(b.last_used_at).getTime() : 0;
-
-                    return timeB - timeA;
-                  })
-                  .map((cred) => (
-                    <li
-                      key={cred.id}
-                      className="flex items-center justify-between py-3.5 px-3 hover:bg-accent/40 rounded-md transition-colors"
-                    >
-                      <div className="min-w-0 flex items-center gap-3">
-                        <Key className="h-4 w-4 text-muted-foreground shrink-0" />
-                        <div className="min-w-0">
-                          <div className="flex items-center gap-2">
-                            <div className="font-medium truncate">{cred.device_name}</div>
-                            {isRecent(cred.last_used_at) && (
-                              <span className="rounded-full bg-info/15 text-info px-2 py-0.5 text-[10px]">
-                                Recent
-                              </span>
-                            )}
-                          </div>
-                          <div className="text-xs text-muted-foreground space-y-0.5 leading-5">
-                            <div>Sign count {cred.sign_count}</div>
-                            <div>Last used {formatLastUsedLabel(cred.last_used_at)}</div>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="flex gap-2">
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className="text-foreground/80 hover:text-foreground"
-                          aria-label={`Rename ${cred.device_name}`}
-                          onClick={() => openRenameDialog(cred)}
-                        >
-                          Rename
-                        </Button>
-                        {credentials.length <= 1 ? (
-                          <TooltipProvider>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <span className="inline-flex">
-                                  <Button
-                                    size="sm"
-                                    variant="ghost"
-                                    className="text-destructive"
-                                    aria-label={`Delete ${cred.device_name}`}
-                                    disabled
-                                  >
-                                    Delete
-                                  </Button>
-                                </span>
-                              </TooltipTrigger>
-                              <TooltipContent>You must keep at least one passkey</TooltipContent>
-                            </Tooltip>
-                          </TooltipProvider>
-                        ) : (
-                          <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                className="text-destructive hover:text-destructive hover:bg-destructive/5"
-                                aria-label={`Delete ${cred.device_name}`}
-                              >
-                                Delete
-                              </Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                              <AlertDialogHeader>
-                                <AlertDialogTitle>Remove device?</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                  This will remove "{cred.device_name}" from your account. You must
-                                  have at least one passkey; the last one cannot be removed.
-                                </AlertDialogDescription>
-                              </AlertDialogHeader>
-                              <AlertDialogFooter>
-                                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                <AlertDialogAction
-                                  onClick={async () => {
-                                    try {
-                                      await deleteCredential(cred.id!);
-                                      toast({ title: "Passkey removed" });
-                                    } catch {
-                                      toast({ title: "Failed to remove passkey" });
-                                    } finally {
-                                      void refreshCredentials();
-                                    }
-                                  }}
-                                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                                >
-                                  Remove
-                                </AlertDialogAction>
-                              </AlertDialogFooter>
-                            </AlertDialogContent>
-                          </AlertDialog>
-                        )}
-                      </div>
-                    </li>
-                  ))
-              )}
-            </ul>
+            <PasskeysCard />
           </section>
 
           {/* Active Sessions */}
@@ -727,65 +535,7 @@ const Profile = () => {
           </section>
         </div>
 
-        {/* Recovery Keys */}
-        <section className="mt-6 space-y-4 pt-6 border-t border-border/40">
-          <div className="flex items-baseline justify-between flex-wrap gap-2">
-            <h2 className="text-xl font-bold">Recovery Keys</h2>
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button variant="destructive" size="sm">
-                  <RotateCcw className="mr-2 h-4 w-4" />
-                  Regenerate
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Regenerate recovery keys?</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    This will replace your existing recovery keys. Old keys will no longer work.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction
-                    onClick={handleRegenerateKeys}
-                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                  >
-                    Regenerate
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
-          </div>
-          <div className="flex items-center gap-2">
-            <p className="text-sm text-muted-foreground/70">
-              {recoveryKeysGenerated
-                ? `Last regenerated ${format(lastRecoveryDate, "PP")}`
-                : "Never generated"}
-            </p>
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger>
-                  <Info className="h-4 w-4 text-muted-foreground" />
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>
-                    Regenerating creates new keys and invalidates old ones.
-                    <br />
-                    New keys are shown only once.
-                  </p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          </div>
-          <div className="flex items-center gap-2 p-3 rounded-lg bg-info/10 border border-info/30">
-            <Info className="h-4 w-4 text-info shrink-0" />
-            <p className="text-sm text-foreground">
-              Your recovery keys can only be viewed right after they're generated. If you've lost
-              them, regenerate to create new keys.
-            </p>
-          </div>
-        </section>
+        {/* Recovery keys section removed */}
 
         {/* Danger Zone */}
         <section className="mt-8 space-y-4">

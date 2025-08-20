@@ -22,11 +22,6 @@ func RegisterDeployments(r *gin.Engine, deps DeploymentDeps) {
 			deployments.GET("/:deployment_id", deps.H.GetByID)
 			deployments.PATCH("/:deployment_id", deps.H.Update)
 			deployments.DELETE("/:deployment_id", deps.H.Delete)
-
-			// Render job sub-resource
-			deployments.GET("/:deployment_id/render-job", deps.H.GetRenderJob)
-			deployments.POST("/:deployment_id/render-job", deps.H.CreateRenderJob)
-			deployments.PATCH("/:deployment_id/render-job", deps.H.UpdateRenderJob)
 		}
 	}
 }

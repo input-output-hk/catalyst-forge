@@ -118,9 +118,6 @@ func runServer(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	// Initialize RBAC (automigrate + seed defaults if enabled)
-	initRBAC(context.Background(), db, cfg, logger)
-
 	// Context reserved for future init steps
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	_ = ctx

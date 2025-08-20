@@ -39,8 +39,8 @@ just down
 
 ## Services
 
-- Edge proxy: https://forge.localhost → routes `/api` to API, all else to Frontend
-- API: http://localhost:5050 (direct), or via edge at `https://forge.localhost/api`
+- Edge proxy: https://forge-test.projectcatalyst.io → routes `/api` to API, all else to Frontend
+- API: http://localhost:5050 (direct), or via edge at `https://forge-test.projectcatalyst.io/api`
 - Postgres: localhost:5432
 - pgAdmin: http://localhost:5051
 
@@ -52,19 +52,12 @@ just down
 ```bash
 mkdir -p .certs
 cd .certs
-mkcert forge.localhost
+mkcert forge-test.projectcatalyst.io.pem
 ```
-
-3) Add to `/etc/hosts`:
-
-```
-127.0.0.1 forge.localhost forge
-```
-
 4) Start the stack:
 
 ```bash
 just up
 ```
 
-Open `https://forge.localhost` in your browser.
+Open `https://forge-test.projectcatalyst.io` in your browser.

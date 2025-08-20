@@ -32,9 +32,14 @@ set shell := ["bash", "-cu"]
 
 # Start the playground
 @up VITE_API_URL="http://api:5050":
-    (cd ../services/api && earthly --config "" +docker)
+    #(cd ../services/api && earthly --config "" +docker)
     just build VITE_API_URL="{{VITE_API_URL}}"
-    docker compose up -d
+    docker compose -f docker-compose.yml -f docker-compose.ory.yml --profile prod up -d
+
+# Start dev profile with live-reload frontend
+@up-dev:
+    #(cd ../services/api && earthly --config "" +docker)
+    docker compose -f docker-compose.yml -f docker-compose.ory.yml --profile dev up -d
 
 # Stop and remove containers
 @down:
@@ -42,43 +47,32 @@ set shell := ["bash", "-cu"]
     docker compose down -v --remove-orphans || true
 
 # Tail logs
-@logs:
-    docker compose logs -f --tail=200
-
-# Start dev profile with live-reload frontend
-@up-dev:
-    (cd ../services/api && earthly --config "" +docker)
-    docker compose --profile dev up -d
+@logs container="api":
+    docker compose -f docker-compose.yml -f docker-compose.ory.yml --profile dev logs "{{container}}"
 
 # Tail dev logs
 @logs-dev:
     docker compose --profile dev logs -f --tail=200
 
-# Generate local TLS certs with mkcert for forge.localhost
+# Generate local TLS certs with mkcert for forge-test.projectcatalyst.io
 @certs:
     mkdir -p .certs
     if command -v mkcert >/dev/null 2>&1; then \
-      (cd .certs && mkcert forge.localhost); \
+      (cd .certs && mkcert forge-test.projectcatalyst.io); \
     else \
       echo "mkcert not found. Install it from https://github.com/FiloSottile/mkcert and re-run: just certs"; \
     fi
 
-# Add the local domain to the hosts file
-@host:
-    sudo hostctl add forge.localhost 127.0.0.1 && sudo hostctl -install
+@seed:
+    ./scripts/seed.sh
 
-# Open the frontend in the default browser
-@open:
-    if command -v open >/dev/null 2>&1; then open "https://forge.localhost"; \
-    elif command -v xdg-open >/dev/null 2>&1; then xdg-open "https://forge.localhost"; \
-    elif command -v powershell.exe >/dev/null 2>&1; then powershell.exe Start-Process "https://forge.localhost"; \
-    else echo "Please open https://forge.localhost in your browser"; fi
+@exec container command="/bin/sh" profile="dev":
+    docker compose -f docker-compose.yml -f docker-compose.ory.yml --profile "{{profile}}" exec "{{container}}" "{{command}}"
 
-# Open the dev URL
-@open-dev:
-    if command -v open >/dev/null 2>&1; then open "https://forge.localhost"; \
-    elif command -v xdg-open >/dev/null 2>&1; then xdg-open "https://forge.localhost"; \
-    elif command -v powershell.exe >/dev/null 2>&1; then powershell.exe Start-Process "https://forge.localhost"; \
-    else echo "Please open https://forge.localhost in your browser"; fi
+@restart container profile="dev":
+    docker compose -f docker-compose.yml -f docker-compose.ory.yml --profile "{{profile}}" up -d --no-deps --force-recreate "{{container}}"
 
 
+@restart-api profile="dev":
+    (cd ../services/api && just docker)
+    docker compose -f docker-compose.yml -f docker-compose.ory.yml --profile "{{profile}}" up -d --no-deps --force-recreate api

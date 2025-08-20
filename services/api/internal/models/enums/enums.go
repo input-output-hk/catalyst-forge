@@ -54,14 +54,3 @@ const (
 	DeploymentStatusFailed      DeploymentStatus = "failed"
 	DeploymentStatusRolledBack  DeploymentStatus = "rolled_back"
 )
-
-// RenderJobStatus represents the status of a render job
-type RenderJobStatus string
-
-const (
-	RenderJobStatusPending RenderJobStatus = "pending"
-	RenderJobStatusRunning RenderJobStatus = "running"
-	RenderJobStatusSuccess RenderJobStatus = "success"
-	RenderJobStatusFailed  RenderJobStatus = "failed"
-	RenderJobStatusCached  RenderJobStatus = "cached"
-)

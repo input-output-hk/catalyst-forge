@@ -3,24 +3,18 @@ module github.com/input-output-hk/catalyst-forge/services/api
 go 1.24.2
 
 require (
-	github.com/DATA-DOG/go-sqlmock v1.5.2
 	github.com/aws/aws-sdk-go-v2 v1.37.2
 	github.com/aws/aws-sdk-go-v2/config v1.30.3
 	github.com/aws/aws-sdk-go-v2/service/acmpca v1.37.2
 	github.com/aws/aws-sdk-go-v2/service/sesv2 v1.50.0
 	github.com/catalyst-forge/services/clients/go v0.0.0
-	github.com/catalystgo/catalyst-forge/lib/foundry/db v0.0.0
 	github.com/catalystgo/catalyst-forge/lib/foundry/httpkit v0.0.0
 	github.com/gin-gonic/gin v1.10.0
-	github.com/go-webauthn/webauthn v0.13.4
 	github.com/golang-jwt/jwt/v5 v5.2.3
 	github.com/google/uuid v1.6.0
-	github.com/input-output-hk/catalyst-forge/lib/foundry/auth v0.0.0-00010101000000-000000000000
-	github.com/input-output-hk/catalyst-forge/lib/foundry/client v0.0.0-00010101000000-000000000000
 	github.com/lib/pq v1.10.9
 	github.com/mitchellh/mapstructure v1.5.0
 	github.com/prometheus/client_golang v1.20.2
-	github.com/redis/go-redis/v9 v9.12.1
 	github.com/spf13/cobra v1.9.1
 	github.com/spf13/viper v1.20.1
 	github.com/stretchr/testify v1.10.0
@@ -29,10 +23,8 @@ require (
 	github.com/swaggo/swag/v2 v2.0.0-rc4
 	github.com/testcontainers/testcontainers-go v0.35.0
 	github.com/testcontainers/testcontainers-go/modules/postgres v0.35.0
-	gopkg.in/square/go-jose.v2 v2.6.0
 	gorm.io/datatypes v1.2.6
 	gorm.io/driver/postgres v1.6.0
-	gorm.io/driver/sqlite v1.5.7
 	gorm.io/gorm v1.30.0
 )
 
@@ -66,19 +58,15 @@ require (
 	github.com/containerd/log v0.1.0 // indirect
 	github.com/containerd/platforms v0.2.1 // indirect
 	github.com/cpuguy83/dockercfg v0.3.2 // indirect
-	github.com/cyphar/filepath-securejoin v0.3.6 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
-	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
 	github.com/distribution/reference v0.6.0 // indirect
 	github.com/docker/docker v27.1.1+incompatible // indirect
 	github.com/docker/go-connections v0.5.0 // indirect
 	github.com/docker/go-units v0.5.0 // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
 	github.com/fsnotify/fsnotify v1.8.0 // indirect
-	github.com/fxamacker/cbor/v2 v2.9.0 // indirect
 	github.com/gabriel-vasile/mimetype v1.4.3 // indirect
 	github.com/gin-contrib/sse v0.1.0 // indirect
-	github.com/go-git/go-billy/v5 v5.5.0 // indirect
 	github.com/go-logr/logr v1.4.2 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/go-ole/go-ole v1.2.6 // indirect
@@ -91,12 +79,9 @@ require (
 	github.com/go-playground/validator/v10 v10.20.0 // indirect
 	github.com/go-sql-driver/mysql v1.8.1 // indirect
 	github.com/go-viper/mapstructure/v2 v2.2.1 // indirect
-	github.com/go-webauthn/x v0.1.23 // indirect
 	github.com/goccy/go-json v0.10.2 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
-	github.com/google/go-tpm v0.9.5 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
-	github.com/input-output-hk/catalyst-forge/lib/tools v0.0.0-00010101000000-000000000000 // indirect
 	github.com/jackc/pgpassfile v1.0.0 // indirect
 	github.com/jackc/pgservicefile v0.0.0-20240606120523-5a60cdf6a761 // indirect
 	github.com/jackc/pgx/v5 v5.6.0 // indirect
@@ -113,7 +98,6 @@ require (
 	github.com/magiconair/properties v1.8.7 // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
-	github.com/mattn/go-sqlite3 v1.14.22 // indirect
 	github.com/moby/docker-image-spec v1.3.1 // indirect
 	github.com/moby/patternmatcher v0.6.0 // indirect
 	github.com/moby/sys/sequential v0.5.0 // indirect
@@ -124,7 +108,6 @@ require (
 	github.com/morikuni/aec v1.0.0 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
 	github.com/oapi-codegen/runtime v1.1.1 // indirect
-	github.com/onsi/gomega v1.35.1 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.1.0 // indirect
 	github.com/pelletier/go-toml/v2 v2.2.3 // indirect
@@ -134,6 +117,7 @@ require (
 	github.com/prometheus/client_model v0.6.1 // indirect
 	github.com/prometheus/common v0.55.0 // indirect
 	github.com/prometheus/procfs v0.15.1 // indirect
+	github.com/rogpeppe/go-internal v1.11.0 // indirect
 	github.com/sagikazarmark/locafero v0.7.0 // indirect
 	github.com/shirou/gopsutil/v3 v3.23.12 // indirect
 	github.com/shoenig/go-m1cpu v0.1.6 // indirect
@@ -149,7 +133,6 @@ require (
 	github.com/tklauser/numcpus v0.6.1 // indirect
 	github.com/twitchyliquid64/golang-asm v0.15.1 // indirect
 	github.com/ugorji/go/codec v1.2.12 // indirect
-	github.com/x448/float16 v0.8.4 // indirect
 	github.com/yusufpapurcu/wmi v1.2.3 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.54.0 // indirect
 	go.opentelemetry.io/otel v1.29.0 // indirect
@@ -168,13 +151,10 @@ require (
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	gorm.io/driver/mysql v1.5.6 // indirect
+	gorm.io/driver/sqlite v1.5.7 // indirect
 )
 
 replace github.com/input-output-hk/catalyst-forge/lib/tools => ../../lib/tools
-
-replace github.com/input-output-hk/catalyst-forge/lib/foundry/auth => ../../lib/foundry/auth
-
-replace github.com/input-output-hk/catalyst-forge/lib/foundry/client => ../../lib/foundry/client
 
 replace github.com/catalystgo/catalyst-forge/lib/foundry/httpkit => ../../lib/foundry/httpkit
 

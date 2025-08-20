@@ -14,10 +14,10 @@ import (
 )
 
 var (
-	ErrReleaseNotFound     = errors.New("release not found")
-	ErrReleaseExists       = errors.New("release already exists")
-	ErrReleaseSealed       = errors.New("release is sealed and cannot be modified")
-	ErrReleaseReferenced   = errors.New("release is referenced by deployments")
+	ErrReleaseNotFound   = errors.New("release not found")
+	ErrReleaseExists     = errors.New("release already exists")
+	ErrReleaseSealed     = errors.New("release is sealed and cannot be modified")
+	ErrReleaseReferenced = errors.New("release is referenced by deployments")
 )
 
 // Repository defines the interface for release operations
@@ -35,16 +35,16 @@ type Repository interface {
 
 // ListFilter contains filter parameters for listing releases
 type ListFilter struct {
-	ProjectID    *uuid.UUID
-	ReleaseKey   *string
-	Status       *enums.ReleaseStatus
-	OCIDigest    *string
-	Tag          *string
-	CreatedBy    *string
-	Since        *time.Time
-	Until        *time.Time
-	Pagination   *base.Pagination
-	Sort         *base.Sort
+	ProjectID  *uuid.UUID
+	ReleaseKey *string
+	Status     *enums.ReleaseStatus
+	OCIDigest  *string
+	Tag        *string
+	CreatedBy  *string
+	Since      *time.Time
+	Until      *time.Time
+	Pagination *base.Pagination
+	Sort       *base.Sort
 }
 
 // repositoryImpl implements Repository interface
@@ -60,21 +60,21 @@ func NewRepository(db *gorm.DB) Repository {
 // Create creates a new release
 func (r *repositoryImpl) Create(ctx context.Context, rel *release.Release) error {
 	db := base.GetDB(ctx, r.db)
-	
+
 	if err := db.Create(rel).Error; err != nil {
 		if errors.Is(err, gorm.ErrDuplicatedKey) {
 			return ErrReleaseExists
 		}
 		return err
 	}
-	
+
 	return nil
 }
 
 // GetByID retrieves a release by ID
 func (r *repositoryImpl) GetByID(ctx context.Context, id uuid.UUID) (*release.Release, error) {
 	db := base.GetDB(ctx, r.db)
-	
+
 	var rel release.Release
 	if err := db.Where("id = ?", id).First(&rel).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -82,14 +82,14 @@ func (r *repositoryImpl) GetByID(ctx context.Context, id uuid.UUID) (*release.Re
 		}
 		return nil, err
 	}
-	
+
 	return &rel, nil
 }
 
 // GetByProjectAndKey retrieves a release by project ID and release key
 func (r *repositoryImpl) GetByProjectAndKey(ctx context.Context, projectID uuid.UUID, key string) (*release.Release, error) {
 	db := base.GetDB(ctx, r.db)
-	
+
 	var rel release.Release
 	if err := db.Where("project_id = ? AND release_key = ?", projectID, key).First(&rel).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -97,14 +97,14 @@ func (r *repositoryImpl) GetByProjectAndKey(ctx context.Context, projectID uuid.
 		}
 		return nil, err
 	}
-	
+
 	return &rel, nil
 }
 
 // GetByProjectAndTag retrieves a release by project ID and tag
 func (r *repositoryImpl) GetByProjectAndTag(ctx context.Context, projectID uuid.UUID, tag string) (*release.Release, error) {
 	db := base.GetDB(ctx, r.db)
-	
+
 	var rel release.Release
 	if err := db.Where("project_id = ? AND tag = ?", projectID, tag).First(&rel).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -112,14 +112,14 @@ func (r *repositoryImpl) GetByProjectAndTag(ctx context.Context, projectID uuid.
 		}
 		return nil, err
 	}
-	
+
 	return &rel, nil
 }
 
 // GetByOCIDigest retrieves a release by OCI digest
 func (r *repositoryImpl) GetByOCIDigest(ctx context.Context, digest string) (*release.Release, error) {
 	db := base.GetDB(ctx, r.db)
-	
+
 	var rel release.Release
 	if err := db.Where("oci_digest = ?", digest).First(&rel).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -127,16 +127,16 @@ func (r *repositoryImpl) GetByOCIDigest(ctx context.Context, digest string) (*re
 		}
 		return nil, err
 	}
-	
+
 	return &rel, nil
 }
 
 // List retrieves releases with filters and pagination
 func (r *repositoryImpl) List(ctx context.Context, filter ListFilter) ([]release.Release, int64, error) {
 	db := base.GetDB(ctx, r.db)
-	
+
 	query := db.Model(&release.Release{})
-	
+
 	// Apply filters
 	if filter.ProjectID != nil {
 		query = query.Where("project_id = ?", *filter.ProjectID)
@@ -162,107 +162,104 @@ func (r *repositoryImpl) List(ctx context.Context, filter ListFilter) ([]release
 	if filter.Until != nil {
 		query = query.Where("created_at <= ?", *filter.Until)
 	}
-	
+
 	// Count total
 	var total int64
 	if err := query.Count(&total).Error; err != nil {
 		return nil, 0, err
 	}
-	
+
 	// Apply sorting
 	query = base.ApplySort(query, filter.Sort, "created_at DESC")
-	
+
 	// Apply pagination
 	query = base.ApplyPagination(query, filter.Pagination)
-	
+
 	// Fetch results
 	var releases []release.Release
 	if err := query.Find(&releases).Error; err != nil {
 		return nil, 0, err
 	}
-	
+
 	return releases, total, nil
 }
 
 // Update updates a release
 func (r *repositoryImpl) Update(ctx context.Context, rel *release.Release) error {
 	db := base.GetDB(ctx, r.db)
-	
+
 	// Check if release is sealed
 	sealed, err := r.IsSealed(ctx, rel.ID)
 	if err != nil {
 		return err
 	}
-	
+
 	if sealed {
 		// Only allow certain updates on sealed releases
 		allowedUpdates := map[string]interface{}{
-			"signed":               rel.Signed,
-			"sig_issuer":           rel.SigIssuer,
-			"sig_subject":          rel.SigSubject,
+			"signed":                rel.Signed,
+			"sig_issuer":            rel.SigIssuer,
+			"sig_subject":           rel.SigSubject,
 			"signature_verified_at": rel.SignatureVerifiedAt,
-			"updated_at":           time.Now(),
+			"updated_at":            time.Now(),
 		}
-		
+
 		result := db.Model(&release.Release{}).Where("id = ?", rel.ID).Updates(allowedUpdates)
 		if result.Error != nil {
 			return result.Error
 		}
-		
+
 		if result.RowsAffected == 0 {
 			return ErrReleaseNotFound
 		}
-		
+
 		return nil
 	}
-	
+
 	// Full update for non-sealed releases
 	result := db.Model(rel).Where("id = ?", rel.ID).Updates(rel)
 	if result.Error != nil {
 		return result.Error
 	}
-	
+
 	if result.RowsAffected == 0 {
 		return ErrReleaseNotFound
 	}
-	
+
 	return nil
 }
 
 // Delete deletes a release by ID
 func (r *repositoryImpl) Delete(ctx context.Context, id uuid.UUID) error {
 	db := base.GetDB(ctx, r.db)
-	
+
 	// Check if release is referenced by deployments
 	var count int64
 	db.Table("deployment").Where("release_id = ?", id).Count(&count)
 	if count > 0 {
 		return ErrReleaseReferenced
 	}
-	
+
 	// Delete in transaction to ensure all related records are removed
 	return db.Transaction(func(tx *gorm.DB) error {
 		// Delete related records first
 		if err := tx.Where("release_id = ?", id).Delete(&release.ReleaseModule{}).Error; err != nil {
 			return err
 		}
-		if err := tx.Where("release_id = ?", id).Delete(&release.ReleaseInjection{}).Error; err != nil {
-			return err
-		}
 		if err := tx.Where("release_id = ?", id).Delete(&release.ReleaseArtifact{}).Error; err != nil {
 			return err
 		}
-		
+
 		// Delete the release
 		result := tx.Where("id = ?", id).Delete(&release.Release{})
 		if result.Error != nil {
 			return result.Error
 		}
-		
+
 		if result.RowsAffected == 0 {
 			return ErrReleaseNotFound
 		}
-		
+
 		return nil
 	})
 }
@@ -270,7 +267,7 @@ func (r *repositoryImpl) Delete(ctx context.Context, id uuid.UUID) error {
 // IsSealed checks if a release is sealed
 func (r *repositoryImpl) IsSealed(ctx context.Context, id uuid.UUID) (bool, error) {
 	db := base.GetDB(ctx, r.db)
-	
+
 	var status enums.ReleaseStatus
 	if err := db.Model(&release.Release{}).Where("id = ?", id).Select("status").Scan(&status).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -278,6 +275,6 @@ func (r *repositoryImpl) IsSealed(ctx context.Context, id uuid.UUID) (bool, erro
 		}
 		return false, err
 	}
-	
+
 	return status == enums.ReleaseStatusSealed, nil
 }

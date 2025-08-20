@@ -9,7 +9,6 @@ import {
   type Device,
 } from "@/mocks/fixtures";
 import { withLatency } from "@/mocks/latency";
-import { generateRecoveryKeys } from "@/lib/auth/recovery";
 
 export type FeatureFlags = {
   darkMode: boolean;
@@ -26,7 +25,6 @@ export type AppState = {
   devices: Device[];
   flags: FeatureFlags;
   session: { authed: boolean; user: string | null; roles: string[] };
-  recoveryGate: { open: boolean; keys: string[]; returnTo?: string };
 };
 
 const AppStoreCtx = createContext<{
@@ -41,8 +39,6 @@ const AppStoreCtx = createContext<{
     addAudit: (
       e: Omit<AuditEvent, "id" | "timestamp"> & { meta?: Record<string, unknown> }
     ) => void;
-    startRecoveryGate: (keys: string[], returnTo?: string) => void;
-    completeRecoveryGate: () => void;
     login: (user: string, roles: string[]) => void;
     logout: () => void;
   };
@@ -68,7 +64,7 @@ export const AppStoreProvider = ({ children }: { children: React.ReactNode }) =>
       devices: fixtures.devices,
       flags: { darkMode: dark, compact: false, streamLogs: true },
       session: { authed: false, user: null, roles: [] },
-      recoveryGate: { open: false, keys: [], returnTo: undefined },
+
     };
   });
 
@@ -105,23 +101,6 @@ export const AppStoreProvider = ({ children }: { children: React.ReactNode }) =>
     },
     []
   );
-
-  const startRecoveryGate = useCallback(
-    (keys: string[], returnTo?: string) => {
-      setState((s) => ({ ...s, recoveryGate: { open: true, keys, returnTo } }));
-      addAudit({ actor: state.session.user ?? "user", action: "recovery.start", resource: "keys" });
-    },
-    [addAudit, state.session.user]
-  );
-
-  const completeRecoveryGate = useCallback(() => {
-    setState((s) => ({ ...s, recoveryGate: { open: false, keys: [] } }));
-    addAudit({
-      actor: state.session.user ?? "user",
-      action: "recovery.complete",
-      resource: "keys",
-    });
-  }, [addAudit, state.session.user]);
 
   const rotateSecret = useCallback(
     async (id: string) => {
@@ -174,11 +153,9 @@ export const AppStoreProvider = ({ children }: { children: React.ReactNode }) =>
           { id: `dev_${Date.now()}`, label, addedAt: new Date().toISOString() },
         ],
       }));
-      const keys = generateRecoveryKeys(8);
-      startRecoveryGate(keys, "/");
       addAudit({ actor: state.session.user ?? "user", action: "device.register", resource: label });
     },
-    [addAudit, state.session.user, startRecoveryGate]
+    [addAudit, state.session.user]
   );
 
   const removeDevice = useCallback(
@@ -206,8 +183,6 @@ export const AppStoreProvider = ({ children }: { children: React.ReactNode }) =>
         registerInitialDevice,
         removeDevice,
         addAudit,
-        startRecoveryGate,
-        completeRecoveryGate,
         login,
         logout,
       },
@@ -221,8 +196,6 @@ export const AppStoreProvider = ({ children }: { children: React.ReactNode }) =>
       registerInitialDevice,
       removeDevice,
       addAudit,
-      startRecoveryGate,
-      completeRecoveryGate,
     ]
   );
 

@@ -5,8 +5,6 @@ import (
 	"crypto/x509"
 	"encoding/pem"
 	"time"
-
-	rbac "github.com/input-output-hk/catalyst-forge/services/api/internal/authkit/rbac"
 )
 
 type Clock interface{ Now() time.Time }
@@ -24,10 +22,6 @@ type IssueInput struct {
 	NotBefore        *time.Time
 	NotAfter         time.Time
 	IdempotencyToken string
-}
-
-type RBAC interface {
-	Check(ctx context.Context, subj rbac.Subject, action rbac.PermissionKey, res rbac.ResourceRef) (rbac.Decision, error)
 }
 
 type SignRequest struct {
@@ -48,7 +42,6 @@ type SignResult struct {
 type Issuer struct {
 	CAArn            string
 	PCA              PCAClient
-	RBAC             RBAC
 	Clock            Clock
 	AllowedTemplates map[string]string
 	MaxTTL           time.Duration
@@ -68,16 +61,6 @@ func (i *Issuer) SignCSR(ctx context.Context, req SignRequest) (*SignResult, err
 	}
 	if err := csr.CheckSignature(); err != nil {
 		return nil, ErrCSRSignature
-	}
-	// Extract SANs
-	dns, uris, ips := ExtractSANs(csr)
-	// Optional RBAC check (resource attrs carry SANs)
-	if i.RBAC != nil {
-		res := rbac.ResourceRef{Type: "cert-request", Attrs: map[string]any{"dns_sans": dns, "uri_sans": uris, "ip_sans": ips}}
-		subj := rbac.Subject{Type: rbac.SubjectUser, ID: req.Requestor}
-		if dec, _ := i.RBAC.Check(ctx, subj, rbac.PermissionKey("cert:sign"), res); dec != rbac.DecisionAllow {
-			return nil, ErrCSRPolicyViolation
-		}
 	}
 	// TTL clamp
 	now := i.Clock.Now()

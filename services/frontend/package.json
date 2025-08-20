@@ -18,6 +18,8 @@
     "sync-client": "bash ./scripts/sync-vendored-client.sh --build"
   },
   "dependencies": {
+    "@ory/elements-react": "^1.0.0",
+    "@ory/client": "^1.6.0",
     "@hookform/resolvers": "^3.10.0",
     "@radix-ui/react-accordion": "^1.2.11",
     "@radix-ui/react-alert-dialog": "^1.1.14",

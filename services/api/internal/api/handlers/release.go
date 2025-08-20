@@ -31,7 +31,7 @@ func NewReleaseHandler(service releaseService.Service, logger *slog.Logger) *Rel
 
 // Create handles POST /api/v1/releases
 // @Summary Create a new release
-// @Description Create a new release with modules, injections, and artifacts
+// @Description Create a new release with modules and artifacts
 // @Tags releases
 // @Accept json
 // @Produce json
@@ -88,18 +88,6 @@ func (h *ReleaseHandler) Create(c *gin.Context) {
 			Path:       m.Path,
 		}
 		svcReq.Modules = append(svcReq.Modules, module)
-	}
-
-	// Handle injections
-	for _, i := range req.Injections {
-		injection := releaseService.InjectionRequest{
-			JSONPointer:   i.JSONPointer,
-			ArtifactKey:   i.ArtifactKey,
-			ArtifactField: i.ArtifactField,
-			ModuleKey:     i.ModuleKey,
-			ModuleName:    i.ModuleName,
-		}
-		svcReq.Injections = append(svcReq.Injections, injection)
 	}
 
 	// Handle artifacts
@@ -520,160 +508,6 @@ func (h *ReleaseHandler) RemoveModule(c *gin.Context) {
 	c.Status(http.StatusNoContent)
 }
 
-// GetInjections handles GET /api/v1/releases/:id/injections
-// @Summary Get release injections
-// @Description List all injections associated with a release
-// @Tags releases
-// @Accept json
-// @Produce json
-// @Param id path string true "Release ID (UUID)"
-// @Success 200 {array} contracts.ReleaseInjection "List of release injections"
-// @Failure 400 {object} contracts.ErrorResponse "Invalid release ID"
-// @Failure 404 {object} contracts.ErrorResponse "Release not found"
-// @Failure 500 {object} contracts.ErrorResponse "Internal server error"
-// @Router /api/v1/releases/{id}/injections [get]
-func (h *ReleaseHandler) GetInjections(c *gin.Context) {
-	type pathParam struct {
-		ReleaseID string `uri:"release_id" binding:"required,uuid4"`
-	}
-	var p pathParam
-	if err := c.ShouldBindUri(&p); err != nil {
-		h.RespondWithValidationError(c, err)
-		return
-	}
-	id, err := h.ParseUUID(p.ReleaseID)
-	if err != nil {
-		h.RespondWithValidationError(c, err)
-		return
-	}
-	injections, err := h.service.ListInjections(c.Request.Context(), id)
-	if err != nil {
-		if errors.Is(err, releaseRepo.ErrReleaseNotFound) {
-			h.RespondWithNotFound(c, "Release")
-			return
-		}
-		h.RespondWithInternalError(c, err)
-		return
-	}
-	items := make([]contracts.ReleaseInjection, len(injections))
-	for i, inj := range injections {
-		items[i] = h.toInjectionResponse(&inj)
-	}
-	h.RespondWithSuccess(c, http.StatusOK, items)
-}
-
-// AddInjections handles POST /api/v1/releases/:id/injections
-// @Summary Add injections to a release
-// @Description Add one or more injections to an existing release
-// @Tags releases
-// @Accept json
-// @Produce json
-// @Param id path string true "Release ID (UUID)"
-// @Param injections body contracts.ReleaseInjectionCreate true "Injections to add"
-// @Success 201 "Injections added successfully"
-// @Failure 400 {object} contracts.ErrorResponse "Invalid request"
-// @Failure 404 {object} contracts.ErrorResponse "Release not found"
-// @Failure 409 {object} contracts.ErrorResponse "Release is sealed and cannot be modified"
-// @Failure 500 {object} contracts.ErrorResponse "Internal server error"
-// @Router /api/v1/releases/{id}/injections [post]
-func (h *ReleaseHandler) AddInjections(c *gin.Context) {
-	type pathParam struct {
-		ReleaseID string `uri:"release_id" binding:"required,uuid4"`
-	}
-	var p pathParam
-	if err := c.ShouldBindUri(&p); err != nil {
-		h.RespondWithValidationError(c, err)
-		return
-	}
-	var req contracts.ReleaseInjectionCreate
-	if err := c.ShouldBindJSON(&req); err != nil {
-		h.RespondWithValidationError(c, err)
-		return
-	}
-	id, err := h.ParseUUID(p.ReleaseID)
-	if err != nil {
-		h.RespondWithValidationError(c, err)
-		return
-	}
-	var injections []releaseService.InjectionRequest
-	for _, i := range req.Injections {
-		injection := releaseService.InjectionRequest{
-			JSONPointer:   i.JSONPointer,
-			ArtifactKey:   i.ArtifactKey,
-			ArtifactField: i.ArtifactField,
-			ModuleKey:     i.ModuleKey,
-			ModuleName:    i.ModuleName,
-		}
-		injections = append(injections, injection)
-	}
-	if err := h.service.CreateInjections(c.Request.Context(), id, injections); err != nil {
-		if errors.Is(err, releaseRepo.ErrReleaseNotFound) {
-			h.RespondWithNotFound(c, "Release")
-			return
-		}
-		if errors.Is(err, releaseService.ErrReleaseSealed) {
-			h.RespondWithConflict(c, "Release is sealed and cannot be modified")
-			return
-		}
-		h.RespondWithInternalError(c, err)
-		return
-	}
-	c.Status(http.StatusCreated)
-}
-
-// RemoveInjection handles DELETE /api/v1/releases/:release_id/injections/:injection_id
-// @Summary Remove an injection from a release
-// @Description Remove a specific injection from a release
-// @Tags releases
-// @Accept json
-// @Produce json
-// @Param release_id path string true "Release ID (UUID)"
-// @Param injection_id path string true "Injection ID (UUID)"
-// @Success 204 "Injection removed successfully"
-// @Failure 400 {object} contracts.ErrorResponse "Invalid parameters"
-// @Failure 404 {object} contracts.ErrorResponse "Release or injection not found"
-// @Failure 409 {object} contracts.ErrorResponse "Release is sealed and cannot be modified"
-// @Failure 500 {object} contracts.ErrorResponse "Internal server error"
-// @Router /api/v1/releases/{release_id}/injections/{injection_id} [delete]
-func (h *ReleaseHandler) RemoveInjection(c *gin.Context) {
-	type pathParam struct {
-		ReleaseID   string `uri:"release_id" binding:"required,uuid4"`
-		InjectionID string `uri:"injection_id" binding:"required,uuid4"`
-	}
-	var p pathParam
-	if err := c.ShouldBindUri(&p); err != nil {
-		h.RespondWithValidationError(c, err)
-		return
-	}
-	releaseID, err := h.ParseUUID(p.ReleaseID)
-	if err != nil {
-		h.RespondWithValidationError(c, err)
-		return
-	}
-	injectionID, err := h.ParseUUID(p.InjectionID)
-	if err != nil {
-		h.RespondWithValidationError(c, err)
-		return
-	}
-	if err := h.service.DeleteInjection(c.Request.Context(), releaseID, injectionID); err != nil {
-		if errors.Is(err, releaseRepo.ErrReleaseNotFound) {
-			h.RespondWithNotFound(c, "Release")
-			return
-		}
-		if errors.Is(err, releaseRepo.ErrInjectionNotFound) {
-			h.RespondWithNotFound(c, "Injection")
-			return
-		}
-		if errors.Is(err, releaseService.ErrReleaseSealed) {
-			h.RespondWithConflict(c, "Release is sealed and cannot be modified")
-			return
-		}
-		h.RespondWithInternalError(c, err)
-		return
-	}
-	c.Status(http.StatusNoContent)
-}
-
 // GetArtifacts handles GET /api/v1/releases/:id/artifacts
 // @Summary Get release artifacts
 // @Description List all artifacts associated with a release
@@ -884,22 +718,6 @@ func (h *ReleaseHandler) toModuleResponse(m *release.ReleaseModule) contracts.Re
 		GitRef:     m.GitRef,
 		Path:       m.Path,
 		CreatedAt:  &m.CreatedAt,
-	}
-
-	return resp
-}
-
-// toInjectionResponse converts a release injection model to response DTO
-func (h *ReleaseHandler) toInjectionResponse(i *release.ReleaseInjection) contracts.ReleaseInjection {
-	resp := contracts.ReleaseInjection{
-		ID:            i.ID.String(),
-		ReleaseID:     i.ReleaseID.String(),
-		JSONPointer:   i.JSONPointer,
-		ArtifactKey:   i.ArtifactKey,
-		ArtifactField: string(i.ArtifactField),
-		ModuleKey:     i.ModuleKey,
-		ModuleName:    i.ModuleName,
-		CreatedAt:     &i.CreatedAt,
 	}
 
 	return resp

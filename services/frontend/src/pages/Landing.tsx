@@ -4,38 +4,10 @@ import { Button } from "@/components/ui/button";
 import { LogoMark } from "@/components/brand/LogoMark";
 import { ForgeAnimation } from "@/components/brand/ForgeAnimation";
 import { BRAND } from "@/lib/brand";
-import { preloadAuthFlows } from "@/lib/preloaders";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from "@/components/ui/dialog";
-import { CheckCircle2, KeyRound, Info, AlertTriangle } from "lucide-react";
-import RegisterRequestForm from "@/components/auth/RegisterRequestForm";
-import { useForm } from "react-hook-form";
-import { z } from "zod";
-import { zodResolver } from "@hookform/resolvers/zod";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
+import { Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAppStore } from "@/store/app-store";
-import { loginWithWebAuthn } from "@/lib/webauthn";
-import {
-  formatRecoveryKey,
-  isValidRecoveryKey,
-  normalizeRecoveryKeyInput,
-} from "@/lib/auth/recovery";
-import { cn } from "@/lib/utils";
+import { loginWithProvider, registerWithProvider } from "@/lib/auth/oidc";
 import { usePageTitle } from "@/hooks/usePageTitle";
 import { extractErrorMessage } from "@/lib/api";
 
@@ -46,22 +18,7 @@ interface NavigationState {
   from?: string;
 }
 
-interface RecoveryKeyStatus {
-  tone: "success" | "warning";
-  msg: string;
-}
-
-type RecoveryFormData = z.infer<typeof recoverySchema>;
-
-// Schema definitions
-const recoverySchema = z.object({
-  key: z
-    .string()
-    .min(1, "Recovery key is required")
-    .refine((value) => isValidRecoveryKey(value), {
-      message: "Use A–Z and 2–7; length 20, 25, or 26.",
-    }),
-});
+// Recovery flows removed
 /**
  * Landing page component for Catalyst Forge.
  * Handles user authentication, access requests, and account recovery.
@@ -77,147 +34,76 @@ export default function Landing() {
   const shouldOpenRequest = searchParams.get("request") === "1";
   const shouldOpenRecovery = searchParams.get("recover") === "1";
 
-  // Dialog state management
-  const [requestOpen, setRequestOpen] = useState(false);
-  const [recoveryOpen, setRecoveryOpen] = useState(false);
-  const [submittedEmail, setSubmittedEmail] = useState<string | null>(null);
-
   // UI state
-  const [jiggle, setJiggle] = useState(false);
-
-  // Open dialogs based on URL parameters
-  useEffect(() => {
-    if (shouldOpenRequest) {
-      setRequestOpen(true);
-    }
-  }, [shouldOpenRequest]);
-
-  useEffect(() => {
-    if (shouldOpenRecovery) {
-      setRecoveryOpen(true);
-    }
-  }, [shouldOpenRecovery]);
-
-  // Recovery form setup
-  const recoveryForm = useForm<RecoveryFormData>({
-    resolver: zodResolver(recoverySchema),
-    defaultValues: { key: "" },
-  });
-
-  // Auto-focus recovery key field when dialog opens
-  useEffect(() => {
-    if (recoveryOpen) {
-      const focusDelay = 10; // milliseconds
-      setTimeout(() => recoveryForm.setFocus("key"), focusDelay);
-    }
-  }, [recoveryOpen, recoveryForm]);
+  const [loginPending, setLoginPending] = useState(false);
+  const [registerPending, setRegisterPending] = useState(false);
 
   // Store and hooks
-  const { actions } = useAppStore();
+  const { state, actions } = useAppStore();
   const { toast } = useToast();
 
   // SEO metadata
   const seo = usePageTitle(
     "Catalyst Forge – Developer Platform",
-    "Developer platform landing: login, access request, and account recovery.",
+    "Developer platform landing: login, register, and account recovery.",
     "/welcome"
   );
 
-  /**
-   * Handles WebAuthn login flow.
-   * Shows authentication prompt and navigates on success.
-   */
+  // If a valid Kratos session already exists (e.g., right after registration),
+  // mark the app as authed and send the user to their intended destination.
+  useEffect(() => {
+    let cancelled = false;
+    async function pickUpExistingSession() {
+      try {
+        if (!state.session.authed) {
+          const resp = await fetch("/.ory/kratos/public/sessions/whoami", { credentials: "include" });
+          if (resp.ok) {
+            const data = await resp.json();
+            const email = data?.identity?.traits?.email ?? "user";
+            actions.login(email, Array.isArray(state.session.roles) ? state.session.roles : []);
+            const redirectPath = navigationState?.from || "/";
+            navigate(redirectPath, { replace: true });
+          }
+        }
+      } catch {
+        // no-op; stay on welcome
+      }
+    }
+    pickUpExistingSession();
+    return () => {
+      cancelled = true;
+    };
+  }, [state.session.authed, state.session.roles, navigationState?.from, actions, navigate]);
+
   async function handleLogin() {
+    const redirectPath = navigationState?.from || "/";
     try {
-      toast({
-        title: "Authenticate",
-        description: "Touch your security key or biometric sensor.",
-      });
-
-      await loginWithWebAuthn();
-
-      // Navigate to previous page or home
-      const redirectPath = navigationState?.from || "/";
-      navigate(redirectPath, { replace: true });
-    } catch (error) {
-      const errorMessage = extractErrorMessage(error, "Login failed");
+      setLoginPending(true);
+      await loginWithProvider("google", redirectPath);
+    } catch (err) {
+      setLoginPending(false);
       toast({
         title: "Login failed",
-        description: errorMessage,
+        description: extractErrorMessage(err, "Could not start sign-in. Please try again."),
         variant: "destructive",
       });
     }
   }
 
-  /**
-   * Handles account recovery form submission.
-   * Verifies recovery key and registers current device.
-   */
-  async function handleRecovery(_values: RecoveryFormData) {
-    // Log recovery attempt
-    actions.addAudit({
-      actor: "recovery",
-      action: "recovery.verify",
-      resource: "account",
-      meta: { method: "key" },
-    });
-
-    // Show success message
-    toast({
-      title: "Recovery key accepted",
-      description: "Registering this device...",
-    });
-
-    // Close dialog and reset form
-    setRecoveryOpen(false);
-    recoveryForm.reset({ key: "" });
-
-    // Navigate to welcome page
-    navigate("/welcome", { replace: true });
-
-    // Register device asynchronously
-    await actions.addDevice("This device");
+  async function handleRegister() {
+    const redirectPath = navigationState?.from || "/";
+    try {
+      setRegisterPending(true);
+      await registerWithProvider("google", redirectPath);
+    } catch (err) {
+      setRegisterPending(false);
+      toast({
+        title: "Registration failed",
+        description: extractErrorMessage(err, "Could not start registration. Please try again."),
+        variant: "destructive",
+      });
+    }
   }
-
-  /**
-   * Calculates recovery key validation status based on length.
-   * Provides real-time feedback as user types.
-   */
-  function getRecoveryKeyStatus(keyValue: string): RecoveryKeyStatus | null {
-    const normalizedKey = normalizeRecoveryKeyInput(keyValue || "");
-    const keyLength = normalizedKey.length;
-    const validLengths = [20, 25, 26] as const;
-    const isValidLength = validLengths.includes(keyLength as (typeof validLengths)[number]);
-
-    if (keyLength === 0) {
-      return null;
-    }
-
-    if (keyLength < 20) {
-      const charactersNeeded = 20 - keyLength;
-      return {
-        tone: "warning",
-        msg: `Almost there — ${charactersNeeded} more characters needed (min 20).`,
-      };
-    }
-
-    if (isValidLength) {
-      return {
-        tone: "success",
-        msg: "Key format is valid.",
-      };
-    }
-
-    return {
-      tone: "warning",
-      msg: `Accepted lengths: 20, 25, or 26. Currently ${keyLength}.`,
-    };
-  }
-
-  // Watch recovery key field for real-time validation
-  const recoveryKeyValue = recoveryForm.watch("key");
-  const recoveryKeyStatus = getRecoveryKeyStatus(recoveryKeyValue);
-  const recoveryKeyError = recoveryForm.formState.errors.key?.message;
 
   return (
     <div className="relative min-h-screen bg-background text-foreground overflow-hidden">
@@ -257,47 +143,43 @@ export default function Landing() {
             </div>
           </header>
 
-          <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4">
+          <div className="mt-8 grid grid-cols-1 gap-3 md:gap-4">
             <Button
               size="lg"
               variant="hero"
               className="btn-ripple hover-scale hover-glow w-full"
-              aria-label="Login with this device"
-              onPointerEnter={preloadAuthFlows}
-              onFocus={preloadAuthFlows}
-              onTouchStart={preloadAuthFlows}
+              aria-label="Login"
+
               onClick={handleLogin}
+              disabled={loginPending}
+              aria-disabled={loginPending}
             >
-              Login with this device
+              {loginPending ? (
+                <span className="inline-flex items-center gap-2">
+                  <Loader2 className="h-4 w-4 animate-spin" /> Redirecting…
+                </span>
+              ) : (
+                "Login"
+              )}
             </Button>
             <Button
               size="lg"
-              variant="outline"
-              className="cta-outline-invert btn-ripple hover-scale hover-glow w-full"
-              aria-label="Get access"
-              onPointerEnter={preloadAuthFlows}
-              onFocus={preloadAuthFlows}
-              onTouchStart={preloadAuthFlows}
-              onClick={() => setRequestOpen(true)}
+              variant="secondary"
+              className="btn-ripple hover-scale hover-glow w-full"
+              onClick={handleRegister}
+              disabled={registerPending}
+              aria-disabled={registerPending}
             >
-              Get access
+              {registerPending ? (
+                <span className="inline-flex items-center gap-2">
+                  <Loader2 className="h-4 w-4 animate-spin" /> Redirecting…
+                </span>
+              ) : (
+                "Create account"
+              )}
             </Button>
           </div>
 
-          <div className="mt-8 text-center text-xs text-muted-foreground/80">
-            <button
-              onClick={() => setRecoveryOpen(true)}
-              className="group inline-flex items-center gap-1.5 px-2 py-1.5 -mx-2 rounded-md transition-colors hover:text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
-              aria-label="Lost access? Recover your account"
-            >
-              <KeyRound
-                className="mr-0.5 -mt-px h-3.5 w-3.5 text-muted-foreground/60 group-hover:text-foreground/80 transition-colors"
-                aria-hidden="true"
-              />
-              <span>Lost access? </span>
-              <span className="underline underline-offset-4">Recover your account</span>
-            </button>
-          </div>
 
           <div className="mt-1 flex items-center justify-center gap-2 text-xs text-muted-foreground">
             <span>Version</span>
@@ -306,188 +188,6 @@ export default function Landing() {
             </span>
           </div>
         </section>
-
-        {/* Access Request Dialog */}
-        <Dialog
-          open={requestOpen}
-          onOpenChange={(isOpen) => {
-            setRequestOpen(isOpen);
-
-            if (!isOpen) {
-              setSubmittedEmail(null);
-              navigate("/welcome", { replace: true });
-            }
-          }}
-        >
-          <DialogContent aria-describedby="registration-description" className="max-w-md">
-            {submittedEmail ? (
-              <div className="space-y-4">
-                <DialogHeader>
-                  <DialogTitle>Request received</DialogTitle>
-                  <DialogDescription id="registration-description">
-                    We’ll notify you at {submittedEmail} once your request is approved.
-                  </DialogDescription>
-                </DialogHeader>
-                <div className="flex items-center gap-3 rounded-md border p-3">
-                  <CheckCircle2 className="text-primary" aria-hidden="true" />
-                  <p className="text-sm">Thanks! Your registration is being reviewed.</p>
-                </div>
-                <div className="flex justify-end">
-                  <Button onClick={() => setRequestOpen(false)}>Close</Button>
-                </div>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                <DialogHeader>
-                  <DialogTitle>Request access</DialogTitle>
-                  <DialogDescription id="registration-description">
-                    Enter your work email to request access.
-                  </DialogDescription>
-                </DialogHeader>
-                <RegisterRequestForm
-                  defaultEmail={navigationState?.email}
-                  autoSubmit={navigationState?.auto === true && requestOpen}
-                  onDone={(email) => setSubmittedEmail(email)}
-                />
-              </div>
-            )}
-          </DialogContent>
-        </Dialog>
-
-        {/* Account Recovery Dialog */}
-        <Dialog
-          open={recoveryOpen}
-          onOpenChange={(isOpen) => {
-            setRecoveryOpen(isOpen);
-
-            if (!isOpen) {
-              recoveryForm.reset({ key: "" });
-              navigate("/welcome", { replace: true });
-            }
-          }}
-        >
-          <DialogContent aria-describedby="recovery-description" className="max-w-md">
-            <div className="space-y-4">
-              <DialogHeader>
-                <DialogTitle>Recover your account</DialogTitle>
-                <DialogDescription id="recovery-description">
-                  Enter one of your recovery keys to proceed.
-                </DialogDescription>
-              </DialogHeader>
-              <Form {...recoveryForm}>
-                <form
-                  onSubmit={recoveryForm.handleSubmit(handleRecovery)}
-                  className="space-y-4"
-                  noValidate
-                >
-                  <FormField
-                    control={recoveryForm.control}
-                    name="key"
-                    render={({ field }) => (
-                      <FormItem className="group">
-                        <FormLabel className="flex items-center gap-2">
-                          <span>Recovery key</span>
-
-                          {/* Recovery key format help */}
-                          <Popover>
-                            <PopoverTrigger asChild>
-                              <button
-                                type="button"
-                                className="inline-flex items-center text-muted-foreground hover:text-foreground focus:outline-none"
-                                aria-label="Recovery key format information"
-                              >
-                                <Info className="h-4 w-4" aria-hidden="true" />
-                              </button>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-80">
-                              <div className="space-y-2 text-sm">
-                                <p>Use Base32 uppercase A–Z (excluding I, L, O) and digits 2–7.</p>
-                                <p>Accepted lengths: 20, 25, or 26 characters.</p>
-                                <p className="font-mono text-xs text-foreground/80">
-                                  Example: ABCDE-FGHJK-MNPQR-STUVW-XYZ23
-                                </p>
-                              </div>
-                            </PopoverContent>
-                          </Popover>
-                        </FormLabel>
-                        <FormControl>
-                          <Input
-                            {...field}
-                            placeholder="ABCDE-FGHJK-MNPQR-STUVW-XYZ23"
-                            inputMode="text"
-                            autoCapitalize="characters"
-                            autoCorrect="off"
-                            spellCheck={false}
-                            maxLength={31}
-                            className={jiggle ? "animate-jiggle" : undefined}
-                            onChange={(event) => {
-                              const inputValue = event.currentTarget.value;
-                              const normalizedValue = normalizeRecoveryKeyInput(inputValue);
-
-                              // Check if user exceeded max length
-                              const hasExceededMaxLength = normalizedValue.length > 26;
-                              const clampedValue = normalizedValue.slice(0, 26);
-                              const formattedValue = formatRecoveryKey(clampedValue);
-
-                              // Trigger jiggle animation if exceeded
-                              if (hasExceededMaxLength) {
-                                setJiggle(true);
-                                const animationDuration = 180; // milliseconds
-                                window.setTimeout(() => setJiggle(false), animationDuration);
-                              }
-
-                              field.onChange(formattedValue);
-                            }}
-                          />
-                        </FormControl>
-                        {/* Validation feedback */}
-                        <FormMessage
-                          role="status"
-                          aria-live="polite"
-                          className={cn(
-                            "mt-1.5 flex items-start gap-2 text-[13px]",
-                            !recoveryKeyError &&
-                              recoveryKeyStatus?.tone === "success" &&
-                              "text-success",
-                            !recoveryKeyError &&
-                              recoveryKeyStatus?.tone === "warning" &&
-                              "text-warning"
-                          )}
-                        >
-                          {recoveryKeyError ? (
-                            <span className="fade-in-up">{recoveryKeyError}</span>
-                          ) : recoveryKeyStatus ? (
-                            <>
-                              {recoveryKeyStatus.tone === "success" ? (
-                                <CheckCircle2 className="h-4 w-4 mt-0.5" aria-hidden="true" />
-                              ) : (
-                                <AlertTriangle className="h-4 w-4 mt-0.5" aria-hidden="true" />
-                              )}
-                              <span
-                                key={`${recoveryKeyStatus.tone}-${recoveryKeyValue.length}`}
-                                className="fade-in-up"
-                              >
-                                {recoveryKeyStatus.msg}
-                              </span>
-                            </>
-                          ) : null}
-                        </FormMessage>
-                      </FormItem>
-                    )}
-                  />
-                  <div className="flex justify-end gap-2">
-                    <Button type="button" variant="outline" onClick={() => setRecoveryOpen(false)}>
-                      Cancel
-                    </Button>
-                    <Button type="submit" disabled={recoveryForm.formState.isSubmitting}>
-                      {recoveryForm.formState.isSubmitting ? "Verifying..." : "Continue"}
-                    </Button>
-                  </div>
-                </form>
-              </Form>
-            </div>
-          </DialogContent>
-        </Dialog>
       </main>
     </div>
   );

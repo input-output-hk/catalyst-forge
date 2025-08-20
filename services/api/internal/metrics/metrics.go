@@ -4,19 +4,19 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 )
 
-// BuildSessionCreated counts created build sessions labeled by owner_type.
-var BuildSessionCreated *prometheus.CounterVec
+// BuildCreatedTotal counts created builds by source (pr|merge|tag|manual).
+var BuildCreatedTotal *prometheus.CounterVec
 
 // InitDefault registers metrics to the default Prometheus registerer.
 func InitDefault() {
-	BuildSessionCreated = prometheus.NewCounterVec(
+	BuildCreatedTotal = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
 			Namespace: "foundry",
 			Subsystem: "build",
-			Name:      "session_created_total",
-			Help:      "Total number of build sessions created.",
+			Name:      "created_total",
+			Help:      "Total number of builds created.",
 		},
-		[]string{"owner_type"},
+		[]string{"source"},
 	)
 	CertIssuedTotal = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
@@ -75,7 +75,7 @@ func InitDefault() {
 		},
 		[]string{"result"}, // success
 	)
-	prometheus.MustRegister(BuildSessionCreated, CertIssuedTotal, CertIssueErrorsTotal, PCAIssueLatencySeconds, SessionRefreshTotal, SessionLogoutTotal, DeviceTokenModeTotal)
+	prometheus.MustRegister(BuildCreatedTotal, CertIssuedTotal, CertIssueErrorsTotal, PCAIssueLatencySeconds, SessionRefreshTotal, SessionLogoutTotal, DeviceTokenModeTotal)
 }
 
 // Certificate issuance metrics.

@@ -329,26 +329,8 @@ export default function UserSheet({ user, onOpenChange, density }: Props) {
                 Security
               </h3>
               <div className="mt-3 flex items-center justify-between">
-                <div className="text-sm text-muted-foreground">
-                  Recovery keys: Generate new one-time codes for this user.
-                </div>
-                <Button
-                  size="sm"
-                  onClick={async () => {
-                    try {
-                      const data = await adminGenerateUserRecoveryCodes(user.id);
-                      const filename = `recovery_codes_${user.email}_${format(new Date(), "yyyyMMdd_HHmmss")}.txt`;
-                      const { downloadRecoveryCodes } = await import("@/lib/auth/recovery");
-                      downloadRecoveryCodes(filename, data.codes);
-                      toast({
-                        title: "Recovery keys generated",
-                        description: "A .txt file was downloaded with the one-time codes.",
-                      });
-                    } catch {
-                      toast({ title: "Failed to generate recovery keys" });
-                    }
-                  }}
-                >
+                <div className="text-sm text-muted-foreground">Recovery keys feature removed.</div>
+                <Button size="sm" disabled>
                   Regenerate
                 </Button>
               </div>

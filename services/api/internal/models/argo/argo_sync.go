@@ -33,26 +33,26 @@ func (j *JSONB) Scan(value any) error {
 	return json.Unmarshal(bytes, j)
 }
 
-// ArgoSync represents Argo CD application status snapshots for observability
-type ArgoSync struct {
+// GitOpsSync represents GitOps application status snapshots for observability
+type GitOpsSync struct {
 	ID           uuid.UUID  `gorm:"type:uuid;primaryKey;default:gen_random_uuid()" json:"id"`
 	DeploymentID *uuid.UUID `gorm:"type:uuid" json:"deployment_id,omitempty"`
-	EnvID        uuid.UUID  `gorm:"type:uuid;not null;index:ix_argo_sync_env_app_time,priority:1" json:"env_id"`
-	AppName      string     `gorm:"not null;index:ix_argo_sync_env_app_time,priority:2" json:"app_name"`
+	EnvID        uuid.UUID  `gorm:"type:uuid;not null;index:ix_gitops_sync_env_app_time,priority:1" json:"env_id"`
+	AppName      string     `gorm:"not null;index:ix_gitops_sync_env_app_time,priority:2" json:"app_name"`
 	ObservedRev  *string    `json:"observed_rev,omitempty"`
 	SyncStatus   *string    `json:"sync_status,omitempty"`
 	HealthStatus *string    `json:"health_status,omitempty"`
-	ObservedAt   time.Time  `gorm:"not null;default:now();index:ix_argo_sync_env_app_time,priority:3,sort:desc" json:"observed_at"`
+	ObservedAt   time.Time  `gorm:"not null;default:now();index:ix_gitops_sync_env_app_time,priority:3,sort:desc" json:"observed_at"`
 	Raw          JSONB      `gorm:"type:jsonb" json:"raw,omitempty"`
 }
 
 // TableName specifies the table name
-func (ArgoSync) TableName() string {
-	return "argo_sync"
+func (GitOpsSync) TableName() string {
+	return "gitops_sync"
 }
 
 // BeforeCreate hook to set UUID if not provided
-func (a *ArgoSync) BeforeCreate(tx *gorm.DB) error {
+func (a *GitOpsSync) BeforeCreate(tx *gorm.DB) error {
 	if a.ID == uuid.Nil {
 		a.ID = uuid.New()
 	}

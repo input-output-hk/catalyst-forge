@@ -1,4 +1,7 @@
 services:
+
+  # --- Caddy ---
+
   edge:
     profiles: [prod]
     image: caddy:2-alpine
@@ -7,13 +10,32 @@ services:
       - "80:80"
       - "443:443"
     volumes:
-      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./Caddyfile.prod:/etc/caddy/Caddyfile:ro
       - ./.certs:/certs:ro
     depends_on:
       api:
         condition: service_started
       frontend:
         condition: service_started
+
+  # --- Caddy (dev) ---
+
+  edge-dev:
+    profiles: [dev]
+    image: caddy:2-alpine
+    container_name: edge-dev
+    ports:
+      - "443:443"
+    volumes:
+      - ./Caddyfile.dev:/etc/caddy/Caddyfile:ro
+      - ./.certs:/certs:ro
+    depends_on:
+      api:
+        condition: service_started
+      frontend-dev:
+        condition: service_started
+
+  # --- API ---
 
   api:
     profiles: [dev, prod]
@@ -22,7 +44,7 @@ services:
     command:
       - run
       - --http-port=5050
-      - --public-base-url=https://forge.localhost
+      - --public-base-url=https://forge-test.projectcatalyst.io
       - --invite-ttl=72h
       - --auth-access-ttl=30m
       - --auth-refresh-ttl=720h
@@ -52,12 +74,6 @@ services:
       DB_USER: postgres
       DB_HOST: postgres
       DB_PORT: "5432"
-      # Optional: fallback inline PEM if no secret file is mounted
-      # AUTH_SIGNING_KEY_PEM: |
-      #   -----BEGIN EC PRIVATE KEY-----
-      #   ...
-      #   -----END EC PRIVATE KEY-----
-      # Provide a stable CSRF secret (base64/hex/raw). In dev we export via .env
       AUTH_CSRF_SECRET: "${AUTH_CSRF_SECRET}"
     ports:
       - "5050:5050"
@@ -74,13 +90,15 @@ services:
     secrets:
       - jwt_es256.pem
 
+  # --- Frontend ---
+
   frontend:
     profiles: [prod]
     image: foundry-frontend:latest
     container_name: frontend
     environment:
       # Point client base URL at the edge; endpoints use absolute /api/v1 paths
-      VITE_API_URL: https://forge.localhost
+      VITE_API_URL: https://forge-test.projectcatalyst.io
     # no published port; reached via edge
     depends_on:
       api:
@@ -96,7 +114,7 @@ services:
     command: sh -lc "npm ci --no-fund --no-audit && npm run dev -- --host --port 8080"
     environment:
       # In dev, still talk to the edge so cookies/CSRF match browser origin
-      VITE_API_URL: https://forge.localhost
+      VITE_API_URL: https://forge-test.projectcatalyst.io
       NODE_ENV: development
     volumes:
       - ../services/frontend:/work
@@ -113,21 +131,7 @@ services:
         condition: service_started
     restart: on-failure
 
-  # Edge proxy for dev profile that targets the Vite dev server
-  edge-dev:
-    profiles: [dev]
-    image: caddy:2-alpine
-    container_name: edge-dev
-    ports:
-      - "443:443"
-    volumes:
-      - ./Caddyfile.dev:/etc/caddy/Caddyfile:ro
-      - ./.certs:/certs:ro
-    depends_on:
-      api:
-        condition: service_started
-      frontend-dev:
-        condition: service_started
+  # --- Postgres ---
 
   postgres:
     profiles: [dev, prod]

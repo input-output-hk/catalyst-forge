@@ -10,7 +10,6 @@ import (
 	"time"
 
 	client "github.com/catalyst-forge/services/clients/go/client"
-	legacyclient "github.com/input-output-hk/catalyst-forge/lib/foundry/client"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )

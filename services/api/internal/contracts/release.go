@@ -22,7 +22,6 @@ type ReleaseCreate struct {
 	ContentHash    *string                `json:"content_hash,omitempty"`
 	CreatedBy      *string                `json:"created_by,omitempty"`
 	Modules        []ReleaseModule        `json:"modules,omitempty"`
-	Injections     []ReleaseInjection     `json:"injections,omitempty"`
 	Artifacts      []ReleaseArtifactLink  `json:"artifacts,omitempty"`
 }
 
@@ -76,18 +75,18 @@ type ReleaseListFilter struct {
 
 // ReleaseModule represents a release module
 type ReleaseModule struct {
-	ID         string  `json:"id,omitempty"`
-	ReleaseID  string  `json:"release_id,omitempty"`
-	ModuleKey  string  `json:"module_key" binding:"required"`
-	Name       string  `json:"name" binding:"required"`
-	ModuleType string  `json:"module_type" binding:"required,oneof=kcl helm git"`
-	Version    *string `json:"version,omitempty"`
-	Registry   *string `json:"registry,omitempty"`
-	OCIRef     *string `json:"oci_ref,omitempty"`
-	OCIDigest  *string `json:"oci_digest,omitempty"`
-	GitURL     *string `json:"git_url,omitempty"`
-	GitRef     *string `json:"git_ref,omitempty"`
-	Path       *string `json:"path,omitempty"`
+	ID         string     `json:"id,omitempty"`
+	ReleaseID  string     `json:"release_id,omitempty"`
+	ModuleKey  string     `json:"module_key" binding:"required"`
+	Name       string     `json:"name" binding:"required"`
+	ModuleType string     `json:"module_type" binding:"required,oneof=kcl helm git"`
+	Version    *string    `json:"version,omitempty"`
+	Registry   *string    `json:"registry,omitempty"`
+	OCIRef     *string    `json:"oci_ref,omitempty"`
+	OCIDigest  *string    `json:"oci_digest,omitempty"`
+	GitURL     *string    `json:"git_url,omitempty"`
+	GitRef     *string    `json:"git_ref,omitempty"`
+	Path       *string    `json:"path,omitempty"`
 	CreatedAt  *time.Time `json:"created_at,omitempty"`
 }
 
@@ -107,23 +106,6 @@ type ReleaseModuleUpdate struct {
 	GitURL     *string `json:"git_url,omitempty"`
 	GitRef     *string `json:"git_ref,omitempty"`
 	Path       *string `json:"path,omitempty"`
-}
-
-// ReleaseInjection represents a release injection
-type ReleaseInjection struct {
-	ID            string     `json:"id,omitempty"`
-	ReleaseID     string     `json:"release_id,omitempty"`
-	JSONPointer   string     `json:"json_pointer" binding:"required"`
-	ArtifactKey   string     `json:"artifact_key" binding:"required"`
-	ArtifactField string     `json:"artifact_field" binding:"required,oneof=image_name image_digest tag repo"`
-	ModuleKey     *string    `json:"module_key,omitempty"`
-	ModuleName    *string    `json:"module_name,omitempty"`
-	CreatedAt     *time.Time `json:"created_at,omitempty"`
-}
-
-// ReleaseInjectionCreate represents a request to create release injections
-type ReleaseInjectionCreate struct {
-	Injections []ReleaseInjection `json:"injections" binding:"required,min=1,dive"`
 }
 
 // ReleaseArtifactLink represents a link between a release and an artifact
@@ -156,19 +138,13 @@ type ReleaseIDParam struct {
 
 // ReleaseModuleKeyParam represents a module key parameter
 type ReleaseModuleKeyParam struct {
-	ReleaseID  uuid.UUID `uri:"release_id" binding:"required,uuid4"`
-	ModuleKey  string    `uri:"module_key" binding:"required"`
-}
-
-// ReleaseInjectionIDParam represents an injection ID parameter
-type ReleaseInjectionIDParam struct {
-	ReleaseID    uuid.UUID `uri:"release_id" binding:"required,uuid4"`
-	InjectionID  uuid.UUID `uri:"injection_id" binding:"required,uuid4"`
+	ReleaseID uuid.UUID `uri:"release_id" binding:"required,uuid4"`
+	ModuleKey string    `uri:"module_key" binding:"required"`
 }
 
 // ReleaseArtifactIDParam represents an artifact ID parameter for release
 type ReleaseArtifactIDParam struct {
-	ReleaseID   uuid.UUID `uri:"release_id" binding:"required,uuid4"`
-	ArtifactID  uuid.UUID `uri:"artifact_id" binding:"required,uuid4"`
-	Role        string    `form:"role" binding:"required"`
+	ReleaseID  uuid.UUID `uri:"release_id" binding:"required,uuid4"`
+	ArtifactID uuid.UUID `uri:"artifact_id" binding:"required,uuid4"`
+	Role       string    `form:"role" binding:"required"`
 }

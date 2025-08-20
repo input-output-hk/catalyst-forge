@@ -1,0 +1,225 @@
+# docker-compose.ory.yml
+services:
+
+  # --- Ory Kratos (Identity) ---
+
+  init-ory-dbs:
+    profiles: [dev, prod]
+    image: postgres:16-alpine
+    container_name: init-ory-dbs
+    command: ["/bin/sh", "/init-ory-dbs.sh"]
+    environment:
+      PGHOST: postgres
+      PGPORT: "5432"
+      PGUSER: postgres
+      PGPASSWORD: postgres
+    volumes:
+      - ./scripts/kratos-init.sh:/init-ory-dbs.sh:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+
+  kratos-migrate:
+    profiles: [dev, prod]
+    image: oryd/kratos:latest
+    container_name: kratos-migrate
+    command: ["migrate", "sql", "-e", "--yes", "--config", "/etc/kratos/kratos.yml"]
+    environment:
+      DSN: postgres://postgres:postgres@postgres:5432/kratos?sslmode=disable
+    volumes:
+      - ./ory/kratos:/etc/kratos:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+      init-ory-dbs:
+        condition: service_completed_successfully
+    restart: "no"
+
+  kratos:
+    profiles: [dev, prod]
+    image: oryd/kratos:latest
+    container_name: kratos
+    command: ["serve", "--config", "/etc/kratos/kratos.yml", "--watch-courier"]
+    environment:
+      DSN: postgres://postgres:postgres@postgres:5432/kratos?sslmode=disable
+    env_file:
+      - ./.env
+    volumes:
+      - ./ory/kratos:/etc/kratos:ro
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:4433/health/ready"]
+      interval: 10s
+      timeout: 5s
+      retries: 15
+      start_period: 15s
+    depends_on:
+      postgres:
+        condition: service_healthy
+      kratos-migrate:
+        condition: service_completed_successfully
+    restart: on-failure
+
+  # Optional: Kratos reference Self-Service UI (dev only)
+  kratos-selfservice-ui:
+    profiles: [dev]
+    image: oryd/kratos-selfservice-ui-node:latest
+    container_name: kratos-ui
+    environment:
+      KRATOS_PUBLIC_URL: http://kratos:4433/
+      KRATOS_ADMIN_URL: http://kratos:4434/
+      PORT: "4455"
+      COOKIE_SECRET: c6a6d84d5af2a6f69529eec3fe13b262
+      CSRF_COOKIE_NAME: __Host-kratos_ui_csrf
+      CSRF_COOKIE_SECRET: 773cf478288394dc6a8f99771079afd7
+    expose:
+      - "4455"
+    depends_on:
+      kratos:
+        condition: service_healthy
+    restart: on-failure
+
+  # --- Ory Hydra (OAuth2/OIDC) ---
+
+  hydra-migrate:
+    profiles: [dev, prod]
+    image: oryd/hydra:latest
+    container_name: hydra-migrate
+    command: ["migrate", "sql", "-e", "--yes"]
+    environment:
+      DSN: postgres://postgres:postgres@postgres:5432/hydra?sslmode=disable
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+
+  hydra:
+    profiles: [dev, prod]
+    image: oryd/hydra:latest
+    container_name: hydra
+    command: ["serve", "all", "--config", "/etc/hydra/hydra.yml"]
+    environment:
+      DSN: postgres://postgres:postgres@postgres:5432/hydra?sslmode=disable
+      OAUTH2_EXPOSE_INTERNAL_ERRORS: "true"
+    volumes:
+      - ./ory/hydra:/etc/hydra:ro
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:4444/health/ready"]
+      interval: 10s
+      timeout: 5s
+      retries: 15
+      start_period: 15s
+    depends_on:
+      hydra-migrate:
+        condition: service_completed_successfully
+      postgres:
+        condition: service_healthy
+    restart: on-failure
+
+  # Hydra Login/Consent reference app (internal)
+  hydra-login-consent:
+    profiles: [dev, prod]
+    image: oryd/hydra-login-consent-node:latest
+    container_name: hydra-login-consent
+    environment:
+      HYDRA_ADMIN_URL: http://hydra:4445
+      PORT: "3000"
+      NODE_TLS_REJECT_UNAUTHORIZED: "0"
+    expose:
+      - "3000"
+    depends_on:
+      hydra:
+        condition: service_healthy
+    restart: on-failure
+
+  # --- Ory Oathkeeper (API gateway / identity-aware proxy) ---
+
+  oathkeeper:
+    profiles: [dev, prod]
+    image: oryd/oathkeeper:latest
+    container_name: oathkeeper
+    command: ["serve", "--config", "/etc/oathkeeper/config.yml"]
+    volumes:
+      - ./ory/oathkeeper:/etc/oathkeeper:ro
+    environment:
+      AUTHENTICATORS_OAUTH2_INTROSPECTION_CONFIG_INTROSPECTION_URL: http://hydra:4445/admin/oauth2/introspect
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:4456/health/ready"]
+      interval: 10s
+      timeout: 5s
+      retries: 15
+      start_period: 15s
+    depends_on:
+      kratos:
+        condition: service_healthy
+      hydra:
+        condition: service_healthy
+    restart: on-failure
+
+  # --- Ory Keto (permissions) ---
+
+  keto-migrate:
+    profiles: [dev, prod]
+    image: oryd/keto:latest
+    container_name: keto-migrate
+    command: ["migrate", "up", "--yes", "--config", "/etc/keto/keto.yml"]
+    environment:
+      DSN: postgres://postgres:postgres@postgres:5432/keto?sslmode=disable
+    volumes:
+      - ./ory/keto:/etc/keto:ro
+      - ./ory/keto/keto_namespaces:/home/ory/keto_namespaces:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+      init-ory-dbs:
+        condition: service_completed_successfully
+    restart: "no"
+
+  keto:
+    profiles: [dev, prod]
+    image: oryd/keto:latest
+    container_name: keto
+    command: ["serve", "--config", "/etc/keto/keto.yml"]
+    environment:
+      DSN: postgres://postgres:postgres@postgres:5432/keto?sslmode=disable
+    volumes:
+      - ./ory/keto:/etc/keto:ro
+      - ./ory/keto/keto_namespaces:/home/ory/keto_namespaces:ro
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:4466/health/ready"]
+      interval: 10s
+      timeout: 5s
+      retries: 15
+      start_period: 15s
+    depends_on:
+      keto-migrate:
+        condition: service_completed_successfully
+      postgres:
+        condition: service_healthy
+    restart: on-failure
+
+  # --- PDP (permissions) ---
+  pdp:
+    image: pdp:latest
+    container_name: pdp
+    environment:
+      KETO_READ_URL: http://keto:4466
+    depends_on:
+      keto:
+        condition: service_started
+
+  # --- Kratos Actions Webhook ---
+  webhook:
+    profiles: [dev]
+    image: ory-webhook:latest
+    container_name: ory-webhook
+    environment:
+      GITHUB_ALLOWED_ORG: testing
+      KRATOS_ADMIN_URL: http://kratos:4434
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:8080/healthz"]
+      interval: 10s
+      timeout: 5s
+      retries: 15
+      start_period: 10s
+    restart: on-failure
