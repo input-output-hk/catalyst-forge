@@ -34,7 +34,8 @@ type Promotion struct {
 	ID        uuid.UUID `gorm:"type:uuid;primaryKey;default:gen_random_uuid()" json:"id"`
 	ProjectID uuid.UUID `gorm:"type:uuid;not null;index:ix_promotions_proj_env,priority:1" json:"project_id"`
 	ReleaseID uuid.UUID `gorm:"type:uuid;not null;index:ix_promotions_release" json:"release_id"`
-	EnvID     uuid.UUID `gorm:"type:uuid;not null;index:ix_promotions_proj_env,priority:2" json:"environment_id"`
+	// Explicit column name to match manual index SQL in migrations (environment_id)
+	EnvID uuid.UUID `gorm:"type:uuid;not null;column:environment_id;index:ix_promotions_proj_env,priority:2" json:"environment_id"`
 
 	Status       PromotionStatus `gorm:"not null;index:ix_promotions_status" json:"status"`
 	Reason       *string         `json:"reason,omitempty"`

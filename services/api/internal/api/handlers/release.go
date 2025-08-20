@@ -132,13 +132,14 @@ func (h *ReleaseHandler) Create(c *gin.Context) {
 // @Failure 500 {object} contracts.ErrorResponse "Internal server error"
 // @Router /api/v1/releases/{id} [get]
 func (h *ReleaseHandler) GetByID(c *gin.Context) {
-	var param contracts.ReleaseIDParam
-	if err := c.ShouldBindUri(&param); err != nil {
+	idStr := c.Param("release_id")
+	id, err := h.ParseUUID(idStr)
+	if err != nil {
 		h.RespondWithValidationError(c, err)
 		return
 	}
 
-	rel, err := h.service.GetByID(c.Request.Context(), param.ReleaseID)
+	rel, err := h.service.GetByID(c.Request.Context(), id)
 	if err != nil {
 		if errors.Is(err, releaseRepo.ErrReleaseNotFound) {
 			h.RespondWithNotFound(c, "Release")

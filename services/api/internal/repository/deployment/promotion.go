@@ -83,7 +83,8 @@ func (r *promotionRepositoryImpl) List(ctx context.Context, filter PromotionList
 		query = query.Where("project_id = ?", *filter.ProjectID)
 	}
 	if filter.EnvID != nil {
-		query = query.Where("env_id = ?", *filter.EnvID)
+		// Column name is environment_id
+		query = query.Where("environment_id = ?", *filter.EnvID)
 	}
 	if filter.ReleaseID != nil {
 		query = query.Where("release_id = ?", *filter.ReleaseID)

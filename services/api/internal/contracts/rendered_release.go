@@ -8,9 +8,9 @@ import (
 
 // RenderedReleaseCreate represents a request to create a rendered release record
 type RenderedReleaseCreate struct {
-	DeploymentID        string                   `json:"deployment_id" binding:"required,uuid4"`
-	ReleaseID           string                   `json:"release_id" binding:"required,uuid4"`
-	EnvironmentID       string                   `json:"environment_id" binding:"required,uuid4"`
+	DeploymentID        string                   `json:"deployment_id" binding:"required"`
+	ReleaseID           string                   `json:"release_id" binding:"required"`
+	EnvironmentID       string                   `json:"environment_id" binding:"required"`
 	RendererVersion     string                   `json:"renderer_version" binding:"required"`
 	ModuleVersions      []map[string]interface{} `json:"module_versions"`
 	BundleHash          string                   `json:"bundle_hash" binding:"required"`
@@ -52,9 +52,9 @@ type RenderedReleaseResponse struct {
 
 // RenderedReleaseListFilter represents filters for listing rendered releases
 type RenderedReleaseListFilter struct {
-	ReleaseID     *string `json:"release_id,omitempty" form:"release_id" binding:"omitempty,uuid4"`
-	EnvironmentID *string `json:"environment_id,omitempty" form:"environment_id" binding:"omitempty,uuid4"`
-	DeploymentID  *string `json:"deployment_id,omitempty" form:"deployment_id" binding:"omitempty,uuid4"`
+	ReleaseID     *string `json:"release_id,omitempty" form:"release_id" binding:"omitempty"`
+	EnvironmentID *string `json:"environment_id,omitempty" form:"environment_id" binding:"omitempty"`
+	DeploymentID  *string `json:"deployment_id,omitempty" form:"deployment_id" binding:"omitempty"`
 	OCIDigest     *string `json:"oci_digest,omitempty" form:"oci_digest"`
 	OutputHash    *string `json:"output_hash,omitempty" form:"output_hash"`
 	TimeRange
@@ -64,10 +64,10 @@ type RenderedReleaseListFilter struct {
 
 // RenderedReleaseIDParam represents a rendered release ID parameter
 type RenderedReleaseIDParam struct {
-	RenderedReleaseID uuid.UUID `uri:"rendered_release_id" binding:"required,uuid4"`
+	RenderedReleaseID uuid.UUID `uri:"rendered_release_id"`
 }
 
 // RenderedReleaseDeploymentParam represents a deployment ID parameter
 type RenderedReleaseDeploymentParam struct {
-	DeploymentID uuid.UUID `uri:"deployment_id" binding:"required,uuid4"`
+	DeploymentID uuid.UUID `uri:"deployment_id"`
 }

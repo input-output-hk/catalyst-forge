@@ -18,9 +18,9 @@ func RegisterPromotions(r *gin.Engine, deps PromotionDeps) {
 		{
 			promotions.POST("", deps.H.Create)
 			promotions.GET("", deps.H.List)
-			promotions.GET(":promotion_id", deps.H.GetByID)
-			promotions.PATCH(":promotion_id", deps.H.Update)
-			promotions.DELETE(":promotion_id", deps.H.Delete)
+			promotions.GET("/:promotion_id", deps.H.GetByID)
+			promotions.PATCH("/:promotion_id", deps.H.Update)
+			promotions.DELETE("/:promotion_id", deps.H.Delete)
 		}
 	}
 }

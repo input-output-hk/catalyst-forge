@@ -4,12 +4,8 @@ package testutil
 
 import (
 	"context"
-	"crypto/ecdsa"
-	"crypto/elliptic"
 	"crypto/rand"
-	"crypto/x509"
 	"database/sql"
-	"encoding/pem"
 	"errors"
 	"fmt"
 	"net/http"
@@ -27,53 +23,6 @@ type APIServer struct {
 	BaseURL string
 }
 
-// KeyPaths holds paths to generated JWT signing keys.
-type KeyPaths struct {
-	PrivatePath string
-	PublicPath  string
-	TempDir     string
-}
-
-// GenerateJWTKeys creates ephemeral ECDSA keys for JWT signing and returns their paths.
-func GenerateJWTKeys() (*KeyPaths, error) {
-	tmp, err := os.MkdirTemp("", "api-keys-*")
-	if err != nil {
-		return nil, fmt.Errorf("failed to create temp dir: %w", err)
-	}
-
-	// Generate ECDSA P-256 keys using Go stdlib
-	key, err := ecdsa.GenerateKey(elliptic.P256(), randReader{})
-	if err != nil {
-		return nil, fmt.Errorf("failed to generate key: %w", err)
-	}
-
-	// Private key (EC PRIVATE KEY for compatibility with ES256 manager)
-	privDER, err := x509.MarshalECPrivateKey(key)
-	if err != nil {
-		return nil, fmt.Errorf("failed to marshal private key: %w", err)
-	}
-	privPath := filepath.Join(tmp, "private.pem")
-	if err := os.WriteFile(privPath, pem.EncodeToMemory(&pem.Block{Type: "EC PRIVATE KEY", Bytes: privDER}), 0600); err != nil {
-		return nil, fmt.Errorf("failed to write private key: %w", err)
-	}
-
-	// Public key (PKIX)
-	pubDER, err := x509.MarshalPKIXPublicKey(&key.PublicKey)
-	if err != nil {
-		return nil, fmt.Errorf("failed to marshal public key: %w", err)
-	}
-	pubPath := filepath.Join(tmp, "public.pem")
-	if err := os.WriteFile(pubPath, pem.EncodeToMemory(&pem.Block{Type: "PUBLIC KEY", Bytes: pubDER}), 0644); err != nil {
-		return nil, fmt.Errorf("failed to write public key: %w", err)
-	}
-
-	return &KeyPaths{
-		PrivatePath: privPath,
-		PublicPath:  pubPath,
-		TempDir:     tmp,
-	}, nil
-}
-
 // randReader wraps crypto/rand.Read; separate for vet/lint clarity.
 type randReader struct{}
 
@@ -83,7 +32,7 @@ func (randReader) Read(p []byte) (int, error) { return cryptoRandRead(p) }
 var cryptoRandRead = func(p []byte) (int, error) { return rand.Read(p) }
 
 // buildServerEnv creates the environment variables for the API server.
-func buildServerEnv(cfg *Config, keys *KeyPaths, pg *PG, ctx context.Context) ([]string, error) {
+func buildServerEnv(cfg *Config, pg *PG, ctx context.Context) ([]string, error) {
 	host, port, user, pass, db, ssl, err := pg.DSN(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get DSN: %w", err)
@@ -96,24 +45,6 @@ func buildServerEnv(cfg *Config, keys *KeyPaths, pg *PG, ctx context.Context) ([
 	add("SERVER_HTTPPORT", fmt.Sprintf("%d", cfg.HTTPPort))
 	add("SERVER_PUBLICBASEURL", cfg.PublicBaseURL)
 	add("SERVER_COOKIESAMESITE", "Strict")
-
-	// AuthKit config via Viper keys (dot->underscore)
-	add("AUTH_INVITETTL", "72h")
-	add("AUTH_ACCESSTTL", "30m")
-	add("AUTH_REFRESHTTL", "720h")
-	add("AUTH_STEPUPTTL", "5m")
-	add("AUTH_RPNAME", "Foundry Platform")
-	add("AUTH_REQUIREUV", "true")
-	add("AUTH_CHALLENGETTL", "5m")
-	add("AUTH_REFRESHCOOKIENAME", "__Host-refresh_token")
-	add("AUTH_REFRESHCOOKIESECURE", "false")
-	add("AUTH_RATEENABLED", "false")
-	add("AUTH_JWKSROUTE", "true")
-	add("AUTH_BOOTSTRAPTOKEN", cfg.BootstrapToken)
-	add("AUTH_RBACSEEDDEFAULTS", "true")
-
-	// Security
-	add("SECURITY_ENABLENAIVEPERIPRATELIMIT", "false")
 
 	// Database config (Viper keys)
 	add("DATABASE_HOST", host)
@@ -136,7 +67,8 @@ func buildServerEnv(cfg *Config, keys *KeyPaths, pg *PG, ctx context.Context) ([
 }
 
 // createServerCommand builds the exec.Cmd for starting the API server.
-func createServerCommand(ctx context.Context, env []string) (*exec.Cmd, error) {
+// Passes explicit flags to avoid relying on config files or fragile env decoding.
+func createServerCommand(ctx context.Context, env []string, cfg *Config, host, port, user, pass, dbName, ssl string) (*exec.Cmd, error) {
 	var cmd *exec.Cmd
 	bin := os.Getenv("FOUNDRY_API_BIN")
 	if bin == "" {
@@ -148,11 +80,31 @@ func createServerCommand(ctx context.Context, env []string) (*exec.Cmd, error) {
 		}
 	}
 
+	// Build common args we want to always pass explicitly to the server
+	args := []string{
+		"run",
+		"--http-port", fmt.Sprintf("%d", cfg.HTTPPort),
+		"--public-base-url", cfg.PublicBaseURL,
+		"--db-host", host,
+		"--db-port", port,
+		"--db-user", user,
+		"--db-password", pass,
+		"--db-name", dbName,
+		"--db-sslmode", ssl,
+	}
+
+	// Prefer human logs when TEST_LOG=1
+	if os.Getenv("TEST_LOG") == "1" {
+		args = append(args, "--log-level", "debug", "--log-format", "text")
+	} else {
+		args = append(args, "--log-level", "error", "--log-format", "json")
+	}
+
 	if bin != "" {
-		cmd = exec.CommandContext(ctx, bin, "run")
+		cmd = exec.CommandContext(ctx, bin, args...)
 	} else {
 		// Fallback to `go run` if binary not available
-		cmd = exec.CommandContext(ctx, "go", "run", "./cmd/api", "run")
+		cmd = exec.CommandContext(ctx, "go", append([]string{"run", "./cmd/api"}, args...)...)
 		if root, e := findRepoRoot(); e == nil {
 			cmd.Dir = root
 		}
@@ -179,29 +131,14 @@ func StartAPIServer(ctx context.Context, cfg *Config, pg *PG) (*APIServer, error
 		return nil, fmt.Errorf("postgres not ready: %w", err)
 	}
 
-	// Generate JWT keys
-	keys, err := GenerateJWTKeys()
-	if err != nil {
-		return nil, fmt.Errorf("failed to generate keys: %w", err)
-	}
-
-	if os.Getenv("TEST_LOG") == "1" {
-		if b, e := os.ReadFile(keys.PrivatePath); e == nil {
-			if p, _ := pem.Decode(b); p != nil {
-				fmt.Println("[testutil] private key PEM type:", p.Type)
-			}
-		}
-		fmt.Println("[testutil] private:", keys.PrivatePath, " public:", keys.PublicPath)
-	}
-
 	// Build server environment
-	env, err := buildServerEnv(cfg, keys, pg, ctx)
+	env, err := buildServerEnv(cfg, pg, ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to build environment: %w", err)
 	}
 
-	// Create and configure command
-	cmd, err := createServerCommand(ctx, env)
+	// Create and configure command with explicit flags
+	cmd, err := createServerCommand(ctx, env, cfg, host, port, user, pass, db, ssl)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create command: %w", err)
 	}

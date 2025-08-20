@@ -55,16 +55,17 @@ func RegisterDomainRoutes(r *gin.Engine, deps DomainDeps) {
 		releases := v1.Group("/releases")
 		{
 			releases.POST("", h.Release.Create)
-			releases.GET(":release_id", h.Release.GetByID)
+			releases.GET("/:release_id", h.Release.GetByID)
 			releases.GET("", h.Release.List)
-			releases.PATCH(":release_id", h.Release.Update)
-			releases.DELETE(":release_id", h.Release.Delete)
-			releases.GET(":release_id/modules", h.Release.GetModules)
-			releases.POST(":release_id/modules", h.Release.AddModules)
-			releases.DELETE(":release_id/modules/:module_key", h.Release.RemoveModule)
-			releases.GET(":release_id/artifacts", h.Release.GetArtifacts)
-			releases.POST(":release_id/artifacts", h.Release.AttachArtifact)
-			releases.DELETE(":release_id/artifacts/:artifact_id", h.Release.DetachArtifact)
+			releases.PATCH("/:release_id", h.Release.Update)
+			releases.DELETE("/:release_id", h.Release.Delete)
+			releases.GET("/:release_id/modules", h.Release.GetModules)
+			releases.POST("/:release_id/modules", h.Release.AddModules)
+			releases.DELETE("/:release_id/modules/:module_key", h.Release.RemoveModule)
+			releases.GET("/:release_id/artifacts", h.Release.GetArtifacts)
+			releases.POST("/:release_id/artifacts", h.Release.AttachArtifact)
+			// Include role segment to match handler signature and tests
+			releases.DELETE("/:release_id/artifacts/:artifact_id/:role", h.Release.DetachArtifact)
 		}
 	}
 

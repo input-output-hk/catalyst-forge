@@ -31,8 +31,6 @@ func SetupRouter(
 	// Middleware
 	r.Use(gin.Recovery())
 	r.Use(middleware.Logger(logger))
-	// Dump all inbound headers for Ory Oathkeeper integration testing
-	r.Use(middleware.OathkeeperDump(logger))
 	//r.Use(middleware.CORSMiddleware())
 
 	// Handlers
@@ -42,8 +40,6 @@ func SetupRouter(
 		Logger: logger,
 	})
 	apiroutes.RegisterPublic(r, healthHandler.CheckHealth)
-	// Simple test handler to validate Oathkeeper → API flow
-	apiroutes.RegisterTest(r)
 
 	// Swagger
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))

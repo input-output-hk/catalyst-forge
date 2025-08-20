@@ -9,7 +9,6 @@ import (
 	"sync"
 	"time"
 
-	client "github.com/catalyst-forge/services/clients/go/client"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
@@ -77,13 +76,7 @@ func (s *Suite) PerTestEnv(ctx context.Context, adminEmail string) (*Env, error)
 		return nil, fmt.Errorf("failed to start API server: %w", err)
 	}
 
-	jwt, err := BootstrapAdmin(ctx, srv.BaseURL, cfg.BootstrapToken, adminEmail)
-	if err != nil {
-		srv.Stop()
-		return nil, fmt.Errorf("failed to bootstrap admin user: %w", err)
-	}
-
-	return &Env{Suite: s, Server: srv, AdminJWT: jwt, AdminEmail: adminEmail}, nil
+	return &Env{Suite: s, Server: srv, AdminEmail: adminEmail}, nil
 }
 
 // MustOpenGorm opens a gorm DB using environment variables that StartAPIServer set (DATABASE_*), failing the test on error.
@@ -114,18 +107,6 @@ func MustCloseGorm(db *gorm.DB) error {
 		return err
 	}
 	return sqlDB.Close()
-}
-
-// AdminClient creates a new client authenticated with the admin JWT token.
-func (e *Env) AdminClient() legacyclient.Client {
-	return legacyclient.NewClient(e.Server.BaseURL, legacyclient.WithToken(e.AdminJWT))
-}
-
-// NewGenClient returns the new high-level client with AutoAuth transport wired.
-func (e *Env) NewGenClient() (*client.FoundryClient, error) {
-	cfg := client.NewDefaultConfig(e.Server.BaseURL).
-		WithAuth(client.NewBearerTokenProvider(e.AdminJWT))
-	return client.NewFoundryClient(cfg)
 }
 
 // BaseURL returns the base URL of the test server.

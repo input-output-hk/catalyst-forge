@@ -56,6 +56,12 @@ func TestReleases_Create_And_List(t *testing.T) {
 	r, err = tu.DoJSON(nil, http.MethodGet, url, headers, nil, &list)
 	require.NoError(t, err)
 	require.Equal(t, http.StatusOK, r.StatusCode)
+
+	// Positive get by ID
+	var one map[string]any
+	r, err = tu.DoJSON(nil, http.MethodGet, env.BaseURL()+"/api/v1/releases/"+rel["id"].(string), headers, nil, &one)
+	require.NoError(t, err)
+	require.Equal(t, http.StatusOK, r.StatusCode)
 }
 
 func TestReleases_Update_MinimalField(t *testing.T) {
@@ -128,30 +134,7 @@ func TestReleases_Subresources_Modules_Injections_Artifacts_And_Delete(t *testin
 	require.NoError(t, err)
 	require.Equal(t, http.StatusNoContent, r.StatusCode)
 
-	// Injections: add
-	injCreate := map[string]any{
-		"injections": []map[string]any{{
-			"json_pointer":   "/spec/template",
-			"artifact_key":   "image",
-			"artifact_field": "image_digest",
-			"module_key":     "core",
-			"module_name":    "core",
-		}},
-	}
-	r, err = tu.DoJSON(nil, http.MethodPost, env.BaseURL()+"/api/v1/releases/"+relID+"/injections", headers, injCreate, nil)
-	require.NoError(t, err)
-	require.Equal(t, http.StatusCreated, r.StatusCode)
-	// Injections: list then remove first
-	var injList []map[string]any
-	r, err = tu.DoJSON(nil, http.MethodGet, env.BaseURL()+"/api/v1/releases/"+relID+"/injections", headers, nil, &injList)
-	require.NoError(t, err)
-	require.Equal(t, http.StatusOK, r.StatusCode)
-	if len(injList) > 0 {
-		injID := injList[0]["id"].(string)
-		r, err = tu.DoJSON(nil, http.MethodDelete, env.BaseURL()+"/api/v1/releases/"+relID+"/injections/"+injID, headers, nil, nil)
-		require.NoError(t, err)
-		require.Equal(t, http.StatusNoContent, r.StatusCode)
-	}
+	// Injections routes removed; skip injection steps
 
 	// Artifacts: create build and artifact, attach, list, detach
 	bcreate := map[string]any{

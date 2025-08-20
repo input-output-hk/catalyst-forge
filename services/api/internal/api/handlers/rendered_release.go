@@ -6,7 +6,6 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"github.com/google/uuid"
 
 	contracts "github.com/input-output-hk/catalyst-forge/services/api/internal/contracts"
 	model "github.com/input-output-hk/catalyst-forge/services/api/internal/models/release"
@@ -44,10 +43,26 @@ func (h *RenderedReleaseHandler) Create(c *gin.Context) {
 		return
 	}
 
+	depID, err := h.ParseUUID(req.DeploymentID)
+	if err != nil {
+		h.RespondWithValidationError(c, err)
+		return
+	}
+	relID, err := h.ParseUUID(req.ReleaseID)
+	if err != nil {
+		h.RespondWithValidationError(c, err)
+		return
+	}
+	envID, err := h.ParseUUID(req.EnvironmentID)
+	if err != nil {
+		h.RespondWithValidationError(c, err)
+		return
+	}
+
 	svcReq := renderedService.RenderedCreateRequest{
-		DeploymentID:        uuid.MustParse(req.DeploymentID),
-		ReleaseID:           uuid.MustParse(req.ReleaseID),
-		EnvironmentID:       uuid.MustParse(req.EnvironmentID),
+		DeploymentID:        depID,
+		ReleaseID:           relID,
+		EnvironmentID:       envID,
 		RendererVersion:     req.RendererVersion,
 		ModuleVersions:      req.ModuleVersions,
 		BundleHash:          req.BundleHash,
@@ -85,13 +100,14 @@ func (h *RenderedReleaseHandler) Create(c *gin.Context) {
 // @Failure 500 {object} contracts.ErrorResponse "Internal server error"
 // @Router /api/v1/rendered-releases/{rendered_release_id} [get]
 func (h *RenderedReleaseHandler) GetByID(c *gin.Context) {
-	var p contracts.RenderedReleaseIDParam
-	if err := c.ShouldBindUri(&p); err != nil {
+	idStr := c.Param("rendered_release_id")
+	id, err := h.ParseUUID(idStr)
+	if err != nil {
 		h.RespondWithValidationError(c, err)
 		return
 	}
 
-	rr, err := h.service.GetByID(c.Request.Context(), p.RenderedReleaseID)
+	rr, err := h.service.GetByID(c.Request.Context(), id)
 	if err != nil {
 		if errors.Is(err, renderedRepo.ErrRenderedReleaseNotFound) {
 			h.RespondWithNotFound(c, "RenderedRelease")
@@ -116,13 +132,14 @@ func (h *RenderedReleaseHandler) GetByID(c *gin.Context) {
 // @Failure 500 {object} contracts.ErrorResponse "Internal server error"
 // @Router /api/v1/deployments/{deployment_id}/rendered-release [get]
 func (h *RenderedReleaseHandler) GetByDeployment(c *gin.Context) {
-	var p contracts.RenderedReleaseDeploymentParam
-	if err := c.ShouldBindUri(&p); err != nil {
+	depStr := c.Param("deployment_id")
+	depID, err := h.ParseUUID(depStr)
+	if err != nil {
 		h.RespondWithValidationError(c, err)
 		return
 	}
 
-	rr, err := h.service.GetByDeployment(c.Request.Context(), p.DeploymentID)
+	rr, err := h.service.GetByDeployment(c.Request.Context(), depID)
 	if err != nil {
 		if errors.Is(err, renderedRepo.ErrRenderedReleaseNotFound) {
 			h.RespondWithNotFound(c, "RenderedRelease")
@@ -167,15 +184,27 @@ func (h *RenderedReleaseHandler) List(c *gin.Context) {
 		Sort:       h.GetSort(c),
 	}
 	if filter.ReleaseID != nil {
-		id := uuid.MustParse(*filter.ReleaseID)
+		id, err := h.ParseUUID(*filter.ReleaseID)
+		if err != nil {
+			h.RespondWithValidationError(c, err)
+			return
+		}
 		svcFilter.ReleaseID = &id
 	}
 	if filter.EnvironmentID != nil {
-		id := uuid.MustParse(*filter.EnvironmentID)
+		id, err := h.ParseUUID(*filter.EnvironmentID)
+		if err != nil {
+			h.RespondWithValidationError(c, err)
+			return
+		}
 		svcFilter.EnvironmentID = &id
 	}
 	if filter.DeploymentID != nil {
-		id := uuid.MustParse(*filter.DeploymentID)
+		id, err := h.ParseUUID(*filter.DeploymentID)
+		if err != nil {
+			h.RespondWithValidationError(c, err)
+			return
+		}
 		svcFilter.DeploymentID = &id
 	}
 	svcFilter.OCIDigest = filter.OCIDigest
@@ -209,11 +238,13 @@ func (h *RenderedReleaseHandler) List(c *gin.Context) {
 // @Failure 500 {object} contracts.ErrorResponse "Internal server error"
 // @Router /api/v1/rendered-releases/{rendered_release_id} [patch]
 func (h *RenderedReleaseHandler) Update(c *gin.Context) {
-	var p contracts.RenderedReleaseIDParam
-	if err := c.ShouldBindUri(&p); err != nil {
+	idStr := c.Param("rendered_release_id")
+	id, err := h.ParseUUID(idStr)
+	if err != nil {
 		h.RespondWithValidationError(c, err)
 		return
 	}
+
 	var req contracts.RenderedReleaseUpdate
 	if err := c.ShouldBindJSON(&req); err != nil {
 		h.RespondWithValidationError(c, err)
@@ -227,7 +258,7 @@ func (h *RenderedReleaseHandler) Update(c *gin.Context) {
 		Signed:              req.Signed,
 		SignatureVerifiedAt: req.SignatureVerifiedAt,
 	}
-	rr, err := h.service.Update(c.Request.Context(), p.RenderedReleaseID, svcReq)
+	rr, err := h.service.Update(c.Request.Context(), id, svcReq)
 	if err != nil {
 		if errors.Is(err, renderedRepo.ErrRenderedReleaseNotFound) {
 			h.RespondWithNotFound(c, "RenderedRelease")
@@ -252,12 +283,13 @@ func (h *RenderedReleaseHandler) Update(c *gin.Context) {
 // @Failure 500 {object} contracts.ErrorResponse "Internal server error"
 // @Router /api/v1/rendered-releases/{rendered_release_id} [delete]
 func (h *RenderedReleaseHandler) Delete(c *gin.Context) {
-	var p contracts.RenderedReleaseIDParam
-	if err := c.ShouldBindUri(&p); err != nil {
+	idStr := c.Param("rendered_release_id")
+	id, err := h.ParseUUID(idStr)
+	if err != nil {
 		h.RespondWithValidationError(c, err)
 		return
 	}
-	if err := h.service.Delete(c.Request.Context(), p.RenderedReleaseID); err != nil {
+	if err := h.service.Delete(c.Request.Context(), id); err != nil {
 		if errors.Is(err, renderedRepo.ErrRenderedReleaseNotFound) {
 			h.RespondWithNotFound(c, "RenderedRelease")
 			return

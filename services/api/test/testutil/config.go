@@ -12,9 +12,8 @@ import (
 
 // Config holds minimal knobs for starting the API under test.
 type Config struct {
-	HTTPPort       int
-	PublicBaseURL  string
-	BootstrapToken string
+	HTTPPort      int
+	PublicBaseURL string
 }
 
 // RandomPort allocates a free TCP port on localhost and returns it.
@@ -74,9 +73,5 @@ func DefaultTestConfig() (*Config, error) {
 	return &Config{
 		HTTPPort:      httpPort,
 		PublicBaseURL: base,
-		BootstrapToken: getStringEnv("TEST_BOOTSTRAP_TOKEN", func() string {
-			// Exactly 32 chars to satisfy handler binding (len=32)
-			return RandomHex(16)
-		}),
 	}, nil
 }

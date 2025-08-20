@@ -76,12 +76,13 @@ func (h *PromotionHandler) Create(c *gin.Context) {
 // @Failure 500 {object} contracts.ErrorResponse "Internal server error"
 // @Router /api/v1/promotions/{promotion_id} [get]
 func (h *PromotionHandler) GetByID(c *gin.Context) {
-	var p contracts.PromotionIDParam
-	if err := c.ShouldBindUri(&p); err != nil {
+	idStr := c.Param("promotion_id")
+	id, err := h.ParseUUID(idStr)
+	if err != nil {
 		h.RespondWithValidationError(c, err)
 		return
 	}
-	pr, err := h.service.GetByID(c.Request.Context(), p.PromotionID)
+	pr, err := h.service.GetByID(c.Request.Context(), id)
 	if err != nil {
 		if errors.Is(err, depRepo.ErrPromotionNotFound) {
 			h.RespondWithNotFound(c, "Promotion")
@@ -169,8 +170,9 @@ func (h *PromotionHandler) List(c *gin.Context) {
 // @Failure 500 {object} contracts.ErrorResponse "Internal server error"
 // @Router /api/v1/promotions/{promotion_id} [patch]
 func (h *PromotionHandler) Update(c *gin.Context) {
-	var p contracts.PromotionIDParam
-	if err := c.ShouldBindUri(&p); err != nil {
+	idStr := c.Param("promotion_id")
+	id, err := h.ParseUUID(idStr)
+	if err != nil {
 		h.RespondWithValidationError(c, err)
 		return
 	}
@@ -190,15 +192,15 @@ func (h *PromotionHandler) Update(c *gin.Context) {
 	svcReq.StepUpVerifiedAt = req.StepUpVerifiedAt
 	svcReq.PolicyResults = req.PolicyResults
 	if req.DeploymentID != nil {
-		id := uuid.MustParse(*req.DeploymentID)
-		svcReq.DeploymentID = &id
+		pid := uuid.MustParse(*req.DeploymentID)
+		svcReq.DeploymentID = &pid
 	}
 	if req.TraceID != nil {
-		id := uuid.MustParse(*req.TraceID)
-		svcReq.TraceID = &id
+		tid := uuid.MustParse(*req.TraceID)
+		svcReq.TraceID = &tid
 	}
 
-	pr, err := h.service.Update(c.Request.Context(), p.PromotionID, svcReq)
+	pr, err := h.service.Update(c.Request.Context(), id, svcReq)
 	if err != nil {
 		if errors.Is(err, depRepo.ErrPromotionNotFound) {
 			h.RespondWithNotFound(c, "Promotion")
@@ -223,12 +225,13 @@ func (h *PromotionHandler) Update(c *gin.Context) {
 // @Failure 500 {object} contracts.ErrorResponse "Internal server error"
 // @Router /api/v1/promotions/{promotion_id} [delete]
 func (h *PromotionHandler) Delete(c *gin.Context) {
-	var p contracts.PromotionIDParam
-	if err := c.ShouldBindUri(&p); err != nil {
+	idStr := c.Param("promotion_id")
+	id, err := h.ParseUUID(idStr)
+	if err != nil {
 		h.RespondWithValidationError(c, err)
 		return
 	}
-	if err := h.service.Delete(c.Request.Context(), p.PromotionID); err != nil {
+	if err := h.service.Delete(c.Request.Context(), id); err != nil {
 		if errors.Is(err, depRepo.ErrPromotionNotFound) {
 			h.RespondWithNotFound(c, "Promotion")
 			return

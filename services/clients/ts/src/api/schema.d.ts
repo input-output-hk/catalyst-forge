@@ -4,456 +4,6 @@
  */
 
 export interface paths {
-    "/.well-known/jwks.json": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Get JWKS
-         * @description Returns the public JSON Web Key Set used to verify access tokens
-         */
-        get: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody?: {
-                content: {
-                    "application/json": Record<string, never>;
-                };
-            };
-            responses: {
-                /** @description JWKS */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": {
-                            [key: string]: unknown;
-                        };
-                    };
-                };
-            };
-        };
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/admin/access-requests": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** List access requests (admin) */
-        get: {
-            parameters: {
-                query?: {
-                    /** @description Filter by status (pending|approved|rejected) */
-                    status?: string;
-                    /** @description Search query (email or reason) */
-                    q?: string;
-                    /** @description Max results (1-200) */
-                    limit?: number;
-                    /** @description Offset for pagination */
-                    offset?: number;
-                };
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description OK */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["auth.AccessRequestListResponse"];
-                    };
-                };
-            };
-        };
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/admin/access-requests/{id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        /** Decide access request (admin) */
-        patch: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path: {
-                    /** @description Access Request ID */
-                    id: string;
-                };
-                cookie?: never;
-            };
-            /** @description Decision */
-            requestBody: {
-                content: {
-                    "application/json": components["schemas"]["auth.AccessRequestDecideRequest"];
-                };
-            };
-            responses: {
-                /** @description No Content */
-                204: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
-            };
-        };
-        trace?: never;
-    };
-    "/api/v1/admin/audit": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** List audit events (admin) */
-        get: {
-            parameters: {
-                query?: {
-                    /** @description Filter by actor ID (UUID) */
-                    actor_id?: string;
-                    /** @description Filter by user ID (UUID) */
-                    user_id?: string;
-                    /** @description Comma-separated event types */
-                    types?: string;
-                    /** @description Filter events created at or after this RFC3339 timestamp */
-                    since?: string;
-                    /** @description Filter events created before this RFC3339 timestamp */
-                    until?: string;
-                    /** @description Max results (1-200) */
-                    limit?: number;
-                    /** @description Offset for pagination */
-                    offset?: number;
-                };
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description OK */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["auth.AuditListResponse"];
-                    };
-                };
-            };
-        };
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/admin/invites": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Create invite (admin) */
-        post: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            /** @description Invite create request */
-            requestBody: {
-                content: {
-                    "application/json": components["schemas"]["auth.AdminInviteCreateRequest"];
-                };
-            };
-            responses: {
-                /** @description Created */
-                201: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["auth.AdminInviteCreateResponse"];
-                    };
-                };
-            };
-        };
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/admin/invites/preview": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Preview invite (public) */
-        get: {
-            parameters: {
-                query?: {
-                    /** @description Invite token (base64url) */
-                    token?: string;
-                    /** @description Invite ID (UUID) */
-                    id?: string;
-                };
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description OK */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["auth.InvitePreviewResponse"];
-                    };
-                };
-            };
-        };
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/admin/users": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** List users (admin) */
-        get: {
-            parameters: {
-                query?: {
-                    /** @description Search query (email or ID) */
-                    q?: string;
-                    /** @description Filter by role (admin|member) */
-                    role?: string;
-                    /** @description Max results (1-200) */
-                    limit?: number;
-                    /** @description Offset for pagination */
-                    offset?: number;
-                };
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description OK */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["auth.AdminUsersListResponse"];
-                    };
-                };
-            };
-        };
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/admin/users/{id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        /** Delete a user (admin) */
-        delete: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path: {
-                    /** @description User ID */
-                    id: string;
-                };
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description No Content */
-                204: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
-            };
-        };
-        options?: never;
-        head?: never;
-        /** Update a user (admin) */
-        patch: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path: {
-                    /** @description User ID */
-                    id: string;
-                };
-                cookie?: never;
-            };
-            requestBody?: {
-                content: {
-                    "application/json": Record<string, never>;
-                };
-            };
-            responses: {
-                /** @description No Content */
-                204: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
-            };
-        };
-        trace?: never;
-    };
-    "/api/v1/admin/users/{id}/credentials": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** List user credentials (admin) */
-        get: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path: {
-                    /** @description User ID */
-                    id: string;
-                };
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description OK */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["auth.CredentialsListResponse"];
-                    };
-                };
-            };
-        };
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/admin/users/{id}/recovery/codes/generate": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Generate recovery codes for a user (admin) */
-        post: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path: {
-                    /** @description User ID */
-                    id: string;
-                };
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description OK */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["auth.RecoveryGenerateResponse"];
-                    };
-                };
-            };
-        };
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/api/v1/artifacts": {
         parameters: {
             query?: never;
@@ -861,1445 +411,6 @@ export interface paths {
         };
         put?: never;
         post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/auth/bootstrap": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Admin bootstrap */
-        post: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            /** @description Bootstrap request */
-            requestBody: {
-                content: {
-                    "application/json": components["schemas"]["auth.BootstrapRequest"];
-                };
-            };
-            responses: {
-                /** @description Created */
-                201: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["auth.BootstrapResponse"];
-                    };
-                };
-                /** @description Not Found */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": {
-                            [key: string]: unknown;
-                        };
-                    };
-                };
-            };
-        };
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/auth/credentials": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** List credentials */
-        get: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description OK */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["auth.CredentialsListResponse"];
-                    };
-                };
-            };
-        };
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/auth/credentials/{credentialId}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        /** Delete credential */
-        delete: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path: {
-                    /** @description Credential ID */
-                    credentialId: string;
-                };
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description No Content */
-                204: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
-            };
-        };
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/auth/credentials/{id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        /** Update credential device name */
-        patch: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path: {
-                    /** @description Credential ID (base64url) */
-                    id: string;
-                };
-                cookie?: never;
-            };
-            requestBody?: {
-                content: {
-                    "application/json": Record<string, never>;
-                };
-            };
-            responses: {
-                /** @description No Content */
-                204: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
-            };
-        };
-        trace?: never;
-    };
-    "/api/v1/auth/credentials/add/begin": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Add credential (begin) */
-        post: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            /** @description Begin credential add */
-            requestBody: {
-                content: {
-                    "application/json": components["schemas"]["auth.CredentialsAddBeginRequest"];
-                };
-            };
-            responses: {
-                /** @description OK */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["auth.PublicKeyOptionsResponse"];
-                    };
-                };
-            };
-        };
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/auth/credentials/add/complete": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Add credential (complete) */
-        post: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            /** @description Complete credential add */
-            requestBody: {
-                content: {
-                    "application/json": components["schemas"]["auth.CredentialsAddCompleteRequest"];
-                };
-            };
-            responses: {
-                /** @description No Content */
-                204: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
-            };
-        };
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/auth/device-link/authorize": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Authorize device link
-         * @description Authorizes a pending device link request (requires authentication and step-up)
-         */
-        post: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            /** @description Authorization request */
-            requestBody: {
-                content: {
-                    "application/json": components["schemas"]["auth.AuthorizeDeviceLinkRequest"];
-                };
-            };
-            responses: {
-                /** @description No Content */
-                204: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
-            };
-        };
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/auth/device-link/begin": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Begin device link flow
-         * @description Initiates a device authorization flow for CLI/device authentication
-         */
-        post: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            /** @description Device link request */
-            requestBody: {
-                content: {
-                    "application/json": components["schemas"]["auth.BeginDeviceLinkRequest"];
-                };
-            };
-            responses: {
-                /** @description OK */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["service.DeviceLinkResponse"];
-                    };
-                };
-            };
-        };
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/auth/device-link/exchange": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Exchange device code for tokens
-         * @description Exchanges a device code for access and refresh tokens (polling endpoint)
-         */
-        post: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            /** @description Exchange request */
-            requestBody: {
-                content: {
-                    "application/json": components["schemas"]["auth.ExchangeDeviceCodeRequest"];
-                };
-            };
-            responses: {
-                /** @description OK */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["service.ExchangeResponse"];
-                    };
-                };
-            };
-        };
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/auth/device-link/verify": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Verify device link code
-         * @description Verifies a user code and returns device information for display in the browser UI
-         */
-        get: {
-            parameters: {
-                query: {
-                    /** @description User code to verify */
-                    code: string;
-                };
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody?: {
-                content: {
-                    "application/json": Record<string, never>;
-                };
-            };
-            responses: {
-                /** @description OK */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["auth.DeviceLinkVerificationResponse"];
-                    };
-                };
-            };
-        };
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/auth/devices": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * List user devices
-         * @description Lists all devices registered for the authenticated user
-         */
-        get: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody?: {
-                content: {
-                    "application/json": Record<string, never>;
-                };
-            };
-            responses: {
-                /** @description OK */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["auth.DeviceListResponse"];
-                    };
-                };
-            };
-        };
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/auth/devices/{id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Get device details
-         * @description Gets details of a specific device
-         */
-        get: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path: {
-                    /** @description Device ID */
-                    id: string;
-                };
-                cookie?: never;
-            };
-            requestBody?: {
-                content: {
-                    "application/json": Record<string, never>;
-                };
-            };
-            responses: {
-                /** @description OK */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["auth.DeviceResponse"];
-                    };
-                };
-            };
-        };
-        put?: never;
-        post?: never;
-        /**
-         * Revoke device
-         * @description Revokes a device and all associated refresh tokens
-         */
-        delete: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path: {
-                    /** @description Device ID */
-                    id: string;
-                };
-                cookie?: never;
-            };
-            requestBody?: {
-                content: {
-                    "application/json": Record<string, never>;
-                };
-            };
-            responses: {
-                /** @description No Content */
-                204: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
-            };
-        };
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/auth/login/begin": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Begin login */
-        post: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description OK */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["auth.PublicKeyOptionsResponse"];
-                    };
-                };
-            };
-        };
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/auth/login/complete": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Complete login */
-        post: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            /** @description Login complete request */
-            requestBody: {
-                content: {
-                    "application/json": components["schemas"]["auth.LoginCompleteRequest"];
-                };
-            };
-            responses: {
-                /** @description OK */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["auth.LoginCompleteResponse"];
-                    };
-                };
-            };
-        };
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/auth/logout": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Logout current session */
-        post: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description No Content */
-                204: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
-            };
-        };
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/auth/logout-all": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Logout all sessions */
-        post: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description No Content */
-                204: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
-            };
-        };
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/auth/me": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Me */
-        get: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description OK */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["auth.MeResponse"];
-                    };
-                };
-            };
-        };
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        /** Update profile (full name) */
-        patch: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody?: {
-                content: {
-                    "application/json": Record<string, never>;
-                };
-            };
-            responses: never;
-        };
-        trace?: never;
-    };
-    "/api/v1/auth/oidc/github/exchange": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Exchange GitHub OIDC token */
-        post: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            /** @description GitHub OIDC exchange request */
-            requestBody: {
-                content: {
-                    "application/json": components["schemas"]["auth.ghaExchangeRequest"];
-                };
-            };
-            responses: {
-                /** @description OK */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": {
-                            [key: string]: unknown;
-                        };
-                    };
-                };
-            };
-        };
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/auth/oidc/github/policies": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** List GitHub policies */
-        get: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description OK */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["auth.GithubPolicyResponse"][];
-                    };
-                };
-            };
-        };
-        put?: never;
-        /** Create GitHub policy */
-        post: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            /** @description Create policy */
-            requestBody: {
-                content: {
-                    "application/json": components["schemas"]["auth.GithubPolicyCreateRequest"];
-                };
-            };
-            responses: {
-                /** @description Created */
-                201: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["auth.GithubPolicyResponse"];
-                    };
-                };
-            };
-        };
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/auth/oidc/github/policies/{id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Get GitHub policy */
-        get: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path: {
-                    /** @description Policy ID */
-                    id: string;
-                };
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description OK */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["auth.GithubPolicyResponse"];
-                    };
-                };
-                /** @description Not Found */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": {
-                            [key: string]: unknown;
-                        };
-                    };
-                };
-            };
-        };
-        /** Update GitHub policy */
-        put: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path: {
-                    /** @description Policy ID */
-                    id: string;
-                };
-                cookie?: never;
-            };
-            /** @description Update policy */
-            requestBody: {
-                content: {
-                    "application/json": components["schemas"]["auth.GithubPolicyUpdateRequest"];
-                };
-            };
-            responses: {
-                /** @description No Content */
-                204: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
-            };
-        };
-        post?: never;
-        /** Delete GitHub policy */
-        delete: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path: {
-                    /** @description Policy ID */
-                    id: string;
-                };
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description No Content */
-                204: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
-            };
-        };
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/auth/onboard/begin": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Onboard begin */
-        post: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            /** @description Onboard begin request */
-            requestBody: {
-                content: {
-                    "application/json": components["schemas"]["auth.OnboardBeginRequest"];
-                };
-            };
-            responses: {
-                /** @description OK */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["auth.OnboardBeginResponse"];
-                    };
-                };
-            };
-        };
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/auth/onboard/complete": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Onboard complete */
-        post: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            /** @description Onboard complete request */
-            requestBody: {
-                content: {
-                    "application/json": components["schemas"]["auth.OnboardCompleteRequest"];
-                };
-            };
-            responses: {
-                /** @description No Content */
-                204: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
-            };
-        };
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/auth/recovery/codes/generate": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Generate new recovery codes (one-time view) */
-        post: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description OK */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["auth.RecoveryGenerateResponse"];
-                    };
-                };
-            };
-        };
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/auth/recovery/init": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Recovery init */
-        post: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            /** @description Recovery init request */
-            requestBody: {
-                content: {
-                    "application/json": components["schemas"]["auth.RecoveryInitRequest"];
-                };
-            };
-            responses: {
-                /** @description OK */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["auth.RecoveryInitResponse"];
-                    };
-                };
-            };
-        };
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/auth/recovery/register/begin": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Recovery register begin */
-        post: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            /** @description Recovery register begin request */
-            requestBody: {
-                content: {
-                    "application/json": components["schemas"]["auth.RecoveryRegisterBeginRequest"];
-                };
-            };
-            responses: {
-                /** @description OK */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["auth.PublicKeyOptionsResponse"];
-                    };
-                };
-            };
-        };
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/auth/recovery/register/complete": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Recovery register complete */
-        post: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            /** @description Recovery register complete request */
-            requestBody: {
-                content: {
-                    "application/json": components["schemas"]["auth.RecoveryRegisterCompleteRequest"];
-                };
-            };
-            responses: {
-                /** @description No Content */
-                204: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
-            };
-        };
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/auth/recovery/verify": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Recovery verify */
-        post: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            /** @description Recovery verify request */
-            requestBody: {
-                content: {
-                    "application/json": components["schemas"]["auth.RecoveryVerifyRequest"];
-                };
-            };
-            responses: {
-                /** @description OK */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["auth.RecoveryVerifyResponse"];
-                    };
-                };
-            };
-        };
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/auth/refresh": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Refresh access token */
-        post: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody?: {
-                content: {
-                    "application/json": Record<string, never>;
-                };
-            };
-            responses: {
-                /** @description OK */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["auth.AccessTokenResponse"];
-                    };
-                };
-            };
-        };
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/auth/session": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Session */
-        get: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description OK */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["auth.SessionResponse"];
-                    };
-                };
-            };
-        };
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/auth/sessions": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** List active sessions */
-        get: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description OK */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["auth.SessionsListResponse"];
-                    };
-                };
-            };
-        };
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/auth/sessions/{family_id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        /** Revoke a session */
-        delete: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path: {
-                    /** @description Family ID */
-                    family_id: string;
-                };
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description No Content */
-                204: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
-            };
-        };
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/auth/step-up/begin": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Step-up (begin) */
-        post: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description OK */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["auth.PublicKeyOptionsResponse"];
-                    };
-                };
-            };
-        };
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/auth/step-up/complete": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Step-up (complete) */
-        post: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            /** @description Step-up complete request */
-            requestBody: {
-                content: {
-                    "application/json": components["schemas"]["auth.StepUpCompleteRequest"];
-                };
-            };
-            responses: {
-                /** @description OK */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["auth.AccessTokenResponse"];
-                    };
-                };
-            };
-        };
         delete?: never;
         options?: never;
         head?: never;
@@ -2807,7 +918,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/deployments/{deployment_id}/render-job": {
+    "/api/v1/deployments/{deployment_id}/rendered-release": {
         parameters: {
             query?: never;
             header?: never;
@@ -2815,8 +926,8 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Get render job for a deployment
-         * @description Retrieve the render job associated with a deployment
+         * Get a rendered release by deployment ID
+         * @description Retrieve the rendered release associated with a deployment
          */
         get: {
             parameters: {
@@ -2834,13 +945,13 @@ export interface paths {
                 };
             };
             responses: {
-                /** @description Render job details */
+                /** @description Rendered release for deployment */
                 200: {
                     headers: {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["contracts.RenderJobResponse"];
+                        "application/json": components["schemas"]["contracts.RenderedReleaseResponse"];
                     };
                 };
                 /** @description Invalid deployment ID */
@@ -2852,7 +963,7 @@ export interface paths {
                         "application/json": components["schemas"]["contracts.ErrorResponse"];
                     };
                 };
-                /** @description Render job not found */
+                /** @description Rendered release not found */
                 404: {
                     headers: {
                         [name: string]: unknown;
@@ -2873,136 +984,11 @@ export interface paths {
             };
         };
         put?: never;
-        /**
-         * Create a render job for a deployment
-         * @description Create a new render job for an existing deployment
-         */
-        post: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path: {
-                    /** @description Deployment ID (UUID) */
-                    deployment_id: string;
-                };
-                cookie?: never;
-            };
-            /** @description Render job creation request */
-            requestBody: {
-                content: {
-                    "application/json": components["schemas"]["contracts.RenderJobCreate"];
-                };
-            };
-            responses: {
-                /** @description Created render job */
-                201: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["contracts.RenderJobResponse"];
-                    };
-                };
-                /** @description Invalid request */
-                400: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["contracts.ErrorResponse"];
-                    };
-                };
-                /** @description Deployment not found */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["contracts.ErrorResponse"];
-                    };
-                };
-                /** @description Render job already exists for this deployment */
-                409: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["contracts.ErrorResponse"];
-                    };
-                };
-                /** @description Internal server error */
-                500: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["contracts.ErrorResponse"];
-                    };
-                };
-            };
-        };
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
-        /**
-         * Update a render job
-         * @description Update the render job associated with a deployment
-         */
-        patch: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path: {
-                    /** @description Deployment ID (UUID) */
-                    deployment_id: string;
-                };
-                cookie?: never;
-            };
-            /** @description Render job update request */
-            requestBody: {
-                content: {
-                    "application/json": components["schemas"]["contracts.RenderJobUpdate"];
-                };
-            };
-            responses: {
-                /** @description Updated render job */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["contracts.RenderJobResponse"];
-                    };
-                };
-                /** @description Invalid request */
-                400: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["contracts.ErrorResponse"];
-                    };
-                };
-                /** @description Render job not found */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["contracts.ErrorResponse"];
-                    };
-                };
-                /** @description Internal server error */
-                500: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["contracts.ErrorResponse"];
-                    };
-                };
-            };
-        };
+        patch?: never;
         trace?: never;
     };
     "/api/v1/deployments/{id}": {
@@ -3767,41 +1753,85 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/rbac/bindings": {
+    "/api/v1/promotions": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        /** List bindings for a subject */
+        /**
+         * List promotions
+         * @description List promotions with optional filtering and pagination
+         */
         get: {
             parameters: {
-                query: {
-                    /** @description Subject type (user|group|service) */
-                    subject_type: string;
-                    /** @description Subject ID */
-                    subject_id: string;
+                query?: {
+                    /** @description Page number (default: 1) */
+                    page?: number;
+                    /** @description Page size (default: 20) */
+                    page_size?: number;
+                    /** @description Filter by project ID */
+                    project_id?: string;
+                    /** @description Filter by environment ID */
+                    environment_id?: string;
+                    /** @description Filter by release ID */
+                    release_id?: string;
+                    /** @description Filter by status */
+                    status?: string;
+                    /** @description Filter by creation date (RFC3339) */
+                    since?: string;
+                    /** @description Filter by creation date (RFC3339) */
+                    until?: string;
+                    /** @description Sort field (created_at, updated_at) */
+                    sort_by?: string;
+                    /** @description Sort order (asc, desc) */
+                    sort_order?: string;
                 };
                 header?: never;
                 path?: never;
                 cookie?: never;
             };
-            requestBody?: never;
+            requestBody?: {
+                content: {
+                    "application/json": Record<string, never>;
+                };
+            };
             responses: {
-                /** @description OK */
+                /** @description Paginated list of promotions */
                 200: {
                     headers: {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["rbac.BindingsListResponse"];
+                        "application/json": components["schemas"]["contracts.PromotionPageResult"];
+                    };
+                };
+                /** @description Invalid query parameters */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["contracts.ErrorResponse"];
+                    };
+                };
+                /** @description Internal server error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["contracts.ErrorResponse"];
                     };
                 };
             };
         };
         put?: never;
-        /** Create binding */
+        /**
+         * Create a promotion
+         * @description Create a new promotion request
+         */
         post: {
             parameters: {
                 query?: never;
@@ -3809,19 +1839,48 @@ export interface paths {
                 path?: never;
                 cookie?: never;
             };
-            /** @description Binding */
+            /** @description Promotion creation request */
             requestBody: {
                 content: {
-                    "application/json": components["schemas"]["rbac.BindingCreateRequest"];
+                    "application/json": components["schemas"]["contracts.PromotionCreate"];
                 };
             };
             responses: {
-                /** @description Created */
+                /** @description Created promotion */
                 201: {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        "application/json": components["schemas"]["contracts.PromotionResponse"];
+                    };
+                };
+                /** @description Invalid request body */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["contracts.ErrorResponse"];
+                    };
+                };
+                /** @description Referenced project, release, or environment not found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["contracts.ErrorResponse"];
+                    };
+                };
+                /** @description Internal server error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["contracts.ErrorResponse"];
+                    };
                 };
             };
         };
@@ -3831,411 +1890,190 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/rbac/bindings/{id}": {
+    "/api/v1/promotions/{promotion_id}": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        /**
+         * Get a promotion by ID
+         * @description Retrieve a single promotion by its ID
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Promotion ID (UUID) */
+                    promotion_id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: {
+                content: {
+                    "application/json": Record<string, never>;
+                };
+            };
+            responses: {
+                /** @description Promotion details */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["contracts.PromotionResponse"];
+                    };
+                };
+                /** @description Invalid promotion ID */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["contracts.ErrorResponse"];
+                    };
+                };
+                /** @description Promotion not found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["contracts.ErrorResponse"];
+                    };
+                };
+                /** @description Internal server error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["contracts.ErrorResponse"];
+                    };
+                };
+            };
+        };
         put?: never;
         post?: never;
-        /** Delete binding */
+        /**
+         * Delete a promotion
+         * @description Delete a promotion by ID
+         */
         delete: {
             parameters: {
                 query?: never;
                 header?: never;
                 path: {
-                    /** @description Binding ID (UUID) */
-                    id: string;
+                    /** @description Promotion ID (UUID) */
+                    promotion_id: string;
                 };
                 cookie?: never;
             };
-            requestBody?: never;
+            requestBody?: {
+                content: {
+                    "application/json": Record<string, never>;
+                };
+            };
             responses: {
-                /** @description No Content */
+                /** @description Promotion deleted successfully */
                 204: {
                     headers: {
                         [name: string]: unknown;
                     };
                     content?: never;
                 };
-            };
-        };
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/rbac/bindings/by-scope": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** List bindings in a scope */
-        get: {
-            parameters: {
-                query: {
-                    /** @description Scope type (global|org|project|resource) */
-                    scope_type: string;
-                    /** @description Scope ID */
-                    scope_id: string;
-                };
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description OK */
-                200: {
+                /** @description Invalid promotion ID */
+                400: {
                     headers: {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["rbac.BindingsListResponse"];
+                        "application/json": components["schemas"]["contracts.ErrorResponse"];
                     };
                 };
-            };
-        };
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/rbac/conditions": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** List registered RBAC conditions */
-        get: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description OK */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["rbac.ConditionsResponse"];
-                    };
-                };
-            };
-        };
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/rbac/explain": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Explain decision */
-        post: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            /** @description Explain request */
-            requestBody: {
-                content: {
-                    "application/json": components["schemas"]["rbac.ExplainRequest"];
-                };
-            };
-            responses: {
-                /** @description OK */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["rbac.ExplainResponse"];
-                    };
-                };
-                /** @description Precondition Required */
-                428: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
-            };
-        };
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/rbac/permissions": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** List registered permission keys */
-        get: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description OK */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["rbac.PermissionsResponse"];
-                    };
-                };
-            };
-        };
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/rbac/roles": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** List roles */
-        get: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description OK */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["rbac.RolesListResponse"];
-                    };
-                };
-            };
-        };
-        put?: never;
-        /** Create role */
-        post: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            /** @description Role definition */
-            requestBody: {
-                content: {
-                    "application/json": components["schemas"]["rbac.RoleDef"];
-                };
-            };
-            responses: {
-                /** @description Created */
-                201: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": Record<string, never>;
-                    };
-                };
-            };
-        };
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/rbac/roles/{slug}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Get role */
-        get: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path: {
-                    /** @description Role slug */
-                    slug: string;
-                };
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description OK */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["rbac.Role"];
-                    };
-                };
-                /** @description Not Found */
+                /** @description Promotion not found */
                 404: {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        "application/json": components["schemas"]["contracts.ErrorResponse"];
+                    };
+                };
+                /** @description Internal server error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["contracts.ErrorResponse"];
+                    };
                 };
             };
         };
-        /** Update role */
-        put: {
+        options?: never;
+        head?: never;
+        /**
+         * Update a promotion
+         * @description Update a promotion's status and metadata
+         */
+        patch: {
             parameters: {
                 query?: never;
                 header?: never;
                 path: {
-                    /** @description Role slug */
-                    slug: string;
+                    /** @description Promotion ID (UUID) */
+                    promotion_id: string;
                 };
                 cookie?: never;
             };
-            /** @description Role definition */
+            /** @description Promotion update request */
             requestBody: {
                 content: {
-                    "application/json": components["schemas"]["rbac.RoleDef"];
+                    "application/json": components["schemas"]["contracts.PromotionUpdate"];
                 };
             };
             responses: {
-                /** @description No Content */
-                204: {
+                /** @description Updated promotion */
+                200: {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        "application/json": components["schemas"]["contracts.PromotionResponse"];
+                    };
                 };
-            };
-        };
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/rbac/roles/{slug}/bump-version": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Bump role version */
-        post: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path: {
-                    /** @description Role slug */
-                    slug: string;
-                };
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description No Content */
-                204: {
+                /** @description Invalid request */
+                400: {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        "application/json": components["schemas"]["contracts.ErrorResponse"];
+                    };
                 };
-            };
-        };
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/rbac/subjects/{subject_type}/{subject_id}/bump-version": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Bump principal version */
-        post: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path: {
-                    /** @description Subject type (user|group|service) */
-                    subject_type: string;
-                    /** @description Subject ID */
-                    subject_id: string;
-                };
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description No Content */
-                204: {
+                /** @description Promotion not found */
+                404: {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        "application/json": components["schemas"]["contracts.ErrorResponse"];
+                    };
+                };
+                /** @description Internal server error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["contracts.ErrorResponse"];
+                    };
                 };
             };
         };
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
         trace?: never;
     };
     "/api/v1/releases": {
@@ -4319,7 +2157,7 @@ export interface paths {
         put?: never;
         /**
          * Create a new release
-         * @description Create a new release with modules, injections, and artifacts
+         * @description Create a new release with modules and artifacts
          */
         post: {
             parameters: {
@@ -4723,146 +2561,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/releases/{id}/injections": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Get release injections
-         * @description List all injections associated with a release
-         */
-        get: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path: {
-                    /** @description Release ID (UUID) */
-                    id: string;
-                };
-                cookie?: never;
-            };
-            requestBody?: {
-                content: {
-                    "application/json": Record<string, never>;
-                };
-            };
-            responses: {
-                /** @description List of release injections */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["contracts.ReleaseInjection"][];
-                    };
-                };
-                /** @description Invalid release ID */
-                400: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["contracts.ErrorResponse"];
-                    };
-                };
-                /** @description Release not found */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["contracts.ErrorResponse"];
-                    };
-                };
-                /** @description Internal server error */
-                500: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["contracts.ErrorResponse"];
-                    };
-                };
-            };
-        };
-        put?: never;
-        /**
-         * Add injections to a release
-         * @description Add one or more injections to an existing release
-         */
-        post: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path: {
-                    /** @description Release ID (UUID) */
-                    id: string;
-                };
-                cookie?: never;
-            };
-            /** @description Injections to add */
-            requestBody: {
-                content: {
-                    "application/json": components["schemas"]["contracts.ReleaseInjectionCreate"];
-                };
-            };
-            responses: {
-                /** @description Injections added successfully */
-                201: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": Record<string, never>;
-                    };
-                };
-                /** @description Invalid request */
-                400: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["contracts.ErrorResponse"];
-                    };
-                };
-                /** @description Release not found */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["contracts.ErrorResponse"];
-                    };
-                };
-                /** @description Release is sealed and cannot be modified */
-                409: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["contracts.ErrorResponse"];
-                    };
-                };
-                /** @description Internal server error */
-                500: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["contracts.ErrorResponse"];
-                    };
-                };
-            };
-        };
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/api/v1/releases/{id}/modules": {
         parameters: {
             query?: never;
@@ -5088,88 +2786,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/releases/{release_id}/injections/{injection_id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        /**
-         * Remove an injection from a release
-         * @description Remove a specific injection from a release
-         */
-        delete: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path: {
-                    /** @description Release ID (UUID) */
-                    release_id: string;
-                    /** @description Injection ID (UUID) */
-                    injection_id: string;
-                };
-                cookie?: never;
-            };
-            requestBody?: {
-                content: {
-                    "application/json": Record<string, never>;
-                };
-            };
-            responses: {
-                /** @description Injection removed successfully */
-                204: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
-                /** @description Invalid parameters */
-                400: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["contracts.ErrorResponse"];
-                    };
-                };
-                /** @description Release or injection not found */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["contracts.ErrorResponse"];
-                    };
-                };
-                /** @description Release is sealed and cannot be modified */
-                409: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["contracts.ErrorResponse"];
-                    };
-                };
-                /** @description Internal server error */
-                500: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["contracts.ErrorResponse"];
-                    };
-                };
-            };
-        };
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/api/v1/releases/{release_id}/modules/{module_key}": {
         parameters: {
             query?: never;
@@ -5250,6 +2866,331 @@ export interface paths {
         options?: never;
         head?: never;
         patch?: never;
+        trace?: never;
+    };
+    "/api/v1/rendered-releases": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List rendered releases
+         * @description List rendered releases with optional filtering and pagination
+         */
+        get: {
+            parameters: {
+                query?: {
+                    /** @description Page number (default: 1) */
+                    page?: number;
+                    /** @description Page size (default: 20) */
+                    page_size?: number;
+                    /** @description Filter by release ID */
+                    release_id?: string;
+                    /** @description Filter by environment ID */
+                    environment_id?: string;
+                    /** @description Filter by deployment ID */
+                    deployment_id?: string;
+                    /** @description Filter by OCI digest */
+                    oci_digest?: string;
+                    /** @description Filter by output hash */
+                    output_hash?: string;
+                    /** @description Filter by creation date (RFC3339) */
+                    since?: string;
+                    /** @description Filter by creation date (RFC3339) */
+                    until?: string;
+                    /** @description Sort field (created_at, updated_at) */
+                    sort_by?: string;
+                    /** @description Sort order (asc, desc) */
+                    sort_order?: string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: {
+                content: {
+                    "application/json": Record<string, never>;
+                };
+            };
+            responses: {
+                /** @description Paginated list of rendered releases */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["contracts.RenderedReleasePageResult"];
+                    };
+                };
+                /** @description Invalid query parameters */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["contracts.ErrorResponse"];
+                    };
+                };
+                /** @description Internal server error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["contracts.ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        /**
+         * Create a rendered release record
+         * @description Create a rendered release associated with a specific deployment, release, and environment
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            /** @description Rendered release creation request */
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["contracts.RenderedReleaseCreate"];
+                };
+            };
+            responses: {
+                /** @description Created rendered release */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["contracts.RenderedReleaseResponse"];
+                    };
+                };
+                /** @description Invalid request body */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["contracts.ErrorResponse"];
+                    };
+                };
+                /** @description Rendered release already exists */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["contracts.ErrorResponse"];
+                    };
+                };
+                /** @description Internal server error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["contracts.ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/rendered-releases/{rendered_release_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get a rendered release by ID
+         * @description Retrieve a single rendered release by its ID
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Rendered Release ID (UUID) */
+                    rendered_release_id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: {
+                content: {
+                    "application/json": Record<string, never>;
+                };
+            };
+            responses: {
+                /** @description Rendered release details */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["contracts.RenderedReleaseResponse"];
+                    };
+                };
+                /** @description Invalid rendered release ID */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["contracts.ErrorResponse"];
+                    };
+                };
+                /** @description Rendered release not found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["contracts.ErrorResponse"];
+                    };
+                };
+                /** @description Internal server error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["contracts.ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        /**
+         * Delete a rendered release
+         * @description Delete a rendered release by ID
+         */
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Rendered Release ID (UUID) */
+                    rendered_release_id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: {
+                content: {
+                    "application/json": Record<string, never>;
+                };
+            };
+            responses: {
+                /** @description Rendered release deleted successfully */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Invalid rendered release ID */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["contracts.ErrorResponse"];
+                    };
+                };
+                /** @description Rendered release not found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["contracts.ErrorResponse"];
+                    };
+                };
+                /** @description Internal server error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["contracts.ErrorResponse"];
+                    };
+                };
+            };
+        };
+        options?: never;
+        head?: never;
+        /**
+         * Update a rendered release
+         * @description Update a rendered release's metadata (OCI fields, signature, storage URI)
+         */
+        patch: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Rendered Release ID (UUID) */
+                    rendered_release_id: string;
+                };
+                cookie?: never;
+            };
+            /** @description Rendered release update request */
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["contracts.RenderedReleaseUpdate"];
+                };
+            };
+            responses: {
+                /** @description Updated rendered release */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["contracts.RenderedReleaseResponse"];
+                    };
+                };
+                /** @description Invalid request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["contracts.ErrorResponse"];
+                    };
+                };
+                /** @description Rendered release not found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["contracts.ErrorResponse"];
+                    };
+                };
+                /** @description Internal server error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["contracts.ErrorResponse"];
+                    };
+                };
+            };
+        };
         trace?: never;
     };
     "/api/v1/repositories": {
@@ -5757,233 +3698,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/ca/buildkit/server-certificates": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Sign a BuildKit server certificate
-         * @description Signs a server CSR
-         */
-        post: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            /** @description Server certificate signing request */
-            requestBody: {
-                content: {
-                    "application/json": components["schemas"]["handlers.CertificateSigningRequest"];
-                };
-            };
-            responses: {
-                /** @description OK */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["handlers.CertificateSigningResponse"];
-                    };
-                };
-                /** @description Invalid request */
-                400: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": {
-                            [key: string]: unknown;
-                        };
-                    };
-                };
-                /** @description Unauthorized */
-                401: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": {
-                            [key: string]: unknown;
-                        };
-                    };
-                };
-                /** @description Forbidden - insufficient permissions */
-                403: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": {
-                            [key: string]: unknown;
-                        };
-                    };
-                };
-                /** @description Internal server error */
-                500: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": {
-                            [key: string]: unknown;
-                        };
-                    };
-                };
-            };
-        };
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/certificates/root": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Get root certificate
-         * @description Returns the Certificate Authority's root certificate
-         */
-        get: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description PEM-encoded root certificate */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": string;
-                        "text/plain": string;
-                    };
-                };
-                /** @description Internal server error */
-                500: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": {
-                            [key: string]: unknown;
-                        };
-                    };
-                };
-            };
-        };
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/certificates/sign": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Sign a certificate
-         * @description Signs a Certificate Signing Request (CSR)
-         */
-        post: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            /** @description Certificate signing request */
-            requestBody: {
-                content: {
-                    "application/json": components["schemas"]["handlers.CertificateSigningRequest"];
-                };
-            };
-            responses: {
-                /** @description OK */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["handlers.CertificateSigningResponse"];
-                    };
-                };
-                /** @description Invalid request */
-                400: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": {
-                            [key: string]: unknown;
-                        };
-                    };
-                };
-                /** @description Unauthorized */
-                401: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": {
-                            [key: string]: unknown;
-                        };
-                    };
-                };
-                /** @description Forbidden - insufficient permissions */
-                403: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": {
-                            [key: string]: unknown;
-                        };
-                    };
-                };
-                /** @description Internal server error */
-                500: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": {
-                            [key: string]: unknown;
-                        };
-                    };
-                };
-            };
-        };
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/healthz": {
         parameters: {
             query?: never;
@@ -6044,273 +3758,6 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
-        "auth.AccessRequest": {
-            attempts?: number;
-            created_at?: string;
-            decided_at?: string;
-            email?: string;
-            id?: string;
-            reason?: string;
-            status?: string;
-        };
-        "auth.AccessRequestDecideRequest": {
-            approve?: boolean;
-            note?: string;
-        };
-        "auth.AccessRequestListResponse": {
-            requests?: components["schemas"]["auth.AccessRequest"][];
-            total?: number;
-        };
-        "auth.AccessTokenResponse": {
-            access_token?: string;
-        };
-        "auth.AdminInviteCreateRequest": {
-            days_to_expire?: number;
-            email?: string;
-            email_user?: boolean;
-            roles?: string[];
-        };
-        "auth.AdminInviteCreateResponse": {
-            expires_at?: string;
-            invite_id?: string;
-            invite_link?: string;
-        };
-        "auth.AdminUser": {
-            active_sessions?: number;
-            created_at?: string;
-            email?: string;
-            id?: string;
-            last_activity_at?: string;
-            roles?: string[];
-            updated_at?: string;
-        };
-        "auth.AdminUsersListResponse": {
-            users?: components["schemas"]["auth.AdminUser"][];
-        };
-        "auth.AuditEvent": {
-            actor_id?: string;
-            created_at?: string;
-            id?: string;
-            ip_address?: string;
-            metadata?: {
-                [key: string]: unknown;
-            };
-            type?: string;
-            user_agent?: string;
-            user_id?: string;
-        };
-        "auth.AuditListResponse": {
-            events?: components["schemas"]["auth.AuditEvent"][];
-            total?: number;
-        };
-        "auth.AuthorizeDeviceLinkRequest": {
-            /** @example ABCD-123 */
-            user_code: string;
-        };
-        "auth.BeginDeviceLinkRequest": {
-            /** @example My CLI */
-            device_name?: string;
-            /**
-             * @example login
-             * @enum {string}
-             */
-            purpose?: "login" | "step_up";
-        };
-        "auth.BootstrapRequest": {
-            bootstrap_token?: string;
-            email?: string;
-        };
-        "auth.BootstrapResponse": {
-            email?: string;
-            token_hash?: string;
-            user_id?: string;
-        };
-        "auth.CredentialSummary": {
-            aaguid?: string;
-            device_name?: string;
-            id?: string;
-            last_used_at?: string;
-            sign_count?: number;
-        };
-        "auth.CredentialsAddBeginRequest": {
-            device_name?: string;
-        };
-        "auth.CredentialsAddCompleteRequest": {
-            credential?: Record<string, never>;
-            session_key?: string;
-        };
-        "auth.CredentialsListResponse": {
-            credentials?: components["schemas"]["auth.CredentialSummary"][];
-        };
-        "auth.DeviceInfo": {
-            /** @example 2024-01-01T00:00:00Z */
-            created_at?: string;
-            /** @example My CLI */
-            device_name?: string;
-            /** @example 550e8400-e29b-41d4-a716-446655440000 */
-            id?: string;
-            /** @example false */
-            is_current?: boolean;
-            /** @example 2024-01-02T15:04:05Z */
-            last_used_at?: string;
-        };
-        "auth.DeviceLinkVerificationResponse": {
-            /** @example false */
-            authorized?: boolean;
-            /** @example My CLI */
-            device_name?: string;
-            /** @example 2024-01-02T15:04:05Z */
-            expires_at?: string;
-            /**
-             * @example login
-             * @enum {string}
-             */
-            purpose?: "login" | "step_up";
-        };
-        "auth.DeviceListResponse": {
-            devices?: components["schemas"]["auth.DeviceInfo"][];
-        };
-        "auth.DeviceResponse": {
-            /** @example 2024-01-01T00:00:00Z */
-            created_at?: string;
-            /** @example My CLI */
-            device_name?: string;
-            /** @example 550e8400-e29b-41d4-a716-446655440000 */
-            id?: string;
-            /** @example false */
-            is_current?: boolean;
-            /** @example 2024-01-02T15:04:05Z */
-            last_used_at?: string;
-        };
-        "auth.ExchangeDeviceCodeRequest": {
-            /** @example eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9... */
-            device_code: string;
-        };
-        "auth.GithubPolicyCreateRequest": {
-            enabled?: boolean;
-            environments?: string[];
-            refs?: string[];
-            repository: string;
-            roles: string[];
-            workflows?: string[];
-        };
-        "auth.GithubPolicyResponse": {
-            enabled?: boolean;
-            environments?: string[];
-            id?: string;
-            refs?: string[];
-            repository?: string;
-            roles?: string[];
-            workflows?: string[];
-        };
-        "auth.GithubPolicyUpdateRequest": {
-            enabled?: boolean;
-            environments?: string[];
-            refs?: string[];
-            roles: string[];
-            workflows?: string[];
-        };
-        "auth.InvitePreviewResponse": {
-            email?: string;
-            expires_at?: string;
-            reason?: string;
-            valid?: boolean;
-        };
-        "auth.LoginCompleteRequest": {
-            credential?: Record<string, never>;
-            session_key?: string;
-        };
-        "auth.LoginCompleteResponse": {
-            access_token?: string;
-            user?: components["schemas"]["auth.UserSummary"];
-        };
-        "auth.MeResponse": {
-            email?: string;
-            full_name?: string;
-            id?: string;
-            roles?: string[];
-        };
-        "auth.OnboardBeginRequest": {
-            device_name?: string;
-            invite_id?: string;
-            token?: string;
-        };
-        "auth.OnboardBeginResponse": {
-            publicKey?: Record<string, never>;
-            session_key?: string;
-            user_id?: string;
-        };
-        "auth.OnboardCompleteRequest": {
-            credential?: Record<string, never>;
-            invite_id?: string;
-            session_key?: string;
-        };
-        "auth.PublicKeyOptionsResponse": {
-            publicKey?: Record<string, never>;
-            session_key?: string;
-        };
-        "auth.RecoveryGenerateResponse": {
-            codes?: string[];
-        };
-        "auth.RecoveryInitRequest": {
-            email?: string;
-        };
-        "auth.RecoveryInitResponse": {
-            flow_id?: string;
-        };
-        "auth.RecoveryRegisterBeginRequest": {
-            device_name?: string;
-            flow_id?: string;
-        };
-        "auth.RecoveryRegisterCompleteRequest": {
-            credential?: Record<string, never>;
-            flow_id?: string;
-            session_key?: string;
-        };
-        "auth.RecoveryVerifyRequest": {
-            code?: string;
-            flow_id?: string;
-        };
-        "auth.RecoveryVerifyResponse": {
-            flow_id?: string;
-            user_id?: string;
-        };
-        "auth.SessionResponse": {
-            session_version?: number;
-            step_up_required?: boolean;
-            step_up_until?: string;
-            valid?: boolean;
-        };
-        "auth.SessionSummary": {
-            /** @description webauthn | device_link */
-            amr?: string;
-            created_at?: string;
-            current?: boolean;
-            device_id?: string;
-            device_name?: string;
-            expires_at?: string;
-            /** @description family_id */
-            id?: string;
-            ip_address?: string;
-            last_activity_at?: string;
-            user_agent?: string;
-        };
-        "auth.SessionsListResponse": {
-            sessions?: components["schemas"]["auth.SessionSummary"][];
-        };
-        "auth.StepUpCompleteRequest": {
-            credential?: Record<string, never>;
-            session_key?: string;
-        };
-        "auth.UserSummary": {
-            email?: string;
-            full_name?: string;
-            id?: string;
-            roles?: string[];
-        };
-        "auth.ghaExchangeRequest": {
-            id_token: string;
-        };
         "contracts.ArtifactCreate": {
             build_args?: {
                 [key: string]: unknown;
@@ -6531,10 +3978,6 @@ export interface components {
         "contracts.ErrorResponse": {
             error?: components["schemas"]["contracts.ErrorDetail"];
         };
-        "contracts.ModuleVersion": {
-            name?: string;
-            version?: string;
-        };
         "contracts.ProjectPageResult": {
             items?: components["schemas"]["contracts.ProjectResponse"][];
             page?: number;
@@ -6555,6 +3998,58 @@ export interface components {
             /** @description "active" or "removed" */
             status?: string;
             updated_at?: string;
+        };
+        "contracts.PromotionCreate": {
+            /** @enum {string} */
+            approval_mode: "manual" | "auto";
+            environment_id: string;
+            policy_results?: {
+                [key: string]: unknown;
+            };
+            project_id: string;
+            reason?: string;
+            release_id: string;
+            requested_by: string;
+        };
+        "contracts.PromotionPageResult": {
+            items?: components["schemas"]["contracts.PromotionResponse"][];
+            page?: number;
+            page_size?: number;
+            total?: number;
+        };
+        "contracts.PromotionResponse": {
+            approval_mode?: string;
+            approved_at?: string;
+            approver_id?: string;
+            created_at?: string;
+            deployment_id?: string;
+            environment_id?: string;
+            id?: string;
+            policy_results?: {
+                [key: string]: unknown;
+            };
+            project_id?: string;
+            reason?: string;
+            release_id?: string;
+            requested_at?: string;
+            requested_by?: string;
+            status?: string;
+            step_up_verified_at?: string;
+            trace_id?: string;
+            updated_at?: string;
+        };
+        "contracts.PromotionUpdate": {
+            approved_at?: string;
+            approver_id?: string;
+            deployment_id?: string;
+            policy_results?: {
+                [key: string]: unknown;
+            };
+            reason?: string;
+            /** @enum {string} */
+            status?: "requested" | "approved" | "submitted" | "completed" | "failed" | "canceled" | "superseded" | "rejected";
+            step_up_verified_at?: string;
+            trace_id?: string;
         };
         "contracts.ReleaseArtifactCreate": {
             artifact_id: string;
@@ -6577,7 +4072,6 @@ export interface components {
             artifacts?: components["schemas"]["contracts.ReleaseArtifactLink"][];
             content_hash?: string;
             created_by?: string;
-            injections?: components["schemas"]["contracts.ReleaseInjection"][];
             modules?: components["schemas"]["contracts.ReleaseModule"][];
             oci_digest?: string;
             oci_ref?: string;
@@ -6593,20 +4087,6 @@ export interface components {
             values_snapshot?: {
                 [key: string]: unknown;
             };
-        };
-        "contracts.ReleaseInjection": {
-            /** @enum {string} */
-            artifact_field: "image_name" | "image_digest" | "tag" | "repo";
-            artifact_key: string;
-            created_at?: string;
-            id?: string;
-            json_pointer: string;
-            module_key?: string;
-            module_name?: string;
-            release_id?: string;
-        };
-        "contracts.ReleaseInjectionCreate": {
-            injections: components["schemas"]["contracts.ReleaseInjection"][];
         };
         "contracts.ReleaseModule": {
             created_at?: string;
@@ -6667,39 +4147,52 @@ export interface components {
             /** @enum {string} */
             status?: "draft" | "sealed";
         };
-        "contracts.RenderJobCreate": {
-            bundle_hash?: string;
-            module_versions?: components["schemas"]["contracts.ModuleVersion"][];
-            renderer_version?: string;
-        };
-        "contracts.RenderJobResponse": {
-            bundle_hash?: string;
-            deployment_id?: string;
-            finished_at?: string;
-            id?: string;
-            module_versions?: components["schemas"]["contracts.ModuleVersion"][];
-            oci_digest?: string;
-            oci_ref?: string;
-            output_hash?: string;
-            renderer_version?: string;
+        "contracts.RenderedReleaseCreate": {
+            bundle_hash: string;
+            deployment_id: string;
+            environment_id: string;
+            module_versions?: {
+                [key: string]: unknown;
+            }[];
+            oci_digest: string;
+            oci_ref: string;
+            output_hash: string;
+            release_id: string;
+            renderer_version: string;
             signature_verified_at?: string;
             signed?: boolean;
-            started_at?: string;
-            status?: string;
             storage_uri?: string;
         };
-        "contracts.RenderJobUpdate": {
+        "contracts.RenderedReleasePageResult": {
+            items?: components["schemas"]["contracts.RenderedReleaseResponse"][];
+            page?: number;
+            page_size?: number;
+            total?: number;
+        };
+        "contracts.RenderedReleaseResponse": {
             bundle_hash?: string;
-            finished_at?: string;
-            module_versions?: components["schemas"]["contracts.ModuleVersion"][];
+            created_at?: string;
+            deployment_id?: string;
+            environment_id?: string;
+            id?: string;
+            module_versions?: {
+                [key: string]: unknown;
+            }[];
             oci_digest?: string;
             oci_ref?: string;
             output_hash?: string;
+            release_id?: string;
             renderer_version?: string;
             signature_verified_at?: string;
             signed?: boolean;
-            /** @enum {string} */
-            status?: "pending" | "running" | "succeeded" | "failed";
+            storage_uri?: string;
+            updated_at?: string;
+        };
+        "contracts.RenderedReleaseUpdate": {
+            oci_digest?: string;
+            oci_ref?: string;
+            signature_verified_at?: string;
+            signed?: boolean;
             storage_uri?: string;
         };
         "contracts.RepositoryPageResult": {
@@ -6740,190 +4233,6 @@ export interface components {
             repo_id?: string;
             retention_class?: string;
             updated_at?: string;
-        };
-        "handlers.CertificateSigningRequest": {
-            /**
-             * @description CommonName can override the CN in the CSR
-             * @example user.example.com
-             */
-            common_name?: string;
-            /**
-             * @description CSR is the PEM-encoded Certificate Signing Request
-             * @example -----BEGIN CERTIFICATE REQUEST-----
-             *     ...
-             */
-            csr: string;
-            /**
-             * @description SANs are additional Subject Alternative Names to include
-             *     These will be validated against user permissions. For client certs, use URI SANs.
-             * @example [
-             *       "example.com",
-             *       "*.example.com"
-             *     ]
-             */
-            sans?: string[];
-            /**
-             * @description TTL is the requested certificate lifetime
-             *     Will be capped by server policy
-             * @example 24h
-             */
-            ttl?: string;
-        };
-        "handlers.CertificateSigningResponse": {
-            /**
-             * @description Certificate is the PEM-encoded signed certificate
-             * @example -----BEGIN CERTIFICATE-----
-             *     ...
-             */
-            certificate?: string;
-            /** @description CertificateChain includes intermediate certificates if available */
-            certificate_chain?: string[];
-            /**
-             * @description Fingerprint is the SHA256 fingerprint of the certificate
-             * @example sha256:abcdef...
-             */
-            fingerprint?: string;
-            /**
-             * @description NotAfter is when the certificate expires
-             * @example 2024-01-02T00:00:00Z
-             */
-            not_after?: string;
-            /**
-             * @description NotBefore is when the certificate becomes valid
-             * @example 2024-01-01T00:00:00Z
-             */
-            not_before?: string;
-            /**
-             * @description SerialNumber is the certificate's serial number
-             * @example 123456789
-             */
-            serial_number?: string;
-        };
-        "internal_api_models_rbac.Binding": {
-            created_at?: string;
-            id?: string;
-            org_id?: string;
-            role_slug?: string;
-            scope_id?: string;
-            scope_type?: string;
-            subject_id?: string;
-            subject_type?: string;
-        };
-        "internal_api_models_rbac.Condition": {
-            name?: string;
-            params?: {
-                [key: string]: unknown;
-            };
-        };
-        "internal_api_models_rbac.RoleEntry": {
-            conditions?: components["schemas"]["internal_api_models_rbac.Condition"][];
-            effect?: string;
-            permission?: string;
-            resource_type?: string;
-        };
-        "internal_authkit_rbac.Condition": {
-            name?: string;
-            params?: {
-                [key: string]: unknown;
-            };
-        };
-        "internal_authkit_rbac.RoleEntry": {
-            conditions?: components["schemas"]["internal_authkit_rbac.Condition"][];
-            effect?: components["schemas"]["rbac.Effect"];
-            permission?: string;
-            resourceType?: string;
-        };
-        "rbac.BindingCreateRequest": {
-            id?: string;
-            org_id?: string;
-            role_slug?: string;
-            scope_id?: string;
-            scope_type?: string;
-            subject?: components["schemas"]["rbac.SubjectRef"];
-        };
-        "rbac.BindingsListResponse": {
-            bindings?: components["schemas"]["internal_api_models_rbac.Binding"][];
-        };
-        "rbac.ConditionsResponse": {
-            conditions?: string[];
-        };
-        /** @enum {string} */
-        "rbac.Effect": "allow" | "deny";
-        "rbac.ExplainRequest": {
-            permission?: string;
-            resource?: components["schemas"]["rbac.ResourceInput"];
-            subject?: components["schemas"]["rbac.SubjectInput"];
-        };
-        "rbac.ExplainResponse": {
-            decision?: string;
-            trace?: unknown;
-        };
-        "rbac.PermissionsResponse": {
-            permissions?: string[];
-        };
-        "rbac.ResourceInput": {
-            attrs?: {
-                [key: string]: unknown;
-            };
-            id?: string;
-            org_id?: string;
-            type?: string;
-        };
-        "rbac.Role": {
-            color?: string;
-            description?: string;
-            entries?: components["schemas"]["internal_api_models_rbac.RoleEntry"][];
-            id?: string;
-            name?: string;
-            slug?: string;
-            version?: number;
-        };
-        "rbac.RoleDef": {
-            color?: string;
-            description?: string;
-            entries?: components["schemas"]["internal_authkit_rbac.RoleEntry"][];
-            id?: string;
-            name?: string;
-            slug?: string;
-            version?: number;
-        };
-        "rbac.RolesListResponse": {
-            roles?: components["schemas"]["rbac.Role"][];
-        };
-        "rbac.SubjectInput": {
-            attrs?: {
-                [key: string]: unknown;
-            };
-            id?: string;
-            org_id?: string;
-            type?: string;
-        };
-        "rbac.SubjectRef": {
-            id?: string;
-            type?: string;
-        };
-        "service.DeviceLinkResponse": {
-            device_code?: string;
-            expires_in?: number;
-            interval?: number;
-            user_code?: string;
-            verification_uri?: string;
-            verification_uri_complete?: string;
-        };
-        "service.ExchangeResponse": {
-            access_token?: string;
-            device_id?: string;
-            expires_in?: number;
-            refresh_expires_in?: number;
-            refresh_token?: string;
-            /** @description "authorization_pending", "slow_down", "expired_token" */
-            status?: string;
-            user?: components["schemas"]["service.UserInfo"];
-        };
-        "service.UserInfo": {
-            email?: string;
-            id?: string;
-            roles?: string[];
         };
     };
     responses: never;

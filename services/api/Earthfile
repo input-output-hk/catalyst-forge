@@ -18,6 +18,7 @@ deps:
     COPY ../clients/go+src/src /clients/go
     COPY ../../lib/tools+src/src /lib/tools
     COPY ../../lib/foundry/db+src/src /lib/foundry/db
+    COPY ../../lib/foundry/httpkit+src/src /lib/foundry/httpkit
 
     COPY go.mod go.sum .
     RUN go mod download
@@ -57,20 +58,9 @@ test:
 
     WORKDIR /work
 
-    COPY docker-compose.yml .
     COPY --dir test .
 
-    WITH DOCKER \
-        --load foundry-api:latest=(+docker) \
-        --load foundry-api-test:latest=(+docker-test) \
-        --compose docker-compose.yml \
-        --service api \
-        --service auth \
-        --service auth-jwt \
-        --service postgres
-
-        RUN docker compose up api-test
-    END
+    RUN go test -tags=integration -count=1 -p 1 -parallel 1 ./test/... -v
 
 docker:
     FROM debian:latest

@@ -1,543 +1,5 @@
 components:
   schemas:
-    auth.AccessRequest:
-      properties:
-        attempts:
-          type: integer
-        created_at:
-          type: string
-        decided_at:
-          type: string
-        email:
-          type: string
-        id:
-          type: string
-        reason:
-          type: string
-        status:
-          type: string
-      type: object
-    auth.AccessRequestDecideRequest:
-      properties:
-        approve:
-          type: boolean
-        note:
-          type: string
-      type: object
-    auth.AccessRequestListResponse:
-      properties:
-        requests:
-          items:
-            $ref: '#/components/schemas/auth.AccessRequest'
-          type: array
-          uniqueItems: false
-        total:
-          type: integer
-      type: object
-    auth.AccessTokenResponse:
-      properties:
-        access_token:
-          type: string
-      type: object
-    auth.AdminInviteCreateRequest:
-      properties:
-        days_to_expire:
-          type: integer
-        email:
-          type: string
-        email_user:
-          type: boolean
-        roles:
-          items:
-            type: string
-          type: array
-          uniqueItems: false
-      type: object
-    auth.AdminInviteCreateResponse:
-      properties:
-        expires_at:
-          type: string
-        invite_id:
-          type: string
-        invite_link:
-          type: string
-      type: object
-    auth.AdminUser:
-      properties:
-        active_sessions:
-          type: integer
-        created_at:
-          type: string
-        email:
-          type: string
-        id:
-          type: string
-        last_activity_at:
-          type: string
-        roles:
-          items:
-            type: string
-          type: array
-          uniqueItems: false
-        updated_at:
-          type: string
-      type: object
-    auth.AdminUsersListResponse:
-      properties:
-        users:
-          items:
-            $ref: '#/components/schemas/auth.AdminUser'
-          type: array
-          uniqueItems: false
-      type: object
-    auth.AuditEvent:
-      properties:
-        actor_id:
-          type: string
-        created_at:
-          type: string
-        id:
-          type: string
-        ip_address:
-          type: string
-        metadata:
-          additionalProperties: {}
-          type: object
-        type:
-          type: string
-        user_agent:
-          type: string
-        user_id:
-          type: string
-      type: object
-    auth.AuditListResponse:
-      properties:
-        events:
-          items:
-            $ref: '#/components/schemas/auth.AuditEvent'
-          type: array
-          uniqueItems: false
-        total:
-          type: integer
-      type: object
-    auth.AuthorizeDeviceLinkRequest:
-      properties:
-        user_code:
-          example: ABCD-123
-          type: string
-      required:
-      - user_code
-      type: object
-    auth.BeginDeviceLinkRequest:
-      properties:
-        device_name:
-          example: My CLI
-          type: string
-        purpose:
-          enum:
-          - login
-          - step_up
-          example: login
-          type: string
-      type: object
-    auth.BootstrapRequest:
-      properties:
-        bootstrap_token:
-          type: string
-        email:
-          type: string
-      type: object
-    auth.BootstrapResponse:
-      properties:
-        email:
-          type: string
-        token_hash:
-          type: string
-        user_id:
-          type: string
-      type: object
-    auth.CredentialSummary:
-      properties:
-        aaguid:
-          type: string
-        device_name:
-          type: string
-        id:
-          type: string
-        last_used_at:
-          type: string
-        sign_count:
-          type: integer
-      type: object
-    auth.CredentialsAddBeginRequest:
-      properties:
-        device_name:
-          type: string
-      type: object
-    auth.CredentialsAddCompleteRequest:
-      properties:
-        credential:
-          type: object
-        session_key:
-          type: string
-      type: object
-    auth.CredentialsListResponse:
-      properties:
-        credentials:
-          items:
-            $ref: '#/components/schemas/auth.CredentialSummary'
-          type: array
-          uniqueItems: false
-      type: object
-    auth.DeviceInfo:
-      properties:
-        created_at:
-          example: "2024-01-01T00:00:00Z"
-          type: string
-        device_name:
-          example: My CLI
-          type: string
-        id:
-          example: 550e8400-e29b-41d4-a716-446655440000
-          type: string
-        is_current:
-          example: false
-          type: boolean
-        last_used_at:
-          example: "2024-01-02T15:04:05Z"
-          type: string
-      type: object
-    auth.DeviceLinkVerificationResponse:
-      properties:
-        authorized:
-          example: false
-          type: boolean
-        device_name:
-          example: My CLI
-          type: string
-        expires_at:
-          example: "2024-01-02T15:04:05Z"
-          type: string
-        purpose:
-          enum:
-          - login
-          - step_up
-          example: login
-          type: string
-      type: object
-    auth.DeviceListResponse:
-      properties:
-        devices:
-          items:
-            $ref: '#/components/schemas/auth.DeviceInfo'
-          type: array
-          uniqueItems: false
-      type: object
-    auth.DeviceResponse:
-      properties:
-        created_at:
-          example: "2024-01-01T00:00:00Z"
-          type: string
-        device_name:
-          example: My CLI
-          type: string
-        id:
-          example: 550e8400-e29b-41d4-a716-446655440000
-          type: string
-        is_current:
-          example: false
-          type: boolean
-        last_used_at:
-          example: "2024-01-02T15:04:05Z"
-          type: string
-      type: object
-    auth.ExchangeDeviceCodeRequest:
-      properties:
-        device_code:
-          example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
-          type: string
-      required:
-      - device_code
-      type: object
-    auth.GithubPolicyCreateRequest:
-      properties:
-        enabled:
-          type: boolean
-        environments:
-          items:
-            type: string
-          type: array
-          uniqueItems: false
-        refs:
-          items:
-            type: string
-          type: array
-          uniqueItems: false
-        repository:
-          type: string
-        roles:
-          items:
-            type: string
-          type: array
-          uniqueItems: false
-        workflows:
-          items:
-            type: string
-          type: array
-          uniqueItems: false
-      required:
-      - repository
-      - roles
-      type: object
-    auth.GithubPolicyResponse:
-      properties:
-        enabled:
-          type: boolean
-        environments:
-          items:
-            type: string
-          type: array
-          uniqueItems: false
-        id:
-          type: string
-        refs:
-          items:
-            type: string
-          type: array
-          uniqueItems: false
-        repository:
-          type: string
-        roles:
-          items:
-            type: string
-          type: array
-          uniqueItems: false
-        workflows:
-          items:
-            type: string
-          type: array
-          uniqueItems: false
-      type: object
-    auth.GithubPolicyUpdateRequest:
-      properties:
-        enabled:
-          type: boolean
-        environments:
-          items:
-            type: string
-          type: array
-          uniqueItems: false
-        refs:
-          items:
-            type: string
-          type: array
-          uniqueItems: false
-        roles:
-          items:
-            type: string
-          type: array
-          uniqueItems: false
-        workflows:
-          items:
-            type: string
-          type: array
-          uniqueItems: false
-      required:
-      - roles
-      type: object
-    auth.InvitePreviewResponse:
-      properties:
-        email:
-          type: string
-        expires_at:
-          type: string
-        reason:
-          type: string
-        valid:
-          type: boolean
-      type: object
-    auth.LoginCompleteRequest:
-      properties:
-        credential:
-          type: object
-        session_key:
-          type: string
-      type: object
-    auth.LoginCompleteResponse:
-      properties:
-        access_token:
-          type: string
-        user:
-          $ref: '#/components/schemas/auth.UserSummary'
-      type: object
-    auth.MeResponse:
-      properties:
-        email:
-          type: string
-        full_name:
-          type: string
-        id:
-          type: string
-        roles:
-          items:
-            type: string
-          type: array
-          uniqueItems: false
-      type: object
-    auth.OnboardBeginRequest:
-      properties:
-        device_name:
-          type: string
-        invite_id:
-          type: string
-        token:
-          type: string
-      type: object
-    auth.OnboardBeginResponse:
-      properties:
-        publicKey:
-          type: object
-        session_key:
-          type: string
-        user_id:
-          type: string
-      type: object
-    auth.OnboardCompleteRequest:
-      properties:
-        credential:
-          type: object
-        invite_id:
-          type: string
-        session_key:
-          type: string
-      type: object
-    auth.PublicKeyOptionsResponse:
-      properties:
-        publicKey:
-          type: object
-        session_key:
-          type: string
-      type: object
-    auth.RecoveryGenerateResponse:
-      properties:
-        codes:
-          items:
-            type: string
-          type: array
-          uniqueItems: false
-      type: object
-    auth.RecoveryInitRequest:
-      properties:
-        email:
-          type: string
-      type: object
-    auth.RecoveryInitResponse:
-      properties:
-        flow_id:
-          type: string
-      type: object
-    auth.RecoveryRegisterBeginRequest:
-      properties:
-        device_name:
-          type: string
-        flow_id:
-          type: string
-      type: object
-    auth.RecoveryRegisterCompleteRequest:
-      properties:
-        credential:
-          type: object
-        flow_id:
-          type: string
-        session_key:
-          type: string
-      type: object
-    auth.RecoveryVerifyRequest:
-      properties:
-        code:
-          type: string
-        flow_id:
-          type: string
-      type: object
-    auth.RecoveryVerifyResponse:
-      properties:
-        flow_id:
-          type: string
-        user_id:
-          type: string
-      type: object
-    auth.SessionResponse:
-      properties:
-        session_version:
-          type: integer
-        step_up_required:
-          type: boolean
-        step_up_until:
-          type: string
-        valid:
-          type: boolean
-      type: object
-    auth.SessionSummary:
-      properties:
-        amr:
-          description: webauthn | device_link
-          type: string
-        created_at:
-          type: string
-        current:
-          type: boolean
-        device_id:
-          type: string
-        device_name:
-          type: string
-        expires_at:
-          type: string
-        id:
-          description: family_id
-          type: string
-        ip_address:
-          type: string
-        last_activity_at:
-          type: string
-        user_agent:
-          type: string
-      type: object
-    auth.SessionsListResponse:
-      properties:
-        sessions:
-          items:
-            $ref: '#/components/schemas/auth.SessionSummary'
-          type: array
-          uniqueItems: false
-      type: object
-    auth.StepUpCompleteRequest:
-      properties:
-        credential:
-          type: object
-        session_key:
-          type: string
-      type: object
-    auth.UserSummary:
-      properties:
-        email:
-          type: string
-        full_name:
-          type: string
-        id:
-          type: string
-        roles:
-          items:
-            type: string
-          type: array
-          uniqueItems: false
-      type: object
-    auth.ghaExchangeRequest:
-      properties:
-        id_token:
-          type: string
-      required:
-      - id_token
-      type: object
     contracts.ArtifactCreate:
       properties:
         build_args:
@@ -979,13 +441,6 @@ components:
         error:
           $ref: '#/components/schemas/contracts.ErrorDetail'
       type: object
-    contracts.ModuleVersion:
-      properties:
-        name:
-          type: string
-        version:
-          type: string
-      type: object
     contracts.ProjectPageResult:
       properties:
         items:
@@ -1025,6 +480,114 @@ components:
           description: '"active" or "removed"'
           type: string
         updated_at:
+          type: string
+      type: object
+    contracts.PromotionCreate:
+      properties:
+        approval_mode:
+          enum:
+          - manual
+          - auto
+          type: string
+        environment_id:
+          type: string
+        policy_results:
+          additionalProperties: {}
+          type: object
+        project_id:
+          type: string
+        reason:
+          type: string
+        release_id:
+          type: string
+        requested_by:
+          type: string
+      required:
+      - approval_mode
+      - environment_id
+      - project_id
+      - release_id
+      - requested_by
+      type: object
+    contracts.PromotionPageResult:
+      properties:
+        items:
+          items:
+            $ref: '#/components/schemas/contracts.PromotionResponse'
+          type: array
+          uniqueItems: false
+        page:
+          type: integer
+        page_size:
+          type: integer
+        total:
+          type: integer
+      type: object
+    contracts.PromotionResponse:
+      properties:
+        approval_mode:
+          type: string
+        approved_at:
+          type: string
+        approver_id:
+          type: string
+        created_at:
+          type: string
+        deployment_id:
+          type: string
+        environment_id:
+          type: string
+        id:
+          type: string
+        policy_results:
+          additionalProperties: {}
+          type: object
+        project_id:
+          type: string
+        reason:
+          type: string
+        release_id:
+          type: string
+        requested_at:
+          type: string
+        requested_by:
+          type: string
+        status:
+          type: string
+        step_up_verified_at:
+          type: string
+        trace_id:
+          type: string
+        updated_at:
+          type: string
+      type: object
+    contracts.PromotionUpdate:
+      properties:
+        approved_at:
+          type: string
+        approver_id:
+          type: string
+        deployment_id:
+          type: string
+        policy_results:
+          additionalProperties: {}
+          type: object
+        reason:
+          type: string
+        status:
+          enum:
+          - requested
+          - approved
+          - submitted
+          - completed
+          - failed
+          - canceled
+          - superseded
+          - rejected
+          type: string
+        step_up_verified_at:
+          type: string
+        trace_id:
           type: string
       type: object
     contracts.ReleaseArtifactCreate:
@@ -1075,11 +638,6 @@ components:
           type: string
         created_by:
           type: string
-        injections:
-          items:
-            $ref: '#/components/schemas/contracts.ReleaseInjection'
-          type: array
-          uniqueItems: false
         modules:
           items:
             $ref: '#/components/schemas/contracts.ReleaseModule'
@@ -1115,45 +673,6 @@ components:
       - project_id
       - release_key
       - source_commit
-      type: object
-    contracts.ReleaseInjection:
-      properties:
-        artifact_field:
-          enum:
-          - image_name
-          - image_digest
-          - tag
-          - repo
-          type: string
-        artifact_key:
-          type: string
-        created_at:
-          type: string
-        id:
-          type: string
-        json_pointer:
-          type: string
-        module_key:
-          type: string
-        module_name:
-          type: string
-        release_id:
-          type: string
-      required:
-      - artifact_field
-      - artifact_key
-      - json_pointer
-      type: object
-    contracts.ReleaseInjectionCreate:
-      properties:
-        injections:
-          items:
-            $ref: '#/components/schemas/contracts.ReleaseInjection'
-          minItems: 1
-          type: array
-          uniqueItems: false
-      required:
-      - injections
       type: object
     contracts.ReleaseModule:
       properties:
@@ -1281,31 +800,76 @@ components:
           - sealed
           type: string
       type: object
-    contracts.RenderJobCreate:
-      properties:
-        bundle_hash:
-          type: string
-        module_versions:
-          items:
-            $ref: '#/components/schemas/contracts.ModuleVersion'
-          type: array
-          uniqueItems: false
-        renderer_version:
-          type: string
-      type: object
-    contracts.RenderJobResponse:
+    contracts.RenderedReleaseCreate:
       properties:
         bundle_hash:
           type: string
         deployment_id:
           type: string
-        finished_at:
+        environment_id:
+          type: string
+        module_versions:
+          items:
+            additionalProperties: {}
+            type: object
+          type: array
+          uniqueItems: false
+        oci_digest:
+          type: string
+        oci_ref:
+          type: string
+        output_hash:
+          type: string
+        release_id:
+          type: string
+        renderer_version:
+          type: string
+        signature_verified_at:
+          type: string
+        signed:
+          type: boolean
+        storage_uri:
+          type: string
+      required:
+      - bundle_hash
+      - deployment_id
+      - environment_id
+      - oci_digest
+      - oci_ref
+      - output_hash
+      - release_id
+      - renderer_version
+      type: object
+    contracts.RenderedReleasePageResult:
+      properties:
+        items:
+          items:
+            $ref: '#/components/schemas/contracts.RenderedReleaseResponse'
+          type: array
+          uniqueItems: false
+        page:
+          type: integer
+        page_size:
+          type: integer
+        total:
+          type: integer
+      type: object
+    contracts.RenderedReleaseResponse:
+      properties:
+        bundle_hash:
+          type: string
+        created_at:
+          type: string
+        deployment_id:
+          type: string
+        environment_id:
           type: string
         id:
           type: string
         module_versions:
           items:
-            $ref: '#/components/schemas/contracts.ModuleVersion'
+            additionalProperties: {}
+            type: object
           type: array
           uniqueItems: false
         oci_digest:
@@ -1314,49 +878,29 @@ components:
           type: string
         output_hash:
           type: string
+        release_id:
+          type: string
         renderer_version:
           type: string
         signature_verified_at:
           type: string
         signed:
           type: boolean
-        started_at:
-          type: string
-        status:
-          type: string
         storage_uri:
           type: string
+        updated_at:
+          type: string
       type: object
-    contracts.RenderJobUpdate:
+    contracts.RenderedReleaseUpdate:
       properties:
-        bundle_hash:
-          type: string
-        finished_at:
-          type: string
-        module_versions:
-          items:
-            $ref: '#/components/schemas/contracts.ModuleVersion'
-          type: array
-          uniqueItems: false
         oci_digest:
           type: string
         oci_ref:
-          type: string
-        output_hash:
-          type: string
-        renderer_version:
           type: string
         signature_verified_at:
           type: string
         signed:
           type: boolean
-        status:
-          enum:
-          - pending
-          - running
-          - succeeded
-          - failed
-          type: string
         storage_uri:
           type: string
       type: object
@@ -1447,386 +991,6 @@ components:
         updated_at:
           type: string
       type: object
-    handlers.CertificateSigningRequest:
-      properties:
-        common_name:
-          description: CommonName can override the CN in the CSR
-          example: user.example.com
-          type: string
-        csr:
-          description: CSR is the PEM-encoded Certificate Signing Request
-          example: |-
-            -----BEGIN CERTIFICATE REQUEST-----
-            ...
-          type: string
-        sans:
-          description: |-
-            SANs are additional Subject Alternative Names to include
-            These will be validated against user permissions. For client certs, use URI SANs.
-          example:
-          - example.com
-          - '*.example.com'
-          items:
-            type: string
-          type: array
-          uniqueItems: false
-        ttl:
-          description: |-
-            TTL is the requested certificate lifetime
-            Will be capped by server policy
-          example: 24h
-          type: string
-      required:
-      - csr
-      type: object
-    handlers.CertificateSigningResponse:
-      properties:
-        certificate:
-          description: Certificate is the PEM-encoded signed certificate
-          example: |-
-            -----BEGIN CERTIFICATE-----
-            ...
-          type: string
-        certificate_chain:
-          description: CertificateChain includes intermediate certificates if available
-          items:
-            type: string
-          type: array
-          uniqueItems: false
-        fingerprint:
-          description: Fingerprint is the SHA256 fingerprint of the certificate
-          example: sha256:abcdef...
-          type: string
-        not_after:
-          description: NotAfter is when the certificate expires
-          example: "2024-01-02T00:00:00Z"
-          type: string
-        not_before:
-          description: NotBefore is when the certificate becomes valid
-          example: "2024-01-01T00:00:00Z"
-          type: string
-        serial_number:
-          description: SerialNumber is the certificate's serial number
-          example: "123456789"
-          type: string
-      type: object
-    internal_api_models_rbac.Binding:
-      properties:
-        created_at:
-          type: string
-        id:
-          type: string
-        org_id:
-          type: string
-        role_slug:
-          type: string
-        scope_id:
-          type: string
-        scope_type:
-          type: string
-        subject_id:
-          type: string
-        subject_type:
-          type: string
-      type: object
-    internal_api_models_rbac.Condition:
-      properties:
-        name:
-          type: string
-        params:
-          additionalProperties: {}
-          type: object
-      type: object
-    internal_api_models_rbac.ResourceEndpointInfo:
-      properties:
-        id_field:
-          type: string
-        label_field:
-          type: string
-        method:
-          type: string
-        parent_filters:
-          items:
-            type: string
-          type: array
-          uniqueItems: false
-        path:
-          type: string
-        query_params:
-          items:
-            type: string
-          type: array
-          uniqueItems: false
-      type: object
-    internal_api_models_rbac.ResourceTypeCatalogItem:
-      properties:
-        endpoint:
-          $ref: '#/components/schemas/internal_api_models_rbac.ResourceEndpointInfo'
-        type:
-          type: string
-      type: object
-    internal_api_models_rbac.RoleEntry:
-      properties:
-        conditions:
-          items:
-            $ref: '#/components/schemas/internal_api_models_rbac.Condition'
-          type: array
-          uniqueItems: false
-        effect:
-          type: string
-        permission:
-          type: string
-        resource_type:
-          type: string
-      type: object
-    internal_authkit_rbac.Condition:
-      properties:
-        name:
-          type: string
-        params:
-          additionalProperties: {}
-          type: object
-      type: object
-    internal_authkit_rbac.RoleEntry:
-      properties:
-        conditions:
-          items:
-            $ref: '#/components/schemas/internal_authkit_rbac.Condition'
-          type: array
-        effect:
-          $ref: '#/components/schemas/rbac.Effect'
-        permission:
-          type: string
-        resourceType:
-          type: string
-      type: object
-    org.Organization:
-      properties:
-        created_at:
-          type: string
-        id:
-          type: string
-        is_default:
-          type: boolean
-        name:
-          type: string
-        updated_at:
-          type: string
-      type: object
-    rbac.BindingCreateRequest:
-      properties:
-        id:
-          type: string
-        org_id:
-          type: string
-        role_slug:
-          type: string
-        scope_id:
-          type: string
-        scope_type:
-          type: string
-        subject:
-          $ref: '#/components/schemas/rbac.SubjectRef'
-      type: object
-    rbac.BindingsListResponse:
-      properties:
-        bindings:
-          items:
-            $ref: '#/components/schemas/internal_api_models_rbac.Binding'
-          type: array
-          uniqueItems: false
-      type: object
-    rbac.ConditionsResponse:
-      properties:
-        conditions:
-          items:
-            type: string
-          type: array
-          uniqueItems: false
-      type: object
-    rbac.Effect:
-      enum:
-      - allow
-      - deny
-      type: string
-      x-enum-varnames:
-      - Allow
-      - Deny
-    rbac.ExplainRequest:
-      properties:
-        permission:
-          type: string
-        resource:
-          $ref: '#/components/schemas/rbac.ResourceInput'
-        subject:
-          $ref: '#/components/schemas/rbac.SubjectInput'
-      type: object
-    rbac.ExplainResponse:
-      properties:
-        decision:
-          type: string
-        trace: {}
-      type: object
-    rbac.PermissionInfo:
-      properties:
-        description:
-          type: string
-        domain:
-          type: string
-        key:
-          type: string
-        name:
-          type: string
-      type: object
-    rbac.PermissionsCatalogResponse:
-      properties:
-        permissions:
-          items:
-            $ref: '#/components/schemas/rbac.PermissionInfo'
-          type: array
-          uniqueItems: false
-      type: object
-    rbac.ResourceInput:
-      properties:
-        attrs:
-          additionalProperties: {}
-          type: object
-        id:
-          type: string
-        org_id:
-          type: string
-        parent:
-          $ref: '#/components/schemas/rbac.ResourceInput'
-        type:
-          type: string
-      type: object
-    rbac.ResourceTypeCatalogResponse:
-      properties:
-        types:
-          items:
-            $ref: '#/components/schemas/internal_api_models_rbac.ResourceTypeCatalogItem'
-          type: array
-          uniqueItems: false
-      type: object
-    rbac.ResourceTypesResponse:
-      properties:
-        types:
-          items:
-            type: string
-          type: array
-          uniqueItems: false
-      type: object
-    rbac.Role:
-      properties:
-        color:
-          type: string
-        description:
-          type: string
-        entries:
-          items:
-            $ref: '#/components/schemas/internal_api_models_rbac.RoleEntry'
-          type: array
-          uniqueItems: false
-        id:
-          type: string
-        name:
-          type: string
-        slug:
-          type: string
-        version:
-          type: integer
-      type: object
-    rbac.RoleDef:
-      properties:
-        color:
-          type: string
-        description:
-          type: string
-        entries:
-          items:
-            $ref: '#/components/schemas/internal_authkit_rbac.RoleEntry'
-          type: array
-        id:
-          type: string
-        name:
-          type: string
-        slug:
-          type: string
-        version:
-          type: integer
-      type: object
-    rbac.RolesListResponse:
-      properties:
-        roles:
-          items:
-            $ref: '#/components/schemas/rbac.Role'
-          type: array
-          uniqueItems: false
-      type: object
-    rbac.SubjectInput:
-      properties:
-        attrs:
-          additionalProperties: {}
-          type: object
-        id:
-          type: string
-        org_id:
-          type: string
-        type:
-          type: string
-      type: object
-    rbac.SubjectRef:
-      properties:
-        id:
-          type: string
-        type:
-          type: string
-      type: object
-    service.DeviceLinkResponse:
-      properties:
-        device_code:
-          type: string
-        expires_in:
-          type: integer
-        interval:
-          type: integer
-        user_code:
-          type: string
-        verification_uri:
-          type: string
-        verification_uri_complete:
-          type: string
-      type: object
-    service.ExchangeResponse:
-      properties:
-        access_token:
-          type: string
-        device_id:
-          type: string
-        expires_in:
-          type: integer
-        refresh_expires_in:
-          type: integer
-        refresh_token:
-          type: string
-        status:
-          description: '"authorization_pending", "slow_down", "expired_token"'
-          type: string
-        user:
-          $ref: '#/components/schemas/service.UserInfo'
-      type: object
-    service.UserInfo:
-      properties:
-        email:
-          type: string
-        id:
-          type: string
-        roles:
-          items:
-            type: string
-          type: array
-          uniqueItems: false
-      type: object
 externalDocs:
   description: ""
   url: ""
@@ -1835,357 +999,6 @@ info:
   version: ""
 openapi: 3.1.0
 paths:
-  /.well-known/jwks.json:
-    get:
-      description: Returns the public JSON Web Key Set used to verify access tokens
-      requestBody:
-        content:
-          application/json:
-            schema:
-              type: object
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                additionalProperties: {}
-                type: object
-          description: JWKS
-      summary: Get JWKS
-      tags:
-      - auth
-  /api/v1/admin/access-requests:
-    get:
-      parameters:
-      - description: Filter by status (pending|approved|rejected)
-        in: query
-        name: status
-        schema:
-          type: string
-      - description: Search query (email or reason)
-        in: query
-        name: q
-        schema:
-          type: string
-      - description: Max results (1-200)
-        in: query
-        name: limit
-        schema:
-          default: 50
-          type: integer
-      - description: Offset for pagination
-        in: query
-        name: offset
-        schema:
-          default: 0
-          type: integer
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/auth.AccessRequestListResponse'
-          description: OK
-      summary: List access requests (admin)
-      tags:
-      - admin
-  /api/v1/admin/access-requests/{id}:
-    patch:
-      parameters:
-      - description: Access Request ID
-        in: path
-        name: id
-        required: true
-        schema:
-          type: string
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/auth.AccessRequestDecideRequest'
-        description: Decision
-        required: true
-      responses:
-        "204":
-          description: No Content
-      summary: Decide access request (admin)
-      tags:
-      - admin
-  /api/v1/admin/audit:
-    get:
-      parameters:
-      - description: Filter by actor ID (UUID)
-        in: query
-        name: actor_id
-        schema:
-          type: string
-      - description: Filter by user ID (UUID)
-        in: query
-        name: user_id
-        schema:
-          type: string
-      - description: Comma-separated event types
-        in: query
-        name: types
-        schema:
-          type: string
-      - description: Filter events created at or after this RFC3339 timestamp
-        in: query
-        name: since
-        schema:
-          type: string
-      - description: Filter events created before this RFC3339 timestamp
-        in: query
-        name: until
-        schema:
-          type: string
-      - description: Max results (1-200)
-        in: query
-        name: limit
-        schema:
-          default: 50
-          type: integer
-      - description: Offset for pagination
-        in: query
-        name: offset
-        schema:
-          default: 0
-          type: integer
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/auth.AuditListResponse'
-          description: OK
-      summary: List audit events (admin)
-      tags:
-      - admin
-  /api/v1/admin/invites:
-    post:
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/auth.AdminInviteCreateRequest'
-        description: Invite create request
-        required: true
-      responses:
-        "201":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/auth.AdminInviteCreateResponse'
-          description: Created
-      summary: Create invite (admin)
-      tags:
-      - admin
-  /api/v1/admin/invites/preview:
-    get:
-      parameters:
-      - description: Invite token (base64url)
-        in: query
-        name: token
-        schema:
-          type: string
-      - description: Invite ID (UUID)
-        in: query
-        name: id
-        schema:
-          type: string
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/auth.InvitePreviewResponse'
-          description: OK
-      summary: Preview invite (public)
-      tags:
-      - admin
-  /api/v1/admin/orgs:
-    get:
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                additionalProperties: {}
-                type: object
-          description: OK
-      summary: List organizations
-      tags:
-      - admin
-    post:
-      requestBody:
-        content:
-          application/json:
-            schema:
-              type: object
-      responses:
-        "201":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/org.Organization'
-          description: Created
-      summary: Create organization
-      tags:
-      - admin
-  /api/v1/admin/orgs/{id}:
-    get:
-      parameters:
-      - description: Organization ID
-        in: path
-        name: id
-        required: true
-        schema:
-          type: string
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/org.Organization'
-          description: OK
-        "404":
-          content:
-            application/json:
-              schema:
-                additionalProperties: {}
-                type: object
-          description: Not Found
-      summary: Get organization
-      tags:
-      - admin
-  /api/v1/admin/orgs/{id}/default:
-    patch:
-      responses:
-        "204":
-          description: No Content
-      summary: Set default organization
-      tags:
-      - admin
-  /api/v1/admin/orgs/{id}/name:
-    patch:
-      requestBody:
-        content:
-          application/json:
-            schema:
-              type: object
-      responses:
-        "204":
-          description: No Content
-      summary: Rename organization
-      tags:
-      - admin
-  /api/v1/admin/users:
-    get:
-      parameters:
-      - description: Search query (email or ID)
-        in: query
-        name: q
-        schema:
-          type: string
-      - description: Filter by role (admin|member)
-        in: query
-        name: role
-        schema:
-          type: string
-      - description: Max results (1-200)
-        in: query
-        name: limit
-        schema:
-          default: 50
-          type: integer
-      - description: Offset for pagination
-        in: query
-        name: offset
-        schema:
-          default: 0
-          type: integer
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/auth.AdminUsersListResponse'
-          description: OK
-      summary: List users (admin)
-      tags:
-      - admin
-  /api/v1/admin/users/{id}:
-    delete:
-      parameters:
-      - description: User ID
-        in: path
-        name: id
-        required: true
-        schema:
-          type: string
-      responses:
-        "204":
-          description: No Content
-      summary: Delete a user (admin)
-      tags:
-      - admin
-    patch:
-      parameters:
-      - description: User ID
-        in: path
-        name: id
-        required: true
-        schema:
-          type: string
-      requestBody:
-        content:
-          application/json:
-            schema:
-              type: object
-      responses:
-        "204":
-          description: No Content
-      summary: Update a user (admin)
-      tags:
-      - admin
-  /api/v1/admin/users/{id}/credentials:
-    get:
-      parameters:
-      - description: User ID
-        in: path
-        name: id
-        required: true
-        schema:
-          type: string
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/auth.CredentialsListResponse'
-          description: OK
-      summary: List user credentials (admin)
-      tags:
-      - admin
-  /api/v1/admin/users/{id}/recovery/codes/generate:
-    post:
-      parameters:
-      - description: User ID
-        in: path
-        name: id
-        required: true
-        schema:
-          type: string
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/auth.RecoveryGenerateResponse'
-          description: OK
-      summary: Generate recovery codes for a user (admin)
-      tags:
-      - admin
   /api/v1/artifacts:
     get:
       description: List artifacts with optional filtering and pagination
@@ -2498,647 +1311,6 @@ paths:
       summary: Get an artifact by digest
       tags:
       - artifacts
-  /api/v1/auth/bootstrap:
-    post:
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/auth.BootstrapRequest'
-        description: Bootstrap request
-        required: true
-      responses:
-        "201":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/auth.BootstrapResponse'
-          description: Created
-        "404":
-          content:
-            application/json:
-              schema:
-                additionalProperties: {}
-                type: object
-          description: Not Found
-      summary: Admin bootstrap
-      tags:
-      - auth
-  /api/v1/auth/credentials:
-    get:
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/auth.CredentialsListResponse'
-          description: OK
-      summary: List credentials
-      tags:
-      - auth
-  /api/v1/auth/credentials/{credentialId}:
-    delete:
-      parameters:
-      - description: Credential ID
-        in: path
-        name: credentialId
-        required: true
-        schema:
-          type: string
-      responses:
-        "204":
-          description: No Content
-      summary: Delete credential
-      tags:
-      - auth
-  /api/v1/auth/credentials/{id}:
-    patch:
-      parameters:
-      - description: Credential ID (base64url)
-        in: path
-        name: id
-        required: true
-        schema:
-          type: string
-      requestBody:
-        content:
-          application/json:
-            schema:
-              type: object
-      responses:
-        "204":
-          description: No Content
-      summary: Update credential device name
-      tags:
-      - auth
-  /api/v1/auth/credentials/add/begin:
-    post:
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/auth.CredentialsAddBeginRequest'
-        description: Begin credential add
-        required: true
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/auth.PublicKeyOptionsResponse'
-          description: OK
-      summary: Add credential (begin)
-      tags:
-      - auth
-  /api/v1/auth/credentials/add/complete:
-    post:
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/auth.CredentialsAddCompleteRequest'
-        description: Complete credential add
-        required: true
-      responses:
-        "204":
-          description: No Content
-      summary: Add credential (complete)
-      tags:
-      - auth
-  /api/v1/auth/device-link/authorize:
-    post:
-      description: Authorizes a pending device link request (requires authentication
-        and step-up)
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/auth.AuthorizeDeviceLinkRequest'
-        description: Authorization request
-        required: true
-      responses:
-        "204":
-          description: No Content
-      summary: Authorize device link
-      tags:
-      - auth
-  /api/v1/auth/device-link/begin:
-    post:
-      description: Initiates a device authorization flow for CLI/device authentication
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/auth.BeginDeviceLinkRequest'
-        description: Device link request
-        required: true
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/service.DeviceLinkResponse'
-          description: OK
-      summary: Begin device link flow
-      tags:
-      - auth
-  /api/v1/auth/device-link/exchange:
-    post:
-      description: Exchanges a device code for access and refresh tokens (polling
-        endpoint)
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/auth.ExchangeDeviceCodeRequest'
-        description: Exchange request
-        required: true
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/service.ExchangeResponse'
-          description: OK
-      summary: Exchange device code for tokens
-      tags:
-      - auth
-  /api/v1/auth/device-link/verify:
-    get:
-      description: Verifies a user code and returns device information for display
-        in the browser UI
-      parameters:
-      - description: User code to verify
-        in: query
-        name: code
-        required: true
-        schema:
-          type: string
-      requestBody:
-        content:
-          application/json:
-            schema:
-              type: object
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/auth.DeviceLinkVerificationResponse'
-          description: OK
-      summary: Verify device link code
-      tags:
-      - auth
-  /api/v1/auth/devices:
-    get:
-      description: Lists all devices registered for the authenticated user
-      requestBody:
-        content:
-          application/json:
-            schema:
-              type: object
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/auth.DeviceListResponse'
-          description: OK
-      summary: List user devices
-      tags:
-      - auth
-  /api/v1/auth/devices/{id}:
-    delete:
-      description: Revokes a device and all associated refresh tokens
-      parameters:
-      - description: Device ID
-        in: path
-        name: id
-        required: true
-        schema:
-          type: string
-      requestBody:
-        content:
-          application/json:
-            schema:
-              type: object
-      responses:
-        "204":
-          description: No Content
-      summary: Revoke device
-      tags:
-      - auth
-    get:
-      description: Gets details of a specific device
-      parameters:
-      - description: Device ID
-        in: path
-        name: id
-        required: true
-        schema:
-          type: string
-      requestBody:
-        content:
-          application/json:
-            schema:
-              type: object
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/auth.DeviceResponse'
-          description: OK
-      summary: Get device details
-      tags:
-      - auth
-  /api/v1/auth/login/begin:
-    post:
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/auth.PublicKeyOptionsResponse'
-          description: OK
-      summary: Begin login
-      tags:
-      - auth
-  /api/v1/auth/login/complete:
-    post:
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/auth.LoginCompleteRequest'
-        description: Login complete request
-        required: true
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/auth.LoginCompleteResponse'
-          description: OK
-      summary: Complete login
-      tags:
-      - auth
-  /api/v1/auth/logout:
-    post:
-      responses:
-        "204":
-          description: No Content
-      summary: Logout current session
-      tags:
-      - auth
-  /api/v1/auth/logout-all:
-    post:
-      responses:
-        "204":
-          description: No Content
-      summary: Logout all sessions
-      tags:
-      - auth
-  /api/v1/auth/me:
-    get:
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/auth.MeResponse'
-          description: OK
-      summary: Me
-      tags:
-      - auth
-    patch:
-      requestBody:
-        content:
-          application/json:
-            schema:
-              type: object
-      responses: {}
-      summary: Update profile (full name)
-      tags:
-      - auth
-  /api/v1/auth/oidc/github/exchange:
-    post:
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/auth.ghaExchangeRequest'
-        description: GitHub OIDC exchange request
-        required: true
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                additionalProperties: {}
-                type: object
-          description: OK
-      summary: Exchange GitHub OIDC token
-      tags:
-      - auth
-  /api/v1/auth/oidc/github/policies:
-    get:
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                items:
-                  $ref: '#/components/schemas/auth.GithubPolicyResponse'
-                type: array
-          description: OK
-      summary: List GitHub policies
-      tags:
-      - auth
-    post:
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/auth.GithubPolicyCreateRequest'
-        description: Create policy
-        required: true
-      responses:
-        "201":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/auth.GithubPolicyResponse'
-          description: Created
-      summary: Create GitHub policy
-      tags:
-      - auth
-  /api/v1/auth/oidc/github/policies/{id}:
-    delete:
-      parameters:
-      - description: Policy ID
-        in: path
-        name: id
-        required: true
-        schema:
-          type: string
-      responses:
-        "204":
-          description: No Content
-      summary: Delete GitHub policy
-      tags:
-      - auth
-    get:
-      parameters:
-      - description: Policy ID
-        in: path
-        name: id
-        required: true
-        schema:
-          type: string
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/auth.GithubPolicyResponse'
-          description: OK
-        "404":
-          content:
-            application/json:
-              schema:
-                additionalProperties: {}
-                type: object
-          description: Not Found
-      summary: Get GitHub policy
-      tags:
-      - auth
-    put:
-      parameters:
-      - description: Policy ID
-        in: path
-        name: id
-        required: true
-        schema:
-          type: string
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/auth.GithubPolicyUpdateRequest'
-        description: Update policy
-        required: true
-      responses:
-        "204":
-          description: No Content
-      summary: Update GitHub policy
-      tags:
-      - auth
-  /api/v1/auth/onboard/begin:
-    post:
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/auth.OnboardBeginRequest'
-        description: Onboard begin request
-        required: true
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/auth.OnboardBeginResponse'
-          description: OK
-      summary: Onboard begin
-      tags:
-      - auth
-  /api/v1/auth/onboard/complete:
-    post:
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/auth.OnboardCompleteRequest'
-        description: Onboard complete request
-        required: true
-      responses:
-        "204":
-          description: No Content
-      summary: Onboard complete
-      tags:
-      - auth
-  /api/v1/auth/recovery/codes/generate:
-    post:
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/auth.RecoveryGenerateResponse'
-          description: OK
-      summary: Generate new recovery codes (one-time view)
-      tags:
-      - auth
-  /api/v1/auth/recovery/init:
-    post:
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/auth.RecoveryInitRequest'
-        description: Recovery init request
-        required: true
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/auth.RecoveryInitResponse'
-          description: OK
-      summary: Recovery init
-      tags:
-      - auth
-  /api/v1/auth/recovery/register/begin:
-    post:
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/auth.RecoveryRegisterBeginRequest'
-        description: Recovery register begin request
-        required: true
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/auth.PublicKeyOptionsResponse'
-          description: OK
-      summary: Recovery register begin
-      tags:
-      - auth
-  /api/v1/auth/recovery/register/complete:
-    post:
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/auth.RecoveryRegisterCompleteRequest'
-        description: Recovery register complete request
-        required: true
-      responses:
-        "204":
-          description: No Content
-      summary: Recovery register complete
-      tags:
-      - auth
-  /api/v1/auth/recovery/verify:
-    post:
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/auth.RecoveryVerifyRequest'
-        description: Recovery verify request
-        required: true
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/auth.RecoveryVerifyResponse'
-          description: OK
-      summary: Recovery verify
-      tags:
-      - auth
-  /api/v1/auth/refresh:
-    post:
-      requestBody:
-        content:
-          application/json:
-            schema:
-              type: object
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/auth.AccessTokenResponse'
-          description: OK
-      summary: Refresh access token
-      tags:
-      - auth
-  /api/v1/auth/session:
-    get:
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/auth.SessionResponse'
-          description: OK
-      summary: Session
-      tags:
-      - auth
-  /api/v1/auth/sessions:
-    get:
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/auth.SessionsListResponse'
-          description: OK
-      summary: List active sessions
-      tags:
-      - auth
-  /api/v1/auth/sessions/{family_id}:
-    delete:
-      parameters:
-      - description: Family ID
-        in: path
-        name: family_id
-        required: true
-        schema:
-          type: string
-      responses:
-        "204":
-          description: No Content
-      summary: Revoke a session
-      tags:
-      - auth
-  /api/v1/auth/step-up/begin:
-    post:
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/auth.PublicKeyOptionsResponse'
-          description: OK
-      summary: Step-up (begin)
-      tags:
-      - auth
-  /api/v1/auth/step-up/complete:
-    post:
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/auth.StepUpCompleteRequest'
-        description: Step-up complete request
-        required: true
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/auth.AccessTokenResponse'
-          description: OK
-      summary: Step-up (complete)
-      tags:
-      - auth
   /api/v1/builds:
     get:
       description: List builds with optional filtering and pagination
@@ -3530,9 +1702,9 @@ paths:
       summary: Create a new deployment
       tags:
       - deployments
-  /api/v1/deployments/{deployment_id}/render-job:
+  /api/v1/deployments/{deployment_id}/rendered-release:
     get:
-      description: Retrieve the render job associated with a deployment
+      description: Retrieve the rendered release associated with a deployment
       parameters:
       - description: Deployment ID (UUID)
         in: path
@@ -3550,8 +1722,8 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/contracts.RenderJobResponse'
-          description: Render job details
+                $ref: '#/components/schemas/contracts.RenderedReleaseResponse'
+          description: Rendered release for deployment
         "400":
           content:
             application/json:
@@ -3563,110 +1735,16 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/contracts.ErrorResponse'
-          description: Render job not found
+          description: Rendered release not found
         "500":
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/contracts.ErrorResponse'
           description: Internal server error
-      summary: Get render job for a deployment
+      summary: Get a rendered release by deployment ID
       tags:
-      - deployments
-    patch:
-      description: Update the render job associated with a deployment
-      parameters:
-      - description: Deployment ID (UUID)
-        in: path
-        name: deployment_id
-        required: true
-        schema:
-          type: string
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/contracts.RenderJobUpdate'
-        description: Render job update request
-        required: true
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/contracts.RenderJobResponse'
-          description: Updated render job
-        "400":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/contracts.ErrorResponse'
-          description: Invalid request
-        "404":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/contracts.ErrorResponse'
-          description: Render job not found
-        "500":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/contracts.ErrorResponse'
-          description: Internal server error
-      summary: Update a render job
-      tags:
-      - deployments
-    post:
-      description: Create a new render job for an existing deployment
-      parameters:
-      - description: Deployment ID (UUID)
-        in: path
-        name: deployment_id
-        required: true
-        schema:
-          type: string
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/contracts.RenderJobCreate'
-        description: Render job creation request
-        required: true
-      responses:
-        "201":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/contracts.RenderJobResponse'
-          description: Created render job
-        "400":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/contracts.ErrorResponse'
-          description: Invalid request
-        "404":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/contracts.ErrorResponse'
-          description: Deployment not found
-        "409":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/contracts.ErrorResponse'
-          description: Render job already exists for this deployment
-        "500":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/contracts.ErrorResponse'
-          description: Internal server error
-      summary: Create a render job for a deployment
-      tags:
-      - deployments
+      - rendered-releases
   /api/v1/deployments/{id}:
     delete:
       description: Delete a deployment
@@ -4216,210 +2294,131 @@ paths:
       summary: Get an environment by project and name
       tags:
       - environments
-  /api/v1/rbac/bindings:
+  /api/v1/promotions:
     get:
+      description: List promotions with optional filtering and pagination
       parameters:
-      - description: Subject type (user|group|service)
+      - description: 'Page number (default: 1)'
         in: query
-        name: subject_type
-        required: true
+        name: page
+        schema:
+          type: integer
+      - description: 'Page size (default: 20)'
+        in: query
+        name: page_size
+        schema:
+          type: integer
+      - description: Filter by project ID
+        in: query
+        name: project_id
         schema:
           type: string
-      - description: Subject ID
+      - description: Filter by environment ID
         in: query
-        name: subject_id
-        required: true
+        name: environment_id
         schema:
           type: string
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/rbac.BindingsListResponse'
-          description: OK
-      summary: List bindings for a subject
-      tags:
-      - rbac
-    post:
+      - description: Filter by release ID
+        in: query
+        name: release_id
+        schema:
+          type: string
+      - description: Filter by status
+        in: query
+        name: status
+        schema:
+          type: string
+      - description: Filter by creation date (RFC3339)
+        in: query
+        name: since
+        schema:
+          type: string
+      - description: Filter by creation date (RFC3339)
+        in: query
+        name: until
+        schema:
+          type: string
+      - description: Sort field (created_at, updated_at)
+        in: query
+        name: sort_by
+        schema:
+          type: string
+      - description: Sort order (asc, desc)
+        in: query
+        name: sort_order
+        schema:
+          type: string
       requestBody:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/rbac.BindingCreateRequest'
-        description: Binding
-        required: true
-      responses:
-        "201":
-          description: Created
-      summary: Create binding
-      tags:
-      - rbac
-  /api/v1/rbac/bindings/{id}:
-    delete:
-      parameters:
-      - description: Binding ID (UUID)
-        in: path
-        name: id
-        required: true
-        schema:
-          type: string
-      responses:
-        "204":
-          description: No Content
-      summary: Delete binding
-      tags:
-      - rbac
-  /api/v1/rbac/bindings/by-scope:
-    get:
-      parameters:
-      - description: Scope type (global|org|project|resource)
-        in: query
-        name: scope_type
-        required: true
-        schema:
-          type: string
-      - description: Scope ID
-        in: query
-        name: scope_id
-        required: true
-        schema:
-          type: string
+              type: object
       responses:
         "200":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/rbac.BindingsListResponse'
-          description: OK
-      summary: List bindings in a scope
-      tags:
-      - rbac
-  /api/v1/rbac/conditions:
-    get:
-      responses:
-        "200":
+                $ref: '#/components/schemas/contracts.PromotionPageResult'
+          description: Paginated list of promotions
+        "400":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/rbac.ConditionsResponse'
-          description: OK
-      summary: List registered RBAC conditions
+                $ref: '#/components/schemas/contracts.ErrorResponse'
+          description: Invalid query parameters
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.ErrorResponse'
+          description: Internal server error
+      summary: List promotions
       tags:
-      - rbac
-  /api/v1/rbac/explain:
+      - promotions
     post:
+      description: Create a new promotion request
       requestBody:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/rbac.ExplainRequest'
-        description: Explain request
-        required: true
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/rbac.ExplainResponse'
-          description: OK
-        "428":
-          description: Precondition Required
-      summary: Explain decision
-      tags:
-      - rbac
-  /api/v1/rbac/permissions/catalog:
-    get:
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/rbac.PermissionsCatalogResponse'
-          description: OK
-      summary: List permission catalog
-      tags:
-      - rbac
-  /api/v1/rbac/resource-types:
-    get:
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/rbac.ResourceTypesResponse'
-          description: OK
-      summary: List canonical resource types
-      tags:
-      - rbac
-  /api/v1/rbac/resource-types/catalog:
-    get:
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/rbac.ResourceTypeCatalogResponse'
-          description: OK
-      summary: Resource type catalog (endpoints for each type)
-      tags:
-      - rbac
-  /api/v1/rbac/roles:
-    get:
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/rbac.RolesListResponse'
-          description: OK
-      summary: List roles
-      tags:
-      - rbac
-    post:
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/rbac.RoleDef'
-        description: Role definition
+              $ref: '#/components/schemas/contracts.PromotionCreate'
+        description: Promotion creation request
         required: true
       responses:
         "201":
           content:
             application/json:
               schema:
-                type: object
-          description: Created
-      summary: Create role
-      tags:
-      - rbac
-  /api/v1/rbac/roles/{slug}:
-    get:
-      parameters:
-      - description: Role slug
-        in: path
-        name: slug
-        required: true
-        schema:
-          type: string
-      responses:
-        "200":
+                $ref: '#/components/schemas/contracts.PromotionResponse'
+          description: Created promotion
+        "400":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/rbac.Role'
-          description: OK
+                $ref: '#/components/schemas/contracts.ErrorResponse'
+          description: Invalid request body
         "404":
-          description: Not Found
-      summary: Get role
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.ErrorResponse'
+          description: Referenced project, release, or environment not found
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.ErrorResponse'
+          description: Internal server error
+      summary: Create a promotion
       tags:
-      - rbac
-    put:
+      - promotions
+  /api/v1/promotions/{promotion_id}:
+    delete:
+      description: Delete a promotion by ID
       parameters:
-      - description: Role slug
+      - description: Promotion ID (UUID)
         in: path
-        name: slug
+        name: promotion_id
         required: true
         schema:
           type: string
@@ -4427,51 +2426,117 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/rbac.RoleDef'
-        description: Role definition
-        required: true
+              type: object
       responses:
         "204":
-          description: No Content
-      summary: Update role
+          description: Promotion deleted successfully
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.ErrorResponse'
+          description: Invalid promotion ID
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.ErrorResponse'
+          description: Promotion not found
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.ErrorResponse'
+          description: Internal server error
+      summary: Delete a promotion
       tags:
-      - rbac
-  /api/v1/rbac/roles/{slug}/bump-version:
-    post:
+      - promotions
+    get:
+      description: Retrieve a single promotion by its ID
       parameters:
-      - description: Role slug
+      - description: Promotion ID (UUID)
         in: path
-        name: slug
+        name: promotion_id
         required: true
         schema:
           type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
       responses:
-        "204":
-          description: No Content
-      summary: Bump role version
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.PromotionResponse'
+          description: Promotion details
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.ErrorResponse'
+          description: Invalid promotion ID
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.ErrorResponse'
+          description: Promotion not found
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.ErrorResponse'
+          description: Internal server error
+      summary: Get a promotion by ID
       tags:
-      - rbac
-  /api/v1/rbac/subjects/{subject_type}/{subject_id}/bump-version:
-    post:
+      - promotions
+    patch:
+      description: Update a promotion's status and metadata
       parameters:
-      - description: Subject type (user|group|service)
+      - description: Promotion ID (UUID)
         in: path
-        name: subject_type
+        name: promotion_id
         required: true
         schema:
           type: string
-      - description: Subject ID
-        in: path
-        name: subject_id
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/contracts.PromotionUpdate'
+        description: Promotion update request
         required: true
-        schema:
-          type: string
       responses:
-        "204":
-          description: No Content
-      summary: Bump principal version
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.PromotionResponse'
+          description: Updated promotion
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.ErrorResponse'
+          description: Invalid request
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.ErrorResponse'
+          description: Promotion not found
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.ErrorResponse'
+          description: Internal server error
+      summary: Update a promotion
       tags:
-      - rbac
+      - promotions
   /api/v1/releases:
     get:
       description: List releases with optional filtering and pagination
@@ -4564,7 +2629,7 @@ paths:
       tags:
       - releases
     post:
-      description: Create a new release with modules, injections, and artifacts
+      description: Create a new release with modules and artifacts
       requestBody:
         content:
           application/json:
@@ -4832,101 +2897,6 @@ paths:
       summary: Attach an artifact to a release
       tags:
       - releases
-  /api/v1/releases/{id}/injections:
-    get:
-      description: List all injections associated with a release
-      parameters:
-      - description: Release ID (UUID)
-        in: path
-        name: id
-        required: true
-        schema:
-          type: string
-      requestBody:
-        content:
-          application/json:
-            schema:
-              type: object
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                items:
-                  $ref: '#/components/schemas/contracts.ReleaseInjection'
-                type: array
-          description: List of release injections
-        "400":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/contracts.ErrorResponse'
-          description: Invalid release ID
-        "404":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/contracts.ErrorResponse'
-          description: Release not found
-        "500":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/contracts.ErrorResponse'
-          description: Internal server error
-      summary: Get release injections
-      tags:
-      - releases
-    post:
-      description: Add one or more injections to an existing release
-      parameters:
-      - description: Release ID (UUID)
-        in: path
-        name: id
-        required: true
-        schema:
-          type: string
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/contracts.ReleaseInjectionCreate'
-        description: Injections to add
-        required: true
-      responses:
-        "201":
-          content:
-            application/json:
-              schema:
-                type: object
-          description: Injections added successfully
-        "400":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/contracts.ErrorResponse'
-          description: Invalid request
-        "404":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/contracts.ErrorResponse'
-          description: Release not found
-        "409":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/contracts.ErrorResponse'
-          description: Release is sealed and cannot be modified
-        "500":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/contracts.ErrorResponse'
-          description: Internal server error
-      summary: Add injections to a release
-      tags:
-      - releases
   /api/v1/releases/{id}/modules:
     get:
       description: List all modules associated with a release
@@ -5078,57 +3048,6 @@ paths:
       summary: Detach an artifact from a release
       tags:
       - releases
-  /api/v1/releases/{release_id}/injections/{injection_id}:
-    delete:
-      description: Remove a specific injection from a release
-      parameters:
-      - description: Release ID (UUID)
-        in: path
-        name: release_id
-        required: true
-        schema:
-          type: string
-      - description: Injection ID (UUID)
-        in: path
-        name: injection_id
-        required: true
-        schema:
-          type: string
-      requestBody:
-        content:
-          application/json:
-            schema:
-              type: object
-      responses:
-        "204":
-          description: Injection removed successfully
-        "400":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/contracts.ErrorResponse'
-          description: Invalid parameters
-        "404":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/contracts.ErrorResponse'
-          description: Release or injection not found
-        "409":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/contracts.ErrorResponse'
-          description: Release is sealed and cannot be modified
-        "500":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/contracts.ErrorResponse'
-          description: Internal server error
-      summary: Remove an injection from a release
-      tags:
-      - releases
   /api/v1/releases/{release_id}/modules/{module_key}:
     delete:
       description: Remove a specific module from a release by module key
@@ -5180,6 +3099,256 @@ paths:
       summary: Remove a module from a release
       tags:
       - releases
+  /api/v1/rendered-releases:
+    get:
+      description: List rendered releases with optional filtering and pagination
+      parameters:
+      - description: 'Page number (default: 1)'
+        in: query
+        name: page
+        schema:
+          type: integer
+      - description: 'Page size (default: 20)'
+        in: query
+        name: page_size
+        schema:
+          type: integer
+      - description: Filter by release ID
+        in: query
+        name: release_id
+        schema:
+          type: string
+      - description: Filter by environment ID
+        in: query
+        name: environment_id
+        schema:
+          type: string
+      - description: Filter by deployment ID
+        in: query
+        name: deployment_id
+        schema:
+          type: string
+      - description: Filter by OCI digest
+        in: query
+        name: oci_digest
+        schema:
+          type: string
+      - description: Filter by output hash
+        in: query
+        name: output_hash
+        schema:
+          type: string
+      - description: Filter by creation date (RFC3339)
+        in: query
+        name: since
+        schema:
+          type: string
+      - description: Filter by creation date (RFC3339)
+        in: query
+        name: until
+        schema:
+          type: string
+      - description: Sort field (created_at, updated_at)
+        in: query
+        name: sort_by
+        schema:
+          type: string
+      - description: Sort order (asc, desc)
+        in: query
+        name: sort_order
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.RenderedReleasePageResult'
+          description: Paginated list of rendered releases
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.ErrorResponse'
+          description: Invalid query parameters
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.ErrorResponse'
+          description: Internal server error
+      summary: List rendered releases
+      tags:
+      - rendered-releases
+    post:
+      description: Create a rendered release associated with a specific deployment,
+        release, and environment
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/contracts.RenderedReleaseCreate'
+        description: Rendered release creation request
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.RenderedReleaseResponse'
+          description: Created rendered release
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.ErrorResponse'
+          description: Invalid request body
+        "409":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.ErrorResponse'
+          description: Rendered release already exists
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.ErrorResponse'
+          description: Internal server error
+      summary: Create a rendered release record
+      tags:
+      - rendered-releases
+  /api/v1/rendered-releases/{rendered_release_id}:
+    delete:
+      description: Delete a rendered release by ID
+      parameters:
+      - description: Rendered Release ID (UUID)
+        in: path
+        name: rendered_release_id
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        "204":
+          description: Rendered release deleted successfully
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.ErrorResponse'
+          description: Invalid rendered release ID
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.ErrorResponse'
+          description: Rendered release not found
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.ErrorResponse'
+          description: Internal server error
+      summary: Delete a rendered release
+      tags:
+      - rendered-releases
+    get:
+      description: Retrieve a single rendered release by its ID
+      parameters:
+      - description: Rendered Release ID (UUID)
+        in: path
+        name: rendered_release_id
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.RenderedReleaseResponse'
+          description: Rendered release details
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.ErrorResponse'
+          description: Invalid rendered release ID
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.ErrorResponse'
+          description: Rendered release not found
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.ErrorResponse'
+          description: Internal server error
+      summary: Get a rendered release by ID
+      tags:
+      - rendered-releases
+    patch:
+      description: Update a rendered release's metadata (OCI fields, signature, storage
+        URI)
+      parameters:
+      - description: Rendered Release ID (UUID)
+        in: path
+        name: rendered_release_id
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/contracts.RenderedReleaseUpdate'
+        description: Rendered release update request
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.RenderedReleaseResponse'
+          description: Updated rendered release
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.ErrorResponse'
+          description: Invalid request
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.ErrorResponse'
+          description: Rendered release not found
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/contracts.ErrorResponse'
+          description: Internal server error
+      summary: Update a rendered release
+      tags:
+      - rendered-releases
   /api/v1/repositories:
     get:
       description: List repositories with optional filtering and pagination
@@ -5553,129 +3722,6 @@ paths:
       summary: Get a trace by ID
       tags:
       - traces
-  /ca/buildkit/server-certificates:
-    post:
-      description: Signs a server CSR
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/handlers.CertificateSigningRequest'
-        description: Server certificate signing request
-        required: true
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/handlers.CertificateSigningResponse'
-          description: OK
-        "400":
-          content:
-            application/json:
-              schema:
-                additionalProperties: {}
-                type: object
-          description: Invalid request
-        "401":
-          content:
-            application/json:
-              schema:
-                additionalProperties: {}
-                type: object
-          description: Unauthorized
-        "403":
-          content:
-            application/json:
-              schema:
-                additionalProperties: {}
-                type: object
-          description: Forbidden - insufficient permissions
-        "500":
-          content:
-            application/json:
-              schema:
-                additionalProperties: {}
-                type: object
-          description: Internal server error
-      security:
-      - BearerAuth.: []
-      summary: Sign a BuildKit server certificate
-      tags:
-      - certificates
-  /certificates/root:
-    get:
-      description: Returns the Certificate Authority's root certificate
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                type: string
-            text/plain:
-              schema:
-                type: string
-          description: PEM-encoded root certificate
-        "500":
-          content:
-            application/json:
-              schema:
-                additionalProperties: {}
-                type: object
-          description: Internal server error
-      summary: Get root certificate
-      tags:
-      - certificates
-  /certificates/sign:
-    post:
-      description: Signs a Certificate Signing Request (CSR)
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/handlers.CertificateSigningRequest'
-        description: Certificate signing request
-        required: true
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/handlers.CertificateSigningResponse'
-          description: OK
-        "400":
-          content:
-            application/json:
-              schema:
-                additionalProperties: {}
-                type: object
-          description: Invalid request
-        "401":
-          content:
-            application/json:
-              schema:
-                additionalProperties: {}
-                type: object
-          description: Unauthorized
-        "403":
-          content:
-            application/json:
-              schema:
-                additionalProperties: {}
-                type: object
-          description: Forbidden - insufficient permissions
-        "500":
-          content:
-            application/json:
-              schema:
-                additionalProperties: {}
-                type: object
-          description: Internal server error
-      security:
-      - BearerAuth.: []
-      summary: Sign a certificate
-      tags:
-      - certificates
   /healthz:
     get:
       description: Check the health status of the API service

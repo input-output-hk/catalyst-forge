@@ -18,15 +18,15 @@ func RegisterRenderedReleases(r *gin.Engine, deps RenderedReleaseDeps) {
 		{
 			rendered.POST("", deps.H.Create)
 			rendered.GET("", deps.H.List)
-			rendered.GET(":rendered_release_id", deps.H.GetByID)
-			rendered.PATCH(":rendered_release_id", deps.H.Update)
-			rendered.DELETE(":rendered_release_id", deps.H.Delete)
+			rendered.GET("/:rendered_release_id", deps.H.GetByID)
+			rendered.PATCH("/:rendered_release_id", deps.H.Update)
+			rendered.DELETE("/:rendered_release_id", deps.H.Delete)
 		}
 
 		// convenience route by deployment
 		deployments := v1.Group("/deployments")
 		{
-			deployments.GET(":deployment_id/rendered-release", deps.H.GetByDeployment)
+			deployments.GET("/:deployment_id/rendered-release", deps.H.GetByDeployment)
 		}
 	}
 }
