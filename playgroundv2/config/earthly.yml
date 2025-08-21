@@ -1,0 +1,4 @@
+global:
+  buildkit_additional_config: |
+    [registry."registry.local.io"]
+      insecure = true

@@ -1,0 +1,50 @@
+log:
+  level: trace
+  leak_sensitive_values: true
+
+serve:
+  proxy:
+    host: 0.0.0.0
+    port: 4455
+    trust_forwarded_headers: true
+  api:
+    host: 0.0.0.0
+    port: 4456
+
+access_rules:
+  repositories:
+    - file:///etc/oathkeeper/access-rules.yml
+  matching_strategy: glob
+
+authenticators:
+  cookie_session:
+    enabled: true
+    config:
+      check_session_url: http://kratos:4433/sessions/whoami
+      subject_from: "identity.id"
+      extra_from: "@this"
+  oauth2_introspection:
+    enabled: true
+    config:
+      introspection_url: http://hydra:4445/admin/oauth2/introspect
+      scope_strategy: exact
+      trusted_issuers: []
+      pre_authorization:
+        enabled: false
+
+authorizers:
+  allow:
+    enabled: true
+
+mutators:
+  header:
+    enabled: true
+    config:
+      headers: {}
+
+errors:
+  handlers:
+    json:
+      enabled: true
+      config:
+        verbose: true

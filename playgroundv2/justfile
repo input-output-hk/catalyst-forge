@@ -1,0 +1,25 @@
+# Justfile for local playgroundv2: MicroK8s + Envoy Gateway via Terraform
+
+PROJROOT := justfile_directory()
+
+default:
+	@just --list
+
+# One-shot bring-up: cluster + Envoy with fixed MetalLB IP + certs + TLS secret + hosts entry
+# Usage:
+#   just -f playgroundv2/justfile up domain=gateway.localhost
+up domain="forge.local.io" profile="envoy":
+    #!/usr/bin/env bash
+    set -euo pipefail
+    bash -lc "{{PROJROOT}}/scripts/up.sh --domain {{domain}} --profile {{profile}}"
+
+# Tear everything down quickly by deleting the Multipass VM and local state
+# Example: just -f playgroundv2/justfile down name=microk8s profile=envoy keep_certs=true
+down name="microk8s" profile="envoy" keep_certs="false":
+    #!/usr/bin/env bash
+    set -euo pipefail
+    bash -lc "{{PROJROOT}}/scripts/down.sh --name {{name}} --profile {{profile}} --keep-certs {{keep_certs}}"
+
+# Build and push an earthly target to the cluster registry
+earthly target="api":
+	earthly --config {{PROJROOT}}/config/earthly.yml --push +{{target}}

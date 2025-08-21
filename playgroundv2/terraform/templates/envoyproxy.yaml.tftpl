@@ -1,0 +1,21 @@
+apiVersion: gateway.envoyproxy.io/v1alpha1
+kind: EnvoyProxy
+metadata:
+  name: default
+  namespace: ${namespace}
+spec:
+  provider:
+    type: Kubernetes
+    kubernetes:
+      envoyService:
+        type: LoadBalancer
+%{ if load_balancer_ip != "" ~}
+        loadBalancerIP: ${load_balancer_ip}
+%{ endif ~}
+%{ if length(service_annotations) > 0 ~}
+        annotations:
+%{ for k, v in service_annotations ~}
+          ${k}: "${v}"
+%{ endfor ~}
+%{ endif ~}
+

@@ -1,0 +1,25 @@
+- id: api
+  version: v0.42.0
+  match:
+    url: https://forge.localhost/api/v1/<.*>
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE"]
+  authenticators:
+    - handler: oauth2_introspection
+    - handler: cookie_session
+  authorizer:
+    handler: remote_json
+    config:
+      remote: http://pdp:4457/check
+      payload: >-
+        {
+          "method": "{{ .Request.Method }}",
+          "path": "{{ .MatchContext.URL.Path }}",
+          "subject": "{{ print .Subject }}",
+          "scopes": "{{ print .Extra.scope }}",
+          "identity_id": "{{ (index .Extra "identity").id }}",
+          "client_id": "{{ .Extra.client_id }}"
+        }
+  mutators:
+    - handler: id_token # asymmetric signing already set up
+  upstream:
+    url: http://api:5050

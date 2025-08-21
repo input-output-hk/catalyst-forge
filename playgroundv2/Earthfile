@@ -1,0 +1,6 @@
+VERSION 0.8
+
+api:
+    FROM ../services/api+docker
+
+    SAVE IMAGE --push registry.local.io/api:latest
