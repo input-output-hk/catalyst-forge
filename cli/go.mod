@@ -18,8 +18,6 @@ require (
 	github.com/go-git/go-git/v5 v5.16.2
 	github.com/google/go-github/v66 v66.0.0
 	github.com/input-output-hk/catalyst-forge/lib/deployment v0.0.0
-	github.com/input-output-hk/catalyst-forge/lib/foundry/auth v0.0.0-00010101000000-000000000000
-	github.com/input-output-hk/catalyst-forge/lib/foundry/client v0.0.0-00010101000000-000000000000
 	github.com/input-output-hk/catalyst-forge/lib/project v0.0.0
 	github.com/input-output-hk/catalyst-forge/lib/providers v0.0.0-00010101000000-000000000000
 	github.com/input-output-hk/catalyst-forge/lib/schema v0.0.0
@@ -92,7 +90,6 @@ require (
 	github.com/cyberphone/json-canonicalization v0.0.0-20241213102144-19d51d7fe467 // indirect
 	github.com/cyphar/filepath-securejoin v0.4.1 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
-	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
 	github.com/digitorus/pkcs7 v0.0.0-20230818184609-3a137a874352 // indirect
 	github.com/digitorus/timestamp v0.0.0-20231217203849-220c5c2851b7 // indirect
 	github.com/docker/cli v28.2.2+incompatible // indirect
@@ -176,7 +173,6 @@ require (
 	github.com/planetscale/vtprotobuf v0.6.1-0.20240319094008-0393e58bdf10 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/protocolbuffers/txtpbfmt v0.0.0-20241112170944-20d2c9ebc01d // indirect
-	github.com/redis/go-redis/v9 v9.11.0 // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect
 	github.com/rogpeppe/go-internal v1.14.1 // indirect
 	github.com/sagikazarmark/locafero v0.7.0 // indirect
@@ -261,8 +257,4 @@ replace github.com/input-output-hk/catalyst-forge/lib/schema => ../lib/schema
 
 replace github.com/input-output-hk/catalyst-forge/lib/tools => ../lib/tools
 
-replace github.com/input-output-hk/catalyst-forge/lib/foundry/client => ../lib/foundry/client
-
 replace github.com/input-output-hk/catalyst-forge/lib/deployment => ../lib/deployment
-
-replace github.com/input-output-hk/catalyst-forge/lib/foundry/auth => ../lib/foundry/auth

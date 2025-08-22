@@ -79,6 +79,45 @@ func TestBlueprintEnvInjectorInject(t *testing.T) {
 			},
 		},
 		{
+			name: "bool false",
+			in: ctx.CompileString(`
+{
+	foo: _ @env(name="FOO",type="bool")
+}
+			`),
+			env: map[string]string{
+				"FOO": "false",
+			},
+			validate: func(t *testing.T, out cue.Value) {
+				require.NoError(t, out.Validate(cue.Concrete(true)))
+
+				v := out.LookupPath(cue.ParsePath("foo"))
+				bv, err := v.Bool()
+				require.NoError(t, err)
+				assert.Equal(t, false, bv)
+			},
+		},
+		{
+			name: "string default can override",
+			in: ctx.CompileString(`
+{
+	foo: string | *"zzz" @env(name="FOO",type="string",concrete=false)
+}
+			`),
+			env: map[string]string{
+				"FOO": "bar",
+			},
+			validate: func(t *testing.T, out cue.Value) {
+				// Prove override works by unifying with another value
+				o := out.Unify(ctx.CompileString(`{ foo: "baz" }`))
+				require.NoError(t, o.Validate(cue.Concrete(true)))
+				ov := o.LookupPath(cue.ParsePath("foo"))
+				osv, err := ov.String()
+				require.NoError(t, err)
+				assert.Equal(t, "baz", osv)
+			},
+		},
+		{
 			name: "bad int",
 			in: ctx.CompileString(`
 {

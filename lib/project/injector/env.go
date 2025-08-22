@@ -1,10 +1,8 @@
 package injector
 
 import (
-	"fmt"
 	"log/slog"
 	"os"
-	"strconv"
 
 	"cuelang.org/go/cue"
 	"github.com/input-output-hk/catalyst-forge/lib/project/blueprint"
@@ -20,26 +18,13 @@ func (b *BlueprintEnvInjector) Inject(bp blueprint.RawBlueprint) blueprint.RawBl
 
 type BlueprintInjectorEnvMap struct{}
 
-func (b BlueprintInjectorEnvMap) Get(ctx *cue.Context, name string, attrType AttrType) (cue.Value, error) {
+func (b BlueprintInjectorEnvMap) Get(ctx *cue.Context, name string, attrType AttrType, concrete bool) (cue.Value, error) {
 	value, exists := os.LookupEnv(name)
 	if !exists {
 		return cue.Value{}, ErrNotFound
 	}
 
-	switch attrType {
-	case AttrTypeString:
-		return ctx.CompileString(fmt.Sprintf(`"%s"`, value)), nil
-	case AttrTypeInt:
-		n, err := strconv.Atoi(value)
-		if err != nil {
-			return cue.Value{}, fmt.Errorf("invalid int value '%s'", value)
-		}
-		return ctx.CompileString(fmt.Sprintf("%d", n)), nil
-	case AttrTypeBool:
-		return ctx.CompileString("true"), nil
-	default:
-		return cue.Value{}, fmt.Errorf("unsupported attribute type '%s'", attrType)
-	}
+	return compileWithConcrete(ctx, attrType, value, concrete)
 }
 
 func NewBlueprintEnvInjector(ctx *cue.Context, logger *slog.Logger) *BlueprintEnvInjector {

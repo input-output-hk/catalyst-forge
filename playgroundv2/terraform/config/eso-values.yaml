@@ -1,0 +1,12 @@
+# Install CRDs the first time you deploy ESO
+installCRDs: true
+
+# Add env vars to the *controller* container
+# (these affect all AWS providers used by ESO)
+extraEnv:
+  - name: AWS_SECRETSMANAGER_ENDPOINT
+    value: "http://localstack.localstack.svc.cluster.local:4566"
+  - name: AWS_SSM_ENDPOINT
+    value: "http://localstack.localstack.svc.cluster.local:4566"
+  - name: AWS_STS_ENDPOINT
+    value: "http://localstack.localstack.svc.cluster.local:4566"

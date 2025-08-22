@@ -28,8 +28,9 @@ KCFG="${ROOT_DIR}/kubeconfig"
 CERT_DIR="${ROOT_DIR}/certs"
 
 # Canonical domains we will register
+FORGE_DOMAIN="forge.${BASE_DOMAIN}"
 REGISTRY_DOMAIN="registry.${BASE_DOMAIN}"
-DOMAINS=("${DOMAIN}" "${REGISTRY_DOMAIN}")
+DOMAINS=("${DOMAIN}" "${REGISTRY_DOMAIN}" "${FORGE_DOMAIN}")
 
 while [[ $# -gt 0 ]]; do
   case "$1" in

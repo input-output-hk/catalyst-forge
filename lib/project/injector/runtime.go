@@ -19,13 +19,16 @@ type BlueprintInjectorRuntimeMap struct {
 	runtimeValues map[string]cue.Value
 }
 
-func (b BlueprintInjectorRuntimeMap) Get(ctx *cue.Context, name string, attrType AttrType) (cue.Value, error) {
+func (b BlueprintInjectorRuntimeMap) Get(ctx *cue.Context, name string, attrType AttrType, concrete bool) (cue.Value, error) {
 	value, exists := b.runtimeValues[name]
 	if !exists {
 		return cue.Value{}, ErrNotFound
 	}
 
-	return value, nil
+	if concrete {
+		return value, nil
+	}
+	return makeDefault(ctx, value)
 }
 
 func NewBlueprintRuntimeInjector(

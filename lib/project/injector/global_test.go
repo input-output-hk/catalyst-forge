@@ -20,6 +20,25 @@ func TestBlueprintGlobalInjectorInject(t *testing.T) {
 		validate func(t *testing.T, out cue.Value)
 	}{
 		{
+			name: "default global can override",
+			in: ctx.CompileString(`
+{
+	global: {
+		foo: "bar"
+	}
+	foo: string | *"zzz" @global(name="foo",concrete=false)
+}
+			`),
+			validate: func(t *testing.T, out cue.Value) {
+				o := out.Unify(ctx.CompileString(`{ foo: "baz" }`))
+				require.NoError(t, o.Validate(cue.Concrete(true)))
+				ov := o.LookupPath(cue.ParsePath("foo"))
+				osv, err := ov.String()
+				require.NoError(t, err)
+				assert.Equal(t, "baz", osv)
+			},
+		},
+		{
 			name: "simple",
 			in: ctx.CompileString(`
 {

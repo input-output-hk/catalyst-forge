@@ -104,7 +104,7 @@ func NewKCLManifestGenerator(logger *slog.Logger, kclOpts ...kcl.Option) (*KCLMa
 		logger = slog.New(slog.NewTextHandler(io.Discard, nil))
 	}
 
-	exec := executor.NewLocalExecutor(logger)
+	exec := executor.NewLocalExecutor(logger, executor.WithStdoutOnly())
 	client, err := kcl.NewBinaryClient(exec, logger, kclOpts...)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create KCL client: %w", err)

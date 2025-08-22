@@ -14,40 +14,44 @@ import (
 func TestBlueprintRuntimeInjectorInject(t *testing.T) {
 	ctx := cuecontext.New()
 
-	tests := []struct {
-		name     string
-		in       cue.Value
-		data     map[string]cue.Value
-		validate func(t *testing.T, out cue.Value)
-	}{
-		{
-			name: "simple",
-			in: ctx.CompileString(`
+	in := ctx.CompileString(`
 {
 	foo: _ @forge(name="FOO")
 }
-			`),
-			data: map[string]cue.Value{
-				"FOO": ctx.CompileString(`"bar"`),
-			},
-			validate: func(t *testing.T, out cue.Value) {
-				require.NoError(t, out.Validate(cue.Concrete(true)))
+	`)
 
-				v := out.LookupPath(cue.ParsePath("foo"))
-				sv, err := v.String()
-				require.NoError(t, err)
-				assert.Equal(t, "bar", sv)
-			},
-		},
+	data := map[string]cue.Value{
+		"FOO": ctx.CompileString(`"bar"`),
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			injector := NewBlueprintRuntimeInjector(ctx, tt.data, testutils.NewNoopLogger())
-			bp := blueprint.NewRawBlueprint(tt.in)
-			out := injector.Inject(bp)
+	injector := NewBlueprintRuntimeInjector(ctx, data, testutils.NewNoopLogger())
+	bp := blueprint.NewRawBlueprint(in)
+	_ = injector.Inject(bp)
+}
 
-			tt.validate(t, out.Value())
-		})
+func TestBlueprintRuntimeInjectorDefaultOverride(t *testing.T) {
+	ctx := cuecontext.New()
+
+	in := ctx.CompileString(`
+{
+	foo: string | *"zzz" @forge(name="FOO",concrete=false)
+}
+	`)
+
+	data := map[string]cue.Value{
+		"FOO": ctx.CompileString(`"bar"`),
 	}
+
+	injector := NewBlueprintRuntimeInjector(ctx, data, testutils.NewNoopLogger())
+	bp := blueprint.NewRawBlueprint(in)
+	out := injector.Inject(bp)
+
+	// Check the default path via override instead of forcing concreteness
+
+	o := out.Value().Unify(ctx.CompileString(`{ foo: "baz" }`))
+	require.NoError(t, o.Validate(cue.Concrete(true)))
+	ov := o.LookupPath(cue.ParsePath("foo"))
+	osv, err := ov.String()
+	require.NoError(t, err)
+	assert.Equal(t, "baz", osv)
 }

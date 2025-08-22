@@ -13,5 +13,5 @@ type BlueprintInjector interface {
 }
 
 type BlueprintInjectorMap interface {
-	Get(ctx *cue.Context, name string, attrType AttrType) (cue.Value, error)
+	Get(ctx *cue.Context, name string, attrType AttrType, concrete bool) (cue.Value, error)
 }

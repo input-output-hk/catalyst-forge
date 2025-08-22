@@ -147,10 +147,6 @@ func (c *Config) Validate() error {
 	if c.Database.Password == "" {
 		return errors.New("database password is required (use --password or DB_PASSWORD env var)")
 	}
-	// Validate bootstrap token if provided
-	if c.Auth.BootstrapToken != "" && len(c.Auth.BootstrapToken) < 32 {
-		return errors.New("BootstrapToken must be at least 32 characters long for security")
-	}
 	return nil
 }
 

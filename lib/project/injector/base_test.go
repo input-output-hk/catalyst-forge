@@ -15,7 +15,7 @@ type mockBlueprintInjectorMap struct {
 	data map[string]cue.Value
 }
 
-func (m *mockBlueprintInjectorMap) Get(ctx *cue.Context, name string, attrType AttrType) (cue.Value, error) {
+func (m *mockBlueprintInjectorMap) Get(ctx *cue.Context, name string, attrType AttrType, concrete bool) (cue.Value, error) {
 	v, ok := m.data[name]
 	if !ok {
 		return cue.Value{}, ErrNotFound

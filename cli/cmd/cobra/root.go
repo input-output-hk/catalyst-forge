@@ -8,7 +8,6 @@ import (
 
 	"cuelang.org/go/cue/cuecontext"
 	"github.com/charmbracelet/log"
-	"github.com/input-output-hk/catalyst-forge/cli/cmd/cobra/api"
 	"github.com/input-output-hk/catalyst-forge/cli/cmd/cobra/module"
 	"github.com/input-output-hk/catalyst-forge/cli/cmd/cobra/scan"
 	"github.com/input-output-hk/catalyst-forge/cli/cmd/cobra/secret"
@@ -58,12 +57,11 @@ func NewRootCommand() *cobra.Command {
 	rootCmd.AddCommand(NewRunCommand())
 	rootCmd.AddCommand(NewValidateCommand())
 	rootCmd.AddCommand(NewDumpCommand())
-    rootCmd.AddCommand(NewPublishCommand())
+	rootCmd.AddCommand(NewPublishCommand())
 	rootCmd.AddCommand(secret.NewCommand())
 	rootCmd.AddCommand(NewCICommand())
 	rootCmd.AddCommand(NewConfigureSatelliteCommand())
 	rootCmd.AddCommand(scan.NewCommand())
-	rootCmd.AddCommand(api.NewCommand())
 	rootCmd.AddCommand(module.NewCommand())
 	rootCmd.AddCommand(newCompletionCommand())
 

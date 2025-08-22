@@ -8,34 +8,34 @@ if [[ -n "${DEBUG_SLEEP:-}" ]]; then
 fi
 
 # Only run database initialization if DB_INIT is set
-if [[ -n "${DB_INIT:-}" ]]; then
+if [[ -n "${DATABASE_INIT:-}" ]]; then
     echo "Initializing database..."
 
-    if [[ -z "${DB_SUPER_USER}" ]]; then
-        echo "Error: DB_SUPER_USER must be set when DB_INIT is enabled"
+    if [[ -z "${DATABASE_ROOT_USER}" ]]; then
+        echo "Error: DATABASE_ROOT_USER must be set when DB_INIT is enabled"
         exit 1
     fi
 
-    if [[ -z "${DB_SUPER_PASSWORD}" ]]; then
-        echo "Error: DB_SUPER_PASSWORD must be set when DB_INIT is enabled"
+    if [[ -z "${DATABASE_ROOT_PASSWORD}" ]]; then
+        echo "Error: DATABASE_ROOT_PASSWORD must be set when DB_INIT is enabled"
         exit 1
     fi
 
-    if [[ -z "${DB_ROOT_NAME}" ]]; then
-        echo "Error: DB_ROOT_NAME must be set when DB_INIT is enabled"
+    if [[ -z "${DATABASE_ROOT_NAME}" ]]; then
+        echo "Error: DATABASE_ROOT_NAME must be set when DB_INIT is enabled"
         exit 1
     fi
 
-    export PGUSER="${DB_SUPER_USER}"
-    export PGPASSWORD="${DB_SUPER_PASSWORD}"
-    psql -h "${DB_HOST}" \
-        -p "${DB_PORT}" \
-        -d "${DB_ROOT_NAME}" \
-        -v dbName="${DB_NAME}" \
+    export PGUSER="${DATABASE_ROOT_USER}"
+    export PGPASSWORD="${DATABASE_ROOT_PASSWORD}"
+    psql -h "${DATABASE_HOST}" \
+        -p "${DATABASE_PORT}" \
+        -d "${DATABASE_ROOT_NAME}" \
+        -v dbName="${DATABASE_NAME}" \
         -v dbDescription="Foundry API Database" \
-        -v dbUser="${DB_USER}" \
-        -v dbUserPw="${DB_PASSWORD}" \
-        -v dbSuperUser="${DB_SUPER_USER}" \
+        -v dbUser="${DATABASE_USER}" \
+        -v dbUserPw="${DATABASE_PASSWORD}" \
+        -v dbSuperUser="${DATABASE_ROOT_USER}" \
         -f sql/setup.sql
 
     echo "Database initialization complete."

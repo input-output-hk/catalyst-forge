@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"os"
 	"os/exec"
+	"strings"
 )
 
 // LocalExecutorOption is an option for configuring a LocalExecutor.
@@ -13,12 +14,13 @@ type LocalExecutorOption func(e *LocalExecutor)
 
 // LocalExecutor is an Executor that runs commands locally.
 type LocalExecutor struct {
-	colors       bool
-	logger       *slog.Logger
-	redirect     bool
-	stdoutStream io.Writer
-	stderrStream io.Writer
-	workdir      string
+	colors           bool
+	logger           *slog.Logger
+	redirect         bool
+	stdoutStream     io.Writer
+	stderrStream     io.Writer
+	workdir          string
+	returnStdoutOnly bool
 }
 
 // NewLocalExecutor creates a new LocalExecutor with the given options.
@@ -53,6 +55,30 @@ func (e *LocalExecutor) Execute(command string, args ...string) ([]byte, error) 
 		return e.executeWithRedirect(cmd)
 	}
 
+	if e.returnStdoutOnly {
+		var stdoutBuf bytes.Buffer
+		cmd.Stdout = &stdoutBuf
+		cmd.Stderr = os.Stderr
+		if err := cmd.Run(); err != nil {
+			return stdoutBuf.Bytes(), err
+		}
+
+		// When downloading an OCI, KCL sometimes emits log output to stdout
+		out := stdoutBuf.String()
+
+		// Strip the first line if it starts with "downloading"
+		if strings.HasPrefix(strings.TrimSpace(out), "downloading") {
+			lines := strings.Split(out, "\n")
+			if len(lines) > 1 {
+				out = strings.Join(lines[1:], "\n")
+			} else {
+				out = ""
+			}
+		}
+
+		return []byte(out), nil
+	}
+
 	return cmd.CombinedOutput()
 }
 
@@ -78,8 +104,9 @@ func (e *LocalExecutor) prepareCommand(command string, args ...string) *exec.Cmd
 
 // executeWithRedirect runs the command while capturing and redirecting output.
 func (e *LocalExecutor) executeWithRedirect(cmd *exec.Cmd) ([]byte, error) {
-	// Buffer to capture all output
+	// Buffer to capture all output and (optionally) stdout-only
 	var captureBuffer bytes.Buffer
+	var stdoutOnlyBuffer bytes.Buffer
 
 	// Set up pipes for stdout and stderr
 	stdoutPipe, err := cmd.StdoutPipe()
@@ -100,8 +127,24 @@ func (e *LocalExecutor) executeWithRedirect(cmd *exec.Cmd) ([]byte, error) {
 	// Copy output concurrently
 	errChan := make(chan error, 2)
 
-	go e.copyOutput(stdoutPipe, e.stdoutStream, &captureBuffer, errChan)
-	go e.copyOutput(stderrPipe, e.stderrStream, &captureBuffer, errChan)
+	// stdout copier
+	go func() {
+		var writer io.Writer
+		if e.returnStdoutOnly {
+			writer = io.MultiWriter(e.stdoutStream, &captureBuffer, &stdoutOnlyBuffer)
+		} else {
+			writer = io.MultiWriter(e.stdoutStream, &captureBuffer)
+		}
+		_, err := io.Copy(writer, stdoutPipe)
+		errChan <- err
+	}()
+
+	// stderr copier
+	go func() {
+		writer := io.MultiWriter(e.stderrStream, &captureBuffer)
+		_, err := io.Copy(writer, stderrPipe)
+		errChan <- err
+	}()
 
 	// Wait for command to complete
 	cmdErr := cmd.Wait()
@@ -111,6 +154,10 @@ func (e *LocalExecutor) executeWithRedirect(cmd *exec.Cmd) ([]byte, error) {
 		if copyErr := <-errChan; copyErr != nil {
 			return captureBuffer.Bytes(), copyErr
 		}
+	}
+
+	if e.returnStdoutOnly {
+		return stdoutOnlyBuffer.Bytes(), cmdErr
 	}
 
 	return captureBuffer.Bytes(), cmdErr
@@ -173,6 +220,14 @@ func WithRedirectTo(stdout, stderr io.Writer) LocalExecutorOption {
 func WithWorkdir(workdir string) LocalExecutorOption {
 	return func(e *LocalExecutor) {
 		e.workdir = workdir
+	}
+}
+
+// WithStdoutOnly configures the executor to return only stdout from Execute.
+// Stderr will still be streamed to the configured stream when redirecting.
+func WithStdoutOnly() LocalExecutorOption {
+	return func(e *LocalExecutor) {
+		e.returnStdoutOnly = true
 	}
 }
 

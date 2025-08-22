@@ -24,14 +24,17 @@ type BlueprintGlobalInjectorMap struct {
 	rbp blueprint.RawBlueprint
 }
 
-func (b BlueprintGlobalInjectorMap) Get(ctx *cue.Context, name string, attrType AttrType) (cue.Value, error) {
+func (b BlueprintGlobalInjectorMap) Get(ctx *cue.Context, name string, attrType AttrType, concrete bool) (cue.Value, error) {
 	path := fmt.Sprintf("global.%s", name)
 	v := b.rbp.Get(path)
 	if v.Err() != nil || v.IsNull() || !v.Exists() {
 		return cue.Value{}, ErrNotFound
 	}
 
-	return v, nil
+	if concrete {
+		return v, nil
+	}
+	return makeDefault(ctx, v)
 }
 
 func NewBlueprintGlobalInjector(ctx *cue.Context, logger *slog.Logger) *BlueprintGlobalInjector {

@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"strconv"
 	"strings"
 
 	"cuelang.org/go/cue"
@@ -16,8 +17,9 @@ type AttrType string
 
 // BaseAttr represents a base attribute
 type BaseAttr struct {
-	Name string
-	Type AttrType
+	Name     string
+	Type     AttrType
+	Concrete bool
 }
 
 const (
@@ -25,8 +27,9 @@ const (
 	AttrTypeInt    AttrType = "int"
 	AttrTypeBool   AttrType = "bool"
 
-	AttrNameKey = "name"
-	AttrTypeKey = "type"
+	AttrNameKey     = "name"
+	AttrTypeKey     = "type"
+	AttrConcreteKey = "concrete"
 )
 
 var (
@@ -61,7 +64,7 @@ func (b *BaseInjector) Inject(bp blueprint.RawBlueprint) blueprint.RawBlueprint 
 
 		b.logger.Debug("parsed attribute", "attr", b.attrName, "name", pAttr.Name, "type", pAttr.Type)
 
-		attrValue, err := b.imap.Get(b.ctx, pAttr.Name, pAttr.Type)
+		attrValue, err := b.imap.Get(b.ctx, pAttr.Name, pAttr.Type, pAttr.Concrete)
 		if errors.Is(err, ErrNotFound) {
 			b.logger.Debug("attr name not found", "attr", b.attrName, "name", pAttr.Name)
 			return true
@@ -100,6 +103,19 @@ func (b *BaseInjector) parseBaseAttr(a *cue.Attribute) (BaseAttr, error) {
 			return attr, fmt.Errorf("missing type key in attribute body '%s'", a.Contents())
 		}
 		attr.Type = AttrType(typeArg)
+	}
+
+	// Concrete is optional; default to true when not specified
+	if concreteArg, ok, err := a.Lookup(0, AttrConcreteKey); err != nil {
+		return attr, err
+	} else if ok {
+		parsed, perr := strconv.ParseBool(concreteArg)
+		if perr != nil {
+			return attr, fmt.Errorf("invalid boolean for concrete: '%s'", concreteArg)
+		}
+		attr.Concrete = parsed
+	} else {
+		attr.Concrete = true
 	}
 
 	return attr, nil

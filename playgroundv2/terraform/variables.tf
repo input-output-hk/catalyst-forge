@@ -89,4 +89,59 @@ variable "pg_storage_class" {
   default     = ""
 }
 
+variable "localstack_namespace" {
+  description = "Namespace to deploy LocalStack into"
+  type        = string
+  default     = "localstack"
+}
+
+variable "localstack_image_tag" {
+  description = "Optional LocalStack image tag override (empty for chart default)"
+  type        = string
+  default     = ""
+}
+
+variable "external_secrets_namespace" {
+  description = "Namespace to deploy External Secrets Operator into"
+  type        = string
+  default     = "external-secrets"
+}
+
+variable "external_secrets_install_crds" {
+  description = "Whether to install CRDs via the Helm chart"
+  type        = bool
+  default     = true
+}
+
+variable "external_secrets_aws_creds_secret_name" {
+  description = "Kubernetes Secret name holding AWS credentials for ESO"
+  type        = string
+  default     = "aws-credentials"
+}
+
+variable "eso_aws_access_key_id" {
+  description = "AWS access key ID for LocalStack"
+  type        = string
+  default     = "test"
+}
+
+variable "eso_aws_secret_access_key" {
+  description = "AWS secret access key for LocalStack"
+  type        = string
+  default     = "test"
+  sensitive   = true
+}
+
+variable "eso_aws_region" {
+  description = "AWS region to use for LocalStack-backed ESO (arbitrary)"
+  type        = string
+  default     = "us-east-1"
+}
+
+variable "localstack_endpoint" {
+  description = "Endpoint URL for LocalStack services"
+  type        = string
+  default     = "http://localstack.localstack:4566"
+}
+
 
