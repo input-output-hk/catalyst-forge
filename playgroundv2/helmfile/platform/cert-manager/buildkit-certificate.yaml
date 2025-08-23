@@ -1,0 +1,12 @@
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: buildkit-server
+  namespace: registry
+spec:
+  secretName: earthly-buildkitd-tls
+  dnsNames:
+    - "buildkit.projectcatalyst.dev"
+  issuerRef:
+    kind: ClusterIssuer
+    name: mkcert-ca

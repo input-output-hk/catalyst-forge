@@ -2,7 +2,7 @@ resource "helm_release" "registry" {
   name             = "registry"
   repository       = "https://helm.twun.io"
   chart            = "docker-registry"
-  namespace        = var.registry_namespace
+  namespace        = var.playground.registry.namespace
   create_namespace = true
 
   set {
@@ -27,10 +27,10 @@ resource "kubectl_manifest" "registry_route" {
   depends_on = [helm_release.registry, kubectl_manifest.gateway]
 
   yaml_body = templatefile("${path.module}/templates/registry-route.yaml.tftpl", {
-    registry_namespace = var.registry_namespace
+    registry_namespace = var.playground.registry.namespace
     gateway_namespace  = local.envoy_gateway_namespace
-    gateway_name       = var.gateway_name
-    hostname           = var.registry_host
+    gateway_name       = var.playground.envoy.gateway_name
+    hostname           = var.playground.registry.host
   })
 }
 

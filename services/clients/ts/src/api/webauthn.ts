@@ -95,7 +95,7 @@ export async function login(client: ForgeClient): Promise<void> {
 
 export async function registerCredential(client: ForgeClient, deviceName: string): Promise<void> {
   if (typeof navigator === 'undefined' || !navigator.credentials) throw new Error('WebAuthn not available');
-  const raw = client.raw as Client<paths>;
+  const raw: any = client.raw as unknown;
   const begin = await raw.POST('/api/v1/auth/credentials/add/begin', { body: { device_name: deviceName } as any });
   if (!begin.response.ok) throw new Error('register begin failed');
   const { publicKey, session_key } = (begin.data as any) || {};
@@ -108,7 +108,7 @@ export async function registerCredential(client: ForgeClient, deviceName: string
 
 export async function stepUp(client: ForgeClient): Promise<void> {
   if (typeof navigator === 'undefined' || !navigator.credentials) throw new Error('WebAuthn not available');
-  const raw = client.raw as Client<paths>;
+  const raw: any = client.raw as unknown;
   const begin = await raw.POST('/api/v1/auth/step-up/begin');
   if (!begin.response.ok) throw new Error('step-up begin failed');
   const { publicKey, session_key } = (begin.data as any) || {};

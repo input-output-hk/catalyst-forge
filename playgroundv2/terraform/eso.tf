@@ -2,10 +2,10 @@ resource "helm_release" "external_secrets" {
   name             = "external-secrets"
   repository       = "https://charts.external-secrets.io"
   chart            = "external-secrets"
-  namespace        = var.external_secrets_namespace
+  namespace        = var.playground.eso.namespace
   create_namespace = true
   version          = "0.11.0"
-  values = [file("${path.module}/config/eso-values.yaml")]
+  values           = [file("${path.module}/config/eso-values.yaml")]
 
   # Keep reasonable defaults; allow overriding chart version via variable if desired later
   timeout = 600
@@ -15,12 +15,12 @@ resource "helm_release" "external_secrets" {
 # Credentials Secret for ESO AWS provider (LocalStack)
 resource "kubernetes_secret_v1" "eso_aws_credentials" {
   metadata {
-    name      = var.external_secrets_aws_creds_secret_name
-    namespace = var.external_secrets_namespace
+    name      = var.playground.eso.aws_creds_secret_name
+    namespace = var.playground.eso.namespace
   }
   data = {
-    "access-key-id"     = var.eso_aws_access_key_id
-    "secret-access-key" = var.eso_aws_secret_access_key
+    "access-key-id"     = var.playground.eso.aws_access_key_id
+    "secret-access-key" = var.playground.eso.aws_secret_access_key
   }
   type = "Opaque"
 }
@@ -40,17 +40,17 @@ spec:
   provider:
     aws:
       service: SecretsManager
-      region: ${var.eso_aws_region}
+      region: ${var.playground.eso.aws_region}
       auth:
         secretRef:
           accessKeyIDSecretRef:
-            name: ${var.external_secrets_aws_creds_secret_name}
+            name: ${var.playground.eso.aws_creds_secret_name}
             key: access-key-id
-            namespace: ${var.external_secrets_namespace}
+            namespace: ${var.playground.eso.namespace}
           secretAccessKeySecretRef:
-            name: ${var.external_secrets_aws_creds_secret_name}
+            name: ${var.playground.eso.aws_creds_secret_name}
             key: secret-access-key
-            namespace: ${var.external_secrets_namespace}
+            namespace: ${var.playground.eso.namespace}
   YAML
 }
 

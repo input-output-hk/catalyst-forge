@@ -1,0 +1,46 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: auth-db-bootstrap
+  namespace: postgres
+spec:
+  backoffLimit: 1
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: auth-db-bootstrap
+          image: registry.projectcatalyst.dev/auth-db:latest
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: PGHOST
+              value: "postgres-postgresql.postgres.svc.cluster.local"
+            - name: PGPORT
+              value: "5432"
+            - name: PGUSER
+              value: "postgres"
+            - name: PGPASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-postgresql
+                  key: postgres-password
+            - name: KRATOS_NAMESPACE
+              value: "auth"
+            - name: KRATOS_DB
+              value: "kratos"
+            - name: KRATOS_USER
+              value: "kratos"
+            - name: KRATOS_PASSWORD
+              value: "kratos_password"
+            - name: KRATOS_SECRET
+              value: "kratos-dsn"
+            - name: HYDRA_NAMESPACE
+              value: "auth"
+            - name: HYDRA_DB
+              value: "hydra"
+            - name: HYDRA_USER
+              value: "hydra"
+            - name: HYDRA_PASSWORD
+              value: "hydra_password"
+            - name: HYDRA_SECRET
+              value: "hydra-dsn"

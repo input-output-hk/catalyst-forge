@@ -2,21 +2,21 @@ resource "helm_release" "postgres" {
   name             = "postgres"
   repository       = "oci://registry-1.docker.io/bitnamicharts"
   chart            = "postgresql"
-  namespace        = var.postgres_namespace
+  namespace        = var.playground.postgres.namespace
   create_namespace = true
   version          = "16.7.26"
 
   set {
     name  = "auth.username"
-    value = var.pg_username
+    value = var.playground.postgres.username
   }
   set {
     name  = "auth.password"
-    value = var.pg_password
+    value = var.playground.postgres.password
   }
   set {
     name  = "auth.database"
-    value = var.pg_database
+    value = var.playground.postgres.database
   }
   set {
     name  = "primary.persistence.enabled"
@@ -24,13 +24,13 @@ resource "helm_release" "postgres" {
   }
   set {
     name  = "primary.persistence.size"
-    value = var.pg_storage
+    value = var.playground.postgres.storage
   }
   dynamic "set" {
-    for_each = var.pg_storage_class == "" ? [] : [1]
+    for_each = var.playground.postgres.storage_class == "" ? [] : [1]
     content {
       name  = "primary.persistence.storageClass"
-      value = var.pg_storage_class
+      value = var.playground.postgres.storage_class
     }
   }
 

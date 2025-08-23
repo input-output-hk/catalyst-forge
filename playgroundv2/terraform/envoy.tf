@@ -20,8 +20,8 @@ resource "kubectl_manifest" "envoy_proxy" {
 
   yaml_body = templatefile("${path.module}/templates/envoyproxy.yaml.tftpl", {
     namespace           = local.envoy_gateway_namespace
-    load_balancer_ip    = var.load_balancer_ip
-    service_annotations = var.service_annotations
+    load_balancer_ip    = try(var.playground.networking.load_balancer_ip, "")
+    service_annotations = try(var.playground.envoy.service_annotations, {})
   })
 }
 
@@ -29,7 +29,7 @@ resource "kubectl_manifest" "gateway_class" {
   depends_on = [helm_release.envoy_gateway]
 
   yaml_body = templatefile("${path.module}/templates/gatewayclass.yaml.tftpl", {
-    name = var.gateway_class_name
+    name = var.playground.envoy.gateway_class_name
   })
 }
 
@@ -37,10 +37,10 @@ resource "kubectl_manifest" "gateway" {
   depends_on = [kubectl_manifest.gateway_class, kubectl_manifest.envoy_proxy]
 
   yaml_body = templatefile("${path.module}/templates/gateway.yaml.tftpl", {
-    name           = var.gateway_name
-    namespace      = local.envoy_gateway_namespace
-    class          = var.gateway_class_name
-    tls_secret_name = var.tls_secret_name
+    name            = var.playground.envoy.gateway_name
+    namespace       = local.envoy_gateway_namespace
+    class           = var.playground.envoy.gateway_class_name
+    tls_secret_name = var.playground.envoy.tls_secret_name
   })
 }
 

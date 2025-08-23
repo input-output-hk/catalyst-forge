@@ -1,0 +1,15 @@
+apiVersion: trust.cert-manager.io/v1alpha1
+kind: Bundle
+metadata:
+  name: mkcert-root-bundle
+  namespace: cert-manager
+spec:
+  sources:
+    - secret:
+        name: mkcert-root-ca
+        key: tls.crt
+  target:
+    # Publish a ConfigMap per-namespace with the Bundle name and key 'ca.crt'
+    configMap:
+      key: ca.crt
+    namespaceSelector: {}

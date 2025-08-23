@@ -35,7 +35,7 @@ project: {
 
 						env: {
 							SERVER_PUBLICBASEURL: value: string | *"https://foundry.projectcatalyst.io"
-							SERVER_HTTPPORT: value:      string | *"5050"
+							SERVER_HTTPPORT: value:      string | *"8080"
 							GIN_MODE: value:             string | *"release"
 							LOG_LEVEL: value:            string | *"info"
 							LOG_FORMAT: value:           string | *"json"
@@ -77,37 +77,37 @@ project: {
 						}
 
 						ports: {
-							http: port: 5050
+							http: port: 8080
 						}
 						probes: {
 							liveness: {
 								path: "/healthz"
-								port: 5050
+								port: 8080
 							}
 							readiness: {
 								path: "/healthz"
-								port: 5050
+								port: 8080
 							}
 						}
 					}
 
 					dns: {
-						subdomain: "forge"
+						createEndpoint: false
+						subdomain:      "forge"
 						...
 					}
 					route: {
-						excludeMaintenancePage: true
 						rules: [
 							{
 								matches: [
 									{
 										path: {
 											type:  "PathPrefix"
-											value: "/"
+											value: "/api/v1"
 										}
 									},
 								]
-								target: port: 5050
+								target: port: 8080
 							},
 						]
 						...

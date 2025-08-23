@@ -3,4 +3,24 @@ VERSION 0.8
 api:
     FROM ../services/api+docker
 
-    SAVE IMAGE --push registry.local.io/api:latest
+    SAVE IMAGE --push registry.projectcatalyst.dev/api:latest
+
+frontend:
+    FROM ../services/frontend+docker
+
+    SAVE IMAGE --push registry.projectcatalyst.dev/frontend:latest
+
+auth-db:
+    FROM debian:bookworm-slim
+
+    RUN apt-get update && apt-get install -y postgresql-client
+
+    RUN mkdir -p /app
+
+    COPY ./scripts/bootstrap-auth-db.sh /app/bootstrap-auth-db.sh
+
+    RUN chmod +x /app/bootstrap-auth-db.sh
+
+    ENTRYPOINT ["/app/bootstrap-auth-db.sh"]
+
+    SAVE IMAGE --push registry.projectcatalyst.dev/auth-db:latest

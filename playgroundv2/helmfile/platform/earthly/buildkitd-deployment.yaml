@@ -1,0 +1,57 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: earthly-buildkitd
+  namespace: registry
+  labels:
+    app: earthly-buildkitd
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: earthly-buildkitd
+  template:
+    metadata:
+      labels:
+        app: earthly-buildkitd
+    spec:
+      containers:
+        - name: buildkitd
+          image: earthly/buildkitd:v0.8.16
+          env:
+            - name: BUILDKIT_TCP_TRANSPORT_ENABLED
+              value: "true"
+            - name: BUILDKIT_TLS_ENABLED
+              value: "true"
+            - name: SSL_CERT_FILE
+              value: /etc/ca.pem
+          ports:
+            - containerPort: 8372
+              name: grpc
+          securityContext:
+            privileged: true
+          volumeMounts:
+            - name: buildkitd-tmp
+              mountPath: /tmp/earthly
+            - name: mkcert-ca
+              mountPath: /etc/ca.pem
+              subPath: ca.crt
+              readOnly: true
+            - name: earthly-tls
+              mountPath: /etc/cert.pem
+              subPath: tls.crt
+              readOnly: true
+            - name: earthly-tls
+              mountPath: /etc/key.pem
+              subPath: tls.key
+              readOnly: true
+      volumes:
+        - name: buildkitd-tmp
+          persistentVolumeClaim:
+            claimName: earthly-buildkitd-cache
+        - name: earthly-tls
+          secret:
+            secretName: earthly-buildkitd-tls
+        - name: mkcert-ca
+          configMap:
+            name: mkcert-root-bundle

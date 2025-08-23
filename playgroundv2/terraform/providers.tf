@@ -18,15 +18,15 @@ terraform {
 }
 
 provider "kubernetes" {
-  config_path = var.kubeconfig_path
+  config_path = var.playground.global.kubeconfig_path
 }
 
 provider "helm" {
   kubernetes {
-    config_path = var.kubeconfig_path
+    config_path = var.playground.global.kubeconfig_path
   }
 }
 
 provider "kubectl" {
-  config_path = var.kubeconfig_path
+  config_path = var.playground.global.kubeconfig_path
 }

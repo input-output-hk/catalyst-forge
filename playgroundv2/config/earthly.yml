@@ -1,4 +1,5 @@
 global:
-  buildkit_additional_config: |
-    [registry."registry.local.io"]
-      insecure = true
+  buildkit_host: tcp://buildkit.projectcatalyst.dev:8372
+  tlsca: /Users/josh/work/catalyst-forge/playgroundv2/.certs/rootCA.pem
+  tlscert: /Users/josh/work/catalyst-forge/playgroundv2/.certs/earthly-client.pem
+  tlskey: /Users/josh/work/catalyst-forge/playgroundv2/.certs/earthly-client-key.pem

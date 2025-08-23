@@ -1,0 +1,13 @@
+apiVersion: gateway.networking.k8s.io/v1alpha2
+kind: TCPRoute
+metadata:
+  name: buildkitd
+  namespace: registry
+spec:
+  parentRefs:
+    - name: default
+      namespace: envoy-gateway-system
+  rules:
+    - backendRefs:
+        - name: earthly-buildkitd
+          port: 8372

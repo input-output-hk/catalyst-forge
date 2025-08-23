@@ -1,7 +1,7 @@
 modules: main: values: {
 	deployment: containers: main: {
 		image: {
-			name: "registry.local.io/api"
+			name: "registry.projectcatalyst.dev/api"
 			tag:  "latest"
 		}
 		env: {
@@ -9,12 +9,14 @@ modules: main: values: {
 		}
 	}
 	dns: {
-		createEndpoint: false
-		excludeEnv:     true
-		rootDomain:     "local.io"
+		excludeEnv: true
+		rootDomain: "projectcatalyst.dev"
 	}
-	route: parent: {
-		name:      "envoy-gateway"
-		namespace: "envoy-gateway-system"
+	route: {
+		excludeMaintenancePage: true
+		parent: {
+			name:      "envoy-gateway"
+			namespace: "envoy-gateway-system"
+		}
 	}
 }

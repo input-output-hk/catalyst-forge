@@ -1,0 +1,176 @@
+repositories:
+  - name: jetstack
+    url: https://charts.jetstack.io
+  - name: cert-manager
+    url: https://charts.jetstack.io
+  - name: bitnami
+    url: https://charts.bitnami.com/bitnami
+  - name: twuni
+    url: https://helm.twun.io
+
+helmDefaults:
+  wait: true
+  timeout: 600
+
+releases:
+  - name: cert-manager
+    namespace: cert-manager
+    chart: jetstack/cert-manager
+    version: v1.15.3
+    createNamespace: true
+    values:
+      - installCRDs: true
+    hooks:
+      - events: ["postsync"]
+        command: kubectl
+        args:
+          [
+            "wait",
+            "--for=condition=Available",
+            "--timeout=180s",
+            "-n",
+            "cert-manager",
+            "deployment/cert-manager",
+            "deployment/cert-manager-cainjector",
+            "deployment/cert-manager-webhook",
+          ]
+        showlogs: true
+      - events: ["postsync"]
+        command: sh
+        args:
+          - -c
+          - |
+            set -euo pipefail
+            CAROOT="$(mkcert -CAROOT)"
+            kubectl -n cert-manager create secret tls mkcert-root-ca \
+              --cert="$CAROOT/rootCA.pem" \
+              --key="$CAROOT/rootCA-key.pem" \
+              --dry-run=client -o yaml | kubectl apply -f -
+        showlogs: true
+      - events: ["postsync"]
+        command: kubectl
+        args: ["apply", "-f", "platform/cert-manager/cluster-issuer.yaml"]
+        showlogs: true
+      - events: ["postsync"]
+        command: sh
+        args:
+          - -c
+          - |
+            set -euo pipefail
+            kubectl create namespace envoy-gateway-system --dry-run=client -o yaml | kubectl apply -f -
+            kubectl apply -f platform/cert-manager/wildcard-dev-certificate.yaml
+        showlogs: true
+
+  - name: trust-manager
+    namespace: cert-manager
+    chart: cert-manager/trust-manager
+    version: v0.13.0
+    createNamespace: false
+    needs:
+      - cert-manager/cert-manager
+    values:
+      - app:
+          webhook:
+            tls:
+              helmCert:
+                enabled: true
+    hooks:
+      - events: ["postsync"]
+        command: kubectl
+        args: ["apply", "-f", "platform/trust/bundle-mkcert.yaml"]
+        showlogs: true
+
+  - name: envoy-gateway
+    namespace: envoy-gateway-system
+    chart: oci://docker.io/envoyproxy/gateway-helm
+    version: v1.5.0
+    createNamespace: true
+    needs:
+      - cert-manager/cert-manager
+    hooks:
+      - events: ["postsync"]
+        command: kubectl
+        args:
+          [
+            "wait",
+            "--for=condition=Available",
+            "--timeout=180s",
+            "-n",
+            "envoy-gateway-system",
+            "deployment/envoy-gateway",
+          ]
+        showlogs: true
+      - events: ["postsync"]
+        command: kubectl
+        args: ["apply", "-f", "platform/envoy/gatewayclass.yaml"]
+        showlogs: true
+      - events: ["postsync"]
+        command: kubectl
+        args: ["apply", "-f", "platform/envoy/gateway.yaml"]
+        showlogs: true
+
+  - name: registry
+    namespace: registry
+    chart: twuni/docker-registry
+    version: 2.2.3
+    createNamespace: true
+    needs:
+      - envoy-gateway-system/envoy-gateway
+    values:
+      - service:
+          type: ClusterIP
+      - persistence:
+          enabled: true
+          size: 20Gi
+      - ingress:
+          enabled: false
+    hooks:
+      - events: ["postsync"]
+        command: kubectl
+        args: ["apply", "-f", "platform/cert-manager/buildkit-certificate.yaml"]
+        showlogs: true
+      - events: ["postsync"]
+        command: kubectl
+        args:
+          [
+            "-n",
+            "registry",
+            "wait",
+            "--for=condition=Ready",
+            "--timeout=180s",
+            "certificate/buildkit-server",
+          ]
+        showlogs: true
+      - events: ["postsync"]
+        command: kubectl
+        args:
+          [
+            "wait",
+            "--for=condition=Available",
+            "--timeout=180s",
+            "-n",
+            "registry",
+            "deployment/registry-docker-registry",
+          ]
+        showlogs: true
+      - events: ["postsync"]
+        command: sh
+        args:
+          - -c
+          - |
+            set -euo pipefail
+            kubectl apply -f platform/envoy/registry-route.yaml
+      - events: ["postsync"]
+        command: sh
+        args:
+          - -c
+          - |
+            set -euo pipefail
+            # Deploy Earthly remote runner (buildkitd)
+            kubectl apply -f platform/earthly/buildkitd-pvc.yaml
+            kubectl apply -f platform/earthly/buildkitd-deployment.yaml
+            kubectl apply -f platform/earthly/buildkitd-service.yaml
+            kubectl -n registry rollout status deploy/earthly-buildkitd --timeout=180s
+            # Expose buildkitd via TCPRoute on Gateway
+            kubectl apply -f platform/envoy/buildkitd-tcproute.yaml
+        showlogs: true

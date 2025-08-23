@@ -105,7 +105,7 @@ if [[ ! -f "${OVERRIDE_FILE}" ]]; then
 fi
 
 if [[ ! -f "${KCFG}" ]]; then
-  err "Kubeconfig not found at '${KCFG}'. Run '${PLAY_DIR}/scripts/up.sh' first."
+  err "Kubeconfig not found at '${KCFG}'. Run 'uv run python -m playgroundv2.cli.main k3d --yes' first."
   exit 1
 fi
 
@@ -138,6 +138,9 @@ if ! compgen -G "${TMP_DIR}"/*.yaml >/dev/null && ! compgen -G "${TMP_DIR}"/*.ym
   err "No Kubernetes manifest files (*.yaml|*.yml) found in ${TMP_DIR}."
   exit 1
 fi
+
+log "Manifest:"
+cat "${TMP_DIR}/main.yaml"
 
 log "Applying Kubernetes manifests from ${TMP_DIR} (context: $(kubectl --kubeconfig "${KCFG}" config current-context 2>/dev/null || echo 'unknown'))..."
 kubectl --kubeconfig "${KCFG}" apply -f "${TMP_DIR}"

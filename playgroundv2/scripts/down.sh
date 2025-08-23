@@ -52,7 +52,7 @@ fi
 if command -v multipass >/dev/null 2>&1; then
   if multipass info "${NAME}" >/dev/null 2>&1; then
     log "Deleting Multipass VM '${NAME}'..."
-    multipass delete "${NAME}" || true
+    multipass delete --purge "${NAME}" || true
     multipass purge || true
   else
     log "Multipass VM '${NAME}' not found; skipping"

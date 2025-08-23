@@ -1,74 +1,57 @@
-# Justfile for local playgroundv2: MicroK8s + Envoy Gateway via Terraform
+# Justfile for local playgroundv2: K3d + Helmfile (Envoy Gateway, registry)
 
 PROJROOT := justfile_directory()
 
 default:
 	@just --list
 
-# One-shot bring-up: cluster + Envoy with fixed MetalLB IP + certs + TLS secret + hosts entry
-# Usage:
-#   just -f playgroundv2/justfile up domain=gateway.localhost
-up domain="forge.local.io" profile="envoy":
-    #!/usr/bin/env bash
-    set -euo pipefail
-    bash -lc "{{PROJROOT}}/scripts/up.sh --domain {{domain}} --profile {{profile}}"
+# CLI: run lint, formatting (check-only), and type checks
+check:
+	#!/usr/bin/env bash
+	set -euo pipefail
+	cd "{{PROJROOT}}/cli"
+	# Ensure tools resolve via uv without requiring a pre-synced venv
+	uv run ruff check .
+	uv run black --check .
+	# Run mypy using uv; set PYTHONPATH so package imports resolve
+	PYTHONPATH="{{PROJROOT}}/.." uv run mypy .
 
-# Tear everything down quickly by deleting the Multipass VM and local state
-# Example: just -f playgroundv2/justfile down name=microk8s profile=envoy keep_certs=true
-down name="microk8s" profile="envoy" keep_certs="false":
+# CLI: auto-format and fix lint issues
+format:
+	#!/usr/bin/env bash
+	set -euo pipefail
+	cd "{{PROJROOT}}/cli"
+	uv run ruff format .
+	uv run ruff check --fix .
+
+
+# K3d: create or reuse local cluster and write kubeconfig/cluster.json
+# Usage:
+#   just -f playgroundv2/justfile up
+up:
     #!/usr/bin/env bash
     set -euo pipefail
-    bash -lc "{{PROJROOT}}/scripts/down.sh --name {{name}} --profile {{profile}} --keep-certs {{keep_certs}}"
+    cd "{{PROJROOT}}/cli" && PYTHONPATH="{{PROJROOT}}/.." uv run python -m playgroundv2.cli.main k3d --yes
+    just -f "{{PROJROOT}}/justfile" apply
+    cd "{{PROJROOT}}/cli" && PYTHONPATH="{{PROJROOT}}/.." uv run python -m playgroundv2.cli.main dns pin-registry --host registry.projectcatalyst.dev
+
+# K3d: tear down cluster
+down name="forge":
+    #!/usr/bin/env bash
+    set -euo pipefail
+    cd "{{PROJROOT}}/cli" && PYTHONPATH="{{PROJROOT}}/.." uv run python -m playgroundv2.cli.main down --name {{name}}
+
+# Helmfile: apply base platform
+apply:
+	cd "{{PROJROOT}}/helmfile" && helmfile apply
+
+# Helmfile: sync base platform
+sync:
+	cd "{{PROJROOT}}/helmfile" && helmfile sync
 
 # Build, push, and deploy a service to the cluster
 deploy service="api":
 	./scripts/deploy.sh {{service}}
-
-# Terraform plan with derived MetalLB IP from cluster.json
-tf-plan registry_host="registry.local.io":
-    #!/usr/bin/env bash
-    set -euo pipefail
-    RANGE=$(jq -r .metallb.desired_range "{{PROJROOT}}/cluster.json")
-    if [[ -z "${RANGE}" || "${RANGE}" == "null" ]]; then
-      echo "metallb.desired_range not found in ${PROJROOT}/cluster.json" >&2
-      exit 1
-    fi
-    START=${RANGE%-*}
-    END=${RANGE#*-}
-    IFS='.' read -r S1 S2 S3 S4 <<<"${START}"
-    IFS='.' read -r E1 E2 E3 E4 <<<"${END}"
-    OCT=$(( S4 + 5 ))
-    if (( OCT <= E4 )); then
-      LB_IP="${S1}.${S2}.${S3}.${OCT}"
-    else
-      LB_IP="${START}"
-    fi
-    echo "Using MetalLB IP: ${LB_IP}"
-    tofu -chdir="{{PROJROOT}}/terraform" init -upgrade
-    tofu -chdir="{{PROJROOT}}/terraform" plan -var "load_balancer_ip=${LB_IP}" -var "registry_host={{registry_host}}"
-
-# Terraform apply with derived MetalLB IP from cluster.json
-tf-apply registry_host="registry.local.io":
-    #!/usr/bin/env bash
-    set -euo pipefail
-    RANGE=$(jq -r .metallb.desired_range "{{PROJROOT}}/cluster.json")
-    if [[ -z "${RANGE}" || "${RANGE}" == "null" ]]; then
-      echo "metallb.desired_range not found in ${PROJROOT}/cluster.json" >&2
-      exit 1
-    fi
-    START=${RANGE%-*}
-    END=${RANGE#*-}
-    IFS='.' read -r S1 S2 S3 S4 <<<"${START}"
-    IFS='.' read -r E1 E2 E3 E4 <<<"${END}"
-    OCT=$(( S4 + 5 ))
-    if (( OCT <= E4 )); then
-      LB_IP="${S1}.${S2}.${S3}.${OCT}"
-    else
-      LB_IP="${START}"
-    fi
-    echo "Using MetalLB IP: ${LB_IP}"
-    tofu -chdir="{{PROJROOT}}/terraform" init -upgrade
-    tofu -chdir="{{PROJROOT}}/terraform" apply -auto-approve -var "load_balancer_ip=${LB_IP}" -var "registry_host={{registry_host}}"
 
 # Seed LocalStack Secrets Manager with required secrets for ESO
 seed-secrets pg_namespace="default" pg_release="postgres" db_user="foundry" root_user="postgres" root_pass="postgres":
