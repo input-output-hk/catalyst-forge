@@ -8,10 +8,12 @@ from .base import DatabaseRoot
 from .seeders.kratos import KratosSeeder
 from .seeders.hydra import HydraSeeder
 from .seeders.forge import ForgeSeeder
+from .seeders.temporal import TemporalSeeder
 
 __all__ = [
     "DatabaseRoot",
     "KratosSeeder",
     "HydraSeeder",
     "ForgeSeeder",
+    "TemporalSeeder",
 ]

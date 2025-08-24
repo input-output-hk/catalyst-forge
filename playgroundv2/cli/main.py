@@ -32,7 +32,7 @@ from .k3d_ops import (
 )
 from .models import ClusterSummary  # re-export for tests/importers
 from .utils import get_client_cert_paths, get_repo_root, log, require_cmd, run
-from .db import DatabaseRoot, KratosSeeder, HydraSeeder, ForgeSeeder
+from .db import DatabaseRoot, KratosSeeder, HydraSeeder, ForgeSeeder, TemporalSeeder
 from .db.base import DatabaseConfig
 
 # Resolve the playground root (one level up from this file's directory)
@@ -413,7 +413,7 @@ def migrate(
         )
     )
     # Run seeders
-    for seeder in (KratosSeeder(), HydraSeeder(), ForgeSeeder()):
+    for seeder in (KratosSeeder(), HydraSeeder(), ForgeSeeder(), TemporalSeeder()):
         seeder.run(root)
     log("Database migration completed.")
 

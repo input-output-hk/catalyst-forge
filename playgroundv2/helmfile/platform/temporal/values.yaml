@@ -1,0 +1,66 @@
+server:
+  replicaCount: 1
+  resources: {}
+  config:
+    namespaces:
+      create: true
+      namespace:
+        - name: default
+          retention: 3d
+    persistence:
+      default:
+        driver: "sql"
+        sql:
+          driver: "postgres12"
+          host: postgres-postgresql.postgres.svc.cluster.local
+          port: 5432
+          database: temporal
+          user: temporal
+          existingSecret: temporal-default-store
+          maxConns: 20
+          maxIdleConns: 20
+          maxConnLifetime: "1h"
+      visibility:
+        driver: "sql"
+        sql:
+          driver: "postgres12"
+          host: postgres-postgresql.postgres.svc.cluster.local
+          port: 5432
+          database: temporal_visibility
+          user: temporal
+          existingSecret: temporal-visibility-store
+          maxConns: 20
+          maxIdleConns: 20
+          maxConnLifetime: "1h"
+
+  frontend:
+    resources: {}
+  history:
+    resources: {}
+  matching:
+    resources: {}
+  worker:
+    resources: {}
+
+web:
+  enabled: true
+  service:
+    type: ClusterIP
+    port: 8080
+  ingress:
+    enabled: false
+
+schema:
+  createDatabase:
+    enabled: false
+  setup:
+    enabled: true
+  update:
+    enabled: true
+
+elasticsearch:
+  enabled: false
+cassandra:
+  enabled: false
+mysql:
+  enabled: false

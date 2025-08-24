@@ -15,6 +15,8 @@ repositories:
     url: https://jouve.github.io/charts/
   - name: ory
     url: https://k8s.ory.sh/helm/charts
+  - name: temporalio
+    url: https://temporalio.github.io/helm-charts
 
 helmDefaults:
   wait: true
@@ -422,4 +424,53 @@ releases:
       - events: ["postsync"]
         command: kubectl
         args: ["apply", "-f", "platform/envoy/hydra-routes.yaml"]
+        showlogs: true
+
+  - name: temporal
+    namespace: temporal
+    chart: temporalio/temporal
+    version: 0.65.0
+    createNamespace: true
+    needs:
+      - external-secrets/external-secrets
+      - postgres/postgres
+      - envoy-gateway-system/envoy-gateway
+    values:
+      - platform/temporal/values.yaml
+    hooks:
+      - events: ["presync"]
+        command: sh
+        args:
+          - -c
+          - |
+            set -euo pipefail
+            kubectl create namespace temporal --dry-run=client -o yaml | kubectl apply -f -
+      - events: ["presync"]
+        command: kubectl
+        args: ["apply", "-f", "platform/eso/temporal-external-secrets.yaml"]
+        showlogs: true
+      - events: ["presync"]
+        command: sh
+        args:
+          - -c
+          - |
+            set -euo pipefail
+            for i in $(seq 1 60); do
+              if kubectl -n temporal get secret temporal-default-store >/dev/null 2>&1 && kubectl -n temporal get secret temporal-visibility-store >/dev/null 2>&1; then exit 0; fi; sleep 2; done; exit 1
+        showlogs: true
+      - events: ["postsync"]
+        command: kubectl
+        args: ["apply", "-f", "platform/envoy/temporal-ui-route.yaml"]
+        showlogs: true
+      - events: ["postsync"]
+        command: kubectl
+        args:
+          [
+            "-n",
+            "temporal",
+            "rollout",
+            "status",
+            "deployment/temporal-frontend",
+            "--timeout=300s",
+          ]
         showlogs: true
