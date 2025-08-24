@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 
 
 class ClusterSummary(BaseModel):
@@ -30,5 +30,5 @@ class ClusterSummary(BaseModel):
     kubeconfig: str
     kubernetes_version: str
 
-    class Config:
-        allow_population_by_field_name = True
+    # Pydantic v2 configuration
+    model_config = ConfigDict(populate_by_name=True)

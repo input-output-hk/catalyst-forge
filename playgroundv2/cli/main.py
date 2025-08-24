@@ -32,6 +32,8 @@ from .k3d_ops import (
 )
 from .models import ClusterSummary  # re-export for tests/importers
 from .utils import get_client_cert_paths, get_repo_root, log, require_cmd, run
+from .db import DatabaseRoot, KratosSeeder, HydraSeeder, ForgeSeeder
+from .db.base import DatabaseConfig
 
 # Resolve the playground root (one level up from this file's directory)
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -98,6 +100,92 @@ def dns_pin_registry(host: str = typer.Option("registry.projectcatalyst.dev", "-
     log("CoreDNS updated and restart triggered")
 
 
+def _generate_assets(
+    *,
+    base_dir: Path,
+    _registry_host: str,
+    client_name: str,
+    buildkit_host: str,
+) -> None:
+    """Generate local TLS client certs and Earthly configuration.
+
+    Args:
+        base_dir: The base directory of the playground (playgroundv2 root).
+        registry_host: Hostname for the in-cluster Docker registry.
+        client_name: Common Name for the mkcert client certificate.
+        buildkit_host: BuildKit TCP endpoint to write into Earthly config.
+    """
+    # Ensure prerequisites
+    require_cmd("mkcert")
+
+    repo_root = get_repo_root(base_dir)
+    cert_dir = repo_root / "playgroundv2/.certs"
+    cert_dir.mkdir(parents=True, exist_ok=True)
+
+    # 1) Generate client TLS cert for Earthly CLI and copy CA (idempotent)
+    client = get_client_cert_paths(repo_root / "playgroundv2/.certs", client_name)
+    caroot = get_mkcert_caroot()
+    ca_src = caroot / "rootCA.pem"
+
+    if not client["cert"].exists() or not client["key"].exists():
+        log(
+            f"Generating mkcert client cert at {client['cert']} and {client['key']} for {client_name}"
+        )
+        run(
+            [
+                "mkcert",
+                "-client",
+                "-cert-file",
+                str(client["cert"].resolve()),
+                "-key-file",
+                str(client["key"].resolve()),
+                client_name,
+            ]
+        )
+    if ca_src.exists() and not client["ca"].exists():
+        client["ca"].write_bytes(ca_src.read_bytes())
+
+    log(
+        "Client TLS ready for Earthly CLI (mtls):\n"
+        f"- cert: {client['cert']}\n"
+        f"- key:  {client['key']}\n"
+        f"- ca:   {client['ca']}\n"
+        "Configure your Earthly client to use these paths."
+    )
+
+    # 2) Write Earthly configuration with absolute TLS paths
+    earthly_cfg_path = repo_root / "playgroundv2/config/earthly.yml"
+    earthly_cfg_path.parent.mkdir(parents=True, exist_ok=True)
+    cfg = {
+        "global": {
+            "buildkit_host": buildkit_host,
+            "tlsca": str(client["ca"].resolve()),
+            "tlscert": str(client["cert"].resolve()),
+            "tlskey": str(client["key"].resolve()),
+        }
+    }
+    earthly_cfg_path.write_text(yaml.safe_dump(cfg, sort_keys=False))
+    log(f"Earthly config written to {earthly_cfg_path}")
+
+
+@app.command("generate")
+def generate(
+    client_name: str = typer.Option(
+        "earthly-client", help="Client certificate common name to generate"
+    ),
+    buildkit_host: str = typer.Option(
+        "tcp://buildkit.projectcatalyst.dev:8372",
+        help="BuildKit TCP endpoint to write into Earthly config",
+    ),
+) -> None:
+    """Generate local TLS certs and Earthly config (idempotent)."""
+    _generate_assets(
+        base_dir=BASE_DIR,
+        client_name=client_name,
+        buildkit_host=buildkit_host,
+    )
+
+
 @app.command("k3d")
 def k3d_up(
     name: str = typer.Option("forge", help="Cluster name"),
@@ -119,7 +207,7 @@ def k3d_up(
     ),
     registry_name: str = typer.Option("reg", help="Name for the k3d registry instance"),
     generate_client_cert: bool = typer.Option(
-        True, help="Generate local client certs for Earthly CLI under playgroundv2/.certs"
+        False, help="[Deprecated] Use the 'generate' command instead"
     ),
 ) -> None:
     """Create or reuse a k3d cluster configured for Envoy Gateway ingress."""
@@ -171,27 +259,6 @@ def k3d_up(
         kubeconfig=kubeconfig_out,
     )
 
-    # Auto-generate cert/key with mkcert under playgroundv2/.certs if missing
-    cert_dir = BASE_DIR / ".certs"
-    cert_file = cert_dir / f"{registry_host}.pem"
-    key_file = cert_dir / f"{registry_host}-key.pem"
-    if not cert_file.exists() or not key_file.exists():
-        log(f"Generating mkcert certs for {registry_host} at {cert_file} and {key_file}")
-        import subprocess as _sub
-
-        cert_dir.mkdir(parents=True, exist_ok=True)
-        _sub.run(
-            [
-                "mkcert",
-                "-cert-file",
-                str(cert_file.resolve()),
-                "-key-file",
-                str(key_file.resolve()),
-                registry_host,
-            ],
-            check=True,
-        )
-
     log(
         "\nCluster is ready.\n\n"
         f"- Name: {name}\n"
@@ -200,54 +267,37 @@ def k3d_up(
         "Next: install Envoy Gateway, ESO, LocalStack, Postgres, Mailpit via Helmfile."
     )
 
-    # Optionally generate client cert for Earthly CLI mTLS
+    # Deprecated behavior retained for compatibility
     if generate_client_cert:
-        repo_root = get_repo_root(BASE_DIR)
-        client = get_client_cert_paths(repo_root / "playgroundv2/.certs", "earthly-client")
-        # Ensure mkcert CAROOT is copied to local .certs for consistent pathing in config
-        caroot = get_mkcert_caroot()
-        ca_src = caroot / "rootCA.pem"
-        client["cert"].parent.mkdir(parents=True, exist_ok=True)
-        # Idempotent: only generate if files are missing
-        if not client["cert"].exists() or not client["key"].exists():
-            log(
-                f"Generating mkcert client cert at {client['cert']} and {client['key']} for Earthly CLI"
-            )
-            run(
-                [
-                    "mkcert",
-                    "-client",
-                    "-cert-file",
-                    str(client["cert"].resolve()),
-                    "-key-file",
-                    str(client["key"].resolve()),
-                    "earthly-client",
-                ]
-            )
-        # Copy CAROOT rootCA.pem for consistent local CA path if missing
-        if ca_src.exists() and not client["ca"].exists():
-            client["ca"].write_bytes(ca_src.read_bytes())
-        log(
-            "Client TLS ready for Earthly CLI (mtls):\n"
-            f"- cert: {client['cert']}\n"
-            f"- key:  {client['key']}\n"
-            f"- ca:   {client['ca']}\n"
-            "Configure your Earthly client to use these paths."
+        log("[Deprecated] --generate-client-cert is deprecated; use 'generate' command instead.")
+        _generate_assets(
+            base_dir=BASE_DIR,
+            registry_host=registry_host,
+            client_name="earthly-client",
+            buildkit_host="tcp://buildkit.projectcatalyst.dev:8372",
         )
 
-        # Write Earthly configuration with absolute TLS paths
-        earthly_cfg_path = repo_root / "playgroundv2/config/earthly.yml"
-        earthly_cfg_path.parent.mkdir(parents=True, exist_ok=True)
-        cfg = {
-            "global": {
-                "buildkit_host": "tcp://buildkit.projectcatalyst.dev:8372",
-                "tlsca": str(client["ca"].resolve()),
-                "tlscert": str(client["cert"].resolve()),
-                "tlskey": str(client["key"].resolve()),
-            }
-        }
-        earthly_cfg_path.write_text(yaml.safe_dump(cfg, sort_keys=False))
-        log(f"Earthly config written to {earthly_cfg_path}")
+
+@app.command("migrate")
+def migrate(
+    pg_host: str = typer.Option("127.0.0.1", help="PostgreSQL host"),
+    pg_port: int = typer.Option(5432, help="PostgreSQL port"),
+    pg_user: str = typer.Option("postgres", help="PostgreSQL admin user"),
+    pg_password: str = typer.Option("postgres", help="PostgreSQL admin password"),
+) -> None:
+    """Initialize PostgreSQL for dependent apps (Kratos, Hydra).
+
+    Idempotent: safe to re-run. Extensible via additional seeders.
+    """
+    root = DatabaseRoot(
+        DatabaseConfig(
+            host=pg_host, port=pg_port, user=pg_user, password=pg_password, admin_db="postgres"
+        )
+    )
+    # Run seeders
+    for seeder in (KratosSeeder(), HydraSeeder(), ForgeSeeder()):
+        seeder.run(root)
+    log("Database migration completed.")
 
 
 @app.command("down")

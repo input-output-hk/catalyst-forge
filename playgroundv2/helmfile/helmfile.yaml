@@ -7,6 +7,10 @@ repositories:
     url: https://charts.bitnami.com/bitnami
   - name: twuni
     url: https://helm.twun.io
+  - name: localstack
+    url: https://localstack.github.io/helm-charts
+  - name: external-secrets
+    url: https://charts.external-secrets.io
 
 helmDefaults:
   wait: true
@@ -173,4 +177,104 @@ releases:
             kubectl -n registry rollout status deploy/earthly-buildkitd --timeout=180s
             # Expose buildkitd via TCPRoute on Gateway
             kubectl apply -f platform/envoy/buildkitd-tcproute.yaml
+        showlogs: true
+
+  - name: localstack
+    namespace: localstack
+    chart: localstack/localstack
+    createNamespace: true
+    values:
+      - service:
+          type: ClusterIP
+    hooks:
+      - events: ["postsync"]
+        command: kubectl
+        args:
+          [
+            "wait",
+            "--for=condition=Available",
+            "--timeout=180s",
+            "-n",
+            "localstack",
+            "deployment/localstack",
+          ]
+        showlogs: true
+
+  - name: external-secrets
+    namespace: external-secrets
+    chart: external-secrets/external-secrets
+    version: 0.11.0
+    createNamespace: true
+    needs:
+      - localstack/localstack
+    values:
+      - installCRDs: true
+      - extraEnv:
+          - name: AWS_SECRETSMANAGER_ENDPOINT
+            value: "http://localstack.localstack.svc.cluster.local:4566"
+          - name: AWS_SSM_ENDPOINT
+            value: "http://localstack.localstack.svc.cluster.local:4566"
+          - name: AWS_STS_ENDPOINT
+            value: "http://localstack.localstack.svc.cluster.local:4566"
+    hooks:
+      - events: ["postsync"]
+        command: kubectl
+        args:
+          [
+            "wait",
+            "--for=condition=Available",
+            "--timeout=180s",
+            "-n",
+            "external-secrets",
+            "deployment/external-secrets",
+          ]
+        showlogs: true
+      - events: ["postsync"]
+        command: sh
+        args:
+          - -c
+          - |
+            set -euo pipefail
+            # Create/Update credentials Secret for ESO AWS provider (LocalStack)
+            kubectl -n external-secrets create secret generic localstack-aws-creds \
+              --from-literal=access-key-id="${AWS_ACCESS_KEY_ID:-test}" \
+              --from-literal=secret-access-key="${AWS_SECRET_ACCESS_KEY:-test}" \
+              --dry-run=client -o yaml | kubectl apply -f -
+      - events: ["postsync"]
+        command: kubectl
+        args: ["apply", "-f", "platform/eso/cluster-secret-store.yaml"]
+        showlogs: true
+
+  - name: postgres
+    namespace: postgres
+    chart: oci://registry-1.docker.io/bitnamicharts/postgresql
+    version: 16.7.26
+    createNamespace: true
+    needs:
+      - envoy-gateway-system/envoy-gateway
+    values:
+      - auth:
+          username: postgres
+          password: postgres
+          database: postgres
+      - primary:
+          persistence:
+            enabled: true
+            size: 20Gi
+    hooks:
+      - events: ["postsync"]
+        command: kubectl
+        args:
+          [
+            "-n",
+            "postgres",
+            "rollout",
+            "status",
+            "statefulset/postgres-postgresql",
+            "--timeout=300s",
+          ]
+        showlogs: true
+      - events: ["postsync"]
+        command: kubectl
+        args: ["apply", "-f", "platform/envoy/postgres-tcproute.yaml"]
         showlogs: true

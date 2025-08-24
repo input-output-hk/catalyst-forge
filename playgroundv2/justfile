@@ -5,7 +5,46 @@ PROJROOT := justfile_directory()
 default:
 	@just --list
 
-# CLI: run lint, formatting (check-only), and type checks
+# Create or reuse local cluster and write kubeconfig/cluster.json
+k3d:
+	cd "{{PROJROOT}}/cli" && PYTHONPATH="{{PROJROOT}}/.." uv run python -m playgroundv2.cli.main k3d --yes
+
+# Pin registry.projectcatalyst.dev to local cluster
+pin-registry:
+	cd "{{PROJROOT}}/cli" && PYTHONPATH="{{PROJROOT}}/.." uv run python -m playgroundv2.cli.main dns pin-registry --host registry.projectcatalyst.dev
+
+# Generate local TLS certs and Earthly config
+generate:
+	cd "{{PROJROOT}}/cli" && PYTHONPATH="{{PROJROOT}}/.." uv run python -m playgroundv2.cli.main generate
+
+# Initialize PostgreSQL for dependent apps
+migrate:
+	cd "{{PROJROOT}}/cli" && PYTHONPATH="{{PROJROOT}}/.." uv run python -m playgroundv2.cli.main migrate
+
+# Create or reuse local cluster and write kubeconfig/cluster.json
+up: k3d apply pin-registry generate migrate deploy-all
+
+# Tear down cluster
+down name="forge":
+    cd "{{PROJROOT}}/cli" && PYTHONPATH="{{PROJROOT}}/.." uv run python -m playgroundv2.cli.main down --name {{name}}
+
+# Apply base platform
+apply:
+	cd "{{PROJROOT}}/helmfile" && helmfile apply
+
+# Sync base platform
+sync:
+	cd "{{PROJROOT}}/helmfile" && helmfile sync
+
+# Build, push, and deploy a service to the cluster
+deploy service="api":
+	./scripts/deploy.sh {{service}}
+
+deploy-all:
+	just deploy api
+	just deploy frontend
+
+# Run lint, formatting (check-only), and type checks
 check:
 	#!/usr/bin/env bash
 	set -euo pipefail
@@ -23,38 +62,3 @@ format:
 	cd "{{PROJROOT}}/cli"
 	uv run ruff format .
 	uv run ruff check --fix .
-
-
-# K3d: create or reuse local cluster and write kubeconfig/cluster.json
-# Usage:
-#   just -f playgroundv2/justfile up
-up:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    cd "{{PROJROOT}}/cli" && PYTHONPATH="{{PROJROOT}}/.." uv run python -m playgroundv2.cli.main k3d --yes
-    just -f "{{PROJROOT}}/justfile" apply
-    cd "{{PROJROOT}}/cli" && PYTHONPATH="{{PROJROOT}}/.." uv run python -m playgroundv2.cli.main dns pin-registry --host registry.projectcatalyst.dev
-
-# K3d: tear down cluster
-down name="forge":
-    #!/usr/bin/env bash
-    set -euo pipefail
-    cd "{{PROJROOT}}/cli" && PYTHONPATH="{{PROJROOT}}/.." uv run python -m playgroundv2.cli.main down --name {{name}}
-
-# Helmfile: apply base platform
-apply:
-	cd "{{PROJROOT}}/helmfile" && helmfile apply
-
-# Helmfile: sync base platform
-sync:
-	cd "{{PROJROOT}}/helmfile" && helmfile sync
-
-# Build, push, and deploy a service to the cluster
-deploy service="api":
-	./scripts/deploy.sh {{service}}
-
-# Seed LocalStack Secrets Manager with required secrets for ESO
-seed-secrets pg_namespace="default" pg_release="postgres" db_user="foundry" root_user="postgres" root_pass="postgres":
-    #!/usr/bin/env bash
-    set -euo pipefail
-    bash -lc "KUBECONFIG='{{PROJROOT}}/kubeconfig' {{PROJROOT}}/scripts/seed-secrets.sh --pg-namespace {{pg_namespace}} --pg-release {{pg_release}} --db-user {{db_user}} --root-user {{root_user}} --root-pass {{root_pass}}"

@@ -75,6 +75,8 @@ def build_k3d_create_args(
         f"{https_port}:443@loadbalancer",
         "-p",
         "8372:8372@loadbalancer",
+        "-p",
+        "5432:5432@loadbalancer",
         "--wait",
     ]
     if api_port != 0:
@@ -107,7 +109,7 @@ def create_cluster(
         args.extend(["--volume", vol])
     log(
         f"Creating k3d cluster '{name}' (servers={servers}, agents={agents}) "
-        f"with host ports {http_port}/HTTP, {https_port}/HTTPS and 8372/tcp (buildkitd)..."
+        f"with host ports {http_port}/HTTP, {https_port}/HTTPS and 8372/tcp (buildkitd), 5432/tcp (postgres)..."
     )
     run(args)
 

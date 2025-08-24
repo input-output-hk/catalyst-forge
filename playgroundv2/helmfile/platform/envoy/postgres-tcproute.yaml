@@ -1,14 +1,14 @@
 apiVersion: gateway.networking.k8s.io/v1alpha2
 kind: TCPRoute
 metadata:
-  name: buildkitd
-  namespace: registry
+  name: postgres
+  namespace: postgres
 spec:
   parentRefs:
     - name: default
       namespace: envoy-gateway-system
-      sectionName: buildkit-tcp
+      sectionName: postgres-tcp
   rules:
     - backendRefs:
-        - name: earthly-buildkitd
-          port: 8372
+        - name: postgres-postgresql
+          port: 5432

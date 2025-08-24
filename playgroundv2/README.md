@@ -25,6 +25,9 @@ This folder provisions a complete local environment for development:
 # Bring everything up (idempotent): K3d + Helmfile
 just up
 
+# Generate local Earthly config and TLS client certs (idempotent)
+just generate
+
 # Tear down the local k3d cluster
 just down
 ```
@@ -39,9 +42,10 @@ The up command will:
 - Create/refresh the K3d cluster and write `playgroundv2/cluster.json`
 - Install cert-manager, Envoy Gateway, and Registry via Helmfile
 - Bootstrap TLS using mkcert CA and a wildcard Certificate for `*.projectcatalyst.dev`
-- Generate local client TLS certs for Earthly (idempotent) under `playgroundv2/.certs/`:
-  - `earthly-client.pem`, `earthly-client-key.pem`, and `rootCA.pem`
-  - You can disable this with `--no-generate-client-cert`
+
+Generate command will:
+- Create local client TLS certs for Earthly under `playgroundv2/.certs/`
+- Write `playgroundv2/config/earthly.yml` with absolute TLS paths
 
 #### Deployments included
 - Envoy Gateway (namespace `envoy-gateway-system`)
