@@ -1,0 +1,177 @@
+# yaml-language-server: $schema=https://json.schemastore.org/helm-values.json
+kratos:
+  automigration:
+    enabled: true
+
+  # Inject DSN via Secret env var; keep config.dsn empty
+  config:
+    version: v0.13.0
+    dsn: ""
+
+    log:
+      level: info
+
+    serve:
+      public:
+        host: 0.0.0.0
+        port: 4433
+        base_url: https://auth.projectcatalyst.dev/kratos/public
+      admin:
+        host: 0.0.0.0
+        port: 4434
+
+    secrets:
+      default:
+        - d835e3a5c00db4f349abfca116085fbc
+      cookie:
+        - 74059701e15cc511a3d3ecdde4d033b7
+      cipher:
+        - 8812e4c5719b1cd8e50578735e263311
+
+    selfservice:
+      default_browser_return_url: https://forge.projectcatalyst.dev/
+      allowed_return_urls:
+        - https://forge.projectcatalyst.dev/*
+      flows:
+        settings:
+          ui_url: https://forge.projectcatalyst.dev//profile
+        login:
+          ui_url: https://forge.projectcatalyst.dev/welcome
+        error:
+          ui_url: https://forge.projectcatalyst.dev/auth/error
+        registration:
+          ui_url: https://forge.projectcatalyst.dev/welcome
+          after:
+            oidc:
+              hooks:
+                - hook: session
+      methods:
+        passkey:
+          enabled: true
+          config:
+            rp:
+              display_name: Catalyst Forge
+              id: forge.projectcatalyst.dev
+              origins:
+                - https://forge.projectcatalyst.dev/
+        oidc:
+          enabled: true
+          config:
+            providers:
+              - id: google
+                provider: generic
+                issuer_url: https://auth-mock.projectcatalyst.dev
+                client_id: file:///etc/kratos/oidc/google/client_id
+                client_secret: file:///etc/kratos/oidc/google/client_secret
+                mapper_url: file:///etc/kratos/google.mapper.jsonnet
+                scope:
+                  - openid
+                  - email
+                  - profile
+
+    session:
+      cookie:
+        domain: projectcatalyst.dev
+        same_site: Lax
+        persistent: true
+        path: "/"
+
+    identity:
+      default_schema_id: default
+      schemas:
+        - id: default
+          url: file:///etc/config/identity.schema.json
+
+  identitySchemas:
+    identity.schema.json: |-
+      {
+          "$id": "https://forge-test.projectcatalyst.io/schemas/identity.default.schema.json",
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "title": "Default Identity Schema",
+          "type": "object",
+          "properties": {
+              "traits": {
+                  "type": "object",
+                  "properties": {
+                      "email": {
+                          "type": "string",
+                          "format": "email",
+                          "ory.sh/kratos": {
+                              "credentials": {
+                                  "passkey": {
+                                      "display_name": true
+                                  }
+                              }
+                          }
+                      },
+                      "domain": {
+                          "type": "string"
+                      }
+                  },
+                  "required": [
+                      "email",
+                      "domain"
+                  ],
+                  "additionalProperties": false
+              }
+          }
+      }
+
+  # Mount config map with mapper + identity schema
+  deployment:
+    extraVolumeMounts:
+      - name: kratos-mappers
+        mountPath: /etc/kratos
+        readOnly: true
+      - name: kratos-oidc-google
+        mountPath: /etc/kratos/oidc/google
+        readOnly: true
+    extraVolumes:
+      - name: kratos-mappers
+        configMap:
+          name: kratos-mappers
+      - name: kratos-oidc-google
+        secret:
+          secretName: kratos-oidc-google
+
+  job:
+    extraVolumeMounts:
+      - name: kratos-mappers
+        mountPath: /etc/kratos
+        readOnly: true
+      - name: kratos-oidc-google
+        mountPath: /etc/kratos/oidc/google
+        readOnly: true
+    extraVolumes:
+      - name: kratos-mappers
+        configMap:
+          name: kratos-mappers
+      - name: kratos-oidc-google
+        secret:
+          secretName: kratos-oidc-google
+
+# DSN env for runtime per chart docs (root-level objects)
+deployment:
+  extraEnv:
+    - name: DSN
+      valueFrom:
+        secretKeyRef:
+          name: kratos-dsn
+          key: dsn
+
+job:
+  extraEnv:
+    - name: DSN
+      valueFrom:
+        secretKeyRef:
+          name: kratos-dsn
+          key: dsn
+
+cronjob:
+  cleanup:
+    extraEnv:
+      - name: DSN
+        valueFrom:
+          secretKeyRef:
+            name: kratos-dsn
+            key: dsn

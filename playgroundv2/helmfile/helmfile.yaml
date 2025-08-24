@@ -11,6 +11,10 @@ repositories:
     url: https://localstack.github.io/helm-charts
   - name: external-secrets
     url: https://charts.external-secrets.io
+  - name: jouve
+    url: https://jouve.github.io/charts/
+  - name: ory
+    url: https://k8s.ory.sh/helm/charts
 
 helmDefaults:
   wait: true
@@ -111,6 +115,34 @@ releases:
       - events: ["postsync"]
         command: kubectl
         args: ["apply", "-f", "platform/envoy/gateway.yaml"]
+        showlogs: true
+      - events: ["postsync"]
+        command: kubectl
+        args: ["apply", "-f", "platform/mock-oidc/namespace.yaml"]
+        showlogs: true
+      - events: ["postsync"]
+        command: kubectl
+        args: ["apply", "-f", "platform/mock-oidc/deployment.yaml"]
+        showlogs: true
+      - events: ["postsync"]
+        command: kubectl
+        args: ["apply", "-f", "platform/mock-oidc/service.yaml"]
+        showlogs: true
+      - events: ["postsync"]
+        command: kubectl
+        args: ["apply", "-f", "platform/envoy/mock-oidc-route.yaml"]
+        showlogs: true
+      - events: ["postsync"]
+        command: kubectl
+        args:
+          [
+            "-n",
+            "mock-oidc",
+            "rollout",
+            "status",
+            "deployment/mock-oidc",
+            "--timeout=180s",
+          ]
         showlogs: true
 
   - name: registry
@@ -277,4 +309,117 @@ releases:
       - events: ["postsync"]
         command: kubectl
         args: ["apply", "-f", "platform/envoy/postgres-tcproute.yaml"]
+        showlogs: true
+
+  - name: mailpit
+    namespace: mailpit
+    chart: jouve/mailpit
+    version: 0.28.0
+    createNamespace: true
+    needs:
+      - envoy-gateway-system/envoy-gateway
+    values:
+      - service:
+          type: ClusterIP
+          http:
+            name: http
+          smtp:
+            name: smtp
+        ingress:
+          enabled: false
+    hooks:
+      - events: ["postsync"]
+        command: kubectl
+        args:
+          [
+            "-n",
+            "mailpit",
+            "rollout",
+            "status",
+            "deployment/mailpit",
+            "--timeout=180s",
+          ]
+        showlogs: true
+      - events: ["postsync"]
+        command: kubectl
+        args: ["apply", "-f", "platform/envoy/mailpit-route.yaml"]
+        showlogs: true
+
+  - name: kratos
+    namespace: auth
+    chart: ory/kratos
+    createNamespace: true
+    needs:
+      - external-secrets/external-secrets
+      - postgres/postgres
+      - envoy-gateway-system/envoy-gateway
+    values:
+      - platform/ory/kratos-values.yaml
+    hooks:
+      - events: ["presync"]
+        command: sh
+        args:
+          - -c
+          - |
+            set -euo pipefail
+            kubectl create namespace auth --dry-run=client -o yaml | kubectl apply -f -
+        showlogs: true
+      - events: ["presync"]
+        command: kubectl
+        args: ["apply", "-f", "platform/ory/kratos-mappers.yaml"]
+        showlogs: true
+      - events: ["presync"]
+        command: kubectl
+        args: ["apply", "-f", "platform/eso/kratos-external-secrets.yaml"]
+        showlogs: true
+      - events: ["presync"]
+        command: sh
+        args:
+          - -c
+          - |
+            set -euo pipefail
+            # Wait for ExternalSecret to sync and Secret to exist
+            for i in $(seq 1 60); do
+              if kubectl -n auth get secret kratos-dsn >/dev/null 2>&1; then exit 0; fi; sleep 2; done; exit 1
+        showlogs: true
+      - events: ["postsync"]
+        command: kubectl
+        args: ["apply", "-f", "platform/envoy/kratos-route.yaml"]
+        showlogs: true
+
+  - name: hydra
+    namespace: auth
+    chart: ory/hydra
+    createNamespace: false
+    needs:
+      - external-secrets/external-secrets
+      - postgres/postgres
+      - envoy-gateway-system/envoy-gateway
+    values:
+      - platform/ory/hydra-values.yaml
+    hooks:
+      - events: ["presync"]
+        command: sh
+        args:
+          - -c
+          - |
+            set -euo pipefail
+            kubectl create namespace auth --dry-run=client -o yaml | kubectl apply -f -
+        showlogs: true
+      - events: ["presync"]
+        command: kubectl
+        args: ["apply", "-f", "platform/eso/hydra-external-secrets.yaml"]
+        showlogs: true
+      - events: ["presync"]
+        command: sh
+        args:
+          - -c
+          - |
+            set -euo pipefail
+            for i in $(seq 1 60); do
+              if kubectl -n auth get secret hydra-dsn >/dev/null 2>&1; then exit 0; fi; sleep 2; done; exit 1
+        showlogs: true
+      - events: ["postsync"]
+        command: kubectl
+        args: ["apply", "-f", "platform/envoy/hydra-routes.yaml"]
         showlogs: true

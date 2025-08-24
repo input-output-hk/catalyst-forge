@@ -1,0 +1,79 @@
+hydra:
+  automigration:
+    enabled: true
+
+  config:
+    dsn: ""
+    secrets:
+      system:
+        - dev-hydra-system-secret-please-change
+    log:
+      level: info
+
+    serve:
+      public:
+        host: 0.0.0.0
+        port: 4444
+      admin:
+        host: 0.0.0.0
+        port: 4445
+
+    urls:
+      self:
+        issuer: https://auth.projectcatalyst.dev/hydra/public
+      login: https://auth.projectcatalyst.dev/hydra/ui/login
+      consent: https://auth.projectcatalyst.dev/hydra/ui/consent
+      logout: https://auth.projectcatalyst.dev/hydra/ui/logout
+      post_logout_redirect: https://forge.projectcatalyst.dev/
+
+    oauth2:
+      pkce:
+        enforced_for_public_clients: true
+    strategies:
+      scope: exact
+    ttl:
+      access_token: 30m
+      id_token: 30m
+      refresh_token: 720h
+
+  deployment:
+    extraEnv:
+      - name: DSN
+        valueFrom:
+          secretKeyRef:
+            name: hydra-dsn
+            key: dsn
+
+  job:
+    extraEnv:
+      - name: DSN
+        valueFrom:
+          secretKeyRef:
+            name: hydra-dsn
+            key: dsn
+
+# DSN env for runtime per chart docs (root-level objects)
+deployment:
+  extraEnv:
+    - name: DSN
+      valueFrom:
+        secretKeyRef:
+          name: hydra-dsn
+          key: dsn
+
+job:
+  extraEnv:
+    - name: DSN
+      valueFrom:
+        secretKeyRef:
+          name: hydra-dsn
+          key: dsn
+
+cronjob:
+  cleanup:
+    extraEnv:
+      - name: DSN
+        valueFrom:
+          secretKeyRef:
+            name: hydra-dsn
+            key: dsn

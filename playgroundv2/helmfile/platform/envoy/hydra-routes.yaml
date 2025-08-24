@@ -1,0 +1,53 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: hydra-public
+  namespace: auth
+spec:
+  parentRefs:
+    - name: default
+      namespace: envoy-gateway-system
+  hostnames:
+    - auth.projectcatalyst.dev
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /hydra/public
+      filters:
+        - type: URLRewrite
+          urlRewrite:
+            path:
+              type: ReplacePrefixMatch
+              replacePrefixMatch: /
+      backendRefs:
+        - name: hydra-public
+          namespace: auth
+          port: 4444
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: hydra-admin
+  namespace: auth
+spec:
+  parentRefs:
+    - name: default
+      namespace: envoy-gateway-system
+  hostnames:
+    - auth.projectcatalyst.dev
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /hydra/admin
+      filters:
+        - type: URLRewrite
+          urlRewrite:
+            path:
+              type: ReplacePrefixMatch
+              replacePrefixMatch: /
+      backendRefs:
+        - name: hydra-admin
+          namespace: auth
+          port: 4445

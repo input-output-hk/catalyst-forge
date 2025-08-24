@@ -15,7 +15,7 @@ modules: main: values: {
 	route: {
 		excludeMaintenancePage: true
 		parent: {
-			name:      "envoy-gateway"
+			name:      "default"
 			namespace: "envoy-gateway-system"
 		}
 	}
