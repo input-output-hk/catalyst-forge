@@ -55,11 +55,16 @@ docker:
     EXPOSE 8081
 
     COPY --keep-ts +build/dist /app
+    # Provide a default runtime config (can be overridden by mounted file or entrypoint)
+    COPY ./public/config.example.js /app/config.js
 
     # Note this is only used for local development, a different Caddyfile is
     # used during deployment. See the blueprint.cue file.
     COPY ./Caddyfile /etc/caddy/Caddyfile
+    COPY ./scripts/entrypoint.sh /entrypoint.sh
+    RUN chmod +x /entrypoint.sh
 
+    ENTRYPOINT ["/entrypoint.sh"]
     SAVE IMAGE $container:$tag
 
 # Build and vendor the thin TS client + types into services/frontend/vendor/forge-client

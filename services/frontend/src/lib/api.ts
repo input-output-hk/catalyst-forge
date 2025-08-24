@@ -6,16 +6,26 @@
  * @returns The API base URL
  */
 export function getApiBaseUrl(): string {
+  // 1) Runtime config from window.__CF_CONFIG__
+  try {
+    const w = window as unknown as { __CF_CONFIG__?: { apiBaseUrl?: string } };
+    const runtimeUrl = w.__CF_CONFIG__?.apiBaseUrl;
+    if (runtimeUrl && runtimeUrl.length > 0) return runtimeUrl;
+  } catch {
+    // ignore
+  }
+
+  // 2) Build-time Vite env
   const importMeta = import.meta as unknown as {
     env?: {
       VITE_API_URL?: string;
     };
   };
-
   const envUrl = importMeta.env?.VITE_API_URL;
-  const hasEnvUrl = envUrl && envUrl.length > 0;
+  if (envUrl && envUrl.length > 0) return envUrl;
 
-  return hasEnvUrl ? envUrl : window.location.origin;
+  // 3) Fallback to current origin
+  return window.location.origin;
 }
 
 /**

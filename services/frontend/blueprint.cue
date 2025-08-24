@@ -19,6 +19,9 @@ project: {
 								name: _ @forge(name="CONTAINER_IMAGE", concrete=false)
 								tag:  _ @forge(name="GIT_HASH_OR_TAG", concrete=false)
 							}
+							env: {
+								...
+							}
 							mounts: {
 								config: {
 									ref: {

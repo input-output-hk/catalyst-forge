@@ -60,7 +60,7 @@ kratos:
             providers:
               - id: google
                 provider: generic
-                issuer_url: https://auth-mock.projectcatalyst.dev
+                issuer_url: https://auth-mock.projectcatalyst.dev/.well-known/openid-configuration
                 client_id: file:///etc/kratos/oidc/google/client_id
                 client_secret: file:///etc/kratos/oidc/google/client_secret
                 mapper_url: file:///etc/kratos/google.mapper.jsonnet
@@ -117,42 +117,35 @@ kratos:
           }
       }
 
-  # Mount config map with mapper + identity schema
-  deployment:
-    extraVolumeMounts:
-      - name: kratos-mappers
-        mountPath: /etc/kratos
-        readOnly: true
-      - name: kratos-oidc-google
-        mountPath: /etc/kratos/oidc/google
-        readOnly: true
-    extraVolumes:
-      - name: kratos-mappers
-        configMap:
-          name: kratos-mappers
-      - name: kratos-oidc-google
-        secret:
-          secretName: kratos-oidc-google
-
-  job:
-    extraVolumeMounts:
-      - name: kratos-mappers
-        mountPath: /etc/kratos
-        readOnly: true
-      - name: kratos-oidc-google
-        mountPath: /etc/kratos/oidc/google
-        readOnly: true
-    extraVolumes:
-      - name: kratos-mappers
-        configMap:
-          name: kratos-mappers
-      - name: kratos-oidc-google
-        secret:
-          secretName: kratos-oidc-google
-
 # DSN env for runtime per chart docs (root-level objects)
 deployment:
+  extraVolumes:
+    - name: kratos-mappers
+      configMap:
+        name: kratos-mappers
+    - name: kratos-oidc-google
+      secret:
+        secretName: kratos-oidc-google
+    - name: mkcert-root-bundle
+      configMap:
+        name: mkcert-root-bundle
+        items:
+          - key: ca.crt
+            path: ca.crt
+  extraVolumeMounts:
+    - name: kratos-mappers
+      mountPath: /etc/kratos
+      readOnly: true
+    - name: kratos-oidc-google
+      mountPath: /etc/kratos/oidc/google
+      readOnly: true
+    - name: mkcert-root-bundle
+      mountPath: /etc/ssl/cert.pem
+      subPath: ca.crt
+      readOnly: true
   extraEnv:
+    - name: SSL_CERT_FILE
+      value: /etc/ssl/cert.pem
     - name: DSN
       valueFrom:
         secretKeyRef:
@@ -160,7 +153,33 @@ deployment:
           key: dsn
 
 job:
+  extraVolumes:
+    - name: kratos-mappers
+      configMap:
+        name: kratos-mappers
+    - name: kratos-oidc-google
+      secret:
+        secretName: kratos-oidc-google
+    - name: mkcert-root-bundle
+      configMap:
+        name: mkcert-root-bundle
+        items:
+          - key: ca.crt
+            path: ca.crt
+  extraVolumeMounts:
+    - name: kratos-mappers
+      mountPath: /etc/kratos
+      readOnly: true
+    - name: kratos-oidc-google
+      mountPath: /etc/kratos/oidc/google
+      readOnly: true
+    - name: mkcert-root-bundle
+      mountPath: /etc/ssl/cert.pem
+      subPath: ca.crt
+      readOnly: true
   extraEnv:
+    - name: SSL_CERT_FILE
+      value: /etc/ssl/cert.pem
     - name: DSN
       valueFrom:
         secretKeyRef:
@@ -170,6 +189,8 @@ job:
 cronjob:
   cleanup:
     extraEnv:
+      - name: SSL_CERT_FILE
+        value: /etc/ssl/cert.pem
       - name: DSN
         valueFrom:
           secretKeyRef:

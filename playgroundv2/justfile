@@ -13,6 +13,10 @@ k3d:
 pin-registry:
 	cd "{{PROJROOT}}/cli" && PYTHONPATH="{{PROJROOT}}/.." uv run python -m playgroundv2.cli.main dns pin-registry --host registry.projectcatalyst.dev
 
+# Pin wildcard to local cluster
+pin-wildcard:
+	cd "{{PROJROOT}}/cli" && PYTHONPATH="{{PROJROOT}}/.." uv run python -m playgroundv2.cli.main dns pin-wildcard
+
 # Generate local TLS certs and Earthly config
 generate:
 	cd "{{PROJROOT}}/cli" && PYTHONPATH="{{PROJROOT}}/.." uv run python -m playgroundv2.cli.main generate

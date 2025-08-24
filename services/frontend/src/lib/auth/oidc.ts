@@ -1,4 +1,5 @@
 import { Configuration, FrontendApi } from "@ory/client";
+import { getKratosPublicBaseUrl } from "@/lib/auth/kratos";
 
 // Minimal UI typing to avoid any-casts while keeping code clear
 interface UiNodeAttributes {
@@ -21,9 +22,10 @@ interface HasUi {
   id?: string;
 }
 
-// Client for Kratos Public API routed via Caddy at /.ory/kratos/public
+// Client for Kratos Public API; base path is configurable at runtime
+const kratosBase = getKratosPublicBaseUrl();
 const kratos = new FrontendApi(
-  new Configuration({ basePath: "/.ory/kratos/public", baseOptions: { withCredentials: true } })
+  new Configuration({ basePath: kratosBase, baseOptions: { withCredentials: true } })
 );
 
 /**
@@ -31,10 +33,33 @@ const kratos = new FrontendApi(
  * browser naturally follows redirects (no CORS surprises).
  */
 export async function loginWithProvider(provider: string, returnTo: string = "/"): Promise<void> {
-  const { data } = await kratos.createBrowserLoginFlow();
-  const flow = data as unknown as HasUi;
+  async function getFlowWithAction(): Promise<HasUi | null> {
+    try {
+      const { data } = await kratos.createBrowserLoginFlow();
+      const f = data as unknown as HasUi;
+      const hasAction = typeof f.ui?.action === "string" && f.ui.action.length > 0;
+      const hasId = typeof f.id === "string" && f.id.length > 0;
+      if (hasAction || hasId) return f;
+      return null;
+    } catch {
+      return null;
+    }
+  }
 
-  const action = flow.ui?.action ?? `/.ory/kratos/public/self-service/login?flow=${flow.id ?? ""}`;
+  let flow = await getFlowWithAction();
+  if (!flow) flow = await getFlowWithAction();
+
+  if (!flow) {
+    // As a last resort, navigate to the browser endpoint to let Kratos drive the flow
+    window.location.href = `${kratosBase}/self-service/login/browser`;
+    return;
+  }
+
+  const action = flow.ui?.action ?? (flow.id ? `${kratosBase}/self-service/login?flow=${flow.id}` : "");
+  if (!action) {
+    window.location.href = `${kratosBase}/self-service/login/browser`;
+    return;
+  }
   const method = (flow.ui?.method ?? "POST").toUpperCase();
   const csrf = findNodeValue(flow.ui?.nodes ?? [], "csrf_token");
 
@@ -42,7 +67,6 @@ export async function loginWithProvider(provider: string, returnTo: string = "/"
   appendHidden(form, "method", "oidc");
   appendHidden(form, "provider", provider);
   if (typeof csrf === "string" && csrf.length > 0) appendHidden(form, "csrf_token", csrf);
-  // Note: returnTo is kept for parity; Kratos handles return_to internally on browser endpoints
 
   document.body.appendChild(form);
   form.submit();
@@ -58,11 +82,32 @@ export async function loginWithGithub(returnTo: string = "/"): Promise<void> {
  * Start a browser registration flow and submit provider=… via HTML form.
  */
 export async function registerWithProvider(provider: string, returnTo: string = "/"): Promise<void> {
-  const { data } = await kratos.createBrowserRegistrationFlow();
-  const flow = data as unknown as HasUi;
+  async function getFlowWithAction(): Promise<HasUi | null> {
+    try {
+      const { data } = await kratos.createBrowserRegistrationFlow();
+      const f = data as unknown as HasUi;
+      const hasAction = typeof f.ui?.action === "string" && f.ui.action.length > 0;
+      const hasId = typeof f.id === "string" && f.id.length > 0;
+      if (hasAction || hasId) return f;
+      return null;
+    } catch {
+      return null;
+    }
+  }
 
-  const action =
-    flow.ui?.action ?? `/.ory/kratos/public/self-service/registration?flow=${flow.id ?? ""}`;
+  let flow = await getFlowWithAction();
+  if (!flow) flow = await getFlowWithAction();
+
+  if (!flow) {
+    window.location.href = `${kratosBase}/self-service/registration/browser`;
+    return;
+  }
+
+  const action = flow.ui?.action ?? (flow.id ? `${kratosBase}/self-service/registration?flow=${flow.id}` : "");
+  if (!action) {
+    window.location.href = `${kratosBase}/self-service/registration/browser`;
+    return;
+  }
   const method = (flow.ui?.method ?? "POST").toUpperCase();
   const csrf = findNodeValue(flow.ui?.nodes ?? [], "csrf_token");
 

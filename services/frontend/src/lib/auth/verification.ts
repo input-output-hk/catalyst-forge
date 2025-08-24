@@ -1,4 +1,5 @@
 import { Configuration, FrontendApi } from "@ory/client";
+import { getKratosPublicBaseUrl } from "@/lib/auth/kratos";
 
 interface VerifiableAddress {
   value?: string;
@@ -10,8 +11,9 @@ interface IdentityLike {
   verifiable_addresses?: VerifiableAddress[];
 }
 
+const kratosBase = getKratosPublicBaseUrl();
 const kratos = new FrontendApi(
-  new Configuration({ basePath: "/.ory/kratos/public", baseOptions: { withCredentials: true } })
+  new Configuration({ basePath: kratosBase, baseOptions: { withCredentials: true } })
 );
 
 /**

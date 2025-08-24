@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Outlet, useLocation, Navigate } from "react-router-dom";
 import { useAppStore } from "@/store/app-store";
 import { sendEmailVerificationIfNeeded } from "@/lib/auth/verification";
+import { getKratosPublicBaseUrl } from "@/lib/auth/kratos";
 
 export default function RequireAuth() {
   const { state, actions } = useAppStore();
@@ -14,7 +15,8 @@ export default function RequireAuth() {
       try {
         if (!state.session.authed) {
           async function tryWhoAmI(): Promise<boolean> {
-            const whoami = await fetch("/.ory/kratos/public/sessions/whoami", {
+            const kratosBase = getKratosPublicBaseUrl();
+            const whoami = await fetch(`${kratosBase}/sessions/whoami`, {
               credentials: "include",
             });
             if (whoami.ok) {

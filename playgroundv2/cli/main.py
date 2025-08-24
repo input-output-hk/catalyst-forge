@@ -47,8 +47,17 @@ app.add_typer(dns_app, name="dns")
 
 
 @dns_app.command("pin-registry")
-def dns_pin_registry(host: str = typer.Option("registry.projectcatalyst.dev", "--host")) -> None:
-    """Pin a hostname to Envoy Service ClusterIP in CoreDNS NodeHosts (idempotent)."""
+def dns_pin_registry(
+    host: list[str] = typer.Option(
+        [
+            "registry.projectcatalyst.dev",
+            "auth-mock.projectcatalyst.dev",
+        ],
+        "--host",
+        help="Hostname(s) to pin to the Envoy Service ClusterIP (repeatable)",
+    ),
+) -> None:
+    """Pin one or more hostnames to Envoy Service ClusterIP in CoreDNS NodeHosts (idempotent)."""
     from kubernetes import client, config
 
     # Load kubeconfig
@@ -70,34 +79,143 @@ def dns_pin_registry(host: str = typer.Option("registry.projectcatalyst.dev", "-
     if not corefile:
         raise RuntimeError("CoreDNS Corefile not found")
 
-    # Ensure mapping exists in NodeHosts (file-mode for hosts plugin)
-    mapping_line = f"{envoy_ip} {host}"
+    # Ensure mappings exist in NodeHosts (file-mode for hosts plugin)
     node_lines = node_hosts.splitlines() if node_hosts else []
-    if not any(ln.strip().endswith(f" {host}") for ln in node_lines):
-        node_lines.append(mapping_line)
-        cm.data["NodeHosts"] = "\n".join(node_lines) + "\n"
+    existing = {ln.strip() for ln in node_lines}
+    for h in host:
+        mapping_line = f"{envoy_ip} {h}"
+        if mapping_line not in existing:
+            node_lines.append(mapping_line)
+            existing.add(mapping_line)
+    cm.data["NodeHosts"] = "\n".join(node_lines) + "\n"
 
     # Remove any stray inline mapping lines from Corefile hosts block (avoid parse errors)
-    if host in corefile:
+    if any(h in corefile for h in host):
         pruned: list[str] = []
         for ln in corefile.splitlines():
-            if host in ln and ln.strip().split()[0].replace(".", "").isdigit():
-                # drop inline mapping in Corefile
+            # Drop inline IP mappings for any of the target hosts
+            if any(h in ln for h in host) and ln.strip().split()[0].replace(".", "").isdigit():
                 continue
             pruned.append(ln)
         cm.data["Corefile"] = "\n".join(pruned)
 
     v1.patch_namespaced_config_map("coredns", "kube-system", cm)
-    # Restart CoreDNS
+    # Restart CoreDNS (force new pod template annotation with timestamp)
+    from datetime import datetime
+
+    ts = datetime.utcnow().isoformat() + "Z"
     apps = client.AppsV1Api()
     apps.patch_namespaced_deployment(
         name="coredns",
         namespace="kube-system",
         body={
-            "spec": {"template": {"metadata": {"annotations": {"restartedAt": str(Path.cwd())}}}}
+            "spec": {
+                "template": {"metadata": {"annotations": {"kubectl.kubernetes.io/restartedAt": ts}}}
+            }
         },
     )
     log("CoreDNS updated and restart triggered")
+
+
+@dns_app.command("pin-wildcard")
+def dns_pin_wildcard(
+    domain: str = typer.Option(
+        "projectcatalyst.dev", "--domain", help="Base domain to wildcard to Envoy"
+    ),
+) -> None:
+    """Patch CoreDNS Corefile with a wildcard template that points all subdomains to Envoy.
+
+    Idempotent: updates or inserts a managed block delimited by BEGIN/END markers, placed inside the main .:53 server block.
+    """
+    from kubernetes import client, config
+
+    # Load kubeconfig
+    config.load_kube_config(config_file=str((BASE_DIR / "kubeconfig").resolve()))
+    v1 = client.CoreV1Api()
+
+    # Discover Envoy Service ClusterIP
+    svcs = v1.list_namespaced_service(
+        "envoy-gateway-system", label_selector="app.kubernetes.io/name=envoy"
+    ).items
+    if not svcs:
+        raise RuntimeError("Envoy Service not found in envoy-gateway-system")
+    envoy_ip = svcs[0].spec.cluster_ip
+
+    # Fetch CoreDNS ConfigMap (Corefile)
+    cm = v1.read_namespaced_config_map("coredns", "kube-system")
+    corefile = cm.data.get("Corefile", "")
+    if not corefile:
+        raise RuntimeError("CoreDNS Corefile not found")
+
+    begin = f"# BEGIN catalyst-forge wildcard {domain}"
+    end = f"# END catalyst-forge wildcard {domain}"
+
+    # Remove any existing managed block anywhere
+    if begin in corefile and end in corefile:
+        pre, _, rest = corefile.partition(begin)
+        _, _, post = rest.partition(end)
+        corefile = pre.rstrip() + "\n" + post.lstrip()
+
+    # Build managed block (proper indent inside main server block)
+    escaped_domain = domain.replace(".", "\\.")
+    managed_block = (
+        f"{begin}\n"
+        f"    template IN A {domain} {{\n"
+        f'        match "^([a-z0-9-]+\\.)*{escaped_domain}\\.$"\n'
+        f'        answer "{{{{ .Name }}}} 300 IN A {envoy_ip}"\n'
+        f"        fallthrough\n"
+        f"    }}\n"
+        f"{end}\n"
+    )
+
+    # Insert inside the main .:53 server block before its closing brace
+    lines = corefile.splitlines()
+    start_idx = -1
+    brace_depth = 0
+    in_main = False
+    for i, ln in enumerate(lines):
+        if start_idx < 0 and ln.strip().startswith(".:53") and ln.strip().endswith("{"):
+            start_idx = i
+            brace_depth = 1
+            in_main = True
+            continue
+        if in_main:
+            # Count braces naively
+            brace_depth += ln.count("{")
+            brace_depth -= ln.count("}")
+            if brace_depth == 0:
+                # Insert block just before this closing brace
+                insert_at = i
+                # Ensure a blank line before managed block
+                if insert_at > 0 and lines[insert_at - 1].strip() != "":
+                    managed_block = "\n" + managed_block
+                new_lines = lines[:insert_at] + [managed_block.rstrip("\n")] + lines[insert_at:]
+                cm.data["Corefile"] = "\n".join(new_lines) + "\n"
+                v1.patch_namespaced_config_map("coredns", "kube-system", cm)
+                # Restart CoreDNS to apply changes
+                from datetime import datetime
+
+                ts = datetime.utcnow().isoformat() + "Z"
+                apps = client.AppsV1Api()
+                apps.patch_namespaced_deployment(
+                    name="coredns",
+                    namespace="kube-system",
+                    body={
+                        "spec": {
+                            "template": {
+                                "metadata": {
+                                    "annotations": {"kubectl.kubernetes.io/restartedAt": ts}
+                                }
+                            }
+                        }
+                    },
+                )
+                log(
+                    "CoreDNS wildcard template applied inside main server block and restart triggered"
+                )
+                return
+
+    raise RuntimeError("Could not find main .:53 server block in CoreDNS Corefile")
 
 
 def _generate_assets(

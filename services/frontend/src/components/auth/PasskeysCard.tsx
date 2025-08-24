@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Configuration, FrontendApi } from "@ory/client";
+import { getKratosPublicBaseUrl } from "@/lib/auth/kratos";
 
 type UiNode = {
     group?: string;
@@ -22,8 +23,9 @@ type SettingsFlowLike = {
     };
 };
 
+const kratosBase = getKratosPublicBaseUrl();
 const kratos = new FrontendApi(
-    new Configuration({ basePath: "/.ory/kratos/public", baseOptions: { withCredentials: true } })
+    new Configuration({ basePath: kratosBase, baseOptions: { withCredentials: true } })
 );
 
 function ensureWebAuthnScript(onReady?: () => void): void {
@@ -32,7 +34,7 @@ function ensureWebAuthnScript(onReady?: () => void): void {
     const script = document.createElement("script");
     script.id = id;
     script.async = true;
-    script.src = "/.ory/kratos/public/.well-known/ory/webauthn.js";
+    script.src = `${kratosBase}/.well-known/ory/webauthn.js`;
     if (onReady) script.onload = onReady;
     document.head.appendChild(script);
 }
@@ -107,7 +109,7 @@ export default function PasskeysCard() {
     if (error) return <div className="text-sm text-destructive">{error}</div>;
     if (!flow) return null;
 
-    const action = flow.ui?.action ?? "/.ory/kratos/public/self-service/settings?flow=" + (flow.id ?? "");
+    const action = flow.ui?.action ?? `${kratosBase}/self-service/settings?flow=` + (flow.id ?? "");
     const method = (flow.ui?.method ?? "POST").toUpperCase();
 
     return (
