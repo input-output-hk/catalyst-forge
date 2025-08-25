@@ -1,0 +1,108 @@
+name: Dump GitHub Context
+
+on:
+  push:
+    branches:
+      - '**'
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+  checks: read
+  issues: read
+  pull-requests: read
+
+jobs:
+  dump:
+    name: Collect and upload context data
+    runs-on: ubuntu-latest
+    steps:
+      - name: Prepare dump directory
+        run: |
+          set -euo pipefail
+          mkdir -p dump
+
+      - name: Dump environment variables
+        run: |
+          set -euo pipefail
+          printenv | sort > dump/environment.txt
+
+      - name: Dump event payload
+        run: |
+          set -euo pipefail
+          if [[ -n "${GITHUB_EVENT_PATH:-}" && -f "$GITHUB_EVENT_PATH" ]]; then
+            cp "$GITHUB_EVENT_PATH" dump/event.json
+          else
+            echo "{}" > dump/event.json
+          fi
+
+      - name: Dump GitHub and Runner contexts
+        env:
+          GITHUB_CONTEXT: ${{ toJSON(github) }}
+          RUNNER_CONTEXT: ${{ toJSON(runner) }}
+        run: |
+          set -euo pipefail
+          printf '%s' "$GITHUB_CONTEXT" > dump/github_context.json
+          printf '%s' "$RUNNER_CONTEXT" > dump/runner_context.json
+
+      - name: Query GitHub API for run, jobs, commit details
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          # gh is preinstalled on ubuntu-latest; verify presence
+          if ! command -v gh >/dev/null 2>&1; then
+            echo "gh CLI not found on runner" >&2
+            exit 1
+          fi
+
+          # Basic metadata
+          gh api \
+            repos/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID} \
+            > dump/run.json
+
+          gh api \
+            repos/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}/jobs \
+            > dump/run_jobs.json
+
+          gh api \
+            repos/${GITHUB_REPOSITORY}/commits/${GITHUB_SHA} \
+            > dump/commit.json
+
+          # Workflow file metadata (best-effort)
+          # Obtain workflow_id from run.json if available
+          if command -v jq >/dev/null 2>&1; then
+            workflow_id=$(jq -r '.workflow_id // empty' dump/run.json || true)
+            if [[ -n "${workflow_id:-}" ]]; then
+              gh api repos/${GITHUB_REPOSITORY}/actions/workflows/${workflow_id} \
+                > dump/workflow.json || true
+            fi
+          fi
+
+      - name: Query PR details when applicable
+        if: ${{ github.event_name == 'pull_request' || github.event_name == 'pull_request_target' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          if ! command -v jq >/dev/null 2>&1; then
+            echo "jq not found, skipping PR detail enrichment" >&2
+            exit 0
+          fi
+          pr_number=$(jq -r '.number // empty' dump/event.json || true)
+          if [[ -n "${pr_number:-}" ]]; then
+            gh api repos/${GITHUB_REPOSITORY}/pulls/${pr_number} > dump/pr.json || true
+            gh api repos/${GITHUB_REPOSITORY}/issues/${pr_number} > dump/pr_issue_view.json || true
+          fi
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: github-context-dump
+          path: dump
+          if-no-files-found: warn
+          retention-days: 7
+
+
