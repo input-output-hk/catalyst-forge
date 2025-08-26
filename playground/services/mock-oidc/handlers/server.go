@@ -6,7 +6,9 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"html"
 	"net/http"
+	"net/url"
 	"strings"
 	"time"
 
@@ -32,6 +34,7 @@ type Config struct {
 	AllowPKCEPlain bool
 	ClientPublic   bool
 	SigningKeyPEM  string
+	Override       bool
 	// Future: ExtraIDTokenClaims map[string]any
 	// Future: UserinfoClaimsFromScopes map[string][]string
 }
@@ -55,6 +58,10 @@ type Server struct {
 	kid       string
 	issuerURL string
 	users     map[string]TestUser
+	// Overrides keyed by OAuth2 state; ephemeral, in-memory.
+	overrides map[string]TestUser
+	// Per-subject overrides used by userinfo after token exchange.
+	subjectOverrides map[string]TestUser
 }
 
 func Must32Bytes(s string) []byte {
@@ -97,13 +104,15 @@ func NewServerFromConfig(cfg *Config, rsaKey *rsa.PrivateKey, users map[string]T
 	oauth := compose.ComposeAllEnabled(fc, store, rsaKey)
 
 	s := &Server{
-		cfg:       cfg,
-		oauth:     oauth,
-		store:     store,
-		rsaKey:    rsaKey,
-		kid:       KidForKey(&rsaKey.PublicKey),
-		issuerURL: fmt.Sprintf("%s/%s", cfg.BaseURL, cfg.IssuerID),
-		users:     users,
+		cfg:              cfg,
+		oauth:            oauth,
+		store:            store,
+		rsaKey:           rsaKey,
+		kid:              KidForKey(&rsaKey.PublicKey),
+		issuerURL:        fmt.Sprintf("%s/%s", cfg.BaseURL, cfg.IssuerID),
+		users:            users,
+		overrides:        make(map[string]TestUser),
+		subjectOverrides: make(map[string]TestUser),
 	}
 	return s, nil
 }
@@ -162,6 +171,118 @@ func (s *Server) HandleJWKS(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) HandleAuthorize(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
+
+	// If override is enabled, present a lightweight consent/edit page before proceeding.
+	if s.cfg.Override {
+		// Detect POST from consent form
+		if r.Method == http.MethodPost && r.Header.Get("Content-Type") != "application/json" {
+			_ = r.ParseForm()
+			if r.Form.Get("_action") == "submit_override" {
+				state := r.Form.Get("state")
+				sub := r.Form.Get("sub")
+				claimsJSON := r.Form.Get("claims_json")
+				var claims map[string]any
+				if err := json.Unmarshal([]byte(claimsJSON), &claims); err != nil {
+					http.Error(w, "invalid claims_json", http.StatusBadRequest)
+					return
+				}
+				u := TestUser{Sub: sub, Extra: map[string]any{}}
+				// Map common known claims for convenience
+				if v, ok := claims["email"].(string); ok {
+					u.Email = v
+				}
+				if v, ok := claims["email_verified"].(bool); ok {
+					u.EmailVerified = v
+				}
+				if v, ok := claims["name"].(string); ok {
+					u.Name = v
+				}
+				if v, ok := claims["given_name"].(string); ok {
+					u.GivenName = v
+				}
+				if v, ok := claims["family_name"].(string); ok {
+					u.FamilyName = v
+				}
+				if v, ok := claims["picture"].(string); ok {
+					u.Picture = v
+				}
+				for k, v := range claims {
+					u.Extra[k] = v
+				}
+				if state == "" {
+					http.Error(w, "missing state", http.StatusBadRequest)
+					return
+				}
+				// Store override for this state
+				s.overrides[state] = u
+				// Reconstruct GET authorize URL with original params and an _consented=1 flag
+				vals := url.Values{}
+				for k, vv := range r.Form {
+					for _, v := range vv {
+						vals.Add(k, v)
+					}
+				}
+				vals.Del("_action")
+				vals.Set("_consented", "1")
+				redir := s.issuerURL + "/authorize?" + vals.Encode()
+				if !strings.Contains(redir, "_consented=") {
+					if strings.Contains(redir, "?") {
+						redir += "&"
+					} else {
+						redir += "?"
+					}
+					redir += "_consented=1"
+				}
+				http.Redirect(w, r, redir, http.StatusSeeOther)
+				return
+			}
+		}
+		// If GET and not yet consented, render the form
+		if r.Method == http.MethodGet && r.URL.Query().Get("_consented") != "1" {
+			// Choose base persona/user
+			userKey := r.URL.Query().Get("user")
+			if userKey == "" {
+				if _, hasDefault := s.users["default"]; hasDefault {
+					userKey = "default"
+				} else {
+					for k := range s.users {
+						userKey = k
+						break
+					}
+				}
+			}
+			u := s.users[userKey]
+			claims := map[string]any{
+				"email":          u.Email,
+				"email_verified": u.EmailVerified,
+				"name":           u.Name,
+				"given_name":     u.GivenName,
+				"family_name":    u.FamilyName,
+				"picture":        u.Picture,
+			}
+			for k, v := range u.Extra {
+				claims[k] = v
+			}
+			b, _ := json.MarshalIndent(claims, "", "  ")
+			w.Header().Set("Content-Type", "text/html; charset=utf-8")
+			fmt.Fprintf(w, "<html><head><title>Consent - %s</title></head><body>", html.EscapeString(s.cfg.IssuerID))
+			fmt.Fprintf(w, "<h3>Override identity for provider %s</h3>", html.EscapeString(s.cfg.IssuerID))
+			fmt.Fprintf(w, "<form method=\"post\" action=\"%s/authorize\">", html.EscapeString(s.issuerURL))
+			fmt.Fprintf(w, "<input type=\"hidden\" name=\"_action\" value=\"submit_override\">")
+			// Preserve original authorize params
+			preserveParams := []string{"client_id", "redirect_uri", "response_type", "scope", "state", "nonce", "code_challenge", "code_challenge_method", "user"}
+			for _, k := range preserveParams {
+				if v := r.URL.Query().Get(k); v != "" {
+					fmt.Fprintf(w, "<input type=\"hidden\" name=\"%s\" value=\"%s\">", html.EscapeString(k), html.EscapeString(v))
+				}
+			}
+			fmt.Fprintf(w, "<div><label>sub</label><br><input name=\"sub\" value=\"%s\" style=\"width: 100%%\"></div>", html.EscapeString(u.Sub))
+			fmt.Fprintf(w, "<div><label>claims_json</label><br><textarea name=\"claims_json\" rows=\"20\" style=\"width: 100%%\">%s</textarea></div>", html.EscapeString(string(b)))
+			fmt.Fprintf(w, "<div><button type=\"submit\">Continue</button></div>")
+			fmt.Fprintf(w, "</form></body></html>")
+			return
+		}
+	}
 	ar, err := s.oauth.NewAuthorizeRequest(ctx, r)
 	if err != nil {
 		s.oauth.WriteAuthorizeError(ctx, w, ar, err)
@@ -187,6 +308,48 @@ func (s *Server) HandleAuthorize(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		http.Error(w, fmt.Sprintf("unknown user key %q", userKey), http.StatusBadRequest)
 		return
+	}
+	// Apply override if present for this state
+	if s.cfg.Override {
+		state := ar.GetState()
+		if ov, has := s.overrides[state]; has {
+			user = ov
+			// Persist by subject for userinfo lookups
+			s.subjectOverrides[user.Sub] = ov
+			delete(s.overrides, state)
+		} else if r.URL.Query().Get("_consented") == "1" {
+			// Fallback: reconstruct override from GET query if not found in memory
+			cj := r.URL.Query().Get("claims_json")
+			if cj != "" {
+				var claims map[string]any
+				if err := json.Unmarshal([]byte(cj), &claims); err == nil {
+					u2 := TestUser{Sub: r.URL.Query().Get("sub"), Extra: map[string]any{}}
+					if v, ok := claims["email"].(string); ok {
+						u2.Email = v
+					}
+					if v, ok := claims["email_verified"].(bool); ok {
+						u2.EmailVerified = v
+					}
+					if v, ok := claims["name"].(string); ok {
+						u2.Name = v
+					}
+					if v, ok := claims["given_name"].(string); ok {
+						u2.GivenName = v
+					}
+					if v, ok := claims["family_name"].(string); ok {
+						u2.FamilyName = v
+					}
+					if v, ok := claims["picture"].(string); ok {
+						u2.Picture = v
+					}
+					for k, v := range claims {
+						u2.Extra[k] = v
+					}
+					user = u2
+					s.subjectOverrides[user.Sub] = u2
+				}
+			}
+		}
 	}
 	now := time.Now()
 	extra := map[string]any{
@@ -306,39 +469,72 @@ func (s *Server) HandleUserinfo(w http.ResponseWriter, r *http.Request) {
 	}
 	subject := sess.Subject
 	var u *TestUser
-	for _, candidate := range s.users {
-		if candidate.Sub == subject {
-			cc := candidate
-			u = &cc
-			break
+	if ov, ok := s.subjectOverrides[subject]; ok {
+		cc := ov
+		u = &cc
+	} else {
+		for _, candidate := range s.users {
+			if candidate.Sub == subject {
+				cc := candidate
+				u = &cc
+				break
+			}
 		}
 	}
 	out := map[string]any{"sub": subject}
 	if granted["email"] {
-		if u != nil {
-			out["email"] = u.Email
-			out["email_verified"] = u.EmailVerified
-		} else {
-			out["email"] = claimString(sess, "email")
-			out["email_verified"] = claimBool(sess, "email_verified")
+		// Prefer session claims (edited) over persona defaults
+		email := claimString(sess, "email")
+		emailVerified := claimBool(sess, "email_verified")
+		if email == "" && u != nil {
+			email = u.Email
 		}
+		if !emailVerified && u != nil {
+			emailVerified = u.EmailVerified
+		}
+		if email != "" {
+			out["email"] = email
+		}
+		out["email_verified"] = emailVerified
 	}
 	if granted["profile"] {
-		if u != nil {
-			out["name"] = u.Name
-			out["given_name"] = u.GivenName
-			out["family_name"] = u.FamilyName
-			out["picture"] = u.Picture
-			for k, v := range u.Extra {
-				if k == "hd" {
-					out[k] = v
-				}
+		name := claimString(sess, "name")
+		given := claimString(sess, "given_name")
+		family := claimString(sess, "family_name")
+		picture := claimString(sess, "picture")
+		if name == "" && u != nil {
+			name = u.Name
+		}
+		if given == "" && u != nil {
+			given = u.GivenName
+		}
+		if family == "" && u != nil {
+			family = u.FamilyName
+		}
+		if picture == "" && u != nil {
+			picture = u.Picture
+		}
+		if name != "" {
+			out["name"] = name
+		}
+		if given != "" {
+			out["given_name"] = given
+		}
+		if family != "" {
+			out["family_name"] = family
+		}
+		if picture != "" {
+			out["picture"] = picture
+		}
+		// Include selected extras like hd; prefer session extras
+		hd := claimString(sess, "hd")
+		if hd == "" && u != nil {
+			if v, ok := u.Extra["hd"].(string); ok {
+				hd = v
 			}
-		} else {
-			out["name"] = claimString(sess, "name")
-			out["given_name"] = claimString(sess, "given_name")
-			out["family_name"] = claimString(sess, "family_name")
-			out["picture"] = claimString(sess, "picture")
+		}
+		if hd != "" {
+			out["hd"] = hd
 		}
 	}
 	writeJSON(w, http.StatusOK, out)

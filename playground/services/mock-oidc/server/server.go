@@ -74,6 +74,7 @@ func NewMuxFromFileConfig(fc *cfgpkg.FileConfig) (http.Handler, error) {
 			AllowPKCEPlain: u.BoolOrDefault(pc.AllowPKCEPlain, fc.AllowPKCEPlain),
 			ClientPublic:   pc.Public,
 			SigningKeyPEM:  pc.SigningKeyPEM,
+			Override:       pc.Override,
 		}
 		priv, err := loadOrGenerateKey(cfg)
 		if err != nil {

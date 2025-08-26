@@ -27,6 +27,7 @@ type ProviderConfig struct {
 	SigningKeyPEM            string                   `yaml:"signing_key_pem"`
 	AllowPKCEPlain           *bool                    `yaml:"allow_pkce_plain"`
 	BaseURL                  string                   `yaml:"base_url"`
+	Override                 bool                     `yaml:"override"`
 }
 
 type ProviderClientConfig struct {

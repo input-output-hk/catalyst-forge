@@ -82,8 +82,9 @@ deployments: {
 					base_url: "https://oidc.projectcatalyst.dev"
 					providers: [
 						{
-							id:     "google"
-							public: false
+							id:       "google"
+							public:   false
+							override: true
 							client: {
 								id:     "kratos-mock-client"
 								secret: "kratos-mock-secret"

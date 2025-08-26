@@ -6,6 +6,9 @@ allow_pkce_plain: false
 providers:
   - id: "default"
     public: true
+    # When true, the authorize flow shows a consent page allowing you to edit
+    # user identity and claims for this login only (useful for testing).
+    override: false
     client:
       id: "kratos-client"
       secret: "kratos-secret"
@@ -25,6 +28,8 @@ providers:
 
   - id: "google"
     public: false
+    # Enable override mode for this provider (optional)
+    # override: true
     client:
       id: "google-client"
       secret: "google-secret"

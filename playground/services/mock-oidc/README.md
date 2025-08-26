@@ -11,6 +11,7 @@ A lightweight, multi-issuer OpenID Connect server for local development and CI. 
 - Deterministic JWKS when a PEM signing key is provided.
 - Personas with arbitrary extra claims (e.g., `hd`) merged into ID tokens and userinfo.
 - Optional refresh token issuance (see policy).
+- Optional per-provider override mode to edit identity/claims at authorize time for testing.
 
 ## Quick start
 
@@ -39,6 +40,9 @@ allow_pkce_plain: false
 providers:
   - id: "default"
     public: true
+    # When true, the authorize flow shows a consent page allowing you to edit
+    # user identity and claims for this login only (useful for testing).
+    override: false
     client:
       id: "kratos-client"
       secret: "kratos-secret"
@@ -53,6 +57,8 @@ providers:
           hd: "example.com"
   - id: "google"
     public: false
+    # Enable override mode for this provider (optional)
+    # override: true
     client:
       id: "google-client"
       secret: "google-secret"
@@ -90,6 +96,7 @@ Global convenience redirects:
 - Define personas and claims per provider in YAML.
 - The server merges persona claims into the ID token’s `extra` and exposes them from `/userinfo` when appropriate.
 - Example: the `hd` (hosted domain) claim is included in ID tokens and returned by `/userinfo` when scope includes `profile`.
+- When override mode is enabled, the consent page lets you modify `sub` and arbitrary claims (via JSON) for this login only; these values are reflected in the ID token and `/userinfo` responses.
 
 ## PKCE and client types
 
