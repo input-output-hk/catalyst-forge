@@ -1,0 +1,21 @@
+set shell := ["/bin/sh", "-cu"]
+
+# Start mock-oidc via docker-compose
+up:
+	earthly --config "" +docker
+	docker compose up -d --build
+	just wait
+
+# Tail logs
+logs:
+	docker compose logs -f --tail=200
+
+# Stop and remove containers
+down:
+	docker compose down -v
+
+# Wait for health endpoint
+wait:
+	until curl -fsS http://localhost:8080/healthz >/dev/null; do echo "waiting for mock-oidc..."; sleep 1; done; echo "mock-oidc ready"
+
+

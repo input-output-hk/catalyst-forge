@@ -69,6 +69,9 @@ func RegisterDomainRoutes(r *gin.Engine, deps DomainDeps) {
 		}
 	}
 
+	// Register simple test endpoint for header inspection
+	RegisterTest(r)
+
 	RegisterDeployments(r, DeploymentDeps{H: h.Deployment})
 	RegisterArtifacts(r, ArtifactDeps{H: h.Artifact})
 	RegisterEnvironments(r, EnvironmentDeps{H: h.Environment})

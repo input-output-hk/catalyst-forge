@@ -1,0 +1,68 @@
+# Justfile for local playground: K3d + Helmfile (Envoy Gateway, registry)
+
+PROJROOT := justfile_directory()
+
+default:
+	@just --list
+
+# Create or reuse local cluster and write kubeconfig/cluster.json
+k3d:
+	cd "{{PROJROOT}}/cli" && PYTHONPATH="{{PROJROOT}}/.." uv run python -m playground.cli.main k3d --yes
+
+# Pin registry.projectcatalyst.dev to local cluster
+pin-registry:
+	cd "{{PROJROOT}}/cli" && PYTHONPATH="{{PROJROOT}}/.." uv run python -m playground.cli.main dns pin-registry --host registry.projectcatalyst.dev
+
+# Pin wildcard to local cluster
+pin-wildcard:
+	cd "{{PROJROOT}}/cli" && PYTHONPATH="{{PROJROOT}}/.." uv run python -m playground.cli.main dns pin-wildcard
+
+# Generate local TLS certs and Earthly config
+generate:
+	cd "{{PROJROOT}}/cli" && PYTHONPATH="{{PROJROOT}}/.." uv run python -m playground.cli.main generate
+
+# Initialize PostgreSQL for dependent apps
+migrate:
+	cd "{{PROJROOT}}/cli" && PYTHONPATH="{{PROJROOT}}/.." uv run python -m playground.cli.main migrate
+
+# Create or reuse local cluster and write kubeconfig/cluster.json
+up: k3d apply pin-registry generate migrate deploy-all
+
+# Tear down cluster
+down name="forge":
+    cd "{{PROJROOT}}/cli" && PYTHONPATH="{{PROJROOT}}/.." uv run python -m playground.cli.main down --name {{name}}
+
+# Apply base platform
+apply:
+	cd "{{PROJROOT}}/helmfile" && helmfile apply
+
+# Sync base platform
+sync:
+	cd "{{PROJROOT}}/helmfile" && helmfile sync
+
+# Build, push, and deploy a service to the cluster
+deploy service="api":
+	cd "{{PROJROOT}}/cli" && PYTHONPATH="{{PROJROOT}}/.." uv run python -m playground.cli.main deploy {{service}}
+
+deploy-all:
+	just deploy api
+	just deploy frontend
+
+# Run lint, formatting (check-only), and type checks
+check:
+	#!/usr/bin/env bash
+	set -euo pipefail
+	cd "{{PROJROOT}}/cli"
+	# Ensure tools resolve via uv without requiring a pre-synced venv
+	uv run ruff check .
+	uv run ruff format --check .
+	# Run mypy using uv; set PYTHONPATH so package imports resolve
+	PYTHONPATH="{{PROJROOT}}/.." uv run mypy .
+
+# CLI: auto-format and fix lint issues
+format:
+	#!/usr/bin/env bash
+	set -euo pipefail
+	cd "{{PROJROOT}}/cli"
+	uv run ruff format .
+	uv run ruff check --fix .

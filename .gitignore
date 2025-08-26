@@ -21,3 +21,5 @@ node_modules
 .claude
 .cursor
 CLAUDE.md
+
+github-context-dump/*

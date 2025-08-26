@@ -1,0 +1,41 @@
+listen_addr: ":8080"
+base_url: "http://localhost:8080"
+global_secret: "0123456789abcdef0123456789abcdef" # exactly 32 bytes
+allow_pkce_plain: false
+
+providers:
+  - id: "default"
+    public: true
+    client:
+      id: "kratos-client"
+      secret: "kratos-secret"
+      redirect_uris: ["http://localhost:18080/callback"]
+    personas:
+      default:
+        sub: "00000000-0000-0000-0000-000000000001"
+        claims:
+          email: "test@example.com"
+          email_verified: true
+          name: "Test User"
+    extra_id_token_claims:
+      hd: "example.com"
+    userinfo_claims_from_scopes:
+      email: ["email", "email_verified"]
+      profile: ["name", "given_name", "family_name", "picture"]
+
+  - id: "google"
+    public: false
+    client:
+      id: "google-client"
+      secret: "google-secret"
+      redirect_uris: ["http://localhost:18080/callback"]
+    personas:
+      acme:
+        sub: "11111111-1111-1111-1111-111111111111"
+        claims:
+          email: "user@acme.com"
+          email_verified: true
+          name: "G Suite User"
+          hd: "acme.com"
+    extra_id_token_claims:
+      azp: "google-client"
