@@ -9,10 +9,6 @@ default:
 k3d:
 	cd "{{PROJROOT}}/cli" && PYTHONPATH="{{PROJROOT}}/.." uv run python -m playground.cli.main k3d --yes
 
-# Pin registry.projectcatalyst.dev to local cluster
-pin-registry:
-	cd "{{PROJROOT}}/cli" && PYTHONPATH="{{PROJROOT}}/.." uv run python -m playground.cli.main dns pin-registry --host registry.projectcatalyst.dev
-
 # Pin wildcard to local cluster
 pin-wildcard:
 	cd "{{PROJROOT}}/cli" && PYTHONPATH="{{PROJROOT}}/.." uv run python -m playground.cli.main dns pin-wildcard
@@ -25,8 +21,22 @@ generate:
 migrate:
 	cd "{{PROJROOT}}/cli" && PYTHONPATH="{{PROJROOT}}/.." uv run python -m playground.cli.main migrate
 
+# Run environment setup tasks (optionally specify tasks via args: e.g., `just setup hydra`)
+setup *tasks:
+	#!/usr/bin/env bash
+	set -euo pipefail
+	cd "{{PROJROOT}}/cli"
+	if [ "$#" -eq 0 ]; then
+		PYTHONPATH="{{PROJROOT}}/.." uv run python -m playground.cli.main setup
+	else
+		# Pass each argument as --only to filter tasks
+		args=()
+		for t in "$@"; do args+=(--only "$t"); done
+		PYTHONPATH="{{PROJROOT}}/.." uv run python -m playground.cli.main setup "${args[@]}"
+	fi
+
 # Create or reuse local cluster and write kubeconfig/cluster.json
-up: k3d apply pin-registry generate migrate deploy-all
+up: k3d apply pin-wildcard generate migrate deploy-all
 
 # Tear down cluster
 down name="forge":

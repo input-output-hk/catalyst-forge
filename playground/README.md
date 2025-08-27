@@ -64,9 +64,9 @@ SMTP endpoint is available inside the cluster at `mailpit.mailpit.svc.cluster.lo
 just earthly api
 ```
 
-### deployments.cue configuration
+### config.cue configuration
 
-`playground/deployments.cue` is the single source of truth for local service deployments. It centralizes:
+`playground/config.cue` is the single source of truth for local playground configuration. It centralizes:
 
 - **registry**: The in-cluster registry hostname used for pushed images.
 - **deployments.<service>**: Per-service build and deployment configuration:
@@ -75,7 +75,7 @@ just earthly api
   - **image.name / image.tag**: Image name and tag (without registry).
   - **overrides**: CUE fragment applied as `env.mod.cue` during templating. This can reference top-level values (e.g., `registry`) and the service’s own fields via CUE interpolation.
 
-Example:
+Example (deployments section):
 ```cue
 registry: "registry.projectcatalyst.dev"
 
@@ -101,7 +101,7 @@ deployments: {
 }
 ```
 
-#### How the deploy flow uses `deployments.cue`
+#### How the deploy flow uses `config.cue`
 
 When you run the deploy command:
 
@@ -111,18 +111,18 @@ uv run python -m playground.cli.main deploy <service>
 
 The CLI will:
 
-- Read `registry` and `deployments.<service>.{project,target,image}` via `cue export playground/deployments.cue`.
+- Read `registry` and `deployments.<service>.{project,target,image}` via `cue export playground/config.cue`.
 - Generate a temporary Earthfile in a temp directory with a single `docker` target:
   - `FROM <abs_repo_root>/<project>+<target>`
   - `SAVE IMAGE --push <registry>/<image.name>:<image.tag>`
 - Write `env.mod.cue` from `deployments.<service>.overrides` via:
-  - `cue eval -e "deployments.<service>.overrides" playground/deployments.cue`
+  - `cue eval -e "deployments.<service>.overrides" playground/config.cue`
 - Build and push with Earthly using the above Earthfile (with `--config playground/config/earthly.yml`).
 - Run `mod dump` / `mod template` to render manifests and apply them with `kubectl` to the local k3d cluster.
 
 #### Adding a new service
 
-1. Add a new entry under `deployments` in `playground/deployments.cue` with `project`, `target`, `image` and optional `overrides`.
+1. Add a new entry under `deployments` in `playground/config.cue` with `project`, `target`, `image` and optional `overrides`.
 2. Ensure the referenced Earthly target exists at `<project>+<target>`.
 3. Deploy it:
    ```bash

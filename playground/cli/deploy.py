@@ -21,7 +21,9 @@ import tempfile
 from dataclasses import dataclass
 from pathlib import Path
 
-from .utils import err, log, require_cmd, run, get_repo_root
+from .utils import err, log, require_cmd, get_repo_root
+from .runner import CommandRunner
+from .config import get_default_config_path
 
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -35,16 +37,19 @@ class DeployPaths:
     playground_dir: Path
     earthly_config: Path
     cli_main_go: Path
-    deployments_cue: Path
+    config_cue: Path
     kubeconfig: Path
 
 
-def _resolve_paths(service_name: str, kubeconfig_opt: Path | None) -> DeployPaths:
+def _resolve_paths(
+    service_name: str, kubeconfig_opt: Path | None, config_path: Path | None
+) -> DeployPaths:
     """Compute canonical paths used by the deploy flow.
 
     Args:
         service_name: Name of the service under `services/`.
         kubeconfig_opt: Optional explicit kubeconfig path.
+        config_path: Optional explicit config.cue path.
 
     Returns:
         DeployPaths with absolute Paths for all required artifacts.
@@ -53,7 +58,9 @@ def _resolve_paths(service_name: str, kubeconfig_opt: Path | None) -> DeployPath
     playground_dir = repo_root / "playground"
     earthly_config = (playground_dir / "config/earthly.yml").resolve()
     cli_main_go = repo_root / "cli/cmd/main.go"
-    deployments_cue = playground_dir / "deployments.cue"
+    config_cue = (
+        config_path.resolve() if config_path is not None else get_default_config_path(repo_root)
+    )
 
     # Kubeconfig precedence: explicit option -> $KUBECONFIG -> default path
     kubeconfig_env = os.environ.get("KUBECONFIG")
@@ -70,7 +77,7 @@ def _resolve_paths(service_name: str, kubeconfig_opt: Path | None) -> DeployPath
         playground_dir=playground_dir,
         earthly_config=earthly_config,
         cli_main_go=cli_main_go,
-        deployments_cue=deployments_cue,
+        config_cue=config_cue,
         kubeconfig=kubeconfig,
     )
 
@@ -86,8 +93,8 @@ def _preflight(paths: DeployPaths) -> None:
     if not paths.cli_main_go.is_file():
         err(f"CLI entrypoint not found at '{paths.cli_main_go}'.")
         raise SystemExit(1)
-    if not paths.deployments_cue.is_file():
-        err(f"Deployments config not found: '{paths.deployments_cue}'.")
+    if not paths.config_cue.is_file():
+        err(f"Configuration file not found: '{paths.config_cue}'.")
         raise SystemExit(1)
     if not paths.kubeconfig.is_file():
         err(
@@ -119,11 +126,12 @@ def _read_deployments_config(paths: DeployPaths, service_name: str) -> Deploymen
         DeploymentConfig with required fields.
     """
     log("Reading deployment configuration from CUE...")
-    cp = run(
+    runner = CommandRunner()
+    cp = runner.run(
         [
             "cue",
             "export",
-            str(paths.deployments_cue),
+            str(paths.config_cue),
         ],
         capture=True,
         cwd=paths.playground_dir,
@@ -192,7 +200,8 @@ def _earthly_build_push(paths: DeployPaths, tmpdir: Path) -> None:
     """Run Earthly build and push for the generated Earthfile target."""
     log("Running Earthly build and push...")
     target_ref = f"{tmpdir}+docker"
-    run(
+    runner = CommandRunner()
+    runner.run(
         [
             "earthly",
             "--config",
@@ -217,26 +226,26 @@ def _generate_module(paths: DeployPaths, tmpdir: Path, service_project: str) -> 
         str((paths.repo_root / service_project).resolve()),
     ]
     # Run from the CLI repo dir so relative module paths mirror the shell script
-    cp = run(cmd, capture=True, env={**os.environ}, cwd=paths.repo_root / "cli")
+    runner = CommandRunner()
+    cp = runner.run(cmd, capture=True, env={**os.environ}, cwd=paths.repo_root / "cli")
     mod_path = tmpdir / "mod.cue"
     mod_path.write_text(cp.stdout or "")
     return mod_path
 
 
-def _write_env_override_from_cue(
-    paths: DeployPaths, service_name: str, tmpdir: Path
-) -> Path:
+def _write_env_override_from_cue(paths: DeployPaths, service_name: str, tmpdir: Path) -> Path:
     """Write the environment override CUE into the temp module folder via `cue eval`."""
     log("Writing env overrides from CUE to temporary module...")
     dst = tmpdir / "env.mod.cue"
     expr = f"deployments.{service_name}.overrides"
-    cp = run(
+    runner = CommandRunner()
+    cp = runner.run(
         [
             "cue",
             "eval",
             "-e",
             expr,
-            str(paths.deployments_cue),
+            str(paths.config_cue),
         ],
         capture=True,
         cwd=paths.playground_dir,
@@ -259,7 +268,8 @@ def _render_template(paths: DeployPaths, tmpdir: Path, mod_path: Path) -> None:
         str(tmpdir),
         str(mod_path),
     ]
-    run(cmd, env={**os.environ}, cwd=paths.repo_root / "cli")
+    runner = CommandRunner()
+    runner.run(cmd, env={**os.environ}, cwd=paths.repo_root / "cli")
 
 
 def _find_manifest_file(tmpdir: Path) -> Path | None:
@@ -275,17 +285,21 @@ def _apply_manifests(kubeconfig: Path, tmpdir: Path) -> None:
     """Apply all manifests in the temporary directory with kubectl."""
     env = {**os.environ, "KUBECONFIG": str(kubeconfig)}
     # Log current context, if possible
+    runner = CommandRunner()
     try:
-        cp = run(["kubectl", "config", "current-context"], capture=True, env=env)
+        cp = runner.run(["kubectl", "config", "current-context"], capture=True, env=env)
         context = (cp.stdout or "").strip() or "unknown"
     except Exception:
         context = "unknown"
     log(f"Applying Kubernetes manifests from {tmpdir} (context: {context})...")
-    run(["kubectl", "apply", "-f", str(tmpdir)], env=env)
+    runner.run(["kubectl", "apply", "-f", str(tmpdir)], env=env)
 
 
 def deploy_service(
-    service_name: str, kubeconfig_opt: Path | None = None, show_manifest: bool = True
+    service_name: str,
+    kubeconfig_opt: Path | None = None,
+    show_manifest: bool = True,
+    config_path: Path | None = None,
 ) -> None:
     """Run the full deploy pipeline for a given service.
 
@@ -294,7 +308,7 @@ def deploy_service(
         kubeconfig_opt: Optional override path to the kubeconfig file.
         show_manifest: If True, prints the selected manifest to stdout.
     """
-    paths = _resolve_paths(service_name, kubeconfig_opt)
+    paths = _resolve_paths(service_name, kubeconfig_opt, config_path)
     log(f"Service: {service_name}")
     log(f"Root dir: {paths.repo_root}")
     log(f"Playground dir: {paths.playground_dir}")

@@ -21,12 +21,14 @@ hydra:
     urls:
       self:
         issuer: https://auth.projectcatalyst.dev/hydra/public
-      login: https://auth.projectcatalyst.dev/hydra/ui/login
-      consent: https://auth.projectcatalyst.dev/hydra/ui/consent
+      login: https://auth.projectcatalyst.dev/api/v1/oauth2/login
+      consent: https://auth.projectcatalyst.dev/api/v1/oauth2/consent
       logout: https://auth.projectcatalyst.dev/hydra/ui/logout
       post_logout_redirect: https://forge.projectcatalyst.dev/
 
     oauth2:
+      token_hook:
+        url: https://auth.projectcatalyst.dev/api/v1/hydra/token-hook
       pkce:
         enforced_for_public_clients: true
     strategies:

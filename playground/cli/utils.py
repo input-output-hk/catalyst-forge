@@ -10,8 +10,7 @@ import os
 import subprocess
 import sys
 from pathlib import Path
-from typing import Any, Mapping, Sequence, overload
-from typing_extensions import Literal
+from typing import Any  # noqa: F401  (used for type hints in some dynamic contexts)
 
 
 def log(message: str) -> None:
@@ -71,55 +70,7 @@ def require_cmd(name: str) -> None:
         raise SystemExit(1)
 
 
-@overload
-def run(
-    args: Sequence[str],
-    check: bool = True,
-    capture: Literal[True] = True,
-    env: Mapping[str, str] | None = None,
-    cwd: str | Path | None = None,
-) -> subprocess.CompletedProcess[str]: ...
-
-
-@overload
-def run(
-    args: Sequence[str],
-    check: bool = True,
-    capture: Literal[False] = False,
-    env: Mapping[str, str] | None = None,
-    cwd: str | Path | None = None,
-) -> subprocess.CompletedProcess[object]: ...
-
-
-def run(
-    args: Sequence[str],
-    check: bool = True,
-    capture: bool = False,
-    env: Mapping[str, str] | None = None,
-    cwd: str | Path | None = None,
-) -> subprocess.CompletedProcess[Any]:
-    """Execute a subprocess command with optional capture.
-
-    Args:
-        args: Command and arguments to execute.
-        check: Whether to raise on non-zero exit status.
-        capture: When True, capture stdout/stderr as text.
-        env: Optional environment to pass to the subprocess.
-
-    Returns:
-        CompletedProcess with stdout/stderr as text when capture=True, otherwise bytes.
-    """
-    if capture:
-        return subprocess.run(
-            args,
-            check=check,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            text=True,
-            env=env,
-            cwd=str(cwd) if cwd is not None else None,
-        )
-    return subprocess.run(args, check=check, env=env, cwd=str(cwd) if cwd is not None else None)
+# The old run() helper has been replaced by playground.cli.runner.CommandRunner
 
 
 def get_client_cert_paths(cert_dir: Path, base_name: str) -> dict[str, Path]:

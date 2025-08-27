@@ -3,11 +3,14 @@ from __future__ import annotations
 import json
 from typing import Any
 
-from ..utils import log, run
+from ..utils import log
+from ..runner import CommandRunner
 
 
 def _get_localstack_pod(namespace: str = "localstack") -> str:
-    cp = run(["kubectl", "-n", namespace, "get", "pods", "-o", "json"], capture=True)
+    cp = CommandRunner().run(
+        ["kubectl", "-n", namespace, "get", "pods", "-o", "json"], capture=True
+    )
     try:
         data = json.loads(cp.stdout or "{}")
         items = data.get("items", [])
@@ -22,11 +25,11 @@ def _get_localstack_pod(namespace: str = "localstack") -> str:
 
 
 def _awslocal(pod: str, args: list[str], namespace: str = "localstack") -> None:
-    run(["kubectl", "-n", namespace, "exec", pod, "--", "awslocal", *args])
+    CommandRunner().run(["kubectl", "-n", namespace, "exec", pod, "--", "awslocal", *args])
 
 
 def _awslocal_capture(pod: str, args: list[str], namespace: str = "localstack") -> int:
-    cp = run(
+    cp = CommandRunner().run(
         ["kubectl", "-n", namespace, "exec", pod, "--", "awslocal", *args],
         check=False,
         capture=True,

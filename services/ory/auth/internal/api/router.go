@@ -22,6 +22,9 @@ func SetupRouter(cfg *config.Config) *gin.Engine {
 	// Initialize handler deps
 	h := handlers.NewHandlers(cfg)
 
+	// Canonical health endpoint
+	r.GET("/healthz", h.Health)
+
 	// Versioned API group
 	v1 := r.Group("/api/v1")
 	{
@@ -29,9 +32,6 @@ func SetupRouter(cfg *config.Config) *gin.Engine {
 		v1.GET("/oauth2/consent", h.ConsentGet)
 		v1.POST("/oauth2/consent", h.ConsentPost)
 		v1.POST("/hydra/token-hook", h.TokenHook)
-
-		// Health within API group per requirement
-		v1.GET("/health", h.Health)
 
 		// Prometheus metrics endpoint
 		v1.GET("/metrics", gin.WrapH(promhttp.Handler()))

@@ -425,6 +425,47 @@ releases:
         command: kubectl
         args: ["apply", "-f", "platform/envoy/hydra-routes.yaml"]
         showlogs: true
+      - events: ["postsync"]
+        command: sh
+        args:
+          - -c
+          - |
+            set -euo pipefail
+            # Wait for hydra admin to be ready
+            kubectl -n auth rollout status deploy/hydra --timeout=180s
+            # Port-forward admin locally and register/update a public PKCE client for CLI
+            pf_pid=""
+            cleanup() { if [ -n "$pf_pid" ]; then kill "$pf_pid" || true; fi }
+            trap cleanup EXIT
+            kubectl -n auth port-forward svc/hydra-admin 8445:4445 >/dev/null 2>&1 & pf_pid=$!
+            for i in $(seq 1 30); do if curl -sk https://127.0.0.1:8445/health/ready >/dev/null; then break; fi; sleep 1; done
+            # Upsert client using Hydra admin API
+            cat > /tmp/forge-cli.json <<'JSON'
+            {
+              "client_id": "forge-cli",
+              "client_name": "Forge CLI (dev)",
+              "token_endpoint_auth_method": "none",
+              "grant_types": ["authorization_code", "refresh_token"],
+              "response_types": ["code"],
+              "scope": "openid offline",
+              "redirect_uris": [
+                "http://127.0.0.1:49152/callback",
+                "http://127.0.0.1:34567/callback"
+              ],
+              "post_logout_redirect_uris": [
+                "http://127.0.0.1:49152/logout"
+              ],
+              "token_endpoint_auth_signing_alg": "RS256",
+              "backchannel_logout_session_required": false,
+              "frontchannel_logout_session_required": false
+            }
+            JSON
+            # Try create, else update
+            if ! curl -sk -X POST "https://127.0.0.1:8445/admin/clients" -H 'content-type: application/json' --data-binary @/tmp/forge-cli.json; then
+              curl -sk -X PUT "https://127.0.0.1:8445/admin/clients/forge-cli" -H 'content-type: application/json' --data-binary @/tmp/forge-cli.json
+            fi
+            echo "Registered/updated Hydra OAuth2 client 'forge-cli'"
+        showlogs: true
 
   - name: temporal
     namespace: temporal

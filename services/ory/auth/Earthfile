@@ -52,7 +52,7 @@ build:
     SAVE ARTIFACT bin/auth auth
 
 docker:
-    FROM debian:latest
+    FROM debian:bookworm-slim
     WORKDIR /app
 
     ARG container="auth"
@@ -69,5 +69,5 @@ docker:
         --GOARCH=$TARGETARCH \
         --version=$version) auth
 
-    ENTRYPOINT [ "/app/auth" ]
+    ENTRYPOINT [ "/app/auth", "run" ]
     SAVE IMAGE ${container}:${tag}

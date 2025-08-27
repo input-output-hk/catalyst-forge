@@ -47,7 +47,7 @@ build:
     SAVE ARTIFACT bin/mock-oidc mock-oidc
 
 docker:
-    FROM debian:latest
+    FROM debian:bookworm-slim
     WORKDIR /app
 
     ARG container="mock-oidc"

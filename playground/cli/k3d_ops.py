@@ -15,7 +15,8 @@ from pathlib import Path
 import yaml
 
 from .models import ClusterSummary
-from .utils import err, log, run, warn
+from .utils import err, log, warn
+from .runner import CommandRunner
 
 
 def cluster_exists(name: str) -> bool:
@@ -27,13 +28,14 @@ def cluster_exists(name: str) -> bool:
     Returns:
         True if the cluster exists, else False.
     """
+    runner = CommandRunner()
     try:
-        cp = run(["k3d", "cluster", "list", "-o", "json"], capture=True)
+        cp = runner.run(["k3d", "cluster", "list", "-o", "json"], capture=True)
         data = json.loads(cp.stdout or "{}")
         clusters = data.get("clusters", [])
         return any(c.get("name") == name for c in clusters)
     except Exception:
-        cp = run(["k3d", "cluster", "list"], capture=True)
+        cp = runner.run(["k3d", "cluster", "list"], capture=True)
         return name in (cp.stdout or "")
 
 
@@ -111,7 +113,7 @@ def create_cluster(
         f"Creating k3d cluster '{name}' (servers={servers}, agents={agents}) "
         f"with host ports {http_port}/HTTP, {https_port}/HTTPS and 8372/tcp (buildkitd), 5432/tcp (postgres)..."
     )
-    run(args)
+    CommandRunner().run(args)
 
 
 def delete_cluster(name: str) -> None:
@@ -121,7 +123,7 @@ def delete_cluster(name: str) -> None:
         name: Cluster name.
     """
     log(f"Deleting k3d cluster '{name}'...")
-    run(["k3d", "cluster", "delete", name], check=False)
+    CommandRunner().run(["k3d", "cluster", "delete", name], check=False)
 
 
 def write_kubeconfig(name: str, out_path: Path, assume_yes: bool) -> None:
@@ -132,7 +134,7 @@ def write_kubeconfig(name: str, out_path: Path, assume_yes: bool) -> None:
         out_path: Destination path for the kubeconfig file.
         assume_yes: Overwrite without prompting if True.
     """
-    tmp = run(["k3d", "kubeconfig", "get", name], capture=True)
+    tmp = CommandRunner().run(["k3d", "kubeconfig", "get", name], capture=True)
     out_path.parent.mkdir(parents=True, exist_ok=True)
     if out_path.exists() and not assume_yes:
         warn(f"Kubeconfig already exists at {out_path}; overwrite with --yes to replace.")
@@ -153,7 +155,9 @@ def wait_for_nodes_ready(kubeconfig: Path, timeout_s: int = 120) -> None:
     start = time.time()
     while time.time() - start < timeout_s:
         try:
-            cp = run(["kubectl", "get", "nodes", "-o", "json"], capture=True, env=env)
+            cp = CommandRunner().run(
+                ["kubectl", "get", "nodes", "-o", "json"], capture=True, env=env
+            )
             data = json.loads(cp.stdout or "{}")
             items = data.get("items", [])
             if not items:
@@ -169,7 +173,7 @@ def wait_for_nodes_ready(kubeconfig: Path, timeout_s: int = 120) -> None:
                     all_ready = False
                     break
             if all_ready:
-                run(["kubectl", "get", "nodes", "-o", "wide"], env=env)
+                CommandRunner().run(["kubectl", "get", "nodes", "-o", "wide"], env=env)
                 return
         except Exception:
             pass
@@ -189,7 +193,7 @@ def get_k8s_version(kubeconfig: Path) -> str:
     """
     env = {**os.environ, "KUBECONFIG": str(kubeconfig)}
     try:
-        cp = run(["kubectl", "version", "--short"], capture=True, env=env)
+        cp = CommandRunner().run(["kubectl", "version", "--short"], capture=True, env=env)
         return " ".join(str(cp.stdout or "").split())
     except Exception:
         return ""
@@ -232,7 +236,7 @@ def emit_cluster_json(
 
 def get_mkcert_caroot() -> Path:
     """Return the mkcert CA root directory."""
-    cp = run(["mkcert", "-CAROOT"], capture=True)
+    cp = CommandRunner().run(["mkcert", "-CAROOT"], capture=True)
     return Path(str(cp.stdout or "").strip())
 
 

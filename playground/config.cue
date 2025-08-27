@@ -1,5 +1,15 @@
 registry: "registry.projectcatalyst.dev"
 
+deps: {
+	db: {
+		host:     "postgres-postgresql.postgres.svc.cluster.local"
+		port:     5432
+		user:     "postgres"
+		password: "postgres"
+		admin_db: "postgres"
+	}
+}
+
 deployments: {
 	api: {
 		project: "services/api"
@@ -118,6 +128,63 @@ deployments: {
 						namespace: "envoy-gateway-system"
 					}
 				}
+			}
+		}
+	}
+	auth: {
+		project: "services/ory/auth"
+		target:  "docker"
+		image: {
+			name: "auth"
+			tag:  "latest"
+		}
+		overrides: {
+			modules: main: values: {
+				deployment: containers: main: {
+					image: {
+						name: "\(registry)/\(deployments.auth.image.name)"
+						tag:  deployments.auth.image.tag
+					}
+					env: {
+						AUTH_SERVER_ADDR: value:       ":8080"
+						AUTH_HYDRA_ADMIN_URL: value:   "http://hydra-admin:4445"
+						AUTH_KRATOS_PUBLIC_URL: value: "http://auth.projectcatalyst.dev/kratos/public"
+					}
+				}
+				dns: {
+					createEndpoint: false
+					excludeEnv:     true
+					rootDomain:     "projectcatalyst.dev"
+				}
+				route: {
+					excludeMaintenancePage: true
+					parent: {
+						name:      "default"
+						namespace: "envoy-gateway-system"
+					}
+				}
+			}
+		}
+	}
+}
+
+tasks: {
+	hydra: {
+		clients: {
+			forge_cli: {
+				client_id:   "forge-cli"
+				client_name: "Forge CLI (dev)"
+				scope:       "openid offline"
+				grant_types: ["authorization_code", "refresh_token"]
+				response_types: ["code"]
+				token_endpoint_auth_method: "none"
+				redirect_uris: [
+					"http://127.0.0.1:49152/callback",
+					"http://127.0.0.1:34567/callback",
+				]
+				post_logout_redirect_uris: [
+					"http://127.0.0.1:49152/logout",
+				]
 			}
 		}
 	}
