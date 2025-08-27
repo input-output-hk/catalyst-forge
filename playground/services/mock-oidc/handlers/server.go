@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"html"
+	"log"
 	"net/http"
 	"net/url"
 	"strings"
@@ -215,6 +216,8 @@ func (s *Server) HandleAuthorize(w http.ResponseWriter, r *http.Request) {
 				}
 				// Store override for this state
 				s.overrides[state] = u
+				log.Printf("override stored: state=%s sub=%s email=%s hd=%v", state, u.Sub, u.Email, u.Extra["hd"])
+
 				// Reconstruct GET authorize URL with original params and an _consented=1 flag
 				vals := url.Values{}
 				for k, vv := range r.Form {
@@ -312,6 +315,7 @@ func (s *Server) HandleAuthorize(w http.ResponseWriter, r *http.Request) {
 	// Apply override if present for this state
 	if s.cfg.Override {
 		state := ar.GetState()
+		log.Printf("override applied: state=%s sub=%s email=%s hd=%v", ar.GetState(), user.Sub, user.Email, user.Extra["hd"])
 		if ov, has := s.overrides[state]; has {
 			user = ov
 			// Persist by subject for userinfo lookups

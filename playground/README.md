@@ -64,7 +64,6 @@ SMTP endpoint is available inside the cluster at `mailpit.mailpit.svc.cluster.lo
 just earthly api
 ```
 
-
 ### deployments.cue configuration
 
 `playground/deployments.cue` is the single source of truth for local service deployments. It centralizes:

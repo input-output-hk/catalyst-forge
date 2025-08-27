@@ -26,6 +26,7 @@ func main() {
 		log.Fatalf("build mux: %v", err)
 	}
 	addr := u.FirstNonEmpty(fc.ListenAddr, ":8080")
+	log.Printf("config loaded: %+v", fc)
 	log.Printf("mock-oidc (multi) listening on %s", addr)
 	log.Fatal(http.ListenAndServe(addr, mux))
 }

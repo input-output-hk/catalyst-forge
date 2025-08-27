@@ -1,0 +1,16 @@
+serve:
+  public:
+    port: 4444
+  admin:
+    port: 4445
+
+urls:
+  login: https://auth.local/api/v1/oauth2/login
+  consent: https://auth.local/api/v1/oauth2/consent
+
+oauth2:
+  token_hook:
+    url: https://auth.local/api/v1/hydra/token-hook
+    # Authentication enforced at mesh (Istio)
+# Note: configure secrets, DSN, JWKS, and other operational settings as needed.
+

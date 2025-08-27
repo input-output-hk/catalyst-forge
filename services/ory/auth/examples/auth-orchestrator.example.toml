@@ -1,0 +1,13 @@
+[server]
+addr = ":8080"
+
+[hydra]
+admin_url = "http://localhost:4445"
+
+[kratos]
+public_url = "http://localhost:4433"
+
+[consent]
+remember_for = 300
+scopes = ["openid", "offline"]
+audience = []
