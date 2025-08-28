@@ -2,37 +2,39 @@
 
 PROJROOT := justfile_directory()
 
+# Ensure recipes run under bash so arrays and [[ ]] work as written
+set shell := ["bash", "-eu", "-o", "pipefail", "-c"]
+
 default:
 	@just --list
 
-# Create or reuse local cluster and write kubeconfig/cluster.json
-k3d:
-	cd "{{PROJROOT}}/cli" && PYTHONPATH="{{PROJROOT}}/.." uv run python -m playground.cli.main k3d --yes
-
-# Pin wildcard to local cluster
-pin-wildcard:
-	cd "{{PROJROOT}}/cli" && PYTHONPATH="{{PROJROOT}}/.." uv run python -m playground.cli.main dns pin-wildcard
-
-# Generate local TLS certs and Earthly config
-generate:
-	cd "{{PROJROOT}}/cli" && PYTHONPATH="{{PROJROOT}}/.." uv run python -m playground.cli.main generate
-
-# Initialize PostgreSQL for dependent apps
-migrate:
-	cd "{{PROJROOT}}/cli" && PYTHONPATH="{{PROJROOT}}/.." uv run python -m playground.cli.main migrate
-
-# Run environment setup tasks (optionally specify tasks via args: e.g., `just setup hydra`)
-setup *tasks:
+# Run environment setup tasks
+# Usage:
+#   just setup                    # run all tasks
+#   just setup hydra dns          # convenience: converts to --only hydra --only dns
+#   just setup --only deploy      # pass flags through as-is when args start with --
+setup *args:
 	#!/usr/bin/env bash
 	set -euo pipefail
 	cd "{{PROJROOT}}/cli"
+	# Populate positional parameters from Just variadic args so $#, $1, "$@" work
+	set -- {{args}}
 	if [ "$#" -eq 0 ]; then
+		echo "Running all tasks"
 		PYTHONPATH="{{PROJROOT}}/.." uv run python -m playground.cli.main setup
 	else
-		# Pass each argument as --only to filter tasks
-		args=()
-		for t in "$@"; do args+=(--only "$t"); done
-		PYTHONPATH="{{PROJROOT}}/.." uv run python -m playground.cli.main setup "${args[@]}"
+		first="$1"
+		if [[ "$first" == --* ]]; then
+			echo "Passing flags through verbatim: $@"
+			# Pass flags through verbatim
+			PYTHONPATH="{{PROJROOT}}/.." uv run python -m playground.cli.main setup "$@"
+		else
+			echo "Treating args as task names, converting to repeated --only flags: $@"
+			# Treat args as task names, convert to repeated --only flags
+			args_conv=()
+			for t in "$@"; do args_conv+=(--only "$t"); done
+			PYTHONPATH="{{PROJROOT}}/.." uv run python -m playground.cli.main setup "${args_conv[@]}"
+		fi
 	fi
 
 # Create or reuse local cluster and write kubeconfig/cluster.json
@@ -49,14 +51,6 @@ apply:
 # Sync base platform
 sync:
 	cd "{{PROJROOT}}/helmfile" && helmfile sync
-
-# Build, push, and deploy a service to the cluster
-deploy service="api":
-	cd "{{PROJROOT}}/cli" && PYTHONPATH="{{PROJROOT}}/.." uv run python -m playground.cli.main deploy {{service}}
-
-deploy-all:
-	just deploy api
-	just deploy frontend
 
 # Run lint, formatting (check-only), and type checks
 check:

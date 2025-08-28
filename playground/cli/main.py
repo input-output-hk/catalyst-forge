@@ -21,9 +21,8 @@ import importlib
 import pkgutil
 from .setup.registry import registry
 from .utils import get_repo_root, log
-from .db import DatabaseRoot, KratosSeeder, HydraSeeder, ForgeSeeder, TemporalSeeder
-from .db.base import DatabaseConfig
-from .deploy import deploy_service
+
+## (no direct db imports here)
 from .deps import Deps
 
 # Resolve the playground root (one level up from this file's directory)
@@ -75,54 +74,7 @@ def _load_global_config(
     log(f"Using configuration: {config_path}")
 
 
-@app.command("migrate")
-def migrate(
-    pg_host: str = typer.Option("127.0.0.1", help="PostgreSQL host"),
-    pg_port: int = typer.Option(5432, help="PostgreSQL port"),
-    pg_user: str = typer.Option("postgres", help="PostgreSQL admin user"),
-    pg_password: str = typer.Option("postgres", help="PostgreSQL admin password"),
-) -> None:
-    """Initialize PostgreSQL for dependent apps (Kratos, Hydra).
-
-    Idempotent: safe to re-run. Extensible via additional seeders.
-    """
-    root = DatabaseRoot(
-        DatabaseConfig(
-            host=pg_host,
-            port=pg_port,
-            user=pg_user,
-            password=pg_password,
-            admin_db="postgres",
-        )
-    )
-    # Run seeders
-    for seeder in (KratosSeeder(), HydraSeeder(), ForgeSeeder(), TemporalSeeder()):
-        seeder.run(root)
-    log("Database migration completed.")
-
-
-@app.command("deploy")
-def deploy(
-    ctx: typer.Context,
-    service: str = typer.Argument(..., help="Service name under services/ (e.g., api)"),
-    kubeconfig: Path | None = typer.Option(
-        None,
-        "--kubeconfig",
-        help="Path to kubeconfig (defaults to playground/kubeconfig or $KUBECONFIG)",
-    ),
-    no_manifest: bool = typer.Option(
-        False, "--no-manifest", help="Do not print the rendered manifest before apply"
-    ),
-) -> None:
-    """Build, render, and deploy a service to the local cluster (Earthly + kubectl)."""
-    state: ConfigState | None = getattr(ctx, "obj", None)
-    config_path = state.path if state is not None else None
-    deploy_service(
-        service_name=service,
-        kubeconfig_opt=kubeconfig,
-        show_manifest=not no_manifest,
-        config_path=config_path,
-    )
+## migrate subcommand has been removed in favor of setup task 'migrate'
 
 
 @app.command("setup")
@@ -132,6 +84,16 @@ def setup(
         None,
         "--only",
         help="Run only specific setup task(s). Repeat flag to specify multiple.",
+    ),
+    task_arg: list[str] = typer.Option(
+        None,
+        "--task-arg",
+        help="Set a runtime arg for a task: <task>.<key>=<value>. Repeatable.",
+    ),
+    task_args_file: Path | None = typer.Option(
+        None,
+        "--task-args-file",
+        help='Path to JSON file with runtime args, shaped as {"<task>": { ... }}.',
     ),
     list_: bool = typer.Option(False, "--list", help="List available setup tasks and exit"),
 ) -> None:
@@ -161,6 +123,56 @@ def setup(
                 f"Unknown setup task(s): {', '.join(unknown)}. Available: {', '.join(sorted(m.name for m in metas))}"
             )
         metas = [m for m in metas if m.name in only_set]
+
+    # Parse runtime task args (namespaced) and attach to state
+    def _parse_value(val: str):
+        import json as _json
+
+        v = val.strip()
+        if not v:
+            return ""
+        if (v.startswith("{") and v.endswith("}")) or (v.startswith("[") and v.endswith("]")):
+            try:
+                return _json.loads(v)
+            except Exception:
+                return v
+        lower = v.lower()
+        if lower in ("true", "false"):
+            return lower == "true"
+        try:
+            if v.isdigit() or (v.startswith("-") and v[1:].isdigit()):
+                return int(v)
+        except Exception:
+            pass
+        if "," in v:
+            return [p for p in (s.strip() for s in v.split(",")) if p]
+        return v
+
+    runtime: dict[str, dict[str, object]] = {}
+    import json as _json
+
+    if task_args_file is not None:
+        try:
+            data = _json.loads(task_args_file.read_text())
+            if isinstance(data, dict):
+                for tname, tvals in data.items():
+                    if isinstance(tname, str) and isinstance(tvals, dict):
+                        runtime.setdefault(tname, {}).update(tvals)
+        except Exception:
+            pass
+    for item in task_arg or []:
+        if "=" not in item:
+            continue
+        lhs, rhs = item.split("=", 1)
+        if "." not in lhs:
+            continue
+        tname, key = lhs.split(".", 1)
+        if not tname or not key:
+            continue
+        runtime.setdefault(tname, {})[key] = _parse_value(rhs)
+
+    # Attach runtime map to config state for task consumption
+    state.runtime = runtime
 
     # Order by priority then name
     metas.sort(key=lambda m: (m.priority, m.name))

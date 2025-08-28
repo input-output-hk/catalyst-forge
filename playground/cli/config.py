@@ -96,6 +96,8 @@ class ConfigState:
     path: Path
     config: PlaygroundConfig
     raw: Dict[str, Any]
+    # Runtime, task-scoped arguments injected at execution time (not from CUE)
+    runtime: Dict[str, Any] | None = None
 
 
 def get_default_config_path(repo_root: Path) -> Path:

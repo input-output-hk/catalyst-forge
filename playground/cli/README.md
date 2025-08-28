@@ -18,7 +18,7 @@ uv run python playground/cli/main.py --help
 uv run python playground/cli/main.py setup --list
 uv run python playground/cli/main.py setup --only k3d
 uv run python playground/cli/main.py setup --only hydra
-uv run python playground/cli/main.py deploy api
+uv run python playground/cli/main.py setup --only deploy
 ```
 
 Project checks from the playground root:
@@ -86,8 +86,8 @@ tasks: {
 
 - `setup --only k3d`: Create or reuse a local k3d cluster with Envoy-compatible ingress, write kubeconfig, wait for Ready.
 - `generate`: Generate client TLS certs and Earthly config for mtls to buildkit.
-- `migrate`: Initialize Postgres for dependent apps (Kratos, Hydra, …) via db seeders.
-- `deploy`: Build, render, and apply a service (Earthly + CUE + kubectl).
+- `setup --only migrate`: Initialize Postgres for dependent apps (Kratos, Hydra, …) via registry-driven db seeders.
+- `setup --only deploy`: Build, render, and apply one or more services (Earthly + CUE + kubectl).
 - `setup`: Run pluggable setup tasks. See below.
 - `dns pin-wildcard` and `dns pin-registry`: CoreDNS helpers for local routing.
 
@@ -104,6 +104,37 @@ Execution flow:
 2. The `setup` command auto-imports modules under `playground.cli.setup` to trigger registration.
 3. Tasks are collected, optionally filtered by `--only`, sorted by `(priority, name)`, and run.
 4. For each task, its factory gets `(ctx: ConfigState, deps: Deps)` and returns a `SetupTask` or `None` to skip.
+### Runtime task arguments
+
+Some behavior is better controlled at runtime rather than in `config.cue`. The `setup` command accepts task-scoped arguments:
+
+- `--task-arg <task>.<key>=<value>` (repeatable)
+- `--task-args-file <path.json>` (JSON object: `{ "<task>": { ... } }`)
+
+Parsing rules:
+- JSON objects/arrays in values are parsed when enclosed in `{}`/`[]`.
+- `true`/`false` → booleans; integers → ints; comma-separated → list of strings; otherwise string.
+
+Tasks can read their scope via `ctx.runtime.get("<task>", {})`.
+
+Examples:
+```bash
+uv run python playground/cli/main.py setup --only migrate --task-arg migrate.only=hydra,kratos
+uv run python playground/cli/main.py setup --only deploy --task-arg deploy.only=api,frontend
+uv run python playground/cli/main.py setup --only deploy --task-arg deploy.skip=renderer
+uv run python playground/cli/main.py setup --only hydra --task-arg hydra.clients='{"cli":{"client_id":"forge-cli","redirect_uris":["http://127.0.0.1:49152/callback"]}}'
+uv run python playground/cli/main.py setup --task-args-file playground/cli/runtime.json
+```
+
+`runtime.json` example:
+```json
+{
+  "migrate": { "only": ["hydra", "kratos"] },
+  "deploy": { "only": ["api"], "show_manifest": false },
+  "dns": { "domain": "dev.local" }
+}
+```
+
 
 Listing or selecting tasks:
 ```bash

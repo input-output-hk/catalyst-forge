@@ -1,8 +1,14 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import Optional, TYPE_CHECKING
 
 from ..base import DatabaseRoot, Seeder
+from ..registry import register_seeder
+
+if TYPE_CHECKING:  # avoid runtime cycles
+    from ...deps import Deps
+    from ...config import ConfigState
 from ...secrets.localstack import ensure_secret_json
 
 
@@ -30,3 +36,14 @@ class HydraSeeder(Seeder):
                 "password": self.config.password,
             },
         )
+
+
+@register_seeder(
+    name="hydra",
+    description="Seed Postgres role/db and LocalStack secrets for Ory Hydra",
+    priority=20,
+    dependencies=(),
+)
+def _factory(ctx: "ConfigState", deps: "Deps") -> Optional[HydraSeeder]:
+    # No config gating yet; always include with defaults.
+    return HydraSeeder()
