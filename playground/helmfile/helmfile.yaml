@@ -401,6 +401,40 @@ releases:
         command: kubectl
         args: ["create", "namespace", "oidc"]
         showlogs: true
+      # Oathkeeper is now deployed as a Helm release below
+  - name: oathkeeper
+    namespace: auth
+    chart: ory/oathkeeper
+    createNamespace: false
+    needs:
+      - auth/hydra
+    values:
+      - platform/oathkeeper/values.yaml
+    set:
+      - name: oathkeeper.accessRules
+        file: platform/oathkeeper/access-rules.yaml
+    hooks:
+      - events: ["postsync"]
+        command: kubectl
+        args:
+          [
+            "-n",
+            "auth",
+            "wait",
+            "--for=condition=Available",
+            "--timeout=180s",
+            "deployment/oathkeeper",
+          ]
+        showlogs: true
+      - events: ["postsync"]
+        command: kubectl
+        args:
+          ["apply", "-f", "platform/envoy/referencegrant-oathkeeper-api.yaml"]
+        showlogs: true
+      - events: ["postsync"]
+        command: kubectl
+        args: ["apply", "-f", "platform/envoy/ext-auth-oathkeeper.yaml"]
+        showlogs: true
 
   - name: temporal
     namespace: temporal

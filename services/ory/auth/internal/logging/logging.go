@@ -41,7 +41,7 @@ func Setup(opts Options) *slog.Logger {
 		AddSource: opts.AddSource,
 		ReplaceAttr: func(groups []string, a slog.Attr) slog.Attr {
 			k := strings.ToLower(a.Key)
-			if k == "raw_query" || k == "authorization" || strings.Contains(k, "token") || strings.Contains(k, "secret") || strings.Contains(k, "password") {
+			if k == "raw_query" || k == "authorization" || strings.Contains(k, "token") || strings.Contains(k, "consent_challenge") || strings.Contains(k, "login_challenge") {
 				return slog.Attr{Key: a.Key, Value: slog.StringValue("[redacted]")}
 			}
 			return a

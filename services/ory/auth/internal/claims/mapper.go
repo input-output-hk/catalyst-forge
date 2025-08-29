@@ -1,7 +1,13 @@
 package claims
 
 // MapKratosTraitsToTokens maps Kratos identity traits to id_token and access_token.ext fields.
-// TODO: Add proper mapping for all traits
+// This mapping reflects the traits produced by google.mapper.jsonnet which sets:
+//
+//	traits.email  (verified Google email)
+//	traits.domain (lowercased Google Workspace domain)
+//
+// We mirror these into the ID Token for client use and into the access token ext
+// so downstream APIs (via Oathkeeper) can read them without the ID Token.
 func MapKratosTraitsToTokens(traits map[string]any) (idToken map[string]any, accessExt map[string]any) {
 	id := map[string]any{}
 	ext := map[string]any{}
@@ -10,33 +16,15 @@ func MapKratosTraitsToTokens(traits map[string]any) (idToken map[string]any, acc
 		return id, ext
 	}
 
-	// Common trait keys
+	// Email is used by clients and APIs; include in both ID token and access token ext
 	if v, ok := traits["email"]; ok {
 		id["email"] = v
+		ext["email"] = v
 	}
-	if v, ok := traits["name"]; ok {
-		switch t := v.(type) {
-		case string:
-			id["name"] = t
-		case map[string]any:
-			if given, ok := t["given"]; ok {
-				id["given_name"] = given
-			}
-			if family, ok := t["family"]; ok {
-				id["family_name"] = family
-			}
-		}
-	}
-
-	// Example ext mappings (tenancy/roles if present)
-	if v, ok := traits["org_id"]; ok {
-		ext["org_id"] = v
-	}
-	if v, ok := traits["roles"]; ok {
-		ext["roles"] = v
-	}
-	if v, ok := traits["tenant"]; ok {
-		ext["tenant"] = v
+	// Domain (Google Workspace hosted domain) is useful for multi-tenant/rbac routing
+	if v, ok := traits["domain"]; ok {
+		id["domain"] = v
+		ext["domain"] = v
 	}
 
 	return id, ext

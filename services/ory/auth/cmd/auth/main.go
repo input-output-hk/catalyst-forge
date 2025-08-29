@@ -115,6 +115,11 @@ func initViper() {
 	viper.SetDefault("log.level", "info")
 	viper.SetDefault("log.format", "text")
 	viper.SetDefault("log.add_source", false)
+	// Mapping defaults
+	viper.SetDefault("mapping.path", "/etc/auth/mapping.yaml")
+	viper.SetDefault("mapping.on_error", "deny")
+	viper.SetDefault("mapping.merge_strategy", "deep")
+	viper.SetDefault("mapping.reload", true)
 }
 
 func applyFlagOverrides(cmd *cobra.Command) {

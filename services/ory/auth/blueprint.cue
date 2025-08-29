@@ -1,3 +1,5 @@
+import "encoding/json"
+
 project: {
 	name: "auth"
 
@@ -24,7 +26,18 @@ project: {
 							ports: {
 								http: port: 8080
 							}
-							env: {...}
+							env: {
+								AUTH_MAPPING_PATH: value: "/etc/auth/mappings.yaml"
+								...
+							}
+							mounts: {
+								mappings: {
+									ref: config: name: "mappings"
+									path:    "/etc/auth/mappings.yaml"
+									subPath: "mappings.yaml"
+								}
+								...
+							}
 							probes: {
 								liveness: {
 									path: "/healthz"
@@ -42,6 +55,47 @@ project: {
 							...
 						}
 						...
+					}
+
+					configs: mappings: data: {
+						"mappings.yaml": json.Marshal({
+							mappings: {
+								consent: {
+									requirements: {
+										[
+											"has(kratos.identity.traits.email)",
+											"has(kratos.identity.traits.domain)",
+										]
+									}
+									id_token: {
+										email:  "kratos.identity.traits.email"
+										domain: "lower(kratos.identity.traits.domain)"
+									}
+									access_token: ext: {
+										email:  "kratos.identity.traits.email"
+										domain: "lower(kratos.identity.traits.domain)"
+									}
+								}
+							}
+							token_hook: {
+								requirements: [
+									"has(jwt.repository)",
+									"has(jwt.ref)",
+									"has(jwt.sha)",
+								]
+								access_token: ext: {
+									gh_repository:  "jwt.repository"
+									gh_ref:         "jwt.ref"
+									gh_sha:         "jwt.sha"
+									gh_actor:       "jwt.actor"
+									gh_environment: "jwt.environment"
+								}
+							}
+							policy: {
+								on_error:       "deny"
+								merge_strategy: "deep"
+							}
+						})
 					}
 
 					dns: {

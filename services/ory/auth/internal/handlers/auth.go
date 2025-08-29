@@ -11,10 +11,11 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/input-output-hk/catalyst-forge/services/ory/auth/internal/claims"
 	"github.com/input-output-hk/catalyst-forge/services/ory/auth/internal/clients/hydra"
 	"github.com/input-output-hk/catalyst-forge/services/ory/auth/internal/clients/kratos"
 	"github.com/input-output-hk/catalyst-forge/services/ory/auth/internal/config"
+	"github.com/input-output-hk/catalyst-forge/services/ory/auth/internal/logging"
+	"github.com/input-output-hk/catalyst-forge/services/ory/auth/internal/mapping"
 )
 
 // Handlers groups dependencies for HTTP handlers.
@@ -23,10 +24,12 @@ type Handlers struct {
 	httpClient   *http.Client
 	hydraAdmin   *hydra.AdminClient
 	kratosPublic *kratos.PublicClient
+	mapper       *mapping.Engine
 }
 
 // NewHandlers constructs handlers with config dependency.
 func NewHandlers(cfg *config.Config) *Handlers {
+	logger := logging.L()
 	transport := &http.Transport{Proxy: nil}
 	// TLS root CAs from config if provided
 	if cfg.TLS.CAFile != "" || cfg.TLS.CAPem != "" {
@@ -34,14 +37,17 @@ func NewHandlers(cfg *config.Config) *Handlers {
 		if pool == nil {
 			pool = x509.NewCertPool()
 		}
+
 		if cfg.TLS.CAFile != "" {
 			if pemBytes, err := os.ReadFile(cfg.TLS.CAFile); err == nil {
 				pool.AppendCertsFromPEM(pemBytes)
 			}
 		}
+
 		if cfg.TLS.CAPem != "" {
 			pool.AppendCertsFromPEM([]byte(cfg.TLS.CAPem))
 		}
+
 		if transport.TLSClientConfig == nil {
 			transport.TLSClientConfig = &tls.Config{RootCAs: pool}
 		} else {
@@ -49,12 +55,20 @@ func NewHandlers(cfg *config.Config) *Handlers {
 		}
 	}
 	client := &http.Client{Timeout: 5 * time.Second, Transport: transport}
-	return &Handlers{
+	h := &Handlers{
 		cfg:          cfg,
 		httpClient:   client,
 		hydraAdmin:   hydra.NewAdminClient(cfg.Hydra.AdminURL, client),
 		kratosPublic: kratos.NewPublicClient(cfg.Kratos.PublicURL, client),
 	}
+
+	logger.Info("loading mapping engine", slog.String("path", cfg.Mapping.Path))
+	if eng, err := mapping.NewEngine(logger, cfg.Mapping.Path); err == nil {
+		h.mapper = eng
+	} else {
+		logger.Error("error loading mapping engine", slog.String("error", err.Error()))
+	}
+	return h
 }
 
 // Health returns ok.
@@ -186,6 +200,7 @@ func (h *Handlers) ConsentGet(c *gin.Context) {
 	consentChallenge := c.Query("consent_challenge")
 	logger := c.MustGet("logger").(*slog.Logger)
 	logger.Debug("consent_get phase=start", "raw_query", c.Request.URL.RawQuery)
+
 	if !isValidChallenge(consentChallenge) {
 		logger.Debug("consent_get phase=invalid_challenge", "length", len(consentChallenge))
 		consentFailureTotal.Inc()
@@ -208,7 +223,32 @@ func (h *Handlers) ConsentGet(c *gin.Context) {
 	}
 	logger.Debug("consent_get phase=kratos_whoami_ok", "identity_id", whoami.Identity.ID)
 
-	idToken, accessExt := claims.MapKratosTraitsToTokens(whoami.Identity.Traits)
+	var idToken map[string]any
+	var accessExt map[string]any
+	if h.mapper != nil {
+		consentReq, err := h.hydraAdmin.GetConsentRequest(consentChallenge)
+		if err != nil {
+			logger.Debug("consent_get phase=hydra_get_consent_request_error", "error", err.Error())
+			consentFailureTotal.Inc()
+			c.JSON(http.StatusBadGateway, gin.H{"error": err.Error(), "correlation": corrFields(c)})
+			return
+		}
+
+		input := buildConsentInput(whoami, consentReq)
+		idToken, accessExt, err = h.mapper.EvaluateConsent(input)
+		if err != nil {
+			if strings.EqualFold(h.cfg.Mapping.OnError, "deny") {
+				consentFailureTotal.Inc()
+				c.JSON(http.StatusForbidden, gin.H{"error": "mapping error", "correlation": corrFields(c)})
+				return
+			}
+
+			logger.Warn("consent_get mapping error; proceeding without claims", slog.String("error", err.Error()))
+		}
+	} else {
+		logger.Warn("consent_get phase=no_mapping_engine; proceeding with passthrough")
+	}
+
 	if idToken == nil {
 		idToken = map[string]any{}
 	}
@@ -223,9 +263,10 @@ func (h *Handlers) ConsentGet(c *gin.Context) {
 		RememberFor:              h.cfg.Consent.RememberForSeconds,
 		Session: map[string]any{
 			"id_token":     idToken,
-			"access_token": map[string]any{"ext": accessExt},
+			"access_token": accessExt,
 		},
 	}
+
 	redirectTo, err := h.hydraAdmin.AcceptConsentRequest(consentChallenge, body)
 	if err != nil {
 		logger.Debug("consent_get phase=accept_consent_error", "error", err.Error())
@@ -243,18 +284,21 @@ func (h *Handlers) ConsentGet(c *gin.Context) {
 func (h *Handlers) ConsentPost(c *gin.Context) {
 	logger := c.MustGet("logger").(*slog.Logger)
 	logger.Debug("consent_post phase=start")
+
 	type consentRequest struct {
 		ConsentChallenge string   `json:"consent_challenge" binding:"required"`
 		GrantScope       []string `json:"grant_scope"`
 		GrantAudience    []string `json:"grant_audience"`
 	}
 	var req consentRequest
+
 	if err := c.ShouldBindJSON(&req); err != nil {
 		logger.Debug("consent_post phase=bind_error", "error", err.Error())
 		consentFailureTotal.Inc()
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error(), "correlation": corrFields(c)})
 		return
 	}
+
 	logger.Debug("consent_post phase=ok", "grant_scope", req.GrantScope, "grant_audience", req.GrantAudience)
 	c.JSON(http.StatusOK, gin.H{
 		"action":            "accept_consent",

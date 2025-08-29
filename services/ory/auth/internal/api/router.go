@@ -50,9 +50,6 @@ func SetupRouter(cfg *config.Config) *gin.Engine {
 		v1.POST("/oauth2/consent", h.ConsentPost)
 		v1.POST("/hydra/token-hook", h.TokenHook)
 
-		// BFF: expose Kratos login flow JSON without cookies for SPA
-		v1.GET("/kratos/login-flow", h.KratosLoginFlow)
-
 		// Prometheus metrics endpoint
 		v1.GET("/metrics", gin.WrapH(promhttp.Handler()))
 	}

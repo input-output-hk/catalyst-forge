@@ -1,0 +1,48 @@
+oathkeeper:
+  config:
+    log:
+      level: info
+      format: json
+
+    serve:
+      proxy: {}
+      api:
+        port: 4456
+
+    authenticators:
+      jwt:
+        enabled: true
+        config:
+          jwks_urls:
+            - https://auth.projectcatalyst.dev/hydra/public/.well-known/jwks.json
+          allowed_algorithms:
+            - RS256
+
+    authorizers:
+      allow:
+        enabled: true
+
+    mutators:
+      header:
+        enabled: true
+        config:
+          headers:
+            X-Subject: "{{ print .Subject }}"
+            X-Email: "{{ .Extra.ext.email }}"
+
+deployment:
+  extraVolumes:
+    - name: mkcert-root-bundle
+      configMap:
+        name: mkcert-root-bundle
+        items:
+          - key: ca.crt
+            path: ca.crt
+  extraVolumeMounts:
+    - name: mkcert-root-bundle
+      mountPath: /etc/ssl/cert.pem
+      subPath: ca.crt
+      readOnly: true
+  extraEnv:
+    - name: SSL_CERT_FILE
+      value: /etc/ssl/cert.pem

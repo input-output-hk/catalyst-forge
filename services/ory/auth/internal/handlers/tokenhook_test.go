@@ -34,7 +34,10 @@ func TestTokenHook_GHA_OK(t *testing.T) {
 	body := map[string]any{
 		"grant_type": "urn:ietf:params:oauth:grant-type:jwt-bearer",
 		"request": map[string]any{
-			"payload": map[string]any{"assertion": assertion},
+			"client":                          map[string]any{"client_id": "ci"},
+			"requested_scope":                 []string{"openid"},
+			"requested_access_token_audience": []string{"api://internal"},
+			"payload":                         map[string]any{"assertion": assertion},
 		},
 	}
 	b, _ := json.Marshal(body)

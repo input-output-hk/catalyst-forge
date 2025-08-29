@@ -30,6 +30,13 @@ type Config struct {
 		CAPem  string `mapstructure:"ca_pem"`
 	} `mapstructure:"tls"`
 
+	Mapping struct {
+		Path          string `mapstructure:"path"`
+		OnError       string `mapstructure:"on_error"`
+		MergeStrategy string `mapstructure:"merge_strategy"`
+		Reload        bool   `mapstructure:"reload"`
+	} `mapstructure:"mapping"`
+
 	Log struct {
 		Level     string `mapstructure:"level"`
 		Format    string `mapstructure:"format"`
@@ -39,31 +46,16 @@ type Config struct {
 
 // GetServerAddr returns the listen address.
 func (c *Config) GetServerAddr() string {
-	if c.Server.Addr == "" {
-		return ":8080"
-	}
 	return c.Server.Addr
 }
 
-// Validate checks required fields and applies sensible defaults.
+// Validate checks required fields.
 func (c *Config) Validate() error {
 	if u, err := url.ParseRequestURI(c.Hydra.AdminURL); err != nil || u.Host == "" {
 		return errors.New("invalid hydra.admin_url")
 	}
 	if u, err := url.ParseRequestURI(c.Kratos.PublicURL); err != nil || u.Host == "" {
 		return errors.New("invalid kratos.public_url")
-	}
-	if c.Consent.RememberForSeconds <= 0 {
-		c.Consent.RememberForSeconds = 300
-	}
-	if len(c.Consent.Scopes) == 0 {
-		c.Consent.Scopes = []string{"openid", "offline"}
-	}
-	if c.Log.Level == "" {
-		c.Log.Level = "info"
-	}
-	if c.Log.Format == "" {
-		c.Log.Format = "text"
 	}
 	return nil
 }

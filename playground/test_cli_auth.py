@@ -6,6 +6,7 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 import secrets
 import time
 import requests
+import json
 
 # --- Configuration ---
 HYDRA_PUBLIC_URL = "https://auth.projectcatalyst.dev/hydra/public"
@@ -18,7 +19,15 @@ def generate_pkce_codes():
     code_verifier = secrets.token_urlsafe(64)
     code_challenge = hashlib.sha256(code_verifier.encode("utf-8")).digest()
     code_challenge = base64.urlsafe_b64encode(code_challenge).decode("utf-8").replace("=", "")
+
     return code_verifier, code_challenge
+
+def jwt_payload(jwt: str) -> dict:
+    parts = jwt.split(".")
+    if len(parts) != 3:
+        return {}
+    pad = "=" * (-len(parts[1]) % 4)
+    return json.loads(base64.urlsafe_b64decode(parts[1] + pad).decode())
 
 # --- HTTP Server for Callback ---
 class CallbackHandler(BaseHTTPRequestHandler):
@@ -57,9 +66,8 @@ if __name__ == "__main__":
 
     # 2. Open Browser and Start Server
     print("Opening browser for authentication...")
-    time.sleep(2)
     print(auth_url)
-    #webbrowser.open(auth_url)
+    webbrowser.open(auth_url)
     authorization_code = None
     received_state = None
     run_server()
@@ -80,7 +88,29 @@ if __name__ == "__main__":
 
         if response.status_code == 200:
             print("Access token received:")
-            print(response.json())
+            data = response.json()
+            print(data)
+            access_token = data.get("access_token")
+
+            payload = jwt_payload(access_token)
+            print("Access token payload:")
+            print(json.dumps(payload, indent=2))
+
+            if access_token:
+                # 4. Call a protected test endpoint with the access token
+                api_url = "https://forge.projectcatalyst.dev/api/v1/test"
+                headers = {"Authorization": f"Bearer {access_token}"}
+                try:
+                    api_resp = requests.get(api_url, headers=headers, timeout=10, verify=False)
+                    print("Test endpoint status:", api_resp.status_code)
+                    try:
+                        print(api_resp.json())
+                    except Exception:
+                        print(api_resp.text)
+                except Exception as e:
+                    print("Error calling test endpoint:", e)
+            else:
+                print("No access_token in token response.")
         else:
             print("Error getting access token:")
             print(response.status_code, response.text)

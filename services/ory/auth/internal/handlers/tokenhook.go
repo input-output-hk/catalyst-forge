@@ -3,6 +3,7 @@ package handlers
 import (
 	"encoding/base64"
 	"encoding/json"
+	"maps"
 	"net/http"
 	"strings"
 
@@ -16,7 +17,12 @@ import (
 type hydraTokenHookRequest struct {
 	GrantType string `json:"grant_type"`
 	Request   struct {
-		Payload struct {
+		Client struct {
+			ClientID string `json:"client_id"`
+		} `json:"client"`
+		RequestedScope               []string `json:"requested_scope"`
+		RequestedAccessTokenAudience []string `json:"requested_access_token_audience"`
+		Payload                      struct {
 			Assertion string `json:"assertion"`
 		} `json:"payload"`
 	} `json:"request"`
@@ -58,58 +64,50 @@ func (h *Handlers) TokenHook(c *gin.Context) {
 		if v, ok := c.Get("request_id"); ok {
 			logger = logger.With(slog.String("request_id", v.(string)))
 		}
-		logger.Warn("token_hook bind error")
+		logger.Warn("token_hook bind error", slog.String("error", err.Error()))
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid payload", "correlation": corrFields(c)})
 		return
 	}
 
 	ext := map[string]any{}
 
-	// JWT-Bearer (GitHub Actions) enrichment
+	// JWT-Bearer enrichment
 	if strings.EqualFold(req.GrantType, "urn:ietf:params:oauth:grant-type:jwt-bearer") && req.Request.Payload.Assertion != "" {
 		claims := parseUnverifiedJWT(req.Request.Payload.Assertion)
 		if claims != nil {
-			// Normalize common GH claims
-			if v, ok := claims["repository"]; ok {
-				ext["gh_repository"] = v
-			}
-			if v, ok := claims["ref"]; ok {
-				ext["gh_ref"] = v
-			}
-			if v, ok := claims["sha"]; ok {
-				ext["gh_sha"] = v
-			}
-			if v, ok := claims["actor"]; ok {
-				ext["gh_actor"] = v
-			}
-			if v, ok := claims["environment"]; ok {
-				ext["gh_environment"] = v
-			}
-
-			// Validate minimal claims without echoing sensitive values
-			if _, ok := ext["gh_repository"]; !ok {
-				tokenHookFailureTotal.Inc()
-				c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": "missing required claim", "correlation": corrFields(c)})
-				return
-			}
-			if _, ok := ext["gh_ref"]; !ok {
-				tokenHookFailureTotal.Inc()
-				c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": "missing required claim", "correlation": corrFields(c)})
-				return
-			}
-			if _, ok := ext["gh_sha"]; !ok {
-				tokenHookFailureTotal.Inc()
-				c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": "missing required claim", "correlation": corrFields(c)})
-				return
+			if h.mapper != nil {
+				input := buildTokenHookInput(
+					claims,
+					c,
+					req.GrantType,
+					req.Request.Client.ClientID,
+					req.Request.RequestedAccessTokenAudience,
+					req.Request.RequestedScope,
+				)
+				mapped, err := h.mapper.EvaluateTokenHook(input)
+				if err != nil {
+					if strings.EqualFold(h.cfg.Mapping.OnError, "deny") {
+						tokenHookFailureTotal.Inc()
+						c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": "mapping error", "correlation": corrFields(c)})
+						return
+					}
+					logging.L().Warn("token_hook mapping error; proceeding without claims", slog.String("error", err.Error()))
+				} else {
+					maps.Copy(ext, mapped)
+				}
 			}
 		}
 	}
 
+	// If no enrichment is present, avoid overriding consent-provided claims.
+	if len(ext) == 0 {
+		c.JSON(http.StatusOK, gin.H{})
+		return
+	}
+
 	c.JSON(http.StatusOK, gin.H{
 		"session": gin.H{
-			"access_token": gin.H{
-				"ext": ext,
-			},
+			"access_token": ext,
 		},
 	})
 }

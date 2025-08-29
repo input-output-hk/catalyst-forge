@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -35,6 +36,7 @@ func TestLogin_FastPath(t *testing.T) {
 	cfg.Kratos.PublicURL = kratosSrv.URL
 
 	eng := gin.New()
+	eng.Use(func(c *gin.Context) { c.Set("logger", slog.Default()); c.Next() })
 	h := NewHandlers(&cfg)
 	eng.GET("/oauth2/login", h.Login)
 
@@ -67,6 +69,7 @@ func TestConsent_FailClosedOnWhoAmI(t *testing.T) {
 	cfg.Consent.Scopes = []string{"openid"}
 
 	eng := gin.New()
+	eng.Use(func(c *gin.Context) { c.Set("logger", slog.Default()); c.Next() })
 	h := NewHandlers(&cfg)
 	eng.GET("/oauth2/consent", h.ConsentGet)
 
@@ -106,6 +109,7 @@ func TestLogin_NoSession_RedirectsToKratos(t *testing.T) {
 	cfg.Kratos.PublicURL = kratosSrv.URL
 
 	eng := gin.New()
+	eng.Use(func(c *gin.Context) { c.Set("logger", slog.Default()); c.Next() })
 	h := NewHandlers(&cfg)
 	eng.GET("/oauth2/login", h.Login)
 
@@ -146,6 +150,7 @@ func TestLogin_WithSession_Accepts(t *testing.T) {
 	cfg.Consent.RememberForSeconds = 300
 
 	eng := gin.New()
+	eng.Use(func(c *gin.Context) { c.Set("logger", slog.Default()); c.Next() })
 	h := NewHandlers(&cfg)
 	eng.GET("/oauth2/login", h.Login)
 
@@ -163,6 +168,8 @@ func TestConsent_Success_Path(t *testing.T) {
 
 	hydraSrv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch {
+		case r.URL.Path == "/oauth2/auth/requests/consent" && r.Method == http.MethodGet:
+			_ = json.NewEncoder(w).Encode(map[string]any{"requested_scope": []string{"openid"}, "requested_access_token_audience": []string{"api://internal"}})
 		case r.URL.Path == "/oauth2/auth/requests/consent/accept" && r.Method == http.MethodPut:
 			_ = json.NewEncoder(w).Encode(map[string]any{"redirect_to": "https://hydra/redirect"})
 		default:
@@ -173,7 +180,7 @@ func TestConsent_Success_Path(t *testing.T) {
 
 	kratosSrv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		_ = json.NewEncoder(w).Encode(map[string]any{
-			"identity": map[string]any{"id": "id-123", "traits": map[string]any{"email": "user@example.com"}},
+			"identity": map[string]any{"id": "id-123", "traits": map[string]any{"email": "user@example.com", "domain": "EXAMPLE.com"}},
 		})
 	}))
 	defer kratosSrv.Close()
@@ -185,6 +192,7 @@ func TestConsent_Success_Path(t *testing.T) {
 	cfg.Consent.Scopes = []string{"openid"}
 
 	eng := gin.New()
+	eng.Use(func(c *gin.Context) { c.Set("logger", slog.Default()); c.Next() })
 	h := NewHandlers(&cfg)
 	eng.GET("/oauth2/consent", h.ConsentGet)
 

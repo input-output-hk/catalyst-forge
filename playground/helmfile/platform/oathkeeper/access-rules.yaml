@@ -1,0 +1,10 @@
+- id: api-v1-test-allow-valid-jwt
+  match:
+    url: <http|https>://forge.projectcatalyst.dev/api/v1/test
+    methods: ["GET"]
+  authenticators:
+    - handler: jwt
+  authorizer:
+    handler: allow
+  mutators:
+    - handler: header

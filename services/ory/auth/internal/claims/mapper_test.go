@@ -11,17 +11,14 @@ func TestMapKratosTraitsToTokens_Empty(t *testing.T) {
 
 func TestMapKratosTraitsToTokens_Populates(t *testing.T) {
 	traits := map[string]any{
-		"email":  "user@example.com",
-		"name":   map[string]any{"given": "Alice", "family": "Doe"},
-		"org_id": "org-1",
-		"roles":  []string{"admin"},
-		"tenant": "tenant-1",
+		"email":  "user@iohk.io",
+		"domain": "iohk.io",
 	}
 	id, ext := MapKratosTraitsToTokens(traits)
-	if id["email"] != "user@example.com" || id["given_name"] != "Alice" || id["family_name"] != "Doe" {
+	if id["email"] != "user@iohk.io" || id["domain"] != "iohk.io" {
 		t.Fatalf("unexpected id token mapping: %v", id)
 	}
-	if ext["org_id"] != "org-1" || ext["tenant"] != "tenant-1" {
+	if ext["email"] != "user@iohk.io" || ext["domain"] != "iohk.io" {
 		t.Fatalf("unexpected access ext mapping: %v", ext)
 	}
 }

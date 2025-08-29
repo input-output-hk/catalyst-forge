@@ -34,6 +34,7 @@ hydra:
       pkce:
         enforced_for_public_clients: true
     strategies:
+      access_token: jwt
       scope: exact
     ttl:
       access_token: 30m
