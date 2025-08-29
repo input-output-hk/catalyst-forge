@@ -58,7 +58,8 @@ if __name__ == "__main__":
     # 2. Open Browser and Start Server
     print("Opening browser for authentication...")
     time.sleep(2)
-    webbrowser.open(auth_url)
+    print(auth_url)
+    #webbrowser.open(auth_url)
     authorization_code = None
     received_state = None
     run_server()

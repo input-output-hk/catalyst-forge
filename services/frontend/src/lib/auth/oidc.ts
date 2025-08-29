@@ -33,31 +33,51 @@ const kratos = new FrontendApi(
  * browser naturally follows redirects (no CORS surprises).
  */
 export async function loginWithProvider(provider: string, returnTo: string = "/"): Promise<void> {
-  async function getFlowWithAction(): Promise<HasUi | null> {
+  // Prefer reusing an existing Kratos login flow if the URL already contains ?flow=...
+  // This preserves the original return_to (e.g., the Hydra login_challenge callback)
+  console.log("STARTING LOGIN WITH PROVIDER", provider, returnTo);
+  const url = new URL(window.location.href);
+  const existingFlowId = url.searchParams.get("flow");
+  console.log("existingFlowId", existingFlowId);
+
+  // For custom UI: read the existing flow using a no-credentials JSON request.
+  // Do NOT send cookies on this request or Kratos will require a CSRF header and return 403.
+  async function readExistingFlow(flowId: string): Promise<HasUi | null> {
     try {
-      const { data } = await kratos.createBrowserLoginFlow();
-      const f = data as unknown as HasUi;
+      const { data } = await kratos.getLoginFlow({ id: flowId });
+      const f = data as HasUi;
       const hasAction = typeof f.ui?.action === "string" && f.ui.action.length > 0;
       const hasId = typeof f.id === "string" && f.id.length > 0;
-      if (hasAction || hasId) return f;
-      return null;
-    } catch {
+      return (hasAction || hasId) ? f : null;
+    } catch (err) {
+      console.log("getLoginFlow error", err);
       return null;
     }
   }
 
-  let flow = await getFlowWithAction();
-  if (!flow) flow = await getFlowWithAction();
+  let flow: HasUi | null = null;
 
+  // Try to load the existing flow first (if present in URL)
+  if (existingFlowId) {
+    try {
+      console.log("readExistingFlow", existingFlowId);
+      flow = await readExistingFlow(existingFlowId);
+    } catch {
+      console.log("readExistingFlow error", existingFlowId);
+    }
+  }
+
+  // If no existing flow, initialize one via browser endpoint so Kratos sets cookies & returns here with ?flow=
   if (!flow) {
-    // As a last resort, navigate to the browser endpoint to let Kratos drive the flow
-    window.location.href = `${kratosBase}/self-service/login/browser`;
+    const rt = returnTo && returnTo.length > 0 ? `?return_to=${encodeURIComponent(returnTo)}` : "";
+    window.location.href = `${kratosBase}/self-service/login/browser${rt}`;
     return;
   }
 
   const action = flow.ui?.action ?? (flow.id ? `${kratosBase}/self-service/login?flow=${flow.id}` : "");
   if (!action) {
-    window.location.href = `${kratosBase}/self-service/login/browser`;
+    const rt = returnTo && returnTo.length > 0 ? `?return_to=${encodeURIComponent(returnTo)}` : "";
+    window.location.href = `${kratosBase}/self-service/login/browser${rt}`;
     return;
   }
   const method = (flow.ui?.method ?? "POST").toUpperCase();
