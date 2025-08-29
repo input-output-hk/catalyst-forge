@@ -31,7 +31,8 @@ kratos:
     selfservice:
       default_browser_return_url: https://forge.projectcatalyst.dev/
       allowed_return_urls:
-        - https://forge.projectcatalyst.dev/*
+        - https://forge.projectcatalyst.dev/
+        - https://auth.projectcatalyst.dev/api/v1/oauth2/login
       flows:
         settings:
           ui_url: https://forge.projectcatalyst.dev//profile

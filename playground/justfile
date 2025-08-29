@@ -38,7 +38,8 @@ setup *args:
 	fi
 
 # Create or reuse local cluster and write kubeconfig/cluster.json
-up: k3d apply pin-wildcard generate migrate deploy-all
+up:
+	cd "{{PROJROOT}}/cli" && PYTHONPATH="{{PROJROOT}}/.." uv run python -m playground.cli.main up
 
 # Tear down cluster
 down name="forge":

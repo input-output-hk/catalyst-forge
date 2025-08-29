@@ -11,9 +11,9 @@ from pathlib import Path
 
 import typer
 
-from .k3d_ops import (
-    cluster_exists,
-    delete_cluster,
+from .k3d import (
+	cluster_exists,
+	delete_cluster,
 )
 from .models import ClusterSummary  # re-export for tests/importers
 from .config import ConfigState, get_default_config_path, load_config
@@ -72,9 +72,6 @@ def _load_global_config(
     cfg, raw = load_config(config_path)
     ctx.obj = ConfigState(path=config_path, config=cfg, raw=raw)
     log(f"Using configuration: {config_path}")
-
-
-## migrate subcommand has been removed in favor of setup task 'migrate'
 
 
 @app.command("setup")
@@ -191,6 +188,103 @@ def setup(
     if not ran_any:
         log("[INFO] No setup tasks to run")
 
+
+@app.command("up")
+def up(
+    ctx: typer.Context,
+    helmfile_action: str = typer.Option(
+        "apply",
+        "--helmfile-action",
+        help="Helmfile action to use for all helmfile steps (apply or sync)",
+    ),
+) -> None:
+    """Bring up the full local test environment in the correct order.
+
+    This orchestrates existing setup tasks with targeted helmfile steps.
+    """
+    state: ConfigState | None = getattr(ctx, "obj", None)
+    if state is None:
+        raise RuntimeError("Config state not loaded")
+
+    # Normalize helmfile action
+    action = (helmfile_action or "apply").strip().lower()
+    if action not in {"apply", "sync"}:
+        action = "apply"
+
+    # Auto-import all setup submodules to ensure task registration
+    import playground.cli.setup as setup_pkg
+
+    for mod in pkgutil.iter_modules(setup_pkg.__path__, setup_pkg.__name__ + "."):
+        importlib.import_module(mod.name)
+
+    # Build index of tasks by name
+    metas = {m.name: m for m in registry.all()}
+
+    def _run_task(name: str, overrides: dict[str, object] | None = None) -> None:
+        meta = metas.get(name)
+        if meta is None:
+            raise SystemExit(f"Required setup task '{name}' is not registered")
+
+        # Ensure runtime mapping exists
+        if state.runtime is None:
+            state.runtime = {}
+        # Save and apply namespaced runtime overrides
+        previous = dict(state.runtime.get(name, {})) if isinstance(state.runtime.get(name), dict) else {}
+        if overrides:
+            merged = {**previous, **overrides}
+            state.runtime[name] = merged
+        try:
+            deps = Deps(state)
+            task = meta.factory(state, deps)
+            if task is None:
+                log(f"[INFO] Skipping '{name}' (not applicable)")
+                return
+            log(f"[INFO] Running '{name}' — {meta.description}")
+            task.run()
+        finally:
+            # Restore previous runtime scope
+            if previous:
+                state.runtime[name] = previous
+            elif name in (state.runtime or {}):
+                try:
+                    del state.runtime[name]  # type: ignore[index]
+                except Exception:
+                    pass
+
+    # 1) k3d cluster
+    _run_task("k3d")
+
+    # 2) Generate TLS/Earthly config
+    _run_task("generate")
+
+    # 3) Helmfile staged applies (foundational components)
+    foundational = [
+        "cert-manager",
+        "trust-manager",
+        "envoy-gateway",
+        "registry",
+        "postgres",
+        "localstack",
+        "external-secrets",
+    ]
+    for release in foundational:
+        _run_task("helmfile", {"action": action, "only": release})
+
+    # 4) CoreDNS wildcard pin
+    _run_task("dns")
+
+    # 5) Database migrations
+    _run_task("migrate")
+
+    # 6) Remaining helmfile releases (app/service layer)
+    remaining = ["mailpit", "kratos", "hydra", "temporal"]
+    _run_task("helmfile", {"action": action, "only": remaining})
+
+    # 7) Hydra client setup
+    _run_task("hydra")
+
+    # 8) Deploy all internal services
+    _run_task("deploy")
 
 @app.command("down")
 def k3d_down(name: str = typer.Option("forge", help="Cluster name")) -> None:

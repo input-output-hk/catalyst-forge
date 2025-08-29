@@ -20,7 +20,9 @@ hydra:
 
     urls:
       self:
+        admin: http://hydra-admin:4445
         issuer: https://auth.projectcatalyst.dev/hydra/public
+        public: https://auth.projectcatalyst.dev/hydra/public
       login: https://auth.projectcatalyst.dev/api/v1/oauth2/login
       consent: https://auth.projectcatalyst.dev/api/v1/oauth2/consent
       logout: https://auth.projectcatalyst.dev/hydra/ui/logout
@@ -56,7 +58,21 @@ hydra:
 
 # DSN env for runtime per chart docs (root-level objects)
 deployment:
+  extraVolumes:
+    - name: mkcert-root-bundle
+      configMap:
+        name: mkcert-root-bundle
+        items:
+          - key: ca.crt
+            path: ca.crt
+  extraVolumeMounts:
+    - name: mkcert-root-bundle
+      mountPath: /etc/ssl/cert.pem
+      subPath: ca.crt
+      readOnly: true
   extraEnv:
+    - name: SSL_CERT_FILE
+      value: /etc/ssl/cert.pem
     - name: DSN
       valueFrom:
         secretKeyRef:

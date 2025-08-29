@@ -19,7 +19,27 @@ uv run python playground/cli/main.py setup --list
 uv run python playground/cli/main.py setup --only k3d
 uv run python playground/cli/main.py setup --only hydra
 uv run python playground/cli/main.py setup --only deploy
+uv run python playground/cli/main.py up
 ```
+### `up` command
+
+The `up` command performs a full environment bootstrap in order:
+
+1. k3d
+2. dns (wildcard)
+3. generate (TLS + Earthly config)
+4. helmfile foundational releases (in order): cert-manager, trust-manager, envoy-gateway, registry, postgres, localstack, external-secrets
+5. migrate (database seeders)
+6. helmfile remaining releases: mailpit, kratos, hydra, temporal
+7. hydra (OAuth2 client setup)
+8. deploy (services from `deployments`)
+
+You can choose Helmfile action for all helmfile steps:
+
+```bash
+uv run python playground/cli/main.py up --helmfile-action=sync
+```
+
 
 Project checks from the playground root:
 ```bash
@@ -90,6 +110,8 @@ tasks: {
 - `setup --only deploy`: Build, render, and apply one or more services (Earthly + CUE + kubectl).
 - `setup`: Run pluggable setup tasks. See below.
 - `dns pin-wildcard` and `dns pin-registry`: CoreDNS helpers for local routing.
+- `setup --only helmfile`: Run Helmfile `apply` (default) or `sync`, with include/skip filters via runtime args.
+- `up`: Bring up the full local environment in the correct order (k3d → dns → generate → helmfile foundation → migrate → helmfile apps → hydra → deploy).
 
 ## Setup architecture (extensible tasks)
 
@@ -229,6 +251,44 @@ The `Deps` container (in `playground/cli/deps.py`) provides lazy providers:
 - `runner`: `CommandRunner` (structured logging, env/cwd control, optional capture, timeouts, redaction)
 - `db`: `DatabaseRoot` built from `deps.db` in config
 - `k8s`: Pre-auth Kubernetes clients (`core`, `apps`) using `deps.k8s.kubeconfig`
+### tasks.helmfile configuration
+
+Configure the Helmfile setup task under `tasks.helmfile` in `playground/config.cue`:
+
+```cue
+tasks: {
+    helmfile: {
+        enabled:      true
+        path:         "playground/helmfile/helmfile.yaml"
+        environment:  _|_ // optional
+        working_dir:  _|_ // optional; defaults to dirname(path)
+        timeout_sec:  600
+        extra_args:   []
+    }
+}
+```
+
+Runtime examples:
+
+```bash
+# Apply everything (default action)
+uv run python playground/cli/main.py setup --only helmfile
+
+# Sync only selected releases
+uv run python playground/cli/main.py setup --only helmfile \
+  --task-arg helmfile.action=sync \
+  --task-arg helmfile.only=postgres,ory
+
+# Apply excluding a release (requires helmfile supporting negative selectors)
+uv run python playground/cli/main.py setup --only helmfile \
+  --task-arg helmfile.skip=temporal
+
+# Add raw selectors and extra args
+uv run python playground/cli/main.py setup --only helmfile \
+  --task-arg helmfile.selectors='["namespace=auth"]' \
+  --task-arg helmfile.args='["--debug"]'
+```
+
 
 Tasks declare only what they need via the `dependencies` tuple when registering. The setup executor builds and passes a single `Deps` instance to all factories; providers are constructed only if used.
 

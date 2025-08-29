@@ -9,7 +9,7 @@ from pydantic import BaseModel, Field
 
 from ..config import ConfigState
 from ..utils import get_client_cert_paths, get_repo_root, log, require_cmd
-from ..k3d_ops import get_mkcert_caroot
+from ..runner import CommandRunner
 from .base import SetupTask
 from .registry import register_setup_task
 
@@ -26,6 +26,10 @@ class GenerateSetup(SetupTask):
     cfg: GenerateTaskConfig
     runner: Any
 
+    def _get_mkcert_caroot(self) -> Path:
+        cp = CommandRunner().run(["mkcert", "-CAROOT"], capture=True)
+        return Path(str(cp.stdout or "").strip())
+
     def run(self) -> None:
         require_cmd("mkcert")
 
@@ -37,7 +41,7 @@ class GenerateSetup(SetupTask):
 
         # Generate client TLS certs if missing
         client = get_client_cert_paths(cert_dir, self.cfg.client_name)
-        caroot = get_mkcert_caroot()
+        caroot = self._get_mkcert_caroot()
         ca_src = caroot / "rootCA.pem"
 
         if not client["cert"].exists() or not client["key"].exists():

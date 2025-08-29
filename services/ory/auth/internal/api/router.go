@@ -1,12 +1,13 @@
 package api
 
 import (
-	"log"
+	"log/slog"
 	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/input-output-hk/catalyst-forge/services/ory/auth/internal/config"
 	"github.com/input-output-hk/catalyst-forge/services/ory/auth/internal/handlers"
+	"github.com/input-output-hk/catalyst-forge/services/ory/auth/internal/logging"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
@@ -18,6 +19,22 @@ func SetupRouter(cfg *config.Config) *gin.Engine {
 	// Middleware
 	r.Use(gin.Recovery())
 	r.Use(requestLogger())
+	// Contextual logger with request-scoped attributes
+	r.Use(func(c *gin.Context) {
+		reqID, _ := c.Get("request_id")
+		logger := logging.L()
+		if reqID != nil {
+			logger = logger.With(slog.Any("request_id", reqID))
+		}
+		if lc, ok := c.Get("corr_login_challenge"); ok {
+			logger = logger.With(slog.Any("login_challenge", lc))
+		}
+		if cc, ok := c.Get("corr_consent_challenge"); ok {
+			logger = logger.With(slog.Any("consent_challenge", cc))
+		}
+		c.Set("logger", logger)
+		c.Next()
+	})
 
 	// Initialize handler deps
 	h := handlers.NewHandlers(cfg)
@@ -79,9 +96,20 @@ func requestLogger() gin.HandlerFunc {
 
 		lc, _ := c.Get("corr_login_challenge")
 		cc, _ := c.Get("corr_consent_challenge")
-		log.Printf(
-			"request method=%s url=%s status=%d latency=%s request_id=%s login_challenge=%v consent_challenge=%v",
-			method, url, status, latency, reqID, lc, cc,
+		logger := logging.L().With(
+			slog.String("request_id", reqID),
+		)
+		if lc != nil {
+			logger = logger.With(slog.Any("login_challenge", lc))
+		}
+		if cc != nil {
+			logger = logger.With(slog.Any("consent_challenge", cc))
+		}
+		logger.Info("request",
+			slog.String("method", method),
+			slog.String("url", url),
+			slog.Int("status", status),
+			slog.Duration("latency", latency),
 		)
 	}
 }

@@ -12,7 +12,7 @@ project: {
 			modules: main: {
 				name:      "app"
 				namespace: "auth"
-				version:   "0.13.3"
+				version:   "0.13.4"
 				values: {
 					deployment: {
 						replicas: number | *1
@@ -39,7 +39,9 @@ project: {
 								cpu:    string | *"256m"
 								memory: string | *"256Mi"
 							}
+							...
 						}
+						...
 					}
 
 					dns: {
@@ -53,7 +55,7 @@ project: {
 									{
 										path: {
 											type:  "PathPrefix"
-											value: "/"
+											value: "/api/v1"
 										}
 									},
 								]
@@ -64,6 +66,7 @@ project: {
 					}
 
 					service: {}
+					...
 				}
 			}
 		}

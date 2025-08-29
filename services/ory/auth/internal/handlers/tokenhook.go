@@ -6,7 +6,10 @@ import (
 	"net/http"
 	"strings"
 
+	"log/slog"
+
 	"github.com/gin-gonic/gin"
+	"github.com/input-output-hk/catalyst-forge/services/ory/auth/internal/logging"
 )
 
 // hydraTokenHookRequest is a reduced shape of Hydra's token hook payload.
@@ -51,7 +54,12 @@ func (h *Handlers) TokenHook(c *gin.Context) {
 	var req hydraTokenHookRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		tokenHookFailureTotal.Inc()
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error(), "correlation": corrFields(c)})
+		logger := logging.L()
+		if v, ok := c.Get("request_id"); ok {
+			logger = logger.With(slog.String("request_id", v.(string)))
+		}
+		logger.Warn("token_hook bind error")
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid payload", "correlation": corrFields(c)})
 		return
 	}
 
@@ -78,17 +86,20 @@ func (h *Handlers) TokenHook(c *gin.Context) {
 				ext["gh_environment"] = v
 			}
 
+			// Validate minimal claims without echoing sensitive values
 			if _, ok := ext["gh_repository"]; !ok {
 				tokenHookFailureTotal.Inc()
-				c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": "missing repository claim", "correlation": corrFields(c)})
+				c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": "missing required claim", "correlation": corrFields(c)})
 				return
-			} else if _, ok := ext["gh_ref"]; !ok {
+			}
+			if _, ok := ext["gh_ref"]; !ok {
 				tokenHookFailureTotal.Inc()
-				c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": "missing ref claim", "correlation": corrFields(c)})
+				c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": "missing required claim", "correlation": corrFields(c)})
 				return
-			} else if _, ok := ext["gh_sha"]; !ok {
+			}
+			if _, ok := ext["gh_sha"]; !ok {
 				tokenHookFailureTotal.Inc()
-				c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": "missing sha claim", "correlation": corrFields(c)})
+				c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": "missing required claim", "correlation": corrFields(c)})
 				return
 			}
 		}

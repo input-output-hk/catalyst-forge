@@ -64,13 +64,34 @@ func NewAdminClient(baseURL string, httpClient *http.Client) *AdminClient {
 	}
 }
 
+// buildAdminEndpoint constructs a full URL by parsing the base, joining path segments,
+// and applying query parameters. It preserves the base host and scheme.
+func buildAdminEndpoint(base string, segments []string, query map[string]string) (string, error) {
+	u, err := url.Parse(base)
+	if err != nil {
+		return "", fmt.Errorf("parse base url: %w", err)
+	}
+	joined, err := url.JoinPath(u.Path, segments...)
+	if err != nil {
+		return "", fmt.Errorf("join path: %w", err)
+	}
+	u.Path = joined
+	q := u.Query()
+	for k, v := range query {
+		q.Set(k, v)
+	}
+	u.RawQuery = q.Encode()
+	return u.String(), nil
+}
+
 // GetLoginRequest fetches the login request details for a given challenge.
 func (c *AdminClient) GetLoginRequest(challenge string) (*LoginRequest, error) {
-	endpoint := fmt.Sprintf(
-		"%s/oauth2/auth/requests/login?login_challenge=%s",
-		c.BaseURL,
-		url.QueryEscape(challenge),
-	)
+	endpoint, err := buildAdminEndpoint(c.BaseURL, []string{"oauth2", "auth", "requests", "login"}, map[string]string{
+		"login_challenge": challenge,
+	})
+	if err != nil {
+		return nil, err
+	}
 
 	req, err := http.NewRequest(http.MethodGet, endpoint, nil)
 	if err != nil {
@@ -96,11 +117,12 @@ func (c *AdminClient) GetLoginRequest(challenge string) (*LoginRequest, error) {
 
 // AcceptLoginRequest finalizes the login step and returns Hydra's redirect URL.
 func (c *AdminClient) AcceptLoginRequest(challenge, subject string, remember bool, rememberFor int) (string, error) {
-	endpoint := fmt.Sprintf(
-		"%s/oauth2/auth/requests/login/accept?login_challenge=%s",
-		c.BaseURL,
-		url.QueryEscape(challenge),
-	)
+	endpoint, err := buildAdminEndpoint(c.BaseURL, []string{"oauth2", "auth", "requests", "login", "accept"}, map[string]string{
+		"login_challenge": challenge,
+	})
+	if err != nil {
+		return "", err
+	}
 
 	payload := acceptLoginBody{
 		Subject:     subject,
@@ -137,11 +159,12 @@ func (c *AdminClient) AcceptLoginRequest(challenge, subject string, remember boo
 
 // GetConsentRequest fetches the consent request details for a given challenge.
 func (c *AdminClient) GetConsentRequest(challenge string) (*ConsentRequest, error) {
-	endpoint := fmt.Sprintf(
-		"%s/oauth2/auth/requests/consent?consent_challenge=%s",
-		c.BaseURL,
-		url.QueryEscape(challenge),
-	)
+	endpoint, err := buildAdminEndpoint(c.BaseURL, []string{"oauth2", "auth", "requests", "consent"}, map[string]string{
+		"consent_challenge": challenge,
+	})
+	if err != nil {
+		return nil, err
+	}
 
 	req, err := http.NewRequest(http.MethodGet, endpoint, nil)
 	if err != nil {
@@ -167,11 +190,12 @@ func (c *AdminClient) GetConsentRequest(challenge string) (*ConsentRequest, erro
 
 // AcceptConsentRequest finalizes the consent step and returns Hydra's redirect URL.
 func (c *AdminClient) AcceptConsentRequest(challenge string, body AcceptConsentBody) (string, error) {
-	endpoint := fmt.Sprintf(
-		"%s/oauth2/auth/requests/consent/accept?consent_challenge=%s",
-		c.BaseURL,
-		url.QueryEscape(challenge),
-	)
+	endpoint, err := buildAdminEndpoint(c.BaseURL, []string{"oauth2", "auth", "requests", "consent", "accept"}, map[string]string{
+		"consent_challenge": challenge,
+	})
+	if err != nil {
+		return "", err
+	}
 
 	bodyBytes, err := json.Marshal(body)
 	if err != nil {

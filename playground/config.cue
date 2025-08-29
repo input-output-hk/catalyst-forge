@@ -148,7 +148,15 @@ deployments: {
 					env: {
 						AUTH_SERVER_ADDR: value:       ":8080"
 						AUTH_HYDRA_ADMIN_URL: value:   "http://hydra-admin:4445"
-						AUTH_KRATOS_PUBLIC_URL: value: "http://auth.projectcatalyst.dev/kratos/public"
+						AUTH_KRATOS_PUBLIC_URL: value: "https://auth.projectcatalyst.dev/kratos/public"
+						AUTH_TLS_CA_FILE: value:       "/etc/ssl/certs/internal.crt"
+					}
+					mounts: {
+						ca: {
+							ref: config: name: "mkcert-root-bundle"
+							path:    "/etc/ssl/certs/internal.crt"
+							subPath: "ca.crt"
+						}
 					}
 				}
 				dns: {
