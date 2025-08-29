@@ -398,10 +398,13 @@ releases:
         args: ["apply", "-f", "platform/envoy/hydra-routes.yaml"]
         showlogs: true
       - events: ["postsync"]
-        command: kubectl
-        args: ["create", "namespace", "oidc"]
+        command: sh
+        args:
+          - -c
+          - |
+            set -euo pipefail
+            kubectl create namespace oidc --dry-run=client -o yaml | kubectl apply -f -
         showlogs: true
-      # Oathkeeper is now deployed as a Helm release below
   - name: oathkeeper
     namespace: auth
     chart: ory/oathkeeper

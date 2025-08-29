@@ -14,7 +14,7 @@ project: {
 			modules: main: {
 				name:      "app"
 				namespace: "oidc"
-				version:   "0.13.3"
+				version:   "0.13.4"
 				values: {
 					deployment: {
 						replicas: number | *1
@@ -25,6 +25,7 @@ project: {
 							}
 							env: {
 								CONFIG_PATH: value: "/config/config.yaml"
+								...
 							}
 							mounts: {
 								config: {
@@ -35,6 +36,7 @@ project: {
 									}
 									path: "/config"
 								}
+								...
 							}
 							ports: {
 								http: port: 8080
@@ -92,6 +94,7 @@ project: {
 					}
 
 					service: {}
+					...
 				}
 			}
 		}

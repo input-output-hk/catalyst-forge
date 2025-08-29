@@ -17,7 +17,7 @@ type Engine struct {
 	cfg        *FileConfig
 	celEnv     *cel.Env
 	consent    compiledMapping
-	tokenHook  compiledMapping
+	tokenHooks map[string]compiledMapping
 	onError    string
 	mergeStyle string
 }
@@ -42,12 +42,17 @@ func NewEngine(logger *slog.Logger, path string) (*Engine, error) {
 	if err != nil {
 		return nil, fmt.Errorf("compile consent mapping: %w", err)
 	}
-	cHook, err := e.compile(fc.Mappings.TokenHook)
-	if err != nil {
-		return nil, fmt.Errorf("compile token_hook mapping: %w", err)
-	}
 	e.consent = cConsent
-	e.tokenHook = cHook
+	// Compile issuer-scoped token hooks
+	e.tokenHooks = map[string]compiledMapping{}
+	for iss, m := range fc.Mappings.TokenHooks {
+		cm, err := e.compile(m)
+		if err != nil {
+			return nil, fmt.Errorf("compile token_hooks[%s]: %w", iss, err)
+		}
+		e.tokenHooks[iss] = cm
+	}
+
 	return e, nil
 }
 
@@ -168,13 +173,17 @@ func (e *Engine) EvaluateConsent(in ConsentInput) (map[string]any, map[string]an
 	return id, ext, nil
 }
 
-// EvaluateTokenHook returns access_token.ext map per config.
-func (e *Engine) EvaluateTokenHook(in TokenHookInput) (map[string]any, error) {
+// EvaluateTokenHookByIssuer selects issuer-scoped mapping and returns access_token.ext.
+func (e *Engine) EvaluateTokenHookByIssuer(issuer string, in TokenHookInput) (map[string]any, error) {
+	cm, ok := e.tokenHooks[issuer]
+	if !ok {
+		return nil, fmt.Errorf("unknown issuer: %s", issuer)
+	}
 	act := map[string]any{
 		"jwt": in.JWT,
 		"req": in.Req,
 	}
-	for _, prg := range e.tokenHook.requirements {
+	for _, prg := range cm.requirements {
 		out, _, err := prg.Eval(act)
 		if err != nil {
 			return nil, err
@@ -185,7 +194,7 @@ func (e *Engine) EvaluateTokenHook(in TokenHookInput) (map[string]any, error) {
 		}
 	}
 	ext := map[string]any{}
-	for k, prg := range e.tokenHook.accessExt {
+	for k, prg := range cm.accessExt {
 		v, _, err := prg.Eval(act)
 		if err != nil {
 			return nil, err

@@ -10,12 +10,13 @@ import (
 // FileConfig represents the YAML configuration for claim mappings.
 type FileConfig struct {
 	Mappings struct {
-		Consent   Mapping `yaml:"consent"`
-		TokenHook Mapping `yaml:"token_hook"`
+		Consent    Mapping            `yaml:"consent"`
+		TokenHooks map[string]Mapping `yaml:"token_hooks"`
 	} `yaml:"mappings"`
 	Policy struct {
-		OnError       string `yaml:"on_error"`       // "deny" | "warn_passthrough"
-		MergeStrategy string `yaml:"merge_strategy"` // "deep" | "replace" (future)
+		OnError         string `yaml:"on_error"`       // "deny" | "warn_passthrough"
+		MergeStrategy   string `yaml:"merge_strategy"` // "deep" | "replace" (future)
+		OnUnknownIssuer string `yaml:"on_unknown_issuer"`
 	} `yaml:"policy"`
 }
 
@@ -39,6 +40,7 @@ func LoadFileConfig(path string) (*FileConfig, error) {
 	if err := yaml.Unmarshal(b, &fc); err != nil {
 		return nil, err
 	}
+
 	// defaults
 	if fc.Policy.OnError == "" {
 		fc.Policy.OnError = "deny"
@@ -46,10 +48,22 @@ func LoadFileConfig(path string) (*FileConfig, error) {
 	if fc.Policy.MergeStrategy == "" {
 		fc.Policy.MergeStrategy = "deep"
 	}
+	if fc.Policy.OnUnknownIssuer == "" {
+		fc.Policy.OnUnknownIssuer = "warn_passthrough"
+	}
+
 	// minimal validation
-	if fc.Mappings.Consent.IDToken == nil && (fc.Mappings.Consent.AccessToken.Ext == nil) &&
-		fc.Mappings.TokenHook.AccessToken.Ext == nil {
+	hasTokenHooksOutput := false
+	for _, m := range fc.Mappings.TokenHooks {
+		if len(m.AccessToken.Ext) > 0 {
+			hasTokenHooksOutput = true
+			break
+		}
+	}
+
+	if fc.Mappings.Consent.IDToken == nil && (fc.Mappings.Consent.AccessToken.Ext == nil) && !hasTokenHooksOutput {
 		return nil, errors.New("mapping config has no outputs defined")
 	}
+
 	return &fc, nil
 }

@@ -15,15 +15,13 @@ import (
 
 // hydraTokenHookRequest is a reduced shape of Hydra's token hook payload.
 type hydraTokenHookRequest struct {
-	GrantType string `json:"grant_type"`
-	Request   struct {
-		Client struct {
-			ClientID string `json:"client_id"`
-		} `json:"client"`
-		RequestedScope               []string `json:"requested_scope"`
-		RequestedAccessTokenAudience []string `json:"requested_access_token_audience"`
-		Payload                      struct {
-			Assertion string `json:"assertion"`
+	Request struct {
+		ClientID        string   `json:"client_id"`
+		GrantedScopes   []string `json:"granted_scopes"`
+		GrantedAudience []string `json:"granted_audience"`
+		GrantTypes      []string `json:"grant_types"`
+		Payload         struct {
+			Assertion json.RawMessage `json:"assertion"`
 		} `json:"payload"`
 	} `json:"request"`
 }
@@ -55,6 +53,21 @@ func jwtDecodeSegment(seg string) ([]byte, error) {
 	return base64.RawURLEncoding.DecodeString(s)
 }
 
+func extractAssertion(raw json.RawMessage) string {
+	if len(raw) == 0 {
+		return ""
+	}
+	var s string
+	if err := json.Unmarshal(raw, &s); err == nil {
+		return s
+	}
+	var arr []string
+	if err := json.Unmarshal(raw, &arr); err == nil && len(arr) > 0 {
+		return arr[0]
+	}
+	return ""
+}
+
 // TokenHook handles POST /hydra/token-hook with real enrichment.
 func (h *Handlers) TokenHook(c *gin.Context) {
 	var req hydraTokenHookRequest
@@ -72,20 +85,33 @@ func (h *Handlers) TokenHook(c *gin.Context) {
 	ext := map[string]any{}
 
 	// JWT-Bearer enrichment
-	if strings.EqualFold(req.GrantType, "urn:ietf:params:oauth:grant-type:jwt-bearer") && req.Request.Payload.Assertion != "" {
-		claims := parseUnverifiedJWT(req.Request.Payload.Assertion)
+	assertion := extractAssertion(req.Request.Payload.Assertion)
+	if assertion != "" {
+		claims := parseUnverifiedJWT(assertion)
 		if claims != nil {
 			if h.mapper != nil {
+				var grantTypeForInput string
+
+				audience := req.Request.GrantedAudience
+
+				scopes := req.Request.GrantedScopes
+
+				if len(req.Request.GrantTypes) > 0 {
+					grantTypeForInput = req.Request.GrantTypes[0]
+				}
 				input := buildTokenHookInput(
 					claims,
 					c,
-					req.GrantType,
-					req.Request.Client.ClientID,
-					req.Request.RequestedAccessTokenAudience,
-					req.Request.RequestedScope,
+					grantTypeForInput,
+					req.Request.ClientID,
+					audience,
+					scopes,
 				)
-				mapped, err := h.mapper.EvaluateTokenHook(input)
+				// Issuer-scoped evaluation
+				iss, _ := claims["iss"].(string)
+				mapped, err := h.mapper.EvaluateTokenHookByIssuer(iss, input)
 				if err != nil {
+					// Unknown issuer or evaluation error
 					if strings.EqualFold(h.cfg.Mapping.OnError, "deny") {
 						tokenHookFailureTotal.Inc()
 						c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": "mapping error", "correlation": corrFields(c)})

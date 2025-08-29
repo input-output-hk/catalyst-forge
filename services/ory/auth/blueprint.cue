@@ -76,24 +76,27 @@ project: {
 										domain: "lower(kratos.identity.traits.domain)"
 									}
 								}
-							}
-							token_hook: {
-								requirements: [
-									"has(jwt.repository)",
-									"has(jwt.ref)",
-									"has(jwt.sha)",
-								]
-								access_token: ext: {
-									gh_repository:  "jwt.repository"
-									gh_ref:         "jwt.ref"
-									gh_sha:         "jwt.sha"
-									gh_actor:       "jwt.actor"
-									gh_environment: "jwt.environment"
+								token_hooks: {
+									"https://token.actions.githubusercontent.com": {
+										requirements: [
+											"has(jwt.repository)",
+											"has(jwt.ref)",
+											"has(jwt.sha)",
+										]
+										access_token: ext: {
+											gh_repository:  "jwt.repository"
+											gh_ref:         "jwt.ref"
+											gh_sha:         "jwt.sha"
+											gh_actor:       "jwt.actor"
+											gh_environment: "jwt.environment"
+										}
+									}
 								}
 							}
 							policy: {
-								on_error:       "deny"
-								merge_strategy: "deep"
+								on_error:          "deny"
+								on_unknown_issuer: "warn_passthrough"
+								merge_strategy:    "deep"
 							}
 						})
 					}

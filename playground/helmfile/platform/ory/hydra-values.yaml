@@ -37,9 +37,9 @@ hydra:
       access_token: jwt
       scope: exact
     ttl:
-      access_token: 30m
+      access_token: 1h
       id_token: 30m
-      refresh_token: 720h
+      refresh_token: 8h
 
   deployment:
     extraEnv:

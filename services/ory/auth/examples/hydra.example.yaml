@@ -11,6 +11,3 @@ urls:
 oauth2:
   token_hook:
     url: https://auth.local/api/v1/hydra/token-hook
-    # Authentication enforced at mesh (Istio)
-# Note: configure secrets, DSN, JWKS, and other operational settings as needed.
-

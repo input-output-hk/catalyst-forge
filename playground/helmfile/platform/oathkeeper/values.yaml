@@ -28,7 +28,8 @@ oathkeeper:
         config:
           headers:
             X-Subject: "{{ print .Subject }}"
-            X-Email: "{{ .Extra.ext.email }}"
+            # Render email only if present to avoid template errors when ext is missing
+            X-Email: "{{ with .Extra.ext }}{{ .email }}{{ end }}"
 
 deployment:
   extraVolumes:

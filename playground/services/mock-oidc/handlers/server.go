@@ -1,6 +1,8 @@
 package handlers
 
 import (
+	"crypto"
+	"crypto/rand"
 	"crypto/rsa"
 	"crypto/sha256"
 	"encoding/base64"
@@ -22,22 +24,23 @@ import (
 )
 
 type Config struct {
-	ListenAddr     string
-	IssuerID       string
-	BaseURL        string
-	ClientID       string
-	ClientSecret   string
-	RedirectURI    string
-	GlobalSecret   string
-	DefaultSub     string
-	DefaultEmail   string
-	DefaultName    string
-	AllowPKCEPlain bool
-	ClientPublic   bool
-	SigningKeyPEM  string
-	Override       bool
-	// Future: ExtraIDTokenClaims map[string]any
-	// Future: UserinfoClaimsFromScopes map[string][]string
+	ListenAddr        string
+	IssuerID          string
+	BaseURL           string
+	ClientID          string
+	ClientSecret      string
+	RedirectURI       string
+	GlobalSecret      string
+	DefaultSub        string
+	DefaultEmail      string
+	DefaultName       string
+	AllowPKCEPlain    bool
+	ClientPublic      bool
+	SigningKeyPEM     string
+	SigningKeyPEMPath string
+	Override          bool
+	IssuerOverride    string
+	DefaultAudience   []string
 }
 
 type TestUser struct {
@@ -52,13 +55,14 @@ type TestUser struct {
 }
 
 type Server struct {
-	cfg       *Config
-	oauth     fosite.OAuth2Provider
-	store     *storage.MemoryStore
-	rsaKey    *rsa.PrivateKey
-	kid       string
-	issuerURL string
-	users     map[string]TestUser
+	cfg         *Config
+	oauth       fosite.OAuth2Provider
+	store       *storage.MemoryStore
+	rsaKey      *rsa.PrivateKey
+	kid         string
+	issuerURL   string
+	claimIssuer string
+	users       map[string]TestUser
 	// Overrides keyed by OAuth2 state; ephemeral, in-memory.
 	overrides map[string]TestUser
 	// Per-subject overrides used by userinfo after token exchange.
@@ -111,9 +115,15 @@ func NewServerFromConfig(cfg *Config, rsaKey *rsa.PrivateKey, users map[string]T
 		rsaKey:           rsaKey,
 		kid:              KidForKey(&rsaKey.PublicKey),
 		issuerURL:        fmt.Sprintf("%s/%s", cfg.BaseURL, cfg.IssuerID),
+		claimIssuer:      "",
 		users:            users,
 		overrides:        make(map[string]TestUser),
 		subjectOverrides: make(map[string]TestUser),
+	}
+	if strings.TrimSpace(cfg.IssuerOverride) != "" {
+		s.claimIssuer = cfg.IssuerOverride
+	} else {
+		s.claimIssuer = s.issuerURL
 	}
 	return s, nil
 }
@@ -368,7 +378,7 @@ func (s *Server) HandleAuthorize(w http.ResponseWriter, r *http.Request) {
 	for k, v := range user.Extra {
 		extra[k] = v
 	}
-	idClaims := &jwt.IDTokenClaims{Issuer: s.issuerURL, Subject: user.Sub, IssuedAt: now, Nonce: ar.GetRequestForm().Get("nonce"), Extra: extra}
+	idClaims := &jwt.IDTokenClaims{Issuer: s.claimIssuer, Subject: user.Sub, IssuedAt: now, Nonce: ar.GetRequestForm().Get("nonce"), Audience: s.cfg.DefaultAudience, Extra: extra}
 	session := &openid.DefaultSession{
 		Claims:    idClaims,
 		Headers:   &jwt.Headers{Extra: map[string]any{"kid": s.kid}},
@@ -542,6 +552,84 @@ func (s *Server) HandleUserinfo(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	writeJSON(w, http.StatusOK, out)
+}
+
+// HandleActionsToken mints a GitHub Actions-like JWT using the provider's signing key.
+// POST JSON: {"repository":"org/repo","ref":"refs/heads/main","sha":"...","actor":"...","environment":"dev","aud":["..."]}
+// Response: {"token":"<jwt>"}
+func (s *Server) HandleActionsToken(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+	var in struct {
+		Repository  string   `json:"repository"`
+		Ref         string   `json:"ref"`
+		Sha         string   `json:"sha"`
+		Actor       string   `json:"actor"`
+		Environment string   `json:"environment"`
+		Aud         []string `json:"aud"`
+		Sub         string   `json:"sub"`
+		Exp         int64    `json:"exp"`
+		TTLSeconds  int64    `json:"ttl_seconds"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&in); err != nil {
+		http.Error(w, "invalid json", http.StatusBadRequest)
+		return
+	}
+	if len(in.Aud) == 0 {
+		in.Aud = s.cfg.DefaultAudience
+	}
+	if in.Sub == "" && in.Repository != "" && in.Ref != "" {
+		in.Sub = "repo:" + in.Repository + ":ref:" + in.Ref
+	}
+	now := time.Now()
+	// Compute expiration: prefer explicit exp (seconds), then ttl_seconds, default 5m
+	var expTime time.Time
+	if in.Exp > 0 {
+		expTime = time.Unix(in.Exp, 0)
+	} else if in.TTLSeconds > 0 {
+		expTime = now.Add(time.Duration(in.TTLSeconds) * time.Second)
+	} else {
+		expTime = now.Add(5 * time.Minute)
+	}
+	// Generate a random jti (JWT ID)
+	var jtiBytes [16]byte
+	_, _ = rand.Read(jtiBytes[:])
+	jti := base64.RawURLEncoding.EncodeToString(jtiBytes[:])
+
+	claims := map[string]any{
+		"iss":         s.claimIssuer,
+		"sub":         in.Sub,
+		"aud":         in.Aud,
+		"iat":         now.Unix(),
+		"exp":         expTime.Unix(),
+		"jti":         jti,
+		"repository":  in.Repository,
+		"ref":         in.Ref,
+		"sha":         in.Sha,
+		"actor":       in.Actor,
+		"environment": in.Environment,
+	}
+	header := map[string]any{
+		"alg": "RS256",
+		"typ": "JWT",
+		"kid": s.kid,
+	}
+	enc := func(v any) string {
+		b, _ := json.Marshal(v)
+		return base64.RawURLEncoding.EncodeToString(b)
+	}
+	unsigned := enc(header) + "." + enc(claims)
+	h := sha256.Sum256([]byte(unsigned))
+	sig, err := rsa.SignPKCS1v15(nil, s.rsaKey, crypto.SHA256, h[:])
+	if err != nil {
+		http.Error(w, "sign error", http.StatusInternalServerError)
+		return
+	}
+	token := unsigned + "." + base64.RawURLEncoding.EncodeToString(sig)
+	log.Printf("actions/token minted kid=%s aud=%v sub=%s", s.kid, in.Aud, in.Sub)
+	writeJSON(w, http.StatusOK, map[string]string{"token": token})
 }
 
 func writeJSON(w http.ResponseWriter, code int, v any) {

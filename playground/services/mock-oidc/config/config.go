@@ -25,9 +25,12 @@ type ProviderConfig struct {
 	ExtraIDTokenClaims       map[string]any           `yaml:"extra_id_token_claims"`
 	UserinfoClaimsFromScopes map[string][]string      `yaml:"userinfo_claims_from_scopes"`
 	SigningKeyPEM            string                   `yaml:"signing_key_pem"`
+	SigningKeyPEMPath        string                   `yaml:"signing_key_pem_path"`
 	AllowPKCEPlain           *bool                    `yaml:"allow_pkce_plain"`
 	BaseURL                  string                   `yaml:"base_url"`
 	Override                 bool                     `yaml:"override"`
+	IssuerOverride           string                   `yaml:"issuer_override"`
+	DefaultAudience          []string                 `yaml:"default_audience"`
 }
 
 type ProviderClientConfig struct {

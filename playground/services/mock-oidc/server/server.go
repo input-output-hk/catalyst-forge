@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 	"time"
 
 	cfgpkg "github.com/input-output-hk/catalyst-forge/playground/services/mock-oidc/config"
@@ -61,21 +62,32 @@ func NewMuxFromFileConfig(fc *cfgpkg.FileConfig) (http.Handler, error) {
 	for _, p := range fc.Providers {
 		pc := p
 		cfg := &handlers.Config{
-			ListenAddr:     u.FirstNonEmpty(fc.ListenAddr, ":8080"),
-			IssuerID:       pc.ID,
-			BaseURL:        u.FirstNonEmpty(pc.BaseURL, fc.BaseURL),
-			ClientID:       pc.Client.ID,
-			ClientSecret:   pc.Client.Secret,
-			RedirectURI:    u.FirstString(pc.Client.RedirectURIs),
-			GlobalSecret:   fc.GlobalSecret,
-			DefaultSub:     u.PickPersonaSub(pc.Personas),
-			DefaultEmail:   u.PickPersonaClaimString(pc.Personas, "email"),
-			DefaultName:    u.PickPersonaClaimString(pc.Personas, "name"),
-			AllowPKCEPlain: u.BoolOrDefault(pc.AllowPKCEPlain, fc.AllowPKCEPlain),
-			ClientPublic:   pc.Public,
-			SigningKeyPEM:  pc.SigningKeyPEM,
-			Override:       pc.Override,
+			ListenAddr:        u.FirstNonEmpty(fc.ListenAddr, ":8080"),
+			IssuerID:          pc.ID,
+			BaseURL:           u.FirstNonEmpty(pc.BaseURL, fc.BaseURL),
+			ClientID:          pc.Client.ID,
+			ClientSecret:      pc.Client.Secret,
+			RedirectURI:       u.FirstString(pc.Client.RedirectURIs),
+			GlobalSecret:      fc.GlobalSecret,
+			DefaultSub:        u.PickPersonaSub(pc.Personas),
+			DefaultEmail:      u.PickPersonaClaimString(pc.Personas, "email"),
+			DefaultName:       u.PickPersonaClaimString(pc.Personas, "name"),
+			AllowPKCEPlain:    u.BoolOrDefault(pc.AllowPKCEPlain, fc.AllowPKCEPlain),
+			ClientPublic:      pc.Public,
+			SigningKeyPEM:     pc.SigningKeyPEM,
+			SigningKeyPEMPath: pc.SigningKeyPEMPath,
+			Override:          pc.Override,
+			IssuerOverride:    pc.IssuerOverride,
+			DefaultAudience:   pc.DefaultAudience,
 		}
+
+		// If inline PEM is empty and a path is configured, read the PEM from file
+		if cfg.SigningKeyPEM == "" && cfg.SigningKeyPEMPath != "" {
+			if b, err := os.ReadFile(cfg.SigningKeyPEMPath); err == nil {
+				cfg.SigningKeyPEM = string(b)
+			}
+		}
+
 		priv, err := loadOrGenerateKey(cfg)
 		if err != nil {
 			return nil, fmt.Errorf("load signing key for %s: %w", pc.ID, err)
@@ -92,6 +104,11 @@ func NewMuxFromFileConfig(fc *cfgpkg.FileConfig) (http.Handler, error) {
 		mux.HandleFunc(base+"/authorize", srv.HandleAuthorize)
 		mux.HandleFunc(base+"/token", srv.HandleToken)
 		mux.HandleFunc(base+"/userinfo", srv.HandleUserinfo)
+
+		// GHA mint endpoint
+		if pc.ID == "github" {
+			mux.HandleFunc(base+"/actions/token", srv.HandleActionsToken)
+		}
 	}
 
 	// Global redirects for convenience

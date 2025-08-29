@@ -87,6 +87,13 @@ deployments: {
 						name: "\(registry)/\(deployments.oidc.image.name)"
 						tag:  deployments.oidc.image.tag
 					}
+					mounts: {
+						key: {
+							ref: secret: name: "mock-oidc-github-signing"
+							path:    "/keys/signing.pem"
+							subPath: "signing_key.pem"
+						}
+					}
 				}
 				#config: {
 					base_url: "https://oidc.projectcatalyst.dev"
@@ -110,6 +117,26 @@ deployments: {
 										email_verified: true
 										name:           "Admin User"
 										hd:             "iohk.io"
+									}
+								}
+							}
+						},
+						{
+							id:                   "github"
+							public:               true
+							override:             false
+							signing_key_pem_path: "/keys/signing.pem"
+							issuer_override:      "https://token.actions.githubusercontent.com"
+							default_audience: ["https://auth.projectcatalyst.dev/hydra/public/oauth2/token"]
+							personas: {
+								default: {
+									sub: "repo:acme/repo:ref:refs/heads/main"
+									claims: {
+										repository:  "acme/repo"
+										ref:         "refs/heads/main"
+										sha:         "deadbeef"
+										actor:       "runner"
+										environment: "dev"
 									}
 								}
 							}
@@ -194,6 +221,24 @@ tasks: {
 					"http://127.0.0.1:49152/logout",
 				]
 			}
+			gha_ci: {
+				client_id:   "gha-ci"
+				client_name: "GitHub Actions (dev)"
+				scope:       "openid"
+				grant_types: ["urn:ietf:params:oauth:grant-type:jwt-bearer"]
+				token_endpoint_auth_method: "none"
+				redirect_uris: []
+				audience: [
+					"https://forge.projectcatalyst.dev/api",
+				]
+			}
 		}
+		trusted_jwt_grant_issuers: [
+			{
+				issuer:            "https://token.actions.githubusercontent.com"
+				jwks_uri:          "https://oidc.projectcatalyst.dev/github/jwks"
+				allow_any_subject: true
+			},
+		]
 	}
 }

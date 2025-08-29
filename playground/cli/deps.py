@@ -12,6 +12,8 @@ from dataclasses import dataclass
 import os
 from pathlib import Path
 from typing import Any, Dict, Optional
+import subprocess
+import requests
 
 from .config import ConfigState
 from .db.base import DatabaseConfig, DatabaseRoot
@@ -27,6 +29,7 @@ class Deps:
     _db: Optional[DatabaseRoot] = None
     _k8s_loaded: bool = False
     _k8s_clients: Dict[str, Any] | None = None
+    _http_session: Optional[requests.Session] = None
 
     @property
     def runner(self) -> CommandRunner:
@@ -106,3 +109,35 @@ class Deps:
             }
             self._k8s_loaded = True
         return self._k8s_clients or {}
+
+    @property
+    def requests_session(self) -> requests.Session:
+        """Return a requests Session configured to trust the local mkcert root CA.
+
+        We assume the repository generates and stores the CA at `.certs/rootCA.pem`.
+        This path is resolved relative to the repository root inferred from the
+        known config path at `playground/config.cue`.
+        """
+        if self._http_session is None:
+            # Derive repo root from the config path (…/playground/config.cue)
+            cfg_path = self.state.path.resolve()
+            repo_root = cfg_path.parent.parent
+            ca_path = repo_root / ".certs/rootCA.pem"
+
+            sess = requests.Session()
+            if ca_path.exists():
+                sess.verify = str(ca_path)
+            else:
+                # Fallback: try mkcert -CAROOT/rootCA.pem
+                try:
+                    out = subprocess.run(
+                        ["mkcert", "-CAROOT"], check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True
+                    )
+                    ca_dir = Path((out.stdout or "").strip())
+                    alt = ca_dir / "rootCA.pem"
+                    if alt.exists():
+                        sess.verify = str(alt)
+                except Exception:
+                    pass
+            self._http_session = sess
+        return self._http_session
