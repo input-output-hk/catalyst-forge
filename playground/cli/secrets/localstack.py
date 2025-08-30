@@ -75,3 +75,37 @@ def ensure_secret_json(name: str, payload: dict[str, Any], namespace: str = "loc
             ],
             namespace,
         )
+
+
+def read_secret_json(name: str, namespace: str = "localstack") -> dict[str, Any] | None:
+    pod = _get_localstack_pod(namespace)
+    # Get SecretString as raw JSON text
+    cp = CommandRunner().run(
+        [
+            "kubectl",
+            "-n",
+            namespace,
+            "exec",
+            pod,
+            "--",
+            "awslocal",
+            "secretsmanager",
+            "get-secret-value",
+            "--secret-id",
+            name,
+        ],
+        capture=True,
+        check=False,
+    )
+    if cp.returncode != 0:
+        return None
+    try:
+        import json as _json
+
+        data = _json.loads(cp.stdout or "{}")
+        secret_str = data.get("SecretString")
+        if isinstance(secret_str, str) and secret_str.strip():
+            return _json.loads(secret_str)
+        return None
+    except Exception:
+        return None

@@ -1,6 +1,8 @@
 repositories:
   - name: jetstack
     url: https://charts.jetstack.io
+  - name: gitea-charts
+    url: https://dl.gitea.io/charts/
   - name: cert-manager
     url: https://charts.jetstack.io
   - name: bitnami
@@ -486,4 +488,72 @@ releases:
             "deployment/temporal-frontend",
             "--timeout=300s",
           ]
+        showlogs: true
+
+  - name: gitea
+    namespace: gitea
+    chart: gitea-charts/gitea
+    createNamespace: true
+    needs:
+      - envoy-gateway-system/envoy-gateway
+      - postgres/postgres
+      - external-secrets/external-secrets
+    values:
+      - service:
+          ssh:
+            type: ClusterIP
+          http:
+            type: ClusterIP
+      - ingress:
+          enabled: false
+      - gitea:
+          config:
+            server:
+              DOMAIN: git.projectcatalyst.dev
+              ROOT_URL: https://git.projectcatalyst.dev/
+            security:
+              INSTALL_LOCK: true
+          database:
+            DB_TYPE: postgres
+            # Non-secret fields set here for clarity; password will be provided via env override
+            HOST: postgres-postgresql.postgres.svc.cluster.local:5432
+            NAME: gitea
+            USER: gitea
+    hooks:
+      - events: ["presync"]
+        command: sh
+        args:
+          - -c
+          - |
+            set -euo pipefail
+            kubectl create namespace gitea --dry-run=client -o yaml | kubectl apply -f -
+        showlogs: true
+      - events: ["presync"]
+        command: kubectl
+        args: ["apply", "-f", "platform/eso/gitea-external-secrets.yaml"]
+        showlogs: true
+      - events: ["presync"]
+        command: sh
+        args:
+          - -c
+          - |
+            set -euo pipefail
+            for i in $(seq 1 60); do
+              if kubectl -n gitea get secret gitea-db >/dev/null 2>&1; then exit 0; fi; sleep 2; done; exit 1
+        showlogs: true
+      - events: ["postsync"]
+        command: kubectl
+        args:
+          [
+            "-n",
+            "gitea",
+            "rollout",
+            "status",
+            "deployment/gitea",
+            "--timeout=300s",
+          ]
+        showlogs: true
+      - events: ["postsync"]
+        command: kubectl
+        args: ["apply", "-f", "platform/envoy/gitea-route.yaml"]
         showlogs: true
