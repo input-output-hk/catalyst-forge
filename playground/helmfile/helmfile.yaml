@@ -1,6 +1,8 @@
 repositories:
   - name: jetstack
     url: https://charts.jetstack.io
+  - name: argo
+    url: https://argoproj.github.io/argo-helm
   - name: gitea-charts
     url: https://dl.gitea.io/charts/
   - name: cert-manager
@@ -556,4 +558,54 @@ releases:
       - events: ["postsync"]
         command: kubectl
         args: ["apply", "-f", "platform/envoy/gitea-route.yaml"]
+        showlogs: true
+
+  - name: argocd
+    namespace: argocd
+    chart: argo/argo-cd
+    createNamespace: true
+    needs:
+      - envoy-gateway-system/envoy-gateway
+      - external-secrets/external-secrets
+    values:
+      - server:
+          service:
+            type: ClusterIP
+          ingress:
+            enabled: false
+          extraArgs:
+            - --insecure
+        configs:
+          cm:
+            url: https://argo.projectcatalyst.dev
+          params:
+            server.insecure: true
+    hooks:
+      - events: ["presync"]
+        command: sh
+        args:
+          - -c
+          - |
+            set -euo pipefail
+            kubectl create namespace argocd --dry-run=client -o yaml | kubectl apply -f -
+        showlogs: true
+      - events: ["postsync"]
+        command: kubectl
+        args: ["apply", "-f", "platform/eso/argocd-external-secrets.yaml"]
+        showlogs: true
+      - events: ["postsync"]
+        command: kubectl
+        args:
+          [
+            "-n",
+            "argocd",
+            "rollout",
+            "status",
+            "deployment/argocd-server",
+            "--timeout=300s",
+          ]
+        showlogs: true
+      - events: ["postsync"]
+        command: kubectl
+        args: ["apply", "-f", "platform/envoy/argocd-route.yaml"]
         showlogs: true

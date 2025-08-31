@@ -277,7 +277,7 @@ def up(
     _run_task("migrate")
 
     # 6) Remaining helmfile releases (app/service layer)
-    remaining = ["mailpit", "kratos", "hydra", "temporal"]
+    remaining = ["gitea", "mailpit", "kratos", "hydra", "temporal", "argocd"]
     _run_task("helmfile", {"action": action, "only": remaining})
 
     # 7) Hydra client setup
