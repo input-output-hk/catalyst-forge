@@ -137,5 +137,3 @@ def _factory(ctx: ConfigState, deps) -> Optional[HelmfileSetup]:
     if not cfg.enabled:
         return None
     return HelmfileSetup(cfg=cfg, deps=deps)
-
-

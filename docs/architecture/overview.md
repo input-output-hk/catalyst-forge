@@ -1,7 +1,3 @@
-Perfect—thanks for the guidance. Below is **Part I: Conceptual (sections 1–4)** rewritten to be conversational and non‑technical. It’s designed to **create shared language** and **mental models** for PMs, leadership, QA, engineers, and platform/SRE—without leaking low‑level details. All file names, paths, and implementation specifics are saved for the Reference section.
-
----
-
 # Part I — Conceptual
 
 ## 1) What is Catalyst Forge?
@@ -1014,11 +1010,15 @@ The associated **Render Job** API surface exposes `bundle_hash`, `module_version
 ## H2. Authorization (AuthZ) & tenancy
 
 * **RBAC** at **project/environment** boundary.
+* **Action vocabulary** (environment carried in context): `promotion:request`, `promotion:approve`, `deployment:execute` (system), `release:publish`, `project:*`, `environment:*`, `artifact:*`, `trace:read`, `events:read`, `gitops:*` (system), `render:*` (system).
 * **Approvals**:
 
   * Dev → pre‑prod: QA approval with **reason (required)**.
   * Pre‑prod → prod: SRE/Platform approval with **reason (required)** + **step‑up**.
   * Operator will not auto‑merge the GitOps PR without a valid approval record.
+* **Role guardrails**:
+  * `devx`: platform admin for non‑prod only; cannot approve or modify `prod`.
+  * `sre`: full platform admin; approves `prod`; break‑glass per runbook.
 * **Tenancy**:
 
   * GitOps repo segmented by `<env>/<project>`.

@@ -37,8 +37,8 @@ class DnsSetup(SetupTask):
         return (
             f"{begin}\n"
             f"    template IN A {domain} {{\n"
-            f"        match \"^([a-z0-9-]+\\.)*{escaped_domain}\\.$\"\n"
-            f"        answer \"{{{{ .Name }}}} 300 IN A {envoy_ip}\"\n"
+            f'        match "^([a-z0-9-]+\\.)*{escaped_domain}\\.$"\n'
+            f'        answer "{{{{ .Name }}}} 300 IN A {envoy_ip}"\n'
             f"        fallthrough\n"
             f"    }}\n"
             f"{end}\n"
@@ -62,7 +62,9 @@ class DnsSetup(SetupTask):
                     return start_idx, i
         return -1, -1
 
-    def _merge_corefile(self, corefile: str, managed_block: str, begin: str, end: str) -> tuple[str, bool, bool]:
+    def _merge_corefile(
+        self, corefile: str, managed_block: str, begin: str, end: str
+    ) -> tuple[str, bool, bool]:
         original = corefile if corefile.endswith("\n") else corefile + "\n"
 
         # Remove existing managed block if present
@@ -120,7 +122,9 @@ class DnsSetup(SetupTask):
         begin = f"# BEGIN catalyst-forge wildcard {self.cfg.domain}"
         end = f"# END catalyst-forge wildcard {self.cfg.domain}"
         managed_block = self._render_managed_block(self.cfg.domain, envoy_ip)
-        new_corefile, changed, has_reload = self._merge_corefile(corefile, managed_block, begin, end)
+        new_corefile, changed, has_reload = self._merge_corefile(
+            corefile, managed_block, begin, end
+        )
 
         if not changed:
             log("DNS: CoreDNS Corefile already up-to-date; no changes")

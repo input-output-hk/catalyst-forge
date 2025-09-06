@@ -48,5 +48,3 @@ class GiteaSeeder(Seeder):
 def _factory(ctx: "ConfigState", deps: "Deps") -> Optional[GiteaSeeder]:
     # Always include with defaults for playground usage.
     return GiteaSeeder()
-
-

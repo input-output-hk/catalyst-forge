@@ -1,3 +1,7 @@
+[build-system]
+requires = ["setuptools>=61", "wheel"]
+build-backend = "setuptools.build_meta"
+
 [project]
 name = "playground-cli"
 version = "0.1.0"
@@ -11,7 +15,14 @@ dependencies = [
     "kubernetes>=28.0.0",
     "psycopg[binary]>=3.1.0",
     "requests>=2.31.0",
+    "networkx>=3.0",
 ]
+
+[project.scripts]
+cli = "cli.main:app"
+
+[tool.setuptools.packages.find]
+include = ["cli*"]
 
 [tool.uv]
 dev-dependencies = [
@@ -20,6 +31,7 @@ dev-dependencies = [
     "pytest>=8.2.0",
     "mypy>=1.10.0",
     "types-PyYAML>=6.0.12.12",
+    "types-requests>=2.32.4.20250809",
 ]
 
 [tool.ruff]

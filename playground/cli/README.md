@@ -200,9 +200,9 @@ Minimal example:
 from __future__ import annotations
 
 from pydantic import BaseModel
-from playground.cli.config import ConfigState
-from playground.cli.setup.base import SetupTask
-from playground.cli.setup.registry import register_setup_task
+from cli.config import ConfigState
+from cli.setup.base import SetupTask
+from cli.setup.registry import register_setup_task
 
 class MyTaskConfig(BaseModel):
     enabled: bool = True

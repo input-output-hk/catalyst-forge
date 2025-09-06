@@ -18,7 +18,7 @@ class MigrateSetup(SetupTask):
 
     def run(self) -> None:
         # Import seeders to populate registry
-        import playground.cli.db.seeders as seeders_pkg
+        import cli.db.seeders as seeders_pkg
         import importlib
         import pkgutil
         import subprocess

@@ -1,4 +1,4 @@
-# Justfile for local playground: K3d + Helmfile (Envoy Gateway, registry)
+# Justfile for local playground: K3d + SetupV2 (contract-based parallel task runner)
 
 PROJROOT := justfile_directory()
 
@@ -8,42 +8,48 @@ set shell := ["bash", "-eu", "-o", "pipefail", "-c"]
 default:
 	@just --list
 
-# Run environment setup tasks
+# DEPRECATED: Run old environment setup tasks (use 'just up' for setupv2)
 # Usage:
-#   just setup                    # run all tasks
-#   just setup hydra dns          # convenience: converts to --only hydra --only dns
-#   just setup --only deploy      # pass flags through as-is when args start with --
+#   just setup                    # run all tasks (DEPRECATED)
+#   just setup hydra dns          # convenience: converts to --only hydra --only dns (DEPRECATED)
+#   just setup --only deploy      # pass flags through as-is when args start with -- (DEPRECATED)
+#
+# NOTE: This command uses the old sequential setup system.
+#       Use 'just up' for the new parallel setupv2 system.
 setup *args:
 	#!/usr/bin/env bash
 	set -euo pipefail
-	cd "{{PROJROOT}}/cli"
+	cd "{{PROJROOT}}"
+	echo "⚠️  WARNING: 'just setup' uses the deprecated V1 system."
+	echo "   Use 'just up' for the new parallel setupv2 system."
+	echo ""
 	# Populate positional parameters from Just variadic args so $#, $1, "$@" work
 	set -- {{args}}
 	if [ "$#" -eq 0 ]; then
-		echo "Running all tasks"
-		PYTHONPATH="{{PROJROOT}}/.." uv run python -m playground.cli.main setup
+		echo "Running all tasks (V1 system)"
+		uv run cli setup
 	else
 		first="$1"
 		if [[ "$first" == --* ]]; then
 			echo "Passing flags through verbatim: $@"
 			# Pass flags through verbatim
-			PYTHONPATH="{{PROJROOT}}/.." uv run python -m playground.cli.main setup "$@"
+			uv run cli setup "$@"
 		else
 			echo "Treating args as task names, converting to repeated --only flags: $@"
 			# Treat args as task names, convert to repeated --only flags
 			args_conv=()
 			for t in "$@"; do args_conv+=(--only "$t"); done
-			PYTHONPATH="{{PROJROOT}}/.." uv run python -m playground.cli.main setup "${args_conv[@]}"
+			uv run cli setup "${args_conv[@]}"
 		fi
 	fi
 
-# Create or reuse local cluster and write kubeconfig/cluster.json
+# Create or reuse local cluster and deploy all services using setupv2
 up:
-	cd "{{PROJROOT}}/cli" && PYTHONPATH="{{PROJROOT}}/.." uv run python -m playground.cli.main up
+	cd "{{PROJROOT}}" && uv run cli setupv2
 
 # Tear down cluster
 down name="forge":
-    cd "{{PROJROOT}}/cli" && PYTHONPATH="{{PROJROOT}}/.." uv run python -m playground.cli.main down --name {{name}}
+    cd "{{PROJROOT}}" && uv run cli down --name {{name}}
 
 # Apply base platform
 apply:
@@ -57,17 +63,17 @@ sync:
 check:
 	#!/usr/bin/env bash
 	set -euo pipefail
-	cd "{{PROJROOT}}/cli"
+	cd "{{PROJROOT}}"
 	# Ensure tools resolve via uv without requiring a pre-synced venv
-	uv run ruff check .
-	uv run ruff format --check .
-	# Run mypy using uv; set PYTHONPATH so package imports resolve
-	PYTHONPATH="{{PROJROOT}}/.." uv run mypy .
+	uv run ruff check cli/
+	uv run ruff format --check cli/
+	# Run mypy using uv
+	uv run mypy cli/
 
 # CLI: auto-format and fix lint issues
 format:
 	#!/usr/bin/env bash
 	set -euo pipefail
-	cd "{{PROJROOT}}/cli"
-	uv run ruff format .
-	uv run ruff check --fix .
+	cd "{{PROJROOT}}"
+	uv run ruff format cli/
+	uv run ruff check --fix cli/

@@ -49,6 +49,12 @@ class PlaygroundConfig(BaseModel):
     registry: str
     deployments: Dict[str, DeploymentConfig]
 
+    # k3d cluster configuration
+    k3d: Dict[str, Any] = Field(default_factory=dict)
+
+    # DNS configuration
+    dns: Dict[str, Any] = Field(default_factory=dict)
+
     # Typed external services configuration
     external: "ExternalConfig | None" = None
 

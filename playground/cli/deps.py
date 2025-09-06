@@ -131,7 +131,11 @@ class Deps:
                 # Fallback: try mkcert -CAROOT/rootCA.pem
                 try:
                     out = subprocess.run(
-                        ["mkcert", "-CAROOT"], check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True
+                        ["mkcert", "-CAROOT"],
+                        check=True,
+                        stdout=subprocess.PIPE,
+                        stderr=subprocess.PIPE,
+                        text=True,
                     )
                     ca_dir = Path((out.stdout or "").strip())
                     alt = ca_dir / "rootCA.pem"

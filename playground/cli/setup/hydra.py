@@ -45,7 +45,9 @@ class HydraTaskConfig(BaseModel):
 class HydraSetup(SetupTask):
     """Register/update Hydra OAuth2 clients based on typed config."""
 
-    def __init__(self, clients: TypingMapping[str, HydraClientConfig], runner, trusted: list[dict], deps) -> None:
+    def __init__(
+        self, clients: TypingMapping[str, HydraClientConfig], runner, trusted: list[dict], deps
+    ) -> None:
         self.clients = dict(clients)
         self.runner = runner
         self.trusted = list(trusted)
@@ -193,8 +195,14 @@ class HydraSetup(SetupTask):
                             iss = it.get("issuer")
                             subj = it.get("subject")
                             anysub = it.get("allow_any_subject")
-                            kid = (it.get("public_key") or {}).get("kid") if isinstance(it.get("public_key"), dict) else None
-                            log(f" - issuer={iss} subject={subj} allow_any_subject={anysub} kid={kid}")
+                            kid = (
+                                (it.get("public_key") or {}).get("kid")
+                                if isinstance(it.get("public_key"), dict)
+                                else None
+                            )
+                            log(
+                                f" - issuer={iss} subject={subj} allow_any_subject={anysub} kid={kid}"
+                            )
                 else:
                     err(f"Failed to list trusted issuers: {resp.status_code} {resp.text}")
             except Exception as e:

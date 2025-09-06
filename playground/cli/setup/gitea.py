@@ -37,10 +37,12 @@ class GiteaTaskConfig(BaseModel):
     remote_name: str = Field(default="gitea")
     enable_push: bool = Field(default=True)
     secrets_prefix: str = Field(default="shared-services/git/gitea")
-    token_scopes: list[str] = Field(default_factory=lambda: [
-        "read:repository",
-        "write:repository",
-    ])
+    token_scopes: list[str] = Field(
+        default_factory=lambda: [
+            "read:repository",
+            "write:repository",
+        ]
+    )
 
 
 @dataclass
@@ -91,7 +93,9 @@ class GiteaSetup(SetupTask):
         self._ensure_user_cli(username=auto_user, password=auto_pass, admin=False)
 
         # Create PAT for automation user using basic auth
-        token = self._ensure_user_pat_user(username=auto_user, password=auto_pass, token_name="automation-ci")
+        token = self._ensure_user_pat_user(
+            username=auto_user, password=auto_pass, token_name="automation-ci"
+        )
 
         # Ensure repository exists under owner (org or user)
         self._ensure_repository(owner=owner, repo=repo_name, token=token)
@@ -102,14 +106,19 @@ class GiteaSetup(SetupTask):
         pub_key = existing.get("ssh_public_key") if isinstance(existing, dict) else None
         if not priv_key or not pub_key:
             priv_key, pub_key = self._ensure_ssh_keypair()
-        self._ensure_deploy_key(owner=owner, repo=repo_name, token=token, title="argocd-readonly", pubkey=pub_key)
+        self._ensure_deploy_key(
+            owner=owner, repo=repo_name, token=token, title="argocd-readonly", pubkey=pub_key
+        )
 
         # Prepare known_hosts for git host
         known_hosts = self._ssh_known_hosts()
 
         # Store secrets in LocalStack
         from urllib.parse import urlparse
-        host = urlparse(base).netloc or base.replace("https://", "").replace("http://", "").strip("/")
+
+        host = urlparse(base).netloc or base.replace("https://", "").replace("http://", "").strip(
+            "/"
+        )
         repo_http = f"{base}/{owner}/{repo_name}.git"
         repo_ssh = f"git@{host}:{owner}/{repo_name}.git"
         ensure_secret_json(
@@ -128,7 +137,9 @@ class GiteaSetup(SetupTask):
 
         # Optionally add remote and push
         if self.cfg.enable_push:
-            self._ensure_git_remote_and_push(remote=self.cfg.remote_name, http_url=repo_http, username=auto_user, token=token)
+            self._ensure_git_remote_and_push(
+                remote=self.cfg.remote_name, http_url=repo_http, username=auto_user, token=token
+            )
 
         log("Gitea: bootstrap complete")
 
@@ -188,9 +199,9 @@ class GiteaSetup(SetupTask):
         sess.auth = (username, password)
         base = str(self.cfg.base_url).rstrip("/")
         url = f"{base}/api/v1/users/{username}/tokens"
-        payload = {"name": token_name}
+        payload: dict = {"name": token_name}
         # Include scopes for Gitea versions that require them
-        scopes = list(self.cfg.token_scopes or [])
+        scopes: list[str] = self.cfg.token_scopes
         if scopes:
             payload["scopes"] = scopes
         r = sess.post(url, json=payload, timeout=10)
@@ -257,17 +268,22 @@ class GiteaSetup(SetupTask):
     def _ssh_known_hosts(self) -> str:
         try:
             from urllib.parse import urlparse
+
             host = urlparse(str(self.cfg.base_url)).netloc
         except Exception:
             host = str(self.cfg.base_url)
         host = host.replace("https://", "").replace("http://", "").strip("/")
         try:
-            cp = CommandRunner().run(["ssh-keyscan", "-t", "rsa,ecdsa,ed25519", host], capture=True, check=False)
+            cp = CommandRunner().run(
+                ["ssh-keyscan", "-t", "rsa,ecdsa,ed25519", host], capture=True, check=False
+            )
             return (cp.stdout or "").strip()
         except Exception:
             return ""
 
-    def _ensure_deploy_key(self, *, owner: str, repo: str, token: str, title: str, pubkey: str) -> None:
+    def _ensure_deploy_key(
+        self, *, owner: str, repo: str, token: str, title: str, pubkey: str
+    ) -> None:
         base = str(self.cfg.base_url).rstrip("/")
         sess = self.deps.requests_session
         sess.headers.update({"Authorization": f"token {token}"})
@@ -285,28 +301,41 @@ class GiteaSetup(SetupTask):
         if r.status_code not in (200, 201):
             warn(f"Failed to add deploy key: {r.status_code} {r.text}")
 
-    def _ensure_git_remote_and_push(self, *, remote: str, http_url: str, username: str, token: str) -> None:
+    def _ensure_git_remote_and_push(
+        self, *, remote: str, http_url: str, username: str, token: str
+    ) -> None:
         repo_root = get_repo_root(Path(__file__).resolve())
         # Add remote if missing
         cp = CommandRunner().run(["git", "-C", str(repo_root), "remote"], capture=True)
         remotes = (cp.stdout or "").split()
         url_with_auth = http_url.replace("https://", f"https://{username}:{token}@")
         if remote not in remotes:
-            CommandRunner().run(["git", "-C", str(repo_root), "remote", "add", remote, url_with_auth], redact=[token])
+            CommandRunner().run(
+                ["git", "-C", str(repo_root), "remote", "add", remote, url_with_auth],
+                redact=[token],
+            )
         else:
             # Update URL to ensure it contains auth
-            CommandRunner().run(["git", "-C", str(repo_root), "remote", "set-url", remote, url_with_auth], redact=[token])
+            CommandRunner().run(
+                ["git", "-C", str(repo_root), "remote", "set-url", remote, url_with_auth],
+                redact=[token],
+            )
         # Determine branch
-        cp = CommandRunner().run(["git", "-C", str(repo_root), "rev-parse", "--abbrev-ref", "HEAD"], capture=True)
+        cp = CommandRunner().run(
+            ["git", "-C", str(repo_root), "rev-parse", "--abbrev-ref", "HEAD"], capture=True
+        )
         branch = (cp.stdout or "main").strip() or "main"
         # Configure per-URL CA bundle for this host so Git trusts mkcert root
         from urllib.parse import urlparse
+
         host = urlparse(http_url).scheme + "://" + (urlparse(http_url).netloc or "")
         try:
             ca_root = CommandRunner().run(["mkcert", "-CAROOT"], capture=True).stdout.strip()
             ca_pem = str(Path(ca_root) / "rootCA.pem")
             if ca_root:
-                CommandRunner().run(["git", "-C", str(repo_root), "config", f"http.{host}.sslCAInfo", ca_pem])
+                CommandRunner().run(
+                    ["git", "-C", str(repo_root), "config", f"http.{host}.sslCAInfo", ca_pem]
+                )
         except Exception:
             pass
         # Push with upstream
@@ -318,7 +347,9 @@ class GiteaSetup(SetupTask):
                 env = {"GIT_SSL_CAINFO": ca_pem}
             except Exception:
                 pass
-            CommandRunner().run(["git", "-C", str(repo_root), "push", "-u", remote, branch], redact=[token], env=env)
+            CommandRunner().run(
+                ["git", "-C", str(repo_root), "push", "-u", remote, branch], redact=[token], env=env
+            )
         except Exception:
             warn("Git push failed (possibly already up to date)")
 
@@ -337,5 +368,3 @@ def _factory(ctx: ConfigState, deps) -> Optional[GiteaSetup]:
     if not cfg.enabled:
         return None
     return GiteaSetup(cfg=cfg, deps=deps)
-
-

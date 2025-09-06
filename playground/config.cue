@@ -1,5 +1,165 @@
 registry: "registry.projectcatalyst.dev"
 
+dns: {
+	domain: "projectcatalyst.dev"
+}
+
+k3d: {
+	cluster_name:   "forge"
+	servers:        1
+	agents:         0
+	http_port:      80
+	https_port:     443
+	api_port:       0 // 0 means auto-assign
+	kubeconfig_out: "playground/kubeconfig"
+	output_json:    "playground/cluster.json"
+	force_recreate: false
+	assume_yes:     true
+}
+
+argocd: {
+	namespace:      "argocd"
+	domain:         "argo.projectcatalyst.dev"
+	admin_password: "admin"
+	repositories: [
+		{
+			name: "catalyst-forge"
+			url:  "https://gitea.projectcatalyst.dev/catalyst-forge"
+		},
+	]
+}
+
+cert_manager: {
+	namespace:           "cert-manager"
+	cluster_issuer_name: "selfsigned-issuer"
+}
+
+envoy_gateway: {
+	namespace:          "envoy-gateway-system"
+	gateway_class_name: "envoy-gateway"
+}
+
+external_secrets: {
+	namespace:         "external-secrets"
+	secret_store_name: "localstack-store"
+}
+
+gitea: {
+	namespace:    "gitea"
+	domain:       "git.projectcatalyst.dev"
+	ssh_port:     2222
+	oauth_secret: "gitea-oauth-secret-change-in-production"
+	security: {
+		secret_key:     "gitea-secret-key-change-in-production"
+		internal_token: "gitea-internal-token-change-in-production"
+	}
+	persistence: {
+		enabled: true
+		size:    "10Gi"
+	}
+	repositories: [
+		{
+			name: "catalyst-forge"
+			org:  "forge"
+		},
+	]
+}
+
+keycloak: {
+	namespace:      "keycloak"
+	domain:         "auth.projectcatalyst.dev"
+	admin_username: "admin"
+	admin_password: "admin"
+	realm_name:     "forge"
+	client_id:      "catalyst-services"
+	client_secret:  "catalyst-secret-change-me"
+	features: {
+		enabled: [
+			"preview",
+			"account-api",
+			"admin-api",
+			"account3",
+			"admin2",
+		]
+		disabled: ["impersonation"]
+	}
+	transaction: {"xaEnabled": false}
+}
+
+localstack: {
+	namespace: "localstack"
+	services:  "secretsmanager,sqs"
+	persistence: {
+		enabled:       true
+		size:          "1Gi"
+		storage_class: "local-path"
+	}
+	region:         "us-east-1"
+	aws_access_key: "test"
+	aws_secret_key: "test"
+	debug:          false
+}
+
+mailpit: {
+	namespace:           "mailpit"
+	hostname:            "mailpit.projectcatalyst.dev"
+	max_messages:        500
+	disable_web_ui_auth: true
+}
+
+postgres: {
+	namespace: "postgres"
+	version:   "15.2.0"
+	database:  "postgres"
+	username:  "postgres"
+	password:  "postgres"
+	host:      "postgres-postgresql.postgres.svc.cluster.local"
+	port:      5432
+	persistence: {
+		enabled: true
+		size:    "10Gi"
+	}
+	metrics_enabled: false
+}
+
+registry: {
+	namespace: "registry"
+	username:  "admin"
+	password:  "registry-password-123"
+	persistence: {
+		enabled:       true
+		size:          "20Gi"
+		storage_class: "local-path"
+	}
+}
+
+temporal: {
+	namespace: "temporal"
+	domain:    "temporal.projectcatalyst.dev"
+	namespaces: ["default"]
+	web_enabled: true
+	schema: {
+		setup_enabled:  true
+		update_enabled: true
+	}
+}
+
+trust_manager: {
+	namespace: "cert-manager"
+	app: {
+		trust: {
+			namespace: "cert-manager"
+			package:   "cert-manager-package"
+		}
+	}
+	ca_bundle: {
+		name:           "mkcert-ca-bundle"
+		secret_name:    "mkcert-ca"
+		secret_key:     "tls.crt"
+		config_map_key: "ca.crt"
+	}
+}
+
 deps: {
 	db: {
 		host:     "postgres-postgresql.postgres.svc.cluster.local"

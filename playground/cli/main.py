@@ -12,8 +12,8 @@ from pathlib import Path
 import typer
 
 from .k3d import (
-	cluster_exists,
-	delete_cluster,
+    cluster_exists,
+    delete_cluster,
 )
 from .models import ClusterSummary  # re-export for tests/importers
 from .config import ConfigState, get_default_config_path, load_config
@@ -25,8 +25,8 @@ from .utils import get_repo_root, log
 ## (no direct db imports here)
 from .deps import Deps
 
-# Resolve the playground root (one level up from this file's directory)
-BASE_DIR = Path(__file__).resolve().parent.parent
+# Use git to find repository root, fallback to parent of cli directory
+REPO_ROOT = get_repo_root(Path(__file__).resolve().parent)
 
 app = typer.Typer(
     help="CLI helpers for the Playground v2 local environment",
@@ -67,8 +67,7 @@ def _load_global_config(
         except Exception:
             pass
 
-    repo_root = get_repo_root(BASE_DIR)
-    config_path = config if config is not None else get_default_config_path(repo_root)
+    config_path = config if config is not None else get_default_config_path(REPO_ROOT)
     cfg, raw = load_config(config_path)
     ctx.obj = ConfigState(path=config_path, config=cfg, raw=raw)
     log(f"Using configuration: {config_path}")
@@ -100,7 +99,7 @@ def setup(
         raise RuntimeError("Config state not loaded")
 
     # Auto-import all setup submodules to trigger their registration
-    import playground.cli.setup as setup_pkg
+    import cli.setup as setup_pkg
 
     for mod in pkgutil.iter_modules(setup_pkg.__path__, setup_pkg.__name__ + "."):
         importlib.import_module(mod.name)
@@ -189,6 +188,62 @@ def setup(
         log("[INFO] No setup tasks to run")
 
 
+@app.command("setupv2")
+def setupv2(
+    ctx: typer.Context,
+    dry_run: bool = typer.Option(
+        False,
+        "--dry-run",
+        help="Show execution plan without running tasks",
+    ),
+    only: list[str] = typer.Option(
+        None,
+        "--only",
+        help="Run only specific task(s). Repeat flag to specify multiple.",
+    ),
+    list_: bool = typer.Option(
+        False,
+        "--list",
+        help="List available tasks with their contracts and exit",
+    ),
+) -> None:
+    """Run environment setup tasks using the v2 contract-based system.
+
+    This is a new setup system that enables parallel execution based on
+    explicit dependency contracts between tasks.
+    """
+    state: ConfigState | None = getattr(ctx, "obj", None)
+    if state is None:
+        raise RuntimeError("Config state not loaded")
+
+    # Import setupv2 module
+    try:
+        from cli.setupv2 import run_all, list_tasks, load_tasks
+    except ImportError as e:
+        raise SystemExit(f"Failed to import setupv2: {e}")
+
+    # Load all tasks from the tasks/ directory
+    print("[INFO] Loading setupv2 tasks...")
+    load_tasks()
+
+    # Handle --list flag
+    if list_:
+        print("\nAvailable tasks and their contracts:")
+        print("-" * 60)
+        task_list = list_tasks()
+        if task_list == "No tasks registered":
+            print("No tasks available. Add tasks to setupv2/tasks/ directory.")
+        else:
+            print(task_list)
+        return
+
+    # Run tasks
+    try:
+        run_all(state.config, only=only or None, dry_run=dry_run)
+    except Exception as e:
+        raise SystemExit(f"Setup failed: {e}")
+
+
 @app.command("up")
 def up(
     ctx: typer.Context,
@@ -212,7 +267,7 @@ def up(
         action = "apply"
 
     # Auto-import all setup submodules to ensure task registration
-    import playground.cli.setup as setup_pkg
+    import cli.setup as setup_pkg
 
     for mod in pkgutil.iter_modules(setup_pkg.__path__, setup_pkg.__name__ + "."):
         importlib.import_module(mod.name)
@@ -229,7 +284,9 @@ def up(
         if state.runtime is None:
             state.runtime = {}
         # Save and apply namespaced runtime overrides
-        previous = dict(state.runtime.get(name, {})) if isinstance(state.runtime.get(name), dict) else {}
+        previous = (
+            dict(state.runtime.get(name, {})) if isinstance(state.runtime.get(name), dict) else {}
+        )
         if overrides:
             merged = {**previous, **overrides}
             state.runtime[name] = merged
@@ -285,6 +342,7 @@ def up(
 
     # 8) Deploy all internal services
     _run_task("deploy")
+
 
 @app.command("down")
 def k3d_down(name: str = typer.Option("forge", help="Cluster name")) -> None:
