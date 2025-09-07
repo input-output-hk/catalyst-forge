@@ -46,8 +46,14 @@ def setup_external_secrets(ctx, cfg, log):
                 "name": "AWS_SECRETSMANAGER_ENDPOINT",
                 "value": "http://localstack.localstack.svc.cluster.local:4566",
             },
-            {"name": "AWS_SSM_ENDPOINT", "value": "http://localstack.localstack.svc.cluster.local:4566"},
-            {"name": "AWS_STS_ENDPOINT", "value": "http://localstack.localstack.svc.cluster.local:4566"},
+            {
+                "name": "AWS_SSM_ENDPOINT",
+                "value": "http://localstack.localstack.svc.cluster.local:4566",
+            },
+            {
+                "name": "AWS_STS_ENDPOINT",
+                "value": "http://localstack.localstack.svc.cluster.local:4566",
+            },
         ],
     }
 
@@ -77,8 +83,7 @@ def setup_external_secrets(ctx, cfg, log):
     # Create ClusterSecretStore for LocalStack AWS Secrets Manager
     log.write(f"Creating ClusterSecretStore '{es_config.secret_store_name}' for LocalStack...\n")
 
-    # Get LocalStack endpoint from context
-    localstack_endpoint = ctx["localstack.endpoint"]
+    # Get LocalStack config from context
     aws_region = ctx["localstack.region"]
     aws_access_key = ctx["localstack.aws_access_key"]
     aws_secret_key = ctx["localstack.aws_secret_key"]

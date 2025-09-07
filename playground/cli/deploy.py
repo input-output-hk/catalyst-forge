@@ -21,7 +21,8 @@ import tempfile
 from dataclasses import dataclass
 from pathlib import Path
 
-from .utils import err, log, require_cmd, get_repo_root
+from .utils import require_cmd, get_repo_root
+from .logging import get_logger
 from .runner import CommandRunner
 from .config import get_default_config_path
 
@@ -84,20 +85,22 @@ def _resolve_paths(
 
 def _preflight(paths: DeployPaths) -> None:
     """Validate external tool requirements and input files."""
+    logger = get_logger("console")
+
     for cmd in ("earthly", "go", "kubectl", "cue"):
         require_cmd(cmd)
 
     if not paths.earthly_config.is_file():
-        err(f"Earthly config not found at '{paths.earthly_config}'.")
+        logger.error(f"Earthly config not found at '{paths.earthly_config}'.")
         raise SystemExit(1)
     if not paths.cli_main_go.is_file():
-        err(f"CLI entrypoint not found at '{paths.cli_main_go}'.")
+        logger.error(f"CLI entrypoint not found at '{paths.cli_main_go}'.")
         raise SystemExit(1)
     if not paths.config_cue.is_file():
-        err(f"Configuration file not found: '{paths.config_cue}'.")
+        logger.error(f"Configuration file not found: '{paths.config_cue}'.")
         raise SystemExit(1)
     if not paths.kubeconfig.is_file():
-        err(
+        logger.error(
             f"Kubeconfig not found at '{paths.kubeconfig}'. "
             "Run 'uv run python -m playground.cli.main k3d --yes' first."
         )
@@ -125,7 +128,8 @@ def _read_deployments_config(paths: DeployPaths, service_name: str) -> Deploymen
     Returns:
         DeploymentConfig with required fields.
     """
-    log("Reading deployment configuration from CUE...")
+    logger = get_logger("console")
+    logger.info("Reading deployment configuration from CUE...")
     runner = CommandRunner()
     cp = runner.run(
         [
@@ -139,7 +143,7 @@ def _read_deployments_config(paths: DeployPaths, service_name: str) -> Deploymen
     try:
         data = json.loads(cp.stdout or "{}")
     except json.JSONDecodeError as exc:
-        err(f"Failed to parse CUE export JSON: {exc}")
+        logger.error(f"Failed to parse CUE export JSON: {exc}")
         raise SystemExit(1)
 
     registry = data.get("registry_host")
@@ -162,7 +166,7 @@ def _read_deployments_config(paths: DeployPaths, service_name: str) -> Deploymen
     if not image_tag:
         missing.append(f"deployments.{service_name}.image.tag")
     if missing:
-        err("Missing required fields in deployments.cue: " + ", ".join(missing))
+        logger.error("Missing required fields in deployments.cue: " + ", ".join(missing))
         raise SystemExit(1)
 
     return DeploymentConfig(
@@ -181,6 +185,7 @@ def _write_temp_earthfile(
     cfg: DeploymentConfig,
 ) -> Path:
     """Write an Earthfile into the temporary directory for a single `docker` target."""
+    logger = get_logger("console")
     earthfile = tmpdir / "Earthfile"
     # Use absolute path to the service project to avoid relative path issues from tmpdir
     service_path = (repo_root / cfg.project).resolve()
@@ -192,13 +197,14 @@ def _write_temp_earthfile(
         f"    SAVE IMAGE --push {cfg.registry}/{cfg.image_name}:{cfg.image_tag}\n"
     )
     earthfile.write_text(content)
-    log(f"Earthfile written to {earthfile}")
+    logger.info(f"Earthfile written to {earthfile}")
     return earthfile
 
 
 def _earthly_build_push(paths: DeployPaths, tmpdir: Path) -> None:
     """Run Earthly build and push for the generated Earthfile target."""
-    log("Running Earthly build and push...")
+    logger = get_logger("console")
+    logger.info("Running Earthly build and push...")
     target_ref = f"{tmpdir}+docker"
     runner = CommandRunner()
     runner.run(
@@ -215,7 +221,8 @@ def _earthly_build_push(paths: DeployPaths, tmpdir: Path) -> None:
 
 def _generate_module(paths: DeployPaths, tmpdir: Path, service_project: str) -> Path:
     """Generate module CUE from the service directory using the Go CLI."""
-    log("Generating module CUE from service directory...")
+    logger = get_logger("console")
+    logger.info("Generating module CUE from service directory...")
     # Execute within the Go CLI directory to mirror relative behavior
     cmd = [
         "go",
@@ -235,7 +242,8 @@ def _generate_module(paths: DeployPaths, tmpdir: Path, service_project: str) -> 
 
 def _write_env_override_from_cue(paths: DeployPaths, service_name: str, tmpdir: Path) -> Path:
     """Write the environment override CUE into the temp module folder via `cue eval`."""
-    log("Writing env overrides from CUE to temporary module...")
+    logger = get_logger("console")
+    logger.info("Writing env overrides from CUE to temporary module...")
     dst = tmpdir / "env.mod.cue"
     expr = f"deployments.{service_name}.overrides"
     runner = CommandRunner()
@@ -257,7 +265,8 @@ def _write_env_override_from_cue(paths: DeployPaths, service_name: str, tmpdir: 
 
 def _render_template(paths: DeployPaths, tmpdir: Path, mod_path: Path) -> None:
     """Render the module template into YAML manifests via the Go CLI."""
-    log("Rendering module template...")
+    logger = get_logger("console")
+    logger.info("Rendering module template...")
     cmd = [
         "go",
         "run",
@@ -291,7 +300,8 @@ def _apply_manifests(kubeconfig: Path, tmpdir: Path) -> None:
         context = (cp.stdout or "").strip() or "unknown"
     except Exception:
         context = "unknown"
-    log(f"Applying Kubernetes manifests from {tmpdir} (context: {context})...")
+    logger = get_logger("console")
+    logger.info(f"Applying Kubernetes manifests from {tmpdir} (context: {context})...")
     runner.run(["kubectl", "apply", "-f", str(tmpdir)], env=env)
 
 
@@ -309,15 +319,16 @@ def deploy_service(
         show_manifest: If True, prints the selected manifest to stdout.
     """
     paths = _resolve_paths(service_name, kubeconfig_opt, config_path)
-    log(f"Service: {service_name}")
-    log(f"Root dir: {paths.repo_root}")
-    log(f"Playground dir: {paths.playground_dir}")
+    logger = get_logger("console")
+    logger.info(f"Service: {service_name}")
+    logger.info(f"Root dir: {paths.repo_root}")
+    logger.info(f"Playground dir: {paths.playground_dir}")
 
     _preflight(paths)
 
     with tempfile.TemporaryDirectory() as tmp:
         tmpdir = Path(tmp)
-        log(f"Temp dir: {tmpdir}")
+        logger.info(f"Temp dir: {tmpdir}")
 
         # Read config from CUE and build + push via generated Earthfile
         cfg = _read_deployments_config(paths, service_name)
@@ -331,11 +342,11 @@ def deploy_service(
 
         manifest = _find_manifest_file(tmpdir)
         if not manifest:
-            err(f"No Kubernetes manifest files (*.yaml|*.yml) found in {tmpdir}.")
+            logger.error(f"No Kubernetes manifest files (*.yaml|*.yml) found in {tmpdir}.")
             raise SystemExit(1)
 
         if show_manifest and manifest.is_file():
-            log("Manifest:")
+            logger.info("Manifest:")
             # Print manifest to stdout
             try:
                 print(manifest.read_text())
@@ -344,4 +355,4 @@ def deploy_service(
 
         _apply_manifests(paths.kubeconfig, tmpdir)
 
-    log("Done. Temporary files cleaned up.")
+    logger.info("Done. Temporary files cleaned up.")

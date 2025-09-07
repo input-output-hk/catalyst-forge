@@ -8,36 +8,8 @@ from __future__ import annotations
 
 import os
 import subprocess
-import sys
 from pathlib import Path
 from typing import Any  # noqa: F401  (used for type hints in some dynamic contexts)
-
-
-def log(message: str) -> None:
-    """Log an informational message to stdout.
-
-    Args:
-        message: The message to emit.
-    """
-    print(f"[INFO] {message}")
-
-
-def warn(message: str) -> None:
-    """Log a warning message to stderr.
-
-    Args:
-        message: The message to emit.
-    """
-    print(f"[WARN] {message}", file=sys.stderr)
-
-
-def err(message: str) -> None:
-    """Log an error message to stderr.
-
-    Args:
-        message: The message to emit.
-    """
-    print(f"[ERROR] {message}", file=sys.stderr)
 
 
 def which(name: str) -> str | None:
@@ -68,6 +40,17 @@ def require_cmd(name: str) -> None:
     if not which(name):
         err(f"Required command not found: {name}")
         raise SystemExit(1)
+
+
+def err(message: str) -> None:
+    """Log an error message and exit.
+
+    Args:
+        message: The message to emit.
+    """
+    from .logging import get_logger
+
+    get_logger("console").error(message)
 
 
 # The old run() helper has been replaced by playground.cli.runner.CommandRunner

@@ -7,6 +7,8 @@ from pathlib import Path
 import importlib
 from typing import Dict, Any
 
+from ...logging import get_logger
+
 
 def load_tasks():
     """
@@ -19,6 +21,7 @@ def load_tasks():
     This function dynamically imports all Python files in the tasks/
     directory, excluding files that start with underscore.
     """
+    logger = get_logger("console")
     tasks_dir = Path(__file__).parent.parent / "tasks"
 
     if not tasks_dir.exists():
@@ -32,9 +35,9 @@ def load_tasks():
                 module_name = f"cli.setupv2.tasks.{task_subdir.name}.task"
                 try:
                     importlib.import_module(module_name)
-                    print(f"  ✓ Loaded task module: {task_subdir.name} (subpackage)")
+                    logger.info(f"  ✓ Loaded task module: {task_subdir.name} (subpackage)")
                 except Exception as e:
-                    print(f"  ✗ Failed to load {task_subdir.name}: {e}")
+                    logger.error(f"  ✗ Failed to load {task_subdir.name}: {e}")
 
     # Process legacy single files (for backward compatibility)
     for task_file in sorted(tasks_dir.glob("*.py")):
@@ -44,15 +47,15 @@ def load_tasks():
         # Skip if this is a legacy file that's been migrated to subpackage
         subdir = tasks_dir / task_file.stem
         if subdir.is_dir() and (subdir / "task.py").exists():
-            print(f"  → Skipping legacy {task_file.name} (migrated to subpackage)")
+            logger.info(f"  → Skipping legacy {task_file.name} (migrated to subpackage)")
             continue
 
         module_name = f"cli.setupv2.tasks.{task_file.stem}"
         try:
             importlib.import_module(module_name)
-            print(f"  ✓ Loaded task module: {task_file.stem} (legacy)")
+            logger.info(f"  ✓ Loaded task module: {task_file.stem} (legacy)")
         except Exception as e:
-            print(f"  ✗ Failed to load {task_file.stem}: {e}")
+            logger.error(f"  ✗ Failed to load {task_file.stem}: {e}")
 
 
 def load_values(filename: str) -> Dict[str, Any]:
@@ -73,3 +76,15 @@ def load_values(filename: str) -> Dict[str, Any]:
 
     with open(file_path, "r") as f:
         return yaml.safe_load(f)
+
+
+def get_mkcert_caroot() -> Path:
+    """Return the mkcert CA root directory.
+
+    Returns:
+        Path to the mkcert CA root directory containing rootCA.pem and rootCA-key.pem
+    """
+    from ...runner import CommandRunner
+
+    cp = CommandRunner().run(["mkcert", "-CAROOT"], capture=True)
+    return Path(str(cp.stdout or "").strip())

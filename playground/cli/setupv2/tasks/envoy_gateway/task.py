@@ -25,6 +25,7 @@ def setup_envoy_gateway(ctx, cfg, log):
 
     # Add the Envoy Gateway Helm repository
     import subprocess
+
     update_repo = subprocess.run(["helm", "repo", "update"], capture_output=True, text=True)
     log.write(f"Updated Helm repos: {update_repo.stdout}\n")
 
@@ -65,12 +66,8 @@ def setup_envoy_gateway(ctx, cfg, log):
     )
 
     # Wait for Envoy Gateway controller and proxy (release name matches Helmfile)
-    k8s.wait_for(
-        "deployment/envoy-gateway", namespace=eg_config.namespace, log=log, timeout=300
-    )
-    k8s.wait_for(
-        "deployment/envoy-proxy", namespace=eg_config.namespace, log=log, timeout=300
-    )
+    k8s.wait_for("deployment/envoy-gateway", namespace=eg_config.namespace, log=log, timeout=300)
+    k8s.wait_for("deployment/envoy-proxy", namespace=eg_config.namespace, log=log, timeout=300)
 
     # Create a GatewayClass for the gateway (no parametersRef, match Helmfile)
     gateway_class = {
@@ -106,7 +103,9 @@ def setup_envoy_gateway(ctx, cfg, log):
                     "allowedRoutes": {"namespaces": {"from": "All"}},
                     "tls": {
                         "mode": "Terminate",
-                        "certificateRefs": [{"kind": "Secret", "name": "wildcard-projectcatalyst-tls"}],
+                        "certificateRefs": [
+                            {"kind": "Secret", "name": "wildcard-projectcatalyst-tls"}
+                        ],
                     },
                     "hostname": "*.projectcatalyst.dev",
                 },

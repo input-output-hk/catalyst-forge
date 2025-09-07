@@ -7,9 +7,11 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 from types import MappingProxyType
 import shutil
-from typing import Dict, Any, Callable, List, Optional
+from typing import Dict, Any, Callable, List, Optional, IO, Mapping
 import time
 import threading
+
+from ..logging import get_logger
 
 _tasks: Dict[str, Dict[str, Any]] = {}
 _context: Dict[str, Any] = {}
@@ -23,6 +25,9 @@ def task(
     config_keys: Optional[List[str]] = None,
     timeout_sec: int = 600,
     retry_delays: Optional[List[int]] = None,
+    health: Optional[Callable[[Mapping[str, Any], Dict[str, Any], IO], None]] = None,
+    health_timeout_sec: int = 180,
+    health_retry_delays: Optional[List[int]] = None,
 ):
     """
     Register a task with automatic namespacing and validation.
@@ -47,6 +52,9 @@ def task(
             "config_keys": config_keys or [],
             "timeout": timeout_sec,
             "retry_delays": retry_delays or [10],
+            "health": health,
+            "health_timeout": health_timeout_sec,
+            "health_retry_delays": health_retry_delays or [5, 5, 10, 10, 20],
             "status": "pending",
         }
         return fn
@@ -119,6 +127,48 @@ def _validate_result(result: Dict[str, Any], expected: Dict[str, type]) -> None:
             )
 
 
+def _run_health_sync(
+    name: str,
+    health_fn: Callable[[Mapping[str, Any], Dict[str, Any], IO], None],
+    ctx_with_pending: Mapping[str, Any],
+    filtered_cfg: Dict[str, Any],
+    log_file: Path,
+    timeout_sec: int,
+    retry_delays: List[int],
+) -> None:
+    """
+    Run the task health check with its own retry and timeout policy.
+
+    Raises RuntimeError if the health check ultimately fails.
+    """
+    start = time.time()
+    last_error: Optional[Exception] = None
+
+    for attempt in range(len(retry_delays) + 1):
+        with open(log_file, "a") as log:
+            log.write(f"\n=== HEALTH CHECK (attempt {attempt}) ===\n")
+            log.flush()
+            try:
+                health_fn(ctx_with_pending, filtered_cfg, log)
+                log.write("Health check \u2713\n")
+                log.flush()
+                return
+            except Exception as e:
+                last_error = e
+                log.write(f"Health check failed: {e}\n")
+                log.flush()
+
+        if attempt < len(retry_delays):
+            delay = retry_delays[attempt]
+            elapsed = time.time() - start
+            if elapsed + delay <= timeout_sec:
+                time.sleep(delay)
+                continue
+        break
+
+    raise RuntimeError(f"Health check failed after {len(retry_delays) + 1} attempts: {last_error}")
+
+
 def run_task_sync(name: str, cfg: Any, log_dir: Path) -> Dict[str, Any]:
     """
     Execute a single task with retries (synchronous).
@@ -134,6 +184,7 @@ def run_task_sync(name: str, cfg: Any, log_dir: Path) -> Dict[str, Any]:
     Raises:
         RuntimeError: If task fails after all retry attempts
     """
+    logger = get_logger("console")
     task_info = _tasks[name]
 
     with _context_lock:
@@ -146,8 +197,7 @@ def run_task_sync(name: str, cfg: Any, log_dir: Path) -> Dict[str, Any]:
     try:
         filtered_cfg = _filter_config(cfg, task_info["config_keys"])
     except ValueError as e:
-        print(f"⚙️  {name}... ✗")
-        print(f"  ❌ Config Error: {e}")
+        logger.error(f"Task '{name}' failed: Config Error: {e}")
         task_info["status"] = "failed"
         raise
 
@@ -158,12 +208,14 @@ def run_task_sync(name: str, cfg: Any, log_dir: Path) -> Dict[str, Any]:
 
     for attempt in range(len(retry_delays) + 1):
         if attempt > 0:
-            print(f"⚙️  {name} (retry {attempt}/{len(retry_delays)})...", end="", flush=True)
+            logger.info(f"Running task '{name}' (retry {attempt}/{len(retry_delays)})")
         else:
-            print(f"⚙️  {name}...", end="", flush=True)
+            logger.info(f"Running task '{name}'")
 
         try:
-            with open(log_file, "a") as log:
+            from .logging import task_logging_context
+
+            with task_logging_context(name, log_dir) as log:
                 if attempt > 0:
                     log.write(f"\n\n=== RETRY {attempt} ===\n\n")
 
@@ -174,22 +226,41 @@ def run_task_sync(name: str, cfg: Any, log_dir: Path) -> Dict[str, Any]:
                 _validate_result(result, expected_types)
 
                 namespaced_result = {f"{name}.{k}": v for k, v in result.items()}
+                # Build a pending context view including this task's outputs
+                pending_ctx = dict(ctx)
+                pending_ctx.update(namespaced_result)
+                ctx_with_pending: Mapping[str, Any] = MappingProxyType(pending_ctx)
+
+                # Run health check first (if provided)
+                health_fn = task_info.get("health")
+                if health_fn is not None:
+                    _run_health_sync(
+                        name,
+                        health_fn,
+                        ctx_with_pending,
+                        filtered_cfg,
+                        log_file,
+                        int(task_info.get("health_timeout", 180)),
+                        list(task_info.get("health_retry_delays", [5, 5, 10, 10, 20])),
+                    )
+
+                # Commit outputs only after successful health (or no health)
                 with _context_lock:
                     _context.update(namespaced_result)
 
-            print(" ✓")
+            logger.info(f"Task '{name}' completed successfully")
             task_info["status"] = "completed"
             return result or {}
 
         except Exception as e:
-            print(" ✗")
+            logger.warning(f"Task '{name}' failed: {e}")
             last_error = str(e)
 
         if attempt < len(retry_delays):
             time.sleep(retry_delays[attempt])
 
-    print(f"  📁 Logs: {log_file}")
-    print(f"  ❌ Error: {last_error}")
+    logger.error(f"Task '{name}' failed after all retries. Logs: {log_file}")
+    logger.error(f"Final error: {last_error}")
     task_info["status"] = "failed"
     raise RuntimeError(f"Task '{name}' failed after {len(retry_delays) + 1} attempts")
 
@@ -298,6 +369,8 @@ def run_all(cfg: Any, only: Optional[List[str]] = None, dry_run: bool = False):
         only: Optional list of specific tasks to run
         dry_run: If True, show execution plan without running tasks
     """
+    logger = get_logger("console")
+
     if only:
         unknown = set(only) - set(_tasks.keys())
         if unknown:
@@ -311,18 +384,17 @@ def run_all(cfg: Any, only: Optional[List[str]] = None, dry_run: bool = False):
         resolved = _resolve_dependencies(_tasks, only)
         if len(resolved) > len(only):
             added = sorted(resolved - set(only))
-            print(f"📋 Including dependencies: {', '.join(added)}")
+            logger.info(f"Including dependencies: {', '.join(added)}")
 
     levels = compute_execution_levels(_tasks, only)
 
     total_tasks = sum(len(level) for level in levels)
-    print(f"📋 Execution plan: {len(levels)} levels, {total_tasks} tasks")
+    logger.info(f"Execution plan: {len(levels)} levels, {total_tasks} tasks")
     for i, level in enumerate(levels, 1):
-        print(f"  Level {i}: {', '.join(level)}")
-    print()
+        logger.info(f"  Level {i}: {', '.join(level)}")
 
     if dry_run:
-        print("✨ Dry run complete (no tasks executed)")
+        logger.info("Dry run complete (no tasks executed)")
         return
 
     # Get the playground directory (two levels up from setupv2)
@@ -345,17 +417,19 @@ def run_all(cfg: Any, only: Optional[List[str]] = None, dry_run: bool = False):
                     future.result()
                 except Exception:
                     failed = True
-                    print(f"  ⚠️  Task '{name}' failed, will stop after level {level_num} completes")
+                    logger.warning(
+                        f"Task '{name}' failed, will stop after level {level_num} completes"
+                    )
 
             if failed:
                 remaining_levels = levels[level_num:]
                 if remaining_levels:
                     remaining_tasks = [task for level in remaining_levels for task in level]
-                    print(f"\n❌ Stopping execution due to failures at level {level_num}")
-                    print(f"   Skipping: {', '.join(remaining_tasks)}")
+                    logger.error(f"Stopping execution due to failures at level {level_num}")
+                    logger.error(f"Skipping: {', '.join(remaining_tasks)}")
                 raise RuntimeError("One or more tasks failed")
 
-    print("\n✅ All tasks completed successfully")
+    logger.info("All tasks completed successfully")
 
 
 def list_tasks():
@@ -377,6 +451,7 @@ def list_tasks():
             provides_with_types.append(f"{key}: {type_hint.__name__}")
         provides = ", ".join(provides_with_types) if provides_with_types else ""
 
-        lines.append(f"{name}: requires({requires}) → provides({provides})")
+        health_flag = "yes" if info.get("health") else "no"
+        lines.append(f"{name}: requires({requires}) → provides({provides}) [health={health_flag}]")
 
     return "\n".join(lines)

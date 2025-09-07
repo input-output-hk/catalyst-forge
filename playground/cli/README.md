@@ -15,10 +15,10 @@ Prerequisites:
 Run commands with uv:
 ```bash
 uv run python playground/cli/main.py --help
-uv run python playground/cli/main.py setup --list
-uv run python playground/cli/main.py setup --only k3d
-uv run python playground/cli/main.py setup --only hydra
-uv run python playground/cli/main.py setup --only deploy
+uv run python playground/cli/main.py setupv2 --list
+uv run python playground/cli/main.py setupv2 --only k3d
+uv run python playground/cli/main.py setupv2 --only hydra
+uv run python playground/cli/main.py setupv2 --only deploy
 uv run python playground/cli/main.py up
 ```
 ### `up` command
@@ -104,31 +104,32 @@ tasks: {
 
 ## Commands overview
 
-- `setup --only k3d`: Create or reuse a local k3d cluster with Envoy-compatible ingress, write kubeconfig, wait for Ready.
+- `setupv2 --only k3d`: Create or reuse a local k3d cluster with Envoy-compatible ingress, write kubeconfig, wait for Ready.
 - `generate`: Generate client TLS certs and Earthly config for mtls to buildkit.
-- `setup --only migrate`: Initialize Postgres for dependent apps (Kratos, Hydra, …) via registry-driven db seeders.
-- `setup --only deploy`: Build, render, and apply one or more services (Earthly + CUE + kubectl).
-- `setup`: Run pluggable setup tasks. See below.
+- `setupv2 --only migrate`: Initialize Postgres for dependent apps (Kratos, Hydra, …) via registry-driven db seeders.
+- `setupv2 --only deploy`: Build, render, and apply one or more services (Earthly + CUE + kubectl).
+- `setupv2`: Run pluggable setup tasks using the contract-based system. See below.
 - `dns pin-wildcard` and `dns pin-registry`: CoreDNS helpers for local routing.
-- `setup --only helmfile`: Run Helmfile `apply` (default) or `sync`, with include/skip filters via runtime args.
+- `setupv2 --only helmfile`: Run Helmfile `apply` (default) or `sync`, with include/skip filters via runtime args.
 - `up`: Bring up the full local environment in the correct order (k3d → dns → generate → helmfile foundation → migrate → helmfile apps → hydra → deploy).
 
-## Setup architecture (extensible tasks)
+## Setupv2 architecture (contract-based tasks)
 
-The setup system is designed to be dynamic and module-local:
-- Tasks live under `playground/cli/setup/`.
-- Each task registers itself via a decorator and may declare its own dependencies.
-- Each task validates only its own configuration (from `tasks.<task>` in the CUE export) using a local Pydantic model.
-- Dependencies (e.g., command runner, db, k8s) are constructed lazily and injected only when requested.
+The setupv2 system uses explicit contracts for parallel execution:
+- Tasks live under `playground/cli/setupv2/tasks/`.
+- Each task declares what it `provides` and what it `requires` via the `@task` decorator.
+- Tasks are automatically namespaced (e.g., `postgres.dsn`, `kratos.public_url`).
+- The system uses networkx to resolve dependencies and execute tasks in parallel where possible.
 
 Execution flow:
-1. CLI loads configuration once and stores both typed and raw JSON in a `ConfigState`.
-2. The `setup` command auto-imports modules under `playground.cli.setup` to trigger registration.
-3. Tasks are collected, optionally filtered by `--only`, sorted by `(priority, name)`, and run.
-4. For each task, its factory gets `(ctx: ConfigState, deps: Deps)` and returns a `SetupTask` or `None` to skip.
+1. CLI loads configuration and stores it in a `ConfigState`.
+2. The `setupv2` command auto-discovers tasks under `playground.cli.setupv2.tasks` and loads them.
+3. Tasks are analyzed for dependencies and grouped into parallel execution levels.
+4. Tasks within each level run in parallel using ThreadPoolExecutor.
+5. Each task gets `(ctx: dict, cfg: dict, log: file)` and returns values to provide to other tasks.
 ### Runtime task arguments
 
-Some behavior is better controlled at runtime rather than in `config.cue`. The `setup` command accepts task-scoped arguments:
+Some behavior is better controlled at runtime rather than in `config.cue`. The `setupv2` command accepts task-scoped arguments:
 
 - `--task-arg <task>.<key>=<value>` (repeatable)
 - `--task-args-file <path.json>` (JSON object: `{ "<task>": { ... } }`)
@@ -141,11 +142,11 @@ Tasks can read their scope via `ctx.runtime.get("<task>", {})`.
 
 Examples:
 ```bash
-uv run python playground/cli/main.py setup --only migrate --task-arg migrate.only=hydra,kratos
-uv run python playground/cli/main.py setup --only deploy --task-arg deploy.only=api,frontend
-uv run python playground/cli/main.py setup --only deploy --task-arg deploy.skip=renderer
-uv run python playground/cli/main.py setup --only hydra --task-arg hydra.clients='{"cli":{"client_id":"forge-cli","redirect_uris":["http://127.0.0.1:49152/callback"]}}'
-uv run python playground/cli/main.py setup --task-args-file playground/cli/runtime.json
+uv run python playground/cli/main.py setupv2 --only migrate --task-arg migrate.only=hydra,kratos
+uv run python playground/cli/main.py setupv2 --only deploy --task-arg deploy.only=api,frontend
+uv run python playground/cli/main.py setupv2 --only deploy --task-arg deploy.skip=renderer
+uv run python playground/cli/main.py setupv2 --only hydra --task-arg hydra.clients='{"cli":{"client_id":"forge-cli","redirect_uris":["http://127.0.0.1:49152/callback"]}}'
+uv run python playground/cli/main.py setupv2 --task-args-file playground/cli/runtime.json
 ```
 
 `runtime.json` example:
@@ -160,9 +161,9 @@ uv run python playground/cli/main.py setup --task-args-file playground/cli/runti
 
 Listing or selecting tasks:
 ```bash
-uv run python playground/cli/main.py setup --list
-uv run python playground/cli/main.py setup --only k3d
-uv run python playground/cli/main.py setup --only hydra
+uv run python playground/cli/main.py setupv2 --list
+uv run python playground/cli/main.py setupv2 --only k3d
+uv run python playground/cli/main.py setupv2 --only hydra
 ```
 
 ### tasks.k3d configuration
@@ -188,51 +189,39 @@ tasks: {
 }
 ```
 
-### Declaring a new setup task
+### Declaring a new setupv2 task
 
-1) Create a file under `playground/cli/setup/`, e.g. `mytask.py`.
-2) Define a local Pydantic model for your task’s config (read from `tasks.mytask`).
-3) Register the task and declare the dependencies you need (e.g., `runner`, `k8s`, `db`).
-4) Implement a small object with a `run()` method; keep it idempotent.
+1) Create a file under `playground/cli/setupv2/tasks/`, e.g. `mytask.py`.
+2) Use the `@task` decorator to declare what your task provides and requires.
+3) Implement a simple function that takes `(ctx, cfg, log)` parameters.
+4) Return a dictionary of values to provide to other tasks.
 
 Minimal example:
 ```python
-from __future__ import annotations
+from cli.setupv2 import task
+from cli.setupv2.tools import helm
 
-from pydantic import BaseModel
-from cli.config import ConfigState
-from cli.setup.base import SetupTask
-from cli.setup.registry import register_setup_task
+@task("mytask",
+      provides={"ready": bool},  # What this task provides
+      requires=[],               # What this task needs from others
+      config_keys=["tasks.mytask"])  # Config keys to access
+def setup_mytask(ctx, cfg, log):
+    """Deploy mytask service."""
 
-class MyTaskConfig(BaseModel):
-    enabled: bool = True
-    message: str = "hello"
+    # Access filtered config
+    task_config = cfg["tasks"]["mytask"]
 
-class MyTask(SetupTask):
-    def __init__(self, cfg: MyTaskConfig, runner) -> None:
-        self.cfg = cfg
-        self.runner = runner
+    # Use setupv2 tools
+    helm.install(
+        name="mytask",
+        chart="mychart/mytask",
+        namespace="default",
+        values={"config": task_config},
+        log=log
+    )
 
-    def run(self) -> None:
-        if not self.cfg.enabled:
-            return
-        # Use the injected runner for commands
-        self.runner.run(["echo", self.cfg.message])
-
-@register_setup_task(
-    name="mytask",
-    description="Example task",
-    priority=100,
-    dependencies=("runner",),
-)
-def factory(ctx: ConfigState, deps):
-    data = (ctx.raw or {}).get("tasks", {}).get("mytask")
-    if not data:
-        return None
-    cfg = MyTaskConfig.model_validate(data)
-    if not cfg.enabled:
-        return None
-    return MyTask(cfg, deps.runner)
+    # Return provided values (auto-namespaced as mytask.ready)
+    return {"ready": True}
 ```
 
 Add CUE configuration under `tasks.mytask`:
@@ -272,25 +261,25 @@ Runtime examples:
 
 ```bash
 # Apply everything (default action)
-uv run python playground/cli/main.py setup --only helmfile
+uv run python playground/cli/main.py setupv2 --only helmfile
 
 # Sync only selected releases
-uv run python playground/cli/main.py setup --only helmfile \
+uv run python playground/cli/main.py setupv2 --only helmfile \
   --task-arg helmfile.action=sync \
   --task-arg helmfile.only=postgres,ory
 
 # Apply excluding a release (requires helmfile supporting negative selectors)
-uv run python playground/cli/main.py setup --only helmfile \
+uv run python playground/cli/main.py setupv2 --only helmfile \
   --task-arg helmfile.skip=temporal
 
 # Add raw selectors and extra args
-uv run python playground/cli/main.py setup --only helmfile \
+uv run python playground/cli/main.py setupv2 --only helmfile \
   --task-arg helmfile.selectors='["namespace=auth"]' \
   --task-arg helmfile.args='["--debug"]'
 ```
 
 
-Tasks declare only what they need via the `dependencies` tuple when registering. The setup executor builds and passes a single `Deps` instance to all factories; providers are constructed only if used.
+Tasks declare what they `provides` and `requires` via the `@task` decorator. The setupv2 system uses networkx to resolve dependencies and execute tasks in parallel where possible.
 
 ## Contributing
 

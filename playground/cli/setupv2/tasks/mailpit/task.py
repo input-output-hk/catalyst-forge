@@ -64,18 +64,12 @@ def setup_mailpit(ctx, cfg, log):
         "kind": "HTTPRoute",
         "metadata": {"name": "mailpit", "namespace": mp_config.namespace},
         "spec": {
-            "parentRefs": [
-                {"name": "default", "namespace": "envoy-gateway-system"}
-            ],
+            "parentRefs": [{"name": "default", "namespace": "envoy-gateway-system"}],
             "hostnames": [mp_config.hostname],
             "rules": [
                 {
-                    "matches": [
-                        {"path": {"type": "PathPrefix", "value": "/"}}
-                    ],
-                    "backendRefs": [
-                        {"name": "http", "port": 80}
-                    ],
+                    "matches": [{"path": {"type": "PathPrefix", "value": "/"}}],
+                    "backendRefs": [{"name": "http", "port": 80}],
                 }
             ],
         },

@@ -16,7 +16,7 @@ from typing import Any, Dict, Mapping, Tuple
 
 from pydantic import BaseModel, Field
 
-from .utils import err
+from .logging import get_logger
 from .runner import CommandRunner
 
 
@@ -123,7 +123,8 @@ def load_config(config_path: Path) -> Tuple[PlaygroundConfig, Dict[str, Any]]:
     """
 
     if not config_path.exists():
-        err(f"Config file not found: {config_path}")
+        logger = get_logger("console")
+        logger.error(f"Config file not found: {config_path}")
         raise SystemExit(1)
 
     runner = CommandRunner()
@@ -135,14 +136,14 @@ def load_config(config_path: Path) -> Tuple[PlaygroundConfig, Dict[str, Any]]:
     try:
         data = json.loads(cp.stdout or "{}")
     except json.JSONDecodeError as exc:
-        err(f"Failed to parse CUE export JSON from {config_path}: {exc}")
+        logger.error(f"Failed to parse CUE export JSON from {config_path}: {exc}")
         raise SystemExit(1)
 
     try:
         typed = PlaygroundConfig.model_validate(data)
         return typed, data
     except Exception as exc:  # ValidationError, but keep dependency surface minimal here
-        err(f"Invalid playground configuration: {exc}")
+        logger.error(f"Invalid playground configuration: {exc}")
         raise SystemExit(1)
 
 

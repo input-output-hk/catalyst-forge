@@ -1,22 +1,21 @@
-"""Operations for managing k3d clusters used by the Playground v2 CLI.
+"""Operations for managing k3d clusters within the SetupV2 k3d task.
 
 Functions in this module wrap k3d and kubectl to create, delete, and inspect
-local clusters, as well as write configuration artifacts consumed by other
-tools. All functions are designed to be idempotent where reasonable.
+local clusters, as well as write configuration artifacts consumed by the k3d task.
+All functions are designed to be idempotent where reasonable.
 """
 
 from __future__ import annotations
 
 import json
-import os
 import time
 from pathlib import Path
 
 import yaml
 
-from ..runner import CommandRunner
-from ..models import ClusterSummary
-from ..logging import get_logger
+from .....runner import CommandRunner
+from .....models import ClusterSummary
+from .....logging import get_logger
 
 
 def cluster_exists(name: str) -> bool:
@@ -260,48 +259,6 @@ def wait_for_nodes_ready(kubeconfig: Path, timeout_s: int = 120) -> None:
     raise SystemExit(1)
 
 
-def wait_for_nodes_ready_kubectl(kubeconfig: Path, timeout_s: int = 120) -> None:
-    """Poll until all nodes report Ready within a timeout using kubectl.
-
-    This is an alternative implementation using kubectl instead of the Python client.
-
-    Args:
-        kubeconfig: Path to the kubeconfig to use for kubectl.
-        timeout_s: Timeout in seconds before failing.
-    """
-    env = {**os.environ, "KUBECONFIG": str(kubeconfig)}
-    logger = get_logger("console")
-    logger.info("Waiting for nodes to be Ready...")
-    start = time.time()
-    while time.time() - start < timeout_s:
-        try:
-            cp = CommandRunner().run(
-                ["kubectl", "get", "nodes", "-o", "json"], capture=True, env=env
-            )
-            data = json.loads(cp.stdout or "{}")
-            items = data.get("items", [])
-            if not items:
-                time.sleep(2)
-                continue
-            all_ready = True
-            for node in items:
-                conditions = node.get("status", {}).get("conditions", [])
-                ready = any(
-                    c.get("type") == "Ready" and c.get("status") == "True" for c in conditions
-                )
-                if not ready:
-                    all_ready = False
-                    break
-            if all_ready:
-                CommandRunner().run(["kubectl", "get", "nodes", "-o", "wide"], env=env)
-                return
-        except Exception:
-            pass
-        time.sleep(2)
-    logger.error("Nodes did not become Ready within the timeout")
-    raise SystemExit(1)
-
-
 def get_k8s_version(kubeconfig: Path) -> str:
     """Return the Kubernetes server version.
 
@@ -324,25 +281,6 @@ def get_k8s_version(kubeconfig: Path) -> str:
         if getattr(v, "platform", None):
             parts.append(f"({v.platform})")
         return " ".join(parts) if parts else ""
-    except Exception:
-        return ""
-
-
-def get_k8s_version_kubectl(kubeconfig: Path) -> str:
-    """Return a compact `kubectl version --short` string.
-
-    This is an alternative implementation using kubectl instead of the Python client.
-
-    Args:
-        kubeconfig: Path to the kubeconfig to use for kubectl.
-
-    Returns:
-        String summary of client/server versions or empty string on failure.
-    """
-    env = {**os.environ, "KUBECONFIG": str(kubeconfig)}
-    try:
-        cp = CommandRunner().run(["kubectl", "version", "--short"], capture=True, env=env)
-        return " ".join(str(cp.stdout or "").split())
     except Exception:
         return ""
 
@@ -380,12 +318,6 @@ def emit_cluster_json(
     )
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(summary.model_dump_json(by_alias=True, indent=2))
-
-
-def get_mkcert_caroot() -> Path:
-    """Return the mkcert CA root directory."""
-    cp = CommandRunner().run(["mkcert", "-CAROOT"], capture=True)
-    return Path(str(cp.stdout or "").strip())
 
 
 def write_registries_yaml(tmpdir: Path, registry_host: str, ca_path: Path) -> Path:

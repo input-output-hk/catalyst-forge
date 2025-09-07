@@ -4,7 +4,7 @@ Deploy cert-manager for certificate management in the cluster.
 
 from cli.setupv2 import task
 from cli.setupv2.tools import helm, k8s, kubectl
-from cli.k3d import get_mkcert_caroot
+from cli.setupv2.tools.utils import get_mkcert_caroot
 from .config import CertManagerConfig  # Import from sibling config module
 import time
 
@@ -116,7 +116,9 @@ def setup_cert_manager(ctx, cfg, log):
         "spec": {"ca": {"secretName": "mkcert-root-ca"}},
     }
 
-    log.write(f"Creating CA ClusterIssuer '{cm_config.cluster_issuer_name}' backed by mkcert-root-ca...\n")
+    log.write(
+        f"Creating CA ClusterIssuer '{cm_config.cluster_issuer_name}' backed by mkcert-root-ca...\n"
+    )
     kubectl.apply(manifest=cluster_issuer, namespace=cm_config.namespace, log=log)
 
     # Apply wildcard certificate for envoy-gateway-system
@@ -131,7 +133,9 @@ def setup_cert_manager(ctx, cfg, log):
         },
     }
 
-    log.write("Applying wildcard certificate for '*.projectcatalyst.dev' in envoy-gateway-system...\n")
+    log.write(
+        "Applying wildcard certificate for '*.projectcatalyst.dev' in envoy-gateway-system...\n"
+    )
     kubectl.apply(manifest=wildcard_cert, namespace="envoy-gateway-system", log=log)
 
     log.write("\n✅ cert-manager deployed successfully\n")

@@ -67,11 +67,14 @@ def setup_temporal(ctx, cfg, log):
 
     # Wait for secrets to exist
     import time as _time
+
     for name in ("temporal-default-store", "temporal-visibility-store"):
         log.write(f"Waiting for Secret {name} to be created...\n")
         for _ in range(60):
             try:
-                secret = kubectl.get("secret", name=name, namespace=temporal_config.namespace, output="json")
+                secret = kubectl.get(
+                    "secret", name=name, namespace=temporal_config.namespace, output="json"
+                )
                 if secret:
                     break
             except Exception:
@@ -166,7 +169,13 @@ def setup_temporal(ctx, cfg, log):
             "rules": [
                 {
                     "matches": [{"path": {"type": "PathPrefix", "value": "/"}}],
-                    "backendRefs": [{"name": "temporal-web", "namespace": temporal_config.namespace, "port": 8080}],
+                    "backendRefs": [
+                        {
+                            "name": "temporal-web",
+                            "namespace": temporal_config.namespace,
+                            "port": 8080,
+                        }
+                    ],
                 }
             ],
         },

@@ -19,6 +19,7 @@ from .config import ConfigState
 from .db.base import DatabaseConfig, DatabaseRoot
 from .utils import require_cmd
 from .runner import CommandRunner
+from .logging import get_logger
 
 
 @dataclass
@@ -86,10 +87,10 @@ class Deps:
                     kubeconfig_candidate = (playground_dir / "kubeconfig").resolve()
 
             # Validate and load
-            from .utils import err  # local import to avoid cycles at top-level
+            logger = get_logger("console")
 
             if not kubeconfig_candidate.exists() or kubeconfig_candidate.stat().st_size == 0:
-                err(
+                logger.error(
                     "Kubeconfig not found or empty: "
                     f"{kubeconfig_candidate}. Run 'k3d' to create the cluster or set deps.k8s.kubeconfig."
                 )
@@ -98,7 +99,7 @@ class Deps:
             try:
                 config.load_kube_config(config_file=str(kubeconfig_candidate))
             except Exception:
-                err(
+                logger.error(
                     "Invalid kubeconfig. Ensure it points to a valid cluster. "
                     "Update deps.k8s.kubeconfig or export KUBECONFIG."
                 )

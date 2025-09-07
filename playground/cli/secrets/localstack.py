@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 from typing import Any
 
-from ..utils import log
+from ..logging import get_logger
 from ..runner import CommandRunner
 
 
@@ -38,6 +38,7 @@ def _awslocal_capture(pod: str, args: list[str], namespace: str = "localstack") 
 
 
 def ensure_secret_json(name: str, payload: dict[str, Any], namespace: str = "localstack") -> None:
+    logger = get_logger("console")
     pod = _get_localstack_pod(namespace)
     json_str = json.dumps(payload, separators=(",", ":"))
     # describe-secret returns non-zero if missing
@@ -48,7 +49,7 @@ def ensure_secret_json(name: str, payload: dict[str, Any], namespace: str = "loc
         == 0
     )
     if exists:
-        log(f"Updating LocalStack secret: {name}")
+        logger.info(f"Updating LocalStack secret: {name}")
         _awslocal(
             pod,
             [
@@ -62,7 +63,7 @@ def ensure_secret_json(name: str, payload: dict[str, Any], namespace: str = "loc
             namespace,
         )
     else:
-        log(f"Creating LocalStack secret: {name}")
+        logger.info(f"Creating LocalStack secret: {name}")
         _awslocal(
             pod,
             [

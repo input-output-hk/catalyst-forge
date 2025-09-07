@@ -11,19 +11,19 @@ import subprocess
 import json
 import os
 
-# Import k3d operations from the existing k3d module
-from cli.k3d import (
+# Import k3d operations from the local ops module
+from .ops import (
     cluster_exists,
     create_cluster,
     delete_cluster,
     write_kubeconfig,
-    wait_for_nodes_ready,
     emit_cluster_json,
-    get_mkcert_caroot,
     write_registries_yaml,
 )
+from cli.setupv2.tools.utils import get_mkcert_caroot
 from cli.utils import require_cmd, get_repo_root
 from .config import K3dConfig
+from .health import health_k3d
 
 
 @task(
@@ -39,6 +39,9 @@ from .config import K3dConfig
     config_keys=["k3d", "registry_host"],
     timeout_sec=600,
     retry_delays=[10, 30],  # k3d cluster creation can be slow
+    health=health_k3d,
+    health_timeout_sec=180,
+    health_retry_delays=[5, 5, 10, 10, 20],
 )
 def setup_k3d(ctx, cfg, log):
     """Create or reuse k3d cluster and configure kubeconfig."""
@@ -135,11 +138,6 @@ def setup_k3d(ctx, cfg, log):
     # Set KUBECONFIG environment variable for subsequent tasks
     os.environ["KUBECONFIG"] = str(kubeconfig_path)
     log.write(f"Set KUBECONFIG={kubeconfig_path}\n")
-
-    # Wait for nodes to be ready
-    log.write("Waiting for cluster nodes to be ready...\n")
-    wait_for_nodes_ready(kubeconfig_path)
-    log.write("All nodes are ready.\n")
 
     # Emit cluster summary JSON
     output_json_path = Path(k3d_config.output_json).expanduser()

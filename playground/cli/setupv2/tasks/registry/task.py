@@ -3,7 +3,7 @@ Deploy Docker Registry for container image storage.
 """
 
 from cli.setupv2 import task
-from cli.setupv2.tools import helm, k8s, kubectl
+from cli.setupv2.tools import helm, k8s
 from .config import RegistryConfig
 
 
@@ -123,11 +123,16 @@ def setup_registry(ctx, cfg, log):
 
     # Apply registry HTTPRoute via Envoy Gateway
     from pathlib import Path
+
     repo_root = Path(__file__).resolve().parents[3]
-    route_manifest = repo_root / "playground" / "helmfile" / "platform" / "envoy" / "registry-route.yaml"
+    route_manifest = (
+        repo_root / "playground" / "helmfile" / "platform" / "envoy" / "registry-route.yaml"
+    )
     if not route_manifest.exists():
         raise RuntimeError(f"Registry HTTPRoute manifest not found: {route_manifest}")
-    subprocess.run(["kubectl", "apply", "-f", str(route_manifest)], check=True, capture_output=True, text=True)
+    subprocess.run(
+        ["kubectl", "apply", "-f", str(route_manifest)], check=True, capture_output=True, text=True
+    )
 
     # Registry details
     internal_host = f"registry-docker-registry.{reg_config.namespace}.svc.cluster.local:5000"
@@ -142,7 +147,7 @@ def setup_registry(ctx, cfg, log):
     # Instructions for usage
     log.write("\nUsage:\n")
     log.write(f"  Internal: docker pull {internal_host}/image:tag\n")
-    log.write(f"  External: docker push registry.projectcatalyst.dev/image:tag\n")
+    log.write("  External: docker push registry.projectcatalyst.dev/image:tag\n")
 
     return {
         "host": internal_host,

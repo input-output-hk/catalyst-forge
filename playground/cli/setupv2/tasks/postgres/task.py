@@ -49,6 +49,7 @@ def setup_postgres(ctx, cfg, log):
 
     # Wait for statefulset rollout to complete
     import subprocess
+
     rollout = subprocess.run(
         [
             "kubectl",
@@ -66,11 +67,19 @@ def setup_postgres(ctx, cfg, log):
 
     # Apply TCPRoute for postgres via Envoy Gateway
     from pathlib import Path
+
     repo_root = Path(__file__).resolve().parents[3]
-    tcproute_manifest = repo_root / "playground" / "helmfile" / "platform" / "envoy" / "postgres-tcproute.yaml"
+    tcproute_manifest = (
+        repo_root / "playground" / "helmfile" / "platform" / "envoy" / "postgres-tcproute.yaml"
+    )
     if not tcproute_manifest.exists():
         raise RuntimeError(f"Postgres TCPRoute manifest not found: {tcproute_manifest}")
-    subprocess.run(["kubectl", "apply", "-f", str(tcproute_manifest)], check=True, capture_output=True, text=True)
+    subprocess.run(
+        ["kubectl", "apply", "-f", str(tcproute_manifest)],
+        check=True,
+        capture_output=True,
+        text=True,
+    )
 
     # Return values - will be namespaced as postgres.host, postgres.port, postgres.dsn
     dsn = f"postgresql://{pg_config.username}:{pg_config.password}@{pg_config.host}:{pg_config.port}/{pg_config.database}"

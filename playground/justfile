@@ -8,40 +8,6 @@ set shell := ["bash", "-eu", "-o", "pipefail", "-c"]
 default:
 	@just --list
 
-# DEPRECATED: Run old environment setup tasks (use 'just up' for setupv2)
-# Usage:
-#   just setup                    # run all tasks (DEPRECATED)
-#   just setup hydra dns          # convenience: converts to --only hydra --only dns (DEPRECATED)
-#   just setup --only deploy      # pass flags through as-is when args start with -- (DEPRECATED)
-#
-# NOTE: This command uses the old sequential setup system.
-#       Use 'just up' for the new parallel setupv2 system.
-setup *args:
-	#!/usr/bin/env bash
-	set -euo pipefail
-	cd "{{PROJROOT}}"
-	echo "⚠️  WARNING: 'just setup' uses the deprecated V1 system."
-	echo "   Use 'just up' for the new parallel setupv2 system."
-	echo ""
-	# Populate positional parameters from Just variadic args so $#, $1, "$@" work
-	set -- {{args}}
-	if [ "$#" -eq 0 ]; then
-		echo "Running all tasks (V1 system)"
-		uv run cli setup
-	else
-		first="$1"
-		if [[ "$first" == --* ]]; then
-			echo "Passing flags through verbatim: $@"
-			# Pass flags through verbatim
-			uv run cli setup "$@"
-		else
-			echo "Treating args as task names, converting to repeated --only flags: $@"
-			# Treat args as task names, convert to repeated --only flags
-			args_conv=()
-			for t in "$@"; do args_conv+=(--only "$t"); done
-			uv run cli setup "${args_conv[@]}"
-		fi
-	fi
 
 # Create or reuse local cluster and deploy all services using setupv2
 up:

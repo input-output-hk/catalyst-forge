@@ -15,7 +15,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Mapping, Sequence
 
-from .utils import log
+from .setupv2.logging import get_command_logger
 
 
 @dataclass
@@ -36,6 +36,7 @@ class CommandRunner:
 
     def __init__(self, default_timeout: int | None = None) -> None:
         self.default_timeout = default_timeout
+        self._cmd_logger = get_command_logger()
 
     def _format_cmd(self, args: Sequence[str], redact: Sequence[str] | None) -> str:
         redactions = set(redact or [])
@@ -60,7 +61,6 @@ class CommandRunner:
         redact: Sequence[str] | None = None,
     ) -> subprocess.CompletedProcess:
         cmd_str = self._format_cmd(args, redact)
-        log(f"$ {cmd_str}")
         started = time.time()
         effective_env = {**os.environ, **(dict(env) if env else {})}
 
@@ -86,5 +86,6 @@ class CommandRunner:
             )
 
         duration = time.time() - started
-        log(f"[cmd] exit={cp.returncode} duration={duration:.2f}s")
+        self._cmd_logger.log_command_start(cmd_str)
+        self._cmd_logger.log_command_end(cmd_str, cp.returncode, duration)
         return cp
