@@ -77,31 +77,6 @@ class Helm:
             if os.path.exists(values_file):
                 os.unlink(values_file)
 
-    def uninstall(self, name: str, namespace: str, log: IO):
-        """
-        Uninstall a Helm release.
-
-        Args:
-            name: Release name
-            namespace: Kubernetes namespace
-            log: Log file handle
-        """
-        cmd = ["helm", "uninstall", name, "-n", namespace]
-
-        log.write(f"$ {' '.join(cmd)}\n")
-        log.flush()
-
-        proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
-
-        if proc.stdout:
-            for line in proc.stdout:
-                log.write(line)
-                log.flush()
-
-        proc.wait()
-        if proc.returncode != 0:
-            raise RuntimeError(f"Helm uninstall failed for {name}")
-
 
 # Singleton instance
 helm = Helm()

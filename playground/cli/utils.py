@@ -56,23 +56,6 @@ def err(message: str) -> None:
 # The old run() helper has been replaced by playground.cli.runner.CommandRunner
 
 
-def get_client_cert_paths(cert_dir: Path, base_name: str) -> dict[str, Path]:
-    """Return paths for client TLS artifacts used by Earthly CLI.
-
-    Args:
-        cert_dir: Directory where client certs are stored.
-        base_name: Base filename (without suffix) for the client cert and key.
-
-    Returns:
-        Dict with keys: 'cert', 'key', 'ca'.
-    """
-    cert_path = cert_dir / f"{base_name}.pem"
-    key_path = cert_dir / f"{base_name}-key.pem"
-    # The CA path is typically the mkcert CAROOT rootCA.pem; callers may copy it locally.
-    ca_path = cert_dir / "rootCA.pem"
-    return {"cert": cert_path, "key": key_path, "ca": ca_path}
-
-
 def get_repo_root(start: Path | None = None) -> Path:
     """Return the git repository root directory.
 

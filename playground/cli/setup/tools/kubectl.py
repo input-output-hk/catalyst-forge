@@ -7,53 +7,11 @@ import yaml
 import json
 import tempfile
 import os
-from typing import Dict, Any, IO, Optional, List
+from typing import Dict, Any, IO, Optional
 
 
 class Kubectl:
     """Helper for kubectl operations."""
-
-    def wait_for(
-        self,
-        resource: str,
-        namespace: str,
-        log: IO,
-        condition: str = "condition=available",
-        timeout: int = 300,
-    ):
-        """
-        Wait for a resource to be ready.
-
-        Args:
-            resource: Resource type/name (e.g., "deployment/app")
-            namespace: Kubernetes namespace
-            log: Log file handle
-            condition: Condition to wait for
-            timeout: Timeout in seconds
-        """
-        cmd = [
-            "kubectl",
-            "wait",
-            f"--for={condition}",
-            f"--timeout={timeout}s",
-            "-n",
-            namespace,
-            resource,
-        ]
-
-        log.write(f"$ {' '.join(cmd)}\n")
-        log.flush()
-
-        proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
-
-        if proc.stdout:
-            for line in proc.stdout:
-                log.write(line)
-                log.flush()
-
-        proc.wait()
-        if proc.returncode != 0:
-            raise RuntimeError(f"Timeout waiting for {resource}")
 
     def apply(self, manifest: Dict[str, Any], namespace: str, log: IO):
         """
@@ -125,34 +83,6 @@ class Kubectl:
             return yaml.safe_load(result.stdout)
         else:
             return result.stdout
-
-    def exec(
-        self,
-        pod: str,
-        command: List[str],
-        namespace: str = "default",
-        container: Optional[str] = None,
-    ) -> str:
-        """
-        Execute a command in a pod.
-
-        Args:
-            pod: Pod name
-            command: Command to execute
-            namespace: Kubernetes namespace
-            container: Container name (optional)
-
-        Returns:
-            Command output
-        """
-        cmd = ["kubectl", "exec", pod, "-n", namespace]
-        if container:
-            cmd.extend(["-c", container])
-        cmd.append("--")
-        cmd.extend(command)
-
-        result = subprocess.run(cmd, capture_output=True, text=True, check=True)
-        return result.stdout
 
 
 # Singleton instance

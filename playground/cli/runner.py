@@ -11,17 +11,10 @@ import os
 import shlex
 import subprocess
 import time
-from dataclasses import dataclass
 from pathlib import Path
 from typing import Mapping, Sequence
 
 from .setup.logging import get_command_logger
-
-
-@dataclass
-class RunTiming:
-    started_at: float
-    duration_sec: float
 
 
 class CommandRunner:

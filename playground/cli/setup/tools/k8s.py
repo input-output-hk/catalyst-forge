@@ -67,63 +67,6 @@ class K8s:
         self._ensure_clients()
         return self._clients or {}
 
-    def apply(
-        self,
-        manifest: Dict[str, Any],
-        namespace: Optional[str] = None,
-        log: Optional[IO] = None,
-    ) -> Any:
-        """
-        Apply a Kubernetes manifest using the Python API.
-
-        Args:
-            manifest: Kubernetes manifest dictionary
-            namespace: Kubernetes namespace (optional)
-            log: Log file handle (optional)
-
-        Returns:
-            API response object
-        """
-        self._ensure_clients()
-
-        kind = manifest.get("kind", "")
-        name = manifest.get("metadata", {}).get("name", "")
-        ns = namespace or manifest.get("metadata", {}).get("namespace", "default")
-
-        if log:
-            log.write(f"Applying {kind} {name} in namespace {ns}\n")
-            log.flush()
-
-        # Route to appropriate API client based on kind
-        if kind == "Secret":
-            return self.clients["core"].create_namespaced_secret(namespace=ns, body=manifest)
-        elif kind == "ConfigMap":
-            return self.clients["core"].create_namespaced_config_map(namespace=ns, body=manifest)
-        elif kind == "Service":
-            return self.clients["core"].create_namespaced_service(namespace=ns, body=manifest)
-        elif kind == "Deployment":
-            return self.clients["apps"].create_namespaced_deployment(namespace=ns, body=manifest)
-        elif kind == "ServiceAccount":
-            return self.clients["core"].create_namespaced_service_account(
-                namespace=ns, body=manifest
-            )
-        elif kind == "ClusterRole":
-            return self.clients["rbac"].create_cluster_role(body=manifest)
-        elif kind == "ClusterRoleBinding":
-            return self.clients["rbac"].create_cluster_role_binding(body=manifest)
-        elif kind == "Role":
-            return self.clients["rbac"].create_namespaced_role(namespace=ns, body=manifest)
-        elif kind == "RoleBinding":
-            return self.clients["rbac"].create_namespaced_role_binding(namespace=ns, body=manifest)
-        elif kind == "Ingress":
-            return self.clients["networking"].create_namespaced_ingress(namespace=ns, body=manifest)
-        else:
-            # For custom resources or unsupported types, fall back to kubectl
-            raise NotImplementedError(
-                f"Direct API support not implemented for {kind}. "
-                "Use kubectl.apply() for this resource type."
-            )
-
     def get(
         self,
         kind: str,
@@ -313,7 +256,28 @@ class K8s:
             },
         }
 
-        return self.apply(manifest, namespace, log)
+        from .kubectl import kubectl
+
+        if log is not None:
+            return kubectl.apply(manifest, namespace, log)
+        else:
+            # If no log provided, apply without logging
+            import tempfile
+            import yaml
+            import os
+
+            with tempfile.NamedTemporaryFile(mode="w", suffix=".yaml", delete=False) as f:
+                yaml.dump(manifest, f, default_flow_style=False)
+                manifest_file = f.name
+            try:
+                import subprocess
+
+                cmd = ["kubectl", "apply", "-n", namespace, "-f", manifest_file]
+                result = subprocess.run(cmd, capture_output=True, text=True, check=True)
+                return result.stdout
+            finally:
+                if os.path.exists(manifest_file):
+                    os.unlink(manifest_file)
 
     def create_service(
         self,
@@ -349,7 +313,28 @@ class K8s:
             },
         }
 
-        return self.apply(manifest, namespace, log)
+        from .kubectl import kubectl
+
+        if log is not None:
+            return kubectl.apply(manifest, namespace, log)
+        else:
+            # If no log provided, apply without logging
+            import tempfile
+            import yaml
+            import os
+
+            with tempfile.NamedTemporaryFile(mode="w", suffix=".yaml", delete=False) as f:
+                yaml.dump(manifest, f, default_flow_style=False)
+                manifest_file = f.name
+            try:
+                import subprocess
+
+                cmd = ["kubectl", "apply", "-n", namespace, "-f", manifest_file]
+                result = subprocess.run(cmd, capture_output=True, text=True, check=True)
+                return result.stdout
+            finally:
+                if os.path.exists(manifest_file):
+                    os.unlink(manifest_file)
 
     def create_secret(
         self,
@@ -391,7 +376,28 @@ class K8s:
             # If no string data, assume data is already base64 encoded
             manifest["data"] = data
 
-        return self.apply(manifest, namespace, log)
+        from .kubectl import kubectl
+
+        if log is not None:
+            return kubectl.apply(manifest, namespace, log)
+        else:
+            # If no log provided, apply without logging
+            import tempfile
+            import yaml
+            import os
+
+            with tempfile.NamedTemporaryFile(mode="w", suffix=".yaml", delete=False) as f:
+                yaml.dump(manifest, f, default_flow_style=False)
+                manifest_file = f.name
+            try:
+                import subprocess
+
+                cmd = ["kubectl", "apply", "-n", namespace, "-f", manifest_file]
+                result = subprocess.run(cmd, capture_output=True, text=True, check=True)
+                return result.stdout
+            finally:
+                if os.path.exists(manifest_file):
+                    os.unlink(manifest_file)
 
     def create_external_secret(
         self,
@@ -432,7 +438,28 @@ class K8s:
             },
         }
 
-        return self.apply(manifest, namespace, log)
+        from .kubectl import kubectl
+
+        if log is not None:
+            return kubectl.apply(manifest, namespace, log)
+        else:
+            # If no log provided, apply without logging
+            import tempfile
+            import yaml
+            import os
+
+            with tempfile.NamedTemporaryFile(mode="w", suffix=".yaml", delete=False) as f:
+                yaml.dump(manifest, f, default_flow_style=False)
+                manifest_file = f.name
+            try:
+                import subprocess
+
+                cmd = ["kubectl", "apply", "-n", namespace, "-f", manifest_file]
+                result = subprocess.run(cmd, capture_output=True, text=True, check=True)
+                return result.stdout
+            finally:
+                if os.path.exists(manifest_file):
+                    os.unlink(manifest_file)
 
     def create_config_map(
         self,
@@ -472,7 +499,28 @@ class K8s:
         if binary_data:
             manifest["binaryData"] = binary_data
 
-        return self.apply(manifest, namespace, log)
+        from .kubectl import kubectl
+
+        if log is not None:
+            return kubectl.apply(manifest, namespace, log)
+        else:
+            # If no log provided, apply without logging
+            import tempfile
+            import yaml
+            import os
+
+            with tempfile.NamedTemporaryFile(mode="w", suffix=".yaml", delete=False) as f:
+                yaml.dump(manifest, f, default_flow_style=False)
+                manifest_file = f.name
+            try:
+                import subprocess
+
+                cmd = ["kubectl", "apply", "-n", namespace, "-f", manifest_file]
+                result = subprocess.run(cmd, capture_output=True, text=True, check=True)
+                return result.stdout
+            finally:
+                if os.path.exists(manifest_file):
+                    os.unlink(manifest_file)
 
     def wait_for(
         self,
