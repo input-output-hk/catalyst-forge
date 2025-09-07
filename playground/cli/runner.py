@@ -15,7 +15,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Mapping, Sequence
 
-from .setupv2.logging import get_command_logger
+from .setup.logging import get_command_logger
 
 
 @dataclass

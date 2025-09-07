@@ -87,8 +87,8 @@ def _load_global_config(
     logger.info(f"Using configuration: {config_path}")
 
 
-@app.command("setupv2")
-def setupv2(
+@app.command("setup")
+def setup(
     ctx: typer.Context,
     dry_run: bool = typer.Option(
         False,
@@ -106,26 +106,26 @@ def setupv2(
         help="List available tasks with their contracts and exit",
     ),
 ) -> None:
-    """Run environment setup tasks using the v2 contract-based system.
+    """Run environment setup tasks using the contract-based system.
 
-    This is a new setup system that enables parallel execution based on
-    explicit dependency contracts between tasks.
+    This system enables parallel execution based on explicit dependency
+    contracts between tasks.
     """
     state: ConfigState | None = getattr(ctx, "obj", None)
     if state is None:
         raise RuntimeError("Config state not loaded")
 
-    # Import setupv2 module
+    # Import setup module
     try:
-        from cli.setupv2 import run_all, list_tasks, load_tasks
+        from cli.setup import run_all, list_tasks, load_tasks
     except ImportError as e:
-        raise SystemExit(f"Failed to import setupv2: {e}")
+        raise SystemExit(f"Failed to import setup: {e}")
 
     # Get logger for user-facing messages
     logger = get_logger("console")
 
     # Load all tasks from the tasks/ directory
-    logger.info("Loading setupv2 tasks...")
+    logger.info("Loading setup tasks...")
     load_tasks()
 
     # Handle --list flag
@@ -162,17 +162,17 @@ def up(
     if state is None:
         raise RuntimeError("Config state not loaded")
 
-    # Import setupv2 module
+    # Import setup module
     try:
-        from cli.setupv2 import run_all, load_tasks
+        from cli.setup import run_all, load_tasks
     except ImportError as e:
-        raise SystemExit(f"Failed to import setupv2: {e}")
+        raise SystemExit(f"Failed to import setup: {e}")
 
     # Get logger for user-facing messages
     logger = get_logger("console")
 
     # Load all tasks from the tasks/ directory
-    logger.info("Loading setupv2 tasks...")
+    logger.info("Loading setup tasks...")
     load_tasks()
 
     # Run all tasks with setupv2

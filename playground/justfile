@@ -1,4 +1,4 @@
-# Justfile for local playground: K3d + SetupV2 (contract-based parallel task runner)
+# Justfile for local playground: K3d + Setup (contract-based parallel task runner)
 
 PROJROOT := justfile_directory()
 
@@ -9,9 +9,9 @@ default:
 	@just --list
 
 
-# Create or reuse local cluster and deploy all services using setupv2
+# Create or reuse local cluster and deploy all services using setup
 up:
-	cd "{{PROJROOT}}" && uv run cli setupv2
+	cd "{{PROJROOT}}" && uv run cli setup
 
 # Tear down cluster
 down name="forge":

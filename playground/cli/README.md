@@ -15,10 +15,10 @@ Prerequisites:
 Run commands with uv:
 ```bash
 uv run python playground/cli/main.py --help
-uv run python playground/cli/main.py setupv2 --list
-uv run python playground/cli/main.py setupv2 --only k3d
-uv run python playground/cli/main.py setupv2 --only hydra
-uv run python playground/cli/main.py setupv2 --only deploy
+uv run python playground/cli/main.py setup --list
+uv run python playground/cli/main.py setup --only k3d
+uv run python playground/cli/main.py setup --only hydra
+uv run python playground/cli/main.py setup --only deploy
 uv run python playground/cli/main.py up
 ```
 ### `up` command
@@ -104,32 +104,32 @@ tasks: {
 
 ## Commands overview
 
-- `setupv2 --only k3d`: Create or reuse a local k3d cluster with Envoy-compatible ingress, write kubeconfig, wait for Ready.
+- `setup --only k3d`: Create or reuse a local k3d cluster with Envoy-compatible ingress, write kubeconfig, wait for Ready.
 - `generate`: Generate client TLS certs and Earthly config for mtls to buildkit.
-- `setupv2 --only migrate`: Initialize Postgres for dependent apps (Kratos, Hydra, …) via registry-driven db seeders.
-- `setupv2 --only deploy`: Build, render, and apply one or more services (Earthly + CUE + kubectl).
-- `setupv2`: Run pluggable setup tasks using the contract-based system. See below.
+- `setup --only migrate`: Initialize Postgres for dependent apps (Kratos, Hydra, …) via registry-driven db seeders.
+- `setup --only deploy`: Build, render, and apply one or more services (Earthly + CUE + kubectl).
+- `setup`: Run pluggable setup tasks using the contract-based system. See below.
 - `dns pin-wildcard` and `dns pin-registry`: CoreDNS helpers for local routing.
-- `setupv2 --only helmfile`: Run Helmfile `apply` (default) or `sync`, with include/skip filters via runtime args.
+- `setup --only helmfile`: Run Helmfile `apply` (default) or `sync`, with include/skip filters via runtime args.
 - `up`: Bring up the full local environment in the correct order (k3d → dns → generate → helmfile foundation → migrate → helmfile apps → hydra → deploy).
 
 ## Setupv2 architecture (contract-based tasks)
 
-The setupv2 system uses explicit contracts for parallel execution:
-- Tasks live under `playground/cli/setupv2/tasks/`.
+The setup system uses explicit contracts for parallel execution:
+- Tasks live under `playground/cli/setup/tasks/`.
 - Each task declares what it `provides` and what it `requires` via the `@task` decorator.
 - Tasks are automatically namespaced (e.g., `postgres.dsn`, `kratos.public_url`).
 - The system uses networkx to resolve dependencies and execute tasks in parallel where possible.
 
 Execution flow:
 1. CLI loads configuration and stores it in a `ConfigState`.
-2. The `setupv2` command auto-discovers tasks under `playground.cli.setupv2.tasks` and loads them.
+2. The `setup` command auto-discovers tasks under `playground.cli.setup.tasks` and loads them.
 3. Tasks are analyzed for dependencies and grouped into parallel execution levels.
 4. Tasks within each level run in parallel using ThreadPoolExecutor.
 5. Each task gets `(ctx: dict, cfg: dict, log: file)` and returns values to provide to other tasks.
 ### Runtime task arguments
 
-Some behavior is better controlled at runtime rather than in `config.cue`. The `setupv2` command accepts task-scoped arguments:
+Some behavior is better controlled at runtime rather than in `config.cue`. The `setup` command accepts task-scoped arguments:
 
 - `--task-arg <task>.<key>=<value>` (repeatable)
 - `--task-args-file <path.json>` (JSON object: `{ "<task>": { ... } }`)
@@ -142,11 +142,11 @@ Tasks can read their scope via `ctx.runtime.get("<task>", {})`.
 
 Examples:
 ```bash
-uv run python playground/cli/main.py setupv2 --only migrate --task-arg migrate.only=hydra,kratos
-uv run python playground/cli/main.py setupv2 --only deploy --task-arg deploy.only=api,frontend
-uv run python playground/cli/main.py setupv2 --only deploy --task-arg deploy.skip=renderer
-uv run python playground/cli/main.py setupv2 --only hydra --task-arg hydra.clients='{"cli":{"client_id":"forge-cli","redirect_uris":["http://127.0.0.1:49152/callback"]}}'
-uv run python playground/cli/main.py setupv2 --task-args-file playground/cli/runtime.json
+uv run python playground/cli/main.py setup --only migrate --task-arg migrate.only=hydra,kratos
+uv run python playground/cli/main.py setup --only deploy --task-arg deploy.only=api,frontend
+uv run python playground/cli/main.py setup --only deploy --task-arg deploy.skip=renderer
+uv run python playground/cli/main.py setup --only hydra --task-arg hydra.clients='{"cli":{"client_id":"forge-cli","redirect_uris":["http://127.0.0.1:49152/callback"]}}'
+uv run python playground/cli/main.py setup --task-args-file playground/cli/runtime.json
 ```
 
 `runtime.json` example:
@@ -161,9 +161,9 @@ uv run python playground/cli/main.py setupv2 --task-args-file playground/cli/run
 
 Listing or selecting tasks:
 ```bash
-uv run python playground/cli/main.py setupv2 --list
-uv run python playground/cli/main.py setupv2 --only k3d
-uv run python playground/cli/main.py setupv2 --only hydra
+uv run python playground/cli/main.py setup --list
+uv run python playground/cli/main.py setup --only k3d
+uv run python playground/cli/main.py setup --only hydra
 ```
 
 ### tasks.k3d configuration
@@ -189,17 +189,17 @@ tasks: {
 }
 ```
 
-### Declaring a new setupv2 task
+### Declaring a new setup task
 
-1) Create a file under `playground/cli/setupv2/tasks/`, e.g. `mytask.py`.
+1) Create a file under `playground/cli/setup/tasks/`, e.g. `mytask.py`.
 2) Use the `@task` decorator to declare what your task provides and requires.
 3) Implement a simple function that takes `(ctx, cfg, log)` parameters.
 4) Return a dictionary of values to provide to other tasks.
 
 Minimal example:
 ```python
-from cli.setupv2 import task
-from cli.setupv2.tools import helm
+from cli.setup import task
+from cli.setup.tools import helm
 
 @task("mytask",
       provides={"ready": bool},  # What this task provides
@@ -211,7 +211,7 @@ def setup_mytask(ctx, cfg, log):
     # Access filtered config
     task_config = cfg["tasks"]["mytask"]
 
-    # Use setupv2 tools
+    # Use setup tools
     helm.install(
         name="mytask",
         chart="mychart/mytask",
@@ -261,25 +261,25 @@ Runtime examples:
 
 ```bash
 # Apply everything (default action)
-uv run python playground/cli/main.py setupv2 --only helmfile
+uv run python playground/cli/main.py setup --only helmfile
 
 # Sync only selected releases
-uv run python playground/cli/main.py setupv2 --only helmfile \
+uv run python playground/cli/main.py setup --only helmfile \
   --task-arg helmfile.action=sync \
   --task-arg helmfile.only=postgres,ory
 
 # Apply excluding a release (requires helmfile supporting negative selectors)
-uv run python playground/cli/main.py setupv2 --only helmfile \
+uv run python playground/cli/main.py setup --only helmfile \
   --task-arg helmfile.skip=temporal
 
 # Add raw selectors and extra args
-uv run python playground/cli/main.py setupv2 --only helmfile \
+uv run python playground/cli/main.py setup --only helmfile \
   --task-arg helmfile.selectors='["namespace=auth"]' \
   --task-arg helmfile.args='["--debug"]'
 ```
 
 
-Tasks declare what they `provides` and `requires` via the `@task` decorator. The setupv2 system uses networkx to resolve dependencies and execute tasks in parallel where possible.
+Tasks declare what they `provides` and `requires` via the `@task` decorator. The setup system uses networkx to resolve dependencies and execute tasks in parallel where possible.
 
 ## Contributing
 
