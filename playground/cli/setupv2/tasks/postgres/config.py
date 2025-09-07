@@ -19,7 +19,7 @@ class PostgresConfig(BaseModel):
     Default: "postgres"
     """
 
-    chart: str = "bitnami/postgresql"
+    chart: str = "oci://registry-1.docker.io/bitnamicharts/postgresql"
     """Helm chart to use for PostgreSQL deployment.
 
     Specifies the Helm chart repository and name for PostgreSQL.
@@ -68,7 +68,7 @@ class PostgresConfig(BaseModel):
     Default: 5432
     """
 
-    persistence: dict = {"enabled": True, "size": "10Gi"}
+    persistence: dict = {"enabled": True, "size": "20Gi"}
     """Persistence configuration for PostgreSQL data.
 
     Controls whether data is stored persistently and the storage size.

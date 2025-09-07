@@ -53,9 +53,9 @@ class CertManagerConfig(BaseModel):
     Defines CPU and memory allocations for cert-manager, webhook, and cainjector.
     """
 
-    cluster_issuer_name: str = "selfsigned-issuer"
+    cluster_issuer_name: str = "mkcert-ca"
     """Name of the ClusterIssuer to create.
 
-    This ClusterIssuer will be created for basic certificate needs.
-    Default: "selfsigned-issuer"
+    Uses mkcert root CA secret for signing certificates.
+    Default: "mkcert-ca"
     """

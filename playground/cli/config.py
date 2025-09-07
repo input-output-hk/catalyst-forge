@@ -46,7 +46,7 @@ class DeploymentConfig(BaseModel):
 class PlaygroundConfig(BaseModel):
     """Top-level playground configuration."""
 
-    registry: str
+    registry_host: str
     deployments: Dict[str, DeploymentConfig]
 
     # k3d cluster configuration

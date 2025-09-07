@@ -19,7 +19,7 @@ class EnvoyGatewayConfig(BaseModel):
     Default: "envoy-gateway-system"
     """
 
-    gateway_class_name: str = "envoy-gateway"
+    gateway_class_name: str = "eg"
     """Name of the GatewayClass to create for Envoy Gateway.
 
     This GatewayClass will be used by Gateway resources to route traffic

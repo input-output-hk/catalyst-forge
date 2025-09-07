@@ -38,8 +38,6 @@ def setup_trust_manager(ctx, cfg, log):
 
     values = {
         "app": tm_config.app,
-        "resources": tm_config.resources["trust_manager"],
-        "webhook": {"resources": tm_config.resources["webhook"]},
     }
 
     helm.install(
@@ -61,7 +59,6 @@ def setup_trust_manager(ctx, cfg, log):
     )
 
     # Create a Bundle for mkcert CA certificates (common in development)
-    # This will automatically distribute the mkcert CA to services that need it
     ca_bundle = {
         "apiVersion": "trust.cert-manager.io/v1alpha1",
         "kind": "Bundle",
@@ -77,9 +74,7 @@ def setup_trust_manager(ctx, cfg, log):
             ],
             "target": {
                 "configMap": {"key": tm_config.ca_bundle["config_map_key"]},
-                "namespaceSelector": {
-                    "matchLabels": {"cert-manager.io/disable-auto-mount": "false"}
-                },
+                "namespaceSelector": {},
             },
         },
     }

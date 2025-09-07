@@ -64,7 +64,7 @@ Key top-level fields used by the CLI:
 
 Example snippets:
 ```cue
-registry: "registry.projectcatalyst.dev"
+registry_host: "registry.projectcatalyst.dev"
 
 deps: {
     db: {

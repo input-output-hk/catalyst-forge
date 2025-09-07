@@ -36,7 +36,7 @@ from .config import K3dConfig
         "api_port": int,
         "ready": bool,
     },
-    config_keys=["k3d", "registry"],
+    config_keys=["k3d", "registry_host"],
     timeout_sec=600,
     retry_delays=[10, 30],  # k3d cluster creation can be slow
 )
@@ -45,7 +45,7 @@ def setup_k3d(ctx, cfg, log):
 
     # Parse configuration with validation and defaults
     k3d_config = K3dConfig.model_validate(cfg["k3d"])
-    registry_host = cfg["registry"]
+    registry_host = cfg["registry_host"]
 
     log.write(f"Setting up k3d cluster '{k3d_config.cluster_name}'...\n")
 

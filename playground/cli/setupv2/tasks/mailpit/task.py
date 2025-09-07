@@ -31,18 +31,12 @@ def setup_mailpit(ctx, cfg, log):
         },
         "service": {
             "type": mp_config.service_type,
-            "ports": {
-                "http": {"port": 8025, "targetPort": 8025},
-                "smtp": {"port": 1025, "targetPort": 1025},
-            },
+            "http": {"name": "http"},
+            "smtp": {"name": "smtp"},
         },
-        "ingress": {
-            "enabled": False  # We'll use Envoy Gateway instead
-        },
+        "ingress": {"enabled": False},
         "resources": mp_config.resources,
-        "persistence": {
-            "enabled": False  # No persistence needed for testing
-        },
+        "persistence": {"enabled": False},
         "mailpit": {
             "uiBindAddr": "0.0.0.0:8025",
             "smtpBindAddr": "0.0.0.0:1025",
@@ -53,7 +47,7 @@ def setup_mailpit(ctx, cfg, log):
 
     helm.install(
         name="mailpit",
-        chart="mailpit",  # Using hardcoded chart name as it's not in our config
+        chart="jouve/mailpit",
         namespace=mp_config.namespace,
         values=values,
         log=log,
@@ -64,29 +58,23 @@ def setup_mailpit(ctx, cfg, log):
     # Wait for Mailpit deployment
     k8s.wait_for("deployment/mailpit", namespace=mp_config.namespace, log=log, timeout=300)
 
-    # Create an HTTPRoute for the Mailpit web UI
+    # Create HTTPRoute for Mailpit web UI without reading from filesystem
     http_route = {
         "apiVersion": "gateway.networking.k8s.io/v1",
         "kind": "HTTPRoute",
-        "metadata": {"name": "mailpit-web", "namespace": mp_config.namespace},
+        "metadata": {"name": "mailpit", "namespace": mp_config.namespace},
         "spec": {
             "parentRefs": [
-                {
-                    "name": "default-gateway",  # Reference the default gateway
-                    "namespace": "envoy-gateway-system",
-                }
+                {"name": "default", "namespace": "envoy-gateway-system"}
             ],
             "hostnames": [mp_config.hostname],
             "rules": [
                 {
-                    "matches": [{"path": {"type": "PathPrefix", "value": "/"}}],
+                    "matches": [
+                        {"path": {"type": "PathPrefix", "value": "/"}}
+                    ],
                     "backendRefs": [
-                        {
-                            "kind": "Service",
-                            "name": "mailpit",
-                            "namespace": mp_config.namespace,
-                            "port": 8025,
-                        }
+                        {"name": "http", "port": 80}
                     ],
                 }
             ],
@@ -95,27 +83,6 @@ def setup_mailpit(ctx, cfg, log):
 
     log.write("Creating HTTPRoute for Mailpit web UI...\n")
     kubectl.apply(manifest=http_route, namespace=mp_config.namespace, log=log)
-
-    # Create a default Gateway if it doesn't exist
-    gateway = {
-        "apiVersion": "gateway.networking.k8s.io/v1",
-        "kind": "Gateway",
-        "metadata": {"name": "default-gateway", "namespace": "envoy-gateway-system"},
-        "spec": {
-            "gatewayClassName": "envoy-gateway",
-            "listeners": [
-                {
-                    "name": "http",
-                    "hostname": "*.projectcatalyst.dev",
-                    "port": 80,
-                    "protocol": "HTTP",
-                }
-            ],
-        },
-    }
-
-    log.write("Ensuring default Gateway exists...\n")
-    kubectl.apply(manifest=gateway, namespace="envoy-gateway-system", log=log)
 
     log.write("\n✅ Mailpit deployed successfully\n")
     log.write(f"   SMTP server available at mailpit.{mp_config.namespace}:1025\n")

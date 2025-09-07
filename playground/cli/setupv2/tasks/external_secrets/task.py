@@ -41,6 +41,14 @@ def setup_external_secrets(ctx, cfg, log):
         "installCRDs": es_config.install_crds,
         "webhook": {"port": es_config.webhook_port},
         "certController": {"requeueInterval": es_config.cert_controller_requeue_interval},
+        "extraEnv": [
+            {
+                "name": "AWS_SECRETSMANAGER_ENDPOINT",
+                "value": "http://localstack.localstack.svc.cluster.local:4566",
+            },
+            {"name": "AWS_SSM_ENDPOINT", "value": "http://localstack.localstack.svc.cluster.local:4566"},
+            {"name": "AWS_STS_ENDPOINT", "value": "http://localstack.localstack.svc.cluster.local:4566"},
+        ],
     }
 
     helm.install(
@@ -75,13 +83,13 @@ def setup_external_secrets(ctx, cfg, log):
     aws_access_key = ctx["localstack.aws_access_key"]
     aws_secret_key = ctx["localstack.aws_secret_key"]
 
-    # Create secret with AWS credentials for External Secrets to use
+    # Create credentials Secret matching Helmfile naming and keys
     k8s.create_secret(
-        name="localstack-credentials",
+        name="localstack-aws-creds",
         namespace=es_config.namespace,
         data={
-            "access-key": aws_access_key,
-            "secret-key": aws_secret_key,
+            "access-key-id": aws_access_key,
+            "secret-access-key": aws_secret_key,
         },
         log=log,
     )
@@ -99,18 +107,17 @@ def setup_external_secrets(ctx, cfg, log):
                     "auth": {
                         "secretRef": {
                             "accessKeyIDSecretRef": {
-                                "name": "localstack-credentials",
+                                "name": "localstack-aws-creds",
+                                "key": "access-key-id",
                                 "namespace": es_config.namespace,
-                                "key": "access-key",
                             },
                             "secretAccessKeySecretRef": {
-                                "name": "localstack-credentials",
+                                "name": "localstack-aws-creds",
+                                "key": "secret-access-key",
                                 "namespace": es_config.namespace,
-                                "key": "secret-key",
                             },
                         }
                     },
-                    "endpoint": {"url": localstack_endpoint},
                 }
             }
         },

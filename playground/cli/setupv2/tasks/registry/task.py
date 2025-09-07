@@ -9,8 +9,8 @@ from .config import RegistryConfig
 
 @task(
     "registry",
-    requires=["k3d.ready"],  # Ensure cluster exists first
-    provides={"host": str, "url": str, "username": str, "password": str},
+    requires=["k3d.ready", "envoy-gateway.gateway_ready"],
+    provides={"host": str, "url": str, "username": str, "password": str, "ready": bool},
     config_keys=["registry"],  # Load registry configuration
     timeout_sec=300,
     retry_delays=[5, 15],  # Retry after 5s, then 15s
@@ -102,7 +102,7 @@ def setup_registry(ctx, cfg, log):
         }
 
     helm.install(
-        name="docker-registry",
+        name="registry",
         chart=reg_config.chart,
         namespace=reg_config.namespace,
         values=values,
@@ -114,39 +114,24 @@ def setup_registry(ctx, cfg, log):
     # Wait for Registry to be ready
     log.write("Waiting for Docker Registry to be ready...\n")
     k8s.wait_for(
-        "deployment/docker-registry",
+        "deployment/registry-docker-registry",
         namespace=reg_config.namespace,
         log=log,
         condition="condition=available",
         timeout=300,
     )
 
-    # Create a NodePort service for external access (for k3d)
-    # This allows pushing images from outside the cluster
-    nodeport_service = {
-        "apiVersion": "v1",
-        "kind": "Service",
-        "metadata": {"name": "docker-registry-nodeport", "namespace": reg_config.namespace},
-        "spec": {
-            "type": "NodePort",
-            "ports": [
-                {
-                    "port": 5000,
-                    "targetPort": 5000,
-                    "nodePort": reg_config.nodeport,
-                    "protocol": "TCP",
-                }
-            ],
-            "selector": {"app": "docker-registry"},
-        },
-    }
-
-    log.write("Creating NodePort service for external access...\n")
-    kubectl.apply(manifest=nodeport_service, namespace=reg_config.namespace, log=log)
+    # Apply registry HTTPRoute via Envoy Gateway
+    from pathlib import Path
+    repo_root = Path(__file__).resolve().parents[3]
+    route_manifest = repo_root / "playground" / "helmfile" / "platform" / "envoy" / "registry-route.yaml"
+    if not route_manifest.exists():
+        raise RuntimeError(f"Registry HTTPRoute manifest not found: {route_manifest}")
+    subprocess.run(["kubectl", "apply", "-f", str(route_manifest)], check=True, capture_output=True, text=True)
 
     # Registry details
-    internal_host = f"docker-registry.{reg_config.namespace}.svc.cluster.local:5000"
-    external_url = f"http://localhost:{reg_config.nodeport}"  # For k3d access
+    internal_host = f"registry-docker-registry.{reg_config.namespace}.svc.cluster.local:5000"
+    external_url = "https://registry.projectcatalyst.dev"
 
     log.write("\n✅ Docker Registry deployed successfully\n")
     log.write(f"   Internal Host: {internal_host}\n")
@@ -157,11 +142,12 @@ def setup_registry(ctx, cfg, log):
     # Instructions for usage
     log.write("\nUsage:\n")
     log.write(f"  Internal: docker pull {internal_host}/image:tag\n")
-    log.write(f"  External: docker push localhost:{reg_config.nodeport}/image:tag\n")
+    log.write(f"  External: docker push registry.projectcatalyst.dev/image:tag\n")
 
     return {
         "host": internal_host,
         "url": external_url,
         "username": username if htpasswd_data else "",
         "password": password if htpasswd_data else "",
+        "ready": True,
     }

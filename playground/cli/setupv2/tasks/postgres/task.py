@@ -9,7 +9,7 @@ from .config import PostgresConfig
 
 @task(
     "postgres",
-    requires=["k3d.ready"],  # Ensure cluster exists first
+    requires=["k3d.ready", "envoy-gateway.gateway_ready"],  # Ensure gateway exists for TCPRoute
     provides={"dsn": str, "host": str, "port": int},
     config_keys=["postgres"],  # Load PostgreSQL configuration
     timeout_sec=300,
@@ -47,25 +47,30 @@ def setup_postgres(ctx, cfg, log):
         timeout="5m",
     )
 
-    # Helm --wait already ensures the StatefulSet is ready
-    # Additional check to ensure the pod is running
+    # Wait for statefulset rollout to complete
     import subprocess
-
-    check_pod = subprocess.run(
+    rollout = subprocess.run(
         [
             "kubectl",
-            "get",
-            "pod",
             "-n",
             pg_config.namespace,
-            "postgres-postgresql-0",
-            "-o",
-            "jsonpath={.status.phase}",
+            "rollout",
+            "status",
+            "statefulset/postgres-postgresql",
+            "--timeout=300s",
         ],
         capture_output=True,
         text=True,
     )
-    log.write(f"PostgreSQL pod status: {check_pod.stdout}\n")
+    log.write(f"StatefulSet rollout: {rollout.stdout}\n")
+
+    # Apply TCPRoute for postgres via Envoy Gateway
+    from pathlib import Path
+    repo_root = Path(__file__).resolve().parents[3]
+    tcproute_manifest = repo_root / "playground" / "helmfile" / "platform" / "envoy" / "postgres-tcproute.yaml"
+    if not tcproute_manifest.exists():
+        raise RuntimeError(f"Postgres TCPRoute manifest not found: {tcproute_manifest}")
+    subprocess.run(["kubectl", "apply", "-f", str(tcproute_manifest)], check=True, capture_output=True, text=True)
 
     # Return values - will be namespaced as postgres.host, postgres.port, postgres.dsn
     dsn = f"postgresql://{pg_config.username}:{pg_config.password}@{pg_config.host}:{pg_config.port}/{pg_config.database}"

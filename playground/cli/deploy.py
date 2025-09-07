@@ -142,7 +142,7 @@ def _read_deployments_config(paths: DeployPaths, service_name: str) -> Deploymen
         err(f"Failed to parse CUE export JSON: {exc}")
         raise SystemExit(1)
 
-    registry = data.get("registry")
+    registry = data.get("registry_host")
     svc = (data.get("deployments") or {}).get(service_name) or {}
     project = svc.get("project")
     target = svc.get("target")
@@ -152,7 +152,7 @@ def _read_deployments_config(paths: DeployPaths, service_name: str) -> Deploymen
 
     missing: list[str] = []
     if not registry:
-        missing.append("registry")
+        missing.append("registry_host")
     if not project:
         missing.append(f"deployments.{service_name}.project")
     if not target:

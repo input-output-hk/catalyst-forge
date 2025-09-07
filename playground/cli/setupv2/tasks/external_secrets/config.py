@@ -47,9 +47,9 @@ class ExternalSecretsConfig(BaseModel):
     Default: "5m"
     """
 
-    secret_store_name: str = "localstack-store"
+    secret_store_name: str = "cluster-secret-store"
     """Name of the ClusterSecretStore to create for LocalStack.
 
     This ClusterSecretStore will connect to LocalStack's AWS-compatible services.
-    Default: "localstack-store"
+    Default: "cluster-secret-store"
     """

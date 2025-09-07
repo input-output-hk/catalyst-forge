@@ -19,38 +19,29 @@ class TrustManagerConfig(BaseModel):
     Default: "cert-manager"
     """
 
-    chart: str = "jetstack/trust-manager"
+    chart: str = "cert-manager/trust-manager"
     """Helm chart to use for trust-manager deployment.
 
     Specifies the Helm chart repository and name for trust-manager.
-    Default: "jetstack/trust-manager"
+    Default: "cert-manager/trust-manager"
     """
 
-    app: dict = {"trust": {"namespace": "cert-manager", "package": "cert-manager-package"}}
+    app: dict = {"webhook": {"tls": {"helmCert": {"enabled": True}}}}
     """Application configuration for trust-manager.
 
-    Controls the trust namespace and package settings.
-    """
-
-    resources: dict = {
-        "trust_manager": {
-            "requests": {"cpu": "10m", "memory": "32Mi"},
-            "limits": {"memory": "128Mi"},
-        },
-        "webhook": {"requests": {"cpu": "10m", "memory": "16Mi"}, "limits": {"memory": "64Mi"}},
-    }
-    """Resource requests and limits for trust-manager components.
-
-    Defines CPU and memory allocations for trust-manager and webhook.
+    Controls the webhook TLS certificate configuration.
     """
 
     ca_bundle: dict = {
-        "name": "mkcert-ca-bundle",
-        "secret_name": "mkcert-ca",
+        "name": "mkcert-root-bundle",
+        "secret_name": "mkcert-root-ca",
         "secret_key": "tls.crt",
         "config_map_key": "ca.crt",
     }
-    """CA bundle configuration for certificate distribution.
+    """CA Bundle configuration for distributing mkcert root CA.
 
-    Defines the Bundle resource for distributing CA certificates.
+    - name: Bundle resource name
+    - secret_name: Source Secret containing the root CA
+    - secret_key: Key within the Secret containing the certificate
+    - config_map_key: Key used in target ConfigMaps
     """

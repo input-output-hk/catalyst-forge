@@ -1,4 +1,4 @@
-registry: "registry.projectcatalyst.dev"
+registry_host: "registry.projectcatalyst.dev"
 
 dns: {
 	domain: "projectcatalyst.dev"
@@ -44,6 +44,13 @@ external_secrets: {
 	secret_store_name: "localstack-store"
 }
 
+generate: {
+	namespace:           "default"
+	earthly_config_path: "playground/.earthly"
+	client_cert_secret:  "earthly-client-cert"
+	ca_cert_secret:      "mkcert-ca"
+}
+
 gitea: {
 	namespace:    "gitea"
 	domain:       "git.projectcatalyst.dev"
@@ -63,6 +70,12 @@ gitea: {
 			org:  "forge"
 		},
 	]
+}
+
+keycloak_operator: {
+	namespace:    "keycloak-system"
+	channel:      "stable"
+	install_mode: "AllNamespaces"
 }
 
 keycloak: {
@@ -182,7 +195,7 @@ deployments: {
 			modules: main: values: {
 				deployment: containers: main: {
 					image: {
-						name: "\(registry)/\(deployments.api.image.name)"
+						name: "\(registry_host)/\(deployments.api.image.name)"
 						tag:  deployments.api.image.tag
 					}
 					env: {
@@ -214,7 +227,7 @@ deployments: {
 			modules: main: values: {
 				deployment: containers: main: {
 					image: {
-						name: "\(registry)/\(deployments.frontend.image.name)"
+						name: "\(registry_host)/\(deployments.frontend.image.name)"
 						tag:  deployments.frontend.image.tag
 					}
 				}
@@ -244,7 +257,7 @@ deployments: {
 			modules: main: values: {
 				deployment: containers: main: {
 					image: {
-						name: "\(registry)/\(deployments.oidc.image.name)"
+						name: "\(registry_host)/\(deployments.oidc.image.name)"
 						tag:  deployments.oidc.image.tag
 					}
 					mounts: {
@@ -329,7 +342,7 @@ deployments: {
 			modules: main: values: {
 				deployment: containers: main: {
 					image: {
-						name: "\(registry)/\(deployments.auth.image.name)"
+						name: "\(registry_host)/\(deployments.auth.image.name)"
 						tag:  deployments.auth.image.tag
 					}
 					env: {

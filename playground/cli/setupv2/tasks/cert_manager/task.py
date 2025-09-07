@@ -4,6 +4,7 @@ Deploy cert-manager for certificate management in the cluster.
 
 from cli.setupv2 import task
 from cli.setupv2.tools import helm, k8s, kubectl
+from cli.k3d import get_mkcert_caroot
 from .config import CertManagerConfig  # Import from sibling config module
 import time
 
@@ -80,19 +81,62 @@ def setup_cert_manager(ctx, cfg, log):
     # This helps prevent race conditions with ClusterIssuer creation
     time.sleep(5)
 
-    # Create a self-signed ClusterIssuer for basic certificate needs
+    # Create mkcert root CA Secret to match prior Helmfile postsync behavior
+    caroot = get_mkcert_caroot()
+    ca_crt_path = caroot / "rootCA.pem"
+    ca_key_path = caroot / "rootCA-key.pem"
+
+    if not (ca_crt_path.exists() and ca_key_path.exists()):
+        raise RuntimeError(
+            f"mkcert root CA files not found at {ca_crt_path} and {ca_key_path}. "
+            "Run 'mkcert -install' to generate the local root CA."
+        )
+
+    with open(ca_crt_path, "r") as f:
+        ca_crt = f.read()
+    with open(ca_key_path, "r") as f:
+        ca_key = f.read()
+
+    mkcert_secret_manifest = {
+        "apiVersion": "v1",
+        "kind": "Secret",
+        "metadata": {"name": "mkcert-root-ca", "namespace": cm_config.namespace},
+        "type": "kubernetes.io/tls",
+        "stringData": {"tls.crt": ca_crt, "tls.key": ca_key},
+    }
+
+    log.write("Creating/Updating mkcert root CA Secret 'mkcert-root-ca'...\n")
+    kubectl.apply(manifest=mkcert_secret_manifest, namespace=cm_config.namespace, log=log)
+
+    # Create a CA ClusterIssuer backed by mkcert root Secret
     cluster_issuer = {
         "apiVersion": "cert-manager.io/v1",
         "kind": "ClusterIssuer",
         "metadata": {"name": cm_config.cluster_issuer_name},
-        "spec": {"selfSigned": {}},
+        "spec": {"ca": {"secretName": "mkcert-root-ca"}},
     }
 
-    log.write(f"Creating self-signed ClusterIssuer '{cm_config.cluster_issuer_name}'...\n")
+    log.write(f"Creating CA ClusterIssuer '{cm_config.cluster_issuer_name}' backed by mkcert-root-ca...\n")
     kubectl.apply(manifest=cluster_issuer, namespace=cm_config.namespace, log=log)
+
+    # Apply wildcard certificate for envoy-gateway-system
+    wildcard_cert = {
+        "apiVersion": "cert-manager.io/v1",
+        "kind": "Certificate",
+        "metadata": {"name": "wildcard-projectcatalyst", "namespace": "envoy-gateway-system"},
+        "spec": {
+            "secretName": "wildcard-projectcatalyst-tls",
+            "dnsNames": ["*.projectcatalyst.dev"],
+            "issuerRef": {"kind": "ClusterIssuer", "name": cm_config.cluster_issuer_name},
+        },
+    }
+
+    log.write("Applying wildcard certificate for '*.projectcatalyst.dev' in envoy-gateway-system...\n")
+    kubectl.apply(manifest=wildcard_cert, namespace="envoy-gateway-system", log=log)
 
     log.write("\n✅ cert-manager deployed successfully\n")
     log.write("   Webhook is ready for certificate requests\n")
-    log.write(f"   Self-signed ClusterIssuer '{cm_config.cluster_issuer_name}' created\n")
+    log.write(f"   CA ClusterIssuer '{cm_config.cluster_issuer_name}' created\n")
+    log.write("   Wildcard certificate applied for '*.projectcatalyst.dev'\n")
 
     return {"ready": True, "webhook_ready": True}

@@ -3,7 +3,7 @@ Deploy Temporal workflow engine with PostgreSQL persistence.
 """
 
 from cli.setupv2 import task
-from cli.setupv2.tools import helm, k8s
+from cli.setupv2.tools import helm, k8s, kubectl
 from .config import TemporalConfig
 
 
@@ -27,26 +27,58 @@ def setup_temporal(ctx, cfg, log):
     db_user = cfg["deps"]["db"]["user"]
     db_password = cfg["deps"]["db"]["password"]
 
-    # Phase 1: Create database secret for Temporal
-    log.write("Phase 1: Creating database configuration...\n")
+    # Phase 1: Create ExternalSecrets for database stores
+    log.write("Phase 1: Creating ExternalSecrets for Temporal stores...\n")
 
-    # Create ExternalSecret for database credentials
-    k8s.create_external_secret(
-        name="temporal-db-secret",
-        namespace="temporal",
-        secret_store_ref={"name": "aws-secretsmanager", "kind": "SecretStore"},
-        data=[
-            {
-                "secretKey": "DB_USER",
-                "remoteRef": {"key": f"temporal-db-{db_user}", "property": "username"},
+    default_store_es = {
+        "apiVersion": "external-secrets.io/v1beta1",
+        "kind": "ExternalSecret",
+        "metadata": {"name": "temporal-default-store", "namespace": temporal_config.namespace},
+        "spec": {
+            "refreshInterval": "5m",
+            "secretStoreRef": {"name": "cluster-secret-store", "kind": "ClusterSecretStore"},
+            "target": {
+                "name": "temporal-default-store",
+                "creationPolicy": "Owner",
+                "template": {"type": "Opaque", "data": {"password": "{{ .password }}"}},
             },
-            {
-                "secretKey": "DB_PASSWORD",
-                "remoteRef": {"key": f"temporal-db-{db_user}", "property": "password"},
+            "dataFrom": [{"extract": {"key": "shared-services/db/temporal"}}],
+        },
+    }
+
+    visibility_store_es = {
+        "apiVersion": "external-secrets.io/v1beta1",
+        "kind": "ExternalSecret",
+        "metadata": {"name": "temporal-visibility-store", "namespace": temporal_config.namespace},
+        "spec": {
+            "refreshInterval": "5m",
+            "secretStoreRef": {"name": "cluster-secret-store", "kind": "ClusterSecretStore"},
+            "target": {
+                "name": "temporal-visibility-store",
+                "creationPolicy": "Owner",
+                "template": {"type": "Opaque", "data": {"password": "{{ .password }}"}},
             },
-        ],
-        log=log,
-    )
+            "dataFrom": [{"extract": {"key": "shared-services/db/temporal_visibility"}}],
+        },
+    }
+
+    kubectl.apply(manifest=default_store_es, namespace=temporal_config.namespace, log=log)
+    kubectl.apply(manifest=visibility_store_es, namespace=temporal_config.namespace, log=log)
+
+    # Wait for secrets to exist
+    import time as _time
+    for name in ("temporal-default-store", "temporal-visibility-store"):
+        log.write(f"Waiting for Secret {name} to be created...\n")
+        for _ in range(60):
+            try:
+                secret = kubectl.get("secret", name=name, namespace=temporal_config.namespace, output="json")
+                if secret:
+                    break
+            except Exception:
+                pass
+            _time.sleep(2)
+        else:
+            raise RuntimeError(f"Timeout waiting for Secret {name}")
 
     # Phase 2: Deploy Temporal via Helm
     log.write("Phase 2: Deploying Temporal via Helm...\n")
@@ -87,7 +119,7 @@ def setup_temporal(ctx, cfg, log):
 
     helm.install(
         name="temporal",
-        chart="temporal/temporal",  # Using hardcoded chart name as it's not in our config
+        chart="temporalio/temporal",
         namespace=temporal_config.namespace,
         values=values,
         log=log,
@@ -121,60 +153,34 @@ def setup_temporal(ctx, cfg, log):
     for namespace in temporal_config.namespaces:
         _create_namespace(namespace, log)
 
-    # Phase 4: Create HTTPRoutes for Envoy Gateway
-    log.write("Phase 4: Creating HTTPRoutes...\n")
+    # Phase 4: Create HTTPRoute for Temporal UI (match Helmfile)
+    log.write("Phase 4: Creating Temporal UI HTTPRoute...\n")
 
-    # Frontend HTTPRoute
-    k8s.create_http_route(
-        name="temporal-frontend",
-        namespace=temporal_config.namespace,
-        hostnames=[temporal_config.domain],
-        rules=[
-            {
-                "matches": [{"path": {"type": "PathPrefix", "value": "/api"}}],
-                "backendRefs": [
-                    {
-                        "kind": "Service",
-                        "name": "temporal-frontend",
-                        "namespace": temporal_config.namespace,
-                        "port": 7233,
-                    }
-                ],
-            }
-        ],
-        log=log,
-    )
-
-    # Web UI HTTPRoute
-    k8s.create_http_route(
-        name="temporal-web",
-        namespace=temporal_config.namespace,
-        hostnames=[f"web.{temporal_config.domain}"],
-        rules=[
-            {
-                "matches": [{"path": {"type": "PathPrefix", "value": "/"}}],
-                "backendRefs": [
-                    {
-                        "kind": "Service",
-                        "name": "temporal-web",
-                        "namespace": temporal_config.namespace,
-                        "port": 8080,
-                    }
-                ],
-            }
-        ],
-        log=log,
-    )
+    ui_route = {
+        "apiVersion": "gateway.networking.k8s.io/v1",
+        "kind": "HTTPRoute",
+        "metadata": {"name": "temporal-ui", "namespace": temporal_config.namespace},
+        "spec": {
+            "parentRefs": [{"name": "default", "namespace": "envoy-gateway-system"}],
+            "hostnames": [temporal_config.domain],
+            "rules": [
+                {
+                    "matches": [{"path": {"type": "PathPrefix", "value": "/"}}],
+                    "backendRefs": [{"name": "temporal-web", "namespace": temporal_config.namespace, "port": 8080}],
+                }
+            ],
+        },
+    }
+    kubectl.apply(manifest=ui_route, namespace=temporal_config.namespace, log=log)
 
     log.write("\n✅ Temporal deployment and configuration complete!\n")
-    log.write(f"   Frontend API: temporal.{temporal_config.domain}:7233\n")
-    log.write(f"   Web UI: https://web.{temporal_config.domain}\n")
+    log.write(f"   Web UI: https://{temporal_config.domain}\n")
     log.write(f"   gRPC Endpoint: temporal-frontend.{temporal_config.namespace}:7233\n")
 
     return {
-        "frontend_url": f"https://temporal.{temporal_config.domain}",
+        "frontend_url": f"https://{temporal_config.domain}",
         "grpc_endpoint": f"temporal-frontend.{temporal_config.namespace}:7233",
-        "web_ui_url": f"https://web.{temporal_config.domain}",
+        "web_ui_url": f"https://{temporal_config.domain}",
     }
 
 

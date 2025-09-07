@@ -48,13 +48,6 @@ class RegistryConfig(BaseModel):
     Default: "ClusterIP"
     """
 
-    nodeport: int = 30500
-    """NodePort for external access to Docker Registry.
-
-    When using NodePort service type, this port will be used for external access.
-    Default: 30500
-    """
-
     persistence: dict = {"enabled": True, "size": "20Gi", "storage_class": "local-path"}
     """Persistence configuration for Docker Registry data.
 

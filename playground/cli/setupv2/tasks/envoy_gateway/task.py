@@ -25,14 +25,6 @@ def setup_envoy_gateway(ctx, cfg, log):
 
     # Add the Envoy Gateway Helm repository
     import subprocess
-
-    add_repo = subprocess.run(
-        ["helm", "repo", "add", "eg", "https://gateway.envoyproxy.io"],
-        capture_output=True,
-        text=True,
-    )
-    log.write(f"Added Envoy Gateway repo: {add_repo.stdout}\n")
-
     update_repo = subprocess.run(["helm", "repo", "update"], capture_output=True, text=True)
     log.write(f"Updated Helm repos: {update_repo.stdout}\n")
 
@@ -63,8 +55,8 @@ def setup_envoy_gateway(ctx, cfg, log):
     }
 
     helm.install(
-        name="eg",
-        chart="eg/gateway-helm",
+        name="envoy-gateway",
+        chart="oci://docker.io/envoyproxy/gateway-helm",
         namespace=eg_config.namespace,
         values=values,
         log=log,
@@ -72,70 +64,74 @@ def setup_envoy_gateway(ctx, cfg, log):
         timeout="10m",
     )
 
-    # Wait for Envoy Gateway controller
+    # Wait for Envoy Gateway controller and proxy (release name matches Helmfile)
     k8s.wait_for(
-        "deployment/gateway-helm-envoy-gateway", namespace=eg_config.namespace, log=log, timeout=300
+        "deployment/envoy-gateway", namespace=eg_config.namespace, log=log, timeout=300
+    )
+    k8s.wait_for(
+        "deployment/envoy-proxy", namespace=eg_config.namespace, log=log, timeout=300
     )
 
-    # Wait for Envoy Proxy deployment
-    k8s.wait_for(
-        "deployment/gateway-helm-envoy-proxy", namespace=eg_config.namespace, log=log, timeout=300
-    )
-
-    # Create a GatewayClass for the gateway
+    # Create a GatewayClass for the gateway (no parametersRef, match Helmfile)
     gateway_class = {
         "apiVersion": "gateway.networking.k8s.io/v1",
         "kind": "GatewayClass",
         "metadata": {"name": eg_config.gateway_class_name},
         "spec": {
             "controllerName": "gateway.envoyproxy.io/gatewayclass-controller",
-            "parametersRef": {
-                "group": "gateway.envoyproxy.io",
-                "kind": "EnvoyProxy",
-                "name": "default-envoy-proxy",
-                "namespace": eg_config.namespace,
-            },
         },
     }
 
     log.write(f"Creating GatewayClass '{eg_config.gateway_class_name}'...\n")
     kubectl.apply(manifest=gateway_class, namespace=eg_config.namespace, log=log)
 
-    # Create an EnvoyProxy configuration
-    envoy_proxy = {
-        "apiVersion": "gateway.envoyproxy.io/v1alpha1",
-        "kind": "EnvoyProxy",
-        "metadata": {"name": "default-envoy-proxy", "namespace": eg_config.namespace},
+    # Apply the default Gateway matching platform manifest
+    gateway_manifest = {
+        "apiVersion": "gateway.networking.k8s.io/v1",
+        "kind": "Gateway",
+        "metadata": {"name": "default", "namespace": eg_config.namespace},
         "spec": {
-            "telemetry": {
-                "accessLog": {
-                    "settings": [
-                        {
-                            "format": {
-                                "type": "Text",
-                                "text": '[%START_TIME%] "%REQ(:METHOD)% %REQ(X-ENVOY-ORIGINAL-PATH?:PATH)% %PROTOCOL%" %RESPONSE_CODE% %RESPONSE_FLAGS% %BYTES_RECEIVED% %BYTES_SENT% %DURATION% "%REQ(X-FORWARDED-FOR)%" "%REQ(USER-AGENT)%" "%REQ(X-REQUEST-ID)%" "%REQ(:AUTHORITY)%" "%UPSTREAM_HOST%"\n',
-                            },
-                            "sinks": [{"type": "File", "file": {"path": "/dev/stdout"}}],
-                        }
-                    ]
-                }
-            },
-            "provider": {
-                "type": "Kubernetes",
-                "kubernetes": {
-                    "watchMode": "Endpoints",
-                    "watchNamespace": "",  # Watch all namespaces
+            "gatewayClassName": eg_config.gateway_class_name,
+            "listeners": [
+                {
+                    "name": "http",
+                    "protocol": "HTTP",
+                    "port": 80,
+                    "allowedRoutes": {"namespaces": {"from": "All"}},
                 },
-            },
+                {
+                    "name": "https",
+                    "protocol": "HTTPS",
+                    "port": 443,
+                    "allowedRoutes": {"namespaces": {"from": "All"}},
+                    "tls": {
+                        "mode": "Terminate",
+                        "certificateRefs": [{"kind": "Secret", "name": "wildcard-projectcatalyst-tls"}],
+                    },
+                    "hostname": "*.projectcatalyst.dev",
+                },
+                {
+                    "name": "buildkit-tcp",
+                    "protocol": "TCP",
+                    "port": 8372,
+                    "allowedRoutes": {"namespaces": {"from": "All"}},
+                },
+                {
+                    "name": "postgres-tcp",
+                    "protocol": "TCP",
+                    "port": 5432,
+                    "allowedRoutes": {"namespaces": {"from": "All"}},
+                },
+            ],
         },
     }
 
-    log.write("Creating EnvoyProxy configuration...\n")
-    kubectl.apply(manifest=envoy_proxy, namespace=eg_config.namespace, log=log)
+    log.write("Applying default Gateway resource...\n")
+    kubectl.apply(manifest=gateway_manifest, namespace=eg_config.namespace, log=log)
 
     log.write(f"\n✅ Envoy Gateway deployed successfully to '{eg_config.namespace}'\n")
     log.write(f"   GatewayClass: '{eg_config.gateway_class_name}'\n")
-    log.write("   Ready to accept Gateway and HTTPRoute resources\n")
+    log.write("   Default Gateway applied with HTTP/HTTPS/TCP listeners\n")
 
     return {
         "gateway_ready": True,
