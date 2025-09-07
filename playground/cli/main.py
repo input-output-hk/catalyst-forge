@@ -10,16 +10,14 @@ from __future__ import annotations
 from pathlib import Path
 
 import typer
+import json
 
-from .k3d import (
-    cluster_exists,
-    delete_cluster,
-)
 from .models import ClusterSummary  # re-export for tests/importers
 from .config import ConfigState, get_default_config_path, load_config
 import logging
 from .utils import get_repo_root
 from .logging import configure_logging, get_logger
+from .runner import CommandRunner
 
 
 # Use git to find repository root, fallback to parent of cli directory
@@ -195,3 +193,32 @@ def k3d_down(name: str = typer.Option("forge", help="Cluster name")) -> None:
 
 if __name__ == "__main__":
     app()
+
+def cluster_exists(name: str) -> bool:
+    """Return True if a k3d cluster with the given name exists.
+
+    Args:
+        name: The k3d cluster name to query.
+
+    Returns:
+        True if the cluster exists, else False.
+    """
+    runner = CommandRunner()
+    try:
+        cp = runner.run(["k3d", "cluster", "list", "-o", "json"], capture=True)
+        data = json.loads(cp.stdout or "{}")
+        clusters = data.get("clusters", [])
+        return any(c.get("name") == name for c in clusters)
+    except Exception:
+        cp = runner.run(["k3d", "cluster", "list"], capture=True)
+        return name in (cp.stdout or "")
+
+def delete_cluster(name: str) -> None:
+    """Delete a k3d cluster if it exists.
+
+    Args:
+        name: Cluster name.
+    """
+    logger = get_logger("console")
+    logger.info(f"Deleting k3d cluster '{name}'...")
+    CommandRunner().run(["k3d", "cluster", "delete", name], check=False)
