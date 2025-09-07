@@ -93,6 +93,8 @@ def create_cluster(
     https_port: int,
     api_port: int,
     extra_volumes: list[str] | None = None,
+    *,
+    log=None,
 ) -> None:
     """Create a k3d cluster with ports and optional extra volume mounts.
 
@@ -109,15 +111,16 @@ def create_cluster(
     for vol in extra_volumes or []:
         args.extend(["--volume", vol])
 
-    logger = get_logger("console")
-    logger.info(
-        f"Creating k3d cluster '{name}' (servers={servers}, agents={agents}) "
-        f"with host ports {http_port}/HTTP, {https_port}/HTTPS and 8372/tcp (buildkitd), 5432/tcp (postgres)..."
+    CommandRunner().run(
+        args,
+        stdout=log,
+        env={
+            **{"NO_COLOR": "1", "CLICOLOR": "0", "TERM": "dumb"},
+        },
     )
-    CommandRunner().run(args)
 
 
-def delete_cluster(name: str) -> None:
+def delete_cluster(name: str, *, log=None) -> None:
     """Delete a k3d cluster if it exists.
 
     Args:
@@ -125,7 +128,15 @@ def delete_cluster(name: str) -> None:
     """
     logger = get_logger("console")
     logger.info(f"Deleting k3d cluster '{name}'...")
-    CommandRunner().run(["k3d", "cluster", "delete", name], check=False)
+    # Stream k3d CLI output to the provided task log if available
+    CommandRunner().run(
+        ["k3d", "cluster", "delete", name],
+        check=False,
+        stdout=log,
+        env={
+            **{"NO_COLOR": "1", "CLICOLOR": "0", "TERM": "dumb"},
+        },
+    )
 
 
 def write_kubeconfig(name: str, out_path: Path, assume_yes: bool = True) -> None:

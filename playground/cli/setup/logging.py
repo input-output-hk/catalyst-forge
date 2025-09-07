@@ -6,6 +6,7 @@ and file-like objects for structured logging.
 """
 
 import logging
+import re
 from contextlib import contextmanager
 from typing import IO, Generator, Optional
 from pathlib import Path
@@ -53,6 +54,15 @@ class TaskLogWriter:
         """Flush any buffered content."""
         if self.file_handle:
             self.file_handle.flush()
+
+    def fileno(self) -> int:
+        """Expose underlying file descriptor when a real file is available.
+
+        This allows passing TaskLogWriter to subprocess as stdout/stderr.
+        """
+        if self.file_handle and hasattr(self.file_handle, "fileno"):
+            return self.file_handle.fileno()  # type: ignore[no-any-return]
+        raise OSError("TaskLogWriter has no underlying file descriptor")
 
     def get_content(self) -> str:
         """Get accumulated content.

@@ -12,7 +12,7 @@ import shlex
 import subprocess
 import time
 from pathlib import Path
-from typing import Mapping, Sequence
+from typing import Mapping, Sequence, IO
 
 from cli.setup.logging import get_command_logger
 
@@ -52,6 +52,8 @@ class CommandRunner:
         cwd: str | Path | None = None,
         timeout: int | None = None,
         redact: Sequence[str] | None = None,
+        stdout: IO[str] | int | None = None,
+        stderr: IO[str] | int | None = None,
     ) -> subprocess.CompletedProcess:
         cmd_str = self._format_cmd(args, redact)
         started = time.time()
@@ -69,6 +71,12 @@ class CommandRunner:
                 timeout=timeout or self.default_timeout,
             )
         else:
+            # When a stdout handle is provided, default stderr to STDOUT so both streams
+            # are redirected to the same destination unless explicitly overridden.
+            effective_stderr = stderr
+            if stdout is not None and stderr is None:
+                effective_stderr = subprocess.STDOUT
+
             cp = subprocess.run(
                 list(args),
                 check=check,
@@ -76,6 +84,8 @@ class CommandRunner:
                 env=effective_env,
                 cwd=str(cwd) if cwd is not None else None,
                 timeout=timeout or self.default_timeout,
+                stdout=stdout,
+                stderr=effective_stderr,
             )
 
         duration = time.time() - started

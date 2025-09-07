@@ -100,7 +100,7 @@ def setup_k3d(ctx, cfg, log):
         log.write(f"Cluster '{k3d_config.cluster_name}' already exists.\n")
         if k3d_config.force_recreate:
             log.write("Force recreate enabled, deleting existing cluster...\n")
-            delete_cluster(k3d_config.cluster_name)
+            delete_cluster(k3d_config.cluster_name, log=log)
             log.write(f"Creating new cluster '{k3d_config.cluster_name}'...\n")
             create_cluster(
                 k3d_config.cluster_name,
@@ -110,6 +110,7 @@ def setup_k3d(ctx, cfg, log):
                 k3d_config.https_port,
                 k3d_config.api_port,
                 extra_volumes=volume_mounts,
+                log=log,
             )
             log.write(f"Cluster '{k3d_config.cluster_name}' created successfully.\n")
         else:
@@ -124,6 +125,7 @@ def setup_k3d(ctx, cfg, log):
             k3d_config.https_port,
             k3d_config.api_port,
             extra_volumes=volume_mounts,
+            log=log,
         )
         log.write(f"Cluster '{k3d_config.cluster_name}' created successfully.\n")
 
