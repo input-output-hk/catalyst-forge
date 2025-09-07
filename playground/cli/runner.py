@@ -14,7 +14,7 @@ import time
 from pathlib import Path
 from typing import Mapping, Sequence
 
-from .setup.logging import get_command_logger
+from cli.setup.logging import get_command_logger
 
 
 class CommandRunner:

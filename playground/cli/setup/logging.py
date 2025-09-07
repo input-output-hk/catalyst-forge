@@ -84,7 +84,7 @@ def task_logging_context(
     Yields:
         File-like object for logging
     """
-    from ..logging import get_task_logger
+    from cli.logging import get_task_logger
 
     logger = get_task_logger(task_name)
     file_handle = None
@@ -116,7 +116,7 @@ def setup_task_logging(task_name: str, log_dir: Optional[Path] = None) -> TaskLo
     Returns:
         File-like object for logging
     """
-    from ..logging import get_task_logger
+    from cli.logging import get_task_logger
 
     logger = get_task_logger(task_name)
 
@@ -184,6 +184,6 @@ def get_command_logger() -> CommandLogger:
     Returns:
         CommandLogger instance
     """
-    from ..logging import get_command_logger
+    from cli.logging import get_command_logger
 
     return CommandLogger(get_command_logger())

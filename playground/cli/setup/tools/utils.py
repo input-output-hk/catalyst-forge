@@ -7,7 +7,7 @@ from pathlib import Path
 import importlib
 from typing import Dict, Any
 
-from ...logging import get_logger
+from cli.logging import get_logger
 
 
 def load_tasks():
@@ -84,7 +84,7 @@ def get_mkcert_caroot() -> Path:
     Returns:
         Path to the mkcert CA root directory containing rootCA.pem and rootCA-key.pem
     """
-    from ...runner import CommandRunner
+    from cli.runner import CommandRunner
 
     cp = CommandRunner().run(["mkcert", "-CAROOT"], capture=True)
     return Path(str(cp.stdout or "").strip())

@@ -11,7 +11,7 @@ from typing import Dict, Any, Callable, List, Optional, IO, Mapping
 import time
 import threading
 
-from ..logging import get_logger
+from cli.logging import get_logger
 
 _tasks: Dict[str, Dict[str, Any]] = {}
 _context: Dict[str, Any] = {}
@@ -213,7 +213,7 @@ def run_task_sync(name: str, cfg: Any, log_dir: Path) -> Dict[str, Any]:
             logger.info(f"Running task '{name}'")
 
         try:
-            from .logging import task_logging_context
+            from cli.setup.logging import task_logging_context
 
             with task_logging_context(name, log_dir) as log:
                 if attempt > 0:

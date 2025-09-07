@@ -256,7 +256,7 @@ class K8s:
             },
         }
 
-        from .kubectl import kubectl
+        from cli.setup.tools.kubectl import kubectl
 
         if log is not None:
             return kubectl.apply(manifest, namespace, log)
@@ -313,7 +313,7 @@ class K8s:
             },
         }
 
-        from .kubectl import kubectl
+        from cli.setup.tools.kubectl import kubectl
 
         if log is not None:
             return kubectl.apply(manifest, namespace, log)
@@ -376,7 +376,7 @@ class K8s:
             # If no string data, assume data is already base64 encoded
             manifest["data"] = data
 
-        from .kubectl import kubectl
+        from cli.setup.tools.kubectl import kubectl
 
         if log is not None:
             return kubectl.apply(manifest, namespace, log)
@@ -438,7 +438,7 @@ class K8s:
             },
         }
 
-        from .kubectl import kubectl
+        from cli.setup.tools.kubectl import kubectl
 
         if log is not None:
             return kubectl.apply(manifest, namespace, log)
@@ -499,7 +499,7 @@ class K8s:
         if binary_data:
             manifest["binaryData"] = binary_data
 
-        from .kubectl import kubectl
+        from cli.setup.tools.kubectl import kubectl
 
         if log is not None:
             return kubectl.apply(manifest, namespace, log)

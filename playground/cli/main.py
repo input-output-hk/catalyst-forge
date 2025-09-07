@@ -12,12 +12,12 @@ from pathlib import Path
 import typer
 import json
 
-from .models import ClusterSummary  # re-export for tests/importers
-from .config import ConfigState, get_default_config_path, load_config
+from cli.models import ClusterSummary  # re-export for tests/importers
+from cli.config import ConfigState, get_default_config_path, load_config
 import logging
-from .utils import get_repo_root
-from .logging import configure_logging, get_logger
-from .runner import CommandRunner
+from cli.utils import get_repo_root
+from cli.logging import configure_logging, get_logger
+from cli.runner import CommandRunner
 
 
 # Use git to find repository root, fallback to parent of cli directory
@@ -194,6 +194,7 @@ def k3d_down(name: str = typer.Option("forge", help="Cluster name")) -> None:
 if __name__ == "__main__":
     app()
 
+
 def cluster_exists(name: str) -> bool:
     """Return True if a k3d cluster with the given name exists.
 
@@ -212,6 +213,7 @@ def cluster_exists(name: str) -> bool:
     except Exception:
         cp = runner.run(["k3d", "cluster", "list"], capture=True)
         return name in (cp.stdout or "")
+
 
 def delete_cluster(name: str) -> None:
     """Delete a k3d cluster if it exists.

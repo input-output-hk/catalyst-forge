@@ -9,7 +9,7 @@ This module provides the logging system that supports:
 - Configurable log levels and output destinations
 
 Usage:
-    from .logging import configure_logging, get_logger, get_task_logger
+    from cli.logging import configure_logging, get_logger, get_task_logger
 
     # Configure at application startup
     configure_logging(log_dir=Path("logs/latest"))

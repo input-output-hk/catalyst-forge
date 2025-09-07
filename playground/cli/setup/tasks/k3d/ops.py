@@ -13,9 +13,9 @@ from pathlib import Path
 
 import yaml
 
-from .....runner import CommandRunner
-from .....models import ClusterSummary
-from .....logging import get_logger
+from cli.runner import CommandRunner
+from cli.models import ClusterSummary
+from cli.logging import get_logger
 
 
 def cluster_exists(name: str) -> bool:

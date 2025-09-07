@@ -16,8 +16,8 @@ from typing import Any, Dict, Mapping, Tuple
 
 from pydantic import BaseModel, Field
 
-from .logging import get_logger
-from .runner import CommandRunner
+from cli.logging import get_logger
+from cli.runner import CommandRunner
 
 
 class Image(BaseModel):

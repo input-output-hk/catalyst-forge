@@ -48,7 +48,7 @@ def err(message: str) -> None:
     Args:
         message: The message to emit.
     """
-    from .logging import get_logger
+    from cli.logging import get_logger
 
     get_logger("console").error(message)
 
