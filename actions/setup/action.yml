@@ -16,7 +16,7 @@ inputs:
   skip_docker:
     description: If true, skip authenticating to DockerHub
     required: false
-    default: "false"
+    default: 'false'
   skip_earthly_install:
     description: If true, skip installing Earthly
     required: false
@@ -28,7 +28,7 @@ inputs:
   skip_github:
     description: If true, skip authenticating to GitHub Container Registry
     required: false
-    default: "false"
+    default: 'false'
   skip_kcl:
     description: If true, skips installing KCL CLI if the provider is configured
     required: false
@@ -82,7 +82,7 @@ runs:
     # Docker Provider
     - name: Get Docker provider configuration
       id: docker
-      if: inputs.skip_docker  == "false"
+      if: inputs.skip_docker  == 'false'
       #continue-on-error: true
       shell: bash
       run: |
