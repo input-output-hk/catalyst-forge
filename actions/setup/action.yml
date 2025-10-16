@@ -67,12 +67,14 @@ runs:
         else
           echo "No configuration found for AWS provider"
         fi
+
     - name: Login to AWS
       uses: aws-actions/configure-aws-credentials@v4
       if: ${{ steps.aws.outputs.region != '' && steps.aws.outputs.role != '' && steps.aws.conclusion == 'success' }}
       with:
         aws-region: ${{ steps.aws.outputs.region }}
         role-to-assume: ${{ steps.aws.outputs.role }}
+
     - name: Login to ECR
       uses: docker/login-action@v3
       if: ${{ steps.aws.outputs.registry != null && steps.aws.conclusion == 'success' }}
@@ -108,6 +110,7 @@ runs:
         else
           echo "No configuration found for DockerHub provider"
         fi
+
     - name: Login to Docker Hub
       uses: docker/login-action@v3
       if: ${{ steps.docker.outputs.username != '' && steps.docker.outputs.password != '' && steps.docker.conclusion == 'success' }}
@@ -131,6 +134,7 @@ runs:
         else
           echo "No configuration found for GitHub provider"
         fi
+
     - name: Login to GitHub Container Registry
       uses: docker/login-action@v3
       if: ${{ steps.github.outputs.login && steps.github.conclusion == 'success' }}
@@ -167,6 +171,7 @@ runs:
 
         echo "sat=$CONFIG_SAT" >> GITHUB_OUTPUT
         echo "version=$VERSION" >> $GITHUB_OUTPUT
+
     - name: Cache Earthly binary
       id: cache-binary
       uses: actions/cache@v4
@@ -174,6 +179,7 @@ runs:
       with:
         path: /usr/local/bin/earthly
         key: ${{ runner.os }}-${{ steps.earthly.outputs.version }}
+
     - name: Install Earthly
       if: ${{ inputs.skip_earthly_install == 'false' && steps.cache-binary.outputs.cache-hit == 'false' }}
       shell: bash
@@ -186,6 +192,7 @@ runs:
 
         chmod +x /usr/local/bin/earthly
         /usr/local/bin/earthly bootstrap
+
     - name: Configure Earthly satellite credentials
       if: ${{ inputs.skip_earthly_satellite == 'false' && steps.earthly.conclusion == 'success' }}
       shell: bash
@@ -211,6 +218,7 @@ runs:
         else
           echo "Not installing Timoni CLI"
         fi
+
     - name: Install Timoni
       uses: stefanprodan/timoni/actions/setup@main
       if: ${{ steps.timoni.outputs.install && steps.timoni.conclusion == 'success' }}
@@ -235,6 +243,7 @@ runs:
         else
           echo "Not installing CUE CLI"
         fi
+
     - name: Install CUE
       uses: cue-lang/setup-cue@v1.0.0
       if: ${{ steps.cue.outputs.install && steps.cue.conclusion == 'success' }}
@@ -259,6 +268,7 @@ runs:
         else
           echo "Not installing KCL CLI"
         fi
+
     - name: Cache KCL
       id: cache-kcl
       if: ${{ steps.kcl.outputs.install && steps.kcl.conclusion == 'success' }}
@@ -266,6 +276,7 @@ runs:
       with:
         path: /usr/local/bin/kcl
         key: ${{ runner.os }}-kcl-${{ steps.kcl.outputs.version }}
+
     - name: Install KCL
       if: ${{ steps.kcl.outputs.install && steps.cache-kcl.outputs.cache-hit == false }}
       shell: bash
@@ -274,6 +285,7 @@ runs:
         VERSION="${{ steps.kcl.outputs.version }}"
         curl -Lo "${WORKDIR}/kcl.tar.gz" https://github.com/kcl-lang/cli/releases/download/$VERSION/kcl-$VERSION-linux-amd64.tar.gz
         cd "${WORKDIR}" && tar -xvzf kcl.tar.gz && mv kcl /usr/local/bin/kcl
+
     - name: Check KCL
       if: ${{ steps.kcl.outputs.install && steps.kcl.conclusion == 'success' }}
       shell: bash
@@ -319,6 +331,7 @@ runs:
         fi
 
         echo "configured=$CONFIGURED" >> $GITHUB_OUTPUT
+        
     - name: Install and configure Tailscale
       if: ${{ inputs.skip_tailscale  == 'false' && steps.tailscale.outputs.configured == 'true' }}
       uses: tailscale/github-action@v3
