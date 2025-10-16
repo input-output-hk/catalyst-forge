@@ -8,11 +8,11 @@ inputs:
   skip_aws:
     description: If true, skip authenticating with AWS and configuring ECR
     required: false
-    default: "false"
+    default: 'false'
   skip_cue:
     description: If true, skips installing CUE CLI if the provider is configured
     required: false
-    default: "false"
+    default: 'false'
   skip_docker:
     description: If true, skip authenticating to DockerHub
     required: false
@@ -20,11 +20,11 @@ inputs:
   skip_earthly_install:
     description: If true, skip installing Earthly
     required: false
-    default: "false"
+    default: 'false'
   skip_earthly_satellite:
     description: If true, skip adding authentication for the remote Earthly satellite
     required: false
-    default: "false"
+    default: 'false'
   skip_github:
     description: If true, skip authenticating to GitHub Container Registry
     required: false
@@ -32,15 +32,15 @@ inputs:
   skip_kcl:
     description: If true, skips installing KCL CLI if the provider is configured
     required: false
-    default: "false"
+    default: 'false'
   skip_tailscale:
     description: If true, skips installing and authenticating with skip_tailscale
     required: false
-    default: "false"
+    default: 'false'
   skip_timoni:
     description: If true, skips installing Timoni CLI if the provider is configured
     required: false
-    default: "false"
+    default: 'false'
 
 runs:
   using: composite
@@ -48,7 +48,7 @@ runs:
     # AWS Provider
     - name: Get AWS provider configuration
       id: aws
-      if: inputs.skip_aws  == 'false'
+      if: ${{ inputs.skip_aws  == 'false' }}
       #continue-on-error: true
       shell: bash
       run: |
@@ -69,7 +69,7 @@ runs:
         fi
     - name: Login to AWS
       uses: aws-actions/configure-aws-credentials@v4
-      if: steps.aws.outputs.region  != '' && steps.aws.outputs.role != '' && steps.aws.conclusion == 'success'
+      if: ${{ steps.aws.outputs.region != '' && steps.aws.outputs.role != '' && steps.aws.conclusion == 'success' }}
       with:
         aws-region: ${{ steps.aws.outputs.region }}
         role-to-assume: ${{ steps.aws.outputs.role }}
@@ -82,7 +82,7 @@ runs:
     # Docker Provider
     - name: Get Docker provider configuration
       id: docker
-      if: inputs.skip_docker  == 'false'
+      if: ${{ inputs.skip_docker  == 'false' }}
       #continue-on-error: true
       shell: bash
       run: |
@@ -118,7 +118,7 @@ runs:
     # GitHub Provider
     - name: Get GitHub provider configuration
       id: github
-      if: inputs.skip_github  == 'false'
+      if: ${{ inputs.skip_github  == 'false' }}
       shell: bash
       run: |
         echo "==== GitHub Setup ====="
@@ -141,7 +141,7 @@ runs:
 
     # Earthly Provider
     - name: Get Earthly provider configuration
-      if: inputs.skip_earthly_install == 'false' && inputs.skip_earthly_satellite == 'false'
+      if: ${{ inputs.skip_earthly_install == 'false' && inputs.skip_earthly_satellite == 'false' }}
       id: earthly
       shell: bash
       run: |
@@ -170,12 +170,12 @@ runs:
     - name: Cache Earthly binary
       id: cache-binary
       uses: actions/cache@v4
-      if: inputs.skip_earthly_install == 'false'
+      if: ${{ inputs.skip_earthly_install == 'false' }}
       with:
         path: /usr/local/bin/earthly
         key: ${{ runner.os }}-${{ steps.earthly.outputs.version }}
     - name: Install Earthly
-      if: inputs.skip_earthly_install == 'false' && steps.cache-binary.outputs.cache-hit == false
+      if: ${{ inputs.skip_earthly_install == 'false' && steps.cache-binary.outputs.cache-hit == false }}
       shell: bash
       run: |
         if [[ "${{ steps.earthly.outputs.version }}" == "latest" ]]; then
@@ -187,7 +187,7 @@ runs:
         chmod +x /usr/local/bin/earthly
         /usr/local/bin/earthly bootstrap
     - name: Configure Earthly satellite credentials
-      if: inputs.skip_earthly_satellite == 'false' && steps.earthly.conclusion == 'success'
+      if: ${{ inputs.skip_earthly_satellite == 'false' && steps.earthly.conclusion == 'success' }}
       shell: bash
       run: |
         rm -rf "$HOME/.earthly"
@@ -196,7 +196,7 @@ runs:
     # Timoni Provider
     - name: Get Timoni provider configuration
       id: timoni
-      if: inputs.skip_timoni  == 'false'
+      if: ${{ inputs.skip_timoni  == 'false' }}
       shell: bash
       run: |
         echo "==== Timoni Setup ====="
@@ -213,14 +213,14 @@ runs:
         fi
     - name: Install Timoni
       uses: stefanprodan/timoni/actions/setup@main
-      if: steps.timoni.outputs.install && steps.timoni.conclusion == 'success'
+      if: ${{ steps.timoni.outputs.install && steps.timoni.conclusion == 'success' }}
       with:
         version: ${{ steps.timoni.outputs.version }}
 
     # CUE Provider
     - name: Get CUE provider configuration
       id: cue
-      if: inputs.skip_cue  == 'false'
+      if: ${{ inputs.skip_cue  == 'false' }}
       shell: bash
       run: |
         echo "==== CUE Setup ====="
@@ -237,14 +237,14 @@ runs:
         fi
     - name: Install CUE
       uses: cue-lang/setup-cue@v1.0.0
-      if: steps.cue.outputs.install && steps.cue.conclusion == 'success'
+      if: ${{ steps.cue.outputs.install && steps.cue.conclusion == 'success' }}
       with:
         version: v${{ steps.cue.outputs.version }}
 
     # KCL Provider
     - name: Get KCL provider configuration
       id: kcl
-      if: inputs.skip_kcl  == 'false'
+      if: ${{ inputs.skip_kcl  == 'false' }}
       shell: bash
       run: |
         echo "==== KCL Setup ====="
@@ -261,13 +261,13 @@ runs:
         fi
     - name: Cache KCL
       id: cache-kcl
-      if: steps.kcl.outputs.install && steps.kcl.conclusion == 'success'
+      if: ${{ steps.kcl.outputs.install && steps.kcl.conclusion == 'success' }}
       uses: actions/cache@v4
       with:
         path: /usr/local/bin/kcl
         key: ${{ runner.os }}-kcl-${{ steps.kcl.outputs.version }}
     - name: Install KCL
-      if: steps.kcl.outputs.install && steps.cache-kcl.outputs.cache-hit == false
+      if: ${{ steps.kcl.outputs.install && steps.cache-kcl.outputs.cache-hit == false }}
       shell: bash
       run: |
         WORKDIR="$(mktemp -d)"
@@ -275,7 +275,7 @@ runs:
         curl -Lo "${WORKDIR}/kcl.tar.gz" https://github.com/kcl-lang/cli/releases/download/$VERSION/kcl-$VERSION-linux-amd64.tar.gz
         cd "${WORKDIR}" && tar -xvzf kcl.tar.gz && mv kcl /usr/local/bin/kcl
     - name: Check KCL
-      if: steps.kcl.outputs.install && steps.kcl.conclusion == 'success'
+      if: ${{ steps.kcl.outputs.install && steps.kcl.conclusion == 'success' }}
       shell: bash
       run: |
         kcl version
@@ -283,7 +283,7 @@ runs:
     # Tailscale Provider
     - name: Get Tailscale provider configuration
       id: tailscale
-      if: inputs.skip_tailscale  == 'false'
+      if: ${{ inputs.skip_tailscale  == 'false' }}
       shell: bash
       run: |
         echo "==== Tailscale Setup ====="
@@ -320,7 +320,7 @@ runs:
 
         echo "configured=$CONFIGURED" >> $GITHUB_OUTPUT
     - name: Install and configure Tailscale
-      if: inputs.skip_tailscale  == 'false' && steps.tailscale.outputs.configured == 'true'
+      if: ${{ inputs.skip_tailscale  == 'false' && steps.tailscale.outputs.configured == 'true' }}
       uses: tailscale/github-action@v3
       with:
         oauth-client-id: "${{ steps.tailscale.outputs.client-id }}"
