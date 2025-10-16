@@ -175,7 +175,7 @@ runs:
         path: /usr/local/bin/earthly
         key: ${{ runner.os }}-${{ steps.earthly.outputs.version }}
     - name: Install Earthly
-      if: ${{ inputs.skip_earthly_install == 'false' && steps.cache-binary.outputs.cache-hit == false }}
+      if: ${{ inputs.skip_earthly_install == 'false' && steps.cache-binary.outputs.cache-hit == 'false' }}
       shell: bash
       run: |
         if [[ "${{ steps.earthly.outputs.version }}" == "latest" ]]; then
