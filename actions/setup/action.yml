@@ -73,15 +73,14 @@ runs:
       with:
         aws-region: ${{ steps.aws.outputs.region }}
         role-to-assume: ${{ steps.aws.outputs.role }}
-
-    - run: echo "Are we stuck here?"
-      shell: bash
-
     - name: Login to ECR
       uses: docker/login-action@v3
       if: ${{ steps.aws.outputs.registry != 'null' && steps.aws.conclusion == 'success' }}
       with:
         registry: ${{ steps.aws.outputs.registry }}
+
+    - run: echo "Are we stuck here?"
+      shell: bash
 
     # Docker Provider
     - name: Get Docker provider configuration
