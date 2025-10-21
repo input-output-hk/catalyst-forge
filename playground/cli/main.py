@@ -103,6 +103,11 @@ def setup(
         "--list",
         help="List available tasks with their contracts and exit",
     ),
+    tui: bool = typer.Option(
+        False,
+        "--tui",
+        help="Use TUI progress display (experimental)",
+    ),
 ) -> None:
     """Run environment setup tasks using the contract-based system.
 
@@ -142,7 +147,7 @@ def setup(
 
     # Run tasks
     try:
-        run_all(state.raw, only=only or None, dry_run=dry_run)
+        run_all(state.raw, only=only or None, dry_run=dry_run, use_tui=tui)
     except Exception as e:
         raise SystemExit(f"Setup failed: {e}")
 
@@ -150,6 +155,11 @@ def setup(
 @app.command("up")
 def up(
     ctx: typer.Context,
+    tui: bool = typer.Option(
+        False,
+        "--tui",
+        help="Use TUI progress display (experimental)",
+    ),
 ) -> None:
     """Bring up the full local test environment using setupv2.
 
@@ -175,7 +185,7 @@ def up(
 
     # Run all tasks with setupv2
     try:
-        run_all(state.raw)
+        run_all(state.raw, use_tui=tui)
     except Exception as e:
         raise SystemExit(f"Setup failed: {e}")
 

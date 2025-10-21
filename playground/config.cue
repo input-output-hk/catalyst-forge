@@ -4,6 +4,11 @@ dns: {
 	domain: "projectcatalyst.dev"
 }
 
+test_task: {
+	enabled: true
+	message: "Test task for TUI validation"
+}
+
 k3d: {
 	cluster_name:   "forge"
 	servers:        1

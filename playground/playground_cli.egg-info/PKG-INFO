@@ -1,0 +1,152 @@
+Metadata-Version: 2.4
+Name: playground-cli
+Version: 0.1.0
+Summary: CLI for managing the Playground v2 local k3d environment
+Requires-Python: >=3.10
+Description-Content-Type: text/markdown
+Requires-Dist: typer>=0.12.3
+Requires-Dist: pydantic>=2.6.0
+Requires-Dist: pyyaml>=6.0.0
+Requires-Dist: kubernetes>=28.0.0
+Requires-Dist: psycopg[binary]>=3.1.0
+Requires-Dist: requests>=2.31.0
+Requires-Dist: networkx>=3.0
+Requires-Dist: rich>=13.8.0
+
+### Playground v2: Local K3d cluster with Helmfile
+
+This folder provisions a complete local environment for development:
+- K3d-based Kubernetes cluster (no Multipass/MicroK8s)
+- Envoy Gateway installed via Helmfile with TLS (mkcert)
+- No hostctl required: we use wildcard DNS on `*.projectcatalyst.dev` -> 127.0.0.1
+- In-cluster Docker registry exposed via Envoy (`registry.projectcatalyst.dev`)
+- Optional PostgreSQL via Helm
+- Mailpit (SMTP testing) via Helm
+
+#### Prerequisites
+- macOS or Linux
+- Docker, k3d, kubectl, mkcert, uv, python3
+
+#### What gets set up
+- K3d cluster named `forge`
+- Envoy Gateway (Bitnami chart) with Gateway listeners for HTTP/HTTPS
+- TLS via cert-manager Certificate for `*.projectcatalyst.dev`
+- In-cluster Docker registry (twuni chart) exposed via HTTPRoute at `registry.projectcatalyst.dev`
+- Cluster trusts mkcert CA for pulling from the local registry
+- Optional: PostgreSQL with PVC
+
+#### Start / Tear down
+```bash
+# Bring everything up (idempotent): K3d + Helmfile
+just up
+
+# Generate local Earthly config and TLS client certs (idempotent)
+just generate
+
+# Tear down the local k3d cluster
+just down
+```
+
+#### Python CLI
+```bash
+# Show CLI help
+uv run python -m playground.cli.main --help
+```
+
+The up command will:
+- Create/refresh the K3d cluster and write `playground/cluster.json`
+- Install cert-manager, Envoy Gateway, and Registry via Helmfile
+- Bootstrap TLS using mkcert CA and a wildcard Certificate for `*.projectcatalyst.dev`
+
+Generate command will:
+- Create local client TLS certs for Earthly under `playground/.certs/`
+- Write `playground/config/earthly.yml` with absolute TLS paths
+
+#### Deployments included
+- Envoy Gateway (namespace `envoy-gateway-system`)
+- Registry (namespace `registry`)
+- Mailpit (namespace `mailpit`)
+- PostgreSQL (optional, namespace `databases`)
+
+#### Accessing Mailpit
+Once the environment is up, open `https://mailpit.projectcatalyst.dev/`.
+SMTP endpoint is available inside the cluster at `mailpit.mailpit.svc.cluster.local:1025`.
+
+
+#### Building images
+```bash
+# Build the API server image and push to in-cluster registry as registry.projectcatalyst.dev/api:latest
+just earthly api
+```
+
+### config.cue configuration
+
+`playground/config.cue` is the single source of truth for local playground configuration. It centralizes:
+
+- **registry**: The in-cluster registry hostname used for pushed images.
+- **deployments.<service>**: Per-service build and deployment configuration:
+  - **project**: Path to the service project relative to repo root (e.g., `services/api`).
+  - **target**: Earthly target to build (standardized to `docker`).
+  - **image.name / image.tag**: Image name and tag (without registry).
+  - **overrides**: CUE fragment applied as `env.mod.cue` during templating. This can reference top-level values (e.g., `registry`) and the service’s own fields via CUE interpolation.
+
+Example (deployments section):
+```cue
+registry: "registry.projectcatalyst.dev"
+
+deployments: {
+    api: {
+        project: "services/api"
+        target:  "docker"
+        image: {
+            name: "api"
+            tag:  "latest"
+        }
+        overrides: {
+            modules: main: values: {
+                deployment: containers: main: {
+                    image: {
+                        name: "\(registry)/\(deployments.api.image.name)"
+                        tag:  deployments.api.image.tag
+                    }
+                }
+            }
+        }
+    }
+}
+```
+
+#### How the deploy flow uses `config.cue`
+
+When you run the deploy command:
+
+```bash
+uv run python -m playground.cli.main deploy <service>
+```
+
+The CLI will:
+
+- Read `registry` and `deployments.<service>.{project,target,image}` via `cue export playground/config.cue`.
+- Generate a temporary Earthfile in a temp directory with a single `docker` target:
+  - `FROM <abs_repo_root>/<project>+<target>`
+  - `SAVE IMAGE --push <registry>/<image.name>:<image.tag>`
+- Write `env.mod.cue` from `deployments.<service>.overrides` via:
+  - `cue eval -e "deployments.<service>.overrides" playground/config.cue`
+- Build and push with Earthly using the above Earthfile (with `--config playground/config/earthly.yml`).
+- Run `mod dump` / `mod template` to render manifests and apply them with `kubectl` to the local k3d cluster.
+
+#### Adding a new service
+
+1. Add a new entry under `deployments` in `playground/config.cue` with `project`, `target`, `image` and optional `overrides`.
+2. Ensure the referenced Earthly target exists at `<project>+<target>`.
+3. Deploy it:
+   ```bash
+   uv run python -m playground.cli.main deploy <service>
+   ```
+
+#### Requirements
+
+- `cue`, `earthly`, `go`, and `kubectl` must be installed and available on `PATH`.
+- `playground/config/earthly.yml` must exist (see `just generate`).
+
+

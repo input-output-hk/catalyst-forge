@@ -1,5 +1,6 @@
 """
 Core task runner with dependency resolution and parallel execution.
+Supports both function-based and class-based tasks.
 """
 
 import networkx as nx
@@ -7,13 +8,19 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 from types import MappingProxyType
 import shutil
-from typing import Dict, Any, Callable, List, Optional, IO, Mapping
+from typing import Dict, Any, Callable, List, Optional, IO, Mapping, Type
 import time
 import threading
 
 from cli.logging import get_logger
+from cli.setup.task_base import BaseTask, TaskError
 
+# Legacy function-based task registry
 _tasks: Dict[str, Dict[str, Any]] = {}
+
+# New class-based task registry
+_task_classes: Dict[str, Dict[str, Any]] = {}
+
 _context: Dict[str, Any] = {}
 _context_lock = threading.Lock()
 
@@ -60,6 +67,59 @@ def task(
         return fn
 
     return decorator
+
+
+def register_task(
+    name: str,
+    task_class: Type[BaseTask],
+):
+    """
+    Register a task class.
+
+    Args:
+        name: Unique task name
+        task_class: Class inheriting from BaseTask
+    """
+    _task_classes[name] = {
+        "class": task_class,
+        "requires": task_class.requires(),
+        "config_keys": task_class.config_keys(),
+        # Namespace provided keys to align with legacy function-based tasks
+        "provides": {f"{name}.{k}": v for k, v in task_class.provides().items()},
+    }
+
+
+def load_tasks():
+    """
+    Auto-discover and register all task classes.
+    This should be called before running tasks to ensure all classes are registered.
+    """
+    # Import all task modules to trigger registration
+    # This is a simplified version - in practice, you might want to auto-discover modules
+    try:
+        from cli.setup.tasks.test_task.task import TestTask
+
+        register_task("test_task", TestTask)
+    except ImportError:
+        pass  # Test task not available yet
+
+    try:
+        from cli.setup.tasks.k3d.task import K3dTask
+
+        register_task("k3d", K3dTask)
+    except ImportError:
+        pass  # K3d task not available yet
+
+    try:
+        from cli.setup.tasks.dns.task import DNSTask
+
+        register_task("dns", DNSTask)
+    except ImportError:
+        pass  # DNS task not available yet
+
+    # Add other task imports as they are migrated
+    # from cli.setup.tasks.cert_manager.task import CertManagerTask
+    # register_task("cert_manager", CertManagerTask)
 
 
 def _filter_config(cfg: Any, keys: List[str]) -> Dict[str, Any]:
@@ -265,6 +325,86 @@ def run_task_sync(name: str, cfg: Any, log_dir: Path) -> Dict[str, Any]:
     raise RuntimeError(f"Task '{name}' failed after {len(retry_delays) + 1} attempts")
 
 
+def run_task_class_sync(name: str, cfg: Any, log_dir: Path, progress_callback) -> Dict[str, Any]:
+    """
+    Execute a class-based task with progress tracking.
+
+    Args:
+        name: Task name to execute
+        cfg: Configuration object
+        log_dir: Directory for task logs
+        progress_callback: Function to call with progress updates
+
+    Returns:
+        Task result dictionary
+
+    Raises:
+        RuntimeError: If task fails
+    """
+    logger = get_logger("console")
+
+    if name not in _task_classes:
+        raise ValueError(f"Unknown class-based task: {name}")
+
+    task_info = _task_classes[name]
+
+    with _context_lock:
+        ctx = MappingProxyType(_context.copy())
+
+    for req in task_info["requires"]:
+        if req not in ctx:
+            raise ValueError(f"Task '{name}' requires '{req}' but it's not available")
+
+    try:
+        filtered_cfg = _filter_config(cfg, task_info["config_keys"])
+    except ValueError as e:
+        logger.error(f"Task '{name}' failed: Config Error: {e}")
+        raise
+
+    logger.info(f"Running task '{name}'")
+
+    try:
+        from cli.setup.logging import task_logging_context
+        from cli.tui.progress import TaskProgress
+
+        with task_logging_context(name, log_dir) as log:
+            # Instantiate task
+            task_class = task_info["class"]
+            task = task_class(name, dict(ctx), filtered_cfg, log)
+
+            # Create progress wrapper
+            progress = TaskProgress(name, progress_callback)
+
+            # Immediately update progress to show task is running
+            if progress_callback:
+                progress_callback(name, 0, "Initializing...")
+
+            # Run task (base class handles everything)
+            try:
+                result = task.run(progress)
+
+                # Update global context with namespaced results
+                namespaced_result = {f"{name}.{k}": v for k, v in result.items()}
+                with _context_lock:
+                    _context.update(namespaced_result)
+
+                logger.info(f"Task '{name}' completed successfully")
+                return result
+
+            except TaskError as e:
+                # Rich error context available
+                logger.error(
+                    f"Task '{e.task_name}' failed at subtask '{e.subtask}': {e.original_error}"
+                )
+                raise RuntimeError(
+                    f"Task '{name}' failed at subtask '{e.subtask}': {e.original_error}"
+                )
+
+    except Exception as e:
+        logger.error(f"Task '{name}' failed unexpectedly: {e}")
+        raise RuntimeError(f"Task '{name}' failed: {e}")
+
+
 def _resolve_dependencies(tasks: Dict[str, Dict], requested: List[str]) -> set:
     """
     Resolve all transitive dependencies for the requested tasks.
@@ -360,7 +500,9 @@ def compute_execution_levels(
     return [list(gen) for gen in nx.topological_generations(G)]
 
 
-def run_all(cfg: Any, only: Optional[List[str]] = None, dry_run: bool = False):
+def run_all(
+    cfg: Any, only: Optional[List[str]] = None, dry_run: bool = False, use_tui: bool = False
+):
     """
     Run all tasks respecting dependencies and parallelism.
 
@@ -368,25 +510,34 @@ def run_all(cfg: Any, only: Optional[List[str]] = None, dry_run: bool = False):
         cfg: Configuration object
         only: Optional list of specific tasks to run
         dry_run: If True, show execution plan without running tasks
+        use_tui: If True, use TUI progress display
     """
     logger = get_logger("console")
 
+    # Load class-based tasks
+    load_tasks()
+
+    # Combine both registries for execution planning
+    all_tasks = {}
+    all_tasks.update(_tasks)
+    all_tasks.update(_task_classes)
+
     if only:
-        unknown = set(only) - set(_tasks.keys())
+        unknown = set(only) - set(all_tasks.keys())
         if unknown:
-            available = sorted(_tasks.keys())
+            available = sorted(all_tasks.keys())
             raise ValueError(
                 f"Unknown tasks: {', '.join(sorted(unknown))}. "
                 f"Available tasks: {', '.join(available)}"
             )
 
         # Show what dependencies were automatically included
-        resolved = _resolve_dependencies(_tasks, only)
+        resolved = _resolve_dependencies(all_tasks, only)
         if len(resolved) > len(only):
             added = sorted(resolved - set(only))
             logger.info(f"Including dependencies: {', '.join(added)}")
 
-    levels = compute_execution_levels(_tasks, only)
+    levels = compute_execution_levels(all_tasks, only)
 
     total_tasks = sum(len(level) for level in levels)
     logger.info(f"Execution plan: {len(levels)} levels, {total_tasks} tasks")
@@ -404,11 +555,111 @@ def run_all(cfg: Any, only: Optional[List[str]] = None, dry_run: bool = False):
         shutil.rmtree(log_dir)
     log_dir.mkdir(parents=True, exist_ok=True)
 
+    # Choose execution mode
+    if use_tui:
+        run_all_with_tui(cfg, levels, log_dir)
+    else:
+        run_all_legacy(cfg, levels, log_dir)
+
+
+def run_all_with_tui(cfg: Any, levels: List[List[str]], log_dir: Path):
+    """
+    Run all tasks with TUI progress display.
+    """
+    from cli.tui.display import TUIDisplay
+
+    logger = get_logger("console")
+
+    with TUIDisplay() as display:
+        for level_num, level_tasks in enumerate(levels, 1):
+            try:
+                total_levels = len(levels)
+                display.console.print(f"\n[bold]Level {level_num}/{total_levels}[/bold]")
+            except Exception:
+                pass
+
+            # Add current level tasks now
+            for task_name in level_tasks:
+                display.add_task(task_name)
+
+            with ThreadPoolExecutor(max_workers=len(level_tasks)) as executor:
+                # Create progress callback for each task
+                def make_callback(name):
+                    return lambda n, p, m: display.update_task(n, p, m)
+
+                futures = {}
+                for name in level_tasks:
+                    # Start task row
+                    display.update_task(name, 0, "Starting...")
+                    # Choose execution function based on task type
+                    if name in _task_classes:
+                        future = executor.submit(
+                            run_task_class_sync, name, cfg, log_dir, make_callback(name)
+                        )
+                    else:
+                        # Fallback to legacy function-based execution
+                        future = executor.submit(run_task_sync, name, cfg, log_dir)
+
+                        # For legacy tasks, we need to manually update progress
+                        def update_legacy_progress(fut, task_name=name):
+                            try:
+                                fut.result()
+                                display.update_task(task_name, 100, "Complete")
+                            except Exception as e:
+                                display.update_task(task_name, -1, f"Failed: {e}")
+
+                        future.add_done_callback(update_legacy_progress)
+
+                    futures[future] = name
+
+                # Wait for completion
+                failed = False
+                for future in as_completed(futures):
+                    name = futures[future]
+                    try:
+                        if name in _task_classes:
+                            # Class-based tasks handle their own progress
+                            future.result()
+                        # Legacy tasks already handled by callback
+                    except Exception as e:
+                        failed = True
+                        logger.warning(f"Task '{name}' failed: {e}")
+
+                if failed:
+                    # Provide a brief health-checks snapshot for the current level
+                    try:
+                        display.print_health_panel(level_tasks)
+                    except Exception:
+                        pass
+                    remaining_levels = levels[level_num:]
+                    if remaining_levels:
+                        remaining_tasks = [task for level in remaining_levels for task in level]
+                        logger.error(f"Stopping execution due to failures at level {level_num}")
+                        logger.error(f"Skipping: {', '.join(remaining_tasks)}")
+                    raise RuntimeError("One or more tasks failed")
+
+    logger.info("All tasks completed successfully")
+
+
+def run_all_legacy(cfg: Any, levels: List[List[str]], log_dir: Path):
+    """
+    Run all tasks with legacy console output (no TUI).
+    """
+    logger = get_logger("console")
+
     for level_num, level_tasks in enumerate(levels, 1):
         with ThreadPoolExecutor(max_workers=len(level_tasks)) as executor:
-            futures = {
-                executor.submit(run_task_sync, name, cfg, log_dir): name for name in level_tasks
-            }
+            futures = {}
+            for name in level_tasks:
+                if name in _task_classes:
+                    # Use class-based execution for new tasks
+                    future = executor.submit(
+                        run_task_class_sync, name, cfg, log_dir, lambda *args: None
+                    )
+                else:
+                    # Use legacy function-based execution
+                    future = executor.submit(run_task_sync, name, cfg, log_dir)
+                futures[future] = name
 
             failed = False
             for future in as_completed(futures):
@@ -439,11 +690,18 @@ def list_tasks():
     Returns:
         Formatted string showing task dependencies and provisions
     """
-    if not _tasks:
+    # Load class-based tasks
+    load_tasks()
+
+    all_tasks = {}
+    all_tasks.update(_tasks)
+    all_tasks.update(_task_classes)
+
+    if not all_tasks:
         return "No tasks registered"
 
     lines = []
-    for name, info in sorted(_tasks.items()):
+    for name, info in sorted(all_tasks.items()):
         requires = ", ".join(info["requires"]) if info["requires"] else ""
 
         provides_with_types = []
@@ -451,7 +709,12 @@ def list_tasks():
             provides_with_types.append(f"{key}: {type_hint.__name__}")
         provides = ", ".join(provides_with_types) if provides_with_types else ""
 
-        health_flag = "yes" if info.get("health") else "no"
-        lines.append(f"{name}: requires({requires}) → provides({provides}) [health={health_flag}]")
+        # Determine task type and additional info
+        task_type = "class" if name in _task_classes else "function"
+        # Class-based tasks implicitly have structured health checks defined in BaseTask
+        health_flag = "yes" if (info.get("health") or name in _task_classes) else "no"
+        lines.append(
+            f"{name} [{task_type}]: requires({requires}) → provides({provides}) [health={health_flag}]"
+        )
 
     return "\n".join(lines)

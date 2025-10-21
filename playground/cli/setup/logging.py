@@ -6,7 +6,6 @@ and file-like objects for structured logging.
 """
 
 import logging
-import re
 from contextlib import contextmanager
 from typing import IO, Generator, Optional
 from pathlib import Path

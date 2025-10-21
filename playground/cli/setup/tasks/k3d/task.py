@@ -5,11 +5,11 @@ This task must run before all other infrastructure tasks as it provides
 the Kubernetes cluster itself.
 """
 
-from cli.setup import task
+from cli.setup.task_base import BaseTask
 from pathlib import Path
 import subprocess
-import json
 import os
+from typing import Dict, List
 
 # Import k3d operations from the local ops module
 from .ops import (
@@ -23,161 +23,271 @@ from .ops import (
 from cli.setup.tools.utils import get_mkcert_caroot
 from cli.utils import require_cmd, get_repo_root
 from .config import K3dConfig
-from .health import health_k3d
 
 
-@task(
-    "k3d",
-    provides={
-        "cluster_name": str,
-        "kubeconfig": str,
-        "http_port": int,
-        "https_port": int,
-        "api_port": int,
-        "ready": bool,
-    },
-    config_keys=["k3d", "registry_host"],
-    timeout_sec=600,
-    retry_delays=[10, 30],  # k3d cluster creation can be slow
-    health=health_k3d,
-    health_timeout_sec=180,
-    health_retry_delays=[5, 5, 10, 10, 20],
-)
-def setup_k3d(ctx, cfg, log):
-    """Create or reuse k3d cluster and configure kubeconfig."""
+class K3dTask(BaseTask):
+    """K3d cluster setup task."""
 
-    # Parse configuration with validation and defaults
-    k3d_config = K3dConfig.model_validate(cfg["k3d"])
-    registry_host = cfg["registry_host"]
+    @classmethod
+    def provides(cls) -> Dict[str, type]:
+        """Define what this task provides."""
+        return {
+            "cluster_name": str,
+            "kubeconfig": str,
+            "http_port": int,
+            "https_port": int,
+            "api_port": int,
+            "ready": bool,
+        }
 
-    log.write(f"Setting up k3d cluster '{k3d_config.cluster_name}'...\n")
+    @classmethod
+    def requires(cls) -> List[str]:
+        """K3d has no dependencies on other tasks."""
+        return []
 
-    # Preflight checks
-    for cmd in ("docker", "k3d", "mkcert"):
-        try:
-            require_cmd(cmd)
-            log.write(f"✓ {cmd} is available\n")
-        except Exception as e:
-            log.write(f"✗ {cmd} is missing: {e}\n")
-            raise RuntimeError(f"Required command '{cmd}' not found")
+    @classmethod
+    def config_keys(cls) -> List[str]:
+        """Config keys needed by this task."""
+        return ["k3d", "registry_host"]
 
-    # Resolve paths
-    playground_dir = Path(__file__).resolve().parent.parent.parent  # .../playground
-    repo_root = get_repo_root(playground_dir)
+    def setup(self):
+        """Register all subtasks and health checks."""
+        # Parse config once
+        self.k3d_config = K3dConfig.model_validate(self.cfg["k3d"])
+        self.registry_host = self.cfg["registry_host"]
 
-    # Prepare mkcert CA and k3s registries.yaml with trusted CA
-    log.write("Preparing mkcert CA certificates...\n")
-    caroot = get_mkcert_caroot()
-    ca_file = caroot / "rootCA.pem"
+        # Setup paths
+        playground_dir = Path(__file__).resolve().parent.parent.parent.parent
+        self.repo_root = get_repo_root(playground_dir)
 
-    if not ca_file.exists():
-        log.write(f"Warning: mkcert CA file not found at {ca_file}\n")
-        log.write("Running 'mkcert -install' to create CA...\n")
-        result = subprocess.run(["mkcert", "-install"], capture_output=True, text=True)
-        log.write(f"{result.stdout}\n")
-        if result.returncode != 0:
-            log.write(f"Error: {result.stderr}\n")
-            raise RuntimeError("Failed to install mkcert CA")
+        # Register subtasks in execution order
+        self.add_subtask("preflight", "Checking prerequisites", 5, self.check_prerequisites)
+        self.add_subtask("certificates", "Preparing certificates", 10, self.prepare_certificates)
+        self.add_subtask("cluster_plan", "Planning cluster actions", 5, self.plan_cluster)
+        self.add_subtask("cluster_create", "Creating k3d cluster", 45, self.create_cluster)
+        self.add_subtask("cluster_post", "Post-create configuration", 10, self.post_create)
+        self.add_subtask("kubeconfig", "Writing kubeconfig", 5, self.write_kubeconfig)
+        self.add_subtask("output", "Writing cluster info", 5, self.write_output)
 
-    tmpdir = (playground_dir / ".certs").resolve()
-    tmpdir.mkdir(parents=True, exist_ok=True)
-
-    log.write(f"Writing registries configuration for {registry_host}...\n")
-    registries_yaml = write_registries_yaml(
-        tmpdir=tmpdir,
-        registry_host=registry_host,
-        ca_path=Path("/etc/ssl/certs/mkcert-rootCA.crt"),
-    ).resolve()
-
-    # Volume mounts for k3d
-    volume_mounts = [
-        f"{ca_file}:/etc/ssl/certs/mkcert-rootCA.crt@server:*;agent:*",
-        f"{registries_yaml}:/etc/rancher/k3s/registries.yaml@server:*;agent:*",
-    ]
-
-    # Create or reuse cluster
-    if cluster_exists(k3d_config.cluster_name):
-        log.write(f"Cluster '{k3d_config.cluster_name}' already exists.\n")
-        if k3d_config.force_recreate:
-            log.write("Force recreate enabled, deleting existing cluster...\n")
-            delete_cluster(k3d_config.cluster_name, log=log)
-            log.write(f"Creating new cluster '{k3d_config.cluster_name}'...\n")
-            create_cluster(
-                k3d_config.cluster_name,
-                k3d_config.servers,
-                k3d_config.agents,
-                k3d_config.http_port,
-                k3d_config.https_port,
-                k3d_config.api_port,
-                extra_volumes=volume_mounts,
-                log=log,
-            )
-            log.write(f"Cluster '{k3d_config.cluster_name}' created successfully.\n")
-        else:
-            log.write("Reusing existing cluster.\n")
-    else:
-        log.write(f"Creating new cluster '{k3d_config.cluster_name}'...\n")
-        create_cluster(
-            k3d_config.cluster_name,
-            k3d_config.servers,
-            k3d_config.agents,
-            k3d_config.http_port,
-            k3d_config.https_port,
-            k3d_config.api_port,
-            extra_volumes=volume_mounts,
-            log=log,
+        # Register health checks (run automatically after subtasks)
+        self.add_healthcheck(
+            "cluster_exists", "Verifying cluster exists", self.verify_cluster_exists
         )
-        log.write(f"Cluster '{k3d_config.cluster_name}' created successfully.\n")
+        self.add_healthcheck(
+            "api_responsive", "Checking API connectivity", self.test_api_connection, retries=3
+        )
+        self.add_healthcheck(
+            "nodes_ready",
+            "Waiting for nodes",
+            self.wait_for_nodes,
+            retries=5,
+            delays=[5, 10, 15, 20, 30],
+        )
+        self.add_healthcheck("system_pods", "Verifying system pods", self.verify_system_pods)
 
-    # Write kubeconfig
-    kubeconfig_path = Path(k3d_config.kubeconfig_out).expanduser()
-    if not kubeconfig_path.is_absolute():
-        kubeconfig_path = (repo_root / kubeconfig_path).resolve()
+    def health_weight_ratio(self) -> float:
+        """Make health checks represent a larger portion for k3d.
 
-    log.write(f"Writing kubeconfig to {kubeconfig_path}...\n")
-    write_kubeconfig(k3d_config.cluster_name, kubeconfig_path, assume_yes=k3d_config.assume_yes)
+        Cluster readiness tends to be dominated by readiness waits, so reflect
+        that by giving health checks equal weight to subtasks (1.0 * subtask).
+        This yields total = subtasks + health = 2x subtasks.
+        """
+        return 1.0
 
-    # Set KUBECONFIG environment variable for subsequent tasks
-    os.environ["KUBECONFIG"] = str(kubeconfig_path)
-    log.write(f"Set KUBECONFIG={kubeconfig_path}\n")
+    def check_prerequisites(self):
+        """Subtask: Check required commands are available."""
+        for cmd in ("docker", "k3d", "mkcert"):
+            try:
+                require_cmd(cmd)
+                self.log.write(f"✓ {cmd} is available\n")
+            except Exception as e:
+                self.log.write(f"✗ {cmd} is missing: {e}\n")
+                raise RuntimeError(f"Required command '{cmd}' not found")
 
-    # Emit cluster summary JSON
-    output_json_path = Path(k3d_config.output_json).expanduser()
-    if not output_json_path.is_absolute():
-        output_json_path = (repo_root / output_json_path).resolve()
+    def prepare_certificates(self):
+        """Subtask: Prepare mkcert CA certificates."""
+        self.log.write("Preparing mkcert CA certificates...\n")
 
-    log.write(f"Writing cluster info to {output_json_path}...\n")
-    emit_cluster_json(
-        path=output_json_path,
-        name=k3d_config.cluster_name,
-        servers=k3d_config.servers,
-        agents=k3d_config.agents,
-        http_port=k3d_config.http_port,
-        https_port=k3d_config.https_port,
-        kubeconfig=kubeconfig_path,
-    )
+        caroot = get_mkcert_caroot()
+        self.ca_file = caroot / "rootCA.pem"
 
-    # Get actual API port if it was auto-assigned
-    api_port = k3d_config.api_port
-    if api_port == 0:
-        # Parse the cluster.json to get the actual API port
-        with open(output_json_path, "r") as f:
-            json.load(f)  # Load but don't store - API port parsing not yet implemented
-            # The API port might be in the kubeconfig or cluster info
-            # For now, we'll keep it as 0 to indicate auto-assigned
+        if not self.ca_file.exists():
+            self.log.write(f"Warning: mkcert CA file not found at {self.ca_file}\n")
+            self.log.write("Running 'mkcert -install' to create CA...\n")
+            result = subprocess.run(["mkcert", "-install"], capture_output=True, text=True)
+            self.log.write(f"{result.stdout}\n")
+            if result.returncode != 0:
+                self.log.write(f"Error: {result.stderr}\n")
+                raise RuntimeError("Failed to install mkcert CA")
+
+        # Prepare registries.yaml
+        tmpdir = (self.repo_root.parent / "playground" / ".certs").resolve()
+        tmpdir.mkdir(parents=True, exist_ok=True)
+
+        self.log.write(f"Writing registries configuration for {self.registry_host}...\n")
+        self.registries_yaml = write_registries_yaml(
+            tmpdir=tmpdir,
+            registry_host=self.registry_host,
+            ca_path=Path("/etc/ssl/certs/mkcert-rootCA.crt"),
+        ).resolve()
+
+    def plan_cluster(self):
+        """Subtask: Plan cluster action (recreate or reuse)."""
+        if cluster_exists(self.k3d_config.cluster_name):
+            self.log.write(f"Cluster '{self.k3d_config.cluster_name}' already exists.\n")
+            if self.k3d_config.force_recreate:
+                self.log.write("Force recreate enabled, will delete and re-create.\n")
+                self._plan_action = "recreate"
+            else:
+                self.log.write("Reusing existing cluster.\n")
+                self._plan_action = "reuse"
+        else:
+            self.log.write("Cluster does not exist; will create new cluster.\n")
+            self._plan_action = "create"
+
+    def create_cluster(self):
+        """Subtask: Create the k3d cluster."""
+        volume_mounts = [
+            f"{self.ca_file}:/etc/ssl/certs/mkcert-rootCA.crt@server:*;agent:*",
+            f"{self.registries_yaml}:/etc/rancher/k3s/registries.yaml@server:*;agent:*",
+        ]
+        action = getattr(self, "_plan_action", "create")
+        if action == "reuse":
+            self.log.write("Reusing existing cluster (no create needed).\n")
+            return
+
+        if action == "recreate":
+            self.log.write("Deleting existing cluster...\n")
+            delete_cluster(self.k3d_config.cluster_name, log=self.log)
+
+        self.log.write(f"Creating cluster '{self.k3d_config.cluster_name}'...\n")
+        create_cluster(
+            self.k3d_config.cluster_name,
+            self.k3d_config.servers,
+            self.k3d_config.agents,
+            self.k3d_config.http_port,
+            self.k3d_config.https_port,
+            self.k3d_config.api_port,
+            extra_volumes=volume_mounts,
+            log=self.log,
+        )
+
+    def write_kubeconfig(self):
+        """Subtask: Write kubeconfig file."""
+        self.kubeconfig_path = Path(self.k3d_config.kubeconfig_out).expanduser()
+        if not self.kubeconfig_path.is_absolute():
+            self.kubeconfig_path = (self.repo_root / self.kubeconfig_path).resolve()
+
+        self.log.write(f"Writing kubeconfig to {self.kubeconfig_path}...\n")
+        write_kubeconfig(
+            self.k3d_config.cluster_name,
+            self.kubeconfig_path,
+            assume_yes=self.k3d_config.assume_yes,
+        )
+
+        # Set environment variable
+        os.environ["KUBECONFIG"] = str(self.kubeconfig_path)
+        self.log.write(f"Set KUBECONFIG={self.kubeconfig_path}\n")
+
+        # Store in provides
+        self._provides["kubeconfig"] = str(self.kubeconfig_path)
+
+    def post_create(self):
+        """Subtask: Post-create steps and quick checks/logs."""
+        # Placeholder for any fast post-creation configuration or logs
+        # Keeps a user-visible step between create and kubeconfig
+        self.log.write("Cluster created. Performing post-create steps...\n")
+
+    def write_output(self):
+        """Subtask: Write cluster summary."""
+        output_json_path = Path(self.k3d_config.output_json).expanduser()
+        if not output_json_path.is_absolute():
+            output_json_path = (self.repo_root / output_json_path).resolve()
+
+        self.log.write(f"Writing cluster info to {output_json_path}...\n")
+        emit_cluster_json(
+            path=output_json_path,
+            name=self.k3d_config.cluster_name,
+            servers=self.k3d_config.servers,
+            agents=self.k3d_config.agents,
+            http_port=self.k3d_config.http_port,
+            https_port=self.k3d_config.https_port,
+            kubeconfig=self.kubeconfig_path,
+        )
+
+        # Get actual API port if it was auto-assigned
+        api_port = self.k3d_config.api_port
+        if api_port == 0:
+            # For now, keep as 0 to indicate auto-assigned
             api_port = 0
 
-    log.write(f"\n✅ k3d cluster '{k3d_config.cluster_name}' is ready!\n")
-    log.write(f"   Kubeconfig: {kubeconfig_path}\n")
-    log.write(f"   HTTP Port: {k3d_config.http_port}\n")
-    log.write(f"   HTTPS Port: {k3d_config.https_port}\n")
-    log.write(f"   API Port: {api_port if api_port > 0 else 'auto-assigned'}\n")
+        # Populate all provides values
+        self._provides.update(
+            {
+                "cluster_name": self.k3d_config.cluster_name,
+                "http_port": self.k3d_config.http_port,
+                "https_port": self.k3d_config.https_port,
+                "api_port": api_port,
+                "ready": True,
+            }
+        )
 
-    return {
-        "cluster_name": k3d_config.cluster_name,
-        "kubeconfig": str(kubeconfig_path),
-        "http_port": k3d_config.http_port,
-        "https_port": k3d_config.https_port,
-        "api_port": api_port,
-        "ready": True,
-    }
+        self.log.write(f"\n✅ k3d cluster '{self.k3d_config.cluster_name}' is ready!\n")
+
+    # Health check methods (called automatically with retry logic)
+    def verify_cluster_exists(self):
+        """Health check: Verify cluster exists."""
+        if not cluster_exists(self.k3d_config.cluster_name):
+            raise RuntimeError(f"Cluster '{self.k3d_config.cluster_name}' not found")
+
+    def test_api_connection(self):
+        """Health check: Test kubernetes API connectivity."""
+        from kubernetes import client as k8s_client, config as k8s_config
+
+        try:
+            k8s_config.load_kube_config(config_file=str(self.kubeconfig_path))
+            api = k8s_client.CoreV1Api()
+            api.list_namespace(limit=1)
+        except Exception as e:
+            raise RuntimeError(f"API connection failed: {e}")
+
+    def wait_for_nodes(self):
+        """Health check: Wait for all nodes to be ready."""
+        from kubernetes import client as k8s_client, config as k8s_config
+
+        k8s_config.load_kube_config(config_file=str(self.kubeconfig_path))
+        api = k8s_client.CoreV1Api()
+
+        nodes = api.list_node().items
+        if not nodes:
+            raise RuntimeError("No nodes found in cluster")
+
+        not_ready = []
+        for node in nodes:
+            conditions = node.status.conditions or []
+            is_ready = any(c.type == "Ready" and c.status == "True" for c in conditions)
+            if not is_ready:
+                not_ready.append(node.metadata.name)
+
+        if not_ready:
+            raise RuntimeError(f"Nodes not ready: {', '.join(not_ready)}")
+
+    def verify_system_pods(self):
+        """Health check: Verify system pods are running."""
+        from kubernetes import client as k8s_client, config as k8s_config
+
+        k8s_config.load_kube_config(config_file=str(self.kubeconfig_path))
+        api = k8s_client.CoreV1Api()
+
+        # Check kube-system pods
+        pods = api.list_namespaced_pod("kube-system").items
+        not_running = [pod.metadata.name for pod in pods if pod.status.phase != "Running"]
+
+        if not_running:
+            # Provide a more informative error message
+            if len(not_running) > 3:
+                # Show first 3 pods and indicate how many more
+                msg = f"{len(not_running)} pods not ready: {', '.join(not_running[:3])}... (+{len(not_running)-3} more)"
+            else:
+                msg = f"{len(not_running)} pods not ready: {', '.join(not_running)}"
+            raise RuntimeError(msg)
