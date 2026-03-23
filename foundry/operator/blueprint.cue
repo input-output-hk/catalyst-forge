@@ -14,7 +14,7 @@ project: {
 			modules: {
 				crd: {
 					name:     "crd"
-					registry: "https://github.com/input-output-hk/catalyst-forge"
+					registry: "https://github.com/cardano-foundation/catalyst-forge"
 					type:     "git"
 					values: {
 						paths: [
