@@ -3,8 +3,8 @@
 package blueprint
 
 import (
-	"github.com/input-output-hk/catalyst-forge/lib/schema/blueprint/global"
-	"github.com/input-output-hk/catalyst-forge/lib/schema/blueprint/project"
+	g "github.com/input-output-hk/catalyst-forge/lib/schema/blueprint/global"
+	p "github.com/input-output-hk/catalyst-forge/lib/schema/blueprint/project"
 )
 
 // Blueprint contains the schema for blueprint files.
@@ -19,10 +19,10 @@ type Blueprint struct {
 	Data any/* CUE top */ `json:"data,omitempty"`
 
 	// Global contains the global configuration for the repository.
-	Global *global.Global `json:"global,omitempty"`
+	Global g.Global `json:"global,omitempty"`
 
 	// Project contains the configuration for the project.
-	Project *project.Project `json:"project,omitempty"`
+	Project p.Project `json:"project,omitempty"`
 
 	// DEPRECATED: This field is deprecated and will be removed in a future version.
 	Version string `json:"version,omitempty"`

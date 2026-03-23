@@ -29,13 +29,13 @@ func TestReleaserRelease(t *testing.T) {
 		return project.Project{
 			Name: name,
 			Blueprint: sb.Blueprint{
-				Global: &sg.Global{
-					Repo: &sg.Repo{
+				Global: sg.Global{
+					Repo: sg.Repo{
 						Name: fmt.Sprintf("%s/%s", repoOwner, repoName),
 					},
 				},
-				Project: &sp.Project{
-					Ci: &sp.CI{
+				Project: sp.Project{
+					Ci: sp.CI{
 						Targets: map[string]sp.Target{
 							"test": {
 								Platforms: platforms,

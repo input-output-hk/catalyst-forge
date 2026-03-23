@@ -46,7 +46,7 @@ type Docker struct {
 
 type Earthly struct {
 	// Satellite contains the configuration for a remote Earthly Satellite.
-	Satellite *EarthlySatellite `json:"satellite,omitempty"`
+	Satellite EarthlySatellite `json:"satellite,omitempty"`
 
 	// Version contains the version of Earthly to install in CI.
 	Version string `json:"version,omitempty"`
@@ -56,7 +56,7 @@ type Earthly struct {
 type EarthlySatellite struct {
 	// Credentials contains the credentials to use for connecting to a remote
 	// Earthly Satellite.
-	Credentials *common.Secret `json:"credentials,omitempty"`
+	Credentials common.Secret `json:"credentials,omitempty"`
 }
 
 // Foundry contains the configuration for Catalyst Foundry.
@@ -72,7 +72,7 @@ type Git struct {
 
 type Github struct {
 	// Credentials contains the credentials to use for Github
-	Credentials *common.Secret `json:"credentials,omitempty"`
+	Credentials common.Secret `json:"credentials,omitempty"`
 
 	// Registry contains the Github registry to use.
 	Registry string `json:"registry,omitempty"`
@@ -91,40 +91,40 @@ type KCL struct {
 
 type Providers struct {
 	// AWS contains the configuration for the AWS provider.
-	Aws *AWS `json:"aws,omitempty"`
+	Aws AWS `json:"aws,omitempty"`
 
 	// CUE contains the configuration for the CUE provider.
-	Cue *CUE `json:"cue,omitempty"`
+	Cue CUE `json:"cue,omitempty"`
 
 	// Docker contains the configuration for the DockerHub provider.
-	Docker *Docker `json:"docker,omitempty"`
+	Docker Docker `json:"docker,omitempty"`
 
 	// Earthly contains the configuration for the Earthly Cloud provider.
-	Earthly *Earthly `json:"earthly,omitempty"`
+	Earthly Earthly `json:"earthly,omitempty"`
 
 	// Foundry contains the configuration for Catalyst Foundry.
-	Foundry *Foundry `json:"foundry,omitempty"`
+	Foundry Foundry `json:"foundry,omitempty"`
 
 	// Git contains the configuration for the Git provider.
-	Git *Git `json:"git,omitempty"`
+	Git Git `json:"git,omitempty"`
 
 	// Github contains the configuration for the Github provider.
-	Github *Github `json:"github,omitempty"`
+	Github Github `json:"github,omitempty"`
 
 	// KCL contains the configuration for the KCL provider.
-	Kcl *KCL `json:"kcl,omitempty"`
+	Kcl KCL `json:"kcl,omitempty"`
 
 	// Tailscale contains the configuration for the Tailscale provider.
-	Tailscale *Tailscale `json:"tailscale,omitempty"`
+	Tailscale Tailscale `json:"tailscale,omitempty"`
 
 	// Timoni contains the configuration for the Timoni provider.
-	Timoni *Timoni `json:"timoni,omitempty"`
+	Timoni Timoni `json:"timoni,omitempty"`
 }
 
 type Tailscale struct {
 	// Credentials contains the OAuth2 credentials for authenticating to the
 	// Tailscale network.
-	Credentials *common.Secret `json:"credentials,omitempty"`
+	Credentials common.Secret `json:"credentials,omitempty"`
 
 	// Tags is a comma-separated list of tags to impersonate.
 	Tags string `json:"tags,omitempty"`

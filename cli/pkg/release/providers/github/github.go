@@ -199,7 +199,7 @@ func NewReleaser(
 	client, err := gh.NewDefaultGithubClient(
 		owner,
 		repo,
-		gh.WithCredsOrEnv(project.Blueprint.Global.Ci.Providers.Github.Credentials),
+		gh.WithCredsOrEnv(&project.Blueprint.Global.Ci.Providers.Github.Credentials),
 		gh.WithLogger(ctx.Logger),
 	)
 	if err != nil {

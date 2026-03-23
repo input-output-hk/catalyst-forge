@@ -53,14 +53,14 @@ func TestDocsReleaserRelease(t *testing.T) {
 		return project.Project{
 			Name: projectName,
 			Blueprint: sb.Blueprint{
-				Global: &global.Global{
-					Repo: &global.Repo{
+				Global: global.Global{
+					Repo: global.Repo{
 						Name:          "owner/repo",
 						DefaultBranch: branch,
 					},
-					Ci: &global.CI{
-						Release: &global.Release{
-							Docs: &global.DocsRelease{
+					Ci: global.CI{
+						Release: global.Release{
+							Docs: global.DocsRelease{
 								Bucket: bucket,
 								Path:   docsPath,
 								Url:    "https://docs.example.com/",
@@ -68,7 +68,7 @@ func TestDocsReleaserRelease(t *testing.T) {
 						},
 					},
 				},
-				Project: &sp.Project{
+				Project: sp.Project{
 					Release: map[string]sp.Release{
 						"docs": {
 							Target: "docs",

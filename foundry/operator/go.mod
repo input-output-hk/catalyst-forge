@@ -1,11 +1,11 @@
 module github.com/input-output-hk/catalyst-forge/foundry/operator
 
-go 1.24.5
+go 1.26.0
 
 godebug default=go1.23
 
 require (
-	cuelang.org/go v0.12.1
+	cuelang.org/go v0.16.0
 	github.com/adrg/xdg v0.5.3
 	github.com/go-git/go-billy/v5 v5.6.2
 	github.com/go-git/go-git/v5 v5.16.2

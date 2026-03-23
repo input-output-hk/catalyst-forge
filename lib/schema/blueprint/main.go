@@ -2,7 +2,7 @@ package blueprint
 
 import "embed"
 
-//go:generate go run cuelang.org/go/cmd/cue@v0.12.0 exp gengotypes
+//go:generate go run cuelang.org/go/cmd/cue@v0.16.0 exp gengotypes
 
 //go:embed cue.mod/module.cue
 //go:embed common/*.cue

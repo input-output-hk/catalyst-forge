@@ -112,12 +112,12 @@ func TestEarthlySatelliteConfigure(t *testing.T) {
 				path:   tt.path,
 				project: &project.Project{
 					Blueprint: sb.Blueprint{
-						Global: &sg.Global{
-							Ci: &sg.CI{
-								Providers: &sp.Providers{
-									Earthly: &sp.Earthly{
-										Satellite: &sp.EarthlySatellite{
-											Credentials: &sc.Secret{
+						Global: sg.Global{
+							Ci: sg.CI{
+								Providers: sp.Providers{
+									Earthly: sp.Earthly{
+										Satellite: sp.EarthlySatellite{
+											Credentials: sc.Secret{
 												Provider: "mock",
 												Path:     "foo/bar",
 											},

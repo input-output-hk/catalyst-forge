@@ -13,7 +13,7 @@ The API documentation is generated using Swagger/OpenAPI and is available in two
 
 ### Prerequisites
 
-- Go 1.24.2 or later
+- Go 1.26.0 or later
 - PostgreSQL database
 - Kubernetes cluster (optional, for deployment features)
 

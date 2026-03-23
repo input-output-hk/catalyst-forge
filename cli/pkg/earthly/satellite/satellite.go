@@ -5,10 +5,13 @@ import (
 	"fmt"
 	"log/slog"
 	"path/filepath"
+	"reflect"
 
 	"github.com/input-output-hk/catalyst-forge/lib/project/project"
 	"github.com/input-output-hk/catalyst-forge/lib/providers/earthly"
 	"github.com/input-output-hk/catalyst-forge/lib/providers/secrets"
+	"github.com/input-output-hk/catalyst-forge/lib/schema/blueprint/common"
+	"github.com/input-output-hk/catalyst-forge/lib/schema/blueprint/global/providers"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/fs"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/fs/billy"
 	"gopkg.in/yaml.v3"
@@ -98,14 +101,14 @@ func (s *EarthlySatellite) Configure() error {
 
 // loadCredentials loads the credentials for the EarthlySatellite.
 func (s *EarthlySatellite) loadCredentials() error {
-	if s.project.Blueprint.Global.Ci.Providers.Earthly == nil ||
-		s.project.Blueprint.Global.Ci.Providers.Earthly.Satellite == nil ||
-		s.project.Blueprint.Global.Ci.Providers.Earthly.Satellite.Credentials == nil {
+	if reflect.DeepEqual(s.project.Blueprint.Global.Ci.Providers.Earthly, providers.Earthly{}) ||
+		reflect.DeepEqual(s.project.Blueprint.Global.Ci.Providers.Earthly.Satellite, providers.EarthlySatellite{}) ||
+		reflect.DeepEqual(s.project.Blueprint.Global.Ci.Providers.Earthly.Satellite.Credentials, common.Secret{}) {
 		return fmt.Errorf("no satellite credentials found")
 	}
 
 	creds, err := earthly.GetEarthlyProviderCreds(
-		s.project.Blueprint.Global.Ci.Providers.Earthly.Satellite.Credentials,
+		&s.project.Blueprint.Global.Ci.Providers.Earthly.Satellite.Credentials,
 		&s.secretStore,
 		s.logger,
 	)

@@ -32,19 +32,19 @@ func TestKCLReleaserRelease(t *testing.T) {
 		return project.Project{
 			Name: name,
 			Blueprint: sb.Blueprint{
-				Global: &sg.Global{
-					Ci: &sg.CI{
-						Providers: &spr.Providers{
-							Kcl: &spr.KCL{
+				Global: sg.Global{
+					Ci: sg.CI{
+						Providers: spr.Providers{
+							Kcl: spr.KCL{
 								Registries: registries,
 							},
 						},
 					},
-					Repo: &sg.Repo{
+					Repo: sg.Repo{
 						Name: "repo",
 					},
 				},
-				Project: &sp.Project{},
+				Project: sp.Project{},
 			},
 		}
 	}

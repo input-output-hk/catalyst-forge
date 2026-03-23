@@ -1,6 +1,6 @@
 module github.com/input-output-hk/catalyst-forge/lib/foundry/auth
 
-go 1.24.2
+go 1.26.0
 
 require (
 	github.com/golang-jwt/jwt/v5 v5.2.3
@@ -18,8 +18,8 @@ require (
 	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
 	github.com/go-git/go-billy/v5 v5.5.0 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
-	golang.org/x/crypto v0.32.0 // indirect
-	golang.org/x/sys v0.29.0 // indirect
+	golang.org/x/crypto v0.48.0 // indirect
+	golang.org/x/sys v0.41.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 

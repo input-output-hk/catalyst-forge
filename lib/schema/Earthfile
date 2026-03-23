@@ -1,7 +1,7 @@
 VERSION 0.8
 
 deps:
-    FROM golang:1.24.2-bookworm
+    FROM golang:1.26.0-bookworm
 
     WORKDIR /work
 
@@ -43,7 +43,7 @@ check-gen:
     RUN diff -r ./blueprint /tmp/blueprint
 
 proto:
-    FROM golang:1.24.2-bookworm
+    FROM golang:1.26.0-bookworm
 
     WORKDIR /work
 

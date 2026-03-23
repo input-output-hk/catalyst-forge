@@ -3,6 +3,7 @@ package deployment
 import (
 	"fmt"
 	"log/slog"
+	"reflect"
 
 	"cuelang.org/go/cue"
 	"cuelang.org/go/cue/cuecontext"
@@ -44,7 +45,7 @@ func FetchBundle(r repo.GitRepo, projectPath string, store secrets.SecretStore, 
 		return ModuleBundle{}, fmt.Errorf("could not load project: %w", err)
 	}
 
-	if p.Blueprint.Project == nil || p.Blueprint.Project.Deployment == nil {
+	if reflect.DeepEqual(p.Blueprint.Project, sp.Project{}) || reflect.DeepEqual(p.Blueprint.Project.Deployment, sp.Deployment{}) {
 		return ModuleBundle{}, fmt.Errorf("project does not have a deployment bundle")
 	}
 

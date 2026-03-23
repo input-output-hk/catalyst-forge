@@ -5,6 +5,7 @@ import (
 	"log/slog"
 	"net/url"
 	"path/filepath"
+	"reflect"
 	"slices"
 	"strings"
 
@@ -16,6 +17,7 @@ import (
 	"github.com/input-output-hk/catalyst-forge/lib/providers/aws"
 	"github.com/input-output-hk/catalyst-forge/lib/providers/git"
 	"github.com/input-output-hk/catalyst-forge/lib/providers/github"
+	"github.com/input-output-hk/catalyst-forge/lib/schema/blueprint/global"
 	sp "github.com/input-output-hk/catalyst-forge/lib/schema/blueprint/project"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/fs"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/fs/billy"
@@ -70,7 +72,7 @@ func (r *DocsReleaser) Release() error {
 		return nil
 	}
 
-	if r.project.Blueprint.Global.Ci == nil || r.project.Blueprint.Global.Ci.Release == nil || r.project.Blueprint.Global.Ci.Release.Docs == nil {
+	if reflect.DeepEqual(r.project.Blueprint.Global.Ci, global.CI{}) || reflect.DeepEqual(r.project.Blueprint.Global.Ci.Release, global.Release{}) || reflect.DeepEqual(r.project.Blueprint.Global.Ci.Release.Docs, global.DocsRelease{}) {
 		return fmt.Errorf("global docs release configuration not found")
 	}
 
@@ -288,7 +290,7 @@ func NewDocsReleaser(
 	ghClient, err := github.NewDefaultGithubClient(
 		owner,
 		repo,
-		github.WithCredsOrEnv(project.Blueprint.Global.Ci.Providers.Github.Credentials),
+		github.WithCredsOrEnv(&project.Blueprint.Global.Ci.Providers.Github.Credentials),
 		github.WithLogger(ctx.Logger),
 	)
 	if err != nil {

@@ -45,8 +45,8 @@ func (g *DeploymentRuntime) Load(project *Project) map[string]cue.Value {
 	}
 
 	project.Blueprint = sb.Blueprint{
-		Global: &sg.Global{
-			Repo: &sg.Repo{
+		Global: sg.Global{
+			Repo: sg.Repo{
 				Name: repo,
 			},
 		},
