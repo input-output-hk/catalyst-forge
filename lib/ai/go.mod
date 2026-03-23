@@ -1,6 +1,6 @@
 module github.com/input-output-hk/catalyst-forge/lib/ai
 
-go 1.24.2
+go 1.26.0
 
 require (
 	github.com/sashabaranov/go-openai v1.40.5

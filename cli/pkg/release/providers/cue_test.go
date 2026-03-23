@@ -37,25 +37,25 @@ func TestCueReleaserRelease(t *testing.T) {
 	) project.Project {
 		return project.Project{
 			Blueprint: sb.Blueprint{
-				Global: &sg.Global{
-					Ci: &sg.CI{
-						Providers: &spr.Providers{
-							Aws: &spr.AWS{
+				Global: sg.Global{
+					Ci: sg.CI{
+						Providers: spr.Providers{
+							Aws: spr.AWS{
 								Ecr: spr.AWSECR{
 									AutoCreate: true,
 								},
 							},
-							Cue: &spr.CUE{
+							Cue: spr.CUE{
 								Registry:       registry,
 								RegistryPrefix: prefix,
 							},
 						},
 					},
-					Repo: &sg.Repo{
+					Repo: sg.Repo{
 						Name: "test",
 					},
 				},
-				Project: &sp.Project{},
+				Project: sp.Project{},
 			},
 			Path:     path,
 			RepoRoot: "/",

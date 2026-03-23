@@ -1,7 +1,7 @@
 VERSION 0.8
 
 deps:
-    FROM golang:1.24.5-bookworm
+    FROM golang:1.26.0-bookworm
 
     WORKDIR /work/renderer
 
@@ -24,7 +24,7 @@ deps:
     RUN go mod download
 
 proto:
-    FROM golang:1.24.5-bookworm
+    FROM golang:1.26.0-bookworm
 
     WORKDIR /work
 

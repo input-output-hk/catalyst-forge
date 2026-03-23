@@ -73,8 +73,8 @@ func Test_createECRRepoIfNotExists(t *testing.T) {
 
 			project := project.Project{
 				Blueprint: sb.Blueprint{
-					Global: &sg.Global{
-						Repo: &sg.Repo{
+					Global: sg.Global{
+						Repo: sg.Repo{
 							Name: "test",
 						},
 					},

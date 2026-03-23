@@ -414,13 +414,13 @@ end`
 			p := project.Project{
 				Name: projectName,
 				Blueprint: blueprint.Blueprint{
-					Global: &global.Global{
-						Repo: &global.Repo{
+					Global: global.Global{
+						Repo: global.Repo{
 							Name: fmt.Sprintf("test-org/%s", projectName),
 						},
-						Ci: &global.CI{
-							Providers: &pb.Providers{
-								Git: &pb.Git{
+						Ci: global.CI{
+							Providers: pb.Providers{
+								Git: pb.Git{
 									Credentials: sc.Secret{
 										Provider: "local",
 										Path:     "token",
@@ -655,8 +655,8 @@ func TestBrewDeployer_getTemplateData(t *testing.T) {
 				project: project.Project{
 					Name: "test-app",
 					Blueprint: blueprint.Blueprint{
-						Global: &global.Global{
-							Repo: &global.Repo{
+						Global: global.Global{
+							Repo: global.Repo{
 								Name: "test/test-app",
 							},
 						},

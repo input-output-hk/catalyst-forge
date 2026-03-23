@@ -11,6 +11,27 @@ type CI struct {
 	Targets map[string]Target `json:"targets"`
 }
 
+// Target contains the configuration for a single target.
+type Target struct {
+	// Args contains the arguments to pass to the target.
+	Args map[string]string `json:"args,omitempty"`
+
+	// Platforms contains the platforms to run the target against.
+	Platforms []string `json:"platforms,omitempty"`
+
+	// Privileged determines if the target should run in privileged mode.
+	Privileged bool `json:"privileged,omitempty"`
+
+	// Retries contains the configuration for the retries of an Earthly target.
+	Retries common.CIRetries `json:"retries,omitempty"`
+
+	// Tags are used to uniquely identify a target when scanning.
+	Tags []string `json:"tags,omitempty"`
+
+	// Secrets contains the secrets to pass to the target.
+	Secrets []common.Secret `json:"secrets,omitempty"`
+}
+
 type Deployment struct {
 	// On contains the events that trigger the deployment.
 	On map[string]any/* CUE top */ `json:"on"`
@@ -61,10 +82,10 @@ type Project struct {
 	Container string `json:"container"`
 
 	// CI contains the configuration for the CI system.
-	Ci *CI `json:"ci,omitempty"`
+	Ci CI `json:"ci,omitempty"`
 
 	// Deployment contains the configuration for the deployment of the project.
-	Deployment *Deployment `json:"deployment,omitempty"`
+	Deployment Deployment `json:"deployment,omitempty"`
 
 	// Release contains the configuration for the release of the project.
 	Release map[string]Release `json:"release,omitempty"`
@@ -80,25 +101,4 @@ type Release struct {
 	// Target is the Earthly target to run for this release.
 	// Defaults to release name.
 	Target string `json:"target,omitempty"`
-}
-
-// Target contains the configuration for a single target.
-type Target struct {
-	// Args contains the arguments to pass to the target.
-	Args map[string]string `json:"args,omitempty"`
-
-	// Platforms contains the platforms to run the target against.
-	Platforms []string `json:"platforms,omitempty"`
-
-	// Privileged determines if the target should run in privileged mode.
-	Privileged bool `json:"privileged,omitempty"`
-
-	// Retries contains the configuration for the retries of an Earthly target.
-	Retries *common.CIRetries `json:"retries,omitempty"`
-
-	// Tags are used to uniquely identify a target when scanning.
-	Tags []string `json:"tags,omitempty"`
-
-	// Secrets contains the secrets to pass to the target.
-	Secrets []common.Secret `json:"secrets,omitempty"`
 }

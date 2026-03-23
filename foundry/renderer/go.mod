@@ -1,9 +1,9 @@
 module github.com/input-output-hk/catalyst-forge/foundry/renderer
 
-go 1.24.5
+go 1.26.0
 
 require (
-	cuelang.org/go v0.12.1
+	cuelang.org/go v0.16.0
 	github.com/alecthomas/kong v1.6.0
 	github.com/input-output-hk/catalyst-forge/lib/deployment v0.0.0
 	github.com/input-output-hk/catalyst-forge/lib/schema v0.0.0

@@ -73,8 +73,8 @@ func TestGenerateContainerName(t *testing.T) {
 			p := &Project{
 				Name: tt.projectName,
 				Blueprint: sb.Blueprint{
-					Global: &sg.Global{
-						Repo: &sg.Repo{
+					Global: sg.Global{
+						Repo: sg.Repo{
 							Name: tt.repoName,
 						},
 					},

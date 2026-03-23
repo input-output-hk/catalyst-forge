@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"reflect"
 	"regexp"
 	"slices"
 	"sort"
@@ -11,6 +12,7 @@ import (
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/run"
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/utils"
 	"github.com/input-output-hk/catalyst-forge/lib/project/project"
+	sp "github.com/input-output-hk/catalyst-forge/lib/schema/blueprint/project"
 )
 
 type EarthfileCmd struct {
@@ -152,8 +154,8 @@ func filterByTags(projects map[string]project.Project, input map[string]map[stri
 		for path, targets := range targetMap {
 			for _, target := range targets {
 				project := projects[path]
-				if project.Blueprint.Project != nil &&
-					project.Blueprint.Project.Ci != nil &&
+				if !reflect.DeepEqual(project.Blueprint.Project, sp.Project{}) &&
+					!reflect.DeepEqual(project.Blueprint.Project.Ci, sp.CI{}) &&
 					project.Blueprint.Project.Ci.Targets != nil {
 					if targetConfig, ok := project.Blueprint.Project.Ci.Targets[target]; ok {
 						for _, tag := range targetConfig.Tags {
