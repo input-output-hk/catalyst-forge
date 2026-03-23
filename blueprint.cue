@@ -8,7 +8,7 @@ global: {
 			"^nightly(-.*)?$",
 		]
 		registries: [
-			"ghcr.io/input-output-hk/catalyst-forge",
+			"ghcr.io/cardano-foundation/catalyst-forge",
 		]
 		release: docs: {
 			bucket: "docs.dev.projectcatalyst.io"
@@ -60,7 +60,7 @@ global: {
 			kcl: {
 				install: true
 				registries: [
-					"ghcr.io/input-output-hk/catalyst-forge",
+					"ghcr.io/cardano-foundation/catalyst-forge",
 				]
 				version: "v0.11.0"
 			}
@@ -91,7 +91,7 @@ global: {
 	}
 	deployment: {
 		registries: {
-			containers: "ghcr.io/input-output-hk/catalyst-forge"
+			containers: "ghcr.io/cardano-foundation/catalyst-forge"
 			modules:    ci.providers.aws.ecr.registry + "/catalyst-deployments"
 		}
 		repo: {
@@ -102,6 +102,6 @@ global: {
 	}
 	repo: {
 		defaultBranch: "master"
-		name:          "input-output-hk/catalyst-forge"
+		name:          "cardano-foundation/catalyst-forge"
 	}
 }

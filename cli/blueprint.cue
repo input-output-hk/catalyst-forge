@@ -27,7 +27,7 @@ project: {
 					description: "Catalyst Forge CLI - A tool for building and deploying Catalyst projects"
 					binary_name: "forge"
 					templates: {
-						repository: "https://github.com/input-output-hk/catalyst-forge.git"
+						repository: "https://github.com/cardano-foundation/catalyst-forge.git"
 						branch: "brew-release"
 						path: "templates/brew"
 					}
