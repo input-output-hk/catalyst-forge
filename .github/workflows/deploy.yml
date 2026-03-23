@@ -43,9 +43,8 @@ jobs:
         with:
           version: ${{ inputs.forge_version }}
       - name: Install Local Forge
-        uses: input-output-hk/catalyst-forge/actions/install-local@ci/v1.10.0
-        id: install-local
         uses: cardano-foundation/catalyst-forge/actions/install-local@ci/v1.11.0
+        id: install-local
         if: ${{ inputs.forge_version == 'local' }}
       - name: Check forge version
         run: forge version
