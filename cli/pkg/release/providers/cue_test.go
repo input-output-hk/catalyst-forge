@@ -8,7 +8,6 @@ import (
 	"testing"
 
 	"github.com/aws/aws-sdk-go-v2/service/ecr"
-	exmocks "github.com/input-output-hk/catalyst-forge/cli/pkg/executor/mocks"
 	"github.com/input-output-hk/catalyst-forge/lib/project/project"
 	"github.com/input-output-hk/catalyst-forge/lib/providers/aws"
 	"github.com/input-output-hk/catalyst-forge/lib/providers/aws/mocks"
@@ -16,6 +15,7 @@ import (
 	sg "github.com/input-output-hk/catalyst-forge/lib/schema/blueprint/global"
 	spr "github.com/input-output-hk/catalyst-forge/lib/schema/blueprint/global/providers"
 	sp "github.com/input-output-hk/catalyst-forge/lib/schema/blueprint/project"
+	exmocks "github.com/input-output-hk/catalyst-forge/lib/tools/executor/mocks"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/fs/billy"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/testutils"
 	"github.com/stretchr/testify/assert"
@@ -37,25 +37,25 @@ func TestCueReleaserRelease(t *testing.T) {
 	) project.Project {
 		return project.Project{
 			Blueprint: sb.Blueprint{
-				Global: &sg.Global{
-					Ci: &sg.CI{
-						Providers: &spr.Providers{
-							Aws: &spr.AWS{
+				Global: sg.Global{
+					Ci: sg.CI{
+						Providers: spr.Providers{
+							Aws: spr.AWS{
 								Ecr: spr.AWSECR{
 									AutoCreate: true,
 								},
 							},
-							Cue: &spr.CUE{
+							Cue: spr.CUE{
 								Registry:       registry,
 								RegistryPrefix: prefix,
 							},
 						},
 					},
-					Repo: &sg.Repo{
+					Repo: sg.Repo{
 						Name: "test",
 					},
 				},
-				Project: &sp.Project{},
+				Project: sp.Project{},
 			},
 			Path:     path,
 			RepoRoot: "/",

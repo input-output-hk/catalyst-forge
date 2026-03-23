@@ -18,6 +18,7 @@ import (
 	"github.com/input-output-hk/catalyst-forge/lib/tools/earthly"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/fs"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/fs/billy"
+	tg "github.com/input-output-hk/catalyst-forge/lib/tools/git"
 	r "github.com/input-output-hk/catalyst-forge/lib/tools/git/repo"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/walker"
 )
@@ -67,7 +68,7 @@ type DefaultProjectLoader struct {
 func (p *DefaultProjectLoader) Load(projectPath string) (Project, error) {
 	p.logger.Info("Finding git root", "projectPath", projectPath)
 	w := walker.NewCustomReverseFSWalker(p.fs, p.logger)
-	gitRoot, err := git.FindGitRoot(projectPath, &w)
+	gitRoot, err := tg.FindGitRoot(projectPath, &w)
 	if err != nil {
 		p.logger.Error("Failed to find git root", "error", err)
 		return Project{}, fmt.Errorf("failed to find git root: %w", err)

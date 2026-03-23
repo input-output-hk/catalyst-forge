@@ -1,0 +1,13 @@
+syntax = "proto3";
+
+package providers;
+
+option go_package = "github.com/input-output-hk/catalyst-forge/lib/schema/proto/generated/global/providers";
+
+import "common/secret.proto";
+
+// Docker contains the configuration for the DockerHub provider.
+message Docker {
+  // Credentials contains the credentials to use for DockerHub
+  common.Secret credentials = 1;
+}

@@ -24,7 +24,86 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
-        "/gha/auth": {
+        "/.well-known/jwks.json": {
+            "get": {
+                "description": "Returns the public JSON Web Key Set used to verify access tokens",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Get JWKS",
+                "responses": {
+                    "200": {
+                        "description": "JWKS",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/challenge": {
+            "post": {
+                "description": "Create a new challenge for user authentication using Ed25519 keys",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Create a new authentication challenge",
+                "parameters": [
+                    {
+                        "description": "Challenge creation request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/handlers.ChallengeRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Challenge created successfully",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.ChallengeResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "404": {
+                        "description": "User key not found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/github": {
             "get": {
                 "security": [
                     {
@@ -48,7 +127,7 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/handlers.GHARepositoryAuthResponse"
+                                "$ref": "#/definitions/handlers.GithubRepositoryAuthResponse"
                             }
                         }
                     },
@@ -100,7 +179,7 @@ const docTemplate = `{
                     "201": {
                         "description": "Authentication configuration created",
                         "schema": {
-                            "$ref": "#/definitions/handlers.GHARepositoryAuthResponse"
+                            "$ref": "#/definitions/handlers.GithubRepositoryAuthResponse"
                         }
                     },
                     "400": {
@@ -127,7 +206,69 @@ const docTemplate = `{
                 }
             }
         },
-        "/gha/auth/repository/{repository}": {
+        "/auth/github/login": {
+            "post": {
+                "description": "Validate a GitHub Actions OIDC token and return a JWT token",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "gha"
+                ],
+                "summary": "Validate GitHub Actions token",
+                "parameters": [
+                    {
+                        "description": "Token validation request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/handlers.ValidateTokenRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Token validated successfully",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.ValidateTokenResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "401": {
+                        "description": "Invalid token",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "403": {
+                        "description": "Repository not authorized",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/github/repository/{repository}": {
             "get": {
                 "security": [
                     {
@@ -158,7 +299,7 @@ const docTemplate = `{
                     "200": {
                         "description": "Authentication configuration",
                         "schema": {
-                            "$ref": "#/definitions/handlers.GHARepositoryAuthResponse"
+                            "$ref": "#/definitions/handlers.GithubRepositoryAuthResponse"
                         }
                     },
                     "401": {
@@ -178,7 +319,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/gha/auth/{id}": {
+        "/auth/github/{id}": {
             "get": {
                 "security": [
                     {
@@ -209,7 +350,7 @@ const docTemplate = `{
                     "200": {
                         "description": "Authentication configuration",
                         "schema": {
-                            "$ref": "#/definitions/handlers.GHARepositoryAuthResponse"
+                            "$ref": "#/definitions/handlers.GithubRepositoryAuthResponse"
                         }
                     },
                     "400": {
@@ -274,7 +415,7 @@ const docTemplate = `{
                     "200": {
                         "description": "Authentication configuration updated",
                         "schema": {
-                            "$ref": "#/definitions/handlers.GHARepositoryAuthResponse"
+                            "$ref": "#/definitions/handlers.GithubRepositoryAuthResponse"
                         }
                     },
                     "400": {
@@ -365,9 +506,14 @@ const docTemplate = `{
                 }
             }
         },
-        "/gha/validate": {
+        "/auth/invites": {
             "post": {
-                "description": "Validate a GitHub Actions OIDC token and return a JWT token",
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Create an invite for a user with one or more roles; optionally emails a verification link",
                 "consumes": [
                     "application/json"
                 ],
@@ -375,25 +521,25 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "gha"
+                    "auth"
                 ],
-                "summary": "Validate GitHub Actions token",
+                "summary": "Create invite",
                 "parameters": [
                     {
-                        "description": "Token validation request",
+                        "description": "Invite creation request",
                         "name": "request",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/handlers.ValidateTokenRequest"
+                            "$ref": "#/definitions/handlers.CreateInviteRequest"
                         }
                     }
                 ],
                 "responses": {
-                    "200": {
-                        "description": "Token validated successfully",
+                    "201": {
+                        "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/handlers.ValidateTokenResponse"
+                            "$ref": "#/definitions/handlers.CreateInviteResponse"
                         }
                     },
                     "400": {
@@ -404,14 +550,49 @@ const docTemplate = `{
                         }
                     },
                     "401": {
-                        "description": "Invalid token",
+                        "description": "Unauthorized",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
                         }
                     },
-                    "403": {
-                        "description": "Repository not authorized",
+                    "500": {
+                        "description": "Server error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/keys": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Retrieve a list of all user keys",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "user-keys"
+                ],
+                "summary": "List all user keys",
+                "responses": {
+                    "200": {
+                        "description": "List of user keys",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/user.UserKey"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Authentication required",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
@@ -422,6 +603,2007 @@ const docTemplate = `{
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Create a new Ed25519 key for a user",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "user-keys"
+                ],
+                "summary": "Create a new user key",
+                "parameters": [
+                    {
+                        "description": "User key creation request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/user.CreateUserKeyRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "User key created successfully",
+                        "schema": {
+                            "$ref": "#/definitions/user.UserKey"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "409": {
+                        "description": "User key already exists",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/keys/kid/{kid}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Retrieve a user key by their kid (key ID)",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "user-keys"
+                ],
+                "summary": "Get a user key by kid",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Key ID",
+                        "name": "kid",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "User key found",
+                        "schema": {
+                            "$ref": "#/definitions/user.UserKey"
+                        }
+                    },
+                    "401": {
+                        "description": "Authentication required",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "404": {
+                        "description": "User key not found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/keys/register": {
+            "post": {
+                "description": "Register a new Ed25519 key for a user with inactive status",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "user-keys"
+                ],
+                "summary": "Register a new user key",
+                "parameters": [
+                    {
+                        "description": "User key registration request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/user.RegisterUserKeyRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "User key registered successfully",
+                        "schema": {
+                            "$ref": "#/definitions/user.UserKey"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "404": {
+                        "description": "User not found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "409": {
+                        "description": "User key already exists",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/keys/user/{user_id}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Retrieve all keys for a specific user",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "user-keys"
+                ],
+                "summary": "Get user keys by user ID",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "User ID",
+                        "name": "user_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of user keys",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/user.UserKey"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Authentication required",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/keys/user/{user_id}/active": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Get all active user keys for a specific user",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "user-keys"
+                ],
+                "summary": "Get active user keys by user ID",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "User ID",
+                        "name": "user_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of active user keys",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/user.UserKey"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid user ID",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "401": {
+                        "description": "Authentication required",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/keys/user/{user_id}/inactive": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Get all inactive user keys for a specific user",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "user-keys"
+                ],
+                "summary": "Get inactive user keys by user ID",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "User ID",
+                        "name": "user_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of inactive user keys",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/user.UserKey"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid user ID",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "401": {
+                        "description": "Authentication required",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/keys/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Retrieve a user key by their ID",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "user-keys"
+                ],
+                "summary": "Get a user key by ID",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "User Key ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "User key found",
+                        "schema": {
+                            "$ref": "#/definitions/user.UserKey"
+                        }
+                    },
+                    "401": {
+                        "description": "Authentication required",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "404": {
+                        "description": "User key not found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            },
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Update an existing user key's information",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "user-keys"
+                ],
+                "summary": "Update a user key",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "User Key ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "User key update request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/user.UpdateUserKeyRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "User key updated successfully",
+                        "schema": {
+                            "$ref": "#/definitions/user.UserKey"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "401": {
+                        "description": "Authentication required",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "404": {
+                        "description": "User key not found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Delete a user key by their ID",
+                "tags": [
+                    "user-keys"
+                ],
+                "summary": "Delete a user key",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "User Key ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "User key deleted successfully"
+                    },
+                    "401": {
+                        "description": "Authentication required",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "404": {
+                        "description": "User key not found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/keys/{id}/revoke": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Revoke a user key by setting its status to revoked",
+                "tags": [
+                    "user-keys"
+                ],
+                "summary": "Revoke a user key",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "User Key ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "User key revoked successfully",
+                        "schema": {
+                            "$ref": "#/definitions/user.UserKey"
+                        }
+                    },
+                    "401": {
+                        "description": "Authentication required",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "404": {
+                        "description": "User key not found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/login": {
+            "post": {
+                "description": "Authenticate a user using their signed challenge response",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Authenticate user with challenge response",
+                "parameters": [
+                    {
+                        "description": "Login request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/handlers.LoginRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Authentication successful",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.LoginResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "401": {
+                        "description": "Authentication failed",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "404": {
+                        "description": "Challenge or user not found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/pending/keys": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Get all user keys with inactive status",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "user-keys"
+                ],
+                "summary": "Get all inactive user keys",
+                "responses": {
+                    "200": {
+                        "description": "List of inactive user keys",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/user.UserKey"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Authentication required",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/pending/users": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Get a list of all users with pending status",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "users"
+                ],
+                "summary": "List pending users",
+                "responses": {
+                    "200": {
+                        "description": "List of pending users",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/internal_api_handlers_user.User"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/role-users": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Retrieve all users assigned to a specific role",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "user-roles"
+                ],
+                "summary": "Get all users for a role",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Role ID",
+                        "name": "role_id",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of role users",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/internal_api_handlers_user.UserRole"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Authentication required",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "404": {
+                        "description": "Role not found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/roles": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Retrieve a list of all roles",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "roles"
+                ],
+                "summary": "List all roles",
+                "responses": {
+                    "200": {
+                        "description": "List of roles",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/internal_api_handlers_user.Role"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Create a new role with the provided information",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "roles"
+                ],
+                "summary": "Create a new role",
+                "parameters": [
+                    {
+                        "description": "Role creation request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/user.CreateRoleRequest"
+                        }
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "If true, ignore permissions and add all permissions",
+                        "name": "admin",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Role created successfully",
+                        "schema": {
+                            "$ref": "#/definitions/internal_api_handlers_user.Role"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "409": {
+                        "description": "Role already exists",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/roles/name/{name}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Retrieve a role by their name",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "roles"
+                ],
+                "summary": "Get a role by name",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Role name",
+                        "name": "name",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Role found",
+                        "schema": {
+                            "$ref": "#/definitions/internal_api_handlers_user.Role"
+                        }
+                    },
+                    "404": {
+                        "description": "Role not found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/roles/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Retrieve a role by their ID",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "roles"
+                ],
+                "summary": "Get a role by ID",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Role ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Role found",
+                        "schema": {
+                            "$ref": "#/definitions/internal_api_handlers_user.Role"
+                        }
+                    },
+                    "404": {
+                        "description": "Role not found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            },
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Update an existing role's information",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "roles"
+                ],
+                "summary": "Update a role",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Role ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Role update request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/user.UpdateRoleRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Role updated successfully",
+                        "schema": {
+                            "$ref": "#/definitions/internal_api_handlers_user.Role"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "404": {
+                        "description": "Role not found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Delete a role by their ID",
+                "tags": [
+                    "roles"
+                ],
+                "summary": "Delete a role",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Role ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Role deleted successfully"
+                    },
+                    "404": {
+                        "description": "Role not found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/user-roles": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Retrieve all roles assigned to a specific user",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "user-roles"
+                ],
+                "summary": "Get all roles for a user",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "User ID",
+                        "name": "user_id",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of user roles",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/internal_api_handlers_user.UserRole"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Authentication required",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "404": {
+                        "description": "User not found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Assign a user to a specific role",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "user-roles"
+                ],
+                "summary": "Assign a user to a role",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "User ID",
+                        "name": "user_id",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Role ID",
+                        "name": "role_id",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "User assigned to role successfully",
+                        "schema": {
+                            "$ref": "#/definitions/internal_api_handlers_user.UserRole"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "404": {
+                        "description": "User or role not found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "409": {
+                        "description": "User already has this role",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Remove a user from a specific role",
+                "tags": [
+                    "user-roles"
+                ],
+                "summary": "Remove a user from a role",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "User ID",
+                        "name": "user_id",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Role ID",
+                        "name": "role_id",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "User removed from role successfully"
+                    },
+                    "401": {
+                        "description": "Authentication required",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "404": {
+                        "description": "User or role not found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/users": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Get a list of all users in the system",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "users"
+                ],
+                "summary": "List all users",
+                "responses": {
+                    "200": {
+                        "description": "List of users",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/internal_api_handlers_user.User"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Create a new user with the provided information",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "users"
+                ],
+                "summary": "Create a new user",
+                "parameters": [
+                    {
+                        "description": "User creation request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/user.CreateUserRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "User created successfully",
+                        "schema": {
+                            "$ref": "#/definitions/internal_api_handlers_user.User"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "409": {
+                        "description": "User already exists",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/users/email/{email}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Retrieve a user by their email address",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "users"
+                ],
+                "summary": "Get a user by email",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "User email",
+                        "name": "email",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "User found",
+                        "schema": {
+                            "$ref": "#/definitions/internal_api_handlers_user.User"
+                        }
+                    },
+                    "404": {
+                        "description": "User not found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/users/register": {
+            "post": {
+                "description": "Register a new user with pending status",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "users"
+                ],
+                "summary": "Register a new user",
+                "parameters": [
+                    {
+                        "description": "User registration request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/user.RegisterUserRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "User registered successfully",
+                        "schema": {
+                            "$ref": "#/definitions/internal_api_handlers_user.User"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "409": {
+                        "description": "User already exists",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/users/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Retrieve a user by their ID",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "users"
+                ],
+                "summary": "Get a user by ID",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "User ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "User found",
+                        "schema": {
+                            "$ref": "#/definitions/internal_api_handlers_user.User"
+                        }
+                    },
+                    "404": {
+                        "description": "User not found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            },
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Update an existing user's information",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "users"
+                ],
+                "summary": "Update a user",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "User ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "User update request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/user.UpdateUserRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "User updated successfully",
+                        "schema": {
+                            "$ref": "#/definitions/internal_api_handlers_user.User"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "404": {
+                        "description": "User not found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Delete a user by their ID",
+                "tags": [
+                    "users"
+                ],
+                "summary": "Delete a user",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "User ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "User deleted successfully"
+                    },
+                    "404": {
+                        "description": "User not found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/users/{id}/activate": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Activate a user by setting their status to active",
+                "tags": [
+                    "users"
+                ],
+                "summary": "Activate a user",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "User ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "User activated successfully",
+                        "schema": {
+                            "$ref": "#/definitions/internal_api_handlers_user.User"
+                        }
+                    },
+                    "404": {
+                        "description": "User not found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/users/{id}/deactivate": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Deactivate a user by setting their status to inactive",
+                "tags": [
+                    "users"
+                ],
+                "summary": "Deactivate a user",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "User ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "User deactivated successfully",
+                        "schema": {
+                            "$ref": "#/definitions/internal_api_handlers_user.User"
+                        }
+                    },
+                    "404": {
+                        "description": "User not found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/ca/buildkit/server-certificates": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Signs a server CSR",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "certificates"
+                ],
+                "summary": "Sign a BuildKit server certificate",
+                "parameters": [
+                    {
+                        "description": "Server certificate signing request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/handlers.CertificateSigningRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.CertificateSigningResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden - insufficient permissions",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/certificates/root": {
+            "get": {
+                "description": "Returns the Certificate Authority's root certificate",
+                "produces": [
+                    "text/plain"
+                ],
+                "tags": [
+                    "certificates"
+                ],
+                "summary": "Get root certificate",
+                "responses": {
+                    "200": {
+                        "description": "PEM-encoded root certificate",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/certificates/sign": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Signs a Certificate Signing Request (CSR)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "certificates"
+                ],
+                "summary": "Sign a certificate",
+                "parameters": [
+                    {
+                        "description": "Certificate signing request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/handlers.CertificateSigningRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.CertificateSigningResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden - insufficient permissions",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/device/approve": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Approve a pending device session identified by user_code",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "device"
+                ],
+                "summary": "Approve device session",
+                "parameters": [
+                    {
+                        "description": "Approval request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/handlers.DeviceApproveRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "approved",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "404": {
+                        "description": "Not found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/device/init": {
+            "post": {
+                "description": "Initialize a device authorization session and return device_code and user_code",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "device"
+                ],
+                "summary": "Start device authorization",
+                "parameters": [
+                    {
+                        "description": "Optional device metadata",
+                        "name": "request",
+                        "in": "body",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.DeviceInitRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.DeviceInitResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Server error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/device/token": {
+            "post": {
+                "description": "Poll the device authorization session for completion and receive tokens when approved",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "device"
+                ],
+                "summary": "Poll device token",
+                "parameters": [
+                    {
+                        "description": "Device token request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/handlers.DeviceTokenRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.DeviceTokenResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "401": {
+                        "description": "authorization_pending | expired_token | access_denied",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.DeviceTokenResponse"
+                        }
+                    },
+                    "429": {
+                        "description": "slow_down",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.DeviceTokenResponse"
                         }
                     }
                 }
@@ -487,14 +2669,8 @@ const docTemplate = `{
                         }
                     },
                     {
-                        "enum": [
-                            "true",
-                            "false",
-                            "1",
-                            "0"
-                        ],
                         "type": "string",
-                        "description": "Deploy the release immediately",
+                        "description": "Deploy the release immediately (true/false)",
                         "name": "deploy",
                         "in": "query"
                     }
@@ -1345,36 +3521,146 @@ const docTemplate = `{
                     }
                 }
             }
+        },
+        "/tokens/refresh": {
+            "post": {
+                "description": "Rotate the refresh token and return a new access token and refresh token",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Refresh tokens",
+                "parameters": [
+                    {
+                        "description": "Refresh request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/handlers.TokenRefreshRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.TokenRefreshResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "401": {
+                        "description": "Invalid token",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Server error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/tokens/revoke": {
+            "post": {
+                "description": "Revoke a refresh token and any linked chain",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Revoke token",
+                "parameters": [
+                    {
+                        "description": "Revoke request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/handlers.TokenRevokeRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "status",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/verify": {
+            "get": {
+                "description": "Verify an invite token and activate the user; assigns roles from the invite",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Verify invite",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Invite token",
+                        "name": "token",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "verified",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Missing token",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "401": {
+                        "description": "Invalid or expired",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {
-        "auth.Permission": {
-            "type": "string",
-            "enum": [
-                "alias:read",
-                "alias:write",
-                "deployment:read",
-                "deployment:write",
-                "deployment:event:read",
-                "deployment:event:write",
-                "release:read",
-                "release:write",
-                "gha:auth:read",
-                "gha:auth:write"
-            ],
-            "x-enum-varnames": [
-                "PermAliasRead",
-                "PermAliasWrite",
-                "PermDeploymentRead",
-                "PermDeploymentWrite",
-                "PermDeploymentEventRead",
-                "PermDeploymentEventWrite",
-                "PermReleaseRead",
-                "PermReleaseWrite",
-                "PermGHAAuthRead",
-                "PermGHAAuthWrite"
-            ]
-        },
         "handlers.AddEventRequest": {
             "type": "object",
             "required": [
@@ -1386,6 +3672,100 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "name": {
+                    "type": "string"
+                }
+            }
+        },
+        "handlers.CertificateSigningRequest": {
+            "type": "object",
+            "required": [
+                "csr"
+            ],
+            "properties": {
+                "common_name": {
+                    "description": "CommonName can override the CN in the CSR",
+                    "type": "string",
+                    "example": "user.example.com"
+                },
+                "csr": {
+                    "description": "CSR is the PEM-encoded Certificate Signing Request",
+                    "type": "string",
+                    "example": "-----BEGIN CERTIFICATE REQUEST-----\n..."
+                },
+                "sans": {
+                    "description": "SANs are additional Subject Alternative Names to include\nThese will be validated against user permissions. For client certs, use URI SANs.",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "example": [
+                        "example.com",
+                        "*.example.com"
+                    ]
+                },
+                "ttl": {
+                    "description": "TTL is the requested certificate lifetime\nWill be capped by server policy",
+                    "type": "string",
+                    "example": "24h"
+                }
+            }
+        },
+        "handlers.CertificateSigningResponse": {
+            "type": "object",
+            "properties": {
+                "certificate": {
+                    "description": "Certificate is the PEM-encoded signed certificate",
+                    "type": "string",
+                    "example": "-----BEGIN CERTIFICATE-----\n..."
+                },
+                "certificate_chain": {
+                    "description": "CertificateChain includes intermediate certificates if available",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "fingerprint": {
+                    "description": "Fingerprint is the SHA256 fingerprint of the certificate",
+                    "type": "string",
+                    "example": "sha256:abcdef..."
+                },
+                "not_after": {
+                    "description": "NotAfter is when the certificate expires",
+                    "type": "string",
+                    "example": "2024-01-02T00:00:00Z"
+                },
+                "not_before": {
+                    "description": "NotBefore is when the certificate becomes valid",
+                    "type": "string",
+                    "example": "2024-01-01T00:00:00Z"
+                },
+                "serial_number": {
+                    "description": "SerialNumber is the certificate's serial number",
+                    "type": "string",
+                    "example": "123456789"
+                }
+            }
+        },
+        "handlers.ChallengeRequest": {
+            "type": "object",
+            "required": [
+                "email",
+                "kid"
+            ],
+            "properties": {
+                "email": {
+                    "type": "string"
+                },
+                "kid": {
+                    "type": "string"
+                }
+            }
+        },
+        "handlers.ChallengeResponse": {
+            "type": "object",
+            "properties": {
+                "token": {
                     "type": "string"
                 }
             }
@@ -1402,25 +3782,33 @@ const docTemplate = `{
             }
         },
         "handlers.CreateAuthRequest": {
+            "type": "object"
+        },
+        "handlers.CreateInviteRequest": {
             "type": "object",
-            "required": [
-                "permissions",
-                "repository"
-            ],
             "properties": {
-                "description": {
+                "email": {
                     "type": "string"
                 },
-                "enabled": {
-                    "type": "boolean"
-                },
-                "permissions": {
+                "roles": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/auth.Permission"
+                        "type": "string"
                     }
                 },
-                "repository": {
+                "ttl": {
+                    "description": "e.g., \"72h\"",
+                    "type": "string"
+                }
+            }
+        },
+        "handlers.CreateInviteResponse": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "integer"
+                },
+                "token": {
                     "type": "string"
                 }
             }
@@ -1455,7 +3843,72 @@ const docTemplate = `{
                 }
             }
         },
-        "handlers.GHARepositoryAuthResponse": {
+        "handlers.DeviceApproveRequest": {
+            "type": "object",
+            "properties": {
+                "user_code": {
+                    "type": "string"
+                }
+            }
+        },
+        "handlers.DeviceInitRequest": {
+            "type": "object",
+            "properties": {
+                "fingerprint": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "platform": {
+                    "type": "string"
+                }
+            }
+        },
+        "handlers.DeviceInitResponse": {
+            "type": "object",
+            "properties": {
+                "device_code": {
+                    "type": "string"
+                },
+                "expires_in": {
+                    "type": "integer"
+                },
+                "interval": {
+                    "type": "integer"
+                },
+                "user_code": {
+                    "type": "string"
+                },
+                "verification_uri": {
+                    "type": "string"
+                }
+            }
+        },
+        "handlers.DeviceTokenRequest": {
+            "type": "object",
+            "properties": {
+                "device_code": {
+                    "type": "string"
+                }
+            }
+        },
+        "handlers.DeviceTokenResponse": {
+            "type": "object",
+            "properties": {
+                "access": {
+                    "type": "string"
+                },
+                "error": {
+                    "description": "authorization_pending | slow_down | expired_token | access_denied",
+                    "type": "string"
+                },
+                "refresh": {
+                    "type": "string"
+                }
+            }
+        },
+        "handlers.GithubRepositoryAuthResponse": {
             "type": "object",
             "properties": {
                 "created_at": {
@@ -1490,29 +3943,54 @@ const docTemplate = `{
                 }
             }
         },
-        "handlers.UpdateAuthRequest": {
+        "handlers.LoginRequest": {
             "type": "object",
-            "required": [
-                "permissions",
-                "repository"
-            ],
             "properties": {
-                "description": {
+                "signature": {
                     "type": "string"
                 },
-                "enabled": {
-                    "type": "boolean"
-                },
-                "permissions": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/auth.Permission"
-                    }
-                },
-                "repository": {
+                "token": {
                     "type": "string"
                 }
             }
+        },
+        "handlers.LoginResponse": {
+            "type": "object",
+            "properties": {
+                "token": {
+                    "type": "string"
+                }
+            }
+        },
+        "handlers.TokenRefreshRequest": {
+            "type": "object",
+            "properties": {
+                "refresh": {
+                    "type": "string"
+                }
+            }
+        },
+        "handlers.TokenRefreshResponse": {
+            "type": "object",
+            "properties": {
+                "access": {
+                    "type": "string"
+                },
+                "refresh": {
+                    "type": "string"
+                }
+            }
+        },
+        "handlers.TokenRevokeRequest": {
+            "type": "object",
+            "properties": {
+                "refresh": {
+                    "type": "string"
+                }
+            }
+        },
+        "handlers.UpdateAuthRequest": {
+            "type": "object"
         },
         "handlers.UpdateReleaseRequest": {
             "type": "object",
@@ -1559,6 +4037,123 @@ const docTemplate = `{
                 },
                 "user_id": {
                     "type": "string"
+                }
+            }
+        },
+        "internal_api_handlers_user.Role": {
+            "description": "Role represents a role in the system",
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string",
+                    "example": "2023-01-01T00:00:00Z"
+                },
+                "id": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "name": {
+                    "type": "string",
+                    "example": "admin"
+                },
+                "permissions": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "example": [
+                        "user:read",
+                        "user:write"
+                    ]
+                },
+                "updated_at": {
+                    "type": "string",
+                    "example": "2023-01-01T00:00:00Z"
+                }
+            }
+        },
+        "internal_api_handlers_user.User": {
+            "description": "User represents a user in the system",
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string",
+                    "example": "2023-01-01T00:00:00Z"
+                },
+                "email": {
+                    "type": "string",
+                    "example": "user@example.com"
+                },
+                "id": {
+                    "type": "integer",
+                    "example": 123
+                },
+                "status": {
+                    "type": "string",
+                    "example": "active"
+                },
+                "updated_at": {
+                    "type": "string",
+                    "example": "2023-01-01T00:00:00Z"
+                }
+            }
+        },
+        "internal_api_handlers_user.UserRole": {
+            "description": "UserRole represents a many-to-many relationship between users and roles",
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string",
+                    "example": "2023-01-01T00:00:00Z"
+                },
+                "id": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "role": {
+                    "$ref": "#/definitions/internal_api_handlers_user.Role"
+                },
+                "role_id": {
+                    "type": "integer",
+                    "example": 456
+                },
+                "updated_at": {
+                    "type": "string",
+                    "example": "2023-01-01T00:00:00Z"
+                },
+                "user": {
+                    "$ref": "#/definitions/internal_api_handlers_user.User"
+                },
+                "user_id": {
+                    "type": "integer",
+                    "example": 123
+                }
+            }
+        },
+        "internal_models_user.User": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "description": "Timestamps",
+                    "type": "string"
+                },
+                "email": {
+                    "type": "string"
+                },
+                "email_verified_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "status": {
+                    "$ref": "#/definitions/user.UserStatus"
+                },
+                "updated_at": {
+                    "type": "string"
+                },
+                "user_ver": {
+                    "type": "integer"
                 }
             }
         },
@@ -1714,6 +4309,203 @@ const docTemplate = `{
                     "type": "string"
                 }
             }
+        },
+        "user.CreateRoleRequest": {
+            "type": "object",
+            "required": [
+                "name"
+            ],
+            "properties": {
+                "name": {
+                    "type": "string"
+                },
+                "permissions": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
+        "user.CreateUserKeyRequest": {
+            "type": "object",
+            "required": [
+                "kid",
+                "pubkey_b64",
+                "user_id"
+            ],
+            "properties": {
+                "kid": {
+                    "type": "string"
+                },
+                "pubkey_b64": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "user_id": {
+                    "type": "integer"
+                }
+            }
+        },
+        "user.CreateUserRequest": {
+            "type": "object",
+            "required": [
+                "email"
+            ],
+            "properties": {
+                "email": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                }
+            }
+        },
+        "user.RegisterUserKeyRequest": {
+            "type": "object",
+            "required": [
+                "email",
+                "kid",
+                "pubkey_b64"
+            ],
+            "properties": {
+                "email": {
+                    "type": "string"
+                },
+                "kid": {
+                    "type": "string"
+                },
+                "pubkey_b64": {
+                    "type": "string"
+                }
+            }
+        },
+        "user.RegisterUserRequest": {
+            "type": "object",
+            "required": [
+                "email"
+            ],
+            "properties": {
+                "email": {
+                    "type": "string"
+                }
+            }
+        },
+        "user.UpdateRoleRequest": {
+            "type": "object",
+            "required": [
+                "name",
+                "permissions"
+            ],
+            "properties": {
+                "name": {
+                    "type": "string"
+                },
+                "permissions": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
+        "user.UpdateUserKeyRequest": {
+            "type": "object",
+            "properties": {
+                "kid": {
+                    "type": "string"
+                },
+                "pubkey_b64": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "user_id": {
+                    "type": "integer"
+                }
+            }
+        },
+        "user.UpdateUserRequest": {
+            "type": "object",
+            "required": [
+                "email"
+            ],
+            "properties": {
+                "email": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                }
+            }
+        },
+        "user.UserKey": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "description": "Timestamps",
+                    "type": "string"
+                },
+                "device_id": {
+                    "description": "Device association (optional)",
+                    "type": "integer"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "kid": {
+                    "type": "string"
+                },
+                "pubkey_b64": {
+                    "type": "string"
+                },
+                "status": {
+                    "$ref": "#/definitions/user.UserKeyStatus"
+                },
+                "updated_at": {
+                    "type": "string"
+                },
+                "user": {
+                    "description": "Relationships",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/internal_models_user.User"
+                        }
+                    ]
+                },
+                "user_id": {
+                    "type": "integer"
+                }
+            }
+        },
+        "user.UserKeyStatus": {
+            "type": "string",
+            "enum": [
+                "active",
+                "inactive",
+                "revoked"
+            ],
+            "x-enum-varnames": [
+                "UserKeyStatusActive",
+                "UserKeyStatusInactive",
+                "UserKeyStatusRevoked"
+            ]
+        },
+        "user.UserStatus": {
+            "type": "string",
+            "enum": [
+                "pending",
+                "active",
+                "inactive"
+            ],
+            "x-enum-varnames": [
+                "UserStatusPending",
+                "UserStatusActive",
+                "UserStatusInactive"
+            ]
         }
     },
     "securityDefinitions": {

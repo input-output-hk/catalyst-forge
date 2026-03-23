@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/release/providers"
+	"github.com/input-output-hk/catalyst-forge/cli/pkg/release/providers/github"
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/run"
 	"github.com/input-output-hk/catalyst-forge/lib/project/project"
 )
@@ -57,7 +58,7 @@ func NewDefaultReleaserStore() *ReleaserStore {
 				return providers.NewDocsReleaser(ctx, project, name, force)
 			},
 			ReleaserTypeGithub: func(ctx run.RunContext, project project.Project, name string, force bool) (Releaser, error) {
-				return providers.NewGithubReleaser(ctx, project, name, force)
+				return github.NewReleaser(ctx, project, name, force)
 			},
 			ReleaserTypeKCL: func(ctx run.RunContext, project project.Project, name string, force bool) (Releaser, error) {
 				return providers.NewKCLReleaser(ctx, project, name, force)

@@ -4,7 +4,7 @@ package global
 
 import (
 	"github.com/input-output-hk/catalyst-forge/lib/schema/blueprint/common"
-	"github.com/input-output-hk/catalyst-forge/lib/schema/blueprint/global/providers"
+	p "github.com/input-output-hk/catalyst-forge/lib/schema/blueprint/global/providers"
 )
 
 // CI contains the configuration for the CI system.
@@ -13,19 +13,37 @@ type CI struct {
 	Local []string `json:"local"`
 
 	// Providers contains the configuration for the providers being used by the CI system.
-	Providers *providers.Providers `json:"providers,omitempty"`
+	Providers p.Providers `json:"providers,omitempty"`
 
 	// Registries contains the container registries to push images to.
 	Registries []string `json:"registries,omitempty"`
 
 	// Release contains the configuration for the release of a project.
-	Release *Release `json:"release,omitempty"`
+	Release Release `json:"release,omitempty"`
 
 	// Retries contains the configuration for the retries of an Earthly target.
-	Retries *common.CIRetries `json:"retries,omitempty"`
+	Retries common.CIRetries `json:"retries,omitempty"`
 
 	// Secrets contains global secrets that will be passed to all targets.
 	Secrets []common.Secret `json:"secrets,omitempty"`
+}
+
+// Release contains the configuration for the release of a project.
+type Release struct {
+	// Docs is the configuration for the docs release type.
+	Docs DocsRelease `json:"docs,omitempty"`
+}
+
+// DocsRelease contains the configuration for the docs release type.
+type DocsRelease struct {
+	// Bucket is the name of the S3 bucket to upload the docs to.
+	Bucket string `json:"bucket"`
+
+	// Path is the subpath within the bucket to upload the docs to.
+	Path string `json:"path,omitempty"`
+
+	// URL is the base URL to the docs.
+	Url string `json:"url"`
 }
 
 type Deployment struct {
@@ -63,36 +81,18 @@ type DeploymentRepo struct {
 // Global contains the global configuration for the blueprint.
 type Global struct {
 	// CI contains the configuration for the CI system.
-	Ci *CI `json:"ci,omitempty"`
+	Ci CI `json:"ci,omitempty"`
 
 	// Deployment contains the global configuration for the deployment of projects.
-	Deployment *Deployment `json:"deployment,omitempty"`
+	Deployment Deployment `json:"deployment,omitempty"`
 
 	// Deployment contains the global configuration for the deployment of projects.
-	Repo *Repo `json:"repo,omitempty"`
+	Repo Repo `json:"repo,omitempty"`
 
 	// State is an optional field that can be used to store global state for later use.
 	// This can be used by external tools or can be consumed using the @global() attribute.
 	// This field is not used by the blueprint itself.
 	State any/* CUE top */ `json:"state,omitempty"`
-}
-
-// Release contains the configuration for the release of a project.
-type Release struct {
-	// Docs is the configuration for the docs release type.
-	Docs *DocsRelease `json:"docs,omitempty"`
-}
-
-// DocsRelease contains the configuration for the docs release type.
-type DocsRelease struct {
-	// Bucket is the name of the S3 bucket to upload the docs to.
-	Bucket string `json:"bucket"`
-
-	// Path is the subpath within the bucket to upload the docs to.
-	Path string `json:"path,omitempty"`
-
-	// URL is the base URL to the docs.
-	Url string `json:"url"`
 }
 
 type Repo struct {

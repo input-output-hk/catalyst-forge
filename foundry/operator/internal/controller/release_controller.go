@@ -30,8 +30,8 @@ import (
 	foundryv1alpha1 "github.com/input-output-hk/catalyst-forge/foundry/operator/api/v1alpha1"
 	"github.com/input-output-hk/catalyst-forge/foundry/operator/pkg/config"
 	"github.com/input-output-hk/catalyst-forge/foundry/operator/pkg/handlers"
-	"github.com/input-output-hk/catalyst-forge/lib/project/deployment"
-	depl "github.com/input-output-hk/catalyst-forge/lib/project/deployment/deployer"
+	"github.com/input-output-hk/catalyst-forge/lib/deployment"
+	depl "github.com/input-output-hk/catalyst-forge/lib/deployment/deployer"
 	"github.com/input-output-hk/catalyst-forge/lib/providers/secrets"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/git/repo/remote"
 )

@@ -1,0 +1,13 @@
+syntax = "proto3";
+
+package providers;
+
+option go_package = "github.com/input-output-hk/catalyst-forge/lib/schema/proto/generated/global/providers";
+
+import "common/secret.proto";
+
+// Git contains the configuration for the Git provider.
+message Git {
+  // Credentials contains the credentials to use for interacting with private repositories.
+  common.Secret credentials = 1;
+}

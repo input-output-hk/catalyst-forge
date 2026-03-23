@@ -1,0 +1,49 @@
+syntax = "proto3";
+
+package providers;
+
+option go_package = "github.com/input-output-hk/catalyst-forge/lib/schema/proto/generated/global/providers";
+
+import "global/providers/aws.proto";
+import "global/providers/cue.proto";
+import "global/providers/docker.proto";
+import "global/providers/earthly.proto";
+import "global/providers/foundry.proto";
+import "global/providers/git.proto";
+import "global/providers/github.proto";
+import "global/providers/kcl.proto";
+import "global/providers/tailscale.proto";
+import "global/providers/timoni.proto";
+
+// Providers contains the configuration for all providers.
+message Providers {
+  // AWS contains the configuration for the AWS provider.
+  AWS aws = 1;
+
+  // CUE contains the configuration for the CUE provider.
+  CUE cue = 2;
+
+  // Docker contains the configuration for the DockerHub provider.
+  Docker docker = 3;
+
+  // Earthly contains the configuration for the Earthly Cloud provider.
+  Earthly earthly = 4;
+
+  // Foundry contains the configuration for Catalyst Foundry.
+  Foundry foundry = 5;
+
+  // Git contains the configuration for the Git provider.
+  Git git = 6;
+
+  // Github contains the configuration for the Github provider.
+  Github github = 7;
+
+  // KCL contains the configuration for the KCL provider.
+  KCL kcl = 8;
+
+  // Tailscale contains the configuration for the Tailscale provider.
+  Tailscale tailscale = 9;
+
+  // Timoni contains the configuration for the Timoni provider.
+  Timoni timoni = 10;
+}

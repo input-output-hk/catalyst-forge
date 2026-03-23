@@ -15,13 +15,13 @@ import (
 	"github.com/input-output-hk/catalyst-forge/cli/cmd/cmds/scan"
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/config"
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/run"
-	"github.com/input-output-hk/catalyst-forge/lib/project/deployment"
+	"github.com/input-output-hk/catalyst-forge/lib/deployment"
 	"github.com/input-output-hk/catalyst-forge/lib/project/project"
-	"github.com/input-output-hk/catalyst-forge/lib/providers/git"
 	"github.com/input-output-hk/catalyst-forge/lib/providers/secrets"
 	schema "github.com/input-output-hk/catalyst-forge/lib/schema"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/fs"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/fs/billy"
+	"github.com/input-output-hk/catalyst-forge/lib/tools/git"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/walker"
 	"github.com/posener/complete"
 	"github.com/willabides/kongplete"
@@ -103,6 +103,11 @@ func (c *CLI) AfterApply(kctx *kong.Context) error {
 		return fmt.Errorf("failed to load root blueprint: %w", err)
 	}
 
+	manifestStore, err := deployment.NewDefaultManifestGeneratorStore(deployment.WithKCLOpts())
+	if err != nil {
+		return fmt.Errorf("failed to create manifest store: %w", err)
+	}
+
 	runctx := run.RunContext{
 		ApiURL:                 cli.GlobalArgs.ApiURL,
 		CI:                     cli.GlobalArgs.CI,
@@ -113,7 +118,7 @@ func (c *CLI) AfterApply(kctx *kong.Context) error {
 		FSReverseWalker:        revWlk,
 		Local:                  cli.GlobalArgs.Local,
 		Logger:                 logger,
-		ManifestGeneratorStore: deployment.NewDefaultManifestGeneratorStore(),
+		ManifestGeneratorStore: manifestStore,
 		ProjectLoader:          &loader,
 		RootProject:            rootProject,
 		SecretStore:            store,

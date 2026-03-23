@@ -12,11 +12,11 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/earthly"
-	"github.com/input-output-hk/catalyst-forge/cli/pkg/executor"
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/run"
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/scan"
 	"github.com/input-output-hk/catalyst-forge/lib/project/project"
 	"github.com/input-output-hk/catalyst-forge/lib/providers/secrets"
+	"github.com/input-output-hk/catalyst-forge/lib/tools/executor"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/walker"
 )
 

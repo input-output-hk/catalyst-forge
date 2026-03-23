@@ -11,20 +11,25 @@ import (
 	"time"
 
 	"github.com/alecthomas/kong"
+	kongtoml "github.com/alecthomas/kong-toml"
+	"github.com/gin-gonic/gin"
 	"github.com/input-output-hk/catalyst-forge/foundry/api/cmd/api/auth"
 	"github.com/input-output-hk/catalyst-forge/foundry/api/internal/api"
-	"github.com/input-output-hk/catalyst-forge/foundry/api/internal/api/handlers"
 	"github.com/input-output-hk/catalyst-forge/foundry/api/internal/api/middleware"
 	"github.com/input-output-hk/catalyst-forge/foundry/api/internal/config"
+	metrics "github.com/input-output-hk/catalyst-forge/foundry/api/internal/metrics"
 	"github.com/input-output-hk/catalyst-forge/foundry/api/internal/models"
 	"github.com/input-output-hk/catalyst-forge/foundry/api/internal/repository"
+	userrepo "github.com/input-output-hk/catalyst-forge/foundry/api/internal/repository/user"
 	"github.com/input-output-hk/catalyst-forge/foundry/api/internal/service"
-	am "github.com/input-output-hk/catalyst-forge/foundry/api/pkg/auth"
-	ghauth "github.com/input-output-hk/catalyst-forge/foundry/api/pkg/auth/github"
+	emailsvc "github.com/input-output-hk/catalyst-forge/foundry/api/internal/service/email"
+
+	userservice "github.com/input-output-hk/catalyst-forge/foundry/api/internal/service/user"
 	"github.com/input-output-hk/catalyst-forge/foundry/api/pkg/k8s"
 	"github.com/input-output-hk/catalyst-forge/foundry/api/pkg/k8s/mocks"
-	"gorm.io/driver/postgres"
-	"gorm.io/gorm"
+	ghauth "github.com/input-output-hk/catalyst-forge/lib/foundry/auth/github"
+
+	// gorm imported via helpers
 
 	_ "github.com/input-output-hk/catalyst-forge/foundry/api/docs"
 )
@@ -62,6 +67,9 @@ type CLI struct {
 	Run     RunCmd       `kong:"cmd,help='Start the API server'"`
 	Version VersionCmd   `kong:"cmd,help='Show version information'"`
 	Auth    auth.AuthCmd `kong:"cmd,help='Authentication management commands'"`
+	Seed    SeedCmd      `kong:"cmd,help='Seed default data (admin user/role)'"`
+	// --config=/path/to/config.toml support (TOML via kong-toml loader)
+	Config kong.ConfigFlag `kong:"help='Load configuration from a TOML file',name='config'"`
 }
 
 // RunCmd represents the run subcommand
@@ -92,7 +100,7 @@ func (r *RunCmd) Run() error {
 	}
 
 	// Connect to the database
-	db, err := gorm.Open(postgres.Open(r.GetDSN()), &gorm.Config{})
+	db, err := openDB(r.Config)
 	if err != nil {
 		logger.Error("Failed to connect to database", "error", err)
 		return err
@@ -100,24 +108,22 @@ func (r *RunCmd) Run() error {
 
 	// Run migrations
 	logger.Info("Running database migrations")
-	err = db.AutoMigrate(
-		&models.Release{},
-		&models.ReleaseDeployment{},
-		&models.IDCounter{},
-		&models.ReleaseAlias{},
-		&models.DeploymentEvent{},
-		&models.GHARepositoryAuth{},
-	)
+	err = runMigrations(db)
 	if err != nil {
 		logger.Error("Failed to run migrations", "error", err)
 		return err
 	}
 
+	// Context reserved for future init steps (kept to match structure)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	_ = ctx
+	cancel()
+
 	// Initialize Kubernetes client if enabled
 	var k8sClient k8s.Client
 	if r.Kubernetes.Enabled {
 		logger.Info("Initializing Kubernetes client", "namespace", r.Kubernetes.Namespace)
-		k8sClient, err = k8s.New(r.Kubernetes.Namespace, logger)
+		k8sClient, err = initK8sClient(r.Kubernetes, logger)
 		if err != nil {
 			logger.Error("Failed to initialize Kubernetes client", "error", err)
 			return err
@@ -133,20 +139,34 @@ func (r *RunCmd) Run() error {
 	counterRepo := repository.NewIDCounterRepository(db)
 	aliasRepo := repository.NewAliasRepository(db)
 	eventRepo := repository.NewEventRepository(db)
-	ghaAuthRepo := repository.NewGHAAuthRepository(db)
+	ghaAuthRepo := repository.NewGithubAuthRepository(db)
+
+	// Initialize user repositories
+	userRepo := userrepo.NewUserRepository(db)
+	roleRepo := userrepo.NewRoleRepository(db)
+	userRoleRepo := userrepo.NewUserRoleRepository(db)
+	userKeyRepo := userrepo.NewUserKeyRepository(db)
 
 	// Initialize services
 	releaseService := service.NewReleaseService(releaseRepo, aliasRepo, counterRepo, deploymentRepo)
 	deploymentService := service.NewDeploymentService(deploymentRepo, releaseRepo, eventRepo, k8sClient, db, logger)
-	ghaAuthService := service.NewGHAAuthService(ghaAuthRepo, logger)
+	ghaAuthService := service.NewGithubAuthService(ghaAuthRepo, logger)
+
+	// Initialize user services
+	userService := userservice.NewUserService(userRepo, logger)
+	roleService := userservice.NewRoleService(roleRepo, logger)
+	userRoleService := userservice.NewUserRoleService(userRoleRepo, logger)
+	userKeyService := userservice.NewUserKeyService(userKeyRepo, logger)
 
 	// Initialize middleware
-	authManager, err := am.NewAuthManager(r.Auth.PrivateKey, r.Auth.PublicKey, am.WithLogger(logger))
+	jwtManagerImpl, err := initJWTManager(r.Auth, logger)
 	if err != nil {
-		logger.Error("Failed to initialize auth manager", "error", err)
+		logger.Error("Failed to initialize JWT manager", "error", err)
 		return err
 	}
-	authMiddleware := middleware.NewAuthMiddleware(authManager, logger)
+	jwtManager := jwtManagerImpl
+	revokedRepo := userrepo.NewRevokedJTIRepository(db)
+	authMiddleware := middleware.NewAuthMiddleware(jwtManager, logger, userService, revokedRepo)
 
 	// Initialize GitHub Actions OIDC client
 	ghaOIDCClient, err := ghauth.NewDefaultGithubActionsOIDCClient(context.Background(), "/tmp/gha-jwks-cache")
@@ -162,11 +182,49 @@ func (r *RunCmd) Run() error {
 	}
 	defer ghaOIDCClient.StopCache()
 
-	// Initialize GHA handler
-	ghaHandler := handlers.NewGHAHandler(authManager, ghaOIDCClient, ghaAuthService, logger)
-
 	// Setup router
-	router := api.SetupRouter(releaseService, deploymentService, authMiddleware, db, logger, ghaHandler)
+	// Optionally construct SES email service
+	var emailService emailsvc.Service
+	emailService, _ = initEmailService(r.Email, r.Server.PublicBaseURL)
+	// Initialize Prometheus metrics
+	metrics.InitDefault()
+
+	// Initialize PCA if configured
+	pcaCli, _ := initPCAClient(r.Certs)
+	router := api.SetupRouter(
+		releaseService,
+		deploymentService,
+		userService,
+		roleService,
+		userRoleService,
+		userKeyService,
+		authMiddleware,
+		db,
+		logger,
+		jwtManager,
+		ghaOIDCClient,
+		ghaAuthService,
+		emailService,
+		r.Certs.SessionMaxActive,
+		r.Security.EnableNaivePerIPRateLimit,
+		pcaCli,
+	)
+	// Inject defaults into request context (policy, email, github, etc.)
+	injectDefaultContext(router, r.Config, emailService)
+	// Attach PCA client to certificate handler if available
+	if pcaCli != nil {
+		// Router constructed the handler; re-create and replace with PCA attached requires refactor.
+		// Simpler: set PCA config in context and handlers already read it; PCA client stored globally here.
+		// For now, set a global in gin context via middleware
+		router.Use(func(c *gin.Context) { c.Set("pca_client_present", true); c.Next() })
+	}
+	// Expose cert TTL clamps
+	router.Use(func(c *gin.Context) {
+		c.Set("certs_client_cert_ttl_dev", r.Certs.ClientCertTTLDev)
+		c.Set("certs_client_cert_ttl_ci_max", r.Certs.ClientCertTTLCIMax)
+		c.Set("certs_server_cert_ttl", r.Certs.ServerCertTTL)
+		c.Next()
+	})
 
 	// Initialize server
 	server := api.NewServer(r.GetServerAddr(), router, logger)
@@ -190,7 +248,7 @@ func (r *RunCmd) Run() error {
 	logger.Info("Shutting down server...")
 
 	// Create a deadline for graceful shutdown
-	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	ctx, cancel = context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
 
 	// Shutdown the server
@@ -211,6 +269,13 @@ func main() {
 		kong.ConfigureHelp(kong.HelpOptions{
 			Compact: true,
 		}),
+		// Load configuration from TOML files if present; CLI flags override
+		kong.Configuration(kongtoml.Loader,
+			"/etc/foundry/foundry-api.toml",
+			"/etc/foundry-api.toml",
+			"~/.config/foundry/api.toml",
+			"./config.toml",
+		),
 	)
 
 	// Execute the selected subcommand

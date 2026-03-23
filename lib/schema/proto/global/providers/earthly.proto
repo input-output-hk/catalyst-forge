@@ -1,0 +1,23 @@
+syntax = "proto3";
+
+package providers;
+
+option go_package = "github.com/input-output-hk/catalyst-forge/lib/schema/proto/generated/global/providers";
+
+import "common/secret.proto";
+
+// Earthly contains the configuration for the Earthly Cloud provider.
+message Earthly {
+  // Satellite contains the configuration for a remote Earthly Satellite.
+  EarthlySatellite satellite = 1;
+
+  // Version contains the version of Earthly to install in CI.
+  string version = 2;
+}
+
+// EarthlySatellite contains the configuration for a remote Earthly Satellite.
+message EarthlySatellite {
+  // Credentials contains the credentials to use for connecting to a remote
+  // Earthly Satellite.
+  common.Secret credentials = 1;
+}

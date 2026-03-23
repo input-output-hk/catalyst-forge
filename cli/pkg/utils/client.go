@@ -2,20 +2,23 @@ package utils
 
 import (
 	"fmt"
+	"reflect"
 
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/run"
-	"github.com/input-output-hk/catalyst-forge/foundry/api/client"
+	"github.com/input-output-hk/catalyst-forge/lib/foundry/client"
 	"github.com/input-output-hk/catalyst-forge/lib/project/project"
+	"github.com/input-output-hk/catalyst-forge/lib/schema/blueprint/global"
+	"github.com/input-output-hk/catalyst-forge/lib/schema/blueprint/global/providers"
 )
 
 // NewAPIClient creates a new API client.
 func NewAPIClient(p *project.Project, ctx run.RunContext) (client.Client, error) {
 	var apiURL string
 	if ctx.ApiURL == "" {
-		if p.Blueprint.Global != nil &&
-			p.Blueprint.Global.Ci != nil &&
-			p.Blueprint.Global.Ci.Providers != nil &&
-			p.Blueprint.Global.Ci.Providers.Foundry != nil {
+		if !reflect.DeepEqual(p.Blueprint.Global, global.Global{}) &&
+			!reflect.DeepEqual(p.Blueprint.Global.Ci, global.CI{}) &&
+			!reflect.DeepEqual(p.Blueprint.Global.Ci.Providers, providers.Providers{}) &&
+			!reflect.DeepEqual(p.Blueprint.Global.Ci.Providers.Foundry, providers.Foundry{}) {
 			apiURL = p.Blueprint.Global.Ci.Providers.Foundry.Url
 		} else {
 			return nil, fmt.Errorf("no Foundry API URL found in the project")

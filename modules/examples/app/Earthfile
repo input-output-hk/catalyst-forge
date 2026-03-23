@@ -1,0 +1,9 @@
+VERSION 0.8
+
+src:
+    FROM scratch
+    
+    # Copy the entire KCL module into a subdirectory
+    COPY . /module/
+    
+    SAVE ARTIFACT /module module

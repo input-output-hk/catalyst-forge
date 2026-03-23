@@ -5,11 +5,12 @@ import (
 	"log/slog"
 
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/events"
-	"github.com/input-output-hk/catalyst-forge/cli/pkg/executor"
+	"github.com/input-output-hk/catalyst-forge/cli/pkg/release/providers/common"
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/run"
 	"github.com/input-output-hk/catalyst-forge/lib/project/project"
 	"github.com/input-output-hk/catalyst-forge/lib/providers/aws"
 	sp "github.com/input-output-hk/catalyst-forge/lib/schema/blueprint/project"
+	"github.com/input-output-hk/catalyst-forge/lib/tools/executor"
 )
 
 const (
@@ -50,9 +51,9 @@ func (r *KCLReleaser) Release() error {
 			return fmt.Errorf("failed to get relative path: %w", err)
 		}
 
-		if isECRRegistry(registry) {
+		if common.IsECRRegistry(registry) {
 			r.logger.Info("Detected ECR registry, checking if repository exists", "repository", container)
-			if err := createECRRepoIfNotExists(r.ecr, &r.project, container, r.logger); err != nil {
+			if err := common.CreateECRRepoIfNotExists(r.ecr, &r.project, container, r.logger); err != nil {
 				return fmt.Errorf("failed to create ECR repository: %w", err)
 			}
 		}
@@ -85,8 +86,8 @@ func NewKCLReleaser(ctx run.RunContext,
 	}
 
 	var config KCLReleaserConfig
-	err := parseConfig(&project, name, &config)
-	if err != nil && err != ErrConfigNotFound {
+	err := common.ParseConfig(&project, name, &config)
+	if err != nil && err != common.ErrConfigNotFound {
 		return nil, fmt.Errorf("failed to parse release config: %w", err)
 	}
 
@@ -95,7 +96,7 @@ func NewKCLReleaser(ctx run.RunContext,
 		return nil, fmt.Errorf("failed to create ECR client: %w", err)
 	}
 
-	kcl := executor.NewLocalWrappedExecutor(exec, "kcl")
+	kcl := executor.NewWrappedLocalExecutor(exec, "kcl")
 	handler := events.NewDefaultEventHandler(ctx.Logger)
 	return &KCLReleaser{
 		config:      config,

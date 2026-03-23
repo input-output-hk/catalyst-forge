@@ -1,0 +1,50 @@
+syntax = "proto3";
+
+package renderer;
+
+option go_package = "github.com/input-output-hk/catalyst-forge/foundry/renderer/pkg/proto";
+
+import "project/deployment.proto";
+
+// RendererService provides manifest generation from deployment bundles
+service RendererService {
+  // RenderManifests takes a deployment bundle and returns rendered YAML manifests
+  rpc RenderManifests(RenderManifeststRequest) returns (RenderManifestsResponse);
+  
+  // HealthCheck provides a health check endpoint
+  rpc HealthCheck(HealthCheckRequest) returns (HealthCheckResponse);
+}
+
+// RenderManifestsRequest contains the deployment bundle to render
+message RenderManifeststRequest {
+  // bundle is the deployment bundle to render
+  project.ModuleBundle bundle = 1;
+  
+  // env_data contains optional environment data to merge with the bundle
+  bytes env_data = 2;
+}
+
+// RenderManifestsResponse contains the rendered YAML manifests
+message RenderManifestsResponse {
+  // manifests contains the rendered YAML manifests, keyed by module name
+  map<string, bytes> manifests = 1;
+  
+  // bundle_data contains the raw bundle data that was processed
+  bytes bundle_data = 2;
+  
+  // error contains error message if rendering failed
+  string error = 3;
+}
+
+// HealthCheckRequest is empty for health checks
+message HealthCheckRequest {
+}
+
+// HealthCheckResponse indicates service health
+message HealthCheckResponse {
+  // status indicates if the service is healthy
+  string status = 1;
+  
+  // timestamp of the health check
+  int64 timestamp = 2;
+}

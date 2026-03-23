@@ -5,7 +5,7 @@ import (
 
 	"cuelang.org/go/cue"
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/config"
-	"github.com/input-output-hk/catalyst-forge/lib/project/deployment"
+	"github.com/input-output-hk/catalyst-forge/lib/deployment"
 	"github.com/input-output-hk/catalyst-forge/lib/project/project"
 	"github.com/input-output-hk/catalyst-forge/lib/providers/secrets"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/fs"

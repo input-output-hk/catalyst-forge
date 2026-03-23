@@ -4,12 +4,11 @@ import (
 	"encoding/base64"
 	"fmt"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/input-output-hk/catalyst-forge/foundry/api/client"
+	"github.com/input-output-hk/catalyst-forge/lib/foundry/client/releases"
 )
 
 func TestAliasAPI(t *testing.T) {
@@ -17,22 +16,14 @@ func TestAliasAPI(t *testing.T) {
 	ctx, cancel := newTestContext()
 	defer cancel()
 
-	projectName := fmt.Sprintf("test-project-alias-%d", time.Now().Unix())
+	projectName := generateTestName("test-project-alias")
 
-	bundleStr := base64.StdEncoding.EncodeToString([]byte("sample code for alias testing"))
-	release := &client.Release{
-		SourceRepo:   "github.com/example/repo",
-		SourceCommit: "abcdef123456",
-		Project:      projectName,
-		ProjectPath:  "services/api",
-		Bundle:       bundleStr,
-	}
-
-	createdRelease, err := c.CreateRelease(ctx, release, false)
+	createdRelease, err := createTestRelease(c, ctx, projectName)
 	require.NoError(t, err)
 	require.NotEmpty(t, createdRelease.ID)
 
-	release2 := &client.Release{
+	bundleStr := base64.StdEncoding.EncodeToString([]byte("test bundle data"))
+	release2 := &releases.Release{
 		SourceRepo:   "github.com/example/repo",
 		SourceCommit: "xyz789",
 		Project:      projectName,
@@ -40,18 +31,18 @@ func TestAliasAPI(t *testing.T) {
 		Bundle:       bundleStr,
 	}
 
-	createdRelease2, err := c.CreateRelease(ctx, release2, false)
+	createdRelease2, err := c.Releases().Create(ctx, release2, false)
 	require.NoError(t, err)
 	require.NotEmpty(t, createdRelease2.ID)
 
 	t.Run("CreateAlias", func(t *testing.T) {
 		aliasName := fmt.Sprintf("%s-latest", projectName)
 
-		err := c.CreateAlias(ctx, aliasName, createdRelease.ID)
+		err := c.Aliases().Create(ctx, aliasName, createdRelease.ID)
 		require.NoError(t, err)
 
 		t.Run("GetReleaseByAlias", func(t *testing.T) {
-			fetchedByAlias, err := c.GetReleaseByAlias(ctx, aliasName)
+			fetchedByAlias, err := c.Releases().GetByAlias(ctx, aliasName)
 			require.NoError(t, err)
 
 			assert.Equal(t, createdRelease.ID, fetchedByAlias.ID)
@@ -59,7 +50,7 @@ func TestAliasAPI(t *testing.T) {
 		})
 
 		t.Run("ListAliases", func(t *testing.T) {
-			aliases, err := c.ListAliases(ctx, createdRelease.ID)
+			aliases, err := c.Aliases().List(ctx, createdRelease.ID)
 			require.NoError(t, err)
 
 			foundAlias := false
@@ -73,20 +64,20 @@ func TestAliasAPI(t *testing.T) {
 		})
 
 		t.Run("ReassignAlias", func(t *testing.T) {
-			err := c.CreateAlias(ctx, aliasName, createdRelease2.ID)
+			err := c.Aliases().Create(ctx, aliasName, createdRelease2.ID)
 			require.NoError(t, err)
 
-			fetchedByAlias, err := c.GetReleaseByAlias(ctx, aliasName)
+			fetchedByAlias, err := c.Releases().GetByAlias(ctx, aliasName)
 			require.NoError(t, err)
 			assert.Equal(t, createdRelease2.ID, fetchedByAlias.ID)
 			assert.Equal(t, "xyz789", fetchedByAlias.SourceCommit)
 		})
 
 		t.Run("DeleteAlias", func(t *testing.T) {
-			err := c.DeleteAlias(ctx, aliasName)
+			err := c.Aliases().Delete(ctx, aliasName)
 			require.NoError(t, err)
 
-			_, err = c.GetReleaseByAlias(ctx, aliasName)
+			_, err = c.Releases().GetByAlias(ctx, aliasName)
 			assert.Error(t, err, "Expected error when getting deleted alias")
 		})
 	})
@@ -95,13 +86,13 @@ func TestAliasAPI(t *testing.T) {
 		alias1 := fmt.Sprintf("%s-prod", projectName)
 		alias2 := fmt.Sprintf("%s-staging", projectName)
 
-		err := c.CreateAlias(ctx, alias1, createdRelease.ID)
+		err := c.Aliases().Create(ctx, alias1, createdRelease.ID)
 		require.NoError(t, err)
 
-		err = c.CreateAlias(ctx, alias2, createdRelease.ID)
+		err = c.Aliases().Create(ctx, alias2, createdRelease.ID)
 		require.NoError(t, err)
 
-		aliases, err := c.ListAliases(ctx, createdRelease.ID)
+		aliases, err := c.Aliases().List(ctx, createdRelease.ID)
 		require.NoError(t, err)
 
 		found1, found2 := false, false
@@ -117,10 +108,10 @@ func TestAliasAPI(t *testing.T) {
 		assert.True(t, found1, "First alias not found in list")
 		assert.True(t, found2, "Second alias not found in list")
 
-		err = c.DeleteAlias(ctx, alias1)
+		err = c.Aliases().Delete(ctx, alias1)
 		require.NoError(t, err)
 
-		err = c.DeleteAlias(ctx, alias2)
+		err = c.Aliases().Delete(ctx, alias2)
 		require.NoError(t, err)
 	})
 }

@@ -7,13 +7,13 @@ import (
 	"testing"
 
 	"github.com/aws/aws-sdk-go-v2/service/ecr"
-	exmocks "github.com/input-output-hk/catalyst-forge/cli/pkg/executor/mocks"
 	"github.com/input-output-hk/catalyst-forge/lib/project/project"
 	"github.com/input-output-hk/catalyst-forge/lib/providers/aws"
 	"github.com/input-output-hk/catalyst-forge/lib/providers/aws/mocks"
 	sb "github.com/input-output-hk/catalyst-forge/lib/schema/blueprint"
 	sg "github.com/input-output-hk/catalyst-forge/lib/schema/blueprint/global"
 	sp "github.com/input-output-hk/catalyst-forge/lib/schema/blueprint/project"
+	exmocks "github.com/input-output-hk/catalyst-forge/lib/tools/executor/mocks"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/testutils"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -28,17 +28,17 @@ func TestDockerReleaserRelease(t *testing.T) {
 	) project.Project {
 		return project.Project{
 			Blueprint: sb.Blueprint{
-				Global: &sg.Global{
-					Ci: &sg.CI{
+				Global: sg.Global{
+					Ci: sg.CI{
 						Registries: registries,
 					},
-					Repo: &sg.Repo{
+					Repo: sg.Repo{
 						Name: "owner/repo",
 					},
 				},
-				Project: &sp.Project{
+				Project: sp.Project{
 					Container: container,
-					Ci: &sp.CI{
+					Ci: sp.CI{
 						Targets: map[string]sp.Target{
 							"test": {
 								Platforms: platforms,

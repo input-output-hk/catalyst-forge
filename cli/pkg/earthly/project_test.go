@@ -6,13 +6,13 @@ import (
 
 	"cuelang.org/go/cue/cuecontext"
 	"github.com/input-output-hk/catalyst-forge/cli/internal/testutils"
-	emocks "github.com/input-output-hk/catalyst-forge/cli/pkg/executor/mocks"
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/run"
 	"github.com/input-output-hk/catalyst-forge/lib/project/blueprint"
 	"github.com/input-output-hk/catalyst-forge/lib/project/project"
 	"github.com/input-output-hk/catalyst-forge/lib/providers/secrets"
 	smocks "github.com/input-output-hk/catalyst-forge/lib/providers/secrets/mocks"
 	schema "github.com/input-output-hk/catalyst-forge/lib/schema/blueprint"
+	emocks "github.com/input-output-hk/catalyst-forge/lib/tools/executor/mocks"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

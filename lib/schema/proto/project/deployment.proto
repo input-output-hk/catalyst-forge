@@ -1,0 +1,50 @@
+syntax = "proto3";
+
+package project;
+
+option go_package = "github.com/input-output-hk/catalyst-forge/lib/schema/proto/generated/project";
+
+// Deployment contains the configuration for the deployment of the project.
+message Deployment {
+  // On contains the events that trigger the deployment.
+  map<string, bytes> on = 1;
+
+  // Bundle contains the deployment modules for the project.
+  ModuleBundle bundle = 2;
+}
+
+// ModuleBundle contains the configuration for deployment modules.
+message ModuleBundle {
+  // Env contains the environment to deploy the modules to.
+  string env = 1;
+
+  // Modules contains the deployment modules.
+  map<string, Module> modules = 2;
+}
+
+// Module contains the configuration for a deployment module.
+message Module {
+  // Instance contains the instance name to use for all generated resources.
+  string instance = 1;
+
+  // Name contains the name of the module to deploy.
+  string name = 2;
+
+  // Namespace contains the namespace to deploy the module to.
+  string namespace = 3;
+
+  // Path contains the path to the module.
+  string path = 4;
+
+  // Registry contains the registry to pull the module from.
+  string registry = 5;
+
+  // Type contains the type of the module.
+  string type = 6;
+
+  // Values contains the values to pass to the deployment module.
+  bytes values = 7;
+
+  // Version contains the version of the deployment module.
+  string version = 8;
+}

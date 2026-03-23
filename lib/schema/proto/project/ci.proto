@@ -1,0 +1,35 @@
+syntax = "proto3";
+
+package project;
+
+option go_package = "github.com/input-output-hk/catalyst-forge/lib/schema/proto/generated/project";
+
+import "common/retries.proto";
+import "common/secret.proto";
+
+// CI contains the configuration for the CI system.
+message CI {
+  // Targets configures the individual targets that are run by the CI system.
+  map<string, Target> targets = 1;
+}
+
+// Target contains the configuration for a single target.
+message Target {
+  // Args contains the arguments to pass to the target.
+  map<string, string> args = 1;
+
+  // Platforms contains the platforms to run the target against.
+  repeated string platforms = 2;
+
+  // Privileged determines if the target should run in privileged mode.
+  bool privileged = 3;
+
+  // Retries contains the configuration for the retries of an Earthly target.
+  common.CIRetries retries = 4;
+
+  // Tags are used to uniquely identify a target when scanning.
+  repeated string tags = 5;
+
+  // Secrets contains the secrets to pass to the target.
+  repeated common.Secret secrets = 6;
+}

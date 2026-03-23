@@ -25,7 +25,7 @@ func TestHealthEndpoint(t *testing.T) {
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	require.NoError(t, err)
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	// Check the response status
 	assert.Equal(t, http.StatusOK, resp.StatusCode, "Expected successful health check")

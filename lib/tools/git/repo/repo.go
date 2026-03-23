@@ -3,16 +3,20 @@ package repo
 import (
 	"errors"
 	"fmt"
+	"iter"
 	"log/slog"
 	"os"
 	"path/filepath"
 	"strings"
 	"time"
 
+	"github.com/go-git/go-git/v5"
 	gg "github.com/go-git/go-git/v5"
+	"github.com/go-git/go-git/v5/config"
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/cache"
 	"github.com/go-git/go-git/v5/plumbing/object"
+	"github.com/go-git/go-git/v5/plumbing/storer"
 	"github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/go-git/go-git/v5/storage/filesystem"
 	"github.com/input-output-hk/catalyst-forge/lib/tools/fs"
@@ -213,6 +217,18 @@ func (g *GitRepo) Fetch(opts ...FetchOption) error {
 	return nil
 }
 
+// FetchTags fetches tags from the remote repository.
+func (g *GitRepo) FetchTags() error {
+	g.logger.Debug("Fetching tags from remote")
+	fo := &gg.FetchOptions{
+		Auth:       g.auth,
+		RemoteName: "origin",
+		RefSpecs:   []config.RefSpec{"refs/tags/*:refs/tags/*"},
+	}
+
+	return g.remote.Fetch(g.raw, fo)
+}
+
 // GetCommit returns the commit with the given hash.
 func (g *GitRepo) GetCommit(hash plumbing.Hash) (*object.Commit, error) {
 	return g.raw.CommitObject(hash)
@@ -265,6 +281,76 @@ func (g *GitRepo) GetCurrentTag() (string, error) {
 	}
 
 	return tag, nil
+}
+
+// ListTags returns all annotated tags in the repository.
+// If fetch is true, it will fetch tags from the remote repository before listing them.
+// Lightweight tags are ignored and only annotated tag objects are returned.
+func (g *GitRepo) ListTags(fetch bool) ([]*object.Tag, error) {
+	if fetch {
+		err := g.FetchTags()
+		if err != nil {
+			return nil, fmt.Errorf("failed to fetch tags: %w", err)
+		}
+	}
+
+	tags, err := g.raw.Tags()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get tags: %w", err)
+	}
+
+	var tagObjects []*object.Tag
+	err = tags.ForEach(func(ref *plumbing.Reference) error {
+		obj, err := g.raw.TagObject(ref.Hash())
+		switch err {
+		case nil:
+			tagObjects = append(tagObjects, obj)
+		case plumbing.ErrObjectNotFound:
+			return nil
+		default:
+			return err
+		}
+		return nil
+	})
+
+	if err != nil {
+		return nil, fmt.Errorf("failed to iterate over tags: %w", err)
+	}
+
+	return tagObjects, nil
+}
+
+// GetTagCommit returns the commit object that the given tag is pointing to.
+func (g *GitRepo) GetTagCommit(tagName string) (*object.Commit, error) {
+	// Get the tag reference
+	tagRefName := plumbing.NewTagReferenceName(tagName)
+	tagRef, err := g.raw.Reference(tagRefName, true)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get tag reference for %s: %w", tagName, err)
+	}
+
+	// Get the object that the reference points to
+	obj, err := g.raw.Object(plumbing.AnyObject, tagRef.Hash())
+	if err != nil {
+		return nil, fmt.Errorf("failed to get object for tag %s: %w", tagName, err)
+	}
+
+	// Check the object type and handle accordingly
+	switch obj := obj.(type) {
+	case *object.Tag:
+		// Annotated tag - get the commit it points to
+		commit, err := obj.Commit()
+		if err != nil {
+			return nil, fmt.Errorf("failed to get commit for annotated tag %s: %w", tagName, err)
+		}
+		return commit, nil
+	case *object.Commit:
+		// Lightweight tag - already pointing to a commit
+		return obj, nil
+	default:
+		// This shouldn't happen for valid tags, but handle it gracefully
+		return nil, fmt.Errorf("tag %s points to unexpected object type: %T", tagName, obj)
+	}
 }
 
 // GitFs returns the filesystem for the .git directory.
@@ -438,6 +524,56 @@ func (g *GitRepo) UnstageFile(path string) error {
 	return nil
 }
 
+// WalkTags walks the commits between two tags.
+// Will return an error if the start tag is not an ancestor of the end tag.
+func (g *GitRepo) WalkTags(startTag, endTag *object.Tag) iter.Seq2[*object.Commit, error] {
+	return func(yield func(*object.Commit, error) bool) {
+		startCommit, err := startTag.Commit()
+		if err != nil {
+			yield(nil, fmt.Errorf("failed to get commit for start tag: %w", err))
+			return
+		}
+
+		endCommit, err := endTag.Commit()
+		if err != nil {
+			yield(nil, fmt.Errorf("failed to get commit for end tag: %w", err))
+			return
+		}
+
+		isAncestor, err := startCommit.IsAncestor(endCommit)
+		if err != nil {
+			yield(nil, fmt.Errorf("failed to check ancestry: %w", err))
+			return
+		}
+		if !isAncestor {
+			yield(nil, fmt.Errorf("tag %s is not an ancestor of tag %s",
+				startTag.Name, endTag.Name))
+			return
+		}
+
+		commitIter, err := g.raw.Log(&git.LogOptions{
+			From: endCommit.Hash,
+		})
+		if err != nil {
+			yield(nil, fmt.Errorf("failed to create commit iterator: %w", err))
+			return
+		}
+		defer commitIter.Close()
+
+		_ = commitIter.ForEach(func(c *object.Commit) error {
+			if c.Hash == startCommit.Hash {
+				return storer.ErrStop
+			}
+
+			if !yield(c, nil) {
+				return storer.ErrStop
+			}
+
+			return nil
+		})
+	}
+}
+
 // WorkFs returns the filesystem for the working directory.
 func (g *GitRepo) WorkFs() fs.Filesystem {
 	return g.wfs
@@ -507,4 +643,49 @@ func NewGitRepo(
 	}
 
 	return r, nil
+}
+
+// Patch generates a patch between two commits.
+func (g *GitRepo) Patch(fromHash, toHash plumbing.Hash) (*object.Patch, error) {
+	fromCommit, err := g.raw.CommitObject(fromHash)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get from commit %s: %w", fromHash.String(), err)
+	}
+
+	toCommit, err := g.raw.CommitObject(toHash)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get to commit %s: %w", toHash.String(), err)
+	}
+
+	patch, err := fromCommit.Patch(toCommit)
+	if err != nil {
+		return nil, fmt.Errorf("failed to generate patch: %w", err)
+	}
+
+	return patch, nil
+}
+
+// PatchHead generates a patch between a given commit and the current HEAD.
+func (g *GitRepo) PatchHead(fromHash plumbing.Hash) (*object.Patch, error) {
+	head, err := g.raw.Head()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get HEAD reference: %w", err)
+	}
+
+	return g.Patch(fromHash, head.Hash())
+}
+
+// GetBranchReference returns the reference for a given branch name.
+func (g *GitRepo) GetBranchReference(branchName string) (*plumbing.Reference, error) {
+	ref, err := g.raw.Reference(plumbing.NewBranchReferenceName(branchName), true)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get branch reference for %s: %w", branchName, err)
+	}
+
+	return ref, nil
+}
+
+// PatchToString converts a patch to a unified diff string.
+func (g *GitRepo) PatchToString(patch *object.Patch) string {
+	return patch.String()
 }

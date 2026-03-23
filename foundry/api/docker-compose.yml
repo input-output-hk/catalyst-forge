@@ -2,29 +2,45 @@ services:
   auth:
     image: foundry-api:latest
     container_name: auth
-    entrypoint: ["/bin/sh", "-c", "/app/foundry-api auth init --output-dir /data"]
+    entrypoint: ["/bin/sh", "-c", "if [ ! -f /data/private.pem ]; then /app/foundry-api auth init --output-dir /data; fi; /app/foundry-api auth generate -a -s admin@foundry.dev -k /data/private.pem > /data/jwt.txt"]
     volumes:
-      - ./.secret:/data
-    restart: on-failure
+      - ./.auth:/data
 
   auth-jwt:
     image: foundry-api:latest
     container_name: auth-jwt
-    entrypoint: ["/bin/sh", "-c", "/app/foundry-api auth generate -a -k /data/private.pem >/data/jwt.txt"]
+    entrypoint: ["/bin/sh", "-c", "/app/foundry-api auth generate -a -s admin@foundry.dev -k /data/private.pem >/data/jwt.txt"]
     volumes:
-      - ./.secret:/data
-    restart: on-failure
+      - ./.auth:/data
     depends_on:
       auth:
-        condition: service_started
+        condition: service_completed_successfully
 
   api:
     image: foundry-api:latest
     container_name: api
     environment:
       HTTP_PORT: 5050
+      PUBLIC_BASE_URL: http://localhost:5050
       AUTH_PRIVATE_KEY: /data/private.pem
       AUTH_PUBLIC_KEY: /data/public.pem
+      # Auth TTLs
+      INVITE_TTL: 72h
+      AUTH_ACCESS_TTL: 30m
+      AUTH_REFRESH_TTL: 720h
+      KET_TTL: 10m
+
+      # Hash secrets for invite/refresh tokens (dev defaults)
+      INVITE_HASH_SECRET: dev-invite-secret
+      REFRESH_HASH_SECRET: dev-refresh-secret
+
+      # Email config (disabled by default for local compose)
+      EMAIL_ENABLED: "false"
+      EMAIL_PROVIDER: none
+      # EMAIL_SENDER: noreply@example.com
+      # SES_REGION: us-east-1
+
+      # Database configuration
       DB_SUPER_USER: postgres
       DB_SUPER_PASSWORD: postgres
       DB_ROOT_NAME: postgres
@@ -38,11 +54,21 @@ services:
       K8S_ENABLED: "false"
       LOG_LEVEL: debug
       LOG_FORMAT: text
+      SEED_ADMIN: admin@foundry.dev
+
+      # PCA configuration (dev defaults expect real ARNs in staging/e2e)
+      PCA_CLIENT_CA_ARN: ""
+      PCA_SERVER_CA_ARN: ""
+      PCA_CLIENT_TEMPLATE_ARN: arn:aws:acm-pca:::template/EndEntityClientAuthCertificate_APIPassthrough/V1
+      PCA_SERVER_TEMPLATE_ARN: arn:aws:acm-pca:::template/EndEntityServerAuthCertificate_APIPassthrough/V1
+      PCA_SIGNING_ALGO_CLIENT: SHA256WITHECDSA
+      PCA_SIGNING_ALGO_SERVER: SHA256WITHECDSA
+      PCA_TIMEOUT: 10s
     ports:
       - "5050:5050"
       - "8080:8080"
     volumes:
-      - ./.secret:/data
+      - ./.auth:/data
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:5050/healthz"]
       interval: 10s
@@ -51,7 +77,7 @@ services:
       start_period: 10s
     depends_on:
       auth:
-        condition: service_started
+        condition: service_completed_successfully
       postgres:
         condition: service_healthy
     restart: on-failure
@@ -63,7 +89,7 @@ services:
       API_URL: http://api:5050
       JWT_TOKEN_PATH: /data/jwt.txt
     volumes:
-      - ./.secret:/data
+      - ./.auth:/data
     depends_on:
       api:
         condition: service_healthy
@@ -86,5 +112,25 @@ services:
       retries: 5
     restart: on-failure
 
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@foundry.dev
+      PGADMIN_DEFAULT_PASSWORD: admin
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+      PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED: 'False'
+    ports:
+      - "5051:80"
+    volumes:
+      - pgadmin-data:/var/lib/pgadmin
+      - ./pgadmin-servers.json:/pgadmin4/servers.json
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: on-failure
+
+
 volumes:
   postgres-data:
+  pgadmin-data:

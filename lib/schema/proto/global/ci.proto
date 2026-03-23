@@ -1,0 +1,31 @@
+syntax = "proto3";
+
+package global;
+
+option go_package = "github.com/input-output-hk/catalyst-forge/lib/schema/proto/generated/global";
+
+import "common/retries.proto";
+import "common/secret.proto";
+import "global/providers/providers.proto";
+import "global/release.proto";
+
+// CI contains the configuration for the CI system.
+message CI {
+  // Local defines the filters to use when simulating a local CI run.
+  repeated string local = 1;
+
+  // Providers contains the configuration for the providers being used by the CI system.
+  providers.Providers providers = 2;
+
+  // Registries contains the container registries to push images to.
+  repeated string registries = 3;
+
+  // Release contains the configuration for the release of a project.
+  Release release = 4;
+
+  // Retries contains the configuration for the retries of an Earthly target.
+  common.CIRetries retries = 5;
+
+  // Secrets contains global secrets that will be passed to all targets.
+  repeated common.Secret secrets = 6;
+}

@@ -1,0 +1,23 @@
+syntax = "proto3";
+
+package global;
+
+option go_package = "github.com/input-output-hk/catalyst-forge/lib/schema/proto/generated/global";
+
+// Release contains the configuration for the release of a project.
+message Release {
+  // Docs is the configuration for the docs release type.
+  DocsRelease docs = 1;
+}
+
+// DocsRelease contains the configuration for the docs release type.
+message DocsRelease {
+  // Bucket is the name of the S3 bucket to upload the docs to.
+  string bucket = 1;
+
+  // Path is the subpath within the bucket to upload the docs to.
+  string path = 2;
+
+  // URL is the base URL to the docs.
+  string url = 3;
+}

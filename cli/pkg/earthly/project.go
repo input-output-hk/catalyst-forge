@@ -3,16 +3,19 @@ package earthly
 import (
 	"fmt"
 	"log/slog"
+	"reflect"
 	"regexp"
 
 	"cuelang.org/go/cue"
 	"cuelang.org/go/cue/cuecontext"
-	"github.com/input-output-hk/catalyst-forge/cli/pkg/executor"
 	"github.com/input-output-hk/catalyst-forge/cli/pkg/run"
 	"github.com/input-output-hk/catalyst-forge/lib/project/project"
 	"github.com/input-output-hk/catalyst-forge/lib/providers/secrets"
 	"github.com/input-output-hk/catalyst-forge/lib/schema"
+	"github.com/input-output-hk/catalyst-forge/lib/schema/blueprint/common"
+	"github.com/input-output-hk/catalyst-forge/lib/schema/blueprint/global/providers"
 	sp "github.com/input-output-hk/catalyst-forge/lib/schema/blueprint/project"
+	"github.com/input-output-hk/catalyst-forge/lib/tools/executor"
 )
 
 var (
@@ -83,11 +86,11 @@ func (p *DefaultProjectRunner) generateOpts(target string) ([]EarthlyExecutorOpt
 			}
 
 			// Prioritize local retries over global retries.
-			if targetConfig.Retries != nil {
-				opts = append(opts, WithRetries(*targetConfig.Retries))
+			if !reflect.DeepEqual(targetConfig.Retries, common.CIRetries{}) {
+				opts = append(opts, WithRetries(targetConfig.Retries))
 			} else if schema.HasGlobalCIDefined(p.project.Blueprint) {
-				if p.project.Blueprint.Global.Ci.Retries != nil {
-					opts = append(opts, WithRetries(*p.project.Blueprint.Global.Ci.Retries))
+				if !reflect.DeepEqual(p.project.Blueprint.Global.Ci.Retries, common.CIRetries{}) {
+					opts = append(opts, WithRetries(p.project.Blueprint.Global.Ci.Retries))
 				}
 			}
 
@@ -98,7 +101,7 @@ func (p *DefaultProjectRunner) generateOpts(target string) ([]EarthlyExecutorOpt
 	}
 
 	if schema.HasEarthlyProviderDefined(p.project.Blueprint) {
-		if p.project.Blueprint.Global.Ci.Providers.Earthly.Satellite != nil && p.ctx.Local {
+		if !reflect.DeepEqual(p.project.Blueprint.Global.Ci.Providers.Earthly.Satellite, providers.EarthlySatellite{}) && p.ctx.Local {
 			// This is a hacky way to prevent Earthly from using the satellite
 			// from the Earthly configuration file as there is no native way to
 			// disable it.
@@ -162,6 +165,7 @@ func NewDefaultProjectRunner(
 	e := executor.NewLocalExecutor(
 		ctx.Logger,
 		executor.WithRedirect(),
+		executor.WithColors(),
 	)
 
 	return DefaultProjectRunner{

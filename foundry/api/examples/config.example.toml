@@ -1,0 +1,118 @@
+# Example Foundry API configuration (TOML)
+# Copy to ./config.toml or /etc/foundry/foundry-api.toml and adjust values.
+
+[server]
+# HTTP port the API listens on
+http-port = 8080
+# Graceful shutdown and request handling timeout
+timeout = "30s"
+# Public base URL used when generating links in emails (invites, verification)
+public-base-url = "http://localhost:8080"
+
+[database]
+# Postgres hostname or service DNS
+host = "localhost"
+# Postgres port
+db-port = 5432
+# Database user
+user = "postgres"
+# Database password (use secrets management in production)
+password = "postgres"
+# Database name
+name = "releases"
+# SSL mode (disable|require|verify-ca|verify-full)
+sslmode = "disable"
+
+[logging]
+# Log verbosity: debug|info|warn|error
+level = "info"
+# Log format: json|text
+format = "json"
+
+[auth]
+# Path to ES256 private key used to sign access tokens
+private-key = "/data/private.pem"
+# Path to ES256 public key used to verify tokens and serve JWKS
+public-key = "/data/public.pem"
+# Default invite expiry (eg. 72h)
+invite-ttl = "72h"
+# Access token TTL (eg. 30m); final cap may be enforced by server
+access-ttl = "30m"
+# Refresh token base TTL for rotation flows (eg. 720h = 30d)
+refresh-ttl = "720h"
+# Key Enrollment Token TTL used during bootstrap/register steps
+ket-ttl = "10m"
+
+[email]
+# Enable outbound email delivery
+enabled = false
+# Email provider (ses|none)
+provider = "none"
+# Sender address used in invite/verification emails
+sender = "no-reply@example.com"
+# AWS region for SES when provider=ses
+ses-region = "us-east-1"
+
+[security]
+# Simple in-process per-IP rate limit (off by default; not for production behind proxies)
+enable-naive-per-ip-rate-limit = false
+
+# Kubernetes flags are prefixed with k8s-
+[kubernetes]
+# Namespace for Kubernetes integrations (if enabled)
+namespace = "default"
+# Toggle Kubernetes integrations
+enabled = false
+
+
+# AWS PCA configuration
+[pca]
+# ARN of the PCA for client certificates (developer/CI)
+pca-client-ca-arn = "arn:aws:acm-pca:region:account:certificate-authority/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+# ARN of the PCA for server certificates (gateway/services)
+pca-server-ca-arn = "arn:aws:acm-pca:region:account:certificate-authority/yyyyyyyy-yyyy-yyyy-yyyy-yyyyyyyyyyyy"
+# ARN of the ACM template for client cert issuance (e.g., EndEntityClientAuth)
+pca-client-template-arn = "arn:aws:acm-pca:::template/EndEntityClientAuth/V1"
+# ARN of the ACM template for server cert issuance (e.g., EndEntityServerAuth)
+pca-server-template-arn = "arn:aws:acm-pca:::template/EndEntityServerAuth/V1"
+# Signing algorithm used by PCA requests; must match CA key type
+# Options typically include: SHA256WITHECDSA for P-256 CAs
+pca-signing-algo-client = "SHA256WITHECDSA"
+pca-signing-algo-server = "SHA256WITHECDSA"
+# Timeout for PCA operations
+pca-timeout = "5s"
+
+# Certificates feature (prefix certs-)
+[certs]
+
+# Default client certificate TTL for developers (PCA clamp target)
+client-cert-ttl-dev = "90m"
+# Maximum client certificate TTL for CI jobs (min(job_exp, this))
+client-cert-ttl-ci-max = "120m"
+# Server certificate TTL (PCA clamp target)
+server-cert-ttl = "336h"
+# Max certificate issuances per hour per user/repo
+issuance-rate-hourly = 6
+# Maximum concurrent build sessions per owner
+session-max-active = 10
+# Authorization default semantics: RequireAll (AND) for permissions
+require-perms-and = true
+# Feature flag: enable optional external authorization endpoint for BuildKit gateway (off by default)
+ext-authz-enabled = false
+
+# GitHub OIDC settings for CI authentication
+# Issuer for GitHub Actions OIDC tokens
+github-oidc-iss = "https://token.actions.githubusercontent.com"
+# Expected audience value to verify in OIDC tokens
+github-oidc-aud = "forge"
+# Comma-separated list of allowed GitHub orgs (optional)
+github-allowed-orgs = "input-output-hk"
+# Comma-separated list of allowed <org>/<repo> entries (optional)
+github-allowed-repos = "input-output-hk/catalyst-forge"
+# Comma-separated list of protected refs (eg. refs/heads/main) (optional)
+github-protected-refs = "refs/heads/main,refs/tags/*"
+# JWKS cache TTL for verifying GitHub OIDC tokens
+github-jwks-cache-ttl = "10m"
+
+# Default TTL for minted job tokens from GHA exchange (clamped by OIDC token expiry)
+job-token-default-ttl = "60m"

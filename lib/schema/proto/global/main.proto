@@ -1,0 +1,34 @@
+syntax = "proto3";
+
+package global;
+
+option go_package = "github.com/input-output-hk/catalyst-forge/lib/schema/proto/generated/global";
+
+import "global/ci.proto";
+import "global/deployment.proto";
+
+// Global contains the global configuration for the blueprint.
+message Global {
+  // CI contains the configuration for the CI system.
+  CI ci = 1;
+
+  // Deployment contains the global configuration for the deployment of projects.
+  Deployment deployment = 2;
+
+  // Repo contains the global configuration for the deployment of projects.
+  Repo repo = 3;
+
+  // State is an optional field that can be used to store global state for later use.
+  // This can be used by external tools or can be consumed using the @global() attribute.
+  // This field is not used by the blueprint itself.
+  bytes state = 4;
+}
+
+// Repo contains the configuration for the repository.
+message Repo {
+  // Name contains the name of the repository (e.g. "owner/repo-name").
+  string name = 1;
+
+  // DefaultBranch contains the default branch of the repository.
+  string defaultBranch = 2;
+}
