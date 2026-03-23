@@ -22,14 +22,14 @@ jobs:
 
       - name: Install Local Forge
         id: install-local
-        uses: input-output-hk/catalyst-forge/actions/install-local@master
+        uses: cardano-foundation/catalyst-forge/actions/install-local@master
       - name: Check forge version
         id: local
         run: |
           forge version
 
       - name: Setup CI
-        uses: input-output-hk/catalyst-forge/actions/setup@master
+        uses: cardano-foundation/catalyst-forge/actions/setup@master
         with:
           skip_docker: 'true'
           skip_github: 'true'
@@ -53,7 +53,7 @@ jobs:
       - name: Create GHA auth
         run: |
             forge -vvv --api-url "http://localhost:5050" api login --token "$(cat ./foundry/api/.auth/jwt.txt)"
-            forge -vvv --api-url "http://localhost:5050" api auth github create -a input-output-hk/catalyst-forge
+            forge -vvv --api-url "http://localhost:5050" api auth github create -a cardano-foundation/catalyst-forge
             rm -rf $HOME/.config/forge/config.toml
 
       - name: Get OIDC token
