@@ -1,0 +1,5 @@
+global:
+  buildkit_host: tcp://buildkit.projectcatalyst.dev:8372
+  tlsca: /Users/josh/work/catalyst-forge/playground/.certs/rootCA.pem
+  tlscert: /Users/josh/work/catalyst-forge/playground/.certs/earthly-client.pem
+  tlskey: /Users/josh/work/catalyst-forge/playground/.certs/earthly-client-key.pem

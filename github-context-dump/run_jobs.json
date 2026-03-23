@@ -1,0 +1,97 @@
+{
+    "total_count": 1,
+    "jobs": [
+        {
+            "id": 48782865681,
+            "run_id": 17197884072,
+            "workflow_name": "Dump GitHub Context",
+            "head_branch": "v2",
+            "run_url": "https://api.github.com/repos/input-output-hk/catalyst-forge/actions/runs/17197884072",
+            "run_attempt": 1,
+            "node_id": "CR_kwDOMniUpM8AAAALW691EQ",
+            "head_sha": "8e9b1f8981e109a4bf77a0684181a30a05840450",
+            "url": "https://api.github.com/repos/input-output-hk/catalyst-forge/actions/jobs/48782865681",
+            "html_url": "https://github.com/input-output-hk/catalyst-forge/actions/runs/17197884072/job/48782865681",
+            "status": "in_progress",
+            "conclusion": null,
+            "created_at": "2025-08-25T03:01:37Z",
+            "started_at": "2025-08-25T03:01:43Z",
+            "completed_at": null,
+            "name": "Collect and upload context data",
+            "steps": [
+                {
+                    "name": "Set up job",
+                    "status": "completed",
+                    "conclusion": "success",
+                    "number": 1,
+                    "started_at": "2025-08-25T03:01:43Z",
+                    "completed_at": "2025-08-25T03:01:44Z"
+                },
+                {
+                    "name": "Prepare dump directory",
+                    "status": "completed",
+                    "conclusion": "success",
+                    "number": 2,
+                    "started_at": "2025-08-25T03:01:44Z",
+                    "completed_at": "2025-08-25T03:01:44Z"
+                },
+                {
+                    "name": "Dump environment variables",
+                    "status": "completed",
+                    "conclusion": "success",
+                    "number": 3,
+                    "started_at": "2025-08-25T03:01:44Z",
+                    "completed_at": "2025-08-25T03:01:44Z"
+                },
+                {
+                    "name": "Dump event payload",
+                    "status": "completed",
+                    "conclusion": "success",
+                    "number": 4,
+                    "started_at": "2025-08-25T03:01:44Z",
+                    "completed_at": "2025-08-25T03:01:44Z"
+                },
+                {
+                    "name": "Dump GitHub and Runner contexts",
+                    "status": "completed",
+                    "conclusion": "success",
+                    "number": 5,
+                    "started_at": "2025-08-25T03:01:44Z",
+                    "completed_at": "2025-08-25T03:01:44Z"
+                },
+                {
+                    "name": "Query GitHub API for run, jobs, commit details",
+                    "status": "in_progress",
+                    "conclusion": null,
+                    "number": 6,
+                    "started_at": "2025-08-25T03:01:44Z",
+                    "completed_at": null
+                },
+                {
+                    "name": "Query PR details when applicable",
+                    "status": "pending",
+                    "conclusion": null,
+                    "number": 7,
+                    "started_at": null,
+                    "completed_at": null
+                },
+                {
+                    "name": "Upload artifact",
+                    "status": "pending",
+                    "conclusion": null,
+                    "number": 8,
+                    "started_at": null,
+                    "completed_at": null
+                }
+            ],
+            "check_run_url": "https://api.github.com/repos/input-output-hk/catalyst-forge/check-runs/48782865681",
+            "labels": [
+                "ubuntu-latest"
+            ],
+            "runner_id": 1000248638,
+            "runner_name": "GitHub Actions 1000248638",
+            "runner_group_id": 0,
+            "runner_group_name": "GitHub Actions"
+        }
+    ]
+}

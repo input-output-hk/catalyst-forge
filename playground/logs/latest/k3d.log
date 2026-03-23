@@ -1,0 +1,59 @@
+[k3d] Starting: Checking prerequisites
+✓ docker is available
+✓ k3d is available
+✓ mkcert is available
+[k3d] Completed: Checking prerequisites
+[k3d] Starting: Preparing certificates
+Preparing mkcert CA certificates...
+Writing registries configuration for registry.projectcatalyst.dev...
+[k3d] Completed: Preparing certificates
+[k3d] Starting: Planning cluster actions
+Cluster does not exist; will create new cluster.
+[k3d] Completed: Planning cluster actions
+[k3d] Starting: Creating k3d cluster
+Creating cluster 'forge'...
+[36mINFO[0m[0000] portmapping '80:80' targets the loadbalancer: defaulting to [servers:*:proxy agents:*:proxy] 
+[36mINFO[0m[0000] portmapping '443:443' targets the loadbalancer: defaulting to [servers:*:proxy agents:*:proxy] 
+[36mINFO[0m[0000] portmapping '8372:8372' targets the loadbalancer: defaulting to [servers:*:proxy agents:*:proxy] 
+[36mINFO[0m[0000] portmapping '5432:5432' targets the loadbalancer: defaulting to [servers:*:proxy agents:*:proxy] 
+[36mINFO[0m[0000] Prep: Network                                
+[36mINFO[0m[0000] Created network 'k3d-forge'                  
+[36mINFO[0m[0000] Created image volume k3d-forge-images        
+[36mINFO[0m[0000] Starting new tools node...                   
+[36mINFO[0m[0000] Starting node 'k3d-forge-tools'              
+[36mINFO[0m[0001] Creating node 'k3d-forge-server-0'           
+[36mINFO[0m[0001] Creating LoadBalancer 'k3d-forge-serverlb'   
+[36mINFO[0m[0001] Using the k3d-tools node to gather environment information 
+[36mINFO[0m[0001] HostIP: using network gateway 192.168.155.1 address 
+[36mINFO[0m[0001] Starting cluster 'forge'                     
+[36mINFO[0m[0001] Starting servers...                          
+[36mINFO[0m[0001] Starting node 'k3d-forge-server-0'           
+[36mINFO[0m[0003] All agents already running.                  
+[36mINFO[0m[0003] Starting helpers...                          
+[36mINFO[0m[0003] Starting node 'k3d-forge-serverlb'           
+[36mINFO[0m[0009] Injecting records for hostAliases (incl. host.k3d.internal) and for 2 network members into CoreDNS configmap... 
+[36mINFO[0m[0011] Cluster 'forge' created successfully!        
+[36mINFO[0m[0012] You can now use it like this:                
+kubectl cluster-info
+[k3d] Completed: Creating k3d cluster
+[k3d] Starting: Post-create configuration
+Cluster created. Performing post-create steps...
+[k3d] Completed: Post-create configuration
+[k3d] Starting: Writing kubeconfig
+Writing kubeconfig to /Users/josh/work/catalyst-forge/playground/kubeconfig...
+Set KUBECONFIG=/Users/josh/work/catalyst-forge/playground/kubeconfig
+[k3d] Completed: Writing kubeconfig
+[k3d] Starting: Writing cluster info
+Writing cluster info to /Users/josh/work/catalyst-forge/playground/cluster.json...
+
+✅ k3d cluster 'forge' is ready!
+[k3d] Completed: Writing cluster info
+[k3d] Running 4 health checks...
+[k3d] Health check 1/4: Verifying cluster exists
+[k3d] ✓ Health check passed: Verifying cluster exists
+[k3d] Health check 2/4: Checking API connectivity
+[k3d] ✓ Health check passed: Checking API connectivity
+[k3d] Health check 3/4: Waiting for nodes
+[k3d] ✓ Health check passed: Waiting for nodes
+[k3d] Health check 4/4: Verifying system pods
+[k3d] ✓ Health check passed: Verifying system pods

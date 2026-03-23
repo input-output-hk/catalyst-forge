@@ -1,0 +1,11 @@
+{
+  "name": "forge",
+  "type": "k3d",
+  "servers": 1,
+  "agents": 0,
+  "host_ip": "127.0.0.1",
+  "http_port": 80,
+  "https_port": 443,
+  "kubeconfig": "/Users/josh/work/catalyst-forge/playground/kubeconfig",
+  "kubernetes_version": "v1.31.5+k3s1 (linux/arm64)"
+}

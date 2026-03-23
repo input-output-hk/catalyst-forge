@@ -1,0 +1,12 @@
+{
+    "id": 183752874,
+    "node_id": "W_kwDOMniUpM4K89iq",
+    "name": "Dump GitHub Context",
+    "path": ".github/workflows/dump-context.yml",
+    "state": "active",
+    "created_at": "2025-08-25T03:01:36.000Z",
+    "updated_at": "2025-08-25T03:01:36.000Z",
+    "url": "https://api.github.com/repos/input-output-hk/catalyst-forge/actions/workflows/183752874",
+    "html_url": "https://github.com/input-output-hk/catalyst-forge/blob/master/.github/workflows/dump-context.yml",
+    "badge_url": "https://github.com/input-output-hk/catalyst-forge/workflows/Dump%20GitHub%20Context/badge.svg"
+}

@@ -1,0 +1,113 @@
+{
+    "sha": "8e9b1f8981e109a4bf77a0684181a30a05840450",
+    "node_id": "C_kwDOMniUpNoAKDhlOWIxZjg5ODFlMTA5YTRiZjc3YTA2ODQxODFhMzBhMDU4NDA0NTA",
+    "commit": {
+        "author": {
+            "name": "Joshua Gilman",
+            "email": "joshuagilman@gmail.com",
+            "date": "2025-08-25T03:01:27Z"
+        },
+        "committer": {
+            "name": "Joshua Gilman",
+            "email": "joshuagilman@gmail.com",
+            "date": "2025-08-25T03:01:27Z"
+        },
+        "message": "wip: testing",
+        "tree": {
+            "sha": "93e454bd953f66c22476883e0f64c663505bf3c0",
+            "url": "https://api.github.com/repos/input-output-hk/catalyst-forge/git/trees/93e454bd953f66c22476883e0f64c663505bf3c0"
+        },
+        "url": "https://api.github.com/repos/input-output-hk/catalyst-forge/git/commits/8e9b1f8981e109a4bf77a0684181a30a05840450",
+        "comment_count": 0,
+        "verification": {
+            "verified": true,
+            "reason": "valid",
+            "signature": "-----BEGIN PGP SIGNATURE-----\n\niHUEABYKAB0WIQQo483r1x1MHnQj1fdWFd2r9kJYgAUCaKvSDAAKCRBWFd2r9kJY\ngA/wAP4qYp3FBj39x9ImGzv7/EZiuwRLHVG5CszRmUE7VwQaagEA7gy72rguHQwA\noEqn2mLQA1M6ybkMhGC4eOqVYRCDOwo=\n=pdHC\n-----END PGP SIGNATURE-----",
+            "payload": "tree 93e454bd953f66c22476883e0f64c663505bf3c0\nparent 0fbe383de37c1294db24d3be4bf3db2c5b388e67\nauthor Joshua Gilman <joshuagilman@gmail.com> 1756090887 -0700\ncommitter Joshua Gilman <joshuagilman@gmail.com> 1756090887 -0700\n\nwip: testing\n",
+            "verified_at": "2025-08-25T03:01:35Z"
+        }
+    },
+    "url": "https://api.github.com/repos/input-output-hk/catalyst-forge/commits/8e9b1f8981e109a4bf77a0684181a30a05840450",
+    "html_url": "https://github.com/input-output-hk/catalyst-forge/commit/8e9b1f8981e109a4bf77a0684181a30a05840450",
+    "comments_url": "https://api.github.com/repos/input-output-hk/catalyst-forge/commits/8e9b1f8981e109a4bf77a0684181a30a05840450/comments",
+    "author": {
+        "login": "jmgilman",
+        "id": 2308444,
+        "node_id": "MDQ6VXNlcjIzMDg0NDQ=",
+        "avatar_url": "https://avatars.githubusercontent.com/u/2308444?v=4",
+        "gravatar_id": "",
+        "url": "https://api.github.com/users/jmgilman",
+        "html_url": "https://github.com/jmgilman",
+        "followers_url": "https://api.github.com/users/jmgilman/followers",
+        "following_url": "https://api.github.com/users/jmgilman/following{/other_user}",
+        "gists_url": "https://api.github.com/users/jmgilman/gists{/gist_id}",
+        "starred_url": "https://api.github.com/users/jmgilman/starred{/owner}{/repo}",
+        "subscriptions_url": "https://api.github.com/users/jmgilman/subscriptions",
+        "organizations_url": "https://api.github.com/users/jmgilman/orgs",
+        "repos_url": "https://api.github.com/users/jmgilman/repos",
+        "events_url": "https://api.github.com/users/jmgilman/events{/privacy}",
+        "received_events_url": "https://api.github.com/users/jmgilman/received_events",
+        "type": "User",
+        "user_view_type": "public",
+        "site_admin": false
+    },
+    "committer": {
+        "login": "jmgilman",
+        "id": 2308444,
+        "node_id": "MDQ6VXNlcjIzMDg0NDQ=",
+        "avatar_url": "https://avatars.githubusercontent.com/u/2308444?v=4",
+        "gravatar_id": "",
+        "url": "https://api.github.com/users/jmgilman",
+        "html_url": "https://github.com/jmgilman",
+        "followers_url": "https://api.github.com/users/jmgilman/followers",
+        "following_url": "https://api.github.com/users/jmgilman/following{/other_user}",
+        "gists_url": "https://api.github.com/users/jmgilman/gists{/gist_id}",
+        "starred_url": "https://api.github.com/users/jmgilman/starred{/owner}{/repo}",
+        "subscriptions_url": "https://api.github.com/users/jmgilman/subscriptions",
+        "organizations_url": "https://api.github.com/users/jmgilman/orgs",
+        "repos_url": "https://api.github.com/users/jmgilman/repos",
+        "events_url": "https://api.github.com/users/jmgilman/events{/privacy}",
+        "received_events_url": "https://api.github.com/users/jmgilman/received_events",
+        "type": "User",
+        "user_view_type": "public",
+        "site_admin": false
+    },
+    "parents": [
+        {
+            "sha": "0fbe383de37c1294db24d3be4bf3db2c5b388e67",
+            "url": "https://api.github.com/repos/input-output-hk/catalyst-forge/commits/0fbe383de37c1294db24d3be4bf3db2c5b388e67",
+            "html_url": "https://github.com/input-output-hk/catalyst-forge/commit/0fbe383de37c1294db24d3be4bf3db2c5b388e67"
+        }
+    ],
+    "stats": {
+        "total": 132,
+        "additions": 132,
+        "deletions": 0
+    },
+    "files": [
+        {
+            "sha": "f2fec7ce0a26b35c63e1d0e1b84717955dc6eebe",
+            "filename": ".github/workflows/dump-context.yml",
+            "status": "added",
+            "additions": 108,
+            "deletions": 0,
+            "changes": 108,
+            "blob_url": "https://github.com/input-output-hk/catalyst-forge/blob/8e9b1f8981e109a4bf77a0684181a30a05840450/.github%2Fworkflows%2Fdump-context.yml",
+            "raw_url": "https://github.com/input-output-hk/catalyst-forge/raw/8e9b1f8981e109a4bf77a0684181a30a05840450/.github%2Fworkflows%2Fdump-context.yml",
+            "contents_url": "https://api.github.com/repos/input-output-hk/catalyst-forge/contents/.github%2Fworkflows%2Fdump-context.yml?ref=8e9b1f8981e109a4bf77a0684181a30a05840450",
+            "patch": "@@ -0,0 +1,108 @@\n+name: Dump GitHub Context\n+\n+on:\n+  push:\n+    branches:\n+      - '**'\n+  pull_request:\n+  workflow_dispatch:\n+\n+permissions:\n+  contents: read\n+  actions: read\n+  checks: read\n+  issues: read\n+  pull-requests: read\n+\n+jobs:\n+  dump:\n+    name: Collect and upload context data\n+    runs-on: ubuntu-latest\n+    steps:\n+      - name: Prepare dump directory\n+        run: |\n+          set -euo pipefail\n+          mkdir -p dump\n+\n+      - name: Dump environment variables\n+        run: |\n+          set -euo pipefail\n+          printenv | sort > dump/environment.txt\n+\n+      - name: Dump event payload\n+        run: |\n+          set -euo pipefail\n+          if [[ -n \"${GITHUB_EVENT_PATH:-}\" && -f \"$GITHUB_EVENT_PATH\" ]]; then\n+            cp \"$GITHUB_EVENT_PATH\" dump/event.json\n+          else\n+            echo \"{}\" > dump/event.json\n+          fi\n+\n+      - name: Dump GitHub and Runner contexts\n+        env:\n+          GITHUB_CONTEXT: ${{ toJSON(github) }}\n+          RUNNER_CONTEXT: ${{ toJSON(runner) }}\n+        run: |\n+          set -euo pipefail\n+          printf '%s' \"$GITHUB_CONTEXT\" > dump/github_context.json\n+          printf '%s' \"$RUNNER_CONTEXT\" > dump/runner_context.json\n+\n+      - name: Query GitHub API for run, jobs, commit details\n+        env:\n+          GH_TOKEN: ${{ github.token }}\n+        run: |\n+          set -euo pipefail\n+          # gh is preinstalled on ubuntu-latest; verify presence\n+          if ! command -v gh >/dev/null 2>&1; then\n+            echo \"gh CLI not found on runner\" >&2\n+            exit 1\n+          fi\n+\n+          # Basic metadata\n+          gh api \\\n+            repos/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID} \\\n+            > dump/run.json\n+\n+          gh api \\\n+            repos/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}/jobs \\\n+            > dump/run_jobs.json\n+\n+          gh api \\\n+            repos/${GITHUB_REPOSITORY}/commits/${GITHUB_SHA} \\\n+            > dump/commit.json\n+\n+          # Workflow file metadata (best-effort)\n+          # Obtain workflow_id from run.json if available\n+          if command -v jq >/dev/null 2>&1; then\n+            workflow_id=$(jq -r '.workflow_id // empty' dump/run.json || true)\n+            if [[ -n \"${workflow_id:-}\" ]]; then\n+              gh api repos/${GITHUB_REPOSITORY}/actions/workflows/${workflow_id} \\\n+                > dump/workflow.json || true\n+            fi\n+          fi\n+\n+      - name: Query PR details when applicable\n+        if: ${{ github.event_name == 'pull_request' || github.event_name == 'pull_request_target' }}\n+        env:\n+          GH_TOKEN: ${{ github.token }}\n+        run: |\n+          set -euo pipefail\n+          if ! command -v jq >/dev/null 2>&1; then\n+            echo \"jq not found, skipping PR detail enrichment\" >&2\n+            exit 0\n+          fi\n+          pr_number=$(jq -r '.number // empty' dump/event.json || true)\n+          if [[ -n \"${pr_number:-}\" ]]; then\n+            gh api repos/${GITHUB_REPOSITORY}/pulls/${pr_number} > dump/pr.json || true\n+            gh api repos/${GITHUB_REPOSITORY}/issues/${pr_number} > dump/pr_issue_view.json || true\n+          fi\n+\n+      - name: Upload artifact\n+        uses: actions/upload-artifact@v4\n+        with:\n+          name: github-context-dump\n+          path: dump\n+          if-no-files-found: warn\n+          retention-days: 7\n+\n+"
+        },
+        {
+            "sha": "4b2acde83ae37cacb43911b473b5105762adfebe",
+            "filename": "docs/v2/architecture.md",
+            "status": "added",
+            "additions": 24,
+            "deletions": 0,
+            "changes": 24,
+            "blob_url": "https://github.com/input-output-hk/catalyst-forge/blob/8e9b1f8981e109a4bf77a0684181a30a05840450/docs%2Fv2%2Farchitecture.md",
+            "raw_url": "https://github.com/input-output-hk/catalyst-forge/raw/8e9b1f8981e109a4bf77a0684181a30a05840450/docs%2Fv2%2Farchitecture.md",
+            "contents_url": "https://api.github.com/repos/input-output-hk/catalyst-forge/contents/docs%2Fv2%2Farchitecture.md?ref=8e9b1f8981e109a4bf77a0684181a30a05840450",
+            "patch": "@@ -0,0 +1,24 @@\n+# Catalyst Forge v2 Architecture\n+\n+WIP architecture notes for Forge v2.\n+\n+## Dump\n+\n+- [ ] Stand up initial API endpoint for receiving new build from GHA\n+  - [ ] Identify initial incoming payload from GHA\n+  - [ ] Implement validation layer to only allow trusted repositories to submit builds\n+\n+\n+## Build Submission\n+\n+Execution begins when a GHA workflow executes an API call to Catalyst Forge API.\n+Workflow uses Catalyst Forge CLI to execute the request.\n+The CLI collects all required runtime data, including a valid GitHub OIDC token, and POSTSs to API build endpoint.\n+The API server performs initial validation of the build request:\n+  1. Validates incoming GHA JWT via public GHA JWKS\n+    - Returns 401 and audit entry if validation fails\n+  1. Uses the source repository name (sourced from JWT claims) to validate if repository is approved to submit build.\n+    - Returns 401 and audit entry if repository is not found\n+  1. Uses GH API to validate source commits exists on source repository\n+    -  Returns 400 if not found\n+Upon validation success, API creates new build entry in backend and hands off build to discovery agent.\n\\ No newline at end of file"
+        }
+    ]
+}

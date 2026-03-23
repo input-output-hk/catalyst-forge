@@ -1,0 +1,8 @@
+mirrors:
+  registry.projectcatalyst.dev:
+    endpoint:
+    - https://registry.projectcatalyst.dev
+configs:
+  registry.projectcatalyst.dev:
+    tls:
+      ca_file: /etc/ssl/certs/mkcert-rootCA.crt
