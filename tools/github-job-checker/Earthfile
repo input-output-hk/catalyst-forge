@@ -1,0 +1,69 @@
+VERSION 0.8
+
+deps:
+    FROM golang:1.23.2-alpine3.19
+
+    WORKDIR /work
+
+    RUN apk add git file
+
+    RUN mkdir -p /go/cache && mkdir -p /go/modcache
+    ENV GOCACHE=/go/cache
+    ENV GOMODCACHE=/go/modcache
+    CACHE --persist --sharing shared /go
+
+    COPY go.mod go.sum .
+    RUN go mod download
+
+src:
+    FROM +deps
+
+    CACHE --persist --sharing shared /go
+
+    COPY . .
+    RUN go generate ./...
+
+check:
+    FROM +src
+
+    RUN gofmt -l . | grep . && exit 1 || exit 0
+    RUN go vet ./...
+
+build:
+    FROM +src
+
+    ARG GOOS
+    ARG GOARCH
+    ARG version="0.0.0"
+
+    ENV CGO_ENABLED=0
+
+    RUN go build -ldflags="-extldflags=-static -X main.version=$version" -o bin/github-job-checker main.go
+    RUN file bin/github-job-checker
+
+    SAVE ARTIFACT bin/github-job-checker github-job-checker
+
+test:
+    FROM +build
+
+    RUN go test ./...
+
+docker:
+    FROM alpine:3
+
+    ARG version="dev"
+
+    ARG TARGETOS
+    ARG TARGETARCH
+    ARG TARGETPLATFORM
+
+    COPY \
+        (+build/github-job-checker \
+        --GOOS=$TARGETOS \
+        --GOARCH=$TARGETARCH \
+        --PLATFORM=$TARGETPLATFORM \
+        --version=$version) bin/github-job-checker
+
+    ENTRYPOINT ["bin/github-job-checker"]
+
+    SAVE IMAGE --push 332405224602.dkr.ecr.eu-central-1.amazonaws.com/github-job-checker:$version
